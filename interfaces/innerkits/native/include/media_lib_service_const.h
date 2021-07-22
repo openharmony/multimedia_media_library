@@ -99,6 +99,7 @@ const std::string AUDIO_CONTAINER_TYPE_AAC = "aac";
 const std::string AUDIO_CONTAINER_TYPE_MP3 = "mp3";
 const std::string AUDIO_CONTAINER_TYPE_FLAC = "flac";
 const std::string AUDIO_CONTAINER_TYPE_WAV = "wav";
+const std::string AUDIO_CONTAINER_TYPE_OGG = "ogg";
 
 /** Supported video container types */
 const std::string VIDEO_CONTAINER_TYPE_MP4 = "mp4";
@@ -118,7 +119,8 @@ const std::unordered_set<std::string> SUPPORTED_AUDIO_FORMATS_SET {
                                                 AUDIO_CONTAINER_TYPE_AAC,
                                                 AUDIO_CONTAINER_TYPE_MP3,
                                                 AUDIO_CONTAINER_TYPE_FLAC,
-                                                AUDIO_CONTAINER_TYPE_WAV
+                                                AUDIO_CONTAINER_TYPE_WAV,
+                                                AUDIO_CONTAINER_TYPE_OGG
                                                 };
 
 // Unordered set contains list supported video formats
