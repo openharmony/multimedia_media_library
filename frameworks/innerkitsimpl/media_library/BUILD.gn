@@ -27,6 +27,7 @@ config("media_library_config") {
     "./include",
     "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+    "//utils/native/base/include",
   ]
 
   cflags = [
@@ -56,6 +57,7 @@ ohos_shared_library("media_library") {
   deps = [
     ":media_library_source",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
+    "//utils/native/base:utils",
   ]
 
   part_name = "multimedia_media_library_standard"
