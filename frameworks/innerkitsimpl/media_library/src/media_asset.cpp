@@ -49,6 +49,7 @@ MediaType MediaAsset::GetMediaType(const std::string &filePath)
     size_t dotIndex = filePath.rfind(DOT_CHAR);
     if (dotIndex != string::npos) {
         string extension = filePath.substr(dotIndex + 1, filePath.length() - dotIndex);
+        transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
         if (SUPPORTED_AUDIO_FORMATS_SET.find(extension) != SUPPORTED_AUDIO_FORMATS_SET.end()) {
             mediaType = MEDIA_TYPE_AUDIO;
         } else if (SUPPORTED_VIDEO_FORMATS_SET.find(extension)
