@@ -14,14 +14,9 @@
  */
 
 #include "media_file_utils.h"
+
 #include "media_lib_service_const.h"
 #include "media_log.h"
-
-#include <fstream>
-#include <ftw.h>
-#include <sstream>
-#include <sys/stat.h>
-#include <unistd.h>
 
 using namespace std;
 
@@ -46,6 +41,36 @@ int RemoveDirectory(const string &path)
     return errCode;
 }
 
+void ChangeOwnerToMedia(const string &path)
+{
+    uid_t usrId;
+    gid_t grpId;
+    struct passwd *pw = nullptr;
+    struct group *grp = nullptr;
+
+    pw = getpwnam(CHOWN_OWNER_NAME.c_str());
+    if (pw == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain the user account information");
+        return;
+    }
+    usrId = pw->pw_uid;
+
+    grp = getgrnam(CHOWN_GROUP_NAME.c_str());
+    if (grp == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain the group information");
+        memset_s(pw, sizeof(struct passwd), 0, sizeof(struct passwd));
+        return;
+    }
+    grpId = grp->gr_gid;
+
+    if (chown(path.c_str(), usrId, grpId) == -1) {
+        MEDIA_ERR_LOG("chown failed for the given path");
+    }
+
+    memset_s(pw, sizeof(struct passwd), 0, sizeof(struct passwd));
+    memset_s(pw, sizeof(struct group), 0, sizeof(struct group));
+}
+
 bool MediaFileUtils::CreateDirectory(const string& dirPath)
 {
     string subStr;
@@ -63,7 +88,16 @@ bool MediaFileUtils::CreateDirectory(const string& dirPath)
 
         subStr = subStr + SLASH_CHAR + segment;
         if (!IsDirectory(subStr)) {
-            mkdir(subStr.c_str(), S_IRWXG);
+            string folderPath = subStr;
+            if (mkdir(folderPath.c_str(), CHOWN_RWX_USR_GRP) == -1) {
+                MEDIA_ERR_LOG("Failed to create directory");
+                return false;
+            }
+
+            ChangeOwnerToMedia(folderPath);
+            if (chmod(folderPath.c_str(), CHOWN_RWX_USR_GRP) == -1) {
+                MEDIA_ERR_LOG("chmod failed for the newly created directory");
+            }
         }
     }
 
@@ -82,10 +116,10 @@ string MediaFileUtils::GetFilename(const string& filePath)
     string fileName = "";
 
     if (!(filePath.empty())) {
-        size_t slashIndex = filePath.rfind("/");
-        if (slashIndex != string::npos) {
-            if (filePath.size() > slashIndex) {
-                fileName = filePath.substr(slashIndex + 1, filePath.length() - slashIndex);
+        size_t lastSlash = filePath.rfind("/");
+        if (lastSlash != string::npos) {
+            if (filePath.size() > lastSlash) {
+                fileName = filePath.substr(lastSlash + 1, filePath.length() - lastSlash);
             }
         }
     }
@@ -107,22 +141,27 @@ bool MediaFileUtils::IsDirectory(const string& dirName)
 
 bool MediaFileUtils::CreateFile(const string& filePath)
 {
-    if (filePath.empty()) {
-        return false;
-    }
+    bool errCode = false;
 
-    if (IsFileExists(filePath)) {
-        return false;
+    if (filePath.empty() || IsFileExists(filePath)) {
+        return errCode;
     }
 
     ofstream file(filePath);
     if (!file) {
         MEDIA_ERR_LOG("Output file path could not be created");
-        return false;
+        return errCode;
     }
+
+    // Change ownership to Media and mode to Read-write user and group
+    ChangeOwnerToMedia(filePath);
+    if (chmod(filePath.c_str(), CHOWN_RW_USR_GRP) == SUCCESS) {
+        errCode = true;
+    }
+
     file.close();
 
-    return true;
+    return errCode;
 }
 
 bool MediaFileUtils::DeleteFile(const string& fileName)
@@ -152,6 +191,41 @@ bool MediaFileUtils::MoveFile(const string& oldPath, const string& newPath)
     return errRet;
 }
 
+bool CopyFileUtil(const string &filePath, const string &newPath)
+{
+    struct stat fst;
+    bool errCode = false;
+
+    int source = open(filePath.c_str(), O_RDONLY);
+    if (source == -1) {
+        MEDIA_ERR_LOG("Open failed for source file");
+        return errCode;
+    }
+
+    int dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
+    if (dest == -1) {
+        MEDIA_ERR_LOG("Open failed for destination file");
+        close(source);
+        return errCode;
+    }
+
+    if (fstat(source, &fst) == SUCCESS) {
+        // Copy file content
+        if (sendfile(dest, source, 0, fst.st_size) != -1) {
+            // Copy ownership and mode of source file
+            if (fchown(dest, fst.st_uid, fst.st_gid) == SUCCESS &&
+                fchmod(dest, fst.st_mode) == SUCCESS) {
+                errCode = true;
+            }
+        }
+    }
+
+    close(source);
+    close(dest);
+
+    return errCode;
+}
+
 bool MediaFileUtils::CopyFile(const string  &filePath, const string &newPath)
 {
     string newPathCorrected;
@@ -170,10 +244,7 @@ bool MediaFileUtils::CopyFile(const string  &filePath, const string &newPath)
             errCode = CreateDirectory(newPath);
         }
         if (errCode == true) {
-            ifstream src(filePath, ios::binary);
-            ofstream dst(newPathCorrected, ios::binary);
-
-            dst << src.rdbuf();
+            errCode = CopyFileUtil(filePath, newPathCorrected);
         }
     }
 

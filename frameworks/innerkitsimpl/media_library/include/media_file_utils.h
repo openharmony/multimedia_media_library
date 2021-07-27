@@ -17,9 +17,25 @@
 #define MEDIA_FILE_UTILS_H
 
 #include <string>
+#include <fstream>
+#include <ftw.h>
+#include <sstream>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
+#include <securec.h>
 
 namespace OHOS {
 namespace Media {
+const std::string CHOWN_OWNER_NAME = "media_rw";
+const std::string CHOWN_GROUP_NAME = "media_rw";
+const mode_t CHOWN_RWX_USR_GRP = 0770;
+const mode_t CHOWN_RW_USR_GRP = 0660;
+
 /**
  * @brief Utility class for file operations
  *
