@@ -8,11 +8,9 @@
       "module_list": [
         "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library_packages",
         "//foundation/multimedia/medialibrary_standard/sa_profile:medialibrary_service_sa_profile",
-        "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_proxy:medialibrary_proxy",
-        "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_service:medialibrary_service",
-        "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/prebuilts/etcs:medialibrary_service.rc",
         "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary",
-        "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary_js"
+        "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary_js",
+        "//foundation/multimedia/medialibrary_standard/services:media_library_service_packages"
       ],
       "inner_kits": [
           {
@@ -33,7 +31,7 @@
           },
           {
             "type": "none",
-            "name": "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_proxy:medialibrary_proxy",
+            "name": "//foundation/multimedia/medialibrary_standard/services:medialibrary_proxy",
             "header": {
             "header_files": [
                 "media_library_client.h"
