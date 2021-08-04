@@ -33,6 +33,7 @@ IMediaLibraryClient *IMediaLibraryClient::GetMediaLibraryClientInstance()
     sptr<IRemoteObject> object = samgr->GetSystemAbility(MEDIA_LIBRARY_SERVICE_ID);
     if (object == nullptr) {
         MEDIA_ERR_LOG("Media Service object is NULL.");
+        return nullptr;
     }
     static MediaLibProxy msProxy(object);
 
