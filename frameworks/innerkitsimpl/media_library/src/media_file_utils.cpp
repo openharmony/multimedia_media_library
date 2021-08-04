@@ -201,11 +201,16 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
         MEDIA_ERR_LOG("Open failed for source file");
         return errCode;
     }
-
-    int dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
+    char *absNewPath = realpath(newPath.c_str(), NULL);
+    if (absNewPath == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for newPath");
+        return errCode;
+    }
+    int dest = open(absNewPath, O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
     if (dest == -1) {
         MEDIA_ERR_LOG("Open failed for destination file");
         close(source);
+        free(absNewPath);
         return errCode;
     }
 
@@ -222,6 +227,7 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 
     close(source);
     close(dest);
+    free(absNewPath);
 
     return errCode;
 }
