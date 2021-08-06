@@ -13,6 +13,8 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 
+     Notes:
+     This is project config file for OpenHarmony OSS Audit Tool, if you have any questions or concerns, please email chenyaxun.
 -->
 <!-- OAT(OSS Audit Tool) configuration guide:
 basedir: Root dir, the basedir + project path is the real source file location.
@@ -55,8 +57,8 @@ Note:If the text contains special characters, please escape them according to th
 <configuration>
     <oatconfig>
         <filefilterlist>
-            <filefilter name="defaultFilter" desc="Files not to check">
-                <filteritem type="filename" name=".*" desc="media library files"/>
+            <filefilter name="FileTypePolicyFilter" desc="Filters for file policies" >
+                <filteritem type="filepath" name=".*" desc="Media library files "/>
             </filefilter>
         </filefilterlist>
     </oatconfig>
