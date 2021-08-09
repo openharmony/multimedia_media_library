@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <sys/sendfile.h>
 #include <sys/types.h>
 #include <pwd.h>
