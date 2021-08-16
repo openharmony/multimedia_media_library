@@ -195,22 +195,24 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 {
     struct stat fst;
     bool errCode = false;
+    char actualPath[PATH_MAX];
 
-    int source = open(filePath.c_str(), O_RDONLY);
+    auto absFilePath = realpath(filePath.c_str(), actualPath);
+    if (absFilePath == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path");
+        return errCode;
+    }
+
+    int source = open(absFilePath, O_RDONLY);
     if (source == -1) {
         MEDIA_ERR_LOG("Open failed for source file");
         return errCode;
     }
-    char *absNewPath = realpath(newPath.c_str(), NULL);
-    if (absNewPath == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for newPath");
-        return errCode;
-    }
-    int dest = open(absNewPath, O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
+
+    int dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
     if (dest == -1) {
         MEDIA_ERR_LOG("Open failed for destination file");
         close(source);
-        free(absNewPath);
         return errCode;
     }
 
@@ -227,12 +229,11 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 
     close(source);
     close(dest);
-    free(absNewPath);
 
     return errCode;
 }
 
-bool MediaFileUtils::CopyFile(const string  &filePath, const string &newPath)
+bool MediaFileUtils::CopyFile(const string &filePath, const string &newPath)
 {
     string newPathCorrected;
     bool errCode = false;

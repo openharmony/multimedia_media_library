@@ -118,12 +118,14 @@ bool MediaAsset::ModifyMediaAsset(const MediaAsset &mediaAsset)
     if (dotIndexDst != string::npos) {
         if (name_.size() > dotIndexDst) {
             fileExtnDst = name_.substr(dotIndexDst);
+            transform(fileExtnDst.begin(), fileExtnDst.end(), fileExtnDst.begin(), ::tolower);
         }
     }
 
     if (dotIndexSrc != string::npos) {
         if (mediaAsset.name_.size() > dotIndexSrc) {
             fileExtnSrc = mediaAsset.name_.substr(dotIndexSrc);
+            transform(fileExtnSrc.begin(), fileExtnSrc.end(), fileExtnSrc.begin(), ::tolower);
         }
     }
 
