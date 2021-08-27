@@ -108,9 +108,10 @@ napi_value VideoAssetNapi::VideoAssetNapiConstructor(napi_env env, napi_callback
 {
     napi_status status;
     napi_value result = nullptr;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &result);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status == napi_ok && thisVar != nullptr) {
         std::unique_ptr<VideoAssetNapi> obj = std::make_unique<VideoAssetNapi>();
         if (obj != nullptr) {
@@ -168,9 +169,10 @@ napi_value VideoAssetNapi::GetMimeType(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     VideoAssetNapi* obj = nullptr;
     std::string mimeType = "";
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -195,9 +197,10 @@ napi_value VideoAssetNapi::GetWidth(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     VideoAssetNapi* obj = nullptr;
     int32_t width;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -222,9 +225,10 @@ napi_value VideoAssetNapi::GetHeight(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     VideoAssetNapi* obj = nullptr;
     int32_t height;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -249,9 +253,10 @@ napi_value VideoAssetNapi::GetDuration(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     VideoAssetNapi* obj = nullptr;
     int32_t duration;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;

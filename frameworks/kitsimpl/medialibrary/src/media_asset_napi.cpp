@@ -140,9 +140,10 @@ napi_value MediaAssetNapi::MediaAssetNapiConstructor(napi_env env, napi_callback
 {
     napi_status status;
     napi_value result = nullptr;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &result);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status == napi_ok && thisVar != nullptr) {
         std::unique_ptr<MediaAssetNapi> obj = std::make_unique<MediaAssetNapi>();
         if (obj != nullptr) {
@@ -250,9 +251,10 @@ napi_value MediaAssetNapi::GetId(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     MediaAssetNapi* obj = nullptr;
     int32_t id;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -277,9 +279,10 @@ napi_value MediaAssetNapi::GetUri(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     MediaAssetNapi* obj = nullptr;
     std::string uri = "";
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -304,9 +307,10 @@ napi_value MediaAssetNapi::GetMediaType(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     MediaAssetNapi* obj = nullptr;
     int32_t mediaType;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -330,12 +334,15 @@ napi_value MediaAssetNapi::JSSetName(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     MediaAssetNapi* obj = nullptr;
     napi_valuetype valueType = napi_undefined;
-    size_t res;
+    size_t res = 0;
     char buffer[SIZE];
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -367,9 +374,10 @@ napi_value MediaAssetNapi::GetName(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     MediaAssetNapi* obj = nullptr;
     std::string name = "";
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -394,9 +402,10 @@ napi_value MediaAssetNapi::GetSize(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     MediaAssetNapi* obj = nullptr;
     uint64_t size;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -421,9 +430,10 @@ napi_value MediaAssetNapi::GetDateAdded(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     MediaAssetNapi* obj = nullptr;
     uint64_t dateAdded;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -448,9 +458,10 @@ napi_value MediaAssetNapi::GetDateModified(napi_env env, napi_callback_info info
     napi_value undefinedResult = nullptr;
     MediaAssetNapi* obj = nullptr;
     uint64_t dateModified;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -475,9 +486,10 @@ napi_value MediaAssetNapi::GetAlbumId(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     MediaAssetNapi* obj = nullptr;
     int32_t id;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -501,12 +513,15 @@ napi_value MediaAssetNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     MediaAssetNapi* obj = nullptr;
     napi_valuetype valueType = napi_undefined;
-    size_t res;
+    size_t res = 0;
     char buffer[SIZE];
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -538,9 +553,10 @@ napi_value MediaAssetNapi::GetAlbumName(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     MediaAssetNapi* obj = nullptr;
     std::string name = "";
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -598,8 +614,12 @@ napi_value MediaAssetNapi::StartCreate(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -611,7 +631,7 @@ napi_value MediaAssetNapi::StartCreate(napi_env env, napi_callback_info info)
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "StartCreate");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "StartCreate");
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -648,48 +668,50 @@ napi_value MediaAssetNapi::CommitCreate(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value result = nullptr;
-    const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
-    NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<MediaAssetAsyncContext> asyncContext = std::make_unique<MediaAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         if (argc == ARGS_ONE) {
-            GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
+            GET_JS_ASYNC_CB_REF(env, argv[PARAM0], REFERENCE_COUNT_ONE, asyncContext->callbackRef);
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CommitCreate");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CommitCreate");
 
-        status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
-                auto context = static_cast<MediaAssetAsyncContext*>(data);
-                Media::MediaAsset asset;
+        status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
+            auto context = static_cast<MediaAssetAsyncContext*>(data);
+            Media::MediaAsset asset;
 
-                context->objectInfo->UpdateNativeMediaAsset(asset);
-                if (!context->objectInfo->newAlbumName_.empty()) {
-                    asset.albumName_ = context->objectInfo->newAlbumName_;
-                } else {
-                    HiLog::Error(LABEL, "Album name is empty");
-                    asset.albumName_ = "";
+            context->objectInfo->UpdateNativeMediaAsset(asset);
+            context->status = false;
+            if (!context->objectInfo->newAlbumName_.empty()) {
+                asset.albumName_ = context->objectInfo->newAlbumName_;
+            } else {
+                // New album name not provided
+                asset.albumName_ = "";
+            }
+            if (!context->objectInfo->newName_.empty()) {
+                asset.name_ = context->objectInfo->newName_;
+                context->status =
+                    context->objectInfo->mediaLibrary_->CreateMediaAsset(GetAssetType(asset.mediaType_), asset);
+                if (context->status) {
+                    context->objectInfo->UpdateMediaAssetInfo(asset);
                 }
-                if (!context->objectInfo->newName_.empty()) {
-                    asset.name_ = context->objectInfo->newName_;
-                    context->status =
-                        context->objectInfo->mediaLibrary_->CreateMediaAsset(GetAssetType(asset.mediaType_), asset);
-                    if (context->status) {
-                        context->objectInfo->UpdateMediaAssetInfo(asset);
-                    }
-                } else {
-                    context->status = false;
-                }
-                context->objectInfo->newName_ = "";
-                context->objectInfo->newAlbumName_ = "";
-                context->objectInfo->startCreateFlag = false;
-            }, CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            }
+
+            context->objectInfo->newName_ = "";
+            context->objectInfo->newAlbumName_ = "";
+            context->objectInfo->startCreateFlag = false;
+        }, CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -706,8 +728,12 @@ napi_value MediaAssetNapi::CancelCreate(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -719,7 +745,7 @@ napi_value MediaAssetNapi::CancelCreate(napi_env env, napi_callback_info info)
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CancelCreate");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CancelCreate");
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -750,8 +776,12 @@ napi_value MediaAssetNapi::StartModify(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -763,7 +793,7 @@ napi_value MediaAssetNapi::StartModify(napi_env env, napi_callback_info info)
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "StartModify");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "StartModify");
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -787,51 +817,49 @@ napi_value MediaAssetNapi::CommitModify(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value result = nullptr;
-    const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
-    NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<MediaAssetAsyncContext> asyncContext = std::make_unique<MediaAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         if (argc == ARGS_ONE) {
-            GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
+            GET_JS_ASYNC_CB_REF(env, argv[PARAM0], REFERENCE_COUNT_ONE, asyncContext->callbackRef);
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CommitModify");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CommitModify");
 
-        status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
-                auto context = static_cast<MediaAssetAsyncContext*>(data);
-                Media::MediaAsset assetOld, assetNew;
+        status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
+            auto context = static_cast<MediaAssetAsyncContext*>(data);
+            Media::MediaAsset assetOld, assetNew;
+            std::string newName = context->objectInfo->newName_;
 
-                context->status = false;
-                context->objectInfo->UpdateNativeMediaAsset(assetOld);
-                context->objectInfo->UpdateNativeMediaAsset(assetNew);
+            context->status = false;
+            context->objectInfo->UpdateNativeMediaAsset(assetOld);
+            context->objectInfo->UpdateNativeMediaAsset(assetNew);
 
-                if (!context->objectInfo->newName_.empty()) {
-                    if (context->objectInfo->newName_.compare(context->objectInfo->name_) != 0) {
-                        assetNew.name_ = context->objectInfo->newName_;
+            if ((!newName.empty()) && (newName.compare(context->objectInfo->name_) != 0)) {
+                assetNew.name_ = newName;
 
-                        context->status =
-                            context->objectInfo->mediaLibrary_->ModifyMediaAsset(GetAssetType(assetOld.mediaType_),
-                                                                                 assetOld, assetNew);
-                        if (context->status) {
-                            context->objectInfo->name_ = assetNew.name_;
-                            context->objectInfo->uri_ = assetNew.uri_;
-                        }
-                    } else {
-                        HiLog::Error(LABEL, "New name cannot be same as the old one");
-                    }
-                    context->objectInfo->newName_ = "";
-                } else {
-                    HiLog::Error(LABEL, "No modification values provided");
+                context->status = context->objectInfo->mediaLibrary_->ModifyMediaAsset(
+                    GetAssetType(assetOld.mediaType_), assetOld, assetNew);
+                if (context->status) {
+                    context->objectInfo->name_ = assetNew.name_;
+                    context->objectInfo->uri_ = assetNew.uri_;
                 }
-                context->objectInfo->startModifyFlag = false;
-            }, CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+                context->objectInfo->newName_ = "";
+            } else {
+                HiLog::Error(LABEL, "Incorrect or no modification values provided");
+            }
+            context->objectInfo->startModifyFlag = false;
+        }, CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -848,8 +876,12 @@ napi_value MediaAssetNapi::CancelModify(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -861,7 +893,7 @@ napi_value MediaAssetNapi::CancelModify(napi_env env, napi_callback_info info)
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CancelModify");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CancelModify");
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -889,8 +921,12 @@ napi_value MediaAssetNapi::CommitDelete(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -902,7 +938,7 @@ napi_value MediaAssetNapi::CommitDelete(napi_env env, napi_callback_info info)
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CommitDelete");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CommitDelete");
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -954,8 +990,12 @@ napi_value MediaAssetNapi::CommitCopy(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value result = nullptr;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_TWO);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc >= ARGS_ONE, "requires 1 parameter minimum");
 
     status = napi_get_undefined(env, &result);
@@ -969,7 +1009,7 @@ napi_value MediaAssetNapi::CommitCopy(napi_env env, napi_callback_info info)
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CommitCopy");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CommitCopy");
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
