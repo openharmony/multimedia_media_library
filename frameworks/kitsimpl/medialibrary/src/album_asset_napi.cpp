@@ -111,9 +111,10 @@ napi_value AlbumAssetNapi::AlbumAssetNapiConstructor(napi_env env, napi_callback
 {
     napi_status status;
     napi_value result = nullptr;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &result);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status == napi_ok && thisVar != nullptr) {
         std::unique_ptr<AlbumAssetNapi> obj = std::make_unique<AlbumAssetNapi>();
         if (obj != nullptr) {
@@ -194,9 +195,10 @@ napi_value AlbumAssetNapi::GetAlbumId(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     AlbumAssetNapi* obj = nullptr;
     int32_t id;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -220,12 +222,15 @@ napi_value AlbumAssetNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     AlbumAssetNapi* obj = nullptr;
     napi_valuetype valueType = napi_undefined;
-    size_t res;
+    size_t res = 0;
     char buffer[SIZE];
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -251,9 +256,10 @@ napi_value AlbumAssetNapi::GetAlbumName(napi_env env, napi_callback_info info)
     napi_value undefinedResult = nullptr;
     AlbumAssetNapi* obj = nullptr;
     std::string name = "";
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &undefinedResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
@@ -324,8 +330,12 @@ napi_value AlbumAssetNapi::GetVideoAssets(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -337,7 +347,7 @@ napi_value AlbumAssetNapi::GetVideoAssets(napi_env env, napi_callback_info info)
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "GetVideoAssets");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "GetVideoAssets");
 
         status = napi_create_async_work(
             env, nullptr, resource,
@@ -406,8 +416,12 @@ napi_value AlbumAssetNapi::GetImageAssets(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -419,7 +433,7 @@ napi_value AlbumAssetNapi::GetImageAssets(napi_env env, napi_callback_info info)
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "GetImageAssets");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "GetImageAssets");
 
         status = napi_create_async_work(
             env, nullptr, resource,
@@ -472,8 +486,12 @@ napi_value AlbumAssetNapi::CommitCreate(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -485,7 +503,7 @@ napi_value AlbumAssetNapi::CommitCreate(napi_env env, napi_callback_info info)
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CommitCreate");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CommitCreate");
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -521,8 +539,12 @@ napi_value AlbumAssetNapi::CommitDelete(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -534,7 +556,7 @@ napi_value AlbumAssetNapi::CommitDelete(napi_env env, napi_callback_info info)
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CommitDelete");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CommitDelete");
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -564,51 +586,48 @@ napi_value AlbumAssetNapi::CommitModify(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value result = nullptr;
-    const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
-    NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<AlbumAsyncContext> asyncContext = std::make_unique<AlbumAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         if (argc == ARGS_ONE) {
-            GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
+            GET_JS_ASYNC_CB_REF(env, argv[PARAM0], REFERENCE_COUNT_ONE, asyncContext->callbackRef);
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CommitModify");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CommitModify");
 
-        status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
-                auto context = static_cast<AlbumAsyncContext*>(data);
-                Media::AlbumAsset assetOld, assetNew;
-                std::string albumUri = context->objectInfo->albumPath_;
+        status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
+            auto context = static_cast<AlbumAsyncContext*>(data);
+            Media::AlbumAsset assetOld, assetNew;
+            std::string albumUri = context->objectInfo->albumPath_;
+            std::string albumNewName = context->objectInfo->newAlbumName_;
 
-                assetOld.albumId_ = context->objectInfo->albumId_;
-                assetOld.albumName_ = context->objectInfo->albumName_;
+            context->status = false;
+            assetOld.albumId_ = context->objectInfo->albumId_;
+            assetOld.albumName_ = context->objectInfo->albumName_;
 
-                assetNew.albumId_ = context->objectInfo->albumId_;
-                if (!context->objectInfo->newAlbumName_.empty()) {
-                    if (context->objectInfo->newAlbumName_.compare(context->objectInfo->albumName_) != 0) {
-                        assetNew.albumName_ = context->objectInfo->newAlbumName_;
-                        context->status = context->objectInfo->mediaLibrary_->ModifyMediaAlbumAsset(
-                            GetAlbumType(context->objectInfo->type_), assetOld, assetNew, albumUri);
-                        if (context->status) {
-                            context->objectInfo->albumName_ = assetNew.albumName_;
-                        }
-                    } else {
-                        HiLog::Error(LABEL, "New name cannot be same as the old one");
-                        context->status = false;
-                    }
-                    context->objectInfo->newAlbumName_ = "";
-                } else {
-                    HiLog::Error(LABEL, "No modification values provided");
-                    context->status = false;
+            assetNew.albumId_ = context->objectInfo->albumId_;
+            if ((!albumNewName.empty()) && (albumNewName.compare(context->objectInfo->albumName_) != 0)) {
+                assetNew.albumName_ = albumNewName;
+                context->status = context->objectInfo->mediaLibrary_->ModifyMediaAlbumAsset(
+                    GetAlbumType(context->objectInfo->type_), assetOld, assetNew, albumUri);
+                if (context->status) {
+                    context->objectInfo->albumName_ = assetNew.albumName_;
                 }
-            },
-            CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+                context->objectInfo->newAlbumName_ = "";
+            } else {
+                HiLog::Error(LABEL, "Incorrect or no modification values provided");
+            }
+        }, CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {

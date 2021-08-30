@@ -19,41 +19,48 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-#define GET_JS_ARGS(env, info, num) \
-    size_t argc = num;              \
-    napi_value argv[num] = {0};     \
-    napi_value thisVar = nullptr;   \
-    void* data;                     \
-    napi_get_cb_info(env, info, &argc, argv, &thisVar, &data)
+#define GET_JS_ARGS(env, info, argc, argv, thisVar)                 \
+    do {                                                            \
+        void* data;                                                 \
+        napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);  \
+    } while (0)
 
-#define GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status) \
-    napi_value thisVar = nullptr;                    \
-    void* data;                                      \
-    status = napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data)
+#define GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar)                       \
+    do {                                                                            \
+        void* data;                                                                 \
+        status = napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data);    \
+    } while (0)
 
-#define GET_JS_ASYNC_CB_REF(env, arg, count, cbRef)     \
-    napi_valuetype valueType = napi_undefined;          \
-    napi_typeof(env, arg, &valueType);                  \
-    if (valueType == napi_function) {                   \
-        napi_create_reference(env, arg, count, &cbRef); \
-    } else {                                            \
-        NAPI_ASSERT(env, false, "type mismatch");       \
-    }
+#define GET_JS_ASYNC_CB_REF(env, arg, count, cbRef)         \
+    do {                                                    \
+        napi_valuetype valueType = napi_undefined;          \
+        napi_typeof(env, arg, &valueType);                  \
+        if (valueType == napi_function) {                   \
+            napi_create_reference(env, arg, count, &cbRef); \
+        } else {                                            \
+            NAPI_ASSERT(env, false, "type mismatch");       \
+        }                                                   \
+    } while (0);
 
-#define ASSERT_NULLPTR_CHECK(env, result)   \
-    if (result == nullptr) {                \
-        napi_get_undefined(env, &result);   \
-        return result;                      \
-    }
+#define ASSERT_NULLPTR_CHECK(env, result)       \
+    do {                                        \
+        if (result == nullptr) {                \
+            napi_get_undefined(env, &result);   \
+            return result;                      \
+        }                                       \
+    } while (0);
 
-#define NAPI_CREATE_PROMISE(env, callbackRef, deferred, result) \
-    if (callbackRef == nullptr) {                               \
-        napi_create_promise(env, &deferred, &result);           \
-    }
+#define NAPI_CREATE_PROMISE(env, callbackRef, deferred, result)     \
+    do {                                                            \
+        if (callbackRef == nullptr) {                               \
+            napi_create_promise(env, &deferred, &result);           \
+        }                                                           \
+    } while (0);
 
-#define NAPI_CREATE_RESOURCE_NAME(env, resourceName)    \
-    napi_value resource = nullptr;                      \
-    napi_create_string_utf8(env, resourceName, NAPI_AUTO_LENGTH, &resource);
+#define NAPI_CREATE_RESOURCE_NAME(env, resource, resourceName)                      \
+    do {                                                                            \
+        napi_create_string_utf8(env, resourceName, NAPI_AUTO_LENGTH, &resource);    \
+    } while (0);
 
 /* Constants for array index */
 const int PARAM0 = 0;
@@ -63,6 +70,7 @@ const int PARAM1 = 1;
 const int ARGS_ONE = 1;
 const int ARGS_TWO = 2;
 const int SIZE = 100;
+const int32_t REFERENCE_COUNT_ONE = 1;
 
 namespace OHOS {
 enum AssetType {

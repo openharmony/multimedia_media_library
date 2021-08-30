@@ -94,9 +94,10 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
 {
     napi_status status;
     napi_value result = nullptr;
+    napi_value thisVar = nullptr;
 
     napi_get_undefined(env, &result);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status == napi_ok && thisVar != nullptr) {
         std::unique_ptr<MediaLibraryNapi> obj = std::make_unique<MediaLibraryNapi>();
         if (obj != nullptr) {
@@ -273,8 +274,12 @@ napi_value MediaLibraryNapi::GetMediaAssets(napi_env env, napi_callback_info inf
 {
     napi_status status;
     napi_value result = nullptr;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_TWO);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
@@ -287,7 +292,7 @@ napi_value MediaLibraryNapi::GetMediaAssets(napi_env env, napi_callback_info inf
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "GetMediaAssets");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "GetMediaAssets");
 
         status = napi_create_async_work(
             env, nullptr, resource,
@@ -357,8 +362,12 @@ napi_value MediaLibraryNapi::GetAudioAssets(napi_env env, napi_callback_info inf
 {
     napi_status status;
     napi_value result = nullptr;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_TWO);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
@@ -371,7 +380,7 @@ napi_value MediaLibraryNapi::GetAudioAssets(napi_env env, napi_callback_info inf
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "GetAudioAssets");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "GetAudioAssets");
 
         status = napi_create_async_work(
             env, nullptr, resource,
@@ -441,8 +450,12 @@ napi_value MediaLibraryNapi::GetVideoAssets(napi_env env, napi_callback_info inf
 {
     napi_status status;
     napi_value result = nullptr;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_TWO);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
@@ -455,7 +468,7 @@ napi_value MediaLibraryNapi::GetVideoAssets(napi_env env, napi_callback_info inf
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "GetVideoAssets");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "GetVideoAssets");
 
         status = napi_create_async_work(
             env, nullptr, resource,
@@ -525,8 +538,12 @@ napi_value MediaLibraryNapi::GetImageAssets(napi_env env, napi_callback_info inf
 {
     napi_status status;
     napi_value result = nullptr;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_TWO);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
@@ -539,7 +556,7 @@ napi_value MediaLibraryNapi::GetImageAssets(napi_env env, napi_callback_info inf
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "GetImageAssets");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "GetImageAssets");
 
         status = napi_create_async_work(
             env, nullptr, resource,
@@ -609,8 +626,12 @@ napi_value MediaLibraryNapi::GetVideoAlbums(napi_env env, napi_callback_info inf
 {
     napi_status status;
     napi_value result = nullptr;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_TWO);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc >= ARGS_ONE, "requires 1 parameter minimum");
 
     napi_get_undefined(env, &result);
@@ -623,7 +644,7 @@ napi_value MediaLibraryNapi::GetVideoAlbums(napi_env env, napi_callback_info inf
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "GetVideoAlbums");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "GetVideoAlbums");
 
         status = napi_create_async_work(
             env, nullptr, resource,
@@ -651,8 +672,12 @@ napi_value MediaLibraryNapi::GetImageAlbums(napi_env env, napi_callback_info inf
 {
     napi_status status;
     napi_value result = nullptr;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_TWO);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc >= ARGS_ONE, "requires 1 parameter minimum");
 
     napi_get_undefined(env, &result);
@@ -665,7 +690,7 @@ napi_value MediaLibraryNapi::GetImageAlbums(napi_env env, napi_callback_info inf
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "GetImageAlbums");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "GetImageAlbums");
 
         status = napi_create_async_work(
             env, nullptr, resource,
@@ -771,8 +796,12 @@ napi_value MediaLibraryNapi::CreateAudioAsset(napi_env env, napi_callback_info i
     napi_status status;
     napi_value result = nullptr;
     bool err = false;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -783,7 +812,7 @@ napi_value MediaLibraryNapi::CreateAudioAsset(napi_env env, napi_callback_info i
         ASSERT_NULLPTR_CHECK(env, result);
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CreateAudioAsset");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CreateAudioAsset");
 
         CreateAsyncWork(env, resource, *(asyncContext.get()), TYPE_AUDIO, err);
         if (!err) {
@@ -801,8 +830,12 @@ napi_value MediaLibraryNapi::CreateVideoAsset(napi_env env, napi_callback_info i
     napi_status status;
     napi_value result = nullptr;
     bool err = false;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -813,7 +846,7 @@ napi_value MediaLibraryNapi::CreateVideoAsset(napi_env env, napi_callback_info i
         ASSERT_NULLPTR_CHECK(env, result);
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CreateVideoAsset");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CreateVideoAsset");
 
         CreateAsyncWork(env, resource, *(asyncContext.get()), TYPE_VIDEO, err);
         if (!err) {
@@ -831,8 +864,12 @@ napi_value MediaLibraryNapi::CreateImageAsset(napi_env env, napi_callback_info i
     napi_status status;
     napi_value result = nullptr;
     bool err = false;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -843,7 +880,7 @@ napi_value MediaLibraryNapi::CreateImageAsset(napi_env env, napi_callback_info i
         ASSERT_NULLPTR_CHECK(env, result);
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CreateImageAsset");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CreateImageAsset");
 
         CreateAsyncWork(env, resource, *(asyncContext.get()), TYPE_IMAGE, err);
         if (!err) {
@@ -861,8 +898,12 @@ napi_value MediaLibraryNapi::CreateAlbum(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value result = nullptr;
     bool err = false;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
-    GET_JS_ARGS(env, info, ARGS_ONE);
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
@@ -873,7 +914,7 @@ napi_value MediaLibraryNapi::CreateAlbum(napi_env env, napi_callback_info info)
         ASSERT_NULLPTR_CHECK(env, result);
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, "CreateAlbum");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "CreateAlbum");
 
         CreateAsyncWork(env, resource, *(asyncContext.get()), TYPE_ALBUM, err);
         if (!err) {
