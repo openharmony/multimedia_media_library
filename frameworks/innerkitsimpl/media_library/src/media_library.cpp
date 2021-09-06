@@ -363,6 +363,25 @@ vector<unique_ptr<MediaAsset>> MediaLibrary::GetMediaAssets(string selection,
     return mediaAssets;
 }
 
+bool IsAlbumEmpty(const string albumPath)
+{
+    DIR *dirPath = opendir(albumPath.c_str());
+    if (dirPath != nullptr) {
+        struct dirent *ent = nullptr;
+        while ((ent = readdir(dirPath)) != nullptr) {
+            // strcmp returns 0 if both strings are same.
+            // The if condition will be true only if ent->d_name is neither . nor ..
+            if (strcmp(ent->d_name, ".") && strcmp(ent->d_name, "..")) {
+                MEDIA_ERR_LOG("Album is not empty");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    return false;
+}
+
 vector<unique_ptr<AlbumAsset>> MediaLibrary::GetAlbumAssets(string selection,
                                                             vector<string> selectionArgs,
                                                             int32_t requestedMediaType)
@@ -372,6 +391,17 @@ vector<unique_ptr<AlbumAsset>> MediaLibrary::GetAlbumAssets(string selection,
 
     for (size_t i = 0; i < albumSubDirList.size(); i++) {
         unique_ptr<AlbumAsset> albumAsset = make_unique<AlbumAsset>();
+
+        if ((requestedMediaType == MEDIA_TYPE_IMAGE) && IsAlbumEmpty(albumSubDirList[i])) {
+            size_t slashIndex = albumSubDirList[i].rfind(SLASH_CHAR);
+            if ((slashIndex != string::npos) && (albumSubDirList[i].size() > slashIndex)) {
+                albumAsset->albumName_ = albumSubDirList[i].substr(slashIndex + 1,
+                    albumSubDirList[i].length() - slashIndex);
+            }
+            albumAssets.push_back(std::move(albumAsset));
+            continue;
+        }
+
         if (ScanAlbums(albumAsset, albumSubDirList[i], requestedMediaType) == MEDIA_SCAN_SUCCESS) {
             if (((requestedMediaType == MEDIA_TYPE_IMAGE) && (albumAsset->imageAssetList_.size() == 0)) ||
                 ((requestedMediaType == MEDIA_TYPE_VIDEO) && (albumAsset->videoAssetList_.size() == 0))) {

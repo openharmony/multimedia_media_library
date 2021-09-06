@@ -101,20 +101,25 @@ int32_t MediaLibServiceStub::WriteImageList(vector<unique_ptr<ImageAsset>> &imag
     int32_t size;
 
     size = (int32_t)imageAssetList.size();
-    if (reply.WriteInt32(size)) {
-        for (int32_t i = 0; i < size; i++) {
-            ImageAsset *imageAsset = imageAssetList[i].get();
-            if (imageAsset != nullptr) {
-                if (WriteCommonData(*imageAsset, reply) == SUCCESS) {
-                    if (reply.WriteInt32(imageAsset->width_) &&
-                        reply.WriteInt32(imageAsset->height_) &&
-                        reply.WriteString(imageAsset->mimeType_)) {
-                        errCode = SUCCESS;
-                    }
-                }
+    if (!reply.WriteInt32(size)) {
+        return errCode;
+    }
+
+    if (size == 0) {
+        return SUCCESS;
+    }
+
+    for (int32_t i = 0; i < size; i++) {
+        ImageAsset *imageAsset = imageAssetList[i].get();
+        if ((imageAsset != nullptr) && (WriteCommonData(*imageAsset, reply) == SUCCESS)) {
+            if (reply.WriteInt32(imageAsset->width_) &&
+                reply.WriteInt32(imageAsset->height_) &&
+                reply.WriteString(imageAsset->mimeType_)) {
+                errCode = SUCCESS;
             }
         }
     }
+
     return errCode;
 }
 
@@ -125,21 +130,22 @@ int32_t MediaLibServiceStub::WriteAudioList(vector<unique_ptr<AudioAsset>> &audi
     int32_t size;
 
     size = (int32_t)audioAssetList.size();
-    if (reply.WriteInt32(size)) {
-        for (int32_t i = 0; i < size; i++) {
-            AudioAsset *audioAsset = audioAssetList[i].get();
-            if (audioAsset != nullptr) {
-                if (WriteCommonData(*audioAsset, reply) == SUCCESS) {
-                    if (reply.WriteString(audioAsset->title_) &&
-                        reply.WriteString(audioAsset->artist_) &&
-                        reply.WriteInt32(audioAsset->duration_) &&
-                        reply.WriteString(audioAsset->mimeType_)) {
-                        errCode = SUCCESS;
-                    }
-                }
+    if (!reply.WriteInt32(size)) {
+        return errCode;
+    }
+
+    for (int32_t i = 0; i < size; i++) {
+        AudioAsset *audioAsset = audioAssetList[i].get();
+        if ((audioAsset != nullptr) && (WriteCommonData(*audioAsset, reply) == SUCCESS)) {
+            if (reply.WriteString(audioAsset->title_) &&
+                reply.WriteString(audioAsset->artist_) &&
+                reply.WriteInt32(audioAsset->duration_) &&
+                reply.WriteString(audioAsset->mimeType_)) {
+                errCode = SUCCESS;
             }
         }
     }
+
     return errCode;
 }
 
@@ -150,21 +156,22 @@ int32_t MediaLibServiceStub::WriteVideoList(vector<unique_ptr<VideoAsset>> &vide
     int32_t size;
 
     size = (int32_t)videoAssetList.size();
-    if (reply.WriteInt32(size)) {
-        for (int32_t i = 0; i < size; i++) {
-            VideoAsset *videoAsset = videoAssetList[i].get();
-            if (videoAsset != nullptr) {
-                if (WriteCommonData(*videoAsset, reply) == SUCCESS) {
-                    if (reply.WriteInt32(videoAsset->width_) &&
-                        reply.WriteInt32(videoAsset->height_) &&
-                        reply.WriteInt32(videoAsset->duration_) &&
-                        reply.WriteString(videoAsset->mimeType_)) {
-                        errCode = SUCCESS;
-                    }
-                }
+    if (!reply.WriteInt32(size)) {
+        return errCode;
+    }
+
+    for (int32_t i = 0; i < size; i++) {
+        VideoAsset *videoAsset = videoAssetList[i].get();
+        if ((videoAsset != nullptr) && (WriteCommonData(*videoAsset, reply) == SUCCESS)) {
+            if (reply.WriteInt32(videoAsset->width_) &&
+                reply.WriteInt32(videoAsset->height_) &&
+                reply.WriteInt32(videoAsset->duration_) &&
+                reply.WriteString(videoAsset->mimeType_)) {
+                errCode = SUCCESS;
             }
         }
     }
+
     return errCode;
 }
 

@@ -107,12 +107,17 @@ const std::string VIDEO_CONTAINER_TYPE_3GP = "3gp";
 const std::string VIDEO_CONTAINER_TYPE_MPG = "mpg";
 const std::string VIDEO_CONTAINER_TYPE_MOV = "mov";
 const std::string VIDEO_CONTAINER_TYPE_WEBM = "webm";
+const std::string VIDEO_CONTAINER_TYPE_MKV = "mkv";
 
 /** Supported image types */
 const std::string IMAGE_CONTAINER_TYPE_BMP = "bmp";
 const std::string IMAGE_CONTAINER_TYPE_GIF = "gif";
 const std::string IMAGE_CONTAINER_TYPE_JPG = "jpg";
 const std::string IMAGE_CONTAINER_TYPE_PNG = "png";
+const std::string IMAGE_CONTAINER_TYPE_WEBP = "webp";
+const std::string IMAGE_CONTAINER_TYPE_RAW = "raw";
+const std::string IMAGE_CONTAINER_TYPE_SVG = "svg";
+const std::string IMAGE_CONTAINER_TYPE_HEIF = "heif";
 
 // Unordered set contains list supported audio formats
 const std::unordered_set<std::string> SUPPORTED_AUDIO_FORMATS_SET {
@@ -129,7 +134,8 @@ const std::unordered_set<std::string> SUPPORTED_VIDEO_FORMATS_SET {
                                                 VIDEO_CONTAINER_TYPE_3GP,
                                                 VIDEO_CONTAINER_TYPE_MPG,
                                                 VIDEO_CONTAINER_TYPE_MOV,
-                                                VIDEO_CONTAINER_TYPE_WEBM
+                                                VIDEO_CONTAINER_TYPE_WEBM,
+                                                VIDEO_CONTAINER_TYPE_MKV
                                                 };
 
 // Unordered set contains list supported image formats
@@ -137,7 +143,11 @@ const std::unordered_set<std::string> SUPPORTED_IMAGE_FORMATS_SET {
                                                 IMAGE_CONTAINER_TYPE_BMP,
                                                 IMAGE_CONTAINER_TYPE_GIF,
                                                 IMAGE_CONTAINER_TYPE_JPG,
-                                                IMAGE_CONTAINER_TYPE_PNG
+                                                IMAGE_CONTAINER_TYPE_PNG,
+                                                IMAGE_CONTAINER_TYPE_WEBP,
+                                                IMAGE_CONTAINER_TYPE_RAW,
+                                                IMAGE_CONTAINER_TYPE_SVG,
+                                                IMAGE_CONTAINER_TYPE_HEIF
                                                 };
 } // namespace OHOS
 } // namespace Media
