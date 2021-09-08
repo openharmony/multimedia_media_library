@@ -591,24 +591,24 @@ static void AlbumAssetsAsyncCallbackComplete(napi_env env, napi_status status, v
     }
 
     napi_get_undefined(env, &result[PARAM0]);
-    if (!context->albumAssets.empty()) {
+    if (!context->albumAssets.empty() && (napi_create_array(env, &albumArray) == napi_ok)) {
         size_t len = context->albumAssets.size();
-        if (napi_create_array(env, &albumArray) == napi_ok) {
-            size_t i;
-            for (i = 0; i < len; i++) {
-                albumAsset = AlbumAssetNapi::CreateAlbumAsset(env, context->albumType,
-                    *(context->albumAssets[i]), *(context->objectInfo->GetMediaLibClientInstance()));
-                if (albumAsset == nullptr || napi_set_element(env, albumArray, i, albumAsset) != napi_ok) {
-                    HiLog::Error(LABEL, "Failed to get album asset napi object");
-                    napi_get_undefined(env, &result[PARAM1]);
-                    break;
-                }
+        size_t i;
+        for (i = 0; i < len; i++) {
+            std::string path = ALBUM_ROOT_PATH;
+            if (!context->selection.empty()) {
+                path = ALBUM_ROOT_PATH + "/" + context->selection;
             }
-            if (i == len) {
-                result[PARAM1] = albumArray;
+            albumAsset = AlbumAssetNapi::CreateAlbumAsset(env, context->albumType, path,
+                *(context->albumAssets[i]), *(context->objectInfo->GetMediaLibClientInstance()));
+            if (albumAsset == nullptr || napi_set_element(env, albumArray, i, albumAsset) != napi_ok) {
+                HiLog::Error(LABEL, "Failed to get album asset napi object");
+                napi_get_undefined(env, &result[PARAM1]);
+                break;
             }
-        } else {
-            napi_get_undefined(env, &result[PARAM1]);
+        }
+        if (i == len) {
+            result[PARAM1] = albumArray;
         }
     } else {
         HiLog::Error(LABEL, "No album assets found!");
@@ -736,7 +736,7 @@ napi_value GetAssetJSObject(napi_env env, AssetType type, Media::IMediaLibraryCl
         }
         case TYPE_ALBUM: {
             std::unique_ptr<Media::AlbumAsset> albumObj = std::make_unique<Media::AlbumAsset>();
-            assetObj = AlbumAssetNapi::CreateAlbumAsset(env, TYPE_NONE, *(albumObj), mediaLibrary);
+            assetObj = AlbumAssetNapi::CreateAlbumAsset(env, TYPE_NONE, "", *(albumObj), mediaLibrary);
             break;
         }
         default:

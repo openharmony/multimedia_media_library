@@ -73,6 +73,8 @@ const int SIZE = 100;
 const int32_t REFERENCE_COUNT_ONE = 1;
 
 namespace OHOS {
+const std::string ALBUM_ROOT_PATH = "/data/media";
+
 enum AssetType {
     TYPE_AUDIO = 0,
     TYPE_VIDEO = 1,

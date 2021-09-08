@@ -31,6 +31,7 @@ class AlbumAssetNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value CreateAlbumAsset(napi_env env, AlbumType type,
+                                       const std::string &albumParentPath,
                                        Media::AlbumAsset &aAsset,
                                        Media::IMediaLibraryClient &mediaLibClient);
     Media::IMediaLibraryClient* GetMediaLibClientInstance();
@@ -69,6 +70,7 @@ private:
     static napi_ref sConstructor_;
     static Media::AlbumAsset *sAlbumAsset_;
     static AlbumType sAlbumType_;
+    static std::string sAlbumPath_;
     static Media::IMediaLibraryClient *sMediaLibrary_;
 };
 
