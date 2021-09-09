@@ -29,6 +29,7 @@ namespace OHOS {
 napi_ref AlbumAssetNapi::sConstructor_ = nullptr;
 Media::AlbumAsset *AlbumAssetNapi::sAlbumAsset_ = nullptr;
 AlbumType AlbumAssetNapi::sAlbumType_ = TYPE_NONE;
+std::string AlbumAssetNapi::sAlbumPath_ = "";
 Media::IMediaLibraryClient *AlbumAssetNapi::sMediaLibrary_ = nullptr;
 
 Media::AssetType GetAlbumType(AlbumType type)
@@ -117,46 +118,35 @@ napi_value AlbumAssetNapi::AlbumAssetNapiConstructor(napi_env env, napi_callback
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status == napi_ok && thisVar != nullptr) {
         std::unique_ptr<AlbumAssetNapi> obj = std::make_unique<AlbumAssetNapi>();
-        if (obj != nullptr) {
-            obj->env_ = env;
-            obj->type_ = sAlbumType_;
-            obj->mediaLibrary_ = sMediaLibrary_;
-            if (sAlbumAsset_ != nullptr) {
-                obj->UpdateAlbumAssetInfo();
+        if (obj == nullptr) {
+            return result;
+        }
 
-                for (size_t i = 0; i < sAlbumAsset_->videoAssetList_.size(); i++) {
-                    obj->videoAssets_.push_back(std::move(sAlbumAsset_->videoAssetList_[i]));
-                    do {
-                        std::string videoPath = obj->videoAssets_[i]->uri_;
-                        size_t slashIndex = videoPath.rfind("/");
-                        if (slashIndex != std::string::npos) {
-                            obj->albumPath_ = videoPath.substr(0, slashIndex);
-                        }
-                    } while (false);
-                }
-                for (size_t i = 0; i < sAlbumAsset_->imageAssetList_.size(); i++) {
-                    obj->imageAssets_.push_back(std::move(sAlbumAsset_->imageAssetList_[i]));
-                    do {
-                        std::string imagePath = obj->imageAssets_[i]->uri_;
-                        size_t slashIndex = imagePath.rfind("/");
-                        if (slashIndex != std::string::npos) {
-                            obj->albumPath_ = imagePath.substr(0, slashIndex);
-                        }
-                    } while (false);
-                }
-            } else {
-                HiLog::Error(LABEL, "No native instance assigned yet");
-                return result;
-            }
+        obj->env_ = env;
+        obj->type_ = sAlbumType_;
+        obj->albumPath_ = sAlbumPath_;
+        obj->mediaLibrary_ = sMediaLibrary_;
+        if (sAlbumAsset_ != nullptr) {
+            obj->UpdateAlbumAssetInfo();
 
-            status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
-                               AlbumAssetNapi::AlbumAssetNapiDestructor, nullptr, &(obj->wrapper_));
-            if (status == napi_ok) {
-                obj.release();
-                return thisVar;
-            } else {
-                HiLog::Error(LABEL, "Failure wrapping js to native napi");
+            for (size_t i = 0; i < sAlbumAsset_->videoAssetList_.size(); i++) {
+                obj->videoAssets_.push_back(std::move(sAlbumAsset_->videoAssetList_[i]));
             }
+            for (size_t i = 0; i < sAlbumAsset_->imageAssetList_.size(); i++) {
+                obj->imageAssets_.push_back(std::move(sAlbumAsset_->imageAssetList_[i]));
+            }
+        } else {
+            HiLog::Error(LABEL, "No native instance assigned yet");
+            return result;
+        }
+
+        status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
+            AlbumAssetNapi::AlbumAssetNapiDestructor, nullptr, &(obj->wrapper_));
+        if (status == napi_ok) {
+            obj.release();
+            return thisVar;
+        } else {
+            HiLog::Error(LABEL, "Failure wrapping js to native napi");
         }
     }
 
@@ -164,7 +154,9 @@ napi_value AlbumAssetNapi::AlbumAssetNapiConstructor(napi_env env, napi_callback
 }
 
 napi_value AlbumAssetNapi::CreateAlbumAsset(napi_env env, AlbumType type,
-    Media::AlbumAsset &aAsset, Media::IMediaLibraryClient &mediaLibClient)
+                                            const std::string &albumParentPath,
+                                            Media::AlbumAsset &aAsset,
+                                            Media::IMediaLibraryClient &mediaLibClient)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -174,6 +166,7 @@ napi_value AlbumAssetNapi::CreateAlbumAsset(napi_env env, AlbumType type,
     if (status == napi_ok) {
         sAlbumAsset_ = &aAsset;
         sAlbumType_ = type;
+        sAlbumPath_ = albumParentPath + "/" + sAlbumAsset_->albumName_;
         sMediaLibrary_ = &mediaLibClient;
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         sAlbumAsset_ = nullptr;
@@ -296,22 +289,20 @@ static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status, v
     }
 
     napi_get_undefined(env, &result[PARAM0]);
-    if (!context->videoAssets.empty()) {
+    if (!context->videoAssets.empty() && (napi_create_array(env, &videoArray) == napi_ok)) {
         size_t len = context->videoAssets.size();
-        if (napi_create_array(env, &videoArray) == napi_ok) {
-            size_t i;
-            for (i = 0; i < len; i++) {
-                vAsset = VideoAssetNapi::CreateVideoAsset(env, *(context->videoAssets[i]),
-                    *(context->objectInfo->GetMediaLibClientInstance()));
-                if (vAsset == nullptr || napi_set_element(env, videoArray, i, vAsset) != napi_ok) {
-                    HiLog::Error(LABEL, "Failed to get video asset napi object");
-                    napi_get_undefined(env, &result[PARAM1]);
-                    break;
-                }
+        size_t i;
+        for (i = 0; i < len; i++) {
+            vAsset = VideoAssetNapi::CreateVideoAsset(env, *(context->videoAssets[i]),
+                *(context->objectInfo->GetMediaLibClientInstance()));
+            if (vAsset == nullptr || napi_set_element(env, videoArray, i, vAsset) != napi_ok) {
+                HiLog::Error(LABEL, "Failed to get video asset napi object");
+                napi_get_undefined(env, &result[PARAM1]);
+                break;
             }
-            if (i == len) {
-                result[PARAM1] = videoArray;
-            }
+        }
+        if (i == len) {
+            result[PARAM1] = videoArray;
         }
     } else {
         HiLog::Error(LABEL, "No video assets found!");
@@ -382,22 +373,20 @@ static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status, v
     }
 
     napi_get_undefined(env, &result[PARAM0]);
-    if (!context->imageAssets.empty()) {
+    if (!context->imageAssets.empty() && (napi_create_array(env, &imageArray) == napi_ok)) {
         size_t len = context->imageAssets.size();
-        if (napi_create_array(env, &imageArray) == napi_ok) {
-            size_t i;
-            for (i = 0; i < len; i++) {
-                iAsset = ImageAssetNapi::CreateImageAsset(env, *(context->imageAssets[i]),
-                    *(context->objectInfo->GetMediaLibClientInstance()));
-                if (iAsset == nullptr || napi_set_element(env, imageArray, i, iAsset) != napi_ok) {
-                    HiLog::Error(LABEL, "Failed to get image asset napi object");
-                    napi_get_undefined(env, &result[PARAM1]);
-                    break;
-                }
+        size_t i;
+        for (i = 0; i < len; i++) {
+            iAsset = ImageAssetNapi::CreateImageAsset(env, *(context->imageAssets[i]),
+                *(context->objectInfo->GetMediaLibClientInstance()));
+            if (iAsset == nullptr || napi_set_element(env, imageArray, i, iAsset) != napi_ok) {
+                HiLog::Error(LABEL, "Failed to get image asset napi object");
+                napi_get_undefined(env, &result[PARAM1]);
+                break;
             }
-            if (i == len) {
-                result[PARAM1] = imageArray;
-            }
+        }
+        if (i == len) {
+            result[PARAM1] = imageArray;
         }
     } else {
         HiLog::Error(LABEL, "No image assets found!");
