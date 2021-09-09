@@ -23,5 +23,6 @@
 #include "video_asset_napi.h"
 #include "image_asset_napi.h"
 #include "album_asset_napi.h"
+#include "avmetadatahelper_napi.h"
 
 #endif /* NATIVE_MODULE_OHOS_MEDIALIBRARY_H_ */
