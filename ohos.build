@@ -11,34 +11,6 @@
         "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary",
         "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary_js",
         "//foundation/multimedia/medialibrary_standard/services:media_library_service_packages"
-      ],
-      "inner_kits": [
-          {
-            "type": "none",
-            "name": "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library_packages",
-            "header": {
-              "header_files": [
-                "album_asset.h",
-                "audio_asset.h",
-                "image_asset.h",
-                "media_asset.h",
-                "media_library.h",
-                "media_log.h",
-                "video_asset.h"
-              ],
-              "header_base": "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include"
-            }
-          },
-          {
-            "type": "none",
-            "name": "//foundation/multimedia/medialibrary_standard/services:medialibrary_proxy",
-            "header": {
-            "header_files": [
-                "media_library_client.h"
-              ],
-              "header_base": "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include"
-            }
-          }
       ]
     }
   }

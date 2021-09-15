@@ -376,6 +376,7 @@ bool IsAlbumEmpty(const string albumPath)
                 return false;
             }
         }
+        closedir(dirPath);
         return true;
     }
 
