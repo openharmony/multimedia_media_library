@@ -365,22 +365,24 @@ vector<unique_ptr<MediaAsset>> MediaLibrary::GetMediaAssets(string selection,
 
 bool IsAlbumEmpty(const string albumPath)
 {
+    bool errCode = false;
     DIR *dirPath = opendir(albumPath.c_str());
     if (dirPath != nullptr) {
         struct dirent *ent = nullptr;
         while ((ent = readdir(dirPath)) != nullptr) {
             // strcmp returns 0 if both strings are same.
             // The if condition will be true only if ent->d_name is neither . nor ..
-            if (strcmp(ent->d_name, ".") && strcmp(ent->d_name, "..")) {
+            if ((strcmp(ent->d_name, ".") != 0) && (strcmp(ent->d_name, "..") != 0)) {
                 MEDIA_ERR_LOG("Album is not empty");
-                return false;
+                errCode = false;
+                break;
             }
+            errCode = true;
         }
         closedir(dirPath);
-        return true;
     }
 
-    return false;
+    return errCode;
 }
 
 vector<unique_ptr<AlbumAsset>> MediaLibrary::GetAlbumAssets(string selection,
