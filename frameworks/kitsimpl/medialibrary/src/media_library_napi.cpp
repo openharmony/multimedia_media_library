@@ -165,6 +165,7 @@ void GetFetchOptionsParam(napi_env env, napi_value arg, const std::string& str,
         || napi_get_value_string_utf8(env, selection, buffer, SIZE, &res) != napi_ok) {
         HiLog::Error(LABEL, "Could not get the string argument!");
         err = true;
+        return;
     } else {
         *selectionStr = buffer;
         memset_s(buffer, SIZE, 0, sizeof(buffer));
