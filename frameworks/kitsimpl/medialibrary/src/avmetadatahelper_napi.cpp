@@ -42,6 +42,7 @@ struct AVMetadataHelperAsyncContext {
     std::string uriStr = "";
     sptr<OHOS::Media::PixelMap> pixelMap = nullptr;
     OHOS::Media::PixelMapParams pixelMapParams;
+    std::shared_ptr<OHOS::Media::AVMetadataHelper> nativeAVMetadataHelper = nullptr;
     AVMetadataHelperNapi *objectInfo = nullptr;
 };
 
@@ -332,12 +333,14 @@ napi_value AVMetadataHelperNapi::SetSource(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
     NAPI_CREATE_RESOURCE_NAME(env, resource, "SetSource");
 
+    asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;
     status = napi_create_async_work(
         env, nullptr, resource,
         [](napi_env env, void *data) {
             auto context = static_cast<AVMetadataHelperAsyncContext*>(data);
-            (void)context->objectInfo->nativeAVMetadataHelper_->SetSource(context->uriStr);
-            context->status = 0;
+            if (context->nativeAVMetadataHelper != nullptr) {
+                (void)context->nativeAVMetadataHelper->SetSource(context->uriStr);
+            }
         },
         SetFunctionAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
@@ -389,12 +392,14 @@ napi_value AVMetadataHelperNapi::ResolveMetadata(napi_env env, napi_callback_inf
     napi_value resource = nullptr;
     NAPI_CREATE_RESOURCE_NAME(env, resource, "ResolveMetadata");
 
+    asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;
     status = napi_create_async_work(
         env, nullptr, resource,
         [](napi_env env, void *data) {
             auto context = static_cast<AVMetadataHelperAsyncContext*>(data);
-            context->valueStr = context->objectInfo->nativeAVMetadataHelper_->ResolveMetadata(context->key);
-            context->status = 0;
+            if (context->nativeAVMetadataHelper != nullptr) {
+                context->valueStr = context->nativeAVMetadataHelper->ResolveMetadata(context->key);
+            }
         },
         GetStringValueAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
@@ -439,8 +444,6 @@ napi_value AVMetadataHelperNapi::FetchVideoScaledPixelMapByTime(napi_env env, na
                 asyncContext->pixelMapParams.dstHeight);
         } else if (i == 2 && valueType == napi_function) { // 2 param
             napi_create_reference(env, argv[i], refCount, &asyncContext->callbackRef);
-        } else {
-            HiLog::Error(LABEL, "FetchVideoScaledPixelMapByTime type mismatch");
         }
     }
 
@@ -449,13 +452,15 @@ napi_value AVMetadataHelperNapi::FetchVideoScaledPixelMapByTime(napi_env env, na
     napi_value resource = nullptr;
     NAPI_CREATE_RESOURCE_NAME(env, resource, "FetchVideoScaledPixelMapByTime");
 
+    asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;
     status = napi_create_async_work(
         env, nullptr, resource,
         [](napi_env env, void *data) {
             auto context = static_cast<AVMetadataHelperAsyncContext*>(data);
-            context->pixelMap = context->objectInfo->nativeAVMetadataHelper_->FetchFrameAtTime(context->timeMs,
-                context->option, context->pixelMapParams);
-            context->status = 0;
+            if (context->nativeAVMetadataHelper != nullptr) {
+                context->pixelMap = context->nativeAVMetadataHelper->FetchFrameAtTime(context->timeMs,
+                    context->option, context->pixelMapParams);
+            }
         },
         GetPixelMapAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
@@ -507,13 +512,15 @@ napi_value AVMetadataHelperNapi::FetchVideoPixelMapByTime(napi_env env, napi_cal
     napi_value resource = nullptr;
     NAPI_CREATE_RESOURCE_NAME(env, resource, "FetchVideoPixelMapByTime");
 
+    asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;
     status = napi_create_async_work(
         env, nullptr, resource,
         [](napi_env env, void *data) {
             auto context = static_cast<AVMetadataHelperAsyncContext*>(data);
-            context->pixelMap = context->objectInfo->nativeAVMetadataHelper_->FetchFrameAtTime(context->timeMs,
-                context->option, context->pixelMapParams);
-            context->status = 0;
+            if (context->nativeAVMetadataHelper != nullptr) {
+                context->pixelMap = context->nativeAVMetadataHelper->FetchFrameAtTime(context->timeMs,
+                    context->option, context->pixelMapParams);
+            }
         },
         GetPixelMapAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
@@ -563,12 +570,14 @@ napi_value AVMetadataHelperNapi::Release(napi_env env, napi_callback_info info)
     napi_value resource = nullptr;
     NAPI_CREATE_RESOURCE_NAME(env, resource, "Release");
 
+    asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;
     status = napi_create_async_work(
         env, nullptr, resource,
         [](napi_env env, void *data) {
             auto context = static_cast<AVMetadataHelperAsyncContext*>(data);
-            context->objectInfo->nativeAVMetadataHelper_->Release();
-            context->status = 0;
+            if (context->nativeAVMetadataHelper != nullptr) {
+                context->nativeAVMetadataHelper->Release();
+            }
         },
         SetFunctionAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
