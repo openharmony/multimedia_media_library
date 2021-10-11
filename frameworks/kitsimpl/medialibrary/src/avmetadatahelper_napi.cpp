@@ -15,6 +15,7 @@
 
 #include "avmetadatahelper_napi.h"
 #include <climits>
+#include "pixel_map_napi.h"
 #include "hilog/log.h"
 
 using OHOS::HiviewDFX::HiLog;
@@ -40,7 +41,7 @@ struct AVMetadataHelperAsyncContext {
     int32_t option = OHOS::Media::AV_META_QUERY_NEXT_SYNC;
     std::string valueStr = "";
     std::string uriStr = "";
-    sptr<OHOS::Media::PixelMap> pixelMap = nullptr;
+    std::shared_ptr<OHOS::Media::PixelMap> pixelMap = nullptr;
     OHOS::Media::PixelMapParams pixelMapParams;
     std::shared_ptr<OHOS::Media::AVMetadataHelper> nativeAVMetadataHelper = nullptr;
     AVMetadataHelperNapi *objectInfo = nullptr;
@@ -105,8 +106,7 @@ static void GetPixelMapAsyncCallbackComplete(napi_env env, napi_status status, v
     }
 
     if (!asyncContext->status) {
-        OHOS::Media::PixelMap *pixelMap = asyncContext->pixelMap;
-        (void)pixelMap;
+        valueParam = Media::PixelMapNapi::CreatePixelMap(env, asyncContext->pixelMap);
     }
     CommonCallbackRoutine(env, asyncContext, valueParam);
 }
