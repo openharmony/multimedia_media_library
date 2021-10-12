@@ -16,10 +16,10 @@
 #ifndef VIDEO_ASSET_NAPI_H
 #define VIDEO_ASSET_NAPI_H
 
-#include "video_asset.h"
 #include "media_asset_napi.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "video_asset.h"
 
 namespace OHOS {
 static const std::string VIDEO_ASSET_NAPI_CLASS_NAME = "VideoAsset";

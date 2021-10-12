@@ -16,8 +16,11 @@
 #ifndef MEDIALIBRARY_NAPI_UTILS_H
 #define MEDIALIBRARY_NAPI_UTILS_H
 
+#include <vector>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "media_lib_service_const.h"
+#include "media_data_ability_const.h"
 
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                 \
     do {                                                            \
@@ -62,17 +65,48 @@
         napi_create_string_utf8(env, resourceName, NAPI_AUTO_LENGTH, &resource);    \
     } while (0);
 
-/* Constants for array index */
-const int PARAM0 = 0;
-const int PARAM1 = 1;
+#define CHECK_NULL_PTR_RETURN_UNDEFINED(env, ptr, ret, message)     \
+    do {                                                            \
+        if ((ptr) == nullptr) {                                     \
+            HiLog::Error(LABEL, message);                           \
+            napi_get_undefined(env, &(ret));                        \
+            return ret;                                             \
+        }                                                           \
+    } while (0)
 
-/* Constants for array size */
-const int ARGS_ONE = 1;
-const int ARGS_TWO = 2;
-const int SIZE = 100;
-const int32_t REFERENCE_COUNT_ONE = 1;
+#define CHECK_NULL_PTR_RETURN_VOID(ptr, message)   \
+    do {                                           \
+        if ((ptr) == nullptr) {                    \
+            HiLog::Error(LABEL, message);          \
+            return;                                \
+        }                                          \
+    } while (0)
+
+#define ASSERT_EQUAL(condition, errMsg)     \
+    do {                                    \
+        if (!(condition)) {                 \
+            HiLog::Error(LABEL, errMsg);    \
+            return;                         \
+        }                                   \
+    } while (0)
 
 namespace OHOS {
+/* Constants for array index */
+const int32_t PARAM0 = 0;
+const int32_t PARAM1 = 1;
+const int32_t PARAM2 = 2;
+
+/* Constants for array size */
+const int32_t ARGS_ONE = 1;
+const int32_t ARGS_TWO = 2;
+const int32_t ARGS_THREE = 3;
+const int32_t SIZE = 100;
+const int32_t REFERENCE_COUNT_ONE = 1;
+
+// Error codes
+const int32_t ERR_MEM_ALLOCATION = 2;
+const int32_t ERR_INVALID_OUTPUT = 3;
+
 const std::string ALBUM_ROOT_PATH = "/data/media";
 
 enum AssetType {
@@ -88,21 +122,96 @@ enum AlbumType {
     TYPE_NONE = 2,
 };
 
+const std::vector<std::string> mediaTypesEnum {
+    "DEFAULT", "FILE", "MEDIA", "IMAGE", "VIDEO", "AUDIO", "ALBUM_LIST", "ALBUM_LIST_INFO"
+};
+
+const std::vector<std::string> fileKeyEnum {
+    "ID", "PATH", "RELATIVE_PATH", "MIME_TYPE", "MEDIA_TYPE", "DISPLAY_NAME", "SIZE",
+    "DATE_ADDED", "DATE_MODIFIED", "TITLE", "ARTIST", "ALBUM", "ALBUM_ID", "ALBUM_NAME"
+};
+
+const std::vector<std::string> fileKeyEnumValues {
+    Media::MEDIA_DATA_DB_ID,
+    Media::MEDIA_DATA_DB_FILE_PATH,
+    Media::MEDIA_DATA_DB_RELATIVE_PATH,
+    Media::MEDIA_DATA_DB_MIME_TYPE,
+    Media::MEDIA_DATA_DB_MEDIA_TYPE,
+    Media::MEDIA_DATA_DB_NAME,
+    Media::MEDIA_DATA_DB_SIZE,
+    Media::MEDIA_DATA_DB_DATE_ADDED,
+    Media::MEDIA_DATA_DB_DATE_MODIFIED,
+    Media::MEDIA_DATA_DB_TITLE,
+    Media::MEDIA_DATA_DB_ARTIST,
+    Media::MEDIA_DATA_DB_ALBUM,
+    Media::MEDIA_DATA_DB_ALBUM_ID,
+    Media::MEDIA_DATA_DB_ALBUM_NAME
+};
+
+struct JSAsyncContextOutput {
+    napi_value error;
+    napi_value data;
+    bool status;
+};
+
 /* Util class used by napi asynchronous methods for making call to js callback function */
 class MediaLibraryNapiUtils {
 public:
-    static void InvokeJSAsyncMethod(napi_env env, napi_deferred deferred, napi_value result[],
-                                    size_t argc, napi_ref callbackRef, napi_async_work work)
+    static Media::AssetType GetAssetType(Media::MediaType type)
+    {
+        Media::AssetType result;
+
+        switch (type) {
+            case Media::MEDIA_TYPE_AUDIO:
+                result = Media::ASSET_AUDIO;
+                break;
+            case Media::MEDIA_TYPE_VIDEO:
+                result = Media::ASSET_VIDEO;
+                break;
+            case Media::MEDIA_TYPE_IMAGE:
+                result = Media::ASSET_IMAGE;
+                break;
+            case Media::MEDIA_TYPE_MEDIA:
+                result = Media::ASSET_MEDIA;
+                break;
+            default:
+                result = Media::ASSET_NONE;
+                break;
+        }
+
+        return result;
+    }
+
+    static void CreateNapiErrorObject(napi_env env, napi_value &errorObj,
+        const int32_t errCode, const std::string errMsg)
+    {
+        napi_value napiErrorCode = nullptr;
+        napi_value napiErrorMsg = nullptr;
+
+        napi_create_int32(env, errCode, &napiErrorCode);
+        napi_create_string_utf8(env, errMsg.c_str(), NAPI_AUTO_LENGTH, &napiErrorMsg);
+        napi_create_error(env, napiErrorCode, napiErrorMsg, &errorObj);
+    }
+
+    static void InvokeJSAsyncMethod(napi_env env, napi_deferred deferred,
+        napi_ref callbackRef, napi_async_work work, const JSAsyncContextOutput &asyncContext)
     {
         napi_value retVal;
         napi_value callback = nullptr;
 
         /* Deferred is used when JS Callback method expects a promise value */
         if (deferred) {
-            napi_resolve_deferred(env, deferred, result[PARAM1]);
+            if (asyncContext.status) {
+                napi_resolve_deferred(env, deferred, asyncContext.data);
+            } else {
+                napi_reject_deferred(env, deferred, asyncContext.error);
+            }
         } else {
+            napi_value result[ARGS_TWO];
+            result[PARAM0] = asyncContext.error;
+            result[PARAM1] = asyncContext.data;
             napi_get_reference_value(env, callbackRef, &callback);
-            napi_call_function(env, nullptr, callback, argc, result, &retVal);
+            napi_call_function(env, nullptr, callback, ARGS_TWO, result, &retVal);
             napi_delete_reference(env, callbackRef);
         }
         napi_delete_async_work(env, work);

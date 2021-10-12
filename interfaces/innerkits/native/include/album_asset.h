@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ALBUM_H
-#define ALBUM_H
+#ifndef ALBUM_ASSET_H
+#define ALBUM_ASSET_H
 
 #include <string>
 #include <vector>
@@ -25,6 +25,7 @@
 
 namespace OHOS {
 namespace Media {
+using namespace std;
 /**
  * @brief Data class for album details
  *
@@ -36,15 +37,35 @@ public:
     AlbumAsset();
     virtual ~AlbumAsset();
 
+    void SetAlbumId(const int32_t albumId);
+    void SetAlbumName(const string albumName);
+    void SetAlbumPath(const string albumPath);
+    void SetAlbumDateModified(const int64_t albumDateModified);
+    void SetAlbumVirtual(const bool albumVirtual);
+    void SetAlbumRelativePath(const string albumRelativePath);
+
+    int32_t GetAlbumId() const;
+    string GetAlbumName() const;
+    string GetAlbumPath() const;
+    int64_t GetAlbumDateModified() const;
+    bool GetAlbumVirtual() const;
+    string GetAlbumRelativePath() const;
+
     bool CreateAlbumAsset();
     bool DeleteAlbumAsset(const std::string &albumUri);
-    bool ModifyAlbumAsset(const AlbumAsset &albumAsset, const std::string &albumUri);
+    bool ModifyAlbumAsset(const std::string &albumUri);
 
-    int32_t albumId_;
-    std::string albumName_;
     std::vector<std::unique_ptr<ImageAsset>> imageAssetList_;
     std::vector<std::unique_ptr<VideoAsset>> videoAssetList_;
+
+private:
+    int32_t albumId_;
+    std::string albumName_;
+    string albumPath_;
+    int64_t albumDateModified_;
+    bool albumVirtual_;
+    string albumRelativePath_;
 };
-}  // namespace Media
-}  // namespace OHOS
-#endif  // ALBUM_H
+} // namespace Media
+} // namespace OHOS
+#endif // ALBUM_ASSET_H

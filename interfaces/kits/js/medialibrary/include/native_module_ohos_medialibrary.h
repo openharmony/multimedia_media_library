@@ -16,13 +16,16 @@
 #ifndef NATIVE_MODULE_OHOS_MEDIALIBRARY_H_
 #define NATIVE_MODULE_OHOS_MEDIALIBRARY_H_
 
-#include "napi/native_node_api.h"
-#include "media_library_napi.h"
-#include "media_asset_napi.h"
-#include "audio_asset_napi.h"
-#include "video_asset_napi.h"
-#include "image_asset_napi.h"
 #include "album_asset_napi.h"
+#include "album_napi.h"
+#include "audio_asset_napi.h"
 #include "avmetadatahelper_napi.h"
+#include "fetch_file_result_napi.h"
+#include "file_asset_napi.h"
+#include "image_asset_napi.h"
+#include "media_asset_napi.h"
+#include "media_library_napi.h"
+#include "napi/native_node_api.h"
+#include "video_asset_napi.h"
 
 #endif /* NATIVE_MODULE_OHOS_MEDIALIBRARY_H_ */

@@ -35,6 +35,6 @@ public:
     int32_t height_;
     std::string mimeType_;
 };
-}  // namespace Media
-}  // namespace OHOS
-#endif  // IMAGE_ASSET_H
+} // namespace Media
+} // namespace OHOS
+#endif // IMAGE_ASSET_H

@@ -22,9 +22,9 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-int UnlinkCb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
 {
-    int errRet = remove(fpath);
+    int32_t errRet = remove(fpath);
     if (errRet) {
         perror(fpath);
     }
@@ -32,9 +32,9 @@ int UnlinkCb(const char *fpath, const struct stat *sb, int typeflag, struct FTW 
     return errRet;
 }
 
-int RemoveDirectory(const string &path)
+int32_t RemoveDirectory(const string &path)
 {
-    int errCode;
+    int32_t errCode;
     char *dirPath = const_cast<char*>(path.c_str());
 
     errCode = nftw(dirPath, UnlinkCb, OPEN_FDS, FTW_DEPTH | FTW_PHYS);
@@ -203,13 +203,13 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
         return errCode;
     }
 
-    int source = open(absFilePath, O_RDONLY);
+    int32_t source = open(absFilePath, O_RDONLY);
     if (source == -1) {
         MEDIA_ERR_LOG("Open failed for source file");
         return errCode;
     }
 
-    int dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
+    int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
     if (dest == -1) {
         MEDIA_ERR_LOG("Open failed for destination file");
         close(source);
@@ -218,7 +218,7 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 
     if (fstat(source, &fst) == SUCCESS) {
         // Copy file content
-        if (sendfile(dest, source, 0, fst.st_size) != -1) {
+        if (sendfile(dest, source, 0, fst.st_size) != FAIL) {
             // Copy ownership and mode of source file
             if (fchown(dest, fst.st_uid, fst.st_gid) == SUCCESS &&
                 fchmod(dest, fst.st_mode) == SUCCESS) {

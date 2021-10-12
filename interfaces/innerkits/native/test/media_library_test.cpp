@@ -23,7 +23,7 @@ using namespace std;
 using namespace OHOS::Media;
 
 namespace MediaLibTest {
-    const int SECOND_ARG_IDX = 2;
+    const int32_t SECOND_ARG_IDX = 2;
 }
 
 class MediaLibraryTest {
@@ -57,11 +57,9 @@ public:
         MEDIA_DEBUG_LOG("Image assets:");
         vector<unique_ptr<ImageAsset>> imageAssets
                             = mediaLibrary->GetImageAssets(selection, selectionArgs);
-        MEDIA_DEBUG_LOG("Image assets size:%{public}d", imageAssets.size());
         for (size_t i = 0; i < imageAssets.size(); i++) {
             MEDIA_DEBUG_LOG("uri: %{public}s", imageAssets[i]->uri_.c_str());
             MEDIA_DEBUG_LOG("id: %{public}d", imageAssets[i]->id_);
-            MEDIA_DEBUG_LOG("size: %{public}lld", imageAssets[i]->size_);
             MEDIA_DEBUG_LOG("media type: %{public}d", imageAssets[i]->mediaType_);
             MEDIA_DEBUG_LOG("mime type: %{public}s", imageAssets[i]->mimeType_.c_str());
             MEDIA_DEBUG_LOG("name: %{public}s", imageAssets[i]->name_.c_str());
@@ -77,14 +75,12 @@ public:
         int32_t requestType = (int32_t)MediaType::MEDIA_TYPE_VIDEO;
         vector<unique_ptr<AlbumAsset>> albumAssets
                         = mediaLibrary->GetAlbumAssets(selection, selectionArgs, requestType);
-        MEDIA_DEBUG_LOG("Album assets size:%{public}d", albumAssets.size());
         for (size_t i = 0; i < albumAssets.size(); i++) {
             MEDIA_DEBUG_LOG("Album name:%{public}s", albumAssets[i]->albumName_.c_str());
             MEDIA_DEBUG_LOG("Image album assets:");
             for (size_t j = 0; j < albumAssets[i]->imageAssetList_.size(); j++) {
                 MEDIA_DEBUG_LOG("uri: %{public}s", albumAssets[i]->imageAssetList_[j]->uri_.c_str());
                 MEDIA_DEBUG_LOG("id: %{public}d", albumAssets[i]->imageAssetList_[j]->id_);
-                MEDIA_DEBUG_LOG("size: %{public}lld", albumAssets[i]->imageAssetList_[j]->size_);
                 MEDIA_DEBUG_LOG("width: %{public}d", albumAssets[i]->imageAssetList_[j]->width_);
                 MEDIA_DEBUG_LOG("height: %{public}d", albumAssets[i]->imageAssetList_[j]->height_);
                 MEDIA_DEBUG_LOG("media type: %{public}d",
@@ -102,7 +98,6 @@ public:
             for (size_t k = 0; k < albumAssets[i]->videoAssetList_.size(); k++) {
                 MEDIA_DEBUG_LOG("uri: %{public}s", albumAssets[i]->videoAssetList_[k]->uri_.c_str());
                 MEDIA_DEBUG_LOG("id: %{public}d", albumAssets[i]->videoAssetList_[k]->id_);
-                MEDIA_DEBUG_LOG("size: %{public}lld", albumAssets[i]->videoAssetList_[k]->size_);
                 MEDIA_DEBUG_LOG("width: %{public}d", albumAssets[i]->videoAssetList_[k]->width_);
                 MEDIA_DEBUG_LOG("height: %{public}d", albumAssets[i]->videoAssetList_[k]->height_);
                 MEDIA_DEBUG_LOG("duration: %{public}d", albumAssets[i]->videoAssetList_[k]->duration_);
@@ -128,7 +123,7 @@ public:
     }
 };
 
-int main(int argc, const char *argv[])
+int32_t main(int32_t argc, const char *argv[])
 {
     MEDIA_INFO_LOG("media lib test in");
 

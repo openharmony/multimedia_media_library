@@ -37,31 +37,6 @@ napi_ref MediaAssetNapi::sConstructor_ = nullptr;
 Media::MediaAsset *MediaAssetNapi::sMediaAsset_ = nullptr;
 Media::IMediaLibraryClient *MediaAssetNapi::sMediaLibrary_ = nullptr;
 
-Media::AssetType GetAssetType(Media::MediaType type)
-{
-    Media::AssetType result;
-
-    switch (type) {
-        case Media::MEDIA_TYPE_AUDIO:
-            result = Media::ASSET_AUDIO;
-            break;
-        case Media::MEDIA_TYPE_VIDEO:
-            result = Media::ASSET_VIDEO;
-            break;
-        case Media::MEDIA_TYPE_IMAGE:
-            result = Media::ASSET_IMAGE;
-            break;
-        case Media::MEDIA_TYPE_MEDIA:
-            result = Media::ASSET_MEDIA;
-            break;
-        default:
-            result = Media::ASSET_NONE;
-            break;
-    }
-
-    return result;
-}
-
 MediaAssetNapi::MediaAssetNapi()
     : env_(nullptr), wrapper_(nullptr)
 {
@@ -592,19 +567,20 @@ void MediaAssetNapi::UpdateMediaAssetInfo(OHOS::Media::MediaAsset &mAsset)
 static void CommonCompleteCallback(napi_env env, napi_status status, void* data)
 {
     auto context = static_cast<MediaAssetAsyncContext*>(data);
-    napi_value result[ARGS_TWO] = {0};
 
     if (context == nullptr) {
         HiLog::Error(LABEL, "Async context is null");
         return;
     }
 
-    napi_get_undefined(env, &result[PARAM0]);
-    napi_get_boolean(env, context->status, &result[PARAM1]);
+    std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
+    jsContext->status = true;
+    napi_get_undefined(env, &jsContext->error);
+    napi_get_boolean(env, context->status, &jsContext->data);
 
     if (context->work != nullptr) {
-        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, result, ARGS_TWO,
-                                                   context->callbackRef, context->work);
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
     }
     delete context;
 }
@@ -701,8 +677,8 @@ napi_value MediaAssetNapi::CommitCreate(napi_env env, napi_callback_info info)
             }
             if (!context->objectInfo->newName_.empty()) {
                 asset.name_ = context->objectInfo->newName_;
-                context->status =
-                    context->objectInfo->mediaLibrary_->CreateMediaAsset(GetAssetType(asset.mediaType_), asset);
+                context->status = context->objectInfo->mediaLibrary_->CreateMediaAsset(
+                    MediaLibraryNapiUtils::GetAssetType(asset.mediaType_), asset);
                 if (context->status) {
                     context->objectInfo->UpdateMediaAssetInfo(asset);
                 }
@@ -849,7 +825,7 @@ napi_value MediaAssetNapi::CommitModify(napi_env env, napi_callback_info info)
                 assetNew.name_ = newName;
 
                 context->status = context->objectInfo->mediaLibrary_->ModifyMediaAsset(
-                    GetAssetType(assetOld.mediaType_), assetOld, assetNew);
+                    MediaLibraryNapiUtils::GetAssetType(assetOld.mediaType_), assetOld, assetNew);
                 if (context->status) {
                     context->objectInfo->name_ = assetNew.name_;
                     context->objectInfo->uri_ = assetNew.uri_;
@@ -945,8 +921,8 @@ napi_value MediaAssetNapi::CommitDelete(napi_env env, napi_callback_info info)
                 auto context = static_cast<MediaAssetAsyncContext*>(data);
                 Media::MediaAsset asset;
                 context->objectInfo->UpdateNativeMediaAsset(asset);
-                context->status =
-                    context->objectInfo->mediaLibrary_->DeleteMediaAsset(GetAssetType(asset.mediaType_), asset);
+                context->status = context->objectInfo->mediaLibrary_->DeleteMediaAsset(
+                    MediaLibraryNapiUtils::GetAssetType(asset.mediaType_), asset);
             },
             CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -1023,7 +999,7 @@ napi_value MediaAssetNapi::CommitCopy(napi_env env, napi_callback_info info)
                     assetTarget.albumName_ = context->targetCopyObject->newAlbumName_;
 
                     context->status = context->objectInfo->mediaLibrary_->CopyMediaAsset(
-                        GetAssetType(assetSrc.mediaType_), assetSrc, assetTarget);
+                        MediaLibraryNapiUtils::GetAssetType(assetSrc.mediaType_), assetSrc, assetTarget);
                     if (context->status) {
                         context->targetCopyObject->UpdateMediaAssetInfo(assetTarget);
                     }

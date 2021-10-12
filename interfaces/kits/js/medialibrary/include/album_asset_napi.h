@@ -16,13 +16,14 @@
 #ifndef ALBUM_ASSET_NAPI_H
 #define ALBUM_ASSET_NAPI_H
 
+#include <vector>
+#include <algorithm>
+
 #include "album_asset.h"
-#include "video_asset_napi.h"
 #include "image_asset_napi.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include <vector>
-#include <algorithm>
+#include "video_asset_napi.h"
 
 namespace OHOS {
 static const std::string ALBUM_ASSET_NAPI_CLASS_NAME = "Album";

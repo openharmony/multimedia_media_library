@@ -1,0 +1,55 @@
+/*
+ * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef MEDIA_SCANNER_CONST_H
+#define MEDIA_SCANNER_CONST_H
+
+#include <string>
+
+namespace OHOS {
+namespace Media {
+enum ScannerApiTypes : int32_t {
+    MEDIA_SCAN_DIR_ABILITY = 0,
+    MEDIA_SCAN_FILE_ABILITY = 1,
+    MEDIA_SCAN_ON_CALLBACK = 2
+};
+
+enum ScanType : uint32_t {
+    SCAN_FILE = 0,
+    SCAN_DIR
+};
+
+enum ScannerIpcErrorTypes : int32_t {
+    SCAN_IPC_ERR = -1,
+    SCAN_IPC_SUCCESS,
+    SCAN_PROXY_WR_ERR,
+    SCAN_PROXY_RD_ERR,
+    SCAN_STUB_WR_ERR,
+    SCAN_STUB_RD_ERR
+};
+
+enum ConnectionState : int32_t {
+    CONN_NONE,
+    CONN_IN_PROGRESS,
+    CONN_SUCCESS,
+    CONN_ERROR
+};
+
+const std::string SCANNER_BUNDLE_NAME = "com.ohos.medialibrary.MediaScannerAbilityA";
+const std::string SCANNER_ABILITY_NAME = "MediaScannerAbility";
+const int32_t NO_PARENT = 0;
+} // namespace OHOS
+} // namespace Media
+#endif // MEDIA_SCANNER_CONST_H

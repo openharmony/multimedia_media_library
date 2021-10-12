@@ -166,7 +166,7 @@ napi_value AlbumAssetNapi::CreateAlbumAsset(napi_env env, AlbumType type,
     if (status == napi_ok) {
         sAlbumAsset_ = &aAsset;
         sAlbumType_ = type;
-        sAlbumPath_ = albumParentPath + "/" + sAlbumAsset_->albumName_;
+        sAlbumPath_ = albumParentPath + "/" + sAlbumAsset_->GetAlbumName();
         sMediaLibrary_ = &mediaLibClient;
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         sAlbumAsset_ = nullptr;
@@ -279,7 +279,6 @@ Media::IMediaLibraryClient* AlbumAssetNapi::GetMediaLibClientInstance()
 static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status, void* data)
 {
     auto context = static_cast<AlbumAsyncContext*>(data);
-    napi_value result[ARGS_TWO] = {0};
     napi_value videoArray = nullptr;
     napi_value vAsset = nullptr;
 
@@ -288,7 +287,9 @@ static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status, v
         return;
     }
 
-    napi_get_undefined(env, &result[PARAM0]);
+    std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
+    jsContext->status = true;
+    napi_get_undefined(env, &jsContext->error);
     if (!context->videoAssets.empty() && (napi_create_array(env, &videoArray) == napi_ok)) {
         size_t len = context->videoAssets.size();
         size_t i;
@@ -297,21 +298,21 @@ static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status, v
                 *(context->objectInfo->GetMediaLibClientInstance()));
             if (vAsset == nullptr || napi_set_element(env, videoArray, i, vAsset) != napi_ok) {
                 HiLog::Error(LABEL, "Failed to get video asset napi object");
-                napi_get_undefined(env, &result[PARAM1]);
+                napi_get_undefined(env, &jsContext->data);
                 break;
             }
         }
         if (i == len) {
-            result[PARAM1] = videoArray;
+            jsContext->data = videoArray;
         }
     } else {
         HiLog::Error(LABEL, "No video assets found!");
-        napi_get_undefined(env, &result[PARAM1]);
+        napi_get_undefined(env, &jsContext->data);
     }
 
     if (context->work != nullptr) {
-        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, result, ARGS_TWO,
-                                                   context->callbackRef, context->work);
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
     }
     delete context;
 }
@@ -363,7 +364,6 @@ napi_value AlbumAssetNapi::GetVideoAssets(napi_env env, napi_callback_info info)
 static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status, void* data)
 {
     auto context = static_cast<AlbumAsyncContext*>(data);
-    napi_value result[ARGS_TWO] = {0};
     napi_value imageArray = nullptr;
     napi_value iAsset = nullptr;
 
@@ -372,7 +372,9 @@ static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status, v
         return;
     }
 
-    napi_get_undefined(env, &result[PARAM0]);
+    std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
+    jsContext->status = true;
+    napi_get_undefined(env, &jsContext->error);
     if (!context->imageAssets.empty() && (napi_create_array(env, &imageArray) == napi_ok)) {
         size_t len = context->imageAssets.size();
         size_t i;
@@ -381,21 +383,21 @@ static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status, v
                 *(context->objectInfo->GetMediaLibClientInstance()));
             if (iAsset == nullptr || napi_set_element(env, imageArray, i, iAsset) != napi_ok) {
                 HiLog::Error(LABEL, "Failed to get image asset napi object");
-                napi_get_undefined(env, &result[PARAM1]);
+                napi_get_undefined(env, &jsContext->data);
                 break;
             }
         }
         if (i == len) {
-            result[PARAM1] = imageArray;
+            jsContext->data = imageArray;
         }
     } else {
         HiLog::Error(LABEL, "No image assets found!");
-        napi_get_undefined(env, &result[PARAM1]);
+        napi_get_undefined(env, &jsContext->data);
     }
 
     if (context->work != nullptr) {
-        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, result, ARGS_TWO,
-                                                   context->callbackRef, context->work);
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
     }
     delete context;
 }
@@ -446,26 +448,27 @@ napi_value AlbumAssetNapi::GetImageAssets(napi_env env, napi_callback_info info)
 
 void AlbumAssetNapi::UpdateAlbumAssetInfo()
 {
-    albumId_ = sAlbumAsset_->albumId_;
-    albumName_ = sAlbumAsset_->albumName_;
+    albumId_ = sAlbumAsset_->GetAlbumId();
+    albumName_ = sAlbumAsset_->GetAlbumName();
 }
 
 static void CommonCompleteCallback(napi_env env, napi_status status, void* data)
 {
     auto context = static_cast<AlbumAsyncContext*>(data);
-    napi_value result[ARGS_TWO] = {0};
 
     if (context == nullptr) {
         HiLog::Error(LABEL, "Async context is null");
         return;
     }
 
-    napi_get_undefined(env, &result[PARAM0]);
-    napi_get_boolean(env, context->status, &result[PARAM1]);
+    std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
+    napi_get_undefined(env, &jsContext->error);
+    napi_get_boolean(env, context->status, &jsContext->data);
+    jsContext->status = true;
 
     if (context->work != nullptr) {
-        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, result, ARGS_TWO,
-                                                   context->callbackRef, context->work);
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
     }
     delete context;
 }
@@ -499,8 +502,8 @@ napi_value AlbumAssetNapi::CommitCreate(napi_env env, napi_callback_info info)
                 auto context = static_cast<AlbumAsyncContext*>(data);
                 Media::AlbumAsset asset;
                 if (!context->objectInfo->newAlbumName_.empty()) {
-                    asset.albumId_ = context->objectInfo->albumId_;
-                    asset.albumName_ = context->objectInfo->newAlbumName_;
+                    asset.SetAlbumId(context->objectInfo->albumId_);
+                    asset.SetAlbumName(context->objectInfo->newAlbumName_);
                     context->status = context->objectInfo->mediaLibrary_->CreateMediaAlbumAsset(
                         GetAlbumType(context->objectInfo->type_), asset);
                     if (context->status) {
@@ -553,8 +556,8 @@ napi_value AlbumAssetNapi::CommitDelete(napi_env env, napi_callback_info info)
                 Media::AlbumAsset asset;
                 std::string albumUri = context->objectInfo->albumPath_;
 
-                asset.albumId_ = context->objectInfo->albumId_;
-                asset.albumName_ = context->objectInfo->albumName_;
+                asset.SetAlbumId(context->objectInfo->albumId_);
+                asset.SetAlbumName(context->objectInfo->albumName_);
 
                 context->status = context->objectInfo->mediaLibrary_->DeleteMediaAlbumAsset(
                     GetAlbumType(context->objectInfo->type_), asset, albumUri);
@@ -601,16 +604,16 @@ napi_value AlbumAssetNapi::CommitModify(napi_env env, napi_callback_info info)
             std::string albumNewName = context->objectInfo->newAlbumName_;
 
             context->status = false;
-            assetOld.albumId_ = context->objectInfo->albumId_;
-            assetOld.albumName_ = context->objectInfo->albumName_;
+            assetOld.SetAlbumId(context->objectInfo->albumId_);
+            assetOld.SetAlbumName(context->objectInfo->albumName_);
 
-            assetNew.albumId_ = context->objectInfo->albumId_;
+            assetNew.SetAlbumId(context->objectInfo->albumId_);
             if ((!albumNewName.empty()) && (albumNewName.compare(context->objectInfo->albumName_) != 0)) {
-                assetNew.albumName_ = albumNewName;
+                assetNew.SetAlbumName(albumNewName);
                 context->status = context->objectInfo->mediaLibrary_->ModifyMediaAlbumAsset(
                     GetAlbumType(context->objectInfo->type_), assetOld, assetNew, albumUri);
                 if (context->status) {
-                    context->objectInfo->albumName_ = assetNew.albumName_;
+                    context->objectInfo->albumName_ = assetNew.GetAlbumName();
                 }
                 context->objectInfo->newAlbumName_ = "";
             } else {

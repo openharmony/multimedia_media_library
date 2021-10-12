@@ -26,6 +26,9 @@ static napi_value Export(napi_env env, napi_value exports)
     VideoAssetNapi::Init(env, exports);
     ImageAssetNapi::Init(env, exports);
     AlbumAssetNapi::Init(env, exports);
+    FileAssetNapi::Init(env, exports);
+    FetchFileResultNapi::Init(env, exports);
+    AlbumNapi::Init(env, exports);
     MediaLibraryNapi::Init(env, exports);
     AVMetadataHelperNapi::Init(env, exports);
     return exports;

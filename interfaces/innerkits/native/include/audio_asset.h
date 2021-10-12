@@ -36,6 +36,6 @@ public:
     std::string artist_;
     std::string mimeType_;
 };
-}  // namespace Media
-}  // namespace OHOS
-#endif  // AUDIO_ASSET_H
+} // namespace Media
+} // namespace OHOS
+#endif // AUDIO_ASSET_H
