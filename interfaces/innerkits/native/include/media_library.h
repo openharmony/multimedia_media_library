@@ -57,7 +57,7 @@ public:
      * @version 1.0
      */
     std::vector<std::unique_ptr<MediaAsset>> GetMediaAssets(std::string selection,
-                                                        std::vector<std::string> selectionArgs);
+                                                            std::vector<std::string> selectionArgs);
 
     /**
      * @brief Gets list of audio assets
@@ -69,7 +69,7 @@ public:
      * @version 1.0
      */
     std::vector<std::unique_ptr<AudioAsset>> GetAudioAssets(std::string selection,
-                                                       std::vector<std::string> selectionArgs);
+                                                            std::vector<std::string> selectionArgs);
 
     /**
      * @brief Gets list of video assets
@@ -81,7 +81,7 @@ public:
      * @version 1.0
      */
     std::vector<std::unique_ptr<VideoAsset>> GetVideoAssets(std::string selection,
-                                                       std::vector<std::string> selectionArgs);
+                                                            std::vector<std::string> selectionArgs);
 
     /**
      * @brief Gets list of image assets
@@ -93,7 +93,7 @@ public:
      * @version 1.0
      */
     std::vector<std::unique_ptr<ImageAsset>> GetImageAssets(std::string selection,
-                                                       std::vector<std::string> selectionArgs);
+                                                            std::vector<std::string> selectionArgs);
 
     /**
      * @brief Gets list of image album assets

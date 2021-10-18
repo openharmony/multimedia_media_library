@@ -35,15 +35,22 @@ ohos_shared_library("medialibrary") {
     "//third_party/node/src",
     "//foundation/ace/napi/interfaces/kits",
     "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
-    "//foundation/multimedia/medialibrary_standard/services/include/client",
+    "//foundation/multimedia/medialibrary_standard/services/media_library_service/include/client",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/innerkits/native_rdb/include",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
+    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_ability/include",
+    "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager/include",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include",
     "//foundation/multimedia/image_standard/interfaces/kits/js/common/include",
   ]
 
   sources = [
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/album_asset_napi.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/album_napi.cpp",
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/audio_asset_napi.cpp",
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/avmetadatahelper_napi.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/fetch_file_result_napi.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/file_asset_napi.cpp",
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/image_asset_napi.cpp",
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/media_asset_napi.cpp",
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/media_library_napi.cpp",
@@ -54,15 +61,27 @@ ohos_shared_library("medialibrary") {
   ldflags = [ "-Wl,-rpath=/system/lib/module/multimedia/" ]
 
   deps = [
+    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
+    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
+    "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager:dataobs_manager",
     "//foundation/ace/napi:ace_napi",
+    "//foundation/appexecfwk/standard/kits:appkit_native",
+    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_standard/interfaces/innerkits/native/media:media_client",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library",
-    "//foundation/multimedia/medialibrary_standard/services:medialibrary_proxy",
+    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_ability:medialibrary_data_ability",
+    "//foundation/multimedia/medialibrary_standard/services/media_library_service:medialibrary_proxy",
     "//utils/native/base:utils",
   ]
 
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  external_deps = [
+    "aafwk_standard:ability_manager",
+    "hiviewdfx_hilog_native:libhilog",
+    "native_appdatamgr:native_appdatafwk",
+    "native_appdatamgr:native_dataability",
+    "native_appdatamgr:native_rdb",
+  ]
 
   relative_install_dir = "module/multimedia"
   subsystem_name = "multimedia"

@@ -36,6 +36,7 @@ class MediaAsset {
 public:
     MediaAsset();
     virtual ~MediaAsset();
+
     bool CreateMediaAsset(AssetType assetType);
     bool DeleteMediaAsset();
     bool ModifyMediaAsset(const MediaAsset &mediaAsset);
@@ -52,6 +53,6 @@ public:
     uint64_t dateAdded_;
     uint64_t dateModified_;
 };
-}  // namespace Media
-}  // namespace OHOS
-#endif  // MEDIA_ASSET_H
+} // namespace Media
+} // namespace OHOS
+#endif // MEDIA_ASSET_H

@@ -14,7 +14,9 @@
  */
 
 #include "album_asset.h"
+
 #include "media_file_utils.h"
+#include "media_lib_service_const.h"
 #include "media_log.h"
 
 using namespace std;
@@ -25,15 +27,79 @@ AlbumAsset::AlbumAsset()
 {
     albumId_ = DEFAULT_ALBUM_ID;
     albumName_ = DEFAULT_ALBUM_NAME;
+    albumPath_ = DEFAULT_ALBUM_PATH;
+    albumDateModified_ = DEFAULT_ALBUM_DATE_MODIFIED;
+    albumVirtual_ = DEFAULT_ALBUM_VIRTUAL;
+    albumRelativePath_ = DEFAULT_ALBUM_RELATIVE_PATH;
 }
 
 AlbumAsset::~AlbumAsset() = default;
 
+
+void AlbumAsset::SetAlbumId(const int32_t albumId)
+{
+    albumId_ = albumId;
+}
+
+void AlbumAsset::SetAlbumName(const string albumName)
+{
+    albumName_ = albumName;
+}
+
+void AlbumAsset::SetAlbumPath(const string albumPath)
+{
+    albumPath_ = albumPath;
+}
+
+void AlbumAsset::SetAlbumDateModified(const int64_t albumDateModified)
+{
+    albumDateModified_ = albumDateModified;
+}
+
+void AlbumAsset::SetAlbumVirtual(const bool albumVirtual)
+{
+    albumVirtual_ = albumVirtual;
+}
+
+void AlbumAsset::SetAlbumRelativePath(const string albumRelativePath)
+{
+    albumRelativePath_ = albumRelativePath;
+}
+
+int32_t AlbumAsset::GetAlbumId() const
+{
+    return albumId_;
+}
+
+string AlbumAsset::GetAlbumName() const
+{
+    return albumName_;
+}
+
+string AlbumAsset::GetAlbumPath() const
+{
+    return albumPath_;
+}
+
+int64_t AlbumAsset::GetAlbumDateModified() const
+{
+    return albumDateModified_;
+}
+
+bool AlbumAsset::GetAlbumVirtual() const
+{
+    return albumVirtual_;
+}
+
+string AlbumAsset::GetAlbumRelativePath() const
+{
+    return albumRelativePath_;
+}
+
 bool AlbumAsset::CreateAlbumAsset()
 {
-    string albumUri = ROOT_MEDIA_DIR + SLASH_CHAR + albumName_;
-    if (!(MediaFileUtils::IsDirectory(albumUri))) {
-        return MediaFileUtils::CreateDirectory(albumUri);
+    if (!(MediaFileUtils::IsDirectory(albumPath_))) {
+        return MediaFileUtils::CreateDirectory(albumPath_);
     } else {
         MEDIA_ERR_LOG("Cannot create album that already exists");
         return false;
@@ -45,7 +111,7 @@ bool AlbumAsset::DeleteAlbumAsset(const string &albumUri)
     return MediaFileUtils::DeleteDir(albumUri);
 }
 
-bool AlbumAsset::ModifyAlbumAsset(const AlbumAsset &albumAsset, const string &albumUri)
+bool AlbumAsset::ModifyAlbumAsset(const string &albumUri)
 {
     string newAlbumUri;
     string oldAlbumUri;
@@ -55,7 +121,7 @@ bool AlbumAsset::ModifyAlbumAsset(const AlbumAsset &albumAsset, const string &al
     oldAlbumUri = albumUri;
     slashIndex = albumUri.rfind("/");
     if (slashIndex != string::npos) {
-        newAlbumUri = albumUri.substr(0, slashIndex)  + SLASH_CHAR + albumName_;
+        newAlbumUri = albumUri.substr(0, slashIndex) + SLASH_CHAR + albumName_;
         errCode =  MediaFileUtils::RenameDir(oldAlbumUri, newAlbumUri);
     }
 

@@ -36,6 +36,6 @@ public:
     int32_t duration_;
     std::string mimeType_;
 };
-}  // namespace Media
-}  // namespace OHOS
-#endif  // VIDEO_ASSET_H
+} // namespace Media
+} // namespace OHOS
+#endif // VIDEO_ASSET_H

@@ -44,7 +44,8 @@ enum MediaType {
     MEDIA_TYPE_VIDEO,
     MEDIA_TYPE_AUDIO,
     MEDIA_TYPE_ALBUM_LIST,
-    MEDIA_TYPE_ALBUM_LIST_INFO
+    MEDIA_TYPE_ALBUM_LIST_INFO,
+    MEDIA_TYPE_ALBUM
 };
 
 /* ENUM Asset types */
@@ -57,6 +58,15 @@ enum AssetType {
     ASSET_IMAGEALBUM,
     ASSET_VIDEOALBUM,
     ASSET_NONE
+};
+
+enum class DataType : int32_t {
+    TYPE_NULL = 0,
+    TYPE_INT,
+    TYPE_LONG,
+    TYPE_DOUBLE,
+    TYPE_STRING,
+    TYPE_BOOL
 };
 
 const int32_t SUCCESS = 0;
@@ -80,19 +90,38 @@ const int32_t COMMON_DATA_WRITE_FAIL = 14;
 const int32_t COMMON_DATA_READ_FAIL = 15;
 
 const int32_t DEFAULT_MEDIA_ID = 0;
-const int32_t DEFAULT_ALBUM_ID = 0;
 const uint64_t DEFAULT_MEDIA_SIZE = 0;
 const uint64_t DEFAULT_MEDIA_DATE_ADDED = 0;
 const uint64_t DEFAULT_MEDIA_DATE_MODIFIED = 0;
 const std::string DEFAULT_MEDIA_URI = "";
 const MediaType DEFAULT_MEDIA_TYPE = MEDIA_TYPE_FILE;
 const std::string DEFAULT_MEDIA_NAME = "Unknown";
+const std::string DEFAULT_MEDIA_PATH = "";
+const std::string DEFAULT_MEDIA_MIMETYPE = "";
+const std::string DEFAULT_MEDIA_RELATIVE_PATH = "";
+
+const std::string DEFAULT_MEDIA_TITLE = "";
+const std::string DEFAULT_MEDIA_ARTIST = "";
+const std::string DEFAULT_MEDIA_ALBUM = "";
+const int32_t DEFAULT_MEDIA_WIDTH = 0;
+const int32_t DEFAULT_MEDIA_HEIGHT = 0;
+const int32_t DEFAULT_MEDIA_DURATION = 0;
+const int32_t DEFAULT_MEDIA_ORIENTATION = 0;
+
+const int32_t DEFAULT_ALBUM_ID = 0;
 const std::string DEFAULT_ALBUM_NAME = "Unknown";
+const std::string DEFAULT_ALBUM_PATH = "";
+const int64_t DEFAULT_ALBUM_DATE_MODIFIED = 0;
+const bool DEFAULT_ALBUM_VIRTUAL = false;
+const std::string DEFAULT_ALBUM_RELATIVE_PATH = "";
+
 const std::string ROOT_MEDIA_DIR = "/data/media";
 const char SLASH_CHAR = '/';
-const int OPEN_FDS = 64;
+const int32_t OPEN_FDS = 64;
 const int32_t MILLISECONDS = 1000;
 const char DOT_CHAR = '.';
+
+const std::string SKIPLIST_FILE_PATH = "/data/SkipScanFile.txt";
 
 /** Supported audio container types */
 const std::string AUDIO_CONTAINER_TYPE_AAC = "aac";

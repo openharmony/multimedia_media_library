@@ -14,9 +14,7 @@
 import("//build/ohos.gni")
 
 group("media_library_packages") {
-  deps = [
-    ":media_library",
-  ]
+  deps = [ ":media_library" ]
 }
 
 config("media_library_config") {
@@ -28,6 +26,10 @@ config("media_library_config") {
     "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//utils/native/base/include",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/innerkits/native_rdb/include",
+    "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/innerkits/native_appdatafwk/include",
   ]
 
   cflags = [
@@ -40,6 +42,8 @@ ohos_source_set("media_library_source") {
   sources = [
     "src/album_asset.cpp",
     "src/audio_asset.cpp",
+    "src/fetch_result.cpp",
+    "src/file_asset.cpp",
     "src/image_asset.cpp",
     "src/media_asset.cpp",
     "src/media_file_utils.cpp",
@@ -56,8 +60,15 @@ ohos_shared_library("media_library") {
 
   deps = [
     ":media_library_source",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
     "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+    "native_appdatamgr:native_appdatafwk",
+    "native_appdatamgr:native_dataability",
+    "native_appdatamgr:native_rdb",
   ]
 
   part_name = "multimedia_media_library_standard"

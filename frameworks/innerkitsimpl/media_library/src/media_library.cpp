@@ -186,7 +186,7 @@ void ScanMediaAssetInfo(MediaType mediaType, const string &path, const struct st
     return;
 }
 
-int ScanCallback(const char *path, const struct stat *statInfo, int typeFlag, struct FTW *ftwInfo)
+int32_t ScanCallback(const char *path, const struct stat *statInfo, int32_t typeFlag, struct FTW *ftwInfo)
 {
     if ((path == nullptr) || (statInfo == nullptr)) {
         MEDIA_ERR_LOG("Invalid arguments!");
@@ -296,7 +296,7 @@ int32_t ScanAlbums(const unique_ptr<AlbumAsset> &albumAsset, string albumDir, in
         size_t slashIndex = albumDir.rfind(SLASH_CHAR);
         if (slashIndex != string::npos) {
             if (albumDir.size() > slashIndex) {
-                albumAsset->albumName_ = albumDir.substr(slashIndex + 1, albumDir.length() - slashIndex);
+                albumAsset->SetAlbumName(albumDir.substr(slashIndex + 1, albumDir.length() - slashIndex));
             }
         }
 
@@ -398,8 +398,8 @@ vector<unique_ptr<AlbumAsset>> MediaLibrary::GetAlbumAssets(string selection,
         if ((requestedMediaType == MEDIA_TYPE_IMAGE) && IsAlbumEmpty(albumSubDirList[i])) {
             size_t slashIndex = albumSubDirList[i].rfind(SLASH_CHAR);
             if ((slashIndex != string::npos) && (albumSubDirList[i].size() > slashIndex)) {
-                albumAsset->albumName_ = albumSubDirList[i].substr(slashIndex + 1,
-                    albumSubDirList[i].length() - slashIndex);
+                albumAsset->SetAlbumName(albumSubDirList[i].substr(slashIndex + 1,
+                    albumSubDirList[i].length() - slashIndex));
             }
             albumAssets.push_back(std::move(albumAsset));
             continue;
@@ -530,6 +530,7 @@ bool MediaLibrary::CopyMediaAsset(AssetType assetType, const MediaAsset& srcMedi
 bool MediaLibrary::CreateMediaAlbumAsset(AssetType assetType, const AlbumAsset& albmAsset)
 {
     AlbumAsset *albumAsset = (AlbumAsset *)&albmAsset;
+    albumAsset->SetAlbumPath(ROOT_MEDIA_DIR + SLASH_CHAR + albumAsset->GetAlbumName());
 
     return albumAsset->CreateAlbumAsset();
 }
@@ -546,7 +547,7 @@ bool MediaLibrary::ModifyMediaAlbumAsset(AssetType assetType, const AlbumAsset& 
 {
     AlbumAsset *dstAlbumAsset = (AlbumAsset *)&dstAlbAsset;
 
-    return dstAlbumAsset->ModifyAlbumAsset(srcAlbumAsset, albumUri);
+    return dstAlbumAsset->ModifyAlbumAsset(albumUri);
 }
 }  // namespace Media
 }  // namespace OHOS

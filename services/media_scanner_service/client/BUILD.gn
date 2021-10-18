@@ -1,0 +1,85 @@
+# Copyright (C) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import("//build/ohos.gni")
+import("//build/test.gni")
+MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
+
+config("media_data_ability_public_config") {
+  include_dirs = [
+    "//utils/native/base/include",
+    "//utils/system/safwk/native/include",
+    "//foundation/aafwk/standard/interfaces/innerkits/want/include",
+    "//foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk/content",
+    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager/include",
+    "//foundation/aafwk/standard/services/abilitymgr/include",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/appmgr",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
+    "//foundation/distributedschedule/dmsfwk/services/dtbschedmgr/include",
+    "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
+    "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client/include",
+    "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/ipc/include",
+  ]
+
+  if (target_cpu == "arm") {
+    cflags = [ "-DBINDER_IPC_32BIT" ]
+  }
+}
+
+ohos_shared_library("media_scanner_client") {
+  install_enable = true
+  sources = [
+    "../ipc/src/media_scanner_ability_proxy.cpp",
+    "../ipc/src/media_scanner_operation_callback_stub.cpp",
+    "src/media_scanner_client.cpp",
+  ]
+
+  public_configs = [ ":media_data_ability_public_config" ]
+
+  deps = [
+    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
+    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager:ability_manager",
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
+    "//foundation/aafwk/standard/services/abilitymgr:abilityms",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
+    "//foundation/distributedschedule/safwk/interfaces/innerkits/safwk:system_ability_fwk",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+    "samgr_L2:samgr_proxy",
+  ]
+
+  subsystem_name = "multimedia"
+  part_name = "multimedia_media_library_standard"
+}
+
+ohos_moduletest("mediascanner_module_test") {
+  module_out_path = "mediascanner/gtest"
+  sources = [ "test/src/mediascanner_module_test.cpp" ]
+
+  include_dirs = [
+    "test/include",
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+    "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
+  ]
+
+  deps = [
+    "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client:media_scanner_client",
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
+  ]
+}
