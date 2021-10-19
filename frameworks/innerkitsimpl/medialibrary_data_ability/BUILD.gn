@@ -72,7 +72,7 @@ ohos_shared_library("medialibrary_data_ability") {
     "native_appdatamgr:native_appdatafwk",
     "native_appdatamgr:native_dataability",
     "native_appdatamgr:native_rdb",
-    "samgr_L2:samgr_proxy",
+    "samgr_standard:samgr_proxy",
   ]
 
   subsystem_name = "multimedia"
