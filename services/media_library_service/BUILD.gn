@@ -67,7 +67,7 @@ ohos_shared_library("medialibrary_service") {
   external_deps = [
     "ipc:ipc_core",
     "safwk:system_ability_fwk",
-    "samgr_L2:samgr_proxy",
+    "samgr_standard:samgr_proxy",
   ]
 
   part_name = "multimedia_media_library_standard"
@@ -90,7 +90,7 @@ ohos_shared_library("medialibrary_proxy") {
   external_deps = [
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
-    "samgr_L2:samgr_proxy",
+    "samgr_standard:samgr_proxy",
   ]
 
   subsystem_name = "multimedia"
