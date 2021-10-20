@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "medialibrary_module_test.h"
+#include "medialibrary_unit_test.h"
 #include "media_log.h"
 
 using namespace std;
@@ -23,19 +23,29 @@ namespace OHOS {
 namespace Media {
 IMediaLibraryClient* mediaLibClientInstance = nullptr;
 
-void MediaLibraryModuleTest::SetUpTestCase(void) {}
-void MediaLibraryModuleTest::TearDownTestCase(void) {}
-
-/* SetUp:Execute before each test case */
-void MediaLibraryModuleTest::SetUp()
+void MediaLibraryUnitTest::SetUpTestCase(void)
 {
     mediaLibClientInstance = IMediaLibraryClient::GetMediaLibraryClientInstance();
 }
 
-void MediaLibraryModuleTest::TearDown(void)
+void MediaLibraryUnitTest::TearDownTestCase(void)
 {
+    string albumUri;
+    AlbumAsset albumAsset;
+    AssetType assetType = ASSET_IMAGEALBUM;
+
+    albumUri = "/data/media/gtest";
+    if (mediaLibClientInstance != nullptr) {
+        (void)mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);
+    }
+
     mediaLibClientInstance = nullptr;
 }
+
+/* SetUp:Execute before each test case */
+void MediaLibraryUnitTest::SetUp() {}
+
+void MediaLibraryUnitTest::TearDown(void) {}
 
 /*
  * Feature: MediaLibrary
@@ -45,7 +55,7 @@ void MediaLibraryModuleTest::TearDown(void)
  * EnvConditions: NA
  * CaseDescription: Create media audio asset in requested directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_testlevel0_001, TestSize.Level0)
 {
     bool errCode = false;
     MediaAsset mediaAsset;
@@ -66,7 +76,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_001, TestSiz
  * EnvConditions: NA
  * CaseDescription: Create media audio asset in ROOT_DIR=/data/media directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_002, TestSize.Level1)
 {
     bool errCode = false;
     MediaAsset mediaAsset;
@@ -76,6 +86,10 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_002, TestSiz
     mediaAsset.albumName_ = "";
     if (mediaLibClientInstance != nullptr) {
         errCode = mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
+
+        // clearing the file created
+        mediaAsset.uri_ = "/data/media/gtest_002_audio.mp3";
+        (void)mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -87,7 +101,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_002, TestSiz
  * EnvConditions: NA
  * CaseDescription: Get audio assets prsent in particalar directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetAudioAssets_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetAudioAssets_testlevel0_001, TestSize.Level0)
 {
     vector<unique_ptr<AudioAsset>> audioAssetList;
     unsigned int size = 0;
@@ -114,7 +128,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetAudioAssets_test_001, TestSize.
  * EnvConditions: NA
  * CaseDescription: Get audio assets from ROOT_DIR=/data/media directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetAudioAssets_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetAudioAssets_test_002, TestSize.Level1)
 {
     vector<unique_ptr<AudioAsset>> audioAssetList;
     unsigned int size = 0;
@@ -135,7 +149,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetAudioAssets_test_002, TestSize.
  * EnvConditions: NA
  * CaseDescription: Create media video asset in requested directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_003, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_testlevel0_003, TestSize.Level0)
 {
     bool errCode = false;
     MediaAsset mediaAsset;
@@ -157,7 +171,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_003, TestSiz
  * EnvConditions: NA
  * CaseDescription: Create media video sset in ROOT_DIR=/data/media directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_004, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_004, TestSize.Level1)
 {
     bool errCode = false;
     MediaAsset mediaAsset;
@@ -167,6 +181,10 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_004, TestSiz
     mediaAsset.albumName_ = "";
     if (mediaLibClientInstance != nullptr) {
         errCode = mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
+
+        // clearing the file created
+        mediaAsset.uri_ = "/data/media/test_002_video.mp4";
+        (void)mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -179,7 +197,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_004, TestSiz
  * EnvConditions: NA
  * CaseDescription: Get video assets present in particalar directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetVideoAssets_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAssets_testlevel0_001, TestSize.Level0)
 {
     vector<unique_ptr<VideoAsset>> videoAssetList;
     unsigned int size = 0;
@@ -206,7 +224,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetVideoAssets_test_001, TestSize.
  * EnvConditions: NA
  * CaseDescription: Get video assets from ROOT_DIR=/data/media directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetVideoAssets_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAssets_test_002, TestSize.Level1)
 {
     vector<unique_ptr<VideoAsset>> videoAssetList;
     unsigned int size = 0;
@@ -227,7 +245,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetVideoAssets_test_002, TestSize.
  * EnvConditions: NA
  * CaseDescription: Create media image asset in requested directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_005, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_testlevel0_005, TestSize.Level0)
 {
     bool errCode = false;
     MediaAsset mediaAsset;
@@ -249,7 +267,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_005, TestSiz
  * EnvConditions: NA
  * CaseDescription: Create media image asset in ROOT_DIR=/data/media directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_006, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_006, TestSize.Level1)
 {
     bool errCode = false;
     MediaAsset mediaAsset;
@@ -259,6 +277,10 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_006, TestSiz
     mediaAsset.albumName_ = "";
     if (mediaLibClientInstance != nullptr) {
         errCode = mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
+
+        // clearing the file created
+        mediaAsset.uri_ = "/data/media/test_003_image.jpg";
+        (void)mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -271,7 +293,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_006, TestSiz
  * EnvConditions: NA
  * CaseDescription: Create existing media asset in requested directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_007, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_007, TestSize.Level1)
 {
     bool errCode = true;
     MediaAsset mediaAsset;
@@ -293,7 +315,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAsset_test_007, TestSiz
  * EnvConditions: NA
  * CaseDescription: Get image assets present in particalar directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetImageAssets_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAssets_testlevel0_001, TestSize.Level0)
 {
     vector<unique_ptr<ImageAsset>> imageAssetList;
     unsigned int size = 0;
@@ -320,7 +342,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetImageAssets_test_001, TestSize.
  * EnvConditions: NA
  * CaseDescription: Get image assets from ROOT_DIR=/data/media directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetImageAssets_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAssets_test_002, TestSize.Level1)
 {
     vector<unique_ptr<ImageAsset>> imageAssetList;
     unsigned int size = 0;
@@ -341,7 +363,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetImageAssets_test_002, TestSize.
  * EnvConditions: NA
  * CaseDescription: Get media assets present in particalar directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetMediaAssets_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetMediaAssets_testlevel0_001, TestSize.Level0)
 {
     vector<unique_ptr<MediaAsset>> mediaAssetList;
     unsigned int size = 0;
@@ -368,7 +390,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetMediaAssets_test_001, TestSize.
  * EnvConditions: NA
  * CaseDescription: Get media assets from ROOT_DIR=/data/media directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetMediaAssets_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetMediaAssets_test_002, TestSize.Level1)
 {
     vector<unique_ptr<MediaAsset>> mediaAssetList;
     unsigned int size = 0;
@@ -389,7 +411,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetMediaAssets_test_002, TestSize.
  * EnvConditions: NA
  * CaseDescription: Get image media assets present in particalar directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetIMageAlbumAssets_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetIMageAlbumAssets_testlevel0_001, TestSize.Level0)
 {
     vector<unique_ptr<AlbumAsset>> albumAssetList;
     unsigned int size = 0;
@@ -416,7 +438,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetIMageAlbumAssets_test_001, Test
  * EnvConditions: NA
  * CaseDescription: Get image album assets from ROOT_DIR=/data/media/ directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetImageAlbumAssets_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAlbumAssets_test_002, TestSize.Level1)
 {
     vector<unique_ptr<AlbumAsset>> albumAssetList;
     unsigned int size = 0;
@@ -426,7 +448,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetImageAlbumAssets_test_002, Test
     if (mediaLibClientInstance != nullptr) {
         albumAssetList = mediaLibClientInstance->GetImageAlbumAssets(dirPath, selectionArgs);
     }
-    EXPECT_NE(albumAssetList.size(), size);
+    EXPECT_EQ(albumAssetList.size(), size);
 }
 
 /*
@@ -437,7 +459,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetImageAlbumAssets_test_002, Test
  * EnvConditions: NA
  * CaseDescription: Get video media assets present in particalar directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetVideoAlbumAssets_test_003, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAlbumAssets_testlevel0_003, TestSize.Level0)
 {
     vector<unique_ptr<AlbumAsset>> albumAssetList;
     unsigned int size = 0;
@@ -464,7 +486,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetVideoAlbumAssets_test_003, Test
  * EnvConditions: NA
  * CaseDescription: Get video album assets from ROOT_DIR=/data/media directory and subdirectories.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_GetVideoAlbumAssets_test_004, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAlbumAssets_test_004, TestSize.Level1)
 {
     vector<unique_ptr<AlbumAsset>> albumAssetList;
     unsigned int size = 0;
@@ -474,7 +496,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetVideoAlbumAssets_test_004, Test
     if (mediaLibClientInstance != nullptr) {
         albumAssetList = mediaLibClientInstance->GetVideoAlbumAssets(dirPath, selectionArgs);
     }
-    EXPECT_NE(albumAssetList.size(), size);
+    EXPECT_EQ(albumAssetList.size(), size);
 }
 
 /*
@@ -485,7 +507,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_GetVideoAlbumAssets_test_004, Test
  * EnvConditions: NA
  * CaseDescription: Modify media audio asset in requested directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAsset_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAsset_testlevel0_001, TestSize.Level0)
 {
     bool errCode = false;
     MediaAsset srcMediaAsset;
@@ -510,7 +532,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAsset_test_001, TestSiz
  * EnvConditions: NA
  * CaseDescription: Modify media audio mp3 file to wav in requested directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAsset_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAsset_test_002, TestSize.Level1)
 {
     bool errCode = true;
     MediaAsset srcMediaAsset;
@@ -535,7 +557,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAsset_test_002, TestSiz
  * EnvConditions: NA
  * CaseDescription: Modify media audio asset  in requested non existing directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAsset_test_003, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAsset_test_003, TestSize.Level1)
 {
     bool errCode = false;
     MediaAsset srcMediaAsset;
@@ -560,13 +582,13 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAsset_test_003, TestSiz
  * EnvConditions: NA
  * CaseDescription: copy media asset to requested new directory, which gets created.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CopyMediaAsset_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_testlevel0_001, TestSize.Level0)
 {
     bool errCode = false;
     MediaAsset srcMediaAsset;
     MediaAsset dstMediaAsset;
     AssetType assetType = ASSET_AUDIO;
-    // copy to requested ablumName
+    // copy to requested albumName
     srcMediaAsset.name_ = "test_001_audio_modify.mp3";
     srcMediaAsset.uri_ = "/data/media/gtest/001/audio/test_001_audio_modify.mp3";
     dstMediaAsset.albumName_ = "gtest/001/copyaudio";
@@ -584,16 +606,16 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CopyMediaAsset_test_001, TestSize.
  * EnvConditions: NA
  * CaseDescription: copy media asset to requested non existing directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CopyMediaAsset_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_testlevel0_002, TestSize.Level0)
 {
     bool errCode = false;
     MediaAsset srcMediaAsset;
     MediaAsset dstMediaAsset;
     AssetType assetType = ASSET_IMAGE;
-    // create and Copy to requested ablumName
+    // create and Copy to requested albumName
     srcMediaAsset.name_ = "test_003_image.jpg";
     srcMediaAsset.uri_ = "/data/media/gtest/003/image/test_003_image.jpg";
-    dstMediaAsset.albumName_ = "copyjpg/001/image";
+    dstMediaAsset.albumName_ = "gtest/copyjpg/001/image";
     if (mediaLibClientInstance != nullptr) {
         errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     }
@@ -608,7 +630,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CopyMediaAsset_test_002, TestSize.
  * EnvConditions: NA
  * CaseDescription: copy media asset to ROOT_DIR=/data/media directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CopyMediaAsset_test_003, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_test_003, TestSize.Level1)
 {
     bool errCode = false;
     MediaAsset srcMediaAsset;
@@ -632,7 +654,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CopyMediaAsset_test_003, TestSize.
  * EnvConditions: NA
  * CaseDescription: copy media asset in requested directory without source file name .
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CopyMediaAsset_test_004, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_test_004, TestSize.Level1)
 {
     bool errCode = false;
     MediaAsset srcMediaAsset;
@@ -656,7 +678,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CopyMediaAsset_test_004, TestSize.
  * EnvConditions: NA
  * CaseDescription: Delete media audio asset from requested directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAsset_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAsset_testlevel0_001, TestSize.Level0)
 {
     bool errCode = false;
     MediaAsset mediaAsset;
@@ -678,7 +700,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAsset_test_001, TestSiz
  * EnvConditions: NA
  * CaseDescription: Delete media video asset in requested directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAsset_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAsset_testlevel0_002, TestSize.Level0)
 {
     bool errCode = false;
     MediaAsset mediaAsset;
@@ -700,7 +722,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAsset_test_002, TestSiz
  * EnvConditions: NA
  * CaseDescription: Create media image asset in requested directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAsset_test_003, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAsset_testlevel0_003, TestSize.Level0)
 {
     bool errCode = false;
     MediaAsset mediaAsset;
@@ -722,7 +744,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAsset_test_003, TestSiz
  * EnvConditions: NA
  * CaseDescription: Delete media asset from requested empty directory path
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAsset_test_004, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAsset_test_004, TestSize.Level1)
 {
     bool errCode = true;
     MediaAsset mediaAsset;
@@ -744,13 +766,13 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAsset_test_004, TestSiz
  * EnvConditions: NA
  * CaseDescription: Create album asset in requested directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAlbumAsset_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAlbumAsset_testlevel0_001, TestSize.Level0)
 {
     bool errCode = false;
     AlbumAsset albumAsset;
     AssetType assetType = ASSET_GENERIC_ALBUM;
 
-    albumAsset.albumName_ = "gtest/crtalbum001";
+    albumAsset.SetAlbumName("gtest/crtalbum001");
     if (mediaLibClientInstance != nullptr) {
         errCode = mediaLibClientInstance->CreateMediaAlbumAsset(assetType, albumAsset);
     }
@@ -765,7 +787,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_CreateMediaAlbumAsset_test_001, Te
  * EnvConditions: NA
  * CaseDescription: Modify image album asset from requested directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAlbumAsset_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAlbumAsset_testlevel0_001, TestSize.Level0)
 {
     bool errCode = false;
     AlbumAsset srcAlbumAsset;
@@ -773,9 +795,9 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAlbumAsset_test_001, Te
     string albumUri;
     AssetType assetType = ASSET_IMAGEALBUM;
 
-    srcAlbumAsset.albumName_ = "copyjpg/001/image";
-    dstAlbumAsset.albumName_ = "modify_image001";
-    albumUri = "/data/media/copyjpg/001/image";
+    srcAlbumAsset.SetAlbumName("gtest/copyjpg/001/image");
+    dstAlbumAsset.SetAlbumName("modify_image001");
+    albumUri = "/data/media/gtest/copyjpg/001/image";
     if (mediaLibClientInstance != nullptr) {
         errCode = mediaLibClientInstance->ModifyMediaAlbumAsset(assetType, srcAlbumAsset, dstAlbumAsset, albumUri);
     }
@@ -790,7 +812,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAlbumAsset_test_001, Te
  * EnvConditions: NA
  * CaseDescription: Modify image album asset in requested "non existing" directory.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAlbumAsset_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAlbumAsset_test_002, TestSize.Level1)
 {
     bool errCode = true;
     AlbumAsset srcAlbumAsset;
@@ -798,8 +820,8 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAlbumAsset_test_002, Te
     string albumUri;
     AssetType assetType = ASSET_IMAGEALBUM;
 
-    srcAlbumAsset.albumName_ = "test/album001";
-    dstAlbumAsset.albumName_ = "modify_album002";
+    srcAlbumAsset.SetAlbumName("test/album001");
+    dstAlbumAsset.SetAlbumName("modify_album002");
     albumUri = "/data/media/test2/album001";
     if (mediaLibClientInstance != nullptr) {
         errCode = mediaLibClientInstance->ModifyMediaAlbumAsset(assetType, srcAlbumAsset, dstAlbumAsset, albumUri);
@@ -815,7 +837,7 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_ModifyMediaAlbumAsset_test_002, Te
  * EnvConditions: NA
  * CaseDescription: Delete media album from requested directory path.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAlbumAsset_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAlbumAsset_testlevel0_001, TestSize.Level0)
 {
     bool errCode = false;
     AlbumAsset albumAsset;
@@ -823,8 +845,8 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAlbumAsset_test_001, Te
     struct stat statInfo {};
     AssetType assetType = ASSET_IMAGEALBUM;
 
-    albumAsset.albumName_ = "copyjpg/001/modify_image001";
-    albumUri = "/data/media/copyjpg/001/modify_image001";
+    albumAsset.SetAlbumName("gtest/copyjpg/001/modify_image001");
+    albumUri = "/data/media/gtest/copyjpg/001/modify_image001";
     if (stat(albumUri.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
             if (mediaLibClientInstance != nullptr) {
@@ -843,14 +865,14 @@ HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAlbumAsset_test_001, Te
  * EnvConditions: NA
  * CaseDescription: Delete media album from requested non existing path.
  */
-HWTEST_F(MediaLibraryModuleTest, medialibrary_DeleteMediaAlbumAsset_test_002, TestSize.Level1)
+HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAlbumAsset_test_002, TestSize.Level1)
 {
     bool errCode = true;
     AlbumAsset albumAsset;
     string albumUri;
     AssetType assetType = ASSET_IMAGEALBUM;
 
-    albumAsset.albumName_ = "gtest/modify_album001";
+    albumAsset.SetAlbumName("gtest/modify_album001");
     albumUri = "/data/media/test/modify_album002";
     if (mediaLibClientInstance != nullptr) {
         errCode = mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);

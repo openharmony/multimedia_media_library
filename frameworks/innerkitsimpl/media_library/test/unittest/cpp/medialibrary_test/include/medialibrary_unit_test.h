@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_MODULE_TEST_H
-#define MEDIALIBRARY_MODULE_TEST_H
+#ifndef MEDIALIBRARY_UNIT_TEST_H
+#define MEDIALIBRARY_UNIT_TEST_H
 
 #include "gtest/gtest.h"
 #include "IMediaLibraryClient.h"
@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryModuleTest : public testing::Test {
+class MediaLibraryUnitTest : public testing::Test {
 public:
     /* SetUpTestCase:The preset action of the test suite is executed before the first TestCase */
     static void SetUpTestCase(void);
@@ -38,4 +38,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIALIBRARY_MODULE_TEST_H
+#endif // MEDIALIBRARY_UNIT_TEST_H

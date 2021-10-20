@@ -14,6 +14,9 @@
         "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_ability:medialibrary_data_ability",
         "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/media_scanner_ability:media_scanner_service",
         "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/client:media_scanner_client"
+      ],
+      "test_list": [
+        "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library/test:medialib_unit_test"
       ]
     }
   }
