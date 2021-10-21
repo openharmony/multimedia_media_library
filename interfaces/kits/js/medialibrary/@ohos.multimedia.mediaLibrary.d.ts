@@ -23,7 +23,11 @@ declare namespace mediaLibrary {
      * @return Instance of MediaLibraryHelper
      * @version1
      */
-    function getMediaLibraryHelper(): MediaLibraryHelper;
+    function getMediaLibrary(): MediaLibrary;
+
+    // OLD API for getting the Media Library instance. This will be deprecated
+    // once all applications have migrated to using new API
+    function getMediaLibraryHelper(): MediaLibrary;
 
     /**
      * Enumeration types for different kind of Media Files
@@ -31,17 +35,23 @@ declare namespace mediaLibrary {
      * @version1
      */
     enum MediaType {
-        DEFAULT = 0,
+        DEFAULT = 0,            // OLD API
         FILE,
-        MEDIA,
+        MEDIA,                  // OLD API
         IMAGE,
         VIDEO,
         AUDIO,
-        ALBUM_LIST,
-        ALBUM_LIST_INFO
+        ALBUM_LIST,             // OLD API
+        ALBUM_LIST_INFO         // OLD API
+    }
+
+    enum ErrorCode {
+        ERR_FAIL = -1,
+        ERR_SUCCESS = 0
     }
 
     /**
+     * OLD API
      * Defines the media asset.
      *
      * @SysCap SystemCapability.Multimedia.MediaLibrary
@@ -134,6 +144,7 @@ declare namespace mediaLibrary {
     }
 
     /**
+     * OLD API
      * Defines the audio asset.
      *
      * @SysCap SystemCapability.Multimedia.MediaLibrary
@@ -148,6 +159,7 @@ declare namespace mediaLibrary {
     }
 
     /**
+     * OLD API
      * Defines the video asset.
      *
      * @SysCap SystemCapability.Multimedia.MediaLibrary
@@ -162,6 +174,7 @@ declare namespace mediaLibrary {
     }
 
     /**
+     * OLD API
      * Defines the image asset.
      *
      * @SysCap SystemCapability.Multimedia.MediaLibrary
@@ -182,10 +195,22 @@ declare namespace mediaLibrary {
      * @version 1
      */
     export interface Album {
-        albumName : string;
-        albumId : number;
+        albumId?: number;
+        albumName: string;
+
+        virtual: boolean;
+
+        path?: string;
+        relativePath: string;
+
+        dateModified?: number;
+
+        // get all FileAssets in each album
+        getFileAssets(options: MediaFetchOptions, callback: AsyncCallback<FetchFileResult>): void;
+        getFileAssets(options: MediaFetchOptions): Promise<FetchFileResult>;
 
         /**
+         * OLD API
          * Gets all video assets in album.
          *
          * @return Returns video assets list as asynchronous response
@@ -195,6 +220,7 @@ declare namespace mediaLibrary {
         getVideoAssets(callback: AsyncCallback<VideoAssets>): void;
 
         /**
+         * OLD API
          * Gets all image assets in album.
          *
          * @return Returns image assets list as asynchronous response
@@ -204,6 +230,7 @@ declare namespace mediaLibrary {
         getImageAssets(callback: AsyncCallback<ImageAssets>): void;
 
         /**
+         * OLD API
          * Commit the creation of an album
          *
          * @return Returns whether creation of an album was committed or not
@@ -213,6 +240,7 @@ declare namespace mediaLibrary {
         commitCreate(): Promise<boolean>;
 
         /**
+         * OLD API
          * Delete an album
          *
          * @return Returns whether deletion of an album was successful or not
@@ -222,6 +250,7 @@ declare namespace mediaLibrary {
         commitDelete(): Promise<boolean>;
 
         /**
+         * OLD API
          * Commit the modification of an album
          *
          * @return Returns whether modification of an album was committed or not
@@ -229,6 +258,56 @@ declare namespace mediaLibrary {
          */
         commitModify(callback: AsyncCallback<boolean>): void;
         commitModify(): Promise<boolean>;
+    }
+
+    interface FileAsset {
+        id?: number;
+        uri?: string;
+        thumbnailUri?: string;
+
+        path?: string;
+        relativePath: string;
+
+        mimeType?: string;
+        mediaType: MediaType;
+
+        displayName: string;
+        size?: number;
+
+        dateAdded?: number;
+        dateModified?: number;
+
+        // audio
+        title?: string;
+        artist?: string;
+        album?: string;
+
+        // image & video
+        width?: number;
+        height?: number;
+        duration?: number;
+        orientation?: number;
+
+        // album
+        albumId?: number;
+        albumName?: string;
+    }
+
+    enum FileKey {
+        ID = "id",
+        PATH = "path",
+        RELATIVE_PATH = "relative_path",
+        MIME_TYPE = "mime_type",
+        MEDIA_TYPE = "media_type",
+        DISPLAY_NAME = "display_name",
+        SIZE = "size",
+        DATE_ADDED = "date_added",
+        DATE_MODIFIED = "date_modified",
+        TITLE = "title",
+        ARTIST = "artist",
+        ALBUM = "album",
+        ALBUM_ID = "album_id",
+        ALBUM_NAME = "album_name",
     }
 
     /**
@@ -239,15 +318,48 @@ declare namespace mediaLibrary {
     export interface MediaFetchOptions {
         selections: string;
         selectionArgs: Array<string>;
+        order: string;
     }
 
-    type MediaAssets = Array<Readonly<MediaAsset>>;
+    interface FetchFileResult {
+        // get count
+        getCount(): number;
 
-    type AudioAssets = Array<Readonly<AudioAsset>>;
+        // is after the last
+        isAfterLast(): boolean;
 
-    type VideoAssets = Array<Readonly<VideoAsset>>;
+        // get the first FileAsset from the results
+        getFirstObject(callback: AsyncCallback<FileAsset>): void;
+        getFirstObject(): Promise<FileAsset>;
 
-    type ImageAssets = Array<Readonly<ImageAsset>>;
+        // get the next FileAsset from the results
+        getNextObject(callback: AsyncCallback<FileAsset>): void;
+        getNextObject(): Promise<FileAsset>;
+
+        // get the last FileAsset from the results
+        getLastObject(callback: AsyncCallback<FileAsset>): void;
+        getLastObject(): Promise<FileAsset>;
+
+        // get the FileAsset at the posion from the results
+        getPositionObject(index: number, callback: AsyncCallback<FileAsset>): void;
+        getPositionObject(index: number): Promise<FileAsset>;
+
+        // query for all asset at a time and return an array
+        getAllObject(callback: AsyncCallback<Array<FileAsset>>): void;
+        getAllObject(): Promise<Array<FileAsset>>;
+    }
+
+    interface MediaChangeListener {
+        mediaType: MediaType;
+    }
+
+    type MediaAssets = Array<Readonly<MediaAsset>>;    // OLD API
+
+    type AudioAssets = Array<Readonly<AudioAsset>>;    // OLD API
+
+    type VideoAssets = Array<Readonly<VideoAsset>>;    // OLD API
+
+    type ImageAssets = Array<Readonly<ImageAsset>>;    // OLD API
 
     type Albums = Array<Readonly<Album>>;
 
@@ -258,9 +370,51 @@ declare namespace mediaLibrary {
      * @devices common
      * @version 1
      */
-    export class MediaLibraryHelper {
+    export class MediaLibrary {
+
+        // query all assets just for count & first cover
+        // if need all data, getAllObject from FetchFileResult
+        getFileAssets(options: MediaFetchOptions, callback: AsyncCallback<FetchFileResult>): void;
+        getFileAssets(options: MediaFetchOptions): Promise<FetchFileResult>;
+
+        // query an entity album
+        getAlbums(options: MediaFetchOptions, callback: AsyncCallback<Array<Album>>): void;
+        getAlbums(options: MediaFetchOptions): Promise<Array<Album>>;
+
+        // subscribe a media change, can be a combination of each MediaType
+        on(type: 'image' | 'video' | 'audio' | 'file', callback: AsyncCallback<MediaChangeListener>): void;
+
+        // unsubscribe a media change
+        off(type: 'image' | 'video' | 'audio' | 'file', callback?: AsyncCallback<MediaChangeListener>): void;
+
+        // file operation
+        createAsset(targetAsset: FileAsset, callback: AsyncCallback<string>): void;
+        createAsset(targetAsset: FileAsset): Promise<string>;
+
+        modifyAsset(uri: string, targetAsset: FileAsset, callback: AsyncCallback<ErrorCode>): void;
+        modifyAsset(uri: string, targetAsset: FileAsset): Promise<ErrorCode>;
+
+        deleteAsset(uri: string, callback: AsyncCallback<ErrorCode>): void;
+        deleteAsset(uri: string): Promise<ErrorCode>;
+
+        openAsset(uri: string, mode: string, callback: AsyncCallback<number>): void;
+        openAsset(uri: string, mode: string): Promise<number>;
+
+        closeAsset(uri: string, fd: number, callback: AsyncCallback<ErrorCode>): void;
+        closeAsset(uri: string, fd: number): Promise<ErrorCode>;
+
+        // album operation
+        createNewAlbum(targetAlbum: Album, callback: AsyncCallback<number>): void;
+        createNewAlbum(targetAlbum: Album): Promise<number>;
+
+        modifyAlbum(albumId: number, targetAlbum: Album, callback: AsyncCallback<ErrorCode>): void;
+        modifyAlbum(albumId: number, targetAlbum: Album): Promise<ErrorCode>;
+
+        deleteAlbum(albumId: number, callback: AsyncCallback<ErrorCode>): void;
+        deleteAlbum(albumId: number): Promise<ErrorCode>;
 
         /**
+         * OLD API
          * Gets all media assets from system.
          *
          * @param options Fetch options with selection strings based on which to select the media assets
@@ -272,6 +426,7 @@ declare namespace mediaLibrary {
         getMediaAssets(options?: MediaFetchOptions): Promise<MediaAssets>;
 
         /**
+         * OLD API
          * Gets all audio assets from system.
          *
          * @param options Fetch options with selection strings based on which to select the audio assets
@@ -283,6 +438,7 @@ declare namespace mediaLibrary {
         getAudioAssets(options?: MediaFetchOptions): Promise<AudioAssets>;
 
         /**
+         * OLD API
          * Gets all video assets from system.
          *
          * @param options Fetch options with selection strings based on which to select the video assets
@@ -294,6 +450,7 @@ declare namespace mediaLibrary {
         getVideoAssets(options?: MediaFetchOptions): Promise<VideoAssets>;
 
         /**
+         * OLD API
          * Gets all image assets from system.
          *
          * @param options Fetch options with selection strings based on which to select the image assets
@@ -305,6 +462,7 @@ declare namespace mediaLibrary {
         getImageAssets(options?: MediaFetchOptions): Promise<ImageAssets>;
 
         /**
+         * OLD API
          * Gets video album from system
          *
          * @param options Fetch options with selection strings based on which to select the albums
@@ -315,6 +473,7 @@ declare namespace mediaLibrary {
         getVideoAlbums(options: MediaFetchOptions): Promise<Albums>;
 
         /**
+         * OLD API
          * Gets image album from system
          *
          * @param options Fetch options with selection strings based on which to select the albums
@@ -325,6 +484,7 @@ declare namespace mediaLibrary {
         getImageAlbums(options: MediaFetchOptions): Promise<Albums>;
 
         /**
+         * OLD API
          * Create a video asset with empty properties
          *
          * @return Returns a video asset as asynchronous response
@@ -334,6 +494,7 @@ declare namespace mediaLibrary {
         createVideoAsset(): Promise<VideoAsset>;
 
         /**
+         * OLD API
          * Create an image asset with empty properties
          *
          * @return Returns an image asset as asynchronous response
@@ -343,6 +504,7 @@ declare namespace mediaLibrary {
         createImageAsset(): Promise<ImageAsset>;
 
         /**
+         * OLD API
          * Create an audio asset with empty properties
          *
          * @return Returns an audio asset as asynchronous response
@@ -352,6 +514,7 @@ declare namespace mediaLibrary {
         createAudioAsset(): Promise<AudioAsset>;
 
         /**
+         * OLD API
          * Create an album with empty properties
          *
          * @return Returns an album as asynchronous response
@@ -359,5 +522,68 @@ declare namespace mediaLibrary {
          */
         createAlbum(callback: AsyncCallback<Album>): void;
         createAlbum(): Promise<Album>;
+    }
+
+    enum MetadataCode {
+        AV_KEY_CD_TRACK_NUMBER = 0,
+        AV_KEY_ALBUM = 1,
+        AV_KEY_ARTIST = 2,
+        AV_KEY_AUTHOR = 3,
+        AV_KEY_COMPOSER = 4,
+        AV_KEY_DATE = 5,
+        AV_KEY_GENRE = 6,
+        AV_KEY_TITLE = 7,
+        AV_KEY_YEAR = 8,
+        AV_KEY_DURATION = 9,
+        AV_KEY_NUM_TRACKS = 10,
+        AV_KEY_WRITER = 11,
+        AV_KEY_MIME_TYPE = 12,
+        AV_KEY_ALBUM_ARTIST = 13,
+        AV_KEY_DISC_NUMBER = 14,
+        AV_KEY_COMPILATION = 15,
+        AV_KEY_HAS_AUDIO = 16,
+        AV_KEY_HAS_VIDEO = 17,
+        AV_KEY_VIDEO_WIDTH = 18,
+        AV_KEY_VIDEO_HEIGHT = 19,
+        AV_KEY_BITRATE = 20,
+        AV_KEY_TIMED_TEXT_LANGUAGES = 21,
+        AV_KEY_IS_DRM = 22,
+        AV_KEY_LOCATION = 23,
+        AV_KEY_VIDEO_ROTATION = 24,
+        AV_KEY_CAPTURE_FRAMERATE = 25,
+        AV_KEY_HAS_IMAGE = 26,
+        AV_KEY_IMAGE_COUNT = 27,
+        AV_KEY_IMAGE_PRIMARY = 28,
+        AV_KEY_IMAGE_WIDTH = 29,
+        AV_KEY_IMAGE_HEIGHT = 30,
+        AV_KEY_IMAGE_ROTATION = 31,
+        AV_KEY_VIDEO_FRAME_COUNT = 32,
+        AV_KEY_EXIF_OFFSET = 33,
+        AV_KEY_EXIF_LENGTH = 34,
+        AV_KEY_COLOR_STANDARD = 35,
+        AV_KEY_COLOR_TRANSFER = 36,
+        AV_KEY_COLOR_RANGE = 37,
+        AV_KEY_SAMPLE_RATE = 38,
+        AV_KEY_BITS_PER_SAMPLE = 39,
+    }
+
+    function getAVMetadataHelper(): AVMetadataHelper;
+
+    interface AVMetadataHelper {
+        // set source by string, string like dataability:///external/media
+        setSource(uri: string, callback: AsyncCallback<void>): void;
+        setSource(uri: string): Promise<void>;
+
+        // fetch video frame pixelmap by time
+        fetchVideoPixelMapByTime(timeMs: number, callback: AsyncCallback<image.PixelMap>): void;
+        fetchVideoPixelMapByTime(timeMs: number): Promise<image.PixelMap>;
+
+        // fetch metadata
+        resolveMetadata(key: MetadataCode, callback: AsyncCallback<string>): void;
+        resolveMetadata(key: MetadataCode): Promise<string>;
+
+        // release
+        release(callback: AsyncCallback<void>): void;
+        release(): Promise<void>;
     }
 }
