@@ -737,7 +737,7 @@ napi_value FileAssetNapi::JSGetDuration(napi_env env, napi_callback_info info)
 void FileAssetNapi::UpdateFileAssetInfo()
 {
     fileId_ = sFileAsset_->GetId();
-    fileUri_ = sFileAsset_->GetUri();
+    fileUri_ = sFileAsset_->GetUri() + "/" + std::to_string(fileId_);
     filePath_ = sFileAsset_->GetPath();
     displayName_ = sFileAsset_->GetDisplayName();
     mimeType_ = sFileAsset_->GetMimeType();
