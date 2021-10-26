@@ -119,7 +119,8 @@ private:
     static void MediaLibraryNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value MediaLibraryNapiConstructor(napi_env env, napi_callback_info info);
 
-    static napi_value GetMediaLibraryInstance(napi_env env, napi_callback_info info);
+    static napi_value GetMediaLibraryNewInstance(napi_env env, napi_callback_info info);
+    static napi_value GetMediaLibraryOldInstance(napi_env env, napi_callback_info info);
     static napi_value GetMediaAssets(napi_env env, napi_callback_info info);
     static napi_value GetAudioAssets(napi_env env, napi_callback_info info);
     static napi_value GetVideoAssets(napi_env env, napi_callback_info info);
