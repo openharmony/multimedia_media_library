@@ -19,33 +19,29 @@ MEDIA_LIB_TEST_DIR = "$MEDIA_LIB_INNERKITS_DIR/media_library/media_library/test/
 
 module_output_path = "medialibrary/gtest"
 
-group("moduletest") {
-    testonly = true
+group("medialibrary_unit_test") {
+  testonly = true
 
-    deps = [
-      ":medialibrary_test",
-    ]
+  deps = [ ":medialibrary_test" ]
 }
 
-ohos_moduletest("medialibrary_test") {
-    module_out_path = module_output_path
-    include_dirs = [
-        "./inc",
-        "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
-        "$MEDIA_LIB_INNERKITS_DIR/media_library/include/",
-        "$MEDIA_LIB_TEST_DIR/moduletest/cpp/medialibrary_test/inc/",
-        "//base/hiviewdfx/hilog/interfaces/native/innerkits/include/",
-        "//utils/native/base/include"
-    ]
+ohos_unittest("medialibrary_test") {
+  module_out_path = module_output_path
+  include_dirs = [
+    "./include",
+    "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
+    "$MEDIA_LIB_INNERKITS_DIR/media_library/include/",
+    "$MEDIA_LIB_TEST_DIR/unittest/cpp/medialibrary_test/include/",
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include/",
+    "//utils/native/base/include",
+  ]
 
-    sources = [
-      "src/medialibrary_module_test.cpp"
-    ]
+  sources = [ "src/medialibrary_unit_test.cpp" ]
 
-    deps = [
-        "$MEDIA_LIB_INNERKITS_DIR/medialibrary_proxy:medialibrary_proxy",
-        "$MEDIA_LIB_INNERKITS_DIR/media_library:media_library",
-        "//utils/native/base:utils",
-        "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog"
-    ]
+  deps = [
+    "$MEDIA_LIB_INNERKITS_DIR/media_library:media_library",
+    "$MEDIA_LIB_BASE_DIR/services/media_library_service:medialibrary_proxy",
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
+    "//utils/native/base:utils",
+  ]
 }

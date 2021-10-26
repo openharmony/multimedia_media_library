@@ -11,11 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-group("medialib_module_test") {
-    testonly = true
+group("medialib_unit_test") {
+  testonly = true
 
-    deps = [
-        "moduletest/cpp/medialibrary_test:moduletest",
-    ]
+  deps = [ "unittest/cpp/medialibrary_test:medialibrary_unit_test" ]
 }
-
