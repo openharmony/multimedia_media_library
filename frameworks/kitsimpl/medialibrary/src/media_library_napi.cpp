@@ -28,6 +28,7 @@ namespace {
 
 namespace OHOS {
 unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
+bool g_isNewApi = false;
 
 napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
@@ -75,7 +76,7 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("deleteAsset", JSDeleteAsset),
         DECLARE_NAPI_FUNCTION("openAsset", JSOpenAsset),
         DECLARE_NAPI_FUNCTION("closeAsset", JSCloseAsset),
-        DECLARE_NAPI_FUNCTION("createAlbum", JSCreateAlbum),
+        DECLARE_NAPI_FUNCTION("createNewAlbum", JSCreateAlbum),
         DECLARE_NAPI_FUNCTION("modifyAlbum", JSModifyAlbum),
         DECLARE_NAPI_FUNCTION("deleteAlbum", JSDeleteAlbum),
         DECLARE_NAPI_FUNCTION("on", JSOnCallback),
@@ -83,8 +84,8 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
     };
 
     napi_property_descriptor static_prop[] = {
-        DECLARE_NAPI_STATIC_FUNCTION("getMediaLibrary", GetMediaLibraryInstance),
-        DECLARE_NAPI_STATIC_FUNCTION("getMediaLibraryHelper", GetMediaLibraryInstance),
+        DECLARE_NAPI_STATIC_FUNCTION("getMediaLibrary", GetMediaLibraryNewInstance),
+        DECLARE_NAPI_STATIC_FUNCTION("getMediaLibraryHelper", GetMediaLibraryOldInstance),
         DECLARE_NAPI_PROPERTY("MediaType", CreateMediaTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("FileKey", CreateFileKeyEnum(env))
     };
@@ -156,11 +157,13 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
             obj->mediaLibrary_ = Media::IMediaLibraryClient::GetMediaLibraryClientInstance();
             CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->mediaLibrary_, result, "MediaLibrary instance creation failed");
 
-            // Initialize the ChangeListener object
-            g_listObj = make_unique<ChangeListenerNapi>(env);
+            if (g_isNewApi) {
+                // Initialize the ChangeListener object
+                g_listObj = make_unique<ChangeListenerNapi>(env);
 
-            obj->abilityHelper_ = GetDataAbilityHelper(env);
-            CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->abilityHelper_, result, "Helper creation failed in Query");
+                obj->abilityHelper_ = GetDataAbilityHelper(env);
+                CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->abilityHelper_, result, "Helper creation failed");
+            }
 
             status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
                                MediaLibraryNapi::MediaLibraryNapiDestructor, nullptr, &(obj->wrapper_));
@@ -176,7 +179,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     return result;
 }
 
-napi_value MediaLibraryNapi::GetMediaLibraryInstance(napi_env env, napi_callback_info info)
+napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -184,6 +187,28 @@ napi_value MediaLibraryNapi::GetMediaLibraryInstance(napi_env env, napi_callback
 
     status = napi_get_reference_value(env, sConstructor_, &ctor);
     if (status == napi_ok) {
+        g_isNewApi = true;
+        status = napi_new_instance(env, ctor, 0, nullptr, &result);
+        if (status == napi_ok) {
+            return result;
+        } else {
+            HiLog::Error(LABEL, "New instance could not be obtained");
+        }
+    }
+
+    napi_get_undefined(env, &result);
+    return result;
+}
+
+napi_value MediaLibraryNapi::GetMediaLibraryOldInstance(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value result = nullptr;
+    napi_value ctor;
+
+    status = napi_get_reference_value(env, sConstructor_, &ctor);
+    if (status == napi_ok) {
+        g_isNewApi = false;
         status = napi_new_instance(env, ctor, 0, nullptr, &result);
         if (status == napi_ok) {
             return result;
