@@ -37,7 +37,6 @@ struct AVMetadataHelperAsyncContext {
     int32_t status = 0;
     int32_t key = 0;
     int32_t timeMs = 0;
-    int32_t intValue = 0;
     int32_t option = OHOS::Media::AV_META_QUERY_NEXT_SYNC;
     std::string valueStr = "";
     std::string uriStr = "";
@@ -45,6 +44,7 @@ struct AVMetadataHelperAsyncContext {
     OHOS::Media::PixelMapParams pixelMapParams;
     std::shared_ptr<OHOS::Media::AVMetadataHelper> nativeAVMetadataHelper = nullptr;
     AVMetadataHelperNapi *objectInfo = nullptr;
+    std::string debugInfo = "";
 };
 
 static std::string GetStringArgument(napi_env env, napi_value value)
@@ -73,26 +73,94 @@ static std::string GetStringArgument(napi_env env, napi_value value)
 static void CommonCallbackRoutine(napi_env env, AVMetadataHelperAsyncContext* &asyncContext,
     const napi_value &valueParam)
 {
-    napi_value result[1] = { nullptr };
+    constexpr int32_t paramCnt = 2;
+    napi_value result[paramCnt] = { nullptr };
     napi_value retVal;
 
     napi_get_undefined(env, &result[0]);
-    if (!asyncContext->status) {
+    napi_get_undefined(env, &result[1]);
+    if (asyncContext->status != 0) {
         result[0] = valueParam;
+    } else {
+        result[1] = valueParam;
     }
 
     if (asyncContext->deferred) {
-        napi_resolve_deferred(env, asyncContext->deferred, result[0]);
+        if (asyncContext->status != 0) {
+            napi_reject_deferred(env, asyncContext->deferred, result[0]);
+        } else {
+            napi_resolve_deferred(env, asyncContext->deferred, result[1]);
+        }
     } else {
         napi_value callback = nullptr;
         napi_get_reference_value(env, asyncContext->callbackRef, &callback);
-        napi_call_function(env, nullptr, callback, 1, result, &retVal);
+        napi_call_function(env, nullptr, callback, paramCnt, result, &retVal);
         napi_delete_reference(env, asyncContext->callbackRef);
     }
     napi_delete_async_work(env, asyncContext->work);
 
     delete asyncContext;
     asyncContext = nullptr;
+}
+
+static napi_status CreateError(napi_env env, int32_t errCode, const std::string &errMsg, napi_value &errVal)
+{
+    napi_get_undefined(env, &errVal);
+
+    napi_value msgValStr = nullptr;
+    napi_status nstatus = napi_create_string_utf8(env, errMsg.c_str(), NAPI_AUTO_LENGTH, &msgValStr);
+    if (nstatus != napi_ok || msgValStr == nullptr) {
+        HiLog::Error(LABEL, "create error message str fail");
+        return napi_invalid_arg;
+    }
+
+    nstatus = napi_create_error(env, nullptr, msgValStr, &errVal);
+    if (nstatus != napi_ok || errVal == nullptr) {
+        HiLog::Error(LABEL, "create error fail");
+        return napi_invalid_arg;
+    }
+
+    napi_value codeStr = nullptr;
+    nstatus = napi_create_string_utf8(env, "code", NAPI_AUTO_LENGTH, &codeStr);
+    if (nstatus != napi_ok || codeStr == nullptr) {
+        HiLog::Error(LABEL, "create code str fail");
+        return napi_invalid_arg;
+    }
+
+    napi_value errCodeVal = nullptr;
+    nstatus = napi_create_int32(env, errCode, &errCodeVal);
+    if (nstatus != napi_ok || errCodeVal == nullptr) {
+        HiLog::Error(LABEL, "create error code number val fail");
+        return napi_invalid_arg;
+    }
+
+    nstatus = napi_set_property(env, errVal, codeStr, errCodeVal);
+    if (nstatus != napi_ok) {
+        HiLog::Error(LABEL, "set error code property fail");
+        return napi_invalid_arg;
+    }
+
+    napi_value nameStr = nullptr;
+    nstatus = napi_create_string_utf8(env, "name", NAPI_AUTO_LENGTH, &nameStr);
+    if (nstatus != napi_ok || nameStr == nullptr) {
+        HiLog::Error(LABEL, "create name str fail");
+        return napi_invalid_arg;
+    }
+
+    napi_value errNameVal = nullptr;
+    nstatus = napi_create_string_utf8(env, "BusinessError", NAPI_AUTO_LENGTH, &errNameVal);
+    if (nstatus != napi_ok || errNameVal == nullptr) {
+        HiLog::Error(LABEL, "create BusinessError str fail");
+        return napi_invalid_arg;
+    }
+
+    nstatus = napi_set_property(env, errVal, nameStr, errNameVal);
+    if (nstatus != napi_ok) {
+        HiLog::Error(LABEL, "set error name property fail");
+        return napi_invalid_arg;
+    }
+
+    return napi_ok;
 }
 
 static void GetPixelMapAsyncCallbackComplete(napi_env env, napi_status status, void *data)
@@ -105,8 +173,17 @@ static void GetPixelMapAsyncCallbackComplete(napi_env env, napi_status status, v
         return;
     }
 
-    if (!asyncContext->status) {
-        valueParam = Media::PixelMapNapi::CreatePixelMap(env, asyncContext->pixelMap);
+    if (status == napi_ok) {
+        if (asyncContext->pixelMap != nullptr) {
+            valueParam = Media::PixelMapNapi::CreatePixelMap(env, asyncContext->pixelMap);
+            asyncContext->status = 0;
+        } else {
+            (void)CreateError(env, -1, "Failed to fetchPixelMap", valueParam);
+            asyncContext->status = -1;
+        }
+    } else {
+        (void)CreateError(env, -1, "Failed to fetchPixelMap", valueParam);
+        asyncContext->status = -1;
     }
     CommonCallbackRoutine(env, asyncContext, valueParam);
 }
@@ -115,15 +192,23 @@ static void SetFunctionAsyncCallbackComplete(napi_env env, napi_status status, v
 {
     auto asyncContext = static_cast<AVMetadataHelperAsyncContext*>(data);
     napi_value valueParam = nullptr;
+    napi_get_undefined(env, &valueParam);
 
     if (asyncContext == nullptr) {
         HiLog::Error(LABEL, "AVMetadataHelperAsyncContext is nullptr!");
         return;
     }
 
-    if (!asyncContext->status) {
-        napi_get_undefined(env, &valueParam);
+    HiLog::Info(LABEL, "async context status : %{public}d, status : %{public}d", asyncContext->status, status);
+    if (status == napi_ok) {
+        if (asyncContext->status != 0) {
+            (void)CreateError(env, -1, asyncContext->debugInfo, valueParam);
+        }
+    } else {
+        asyncContext->status = -1;
+        (void)CreateError(env, -1, asyncContext->debugInfo, valueParam);
     }
+
     CommonCallbackRoutine(env, asyncContext, valueParam);
 }
 
@@ -131,14 +216,27 @@ static void GetStringValueAsyncCallbackComplete(napi_env env, napi_status status
 {
     auto asyncContext = static_cast<AVMetadataHelperAsyncContext*>(data);
     napi_value valueParam = nullptr;
+    napi_get_undefined(env, &valueParam);
 
     if (asyncContext == nullptr) {
         HiLog::Error(LABEL, "AVMetadataHelperAsyncContext is nullptr!");
         return;
     }
 
-    if (!asyncContext->status) {
-        napi_create_string_utf8(env, asyncContext->valueStr.c_str(), NAPI_AUTO_LENGTH, &valueParam);
+    HiLog::Info(LABEL, "async context status : %{public}d, status : %{public}d", asyncContext->status, status);
+
+    if (status == napi_ok) {
+        status = napi_create_string_utf8(
+            env, asyncContext->valueStr.c_str(), NAPI_AUTO_LENGTH, &valueParam);
+        if (status != napi_ok) {
+            (void)CreateError(env, -1, "Failed to resolve metadata", valueParam);
+            asyncContext->status = -1;
+        } else {
+            asyncContext->status = 0;
+        }
+    } else {
+        (void)CreateError(env, -1, "Failed to resolve metadata", valueParam);
+        asyncContext->status = -1;
     }
     CommonCallbackRoutine(env, asyncContext, valueParam);
 }
@@ -333,13 +431,14 @@ napi_value AVMetadataHelperNapi::SetSource(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
     NAPI_CREATE_RESOURCE_NAME(env, resource, "SetSource");
 
+    asyncContext->debugInfo = std::string("Failed to set source: ") + asyncContext->uriStr;
     asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;
     status = napi_create_async_work(
         env, nullptr, resource,
         [](napi_env env, void *data) {
             auto context = static_cast<AVMetadataHelperAsyncContext*>(data);
             if (context->nativeAVMetadataHelper != nullptr) {
-                (void)context->nativeAVMetadataHelper->SetSource(context->uriStr);
+                context->status = context->nativeAVMetadataHelper->SetSource(context->uriStr);
             }
         },
         SetFunctionAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
@@ -399,6 +498,7 @@ napi_value AVMetadataHelperNapi::ResolveMetadata(napi_env env, napi_callback_inf
             auto context = static_cast<AVMetadataHelperAsyncContext*>(data);
             if (context->nativeAVMetadataHelper != nullptr) {
                 context->valueStr = context->nativeAVMetadataHelper->ResolveMetadata(context->key);
+                context->status = 0;
             }
         },
         GetStringValueAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
@@ -570,6 +670,7 @@ napi_value AVMetadataHelperNapi::Release(napi_env env, napi_callback_info info)
     napi_value resource = nullptr;
     NAPI_CREATE_RESOURCE_NAME(env, resource, "Release");
 
+    asyncContext->debugInfo = "Failed to release";
     asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;
     status = napi_create_async_work(
         env, nullptr, resource,
@@ -577,6 +678,7 @@ napi_value AVMetadataHelperNapi::Release(napi_env env, napi_callback_info info)
             auto context = static_cast<AVMetadataHelperAsyncContext*>(data);
             if (context->nativeAVMetadataHelper != nullptr) {
                 context->nativeAVMetadataHelper->Release();
+                context->status = 0;
             }
         },
         SetFunctionAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
