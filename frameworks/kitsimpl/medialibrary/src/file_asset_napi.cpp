@@ -259,7 +259,7 @@ napi_value FileAssetNapi::JSSetFilePath(napi_env env, napi_callback_info info)
     FileAssetNapi* obj = nullptr;
     napi_valuetype valueType = napi_undefined;
     size_t res = 0;
-    char buffer[SIZE];
+    char buffer[PATH_MAX];
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
@@ -276,7 +276,7 @@ napi_value FileAssetNapi::JSSetFilePath(napi_env env, napi_callback_info info)
             return undefinedResult;
         }
 
-        status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res);
+        status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, PATH_MAX, &res);
         if (status == napi_ok) {
             obj->filePath_ = string(buffer);
         }
@@ -316,7 +316,7 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
     FileAssetNapi* obj = nullptr;
     napi_valuetype valueType = napi_undefined;
     size_t res = 0;
-    char buffer[SIZE];
+    char buffer[FILENAME_MAX];
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
@@ -333,7 +333,7 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
             return undefinedResult;
         }
 
-        status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res);
+        status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
         if (status == napi_ok) {
             obj->displayName_ = string(buffer);
         }
@@ -737,7 +737,8 @@ napi_value FileAssetNapi::JSGetDuration(napi_env env, napi_callback_info info)
 void FileAssetNapi::UpdateFileAssetInfo()
 {
     fileId_ = sFileAsset_->GetId();
-    fileUri_ = sFileAsset_->GetUri() + "/" + std::to_string(fileId_);
+    string uri = sFileAsset_->GetUri();
+    fileUri_ = (!uri.empty()) ? (uri + "/" + std::to_string(fileId_)) : uri;
     filePath_ = sFileAsset_->GetPath();
     displayName_ = sFileAsset_->GetDisplayName();
     mimeType_ = sFileAsset_->GetMimeType();

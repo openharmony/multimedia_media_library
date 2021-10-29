@@ -20,7 +20,7 @@ namespace Media {
 MediaScannerOperationCallbackProxy::MediaScannerOperationCallbackProxy(const sptr<IRemoteObject> &impl)
     : IRemoteProxy<IMediaScannerOperationCallback>(impl) {}
 
-int32_t MediaScannerOperationCallbackProxy::OnScanFinishedCallback(int32_t status, const std::string &uri,
+int32_t MediaScannerOperationCallbackProxy::OnScanFinishedCallback(const int32_t status, const std::string &uri,
     const std::string &path)
 {
     MessageParcel data;

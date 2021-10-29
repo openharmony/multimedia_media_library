@@ -44,6 +44,7 @@ sptr<IRemoteObject> MediaScannerAbility::OnConnect(const Want &want)
 
 void MediaScannerAbility::OnDisconnect(const Want &want)
 {
+    MediaScanner::GetMediaScannerInstance()->ReleaseAbilityHelper();
     OHOS::AppExecFwk::Ability::OnDisconnect(want);
 }
 } // namespace Media

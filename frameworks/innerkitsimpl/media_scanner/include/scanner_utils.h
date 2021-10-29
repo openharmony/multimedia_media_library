@@ -38,29 +38,28 @@ enum ErrorCodes {
 };
 
 const std::string ROOT_PATH = "";
-const int32_t MAX_PATH_LENGTH = 200;
 const int32_t MAX_BATCH_SIZE = 5;
 
 // Const for File Metadata defaults
 const std::string FILE_PATH_DEFAULT = "";
-const std::string FILE_NAME_DEFAULT = "Unknown";
+const std::string FILE_NAME_DEFAULT = "";
 const int64_t FILE_SIZE_DEFAULT = 0;
 const std::string URI_DEFAULT = "";
 const int64_t FILE_DATE_ADDED_DEFAULT = 0;
 const int64_t FILE_DATE_MODIFIED_DEFAULT = 0;
 const MediaType FILE_MEDIA_TYPE_DEFAULT = MEDIA_TYPE_FILE;
-const int32_t FILE_ID_DEFAULT = -1;
+const int32_t FILE_ID_DEFAULT = 0;
 const std::string FILE_EXTENSION_DEFAULT = "";
 
 const int32_t FILE_DURATION_DEFAULT = 0;
-const std::string FILE_TITLE_DEFAULT = "Unknown";
-const std::string FILE_ARTIST_DEFAULT = "Unknown";
+const std::string FILE_TITLE_DEFAULT = "";
+const std::string FILE_ARTIST_DEFAULT = "";
 const int32_t FILE_HEIGHT_DEFAULT = 0;
 const int32_t FILE_WIDTH_DEFAULT = 0;
 const int32_t FILE_ALBUM_ID_DEFAULT = 0;
-const std::string FILE_ALBUM_NAME_DEFAULT = "Unknown";
+const std::string FILE_ALBUM_NAME_DEFAULT = "";
 const int32_t FILE_ORIENTATION_DEFAULT = 0;
-const std::string FILE_RELATIVE_PATH_DEFAULT = "Unknown";
+const std::string FILE_RELATIVE_PATH_DEFAULT = "";
 
 const std::string DEFAULT_AUDIO_MIME_TYPE = "audio/*";
 const std::string DEFAULT_VIDEO_MIME_TYPE = "video/*";

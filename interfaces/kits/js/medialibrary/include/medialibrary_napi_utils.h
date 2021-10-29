@@ -22,48 +22,48 @@
 #include "media_lib_service_const.h"
 #include "media_data_ability_const.h"
 
-#define GET_JS_ARGS(env, info, argc, argv, thisVar)                 \
-    do {                                                            \
-        void* data;                                                 \
-        napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);  \
+#define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \
+    do {                                                                    \
+        void* data;                                                         \
+        napi_get_cb_info(env, info, &(argc), argv, &(thisVar), &(data));    \
     } while (0)
 
-#define GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar)                       \
-    do {                                                                            \
-        void* data;                                                                 \
-        status = napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data);    \
+#define GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar)                           \
+    do {                                                                                \
+        void* data;                                                                     \
+        status = napi_get_cb_info(env, info, nullptr, nullptr, &(thisVar), &(data));    \
     } while (0)
 
-#define GET_JS_ASYNC_CB_REF(env, arg, count, cbRef)         \
-    do {                                                    \
-        napi_valuetype valueType = napi_undefined;          \
-        napi_typeof(env, arg, &valueType);                  \
-        if (valueType == napi_function) {                   \
-            napi_create_reference(env, arg, count, &cbRef); \
-        } else {                                            \
-            NAPI_ASSERT(env, false, "type mismatch");       \
-        }                                                   \
-    } while (0);
+#define GET_JS_ASYNC_CB_REF(env, arg, count, cbRef)                                             \
+    do {                                                                                        \
+        napi_valuetype valueType = napi_undefined;                                              \
+        if ((napi_typeof(env, arg, &valueType) == napi_ok) && (valueType == napi_function)) {   \
+            napi_create_reference(env, arg, count, &(cbRef));                                   \
+        } else {                                                                                \
+            HiLog::Error(LABEL, "invalid arguments");                                           \
+            NAPI_ASSERT(env, false, "type mismatch");                                           \
+        }                                                                                       \
+    } while (0)
 
 #define ASSERT_NULLPTR_CHECK(env, result)       \
     do {                                        \
-        if (result == nullptr) {                \
-            napi_get_undefined(env, &result);   \
+        if ((result) == nullptr) {              \
+            napi_get_undefined(env, &(result)); \
             return result;                      \
         }                                       \
-    } while (0);
+    } while (0)
 
 #define NAPI_CREATE_PROMISE(env, callbackRef, deferred, result)     \
     do {                                                            \
-        if (callbackRef == nullptr) {                               \
-            napi_create_promise(env, &deferred, &result);           \
+        if ((callbackRef) == nullptr) {                             \
+            napi_create_promise(env, &(deferred), &(result));       \
         }                                                           \
-    } while (0);
+    } while (0)
 
 #define NAPI_CREATE_RESOURCE_NAME(env, resource, resourceName)                      \
     do {                                                                            \
-        napi_create_string_utf8(env, resourceName, NAPI_AUTO_LENGTH, &resource);    \
-    } while (0);
+        napi_create_string_utf8(env, resourceName, NAPI_AUTO_LENGTH, &(resource));  \
+    } while (0)
 
 #define CHECK_NULL_PTR_RETURN_UNDEFINED(env, ptr, ret, message)     \
     do {                                                            \
@@ -82,7 +82,7 @@
         }                                          \
     } while (0)
 
-#define ASSERT_EQUAL(condition, errMsg)     \
+#define CHECK_IF_EQUAL(condition, errMsg)   \
     do {                                    \
         if (!(condition)) {                 \
             HiLog::Error(LABEL, errMsg);    \

@@ -26,9 +26,14 @@ namespace Media {
 enum ScanState : int32_t {
     SCAN_ERROR = -1,
     SCAN_SUCCESS,
+    SCAN_EMPTY_ARGS,
+    SCAN_NOT_ACCESSIBLE,
+    SCAN_INCORRECT_PATH,
+    SCAN_MEM_ALLOC_FAIL,
+    SCAN_MIMETYPE_NOTSUPPORT,
+    SCAN_SCAN_NOT_INIT,
     SCAN_SERVICE_NOT_READY,
-    SCAN_INV_CB_ERR,
-    SCAN_NO_MEMORY_ERR
+    SCAN_INV_CB_ERR
 };
 
 class IMediaScannerAppCallback {
@@ -36,12 +41,11 @@ public:
     virtual ~IMediaScannerAppCallback() = default;
 
     /**
-     * OnScanFinished will be executed when client recieves callback from service
-     * @param status Scan result code see {@link ScanState}
-     * @param uri File uri
-     * @param uri File path which was requested for scanning
-     * @since 1.0
-     * @version 1.0
+     * @brief OnScanFinished will be executed when client recieves callback from service after scan is finished/error
+     *
+     * @param status scan result
+     * @param uri file uri generated after database updation. For scanDir(), uri will be empty
+     * @param path The path which was requested for scanning
      */
     virtual void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) = 0;
 };
@@ -51,9 +55,8 @@ public:
     virtual ~IMediaScannerClient() = default;
 
     /**
-     * @brief Helps to connect to scanner service ability. Use scanner instance to call this API
+     * @brief Helps to release the current client instance from scanner service ability.
      *
-     * @return int32_t
      */
     virtual void Release() = 0;
 

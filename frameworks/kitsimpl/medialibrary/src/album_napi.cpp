@@ -242,8 +242,8 @@ napi_value AlbumNapi::JSAlbumNameSetter(napi_env env, napi_callback_info info)
     napi_value jsResult = nullptr;
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
-    size_t res;
-    char buffer[SIZE];
+    size_t res = 0;
+    char buffer[FILENAME_MAX];
     AlbumNapi* obj = nullptr;
     napi_value thisVar = nullptr;
     napi_valuetype valueType = napi_undefined;
@@ -258,7 +258,7 @@ napi_value AlbumNapi::JSAlbumNameSetter(napi_env env, napi_callback_info info)
         return jsResult;
     }
 
-    napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res);
+    napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
@@ -274,8 +274,8 @@ napi_value AlbumNapi::JSSetAlbumPath(napi_env env, napi_callback_info info)
     napi_value jsResult = nullptr;
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
-    size_t res;
-    char buffer[SIZE];
+    size_t res = 0;
+    char buffer[PATH_MAX];
     AlbumNapi* obj = nullptr;
     napi_value thisVar = nullptr;
     napi_valuetype valueType = napi_undefined;
@@ -290,7 +290,7 @@ napi_value AlbumNapi::JSSetAlbumPath(napi_env env, napi_callback_info info)
         return jsResult;
     }
 
-    napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res);
+    napi_get_value_string_utf8(env, argv[PARAM0], buffer, PATH_MAX, &res);
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
@@ -432,7 +432,7 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const AlbumNapiAs
             return;
         } else {
             asyncContext->selection = buffer;
-            ASSERT_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+            CHECK_IF_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         }
         present = false;
     }
@@ -446,7 +446,7 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const AlbumNapiAs
             return;
         } else {
             asyncContext->order = buffer;
-            ASSERT_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+            CHECK_IF_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         }
         present = false;
     }
@@ -459,7 +459,7 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const AlbumNapiAs
             napi_get_element(env, property, i, &stringItem);
             napi_get_value_string_utf8(env, stringItem, buffer, SIZE, &res);
             asyncContext->selectionArgs.push_back(std::string(buffer));
-            ASSERT_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+            CHECK_IF_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         }
     } else {
         HiLog::Error(LABEL, "Could not get the string argument!");

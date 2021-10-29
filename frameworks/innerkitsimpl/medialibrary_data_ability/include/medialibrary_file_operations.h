@@ -20,6 +20,7 @@
 
 #include "file_asset.h"
 #include "media_data_ability_const.h"
+#include "medialibrary_data_ability_utils.h"
 #include "medialibrary_file_db.h"
 #include "imedia_scanner_client.h"
 
@@ -31,26 +32,19 @@ namespace OHOS {
 namespace Media {
 class MediaLibraryFileOperations {
 public:
-    int32_t HandleCreateAsset(const OHOS::NativeRdb::ValuesBucket &values,
-                              const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
-    int32_t HandleCloseAsset(std::string &srcPath, const OHOS::NativeRdb::ValuesBucket &values);
-    int32_t HandleOpenAsset(const std::string &srcPath, const OHOS::NativeRdb::ValuesBucket &values);
-    int32_t HandleFileOperation(const std::string &uri, const OHOS::NativeRdb::ValuesBucket &values,
-                                const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
+    int32_t HandleCreateAsset(const NativeRdb::ValuesBucket &values,
+                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    int32_t HandleCloseAsset(std::string &srcPath, const NativeRdb::ValuesBucket &values,
+                             const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    int32_t HandleOpenAsset(const std::string &srcPath, const NativeRdb::ValuesBucket &values);
+    int32_t HandleFileOperation(const std::string &uri, const NativeRdb::ValuesBucket &values,
+                                const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleModifyAsset(const std::string &rowNum, const std::string &srcPath,
-                              const OHOS::NativeRdb::ValuesBucket &values,
+                              const NativeRdb::ValuesBucket &values,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleDeleteAsset(const std::string &rowNum, const std::string &srcPath,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    std::string GetRowNum(std::string uri);
-};
-
-// Scanner callback objects
-class ScanFileCallback : public IMediaScannerAppCallback {
-public:
-    ScanFileCallback() {}
-    ~ScanFileCallback() {}
-    void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
+    NativeRdb::ValuesBucket UpdateBasicAssetDetails(int32_t mediaType, const std::string &path);
 };
 } // namespace Media
 } // namespace OHOS

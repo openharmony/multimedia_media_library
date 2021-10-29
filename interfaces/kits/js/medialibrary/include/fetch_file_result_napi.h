@@ -47,7 +47,7 @@ private:
 
     napi_env env_;
     napi_ref wrapper_;
-    Media::FetchResult *fetchFileResult_;
+    Media::FetchResult *fetchFileResult_ = nullptr;
 
     static napi_ref sConstructor_;
     static Media::FetchResult *sFetchFileResult_;

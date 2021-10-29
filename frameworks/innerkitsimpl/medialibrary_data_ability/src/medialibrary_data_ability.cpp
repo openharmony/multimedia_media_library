@@ -29,6 +29,18 @@ void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
     InitMediaLibraryRdbStore();
 }
 
+void MediaLibraryDataAbility::OnStop()
+{
+    Ability::OnStop();
+    rdbStore = nullptr;
+    isRdbStoreInitialized = false;
+
+    if (scannerClient_ != nullptr) {
+        scannerClient_->Release();
+        scannerClient_ = nullptr;
+    }
+}
+
 MediaLibraryDataAbility::MediaLibraryDataAbility(void)
 {
     isRdbStoreInitialized = false;
@@ -69,23 +81,35 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
 
 int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &value)
 {
-    string uriString = uri.ToString();
-    if (!isRdbStoreInitialized || value.IsEmpty() || (rdbStore == nullptr)) {
+    if ((!isRdbStoreInitialized) || (value.IsEmpty()) || (rdbStore == nullptr)) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility Insert: Input parameter is invalid");
         return DATA_ABILITY_FAIL;
     }
 
-    if (uriString.find(MEDIA_OPERN_KEYWORD) != string::npos) {
+    string insertUri = uri.ToString();
+    // If insert uri contains media opearation, follow media operation procedure
+    if (insertUri.find(MEDIA_OPERN_KEYWORD) != string::npos) {
         MediaLibraryFileOperations fileOprn;
         MediaLibraryAlbumOperations albumOprn;
 
-        if (uriString.find(MEDIA_FILEOPRN) != string::npos) {
-            return fileOprn.HandleFileOperation(uriString, value, rdbStore);
-        } else if (uriString.find(MEDIA_ALBUMOPRN) != string::npos) {
-            return albumOprn.HandleAlbumOperations(uriString, value, rdbStore);
+        string scanPath("");
+        int32_t result(DATA_ABILITY_FAIL);
+        string operationType = MediaLibraryDataAbilityUtils::GetOperationType(insertUri);
+
+        if (insertUri.find(MEDIA_FILEOPRN) != string::npos) {
+            result = fileOprn.HandleFileOperation(operationType, value, rdbStore);
+            // After successfull close asset operation, do a scan file
+            if ((result >= 0) && (operationType == MEDIA_FILEOPRN_CLOSEASSET)) {
+                ScanFile(value, rdbStore);
+            }
+        } else if (insertUri.find(MEDIA_ALBUMOPRN) != string::npos) {
+            result = albumOprn.HandleAlbumOperations(operationType, value, rdbStore);
         }
+
+        return result;
     }
 
+    // Normal URI scenario
     int64_t outRowId = DATA_ABILITY_FAIL;
     (void)rdbStore->Insert(outRowId, MEDIALIBRARY_TABLE, value);
 
@@ -99,15 +123,16 @@ int32_t MediaLibraryDataAbility::Delete(const Uri &uri, const DataAbilityPredica
         return DATA_ABILITY_FAIL;
     }
 
-    string strDeleteCondition = predicates.GetWhereClause();
     string uriString = uri.ToString();
+
+    string strDeleteCondition = predicates.GetWhereClause();
     if (strDeleteCondition.empty()) {
         string::size_type pos = uriString.find_last_of('/');
         CHECK_AND_RETURN_RET_LOG((pos != string::npos) && (pos == MEDIALIBRARY_DATA_URI.length()), DATA_ABILITY_FAIL,
             "Invalid index position");
 
         string strRow = uriString.substr(pos + 1);
-        CHECK_AND_RETURN_RET_LOG(IsNumber(strRow), DATA_ABILITY_FAIL, "Index not a digit");
+        CHECK_AND_RETURN_RET_LOG(MediaLibraryDataAbilityUtils::IsNumber(strRow), DATA_ABILITY_FAIL, "Index not digit");
 
         strDeleteCondition = MEDIA_DATA_DB_ID + " = " + strRow;
         uriString = uriString.substr(0, pos);
@@ -126,19 +151,19 @@ int32_t MediaLibraryDataAbility::Delete(const Uri &uri, const DataAbilityPredica
 shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri, const vector<string> &columns,
     const DataAbilityPredicates &predicates)
 {
-    string uriString = uri.ToString();
-
-    if (!isRdbStoreInitialized || rdbStore == nullptr) {
+    if ((!isRdbStoreInitialized) || (rdbStore == nullptr)) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility Query:Rdb Store is not initialized");
         return nullptr;
     }
+
+    string uriString = uri.ToString();
 
     string strQueryCondition = predicates.GetWhereClause();
     if (strQueryCondition.empty()) {
         string::size_type pos = uriString.find_last_of('/');
         if (pos == MEDIALIBRARY_DATA_URI.length()) {
             string strRow = uriString.substr(pos + 1);
-            CHECK_AND_RETURN_RET_LOG(IsNumber(strRow), nullptr, "Index not a digit");
+            CHECK_AND_RETURN_RET_LOG(MediaLibraryDataAbilityUtils::IsNumber(strRow), nullptr, "Index not a digit");
 
             uriString = uriString.substr(0, pos);
             strQueryCondition = MEDIA_DATA_DB_ID + " = " + strRow;
@@ -161,28 +186,27 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri, co
     unique_ptr<AbsSharedResultSet> queryResultSet = rdbStore->Query(mediaLibAbsPred, columns);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
 
-    auto rowCount(0);
-    (void)queryResultSet->GetRowCount(rowCount);
-
     return queryResultSet;
 }
 
 int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &value,
     const DataAbilityPredicates &predicates)
 {
-    if (!isRdbStoreInitialized || rdbStore == nullptr || value.IsEmpty()) {
+    if ((!isRdbStoreInitialized) || (rdbStore == nullptr) || (value.IsEmpty())) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility Update:Input parameter is invalid ");
         return DATA_ABILITY_FAIL;
     }
-    string strUpdateCondition = predicates.GetWhereClause();
+
     string uriString = uri.ToString();
+
+    string strUpdateCondition = predicates.GetWhereClause();
     if (strUpdateCondition.empty()) {
         string::size_type pos = uriString.find_last_of('/');
         CHECK_AND_RETURN_RET_LOG((pos != string::npos) && (pos == MEDIALIBRARY_DATA_URI.length()), DATA_ABILITY_FAIL,
             "Invalid index position");
 
         string strRow = uriString.substr(pos + 1);
-        CHECK_AND_RETURN_RET_LOG(IsNumber(strRow), DATA_ABILITY_FAIL, "Index not a digit");
+        CHECK_AND_RETURN_RET_LOG(MediaLibraryDataAbilityUtils::IsNumber(strRow), DATA_ABILITY_FAIL, "Index not digit");
 
         uriString = uriString.substr(0, pos);
         strUpdateCondition = MEDIA_DATA_DB_ID + " = " + strRow;
@@ -201,7 +225,7 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
 int32_t MediaLibraryDataAbility::BatchInsert(const Uri &uri, const vector<ValuesBucket> &values)
 {
     string uriString = uri.ToString();
-    if (!isRdbStoreInitialized || rdbStore == nullptr || uriString != MEDIALIBRARY_DATA_URI) {
+    if ((!isRdbStoreInitialized) || (rdbStore == nullptr) || (uriString != MEDIALIBRARY_DATA_URI)) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility BatchInsert: Input parameter is invalid");
         return DATA_ABILITY_FAIL;
     }
@@ -215,21 +239,29 @@ int32_t MediaLibraryDataAbility::BatchInsert(const Uri &uri, const vector<Values
     return rowCount;
 }
 
-bool MediaLibraryDataAbility::IsNumber(const string &str)
+void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
-    if (str.length() == 0) {
-        MEDIA_ERR_LOG("IsNumber input is empty ");
-        return false;
+    if (scannerClient_ == nullptr) {
+        scannerClient_ = MediaScannerHelperFactory::CreateScannerHelper();
     }
 
-    for (char const &c : str) {
-        if (isdigit(c) == 0) {
-            MEDIA_ERR_LOG("Index is not a number");
-            return false;
+    if (scannerClient_ != nullptr) {
+        string actualUri;
+        ValueObject valueObject;
+
+        if (values.GetObject(MEDIA_DATA_DB_URI, valueObject)) {
+            valueObject.GetString(actualUri);
         }
-    }
 
-    return true;
+        string id = MediaLibraryDataAbilityUtils::GetIdFromUri(actualUri);
+        string srcPath = MediaLibraryDataAbilityUtils::GetPathFromDb(id, rdbStore);
+
+        std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
+        auto ret = scannerClient_->ScanFile(srcPath, scanFileCb);
+        CHECK_AND_RETURN_LOG(ret == 0, "Failed to initiate scan request");
+    }
 }
+
+void ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) {}
 }  // namespace Media
 }  // namespace OHOS

@@ -37,7 +37,7 @@ public:
 private:
     int32_t GetAvailableRequestId();
 
-    MediaScanner* mediaScannerInstance_;
+    MediaScanner *mediaScannerInstance_ = nullptr;
     void StoreCallbackPtrInMap(int32_t reqId, sptr<IRemoteObject>& callback);
 };
 } // namespace Media

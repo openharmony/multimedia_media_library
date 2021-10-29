@@ -51,7 +51,7 @@ int32_t MediaLibraryAlbumDb::UpdateAlbumInfo(const ValuesBucket &values, const s
     int32_t updateResult = rdbStore->Update(updatedRows, MEDIALIBRARY_TABLE, values, ALBUM_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(updateResult == E_OK, ALBUM_OPERATION_ERR, "Update failed");
 
-    return updatedRows;
+    return (updatedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
 
 int32_t MediaLibraryAlbumDb::DeleteAlbumInfo(const int32_t albumId, const shared_ptr<RdbStore> &rdbStore)
@@ -64,39 +64,7 @@ int32_t MediaLibraryAlbumDb::DeleteAlbumInfo(const int32_t albumId, const shared
     int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, ALBUM_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, ALBUM_OPERATION_ERR, "Delete failed");
 
-    return deletedRows;
-}
-
-string MediaLibraryAlbumDb::GetAlbumPath(const int32_t albumId, const shared_ptr<RdbStore> &rdbStore)
-{
-    string filePath;
-
-    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (albumId > 0), filePath, "Invalid input");
-
-    vector<string> selectionArgs = { std::to_string(albumId) };
-    AbsRdbPredicates albumPredicates(MEDIALIBRARY_TABLE);
-    albumPredicates.SetWhereClause(ALBUM_DB_COND);
-    albumPredicates.SetWhereArgs(selectionArgs);
-
-    vector<string> columns;
-    columns.push_back(MEDIA_DATA_DB_FILE_PATH);
-
-    unique_ptr<ResultSet> queryResultSet = rdbStore->Query(albumPredicates, columns);
-    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, filePath, "Unable to find the path");
-
-    auto rowCount(0);
-    (void)queryResultSet->GetRowCount(rowCount);
-
-    int32_t columnIndex;
-    auto ret = queryResultSet->GoToFirstRow();
-    if (ret == E_OK) {
-        ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, columnIndex);
-        if (ret == E_OK) {
-            ret = queryResultSet->GetString(columnIndex, filePath);
-        }
-    }
-
-    return filePath;
+    return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
 }  // namespace Media
 }  // namespace OHOS
