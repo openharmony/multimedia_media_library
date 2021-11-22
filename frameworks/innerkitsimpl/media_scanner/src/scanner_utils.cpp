@@ -144,7 +144,7 @@ int32_t ScannerUtils::GetAbsolutePath(string &path)
 {
     int32_t errCode = ERR_EMPTY_ARGS;
 
-    if (path.length() > PATH_MAX || path.empty()) {
+    if (path.empty() || path.length() > PATH_MAX) {
         MEDIA_ERR_LOG("Src path is too long or empty");
         return ERR_INCORRECT_PATH;
     }

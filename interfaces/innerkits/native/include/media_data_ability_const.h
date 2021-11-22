@@ -22,7 +22,6 @@ const int32_t DATA_ABILITY_SUCCESS = 0;
 const int32_t DATA_ABILITY_FAIL = -1;
 const int32_t ALBUM_OPERATION_ERR = -1;
 const int32_t MEDIA_RDB_VERSION = 1;
-const int32_t SECONDS_TO_MILLISECONDS = 1000;
 const std::string ALBUM_DB_COND = "id = ?";
 
 const std::string MEDIA_DATA_DB_Path = "/data/media/";
@@ -75,9 +74,8 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS MEDIALIBRARY_
                                        + MEDIA_DATA_DB_WIDTH + " INT, "
                                        + MEDIA_DATA_DB_ORIENTATION + " INT, "
                                        + MEDIA_DATA_DB_DURATION + " INT, "
-                                       + MEDIA_DATA_DB_ALBUM_ID + " INT, "
                                        + MEDIA_DATA_DB_ALBUM_NAME + " TEXT, "
-                                       + MEDIA_DATA_DB_PARENT_ID + " INT, "
+                                       + MEDIA_DATA_DB_PARENT_ID + " INT DEFAULT 0, "
                                        + MEDIA_DATA_DB_VIRTUAL + " BOOL DEFAULT 0)";
 
 // File operations constants
@@ -95,9 +93,12 @@ const std::string MEDIA_ALBUMOPRN_MODIFYALBUM = "modify_album";
 const std::string MEDIA_ALBUMOPRN_DELETEALBUM = "delete_album";
 const std::string MEDIA_FILEMODE = "mode";
 const std::string MEDIA_FILEDESCRIPTOR = "fd";
-const std::string MEDIA_FILEMODE_READONLY = "read";
-const std::string MEDIA_FILEMODE_WRITEONLY = "write";
-const std::string MEDIA_FILEMODE_READWRITE = "read_write";
+const std::string MEDIA_FILEMODE_READONLY = "r";
+const std::string MEDIA_FILEMODE_WRITEONLY = "w";
+const std::string MEDIA_FILEMODE_READWRITE = "rw";
+const std::string MEDIA_FILEMODE_WRITETRUNCATE = "wt";
+const std::string MEDIA_FILEMODE_WRITEAPPEND = "wa";
+const std::string MEDIA_FILEMODE_READWRITETRUNCATE = "rwt";
 } // namespace OHOS
 } // namespace Media
 #endif // MEDIA_DATA_ABILITY_CONST_H

@@ -30,11 +30,12 @@
         "abilities": [
             {
                 "name": "MediaScannerAbility",
+                "icon": "",
                 "label": "Scanner Ability",
                 "launchType": "standard",
-                "orientation": "unspecified",
                 "type": "service",
-                "visible": true
+                "visible": true,
+                "srcLanguage": "c++"
             }
         ]
     }

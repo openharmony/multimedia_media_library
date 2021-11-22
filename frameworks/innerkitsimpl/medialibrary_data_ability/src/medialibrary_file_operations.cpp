@@ -21,35 +21,89 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+int64_t GetAlbumDateModified(const string &albumPath)
+{
+    struct stat statInfo {};
+    if (!albumPath.empty() && stat(albumPath.c_str(), &statInfo) == 0) {
+        return (statInfo.st_mtime);
+    }
+
+    return 0;
+}
+
+string GetFileName(const string &path)
+{
+    string name;
+    size_t slashIndex = path.rfind("/");
+    if (slashIndex != string::npos) {
+        name = path.substr(slashIndex + 1);
+    }
+
+    return name;
+}
+
 int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
-    string path;
+    string path("");
     int32_t errCode = DATA_ABILITY_FAIL;
-
-    ValueObject valueObject;
-
+    int32_t mediaType = static_cast<int32_t>(MEDIA_TYPE_FILE);
     FileAsset fileAsset;
     MediaLibraryFileDb fileDbOprn;
+    ValueObject valueObject;
 
-    auto contains = values.GetObject(MEDIA_DATA_DB_FILE_PATH, valueObject);
-    if (contains) {
+    // Obtain file path
+    if (values.GetObject(MEDIA_DATA_DB_FILE_PATH, valueObject)) {
         valueObject.GetString(path);
     }
 
+    // Obtain mediatype
+    if (values.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject)) {
+        valueObject.GetInt(mediaType);
+        fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
+    }
+
     errCode = fileAsset.CreateAsset(path);
-    if (errCode == DATA_ABILITY_SUCCESS) {
+    string fileName = GetFileName(path);
+    if ((errCode == DATA_ABILITY_SUCCESS) && (fileName == ".nomedia")) {
+        int32_t deletedRows(ALBUM_OPERATION_ERR);
+        size_t slashIndex = path.rfind("/");
+        string albumPath;
+        if (slashIndex != string::npos) {
+            albumPath = path.substr(0, slashIndex);
+        }
+
+        if (albumPath.empty()) {
+            MEDIA_ERR_LOG("Album path for hidden file is empty");
+            return errCode;
+        }
+
+        vector<string> whereArgs = { (albumPath.back() != '/' ? (albumPath + "/%") : (albumPath + "%")), albumPath };
+
+        int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, "path LIKE ? OR path = ?", whereArgs);
+        if (deleteResult != E_OK) {
+            MEDIA_ERR_LOG("Delete rows failed");
+        }
+        return errCode;
+    }
+
+    if ((errCode == DATA_ABILITY_SUCCESS) && (!fileName.empty()) && (fileName.at(0) != '.')) {
+        // Fill basic file information into DB
+        ValuesBucket updatedAssetInfo = UpdateBasicAssetDetails(mediaType, path);
+
         // will return row id
-        errCode = fileDbOprn.Insert(values, rdbStore);
+        return fileDbOprn.Insert(updatedAssetInfo, rdbStore);
     }
 
     return errCode;
 }
 
-int32_t MediaLibraryFileOperations::HandleCloseAsset(string &srcPath, const ValuesBucket &values)
+int32_t MediaLibraryFileOperations::HandleCloseAsset(string &srcPath, const ValuesBucket &values,
+    const shared_ptr<RdbStore> &rdbStore)
 {
-    int32_t fd(-1);
+    int32_t fd(0);
     ValueObject valueObject;
     FileAsset fileAsset;
+    string fileName;
 
     auto contains = values.GetObject(MEDIA_FILEDESCRIPTOR, valueObject);
     if (contains) {
@@ -57,11 +111,21 @@ int32_t MediaLibraryFileOperations::HandleCloseAsset(string &srcPath, const Valu
     }
 
     int32_t res = fileAsset.CloseAsset(fd);
-    if (res == SUCCESS) {
-        auto client = MediaScannerHelperFactory::CreateScannerHelper();
-        if (client) {
-            std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
-            (void)client->ScanFile(srcPath, scanFileCb);
+    if ((res == SUCCESS) && (!srcPath.empty()) &&
+        ((fileName = GetFileName(srcPath)).length() != 0) && (fileName.at(0) != '.')) {
+        string albumPath;
+        size_t slashIndex = srcPath.rfind("/");
+        if (slashIndex != string::npos) {
+            albumPath = srcPath.substr(0, slashIndex);
+        }
+        int32_t updatedRows(0);
+        vector<string> whereArgs = { albumPath };
+        ValuesBucket valuesBucket;
+        valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, GetAlbumDateModified(albumPath));
+
+        int32_t updateResult = rdbStore->Update(updatedRows, MEDIALIBRARY_TABLE, valuesBucket, "path = ?", whereArgs);
+        if (updateResult != E_OK) {
+            MEDIA_ERR_LOG("Update failed");
         }
     }
 
@@ -98,14 +162,48 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
         valueObject.GetString(dstFileName);
     }
 
+    string albumPath;
     size_t slashIndex = srcPath.rfind("/");
     if (slashIndex != string::npos) {
-        dstPath = srcPath.substr(0, slashIndex) + "/" + dstFileName;
+        albumPath = srcPath.substr(0, slashIndex);
+        dstPath = ((!albumPath.empty() && !dstFileName.empty()) ? (albumPath + "/" + dstFileName) : "");
     }
 
     errCode = fileAsset.ModifyAsset(srcPath, dstPath);
+    if (dstFileName == ".nomedia") {
+        int32_t deletedRows(ALBUM_OPERATION_ERR);
+        vector<string> whereArgs = { (albumPath.back() != '/' ? (albumPath + "/%") : (albumPath + "%")), albumPath };
+
+        int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, "path LIKE ? OR path = ?", whereArgs);
+        if (deleteResult != E_OK) {
+            MEDIA_ERR_LOG("Delete rows failed");
+        }
+        return errCode;
+    }
+
+    if ((!dstFileName.empty()) && (dstFileName.at(0) == '.')) {
+        int32_t deletedRows(ALBUM_OPERATION_ERR);
+        vector<string> whereArgs = { srcPath };
+
+        int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, "path = ?", whereArgs);
+        if (deleteResult != E_OK) {
+            MEDIA_ERR_LOG("Delete rows failed");
+        }
+        return errCode;
+    }
+
     if (errCode == DATA_ABILITY_SUCCESS) {
-        errCode = fileDbOprn.Modify(rowNum, dstPath, rdbStore);
+        if (fileDbOprn.Modify(rowNum, dstPath, rdbStore) > 0) {
+            int32_t count(0);
+            vector<string> whereArgs = { albumPath };
+            ValuesBucket valuesBucket;
+            valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, GetAlbumDateModified(albumPath));
+
+            int32_t updateResult = rdbStore->Update(count, MEDIALIBRARY_TABLE, valuesBucket, "path = ?", whereArgs);
+            if (updateResult != E_OK) {
+                MEDIA_ERR_LOG("Update failed");
+            }
+        }
     }
 
     return errCode;
@@ -118,64 +216,95 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, cons
     FileAsset fileAsset;
     MediaLibraryFileDb fileDbOprn;
 
-    errCode = fileAsset.DeleteAsset(srcPath);
+    if (!srcPath.empty()) {
+        errCode = fileAsset.DeleteAsset(srcPath);
+    }
+
     if (errCode == DATA_ABILITY_SUCCESS) {
-        errCode = fileDbOprn.Delete(rowNum, rdbStore);
+        if (fileDbOprn.Delete(rowNum, rdbStore) > 0) {
+            int32_t count(0);
+            string albumPath;
+            size_t slashIndex = srcPath.rfind("/");
+            if (slashIndex != string::npos) {
+                albumPath = srcPath.substr(0, slashIndex);
+            }
+            vector<string> whereArgs = { albumPath };
+            ValuesBucket valuesBucket;
+            valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, GetAlbumDateModified(albumPath));
+
+            int32_t updateResult = rdbStore->Update(count, MEDIALIBRARY_TABLE, valuesBucket, "path = ?", whereArgs);
+            if (updateResult != E_OK) {
+                MEDIA_ERR_LOG("Update failed");
+            }
+        }
     }
 
     return errCode;
 }
 
-int32_t MediaLibraryFileOperations::HandleFileOperation(const string &uri, const ValuesBucket &values,
+int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, const ValuesBucket &values,
     const shared_ptr<RdbStore> &rdbStore)
 {
     int32_t errCode = DATA_ABILITY_FAIL;
+
+    if (oprn == MEDIA_FILEOPRN_CREATEASSET) {
+        return HandleCreateAsset(values, rdbStore);
+    }
+
     string actualUri;
     ValueObject valueObject;
-    MediaLibraryFileDb fileDbOprn;
 
-    size_t found = uri.rfind('/');
-    if (found != string::npos) {
-        string oprn = uri.substr(found + 1);
-        if (oprn == MEDIA_FILEOPRN_CREATEASSET) {
-            return HandleCreateAsset(values, rdbStore);
-        }
+    auto contains = values.GetObject(MEDIA_DATA_DB_URI, valueObject);
+    if (contains) {
+        valueObject.GetString(actualUri);
+    }
 
-        auto contains = values.GetObject(MEDIA_DATA_DB_URI, valueObject);
-        if (contains) {
-            valueObject.GetString(actualUri);
-        }
-        string rowNum = GetRowNum(actualUri);
-        string srcPath = fileDbOprn.QueryFilePath(rowNum, rdbStore);
+    string id = MediaLibraryDataAbilityUtils::GetIdFromUri(actualUri);
+    string srcPath = MediaLibraryDataAbilityUtils::GetPathFromDb(id, rdbStore);
+    CHECK_AND_RETURN_RET_LOG(!srcPath.empty(), DATA_ABILITY_FAIL, "Failed to obtain path from Database");
 
-        if (oprn == MEDIA_FILEOPRN_OPENASSET) {
-            errCode = HandleOpenAsset(srcPath, values);
-        } else if (oprn == MEDIA_FILEOPRN_MODIFYASSET) {
-            errCode = HandleModifyAsset(rowNum, srcPath, values, rdbStore);
-        } else if (oprn == MEDIA_FILEOPRN_DELETEASSET) {
-            errCode = HandleDeleteAsset(rowNum, srcPath, rdbStore);
-        } else if (oprn == MEDIA_FILEOPRN_CLOSEASSET) {
-            return HandleCloseAsset(srcPath, values);
-        }
+    if (oprn == MEDIA_FILEOPRN_OPENASSET) {
+        errCode = HandleOpenAsset(srcPath, values);
+    } else if (oprn == MEDIA_FILEOPRN_MODIFYASSET) {
+        errCode = HandleModifyAsset(id, srcPath, values, rdbStore);
+    } else if (oprn == MEDIA_FILEOPRN_DELETEASSET) {
+        errCode = HandleDeleteAsset(id, srcPath, rdbStore);
+    } else if (oprn == MEDIA_FILEOPRN_CLOSEASSET) {
+        errCode = HandleCloseAsset(srcPath, values, rdbStore);
     }
 
     return errCode;
 }
 
-string MediaLibraryFileOperations::GetRowNum(string uri)
+ValuesBucket MediaLibraryFileOperations::UpdateBasicAssetDetails(int32_t mediaType, const string &path)
 {
-    string rowNum = "-1";
+    string relPath("");
+    string fileName("");
+    string mediaUri("");
+    ValuesBucket assetInfoBucket;
 
-    size_t pos = uri.rfind('/');
-    if (pos != std::string::npos) {
-        rowNum = uri.substr(pos + 1);
+    if (!path.empty()) {
+        size_t found = path.rfind('/');
+        if ((found != string::npos) && (path.size() > found)) {
+            relPath = path.substr(0, found);
+            fileName = path.substr(found + 1);
+            assetInfoBucket.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, relPath);
+            assetInfoBucket.PutString(Media::MEDIA_DATA_DB_NAME, fileName);
+        }
+
+        struct stat statInfo {};
+        if (stat(path.c_str(), &statInfo) == 0) {
+            assetInfoBucket.PutLong(Media::MEDIA_DATA_DB_SIZE, statInfo.st_size);
+            assetInfoBucket.PutLong(Media::MEDIA_DATA_DB_DATE_ADDED, statInfo.st_ctime);
+        }
+
+        mediaUri = MediaLibraryDataAbilityUtils::GetMediaTypeUri(static_cast<MediaType>(mediaType));
+        assetInfoBucket.PutString(Media::MEDIA_DATA_DB_URI, mediaUri);
+        assetInfoBucket.PutInt(Media::MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+        assetInfoBucket.PutString(Media::MEDIA_DATA_DB_FILE_PATH, path);
     }
 
-    return rowNum;
-}
-
-void ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)
-{
+    return assetInfoBucket;
 }
 } // namespace Media
 } // namespace OHOS

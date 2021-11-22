@@ -25,6 +25,7 @@
 #include "image_asset_napi.h"
 #include "media_asset_napi.h"
 #include "media_library_napi.h"
+#include "media_scanner_napi.h"
 #include "napi/native_node_api.h"
 #include "video_asset_napi.h"
 

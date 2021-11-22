@@ -24,6 +24,7 @@
 #include <ftw.h>
 #include <iostream>
 #include <iterator>
+#include <limits.h>
 #include <securec.h>
 #include <stdlib.h>
 #include <string>
@@ -59,6 +60,7 @@ public:
     int32_t ScanFile(std::string &path, const sptr<IRemoteObject> &callback);
     int32_t ScanDir(std::string &path, const sptr<IRemoteObject> &callback);
     void SetAbilityContext(const std::shared_ptr<OHOS::AppExecFwk::Context> &context);
+    void ReleaseAbilityHelper();
 
 private:
     MediaScanner();

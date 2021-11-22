@@ -28,6 +28,7 @@ namespace OHOS {
 namespace Media {
 FetchResult::FetchResult(const shared_ptr<OHOS::NativeRdb::AbsSharedResultSet>& resultset)
 {
+    count_ = 0;
     if (resultset != nullptr) {
         resultset->GetRowCount(count_);
     }
@@ -37,7 +38,8 @@ FetchResult::FetchResult(const shared_ptr<OHOS::NativeRdb::AbsSharedResultSet>& 
 }
 
 // empty constructor napi
-FetchResult::FetchResult() {}
+FetchResult::FetchResult()
+    : isContain_(false), isClosed_(false), count_(0), resultset_(nullptr) {}
 
 FetchResult::~FetchResult() {}
 

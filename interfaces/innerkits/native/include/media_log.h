@@ -54,6 +54,13 @@
         }                                              \
     } while (0)
 
+#define CHECK_AND_PRINT_LOG(cond, fmt, ...)            \
+    do {                                               \
+        if (!(cond)) {                                 \
+            MEDIA_ERR_LOG(fmt, ##__VA_ARGS__);         \
+        }                                              \
+    } while (0)
+
 #define MEDIA_DEBUG_LOG(fmt, ...) DECORATOR_HILOG(HILOG_DEBUG, fmt, ##__VA_ARGS__)
 #define MEDIA_ERR_LOG(fmt, ...) DECORATOR_HILOG(HILOG_ERROR, fmt, ##__VA_ARGS__)
 #define MEDIA_WARNING_LOG(fmt, ...) DECORATOR_HILOG(HILOG_WARN, fmt, ##__VA_ARGS__)

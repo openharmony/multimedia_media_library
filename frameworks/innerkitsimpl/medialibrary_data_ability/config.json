@@ -24,18 +24,18 @@
         ],
         "distro": {
             "deliveryWithInstall": true,
-            "moduleName": "testability",
+            "moduleName": "DataAbility",
             "moduleType": "entry"
         },
         "abilities": [
             {
                 "name": "MediaLibraryDataAbility",
-                "icon": "$media:snowflakes",
+                "icon": "",
                 "label": "MediaData Ability",
                 "launchType": "standard",
-                "orientation": "unspecified",
                 "type": "data",
                 "visible": true,
+                "srcLanguage": "c++",
                 "uri": "dataability://com.ohos.medialibrary.MediaLibraryDataAbility"
             }
         ]

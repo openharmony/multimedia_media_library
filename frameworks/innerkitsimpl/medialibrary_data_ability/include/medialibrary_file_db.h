@@ -37,8 +37,6 @@ public:
     int32_t Delete(const std::string &strRow, const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
     int32_t Modify(const std::string &rowNum, const std::string &dstPath,
                    const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
-    std::string QueryFilePath(const std::string &rowNum,
-                              const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS

@@ -44,9 +44,10 @@ public:
     MediaScannerDb();
     MediaScannerDb(MediaScannerDb &other) = delete;
     void operator=(const MediaScannerDb &) = delete;
+    ~MediaScannerDb() = default;
 
     static unique_ptr<MediaScannerDb> GetDatabaseInstance();
-    bool DeleteMetadata(const int32_t id);
+    bool DeleteMetadata(const vector<string> &idList);
     void NotifyDatabaseChange(const MediaType mediaType);
     void SetRdbHelper(const std::shared_ptr<AppExecFwk::DataAbilityHelper> &rdbhelper);
 
@@ -67,9 +68,7 @@ public:
 
 private:
     std::string GetMediaTypeUri(MediaType mediaType);
-    std::variant<int32_t, int64_t, std::string, double> GetColumnValue(
-        const string &columnName, const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, DataType type);
-
+    std::unique_ptr<Metadata> FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     std::shared_ptr<AppExecFwk::DataAbilityHelper> rdbhelper_;
 };
 } // namespace Media

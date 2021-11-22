@@ -24,6 +24,7 @@
 #include "medialibrary_album_operations.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_file_operations.h"
+#include "medialibrary_data_ability_utils.h"
 #include "media_log.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
@@ -53,10 +54,13 @@ public:
 
 protected:
     void OnStart(const AAFwk::Want& want) override;
+    void OnStop() override;
 
 private:
-    bool IsNumber(const std::string &str);
+    std::string GetOperationType(const std::string &uri);
+    void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
 
+    std::shared_ptr<IMediaScannerClient> scannerClient_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore;
     bool isRdbStoreInitialized;
 };
@@ -65,6 +69,14 @@ class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
 public:
     int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
     int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
+};
+
+// Scanner callback objects
+class ScanFileCallback : public IMediaScannerAppCallback {
+public:
+    ScanFileCallback() = default;
+    ~ScanFileCallback() = default;
+    void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
 };
 } // namespace Media
 } // namespace OHOS

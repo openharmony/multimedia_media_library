@@ -32,6 +32,10 @@ MediaScanner::MediaScanner()
 MediaScanner::~MediaScanner()
 {
     mediaScannerDb_ = nullptr;
+    if (rdbhelper_ != nullptr) {
+        rdbhelper_->Release();
+        rdbhelper_ = nullptr;
+    }
 }
 
 // Get Media Scanner Instance
@@ -97,17 +101,17 @@ int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCa
     bool isDir = false;
 
     if (path.empty()) {
+        MEDIA_ERR_LOG("Scanfile: Path is empty");
         return ERR_EMPTY_ARGS;
     }
 
     if (ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS) {
-        return ERR_INCORRECT_PATH;
-    }
+        MEDIA_ERR_LOG("Scanfile: Incorrect path or insufficient permission %{public}s", path.c_str());
 
-    if (!ScannerUtils::IsExists(path)) {
         unique_ptr<Metadata> metaData = mediaScannerDb_->ReadMetadata(path);
         if (metaData != nullptr && !metaData->GetFilePath().empty()) {
-            if (mediaScannerDb_->DeleteMetadata(metaData->GetFileId())) {
+            vector<string> idList = {to_string(metaData->GetFileId())};
+            if (mediaScannerDb_->DeleteMetadata(idList)) {
                 mediaScannerDb_->NotifyDatabaseChange(metaData->GetFileMediaType());
             }
         }
@@ -115,6 +119,7 @@ int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCa
     }
 
     if (ScannerUtils::IsDirectory(path)) {
+        MEDIA_ERR_LOG("ScanFile: Incorrect path %{public}s", path.c_str());
         return ERR_INCORRECT_PATH;
     }
 
@@ -144,15 +149,20 @@ int32_t MediaScanner::ScanDir(string &path, const sptr<IRemoteObject> &remoteCal
     bool isDir = true;
 
     if (path.empty()) {
+        MEDIA_ERR_LOG("ScanDir: Path is empty");
         return ERR_EMPTY_ARGS;
     }
 
     // Get Absolute path
     if (ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS) {
+        MEDIA_ERR_LOG("ScanDir: Incorrect path or insufficient permission %{public}s", path.c_str());
+        // If the path is not available, clear the same from database too if present
+        CleanupDirectory(path);
         return ERR_INCORRECT_PATH;
     }
 
     if (!ScannerUtils::IsDirectory(path)) {
+        MEDIA_ERR_LOG("ScanDir: Path provided is not a directory %{public}s", path.c_str());
         return ERR_INCORRECT_PATH;
     }
 
@@ -193,10 +203,12 @@ void MediaScanner::CleanupDirectory(const string &path)
         }
     }
 
-    // Call delete request for each id on Database
-    for (size_t i = 0; i < toBeDeletedIds.size(); i++) {
-        mediaScannerDb_->DeleteMetadata(toBeDeletedIds[i]);
+    // convert deleted id list to vector of strings
+    vector<string> deleteIdList;
+    for (auto id : toBeDeletedIds) {
+        deleteIdList.push_back(to_string(id));
     }
+    mediaScannerDb_->DeleteMetadata(deleteIdList);
 
     // Send notify to the modified URIs
     for (const MediaType &mediaType : mediaTypeSet) {
@@ -309,11 +321,11 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
 {
     unique_ptr<Metadata> fileMetadata = make_unique<Metadata>();
     if (fileMetadata != nullptr) {
-        struct stat statInfo {};
+        struct stat statInfo = { 0 };
         if (stat(path.c_str(), &statInfo) == ERR_SUCCESS) {
-            fileMetadata->SetFileSize(statInfo.st_size);
-            fileMetadata->SetFileDateAdded(statInfo.st_ctime * MILLISECONDS);
-            fileMetadata->SetFileDateModified(statInfo.st_mtime * MILLISECONDS);
+            fileMetadata->SetFileSize(static_cast<int64_t>(statInfo.st_size));
+            fileMetadata->SetFileDateAdded(static_cast<int64_t>(statInfo.st_ctime));
+            fileMetadata->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
         }
 
         fileMetadata->SetFilePath(path);
@@ -329,6 +341,10 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
 
         if (parentId != NO_PARENT) {
             fileMetadata->SetParentId(parentId);
+        }
+
+        if (ScannerUtils::GetParentPath(path) != ROOT_PATH) {
+            fileMetadata->SetAlbumName(ScannerUtils::GetFileNameFromUri(ScannerUtils::GetParentPath(path)));
         }
 
         size_t found = path.rfind('/');
@@ -394,7 +410,7 @@ int32_t MediaScanner::InsertAlbumInfo(string &albumPath, int32_t parentId, strin
         Metadata albumInfo = albumMap_.at(albumPath);
         struct stat statInfo {};
         if (stat(albumPath.c_str(), &statInfo) == ERR_SUCCESS) {
-            if (albumInfo.GetFileDateModified() == statInfo.st_mtime * MILLISECONDS) {
+            if (albumInfo.GetFileDateModified() == statInfo.st_mtime) {
                 errCode = albumInfo.GetFileId();
                 return errCode;
             } else {
@@ -407,10 +423,6 @@ int32_t MediaScanner::InsertAlbumInfo(string &albumPath, int32_t parentId, strin
     if (fileMetadata != nullptr) {
         fileMetadata->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_ALBUM));
         fileMetadata->SetAlbumName(albumName);
-
-        if (parentId != NO_PARENT) {
-            fileMetadata->SetParentId(parentId);
-        }
 
         if (update) {
             errCode = mediaScannerDb_->UpdateAlbum(*fileMetadata);
@@ -425,33 +437,36 @@ int32_t MediaScanner::InsertAlbumInfo(string &albumPath, int32_t parentId, strin
 int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
 {
     int32_t errCode = ERR_SUCCESS;
-    auto fName = (char *)calloc(MAX_PATH_LENGTH, sizeof(char));
     DIR *dirPath = nullptr;
     struct dirent *ent = nullptr;
     int32_t len = path.length();
     struct stat statInfo;
 
+    if (len >= FILENAME_MAX - 1) {
+        return ERR_INCORRECT_PATH;
+    }
+
+    if ((dirPath = opendir(path.c_str())) == nullptr) {
+        return ERR_NOT_ACCESSIBLE;
+    }
+
+    auto fName = (char *)calloc(FILENAME_MAX, sizeof(char));
     if (fName == nullptr) {
         return ERR_MEM_ALLOC_FAIL;
     }
 
-    if (strcpy_s(fName, MAX_PATH_LENGTH, path.c_str()) != ERR_SUCCESS) {
+    if (strcpy_s(fName, FILENAME_MAX, path.c_str()) != ERR_SUCCESS) {
         free(fName);
         return ERR_MEM_ALLOC_FAIL;
     }
     fName[len++] = '/';
 
-    if ((dirPath = opendir(path.c_str())) == nullptr) {
-        free(fName);
-        return ERR_NOT_ACCESSIBLE;
-    }
-
-    while ((ent = readdir(dirPath)) != nullptr && errCode == ERR_SUCCESS) {
+    while ((ent = readdir(dirPath)) != nullptr && errCode != ERR_MEM_ALLOC_FAIL) {
         if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
             continue;
         }
 
-        strncpy_s(fName + len, MAX_PATH_LENGTH, ent->d_name, MAX_PATH_LENGTH - len);
+        strncpy_s(fName + len, FILENAME_MAX, ent->d_name, FILENAME_MAX - len);
         if (lstat(fName, &statInfo) == -1) {
             MEDIA_ERR_LOG("Obtaining Stat info failed");
             continue;
@@ -591,7 +606,7 @@ void MediaScanner::ExecuteScannerClientCallback(int32_t reqId, int32_t status, c
     if (iter != scanResultCbMap_.end()) {
         auto activeCb = iter->second;
         activeCb->OnScanFinishedCallback(status, uri, path);
-        scanResultCbMap_.erase (iter);
+        scanResultCbMap_.erase(iter);
     }
 }
 
@@ -616,6 +631,14 @@ int32_t MediaScanner::GetAvailableRequestId()
 void MediaScanner::SetAbilityContext(const std::shared_ptr<Context> &context)
 {
     abilityContext_ = context;
+}
+
+void MediaScanner::ReleaseAbilityHelper()
+{
+    if (rdbhelper_ != nullptr) {
+        rdbhelper_->Release();
+        rdbhelper_ = nullptr;
+    }
 }
 } // namespace Media
 } // namespace OHOS

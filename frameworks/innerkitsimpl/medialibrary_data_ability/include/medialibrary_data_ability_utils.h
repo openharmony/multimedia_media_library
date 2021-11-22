@@ -13,27 +13,28 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
-#define OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
+#ifndef MEDIALIBRARY_DATA_ABILITY_UTILS
+#define MEDIALIBRARY_DATA_ABILITY_UTILS
 
 #include <string>
-#include <variant>
-
-#include "album_asset.h"
 #include "media_data_ability_const.h"
-#include "medialibrary_album_db.h"
-#include "medialibrary_data_ability_utils.h"
+#include "media_lib_service_const.h"
+#include "media_log.h"
 #include "rdb_store.h"
-#include "values_bucket.h"
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryAlbumOperations {
+class MediaLibraryDataAbilityUtils {
 public:
-    int32_t HandleAlbumOperations(const std::string &uri, const NativeRdb::ValuesBucket &values,
-                                  const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    void ChangeGroupToMedia(const std::string &path);
+    MediaLibraryDataAbilityUtils();
+    ~MediaLibraryDataAbilityUtils();
+
+    static bool IsNumber(const std::string &str);
+    static std::string GetOperationType(const std::string &uri);
+    static std::string GetIdFromUri(const std::string &uri);
+    static std::string GetMediaTypeUri(MediaType mediaType);
+    static std::string GetPathFromDb(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
+#endif // MEDIALIBRARY_DATA_ABILITY_UTILS

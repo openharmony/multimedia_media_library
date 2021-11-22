@@ -90,6 +90,8 @@ public:
         mediaType_ = mediaType;
     }
 
+    ~MediaObserver() = default;
+
     void OnChange() override
     {
         MEDIA_ERR_LOG("OnChange invoked");
@@ -112,8 +114,7 @@ public:
     ~MediaLibraryNapi();
 
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env);
-
-    std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper_;
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
 
 private:
     static void MediaLibraryNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);

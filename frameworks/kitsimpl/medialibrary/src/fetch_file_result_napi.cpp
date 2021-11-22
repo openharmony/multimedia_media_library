@@ -367,7 +367,8 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
         if (type == napi_number) {
             napi_get_value_int32(env, argv[PARAM0], &(asyncContext->position));
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            HiLog::Error(LABEL, "Argument mismatch");
+            return result;
         }
         GET_JS_ASYNC_CB_REF(env, argv[PARAM1], refCount, asyncContext->callbackRef);
 
@@ -435,7 +436,8 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, void*
 
 Media::FetchResult *FetchFileResultNapi::GetFetchResultObject()
 {
-    return fetchFileResult_;
+    Media::FetchResult *fetchResult = fetchFileResult_;
+    return fetchResult;
 }
 
 void GetAllObjectFromFetchResult(const FetchFileResultAsyncContext &asyncContext)

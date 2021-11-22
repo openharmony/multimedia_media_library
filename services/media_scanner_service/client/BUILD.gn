@@ -10,6 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import("//build/ohos.gni")
 import("//build/test.gni")
 MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
@@ -66,20 +67,4 @@ ohos_shared_library("media_scanner_client") {
 
   subsystem_name = "multimedia"
   part_name = "multimedia_media_library_standard"
-}
-
-ohos_moduletest("mediascanner_module_test") {
-  module_out_path = "mediascanner/gtest"
-  sources = [ "test/src/mediascanner_module_test.cpp" ]
-
-  include_dirs = [
-    "test/include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
-  ]
-
-  deps = [
-    "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client:media_scanner_client",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
-  ]
 }

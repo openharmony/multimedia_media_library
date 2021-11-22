@@ -49,6 +49,7 @@ int32_t MediaScannerClient::Init()
     want.SetElementName(SCANNER_BUNDLE_NAME, SCANNER_ABILITY_NAME);
 
     // Connect to the service ability. Dest ability name mentioned in want param
+    SetConnectionState(ConnectionState::CONN_IN_PROGRESS);
     int32_t ret = abilityMgrProxy_->ConnectAbility(want, connection_, nullptr);
     if (ret != 0) {
         MEDIA_ERR_LOG("MediaScannerClient:: Connect ability failed");
@@ -56,7 +57,6 @@ int32_t MediaScannerClient::Init()
         return CONN_ERROR;
     }
 
-    SetConnectionState(ConnectionState::CONN_IN_PROGRESS);
     return CONN_SUCCESS;
 }
 
@@ -111,14 +111,14 @@ ScanState MediaScannerClient::ScanInternal(string &path, const shared_ptr<IMedia
     }
 
     auto callbackStub = new(std::nothrow) MediaScannerOperationCallbackStub();
-    CHECK_AND_RETURN_RET_LOG(callbackStub != nullptr, SCAN_NO_MEMORY_ERR, "ScannerOperCallback creation failed");
+    CHECK_AND_RETURN_RET_LOG(callbackStub != nullptr, SCAN_MEM_ALLOC_FAIL, "ScannerOperCallback creation failed");
 
     callbackStub->SetApplicationCallback(appCb);
 
     auto callbackRemoteObj = callbackStub->AsObject();
-    CHECK_AND_RETURN_RET_LOG(callbackRemoteObj != nullptr, SCAN_NO_MEMORY_ERR, "callback remote obj is null");
+    CHECK_AND_RETURN_RET_LOG(callbackRemoteObj != nullptr, SCAN_MEM_ALLOC_FAIL, "callback remote obj is null");
 
-    // If service is not connected, add the request into queue. Que will be processed OnAbilityConnected callback
+    // If service is not connected, add the request into queue. Queue will be processed OnAbilityConnected callback
     if (state == ConnectionState::CONN_IN_PROGRESS) {
         ScanRequest scanRequest;
         scanRequest.scanType = scanType;
@@ -132,14 +132,14 @@ ScanState MediaScannerClient::ScanInternal(string &path, const shared_ptr<IMedia
         }
     }
 
-    CHECK_AND_RETURN_RET_LOG(abilityProxy_ != nullptr, SCAN_ERROR, "Unable to process scan dir request");
+    CHECK_AND_RETURN_RET_LOG(abilityProxy_ != nullptr, SCAN_ERROR, "Ability service unavailable for scanning");
 
     if (scanType == ScanType::SCAN_FILE) {
         int32_t ret = abilityProxy_->ScanFileService(path, callbackRemoteObj);
-        CHECK_AND_RETURN_RET_LOG(ret == 0, SCAN_ERROR, "Unable to process scan file request");
+        CHECK_AND_RETURN_RET_LOG(ret == 0, static_cast<ScanState>(ret), "Scan file failed [%{public}d]", ret);
     } else if (scanType == ScanType::SCAN_DIR) {
         int32_t ret = abilityProxy_->ScanDirService(path, callbackRemoteObj);
-        CHECK_AND_RETURN_RET_LOG(ret == 0, SCAN_ERROR, "Unable to process scan dir request");
+        CHECK_AND_RETURN_RET_LOG(ret == 0, static_cast<ScanState>(ret), "Scan dir failed [%{public}d]", ret);
     }
 
     return SCAN_SUCCESS;
@@ -169,22 +169,27 @@ void MediaScannerClient::EmptyScanRequestQueue(bool isConnected)
 {
     for (auto &scanRequest : scanList_) {
         if (!isConnected) {
+            MEDIA_ERR_LOG("Remote object unavailable. Notify registered clients");
+            CHECK_AND_RETURN_LOG(scanRequest.appCallback != nullptr, "Invalid app callback object");
             scanRequest.appCallback->OnScanFinished(SCAN_ERROR, "", scanRequest.path);
             break;
         }
 
+        CHECK_AND_RETURN_LOG(abilityProxy_ != nullptr, "Ability service unavailable");
         auto ret(0);
         switch (scanRequest.scanType) {
             case SCAN_FILE:
                 ret = abilityProxy_->ScanFileService(scanRequest.path, scanRequest.serviceCb);
                 if (ret != SCAN_SUCCESS) {
-                    scanRequest.appCallback->OnScanFinished(SCAN_ERROR, "", scanRequest.path);
+                    MEDIA_ERR_LOG("Scan file operation failed %{public}d", ret);
+                    scanRequest.appCallback->OnScanFinished(ret, "", scanRequest.path);
                 }
                 break;
             case SCAN_DIR:
                 ret = abilityProxy_->ScanDirService(scanRequest.path, scanRequest.serviceCb);
                 if (ret != SCAN_SUCCESS) {
-                    scanRequest.appCallback->OnScanFinished(SCAN_ERROR, "", scanRequest.path);
+                    MEDIA_ERR_LOG("Scan dir operation failed %{public}d", ret);
+                    scanRequest.appCallback->OnScanFinished(ret, "", scanRequest.path);
                 }
                 break;
             default:
@@ -242,11 +247,13 @@ MediaScannerConnectCallbackStub::MediaScannerConnectCallbackStub(const sptr<Medi
 void MediaScannerConnectCallbackStub::OnAbilityConnectDone(const OHOS::AppExecFwk::ElementName &element,
     const sptr<IRemoteObject> &remoteObject, int32_t result)
 {
+    CHECK_AND_RETURN_LOG(msInstance_ != nullptr, "Mediascanner instance is null at OnAbilityConnectDone");
     msInstance_->OnConnectAbility(remoteObject, result);
 }
 
 void MediaScannerConnectCallbackStub::OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int32_t result)
 {
+    CHECK_AND_RETURN_LOG(msInstance_ != nullptr, "Mediascanner instance is null at OnAbilityDisconnectDone");
     msInstance_->OnDisconnectAbility();
 }
 } // namespace Media

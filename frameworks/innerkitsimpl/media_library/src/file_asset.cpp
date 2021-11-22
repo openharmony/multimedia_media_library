@@ -240,6 +240,17 @@ int32_t FileAsset::CreateAsset(const string &filePath)
         return errCode;
     }
 
+    size_t slashIndex = filePath.rfind('/');
+    if (slashIndex != string::npos) {
+        string fileName = filePath.substr(slashIndex + 1);
+        if (fileName.at(0) != '.') {
+            size_t dotIndex = filePath.rfind('.');
+            if (dotIndex == string::npos && mediaType_ != MEDIA_TYPE_FILE) {
+                return errCode;
+            }
+        }
+    }
+
     ofstream file(filePath);
     if (!file) {
         MEDIA_ERR_LOG("Output file path could not be created");
@@ -269,14 +280,33 @@ int32_t FileAsset::DeleteAsset(const string &filePath)
 
 int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
 {
+    int32_t errCode = FAIL;
+
+    if (filePath.empty() || mode.empty()) {
+        return errCode;
+    }
+
     int32_t flags = O_RDWR;
     if (mode == MEDIA_FILEMODE_READONLY) {
         flags = O_RDONLY;
     } else if (mode == MEDIA_FILEMODE_WRITEONLY) {
         flags = O_WRONLY;
+    } else if (mode == MEDIA_FILEMODE_WRITETRUNCATE) {
+        flags = O_WRONLY | O_TRUNC;
+    } else if (mode == MEDIA_FILEMODE_WRITEAPPEND) {
+        flags = O_WRONLY | O_APPEND;
+    } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE) {
+        flags = O_RDWR | O_TRUNC;
     }
 
-    return open(filePath.c_str(), flags);
+    char actualPath[PATH_MAX];
+    auto absFilePath = realpath(filePath.c_str(), actualPath);
+    if (absFilePath == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path");
+        return errCode;
+    }
+
+    return open(absFilePath, flags);
 }
 
 int32_t FileAsset::CloseAsset(int32_t fd)

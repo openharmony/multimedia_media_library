@@ -61,7 +61,6 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
     values.PutInt(MEDIA_DATA_DB_DURATION, metadata.GetFileDuration());
     values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
 
-    values.PutInt(MEDIA_DATA_DB_ALBUM_ID, metadata.GetAlbumId());
     values.PutString(MEDIA_DATA_DB_ALBUM_NAME, metadata.GetAlbumName());
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
 
@@ -75,7 +74,7 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
         return "";
     }
 
-    return mediaTypeUri + "/" + to_string(rowNum);
+    return (!mediaTypeUri.empty() ? (mediaTypeUri + "/" + to_string(rowNum)) : mediaTypeUri);
 }
 
 vector<string> MediaScannerDb::BatchInsert(const vector<Metadata> &metadataList)
@@ -98,41 +97,11 @@ unique_ptr<Metadata> MediaScannerDb::ReadMetadata(const string &path)
         Uri uri(MEDIALIBRARY_DATA_URI);
         vector<string> columns = {};
         resultSet = rdbhelper_->Query(uri, columns, predicates);
-        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{public}s", path.c_str());
     }
 
-    unique_ptr<Metadata> metadata = make_unique<Metadata>();
-    CHECK_AND_RETURN_RET_LOG(metadata != nullptr, nullptr, "Metadata object creation failed");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{public}s", path.c_str());
 
-    int32_t rowId = get<int32_t>(GetColumnValue(MEDIA_DATA_DB_ID, resultSet, DataType::TYPE_INT));
-
-    metadata->SetFileId(rowId);
-    metadata->SetFileHeight(get<int32_t>(GetColumnValue(MEDIA_DATA_DB_WIDTH, resultSet, DataType::TYPE_INT)));
-    metadata->SetFileDuration(get<int32_t>(GetColumnValue(MEDIA_DATA_DB_DURATION, resultSet, DataType::TYPE_INT)));
-    metadata->SetOrientation(get<int32_t>(GetColumnValue(MEDIA_DATA_DB_ORIENTATION, resultSet, DataType::TYPE_INT)));
-    metadata->SetAlbumId(get<int32_t>(GetColumnValue(MEDIA_DATA_DB_ALBUM_ID, resultSet, DataType::TYPE_INT)));
-    metadata->SetParentId(get<int32_t>(GetColumnValue(MEDIA_DATA_DB_PARENT_ID, resultSet, DataType::TYPE_INT)));
-    metadata->SetFileHeight(get<int32_t>(GetColumnValue(MEDIA_DATA_DB_HEIGHT, resultSet, DataType::TYPE_INT)));
-    metadata->SetFileMediaType(static_cast<MediaType>(get<int32_t>(GetColumnValue(MEDIA_DATA_DB_MEDIA_TYPE,
-        resultSet, DataType::TYPE_INT))));
-
-    string fileUri = get<string>(GetColumnValue(MEDIA_DATA_DB_URI, resultSet, DataType::TYPE_STRING));
-    metadata->SetUri(fileUri + "/" + to_string(rowId));
-    metadata->SetFileMimeType(get<string>(GetColumnValue(MEDIA_DATA_DB_MIME_TYPE, resultSet, DataType::TYPE_STRING)));
-    metadata->SetFileName(get<string>(GetColumnValue(MEDIA_DATA_DB_NAME, resultSet, DataType::TYPE_STRING)));
-    metadata->SetFileTitle(get<string>(GetColumnValue(MEDIA_DATA_DB_TITLE, resultSet, DataType::TYPE_STRING)));
-    metadata->SetAlbum(get<string>(GetColumnValue(MEDIA_DATA_DB_FILE_PATH, resultSet, DataType::TYPE_STRING)));
-    metadata->SetFileArtist(get<string>(GetColumnValue(MEDIA_DATA_DB_ARTIST, resultSet, DataType::TYPE_STRING)));
-    metadata->SetAlbumName(get<string>(GetColumnValue(MEDIA_DATA_DB_ALBUM_NAME, resultSet, DataType::TYPE_STRING)));
-    metadata->SetRelativePath(get<string>(GetColumnValue(MEDIA_DATA_DB_RELATIVE_PATH, resultSet,
-        DataType::TYPE_STRING)));
-    metadata->SetFilePath(get<string>(GetColumnValue(MEDIA_DATA_DB_FILE_PATH, resultSet,
-        DataType::TYPE_STRING)));
-
-    metadata->SetFileSize(get<int64_t>(GetColumnValue(MEDIA_DATA_DB_SIZE, resultSet, DataType::TYPE_LONG)));
-    metadata->SetFileDateAdded(get<int64_t>(GetColumnValue(MEDIA_DATA_DB_DATE_ADDED, resultSet, DataType::TYPE_LONG)));
-    metadata->SetFileDateModified(get<int64_t>(GetColumnValue(MEDIA_DATA_DB_DATE_MODIFIED, resultSet,
-        DataType::TYPE_LONG)));
+    unique_ptr<Metadata> metadata = FillMetadata(resultSet);
 
     return metadata;
 }
@@ -174,7 +143,6 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
     values.PutInt(MEDIA_DATA_DB_DURATION, metadata.GetFileDuration());
 
-    values.PutInt(MEDIA_DATA_DB_ALBUM_ID, metadata.GetAlbumId());
     values.PutString(MEDIA_DATA_DB_ALBUM_NAME, metadata.GetAlbumName());
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
 
@@ -188,7 +156,7 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
         return "";
     }
 
-    return mediaTypeUri + "/" + to_string(metadata.GetFileId());
+    return (!mediaTypeUri.empty() ? (mediaTypeUri + "/" + to_string(metadata.GetFileId())) : mediaTypeUri);
 }
 
 /**
@@ -215,11 +183,11 @@ int32_t MediaScannerDb::UpdateMetadata(const vector<Metadata> &metadataList)
  * @return true
  * @return false
  */
-bool MediaScannerDb::DeleteMetadata(const int32_t id)
+bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 {
     int32_t deletedCount(0);
     DataAbilityPredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(id));
+    predicates.In(MEDIA_DATA_DB_ID, idList);
 
     Uri deleteUri(MEDIALIBRARY_DATA_URI);
 
@@ -256,22 +224,14 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
     if (rdbhelper_ != nullptr) {
         Uri abilityUri(MEDIALIBRARY_DATA_URI);
         resultSet = rdbhelper_->Query(abilityUri, columns, predicates);
-        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{public}s", path.c_str());
     }
+
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{public}s", path.c_str());
 
     int ret = resultSet->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, nullptr, "Failed to fetch first record");
 
-    unique_ptr<Metadata> metaInfo = make_unique<Metadata>();
-    CHECK_AND_RETURN_RET_LOG(metaInfo != nullptr, nullptr, "Memory failure");
-
-    if (metaInfo != nullptr) {
-        metaInfo->SetFileId(get<int32_t>(GetColumnValue(MEDIA_DATA_DB_ID, resultSet, DataType::TYPE_INT)));
-        metaInfo->SetFileSize(get<int64_t>(GetColumnValue(MEDIA_DATA_DB_SIZE, resultSet, DataType::TYPE_LONG)));
-        metaInfo->SetFileName(get<string>(GetColumnValue(MEDIA_DATA_DB_NAME, resultSet, DataType::TYPE_STRING)));
-        metaInfo->SetFileDateModified(get<int64_t>(GetColumnValue(MEDIA_DATA_DB_DATE_MODIFIED, resultSet,
-            DataType::TYPE_LONG)));
-    }
+    unique_ptr<Metadata> metaInfo = FillMetadata(resultSet);
 
     return metaInfo;
 }
@@ -292,17 +252,17 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
     columns.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
 
     DataAbilityPredicates predicates;
-    predicates.Like(MEDIA_DATA_DB_FILE_PATH, path);
+    // Append % to end of the path for using LIKE statement
+    auto modifiedPath = path;
+    modifiedPath = modifiedPath.back() != '/' ? modifiedPath + "/%" : modifiedPath + "%";
+    predicates.Like(MEDIA_DATA_DB_FILE_PATH, modifiedPath);
 
     if (rdbhelper_ != nullptr) {
         Uri queryUri(MEDIALIBRARY_DATA_URI);
         resultSet = rdbhelper_->Query(queryUri, columns, predicates);
     }
 
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("No result found for this path");
-        return idMap;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, idMap, "No entries found for this path");
 
     int32_t id(0);
     int32_t idIndex(0);
@@ -339,7 +299,7 @@ string MediaScannerDb::GetFileDBUriFromPath(const string &path)
 
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
         MEDIA_ERR_LOG("No result found for this path");
-        return nullptr;
+        return uri;
     }
 
     int32_t intValue(0);
@@ -352,8 +312,8 @@ string MediaScannerDb::GetFileDBUriFromPath(const string &path)
 
 int32_t MediaScannerDb::GetIdFromUri(const string &uri) const
 {
-    int32_t mediaFileId = -1;
-    size_t index;
+    int32_t mediaFileId = 0;
+    size_t index = 0;
 
     if (uri.length() != 0) {
         index =  uri.find_last_of("/");
@@ -365,7 +325,7 @@ int32_t MediaScannerDb::GetIdFromUri(const string &uri) const
 
 int32_t MediaScannerDb::ReadAlbumId(const string &path)
 {
-    int32_t albumId = -1;
+    int32_t albumId = 0;
     int32_t columnIndex = -1;
 
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
@@ -439,7 +399,7 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
 
 int32_t MediaScannerDb::InsertAlbum(const Metadata &metadata)
 {
-    int32_t id = -1;
+    int32_t id = 0;
 
     string uri = InsertMetadata(metadata);
     id = GetIdFromUri(uri);
@@ -449,7 +409,7 @@ int32_t MediaScannerDb::InsertAlbum(const Metadata &metadata)
 
 int32_t MediaScannerDb::UpdateAlbum(const Metadata &metadata)
 {
-    int32_t id = -1;
+    int32_t id = 0;
 
     string uri = UpdateMetadata(metadata);
     id = GetIdFromUri(uri);
@@ -485,54 +445,61 @@ void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)
     rdbhelper_->NotifyChange(uri);
 }
 
-/**
- * @brief Returns the resutset value based on datatype
- *
- * @param col
- * @param resultSet
- * @param type
- * @return variant<int32_t, int64_t, string, double>
- */
-variant<int32_t, int64_t, string, double> MediaScannerDb::GetColumnValue(const string &col,
-    const shared_ptr<AbsSharedResultSet> &resultSet, DataType type)
+unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<AbsSharedResultSet> &resultSet)
 {
-    int32_t columnIndex(0);
-    int32_t intValue(0);
-    int32_t ret(0);
-    int64_t longValue(0);
-    double doubleValue(0);
-    string strValue("");
+    unique_ptr<Metadata> metadata = make_unique<Metadata>();
+    CHECK_AND_RETURN_RET_LOG(metadata != nullptr, nullptr, "Metadata object creation failed");
 
-    variant<int32_t, int64_t, string, double> columnData;
+    std::vector<std::string> columnNames;
+    resultSet->GetAllColumnNames(columnNames);
 
-    resultSet->GetColumnIndex(col, columnIndex);
+    for (const auto &col : columnNames) {
+        int32_t columnIndex(0);
+        resultSet->GetColumnIndex(col, columnIndex);
 
-    switch (type) {
-        case DataType::TYPE_INT:
-            ret = resultSet->GetInt(columnIndex, intValue);
-            CHECK_AND_RETURN_RET_LOG(ret == 0, ERR_FAIL, "Failed to obtain value for index %{public}d", columnIndex);
-            columnData = intValue;
-            break;
-        case DataType::TYPE_LONG:
-            ret = resultSet->GetLong(columnIndex, longValue);
-            CHECK_AND_RETURN_RET_LOG(ret == 0, ERR_FAIL, "Failed to obtain value for index %{public}d", columnIndex);
-            columnData = longValue;
-            break;
-        case DataType::TYPE_DOUBLE:
-            ret = resultSet->GetDouble(columnIndex, doubleValue);
-            CHECK_AND_RETURN_RET_LOG(ret == 0, ERR_FAIL, "Failed to obtain value for index %{public}d", columnIndex);
-            columnData = doubleValue;
-            break;
-        case DataType::TYPE_STRING:
-            ret = resultSet->GetString(columnIndex, strValue);
-            CHECK_AND_RETURN_RET_LOG(ret == 0, "", "Failed to obtain value for index %{public}d", columnIndex);
-            columnData = strValue;
-            break;
-        default:
-            break;
+        auto dataType = DataType::TYPE_NULL;
+        auto itr = metadata->memberFuncMap_.find(col);
+        if (itr != metadata->memberFuncMap_.end()) {
+            dataType = itr->second.first;
+        }
+
+        int32_t ret(0);
+        std::variant<int32_t, int64_t, std::string, MediaType> data = 0;
+
+        switch (dataType) {
+            case DataType::TYPE_INT: {
+                int32_t intValue(0);
+                ret = resultSet->GetInt(columnIndex, intValue);
+                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{public}d", columnIndex);
+                data = intValue;
+                break;
+            }
+            case DataType::TYPE_LONG: {
+                int64_t longValue(0);
+                ret = resultSet->GetLong(columnIndex, longValue);
+                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{public}d", columnIndex);
+                data = longValue;
+                break;
+            }
+            case DataType::TYPE_STRING: {
+                string strValue("");
+                ret = resultSet->GetString(columnIndex, strValue);
+                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain string value for index %{public}d", columnIndex);
+                data = strValue;
+                break;
+            }
+            default:
+                break;
+        }
+
+        // Find the function pointer from map and pass data to fn ptr
+        auto requestFunc = itr->second.second;
+        if (requestFunc != nullptr) {
+            (metadata.get()->*requestFunc)(data);
+        }
     }
 
-    return columnData;
+    return metadata;
 }
 } // namespace Media
 } // namespace OHOS

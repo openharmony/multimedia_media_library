@@ -586,4 +586,67 @@ declare namespace mediaLibrary {
         release(callback: AsyncCallback<void>): void;
         release(): Promise<void>;
     }
+
+    enum ScanState {
+        SCAN_ERROR = -1,
+        SCAN_SUCCESS = 0,
+        SCAN_EMPTY_ARGS = 1,
+        SCAN_NOT_ACCESSIBLE = 2,
+        SCAN_INCORRECT_PATH = 3,
+        SCAN_MEM_ALLOC_FAIL = 4,
+        SCAN_MIMETYPE_NOTSUPPORT = 5,
+        SCAN_SCAN_NOT_INIT = 6,
+        SCAN_SERVICE_NOT_READY = 7,
+        SCAN_INV_CB_ERR = 8
+    }
+
+    /**
+     * Defines the scan result.
+     *
+     * @SysCap SystemCapability.Multimedia.MediaLibrary
+     * @devices common
+     * @version 1
+     */
+     interface ScanResult {
+        status : ScanState;
+        // fileUri will be an URI when we call scanFile API & in scanDir API call it will be blank
+        fileUri : string;
+    }
+
+    /**
+     * Returns an instance of MediaScannerHelper
+     *
+     * @return Instance of MediaScannerHelper
+     * @version1
+     */
+    function getScannerInstance(): MediaScannerHelper;
+
+    /**
+     * Defines the MediaScannerHelper class and provides functions to scan the specified dir/file of media storage.
+     *
+     * @SysCap SystemCapability.Multimedia.MediaLibrary
+     * @devices common
+     * @version 1
+     */
+     class MediaScannerHelper {
+        /**
+         * This API will help to scan the specified directory and updates the metadata to database
+         *
+         * @param scanDirPath Valid path to a directory {/data/media}
+         * @param callback Callback object to be passed along with request
+         * @return int32_t Returns the scan state of scanDir
+         * @version 1
+         */
+        scanDir(scanDirPath: string, callback: AsyncCallback<ScanResult>): void;
+
+        /**
+         * This API will help to scan the specified file and updates the metadata to database
+         *
+         * @param scanFilePath Valid path to a file along with filename{/data/media/sample.mp3}
+         * @param callback Callback object to be passed along with request
+         * @return int32_t Returns the scan state of scanFile
+         * @version 1
+         */
+        scanFile(scanFilePath: string, callback: AsyncCallback<ScanResult>): void;
+     }
 }

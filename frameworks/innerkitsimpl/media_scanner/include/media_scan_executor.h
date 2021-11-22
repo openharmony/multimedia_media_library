@@ -19,10 +19,7 @@
 #include <string>
 #include <iostream>
 #include <thread>
-#include <vector>
 #include <queue>
-#include <mutex>
-#include <condition_variable>
 #include "media_log.h"
 
 namespace OHOS {
@@ -31,8 +28,9 @@ using namespace std;
 
 class ScanRequest {
 public:
-    ScanRequest() {}
-    ScanRequest(string path) : path_(path) {}
+    ScanRequest() : requestId_(0), path_(""), isDir_(false) {}
+    ScanRequest(string path) : requestId_(0), path_(path), isDir_(false) {}
+    ~ScanRequest() = default;
 
     int32_t GetRequestId() const
     {
@@ -75,16 +73,13 @@ public:
     void SetCallbackFunction(callback_func cb_function);
 
 private:
-    const int32_t MAX_THREAD = 1;
-    std::string name_;
-    std::mutex lock_;
-    std::vector<std::thread> scanThreads_;
+    const size_t MAX_THREAD = 1;
+    size_t activeThread_ = 0;
     std::queue<unique_ptr<ScanRequest>> scanRequestQueue_;
-    std::condition_variable conditionVariable_;
-    bool exit_ = false;
     callback_func cb_function_ = nullptr;
 
     void HandleScanExecution();
+    void PrepareScanExecution();
 };
 } // namespace Media
 } // namespace OHOS
