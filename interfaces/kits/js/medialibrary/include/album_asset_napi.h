@@ -26,6 +26,7 @@
 #include "video_asset_napi.h"
 
 namespace OHOS {
+namespace Media {
 static const std::string ALBUM_ASSET_NAPI_CLASS_NAME = "Album";
 
 class AlbumAssetNapi {
@@ -85,5 +86,6 @@ struct AlbumAsyncContext {
     std::vector<std::unique_ptr<Media::VideoAsset>> videoAssets;
     std::vector<std::unique_ptr<Media::ImageAsset>> imageAssets;
 };
+} // namespace Media
 } // namespace OHOS
 #endif /* ALBUM_ASSET_NAPI_H */

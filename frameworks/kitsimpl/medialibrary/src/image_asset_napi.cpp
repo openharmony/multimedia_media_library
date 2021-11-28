@@ -21,12 +21,16 @@ using OHOS::HiviewDFX::HiLogLabel;
 
 namespace {
     constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "ImageAssetNapi"};
+}
+
+namespace ImageAssetConstants {
     const int32_t DEFAULT_IMAGE_WIDTH = 1280;
     const int32_t DEFAULT_IMAGE_HEIGHT = 720;
     const std::string DEFAULT_IMAGE_MIME_TYPE = "image/*";
 }
 
 namespace OHOS {
+namespace Media {
 napi_ref ImageAssetNapi::sConstructor_ = nullptr;
 Media::ImageAsset *ImageAssetNapi::sImageAsset_ = nullptr;
 Media::IMediaLibraryClient *ImageAssetNapi::sMediaLibrary_ = nullptr;
@@ -34,9 +38,9 @@ Media::IMediaLibraryClient *ImageAssetNapi::sMediaLibrary_ = nullptr;
 ImageAssetNapi::ImageAssetNapi()
     : env_(nullptr), wrapper_(nullptr)
 {
-    width_ = DEFAULT_IMAGE_WIDTH;
-    height_ = DEFAULT_IMAGE_HEIGHT;
-    mimeType_ = DEFAULT_IMAGE_MIME_TYPE;
+    width_ = ImageAssetConstants::DEFAULT_IMAGE_WIDTH;
+    height_ = ImageAssetConstants::DEFAULT_IMAGE_HEIGHT;
+    mimeType_ = ImageAssetConstants::DEFAULT_IMAGE_MIME_TYPE;
 }
 
 ImageAssetNapi::~ImageAssetNapi()
@@ -258,4 +262,5 @@ void ImageAssetNapi::UpdateImageAssetInfo()
     width_  = sImageAsset_->width_;
     height_ = sImageAsset_->height_;
 }
+} // namespace Media
 } // namespace OHOS

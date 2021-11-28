@@ -28,8 +28,8 @@ using namespace std;
 
 class ScanRequest {
 public:
-    ScanRequest() : requestId_(0), path_(""), isDir_(false) {}
     ScanRequest(string path) : requestId_(0), path_(path), isDir_(false) {}
+    ScanRequest() : ScanRequest("") {}
     ~ScanRequest() = default;
 
     int32_t GetRequestId() const
@@ -66,8 +66,8 @@ private:
 class MediaScanExecutor {
 typedef void (*callback_func)(ScanRequest);
 public:
-    MediaScanExecutor();
-    ~MediaScanExecutor();
+    MediaScanExecutor() = default;
+    ~MediaScanExecutor() = default;
 
     void ExecuteScan(unique_ptr<ScanRequest> request);
     void SetCallbackFunction(callback_func cb_function);

@@ -243,7 +243,7 @@ int32_t FileAsset::CreateAsset(const string &filePath)
     size_t slashIndex = filePath.rfind('/');
     if (slashIndex != string::npos) {
         string fileName = filePath.substr(slashIndex + 1);
-        if (fileName.at(0) != '.') {
+        if (!fileName.empty() && fileName.at(0) != '.') {
             size_t dotIndex = filePath.rfind('.');
             if (dotIndex == string::npos && mediaType_ != MEDIA_TYPE_FILE) {
                 return errCode;
@@ -266,7 +266,9 @@ int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
 {
     int32_t errRet = -1;
 
-    if (MediaFileUtils::IsFileExists(oldPath) && !MediaFileUtils::IsFileExists(newPath)) {
+    if (!oldPath.empty() && !newPath.empty() &&
+        MediaFileUtils::IsFileExists(oldPath) &&
+        !MediaFileUtils::IsFileExists(newPath)) {
         errRet = rename(oldPath.c_str(), newPath.c_str());
     }
 

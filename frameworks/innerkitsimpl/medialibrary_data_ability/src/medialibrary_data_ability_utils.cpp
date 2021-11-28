@@ -37,6 +37,16 @@ bool MediaLibraryDataAbilityUtils::IsNumber(const string &str)
     return true;
 }
 
+int64_t MediaLibraryDataAbilityUtils::GetAlbumDateModified(const string &albumPath)
+{
+    struct stat statInfo {};
+    if (!albumPath.empty() && stat(albumPath.c_str(), &statInfo) == 0) {
+        return (statInfo.st_mtime);
+    }
+
+    return 0;
+}
+
 string MediaLibraryDataAbilityUtils::GetOperationType(const string &uri)
 {
     string oprn("");

@@ -36,12 +36,13 @@
 #include "values_bucket.h"
 
 namespace OHOS {
+namespace Media {
 static const std::string ALBUM_NAPI_CLASS_NAME = "Album";
 
 class AlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
-    static napi_value CreateAlbumNapi(napi_env env, Media::AlbumAsset &albumData,
+    static napi_value CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
         std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper);
     int32_t GetAlbumId() const;
     std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper() const;
@@ -54,7 +55,7 @@ public:
 private:
     static void AlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value AlbumNapiConstructor(napi_env env, napi_callback_info info);
-    void SetAlbumNapiProperties(const Media::AlbumAsset &albumData);
+    void SetAlbumNapiProperties(const AlbumAsset &albumData);
 
     static napi_value JSGetAlbumId(napi_env env, napi_callback_info info);
     static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
@@ -80,7 +81,7 @@ private:
     napi_ref wrapper_;
 
     static napi_ref sConstructor_;
-    static Media::AlbumAsset *sAlbumData_;
+    static AlbumAsset *sAlbumData_;
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
 };
 
@@ -94,7 +95,8 @@ struct AlbumNapiAsyncContext {
     std::string selection;
     std::vector<std::string> selectionArgs;
     std::string order;
-    std::unique_ptr<Media::FetchResult> fetchResult;
+    std::unique_ptr<FetchResult> fetchResult;
 };
+} // namespace Media
 } // namespace OHOS
 #endif /* ALBUM_NAPI_H */

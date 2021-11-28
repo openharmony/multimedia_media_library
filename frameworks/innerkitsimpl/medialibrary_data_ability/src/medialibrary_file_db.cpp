@@ -68,7 +68,7 @@ int32_t MediaLibraryFileDb::Modify(const string &rowNum, const string &dstPath,
         if (stat(dstPath.c_str(), &statInfo) == 0) {
             ValuesBucket values;
             values.PutString(MEDIA_DATA_DB_FILE_PATH, dstPath);
-            values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, dstPath);
+            values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, (found != string::npos) ? (dstPath.substr(0, found)) : "");
             values.PutString(MEDIA_DATA_DB_NAME, dispName);
             values.PutLong(MEDIA_DATA_DB_DATE_ADDED, statInfo.st_ctime);
             values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);

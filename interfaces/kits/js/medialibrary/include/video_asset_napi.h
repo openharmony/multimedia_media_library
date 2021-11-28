@@ -22,6 +22,7 @@
 #include "video_asset.h"
 
 namespace OHOS {
+namespace Media {
 static const std::string VIDEO_ASSET_NAPI_CLASS_NAME = "VideoAsset";
 
 class VideoAssetNapi : public MediaAssetNapi {
@@ -56,5 +57,6 @@ private:
     static Media::VideoAsset *sVideoAsset_;
     static Media::IMediaLibraryClient *sMediaLibrary_;
 };
+} // namespace OHOS
 } // namespace OHOS
 #endif /* VIDEO_ASSET_NAPI_H */

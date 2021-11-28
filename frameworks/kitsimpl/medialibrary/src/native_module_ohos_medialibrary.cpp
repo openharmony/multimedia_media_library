@@ -16,6 +16,7 @@
 #include "native_module_ohos_medialibrary.h"
 
 namespace OHOS {
+namespace Media {
 /*
  * Function registering all props and functions of ohos.medialibrary module
  */
@@ -55,4 +56,5 @@ extern "C" __attribute__((constructor)) void RegisterModule(void)
 {
     napi_module_register(&g_module);
 }
+} // namespace Media
 } // namespace OHOS

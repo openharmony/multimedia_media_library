@@ -26,6 +26,7 @@ namespace {
 }
 
 namespace OHOS {
+namespace Media {
 napi_ref AVMetadataHelperNapi::constructor_ = nullptr;
 const std::string CLASS_NAME = "AVMetadataHelper";
 
@@ -692,4 +693,5 @@ napi_value AVMetadataHelperNapi::Release(napi_env env, napi_callback_info info)
 
     return undefinedResult;
 }
+}  // namespace Media
 }  // namespace OHOS

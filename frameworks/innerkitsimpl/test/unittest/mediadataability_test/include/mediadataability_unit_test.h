@@ -13,15 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef MEDIADATAABILITY_MODULE_TEST_H
-#define MEDIADATAABILITY_MODULE_TEST_H
+#ifndef MEDIADATAABILITY_UNIT_TEST_H
+#define MEDIADATAABILITY_UNIT_TEST_H
 
 #include "gtest/gtest.h"
-#include "media_data_ability.h"
+#include "medialibrary_data_ability.h"
+#include "fetch_result.h"
 
 namespace OHOS {
 namespace Media {
-class MediaDataAbilityModuleTest : public testing::Test {
+class MediaDataAbilityUnitTest : public testing::Test {
 public:
     /* SetUpTestCase:The preset action of the test suite is executed before the first TestCase */
     static void SetUpTestCase(void);
@@ -37,4 +38,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIADATAABILITY_MODULE_TEST_H
+#endif // MEDIADATAABILITY_UNIT_TEST_H

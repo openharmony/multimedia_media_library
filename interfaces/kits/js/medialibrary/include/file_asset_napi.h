@@ -22,6 +22,7 @@
 #include "napi/native_node_api.h"
 
 namespace OHOS {
+namespace Media {
 static const std::string FILE_ASSET_NAPI_CLASS_NAME = "FileAsset";
 
 class FileAssetNapi {
@@ -30,10 +31,10 @@ public:
     ~FileAssetNapi();
 
     static napi_value Init(napi_env env, napi_value exports);
-    static napi_value CreateFileAsset(napi_env env, Media::FileAsset &iAsset);
+    static napi_value CreateFileAsset(napi_env env, FileAsset &iAsset);
 
     std::string GetFilePath() const;
-    Media::MediaType GetFileMediaType() const;
+    MediaType GetFileMediaType() const;
     std::string GetFileDisplayName() const;
 
 private:
@@ -71,7 +72,7 @@ private:
     std::string displayName_;
     std::string filePath_;
     std::string mimeType_;
-    Media::MediaType mediaType_;
+    MediaType mediaType_;
     int64_t size_;
     int64_t dateAdded_;
     int64_t dateModified_;
@@ -96,7 +97,8 @@ private:
     napi_ref wrapper_;
 
     static napi_ref sConstructor_;
-    static Media::FileAsset *sFileAsset_;
+    static FileAsset *sFileAsset_;
 };
+} // namespace Media
 } // namespace OHOS
 #endif /* FILE_ASSET_NAPI_H */

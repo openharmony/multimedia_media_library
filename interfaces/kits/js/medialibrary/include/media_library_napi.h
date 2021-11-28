@@ -49,6 +49,7 @@
 #include "media_log.h"
 
 namespace OHOS {
+namespace Media {
 static const std::string MEDIA_LIB_NAPI_CLASS_NAME = "MediaLibrary";
 const std::string AUDIO_LISTENER = "audio";
 const std::string VIDEO_LISTENER = "video";
@@ -56,17 +57,14 @@ const std::string IMAGE_LISTENER = "image";
 const std::string FILE_LISTENER = "file";
 
 struct MediaChangeListener {
-    Media::MediaType mediaType;
+    MediaType mediaType;
 };
 
 class ChangeListenerNapi {
 public:
     explicit ChangeListenerNapi(napi_env env) : env_(env) {}
 
-    ~ChangeListenerNapi()
-    {
-        MEDIA_ERR_LOG("ChangeListener destructor called");
-    }
+    ~ChangeListenerNapi() = default;
 
     void OnChange(const MediaChangeListener &listener, const napi_ref cbRef);
 
@@ -84,7 +82,7 @@ private:
 class MediaObserver : public AAFwk::DataAbilityObserverStub {
 public:
     MediaObserver() {}
-    MediaObserver(const ChangeListenerNapi &listObj, Media::MediaType mediaType)
+    MediaObserver(const ChangeListenerNapi &listObj, MediaType mediaType)
     {
         listObj_ = const_cast<ChangeListenerNapi *>(&listObj);
         mediaType_ = mediaType;
@@ -94,21 +92,19 @@ public:
 
     void OnChange() override
     {
-        MEDIA_ERR_LOG("OnChange invoked");
         MediaChangeListener listener;
-        MEDIA_ERR_LOG("mediatype = %{public}d", mediaType_);
         listener.mediaType = mediaType_;
         listObj_->OnChange(listener, listObj_->cbOnRef_);
     }
 
     ChangeListenerNapi *listObj_ = nullptr;
-    Media::MediaType mediaType_;
+    MediaType mediaType_;
 };
 
 class MediaLibraryNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
-    Media::IMediaLibraryClient* GetMediaLibClientInstance();
+    IMediaLibraryClient* GetMediaLibClientInstance();
 
     MediaLibraryNapi();
     ~MediaLibraryNapi();
@@ -158,7 +154,7 @@ private:
     void UnregisterChange(napi_env env, const ChangeListenerNapi &listObj);
     void UnregisterChangeByType(std::string type, const ChangeListenerNapi &listObj);
 
-    Media::IMediaLibraryClient *mediaLibrary_;
+    IMediaLibraryClient *mediaLibrary_;
 
     std::vector<std::string> subscribeList_;
     std::vector<std::string> unsubscribeList_;
@@ -177,19 +173,20 @@ struct MediaLibraryAsyncContext {
     napi_deferred deferred;
     napi_ref callbackRef;
     bool status;
-    AssetType assetType;
+    NapiAssetType assetType;
     AlbumType albumType;
     MediaLibraryNapi *objectInfo;
     std::string selection;
     std::vector<std::string> selectionArgs;
     std::string order;
-    std::vector<std::unique_ptr<Media::MediaAsset>> mediaAssets;
-    std::vector<std::unique_ptr<Media::AudioAsset>> audioAssets;
-    std::vector<std::unique_ptr<Media::VideoAsset>> videoAssets;
-    std::vector<std::unique_ptr<Media::ImageAsset>> imageAssets;
-    std::vector<std::unique_ptr<Media::AlbumAsset>> albumAssets;
-    std::unique_ptr<Media::FetchResult> fetchFileResult;
+    std::vector<std::unique_ptr<MediaAsset>> mediaAssets;
+    std::vector<std::unique_ptr<AudioAsset>> audioAssets;
+    std::vector<std::unique_ptr<VideoAsset>> videoAssets;
+    std::vector<std::unique_ptr<ImageAsset>> imageAssets;
+    std::vector<std::unique_ptr<AlbumAsset>> albumAssets;
+    std::unique_ptr<FetchResult> fetchFileResult;
     OHOS::NativeRdb::ValuesBucket valuesBucket;
 };
+} // namespace Media
 } // namespace OHOS
 #endif /* MEDIA_LIBRARY_NAPI_H */

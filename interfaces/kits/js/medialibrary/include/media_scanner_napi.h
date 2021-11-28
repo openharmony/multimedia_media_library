@@ -25,9 +25,10 @@
 #include "napi/native_node_api.h"
 
 namespace OHOS {
+namespace Media {
 static const std::string SCANNER_HELPER_NAPI_CLASS_NAME = "MediaScannerHelper";
 
-class MediaScannerNapiCallback : public Media::IMediaScannerAppCallback {
+class MediaScannerNapiCallback : public IMediaScannerAppCallback {
 public:
     void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
     void SetToMap(const std::string &path, const napi_ref &cbRef);
@@ -54,7 +55,8 @@ private:
     static napi_value ScanDir(napi_env env, napi_callback_info info);
     static napi_value GetMediaScannerInstance(napi_env env, napi_callback_info info);
 
-    std::shared_ptr<Media::IMediaScannerClient> mediaScanner_;
+    static napi_value NapiScanUtils(napi_env env, napi_callback_info info, const std::string &scanType);
+    std::shared_ptr<IMediaScannerClient> mediaScanner_;
     std::shared_ptr<MediaScannerNapiCallback> mediaScannerNapiCallbackObj_;
 
     napi_env env_;
@@ -62,5 +64,6 @@ private:
 
     static napi_ref sConstructor_;
 };
+} // namespace Media
 } // namespace OHOS
 #endif /* MEDIA_SCANNER_NAPI_H */

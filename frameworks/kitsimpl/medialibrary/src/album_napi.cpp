@@ -21,18 +21,13 @@ using OHOS::HiviewDFX::HiLogLabel;
 
 namespace {
     constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AlbumNapi"};
-    const int32_t DEFAULT_ALBUM_ID = 0;
-    const std::string DEFAULT_ALBUM_NAME = "Unknown";
-    const std::string DEFAULT_ALBUM_PATH = "Unknown";
-    const int64_t DEFAULT_ALBUM_DATE_MODIFIED = 0;
-    const bool DEFAULT_ALBUM_VIRTUAL = false;
-    const std::string DEFAULT_ALBUM_RELATIVE_PATH = "Unknown";
 }
 
 namespace OHOS {
+namespace Media {
 using namespace std;
 napi_ref AlbumNapi::sConstructor_ = nullptr;
-Media::AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
+AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> AlbumNapi::sAbilityHelper = nullptr;
 
 AlbumNapi::AlbumNapi()
@@ -94,7 +89,7 @@ napi_value AlbumNapi::Init(napi_env env, napi_value exports)
     return nullptr;
 }
 
-void AlbumNapi::SetAlbumNapiProperties(const Media::AlbumAsset &albumData)
+void AlbumNapi::SetAlbumNapiProperties(const AlbumAsset &albumData)
 {
     this->albumId_ = albumData.GetAlbumId();
     this->albumName_ = albumData.GetAlbumName();
@@ -136,7 +131,7 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
     return result;
 }
 
-napi_value AlbumNapi::CreateAlbumNapi(napi_env env, Media::AlbumAsset &albumData,
+napi_value AlbumNapi::CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
     std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper)
 {
     napi_status status;
@@ -415,7 +410,7 @@ napi_value AlbumNapi::JSGetAlbumRelativePath(napi_env env, napi_callback_info in
 static void GetFetchOptionsParam(napi_env env, napi_value arg, const AlbumNapiAsyncContext &context, bool &err)
 {
     AlbumNapiAsyncContext *asyncContext = const_cast<AlbumNapiAsyncContext *>(&context);
-    char buffer[SIZE];
+    char buffer[PATH_MAX];
     size_t res;
     uint32_t len = 0;
     napi_value property = nullptr;
@@ -426,13 +421,13 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const AlbumNapiAs
     napi_has_named_property(env, arg, "selections", &present);
     if (present) {
         if (napi_get_named_property(env, arg, "selections", &property) != napi_ok
-            || napi_get_value_string_utf8(env, property, buffer, SIZE, &res) != napi_ok) {
+            || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
             HiLog::Error(LABEL, "Could not get the string argument!");
             err = true;
             return;
         } else {
             asyncContext->selection = buffer;
-            CHECK_IF_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         }
         present = false;
     }
@@ -440,13 +435,13 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const AlbumNapiAs
     napi_has_named_property(env, arg, "order", &present);
     if (present) {
         if (napi_get_named_property(env, arg, "order", &property) != napi_ok
-            || napi_get_value_string_utf8(env, property, buffer, SIZE, &res) != napi_ok) {
+            || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
             HiLog::Error(LABEL, "Could not get the string argument!");
             err = true;
             return;
         } else {
             asyncContext->order = buffer;
-            CHECK_IF_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         }
         present = false;
     }
@@ -457,9 +452,9 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const AlbumNapiAs
         napi_get_array_length(env, property, &len);
         for (size_t i = 0; i < len; i++) {
             napi_get_element(env, property, i, &stringItem);
-            napi_get_value_string_utf8(env, stringItem, buffer, SIZE, &res);
+            napi_get_value_string_utf8(env, stringItem, buffer, PATH_MAX, &res);
             asyncContext->selectionArgs.push_back(std::string(buffer));
-            CHECK_IF_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         }
     } else {
         HiLog::Error(LABEL, "Could not get the string argument!");
@@ -511,16 +506,16 @@ static void GetFileAssetsNative(napi_env env, const AlbumNapiAsyncContext &album
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.OrderByAsc(context->order);
-    predicates.EqualTo(Media::MEDIA_DATA_DB_PARENT_ID, std::to_string(context->objectInfo->GetAlbumId()));
-    predicates.NotEqualTo(Media::MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(Media::MEDIA_TYPE_ALBUM));
+    predicates.EqualTo(MEDIA_DATA_DB_PARENT_ID, std::to_string(context->objectInfo->GetAlbumId()));
+    predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(MEDIA_TYPE_ALBUM));
 
     std::vector<std::string> columns;
-    Uri uri(Media::MEDIALIBRARY_DATA_URI);
+    Uri uri(MEDIALIBRARY_DATA_URI);
 
     std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
         context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
 
-    context->fetchResult = std::make_unique<Media::FetchResult>(resultSet);
+    context->fetchResult = std::make_unique<FetchResult>(resultSet);
 }
 
 static void GetFileAssetsCompleteCallback(napi_env env, napi_status status, void* data)
@@ -571,7 +566,7 @@ napi_value AlbumNapi::JSGetAlbumFileAssets(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameter");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<AlbumNapiAsyncContext> asyncContext = std::make_unique<AlbumNapiAsyncContext>();
@@ -597,4 +592,5 @@ napi_value AlbumNapi::JSGetAlbumFileAssets(napi_env env, napi_callback_info info
 
     return result;
 }
+} // namespace Media
 } // namespace OHOS

@@ -51,6 +51,7 @@ public:
             const NativeRdb::DataAbilityPredicates &predicates) override;
     std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(const Uri &uri, const std::vector<std::string> &columns,
             const NativeRdb::DataAbilityPredicates &predicates) override;
+    int32_t OpenFile(const Uri &uri, const std::string &mode) override;
 
 protected:
     void OnStart(const AAFwk::Want& want) override;

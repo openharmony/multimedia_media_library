@@ -22,6 +22,7 @@
 #include "napi/native_node_api.h"
 
 namespace OHOS {
+namespace Media {
 static const std::string IMAGE_ASSET_NAPI_CLASS_NAME = "ImageAsset";
 
 class ImageAssetNapi : public MediaAssetNapi {
@@ -54,5 +55,6 @@ private:
     static Media::ImageAsset *sImageAsset_;
     static Media::IMediaLibraryClient *sMediaLibrary_;
 };
+} // namespace Media
 } // namespace OHOS
 #endif /* IMAGE_ASSET_NAPI_H */
