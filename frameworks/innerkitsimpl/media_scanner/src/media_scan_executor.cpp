@@ -19,8 +19,6 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-MediaScanExecutor::MediaScanExecutor() {}
-
 void MediaScanExecutor::SetCallbackFunction(callback_func cb_function)
 {
     cb_function_ = cb_function;
@@ -53,7 +51,5 @@ void MediaScanExecutor::PrepareScanExecution()
         }
     }
 }
-
-MediaScanExecutor::~MediaScanExecutor() {}
 } // namespace Media
 } // namespace OHOS

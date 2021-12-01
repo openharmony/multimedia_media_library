@@ -17,6 +17,7 @@
 #define FILE_ASSET_H
 
 #include <string>
+#include <limits.h>
 
 #include "media_lib_service_const.h"
 #include "media_data_ability_const.h"

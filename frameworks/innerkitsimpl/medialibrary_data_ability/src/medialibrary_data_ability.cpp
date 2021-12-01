@@ -255,11 +255,26 @@ void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_
 
         string id = MediaLibraryDataAbilityUtils::GetIdFromUri(actualUri);
         string srcPath = MediaLibraryDataAbilityUtils::GetPathFromDb(id, rdbStore);
-
-        std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
-        auto ret = scannerClient_->ScanFile(srcPath, scanFileCb);
-        CHECK_AND_RETURN_LOG(ret == 0, "Failed to initiate scan request");
+        if (!srcPath.empty()) {
+            std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
+            CHECK_AND_RETURN_LOG(scanFileCb != nullptr, "Failed to create scan file callback object");
+            auto ret = scannerClient_->ScanFile(srcPath, scanFileCb);
+            CHECK_AND_RETURN_LOG(ret == 0, "Failed to initiate scan request");
+        }
     }
+}
+
+int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mode)
+{
+    FileAsset fileAsset;
+
+    string id = MediaLibraryDataAbilityUtils::GetIdFromUri(uri.ToString());
+    string srcPath = MediaLibraryDataAbilityUtils::GetPathFromDb(id, rdbStore);
+    CHECK_AND_RETURN_RET_LOG(!srcPath.empty(), DATA_ABILITY_FAIL, "Failed to obtain path from Database");
+
+    int32_t fd = fileAsset.OpenAsset(srcPath, mode);
+
+    return fd;
 }
 
 void ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) {}

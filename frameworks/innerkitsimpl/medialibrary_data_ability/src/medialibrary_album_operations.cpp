@@ -13,10 +13,6 @@
  * limitations under the License.
  */
 
-#include <grp.h>
-#include <securec.h>
-#include <unistd.h>
-
 #include "medialibrary_album_operations.h"
 
 using namespace std;
@@ -39,7 +35,7 @@ void MediaLibraryAlbumOperations::ChangeGroupToMedia(const string &path)
     }
     grpId = grp->gr_gid;
 
-    if (chown(path.c_str(), usrId, grpId) == -1) {
+    if (chown(path.c_str(), usrId, grpId) == DATA_ABILITY_FAIL) {
         MEDIA_ERR_LOG("chown failed for the given path");
     }
 }
@@ -56,17 +52,14 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket, const string &albu
         values.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, albumPath.substr(0, index));
     }
 
-    values.PutString(Media::MEDIA_DATA_DB_ALBUM_NAME, albumName);
     if ((!albumName.empty()) && (albumName.at(0) == '.')) {
         return 0;
     }
 
+    values.PutString(Media::MEDIA_DATA_DB_ALBUM_NAME, albumName);
     values.PutInt(Media::MEDIA_DATA_DB_MEDIA_TYPE, MediaType::MEDIA_TYPE_ALBUM);
-
-    struct stat statInfo {};
-    if (stat(albumPath.c_str(), &statInfo) == 0) {
-        values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
-    }
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
+        MediaLibraryDataAbilityUtils::GetAlbumDateModified(albumPath));
 
     return const_cast<MediaLibraryAlbumDb &>(albumDbOprn).InsertAlbumInfo(values, rdbStore);
 }
@@ -100,11 +93,8 @@ int32_t UpdateAlbumInfoUtil(const ValuesBucket &valuesBucket, const string &albu
     }
 
     values.PutString(Media::MEDIA_DATA_DB_FILE_PATH, newAlbumPath);
-
-    struct stat statInfo {};
-    if (stat(newAlbumPath.c_str(), &statInfo) == 0) {
-        values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
-    }
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
+        MediaLibraryDataAbilityUtils::GetAlbumDateModified(newAlbumPath));
 
     retVal = const_cast<MediaLibraryAlbumDb &>(albumDbOprn).UpdateAlbumInfo(values, rdbStore);
     if ((retVal == DATA_ABILITY_SUCCESS) && (!newAlbumPath.empty())) {
@@ -152,9 +142,10 @@ int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(const string &oprn, c
     ValueObject valueObject;
 
     if (oprn == MEDIA_ALBUMOPRN_CREATEALBUM) {
-        string albumPath;
-        values.GetObject(MEDIA_DATA_DB_FILE_PATH, valueObject);
-        valueObject.GetString(albumPath);
+        string albumPath = "";
+        if (values.GetObject(MEDIA_DATA_DB_FILE_PATH, valueObject)) {
+            valueObject.GetString(albumPath);
+        }
         CHECK_AND_RETURN_RET_LOG(!albumPath.empty(), DATA_ABILITY_FAIL, "Path is empty");
 
         albumAsset.SetAlbumPath(albumPath);
@@ -163,29 +154,31 @@ int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(const string &oprn, c
             ChangeGroupToMedia(albumPath);
             errCode = InsertAlbumInfoUtil(values, albumPath, rdbStore, albumDbOprn);
         }
-    } else if (oprn == MEDIA_ALBUMOPRN_MODIFYALBUM) {
-        int32_t albumId;
-        values.GetObject(MEDIA_DATA_DB_ID, valueObject);
-        valueObject.GetInt(albumId);
-
-        string albumNewName;
-        values.GetObject(MEDIA_DATA_DB_ALBUM_NAME, valueObject);
-        valueObject.GetString(albumNewName);
-
-        albumAsset.SetAlbumName(albumNewName);
-
-        string albumPath = MediaLibraryDataAbilityUtils::GetPathFromDb(to_string(albumId), rdbStore);
-        if (albumAsset.ModifyAlbumAsset(albumPath) == true) {
-            errCode = UpdateAlbumInfoUtil(values, albumPath, albumNewName, rdbStore, albumDbOprn);
-        }
-    } else if (oprn == MEDIA_ALBUMOPRN_DELETEALBUM) {
+    } else {
         int32_t albumId = 0;
-        values.GetObject(MEDIA_DATA_DB_ID, valueObject);
-        valueObject.GetInt(albumId);
+        if (values.GetObject(MEDIA_DATA_DB_ID, valueObject)) {
+            valueObject.GetInt(albumId);
+        }
 
         string albumPath = MediaLibraryDataAbilityUtils::GetPathFromDb(to_string(albumId), rdbStore);
-        if (albumAsset.DeleteAlbumAsset(albumPath) == true) {
-            errCode = DeleteAlbumInfoUtil(values, albumId, albumPath, rdbStore, albumDbOprn);
+        if (albumPath.empty()) {
+            return errCode;
+        }
+
+        if (oprn == MEDIA_ALBUMOPRN_MODIFYALBUM) {
+            string albumNewName = "";
+            if (values.GetObject(MEDIA_DATA_DB_ALBUM_NAME, valueObject)) {
+                valueObject.GetString(albumNewName);
+            }
+            albumAsset.SetAlbumName(albumNewName);
+
+            if (albumAsset.ModifyAlbumAsset(albumPath) == true) {
+                errCode = UpdateAlbumInfoUtil(values, albumPath, albumNewName, rdbStore, albumDbOprn);
+            }
+        } else if (oprn == MEDIA_ALBUMOPRN_DELETEALBUM) {
+            if (albumAsset.DeleteAlbumAsset(albumPath) == true) {
+                errCode = DeleteAlbumInfoUtil(values, albumId, albumPath, rdbStore, albumDbOprn);
+            }
         }
     }
 

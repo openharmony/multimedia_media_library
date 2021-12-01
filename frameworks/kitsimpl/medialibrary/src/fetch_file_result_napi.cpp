@@ -25,8 +25,9 @@ namespace {
 }
 
 namespace OHOS {
+namespace Media {
 napi_ref FetchFileResultNapi::sConstructor_ = nullptr;
-Media::FetchResult *FetchFileResultNapi::sFetchFileResult_ = nullptr;
+FetchResult *FetchFileResultNapi::sFetchFileResult_ = nullptr;
 
 FetchFileResultNapi::FetchFileResultNapi()
     : env_(nullptr), wrapper_(nullptr) {}
@@ -94,7 +95,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
             obj->env_ = env;
 
             if (sFetchFileResult_ != nullptr) {
-                unique_ptr<Media::FetchResult> fetchRes = make_unique<Media::FetchResult>(
+                unique_ptr<FetchResult> fetchRes = make_unique<FetchResult>(
                     move(sFetchFileResult_->resultset_));
                 obj->fetchFileResult_ = fetchRes.get();
                 obj->fetchFileResult_->isContain_ = sFetchFileResult_->isContain_;
@@ -121,7 +122,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
     return result;
 }
 
-napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, Media::FetchResult &fileResult)
+napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult &fileResult)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -238,7 +239,7 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
@@ -248,6 +249,7 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
         }
 
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetFirstObject");
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -277,7 +279,7 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
@@ -287,6 +289,7 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
         }
 
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetNextObject");
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -316,7 +319,7 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
@@ -326,6 +329,7 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
         }
 
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetLastObject");
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -356,7 +360,7 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameter");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
@@ -370,9 +374,13 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
             HiLog::Error(LABEL, "Argument mismatch");
             return result;
         }
-        GET_JS_ASYNC_CB_REF(env, argv[PARAM1], refCount, asyncContext->callbackRef);
 
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetFirstObject");
+        if (argc == ARGS_TWO) {
+            GET_JS_ASYNC_CB_REF(env, argv[PARAM1], refCount, asyncContext->callbackRef);
+        }
+
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetPositionObject");
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
@@ -434,15 +442,15 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, void*
     delete context;
 }
 
-Media::FetchResult *FetchFileResultNapi::GetFetchResultObject()
+FetchResult *FetchFileResultNapi::GetFetchResultObject()
 {
-    Media::FetchResult *fetchResult = fetchFileResult_;
+    FetchResult *fetchResult = fetchFileResult_;
     return fetchResult;
 }
 
 void GetAllObjectFromFetchResult(const FetchFileResultAsyncContext &asyncContext)
 {
-    unique_ptr<Media::FileAsset> fAsset = nullptr;
+    unique_ptr<FileAsset> fAsset = nullptr;
     FetchFileResultAsyncContext *context = const_cast<FetchFileResultAsyncContext *>(&asyncContext);
 
     fAsset = context->objectInfo->GetFetchResultObject()->GetFirstObject();
@@ -463,7 +471,7 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
@@ -473,6 +481,7 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
         }
 
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAllObject");
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -490,4 +499,5 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
 
     return result;
 }
+} // namespace Media
 } // namespace OHOS

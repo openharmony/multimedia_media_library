@@ -107,7 +107,6 @@ int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCa
 
     if (ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS) {
         MEDIA_ERR_LOG("Scanfile: Incorrect path or insufficient permission %{public}s", path.c_str());
-
         unique_ptr<Metadata> metaData = mediaScannerDb_->ReadMetadata(path);
         if (metaData != nullptr && !metaData->GetFilePath().empty()) {
             vector<string> idList = {to_string(metaData->GetFileId())};
@@ -343,8 +342,9 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
             fileMetadata->SetParentId(parentId);
         }
 
-        if (ScannerUtils::GetParentPath(path) != ROOT_PATH) {
-            fileMetadata->SetAlbumName(ScannerUtils::GetFileNameFromUri(ScannerUtils::GetParentPath(path)));
+        string parentPath = ScannerUtils::GetParentPath(path);
+        if (parentPath != ROOT_PATH) {
+            fileMetadata->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
         }
 
         size_t found = path.rfind('/');
@@ -396,23 +396,20 @@ int32_t MediaScanner::ScanFileInternal(const string &path)
 
 int32_t MediaScanner::InsertAlbumInfo(string &albumPath, int32_t parentId, string &albumName)
 {
-    int32_t errCode = ERR_MEM_ALLOC_FAIL;
+    int32_t albumId = ERR_FAIL;
 
     bool update = false;
-
-    // This will be empty for the first folder in dir path
-    if (albumMap_.empty()) {
-        mediaScannerDb_->ReadAlbums(albumPath, albumMap_);
-    }
 
     if (albumMap_.find(albumPath) != albumMap_.end()) {
         // It Exists
         Metadata albumInfo = albumMap_.at(albumPath);
         struct stat statInfo {};
+        albumId = albumInfo.GetFileId();
+
         if (stat(albumPath.c_str(), &statInfo) == ERR_SUCCESS) {
             if (albumInfo.GetFileDateModified() == statInfo.st_mtime) {
-                errCode = albumInfo.GetFileId();
-                return errCode;
+                scannedIds_.insert(albumId);
+                return albumId;
             } else {
                 update = true;
             }
@@ -425,13 +422,15 @@ int32_t MediaScanner::InsertAlbumInfo(string &albumPath, int32_t parentId, strin
         fileMetadata->SetAlbumName(albumName);
 
         if (update) {
-            errCode = mediaScannerDb_->UpdateAlbum(*fileMetadata);
+            fileMetadata->SetFileId(albumId);
+            albumId = mediaScannerDb_->UpdateAlbum(*fileMetadata);
         } else {
-            errCode = mediaScannerDb_->InsertAlbum(*fileMetadata);
+            albumId = mediaScannerDb_->InsertAlbum(*fileMetadata);
         }
+        scannedIds_.insert(albumId);
     }
 
-    return errCode;
+    return albumId;
 }
 
 int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
@@ -478,6 +477,10 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
             // Insert folder info to database
             string albumName = ent->d_name;
             int32_t albumId = InsertAlbumInfo(currentPath, parentId, albumName);
+            if (albumId == ERR_FAIL) {
+                errCode = ERR_FAIL;
+                break;
+            }
             if (!IsDirHidden(currentPath)) {
                 errCode = WalkFileTree(currentPath, albumId);
             }
@@ -587,6 +590,8 @@ int32_t MediaScanner::ScanDirInternal(const string &path)
         return ERR_NOT_ACCESSIBLE;
     }
 
+    mediaScannerDb_->ReadAlbums(path, albumMap_);
+
     // Walk the folder tree
     errCode = WalkFileTree(path, NO_PARENT);
     if (errCode == ERR_SUCCESS) {
@@ -596,6 +601,8 @@ int32_t MediaScanner::ScanDirInternal(const string &path)
             CleanupDirectory(path);
         }
     }
+
+    albumMap_.clear();
 
     return errCode;
 }

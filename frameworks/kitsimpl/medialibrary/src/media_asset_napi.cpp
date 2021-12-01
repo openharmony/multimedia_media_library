@@ -21,18 +21,10 @@ using OHOS::HiviewDFX::HiLogLabel;
 
 namespace {
     constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaAssetNapi"};
-    const int32_t DEFAULT_MEDIA_ID = 0;
-    const int32_t DEFAULT_ALBUM_ID = 0;
-    const uint64_t DEFAULT_MEDIA_SIZE = 0;
-    const uint64_t DEFAULT_MEDIA_DATE_ADDED = 0;
-    const uint64_t DEFAULT_MEDIA_DATE_MODIFIED = 0;
-    const std::string DEFAULT_MEDIA_URI = "";
-    const OHOS::Media::MediaType DEFAULT_MEDIA_TYPE = OHOS::Media::MEDIA_TYPE_FILE;
-    const std::string DEFAULT_MEDIA_NAME = "Unknown";
-    const std::string DEFAULT_ALBUM_NAME = "Unknown";
 }
 
 namespace OHOS {
+namespace Media {
 napi_ref MediaAssetNapi::sConstructor_ = nullptr;
 Media::MediaAsset *MediaAssetNapi::sMediaAsset_ = nullptr;
 Media::IMediaLibraryClient *MediaAssetNapi::sMediaLibrary_ = nullptr;
@@ -1019,4 +1011,5 @@ napi_value MediaAssetNapi::CommitCopy(napi_env env, napi_callback_info info)
 
     return result;
 }
+} // namespace OHOS
 } // namespace OHOS

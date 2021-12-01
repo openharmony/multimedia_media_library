@@ -25,31 +25,32 @@ namespace {
 }
 
 namespace OHOS {
+namespace Media {
 napi_ref FileAssetNapi::sConstructor_ = nullptr;
-Media::FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
+FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
 
 FileAssetNapi::FileAssetNapi()
     : env_(nullptr), wrapper_(nullptr)
 {
-    fileId_ = Media::DEFAULT_MEDIA_ID;
-    fileUri_ = Media::DEFAULT_MEDIA_URI;
-    mimeType_ = Media::DEFAULT_MEDIA_MIMETYPE;
-    mediaType_ = Media::DEFAULT_MEDIA_TYPE;
-    title_ = Media::DEFAULT_MEDIA_TITLE;
-    size_ = Media::DEFAULT_MEDIA_SIZE;
-    albumId_ = Media::DEFAULT_ALBUM_ID;
-    albumName_ = Media::DEFAULT_ALBUM_NAME;
-    dateAdded_ = Media::DEFAULT_MEDIA_DATE_ADDED;
-    dateModified_ = Media::DEFAULT_MEDIA_DATE_MODIFIED;
-    orientation_ = Media::DEFAULT_MEDIA_ORIENTATION;
-    width_ = Media::DEFAULT_MEDIA_WIDTH;
-    height_ = Media::DEFAULT_MEDIA_HEIGHT;
-    relativePath_ = Media::DEFAULT_MEDIA_RELATIVE_PATH;
-    album_ = Media::DEFAULT_MEDIA_ALBUM;
-    artist_ = Media::DEFAULT_MEDIA_TITLE;
-    filePath_ = Media::DEFAULT_MEDIA_PATH;
-    displayName_ = Media::DEFAULT_MEDIA_NAME;
-    duration_ = Media::DEFAULT_MEDIA_DURATION;
+    fileId_ = DEFAULT_MEDIA_ID;
+    fileUri_ = DEFAULT_MEDIA_URI;
+    mimeType_ = DEFAULT_MEDIA_MIMETYPE;
+    mediaType_ = DEFAULT_MEDIA_TYPE;
+    title_ = DEFAULT_MEDIA_TITLE;
+    size_ = DEFAULT_MEDIA_SIZE;
+    albumId_ = DEFAULT_ALBUM_ID;
+    albumName_ = DEFAULT_ALBUM_NAME;
+    dateAdded_ = DEFAULT_MEDIA_DATE_ADDED;
+    dateModified_ = DEFAULT_MEDIA_DATE_MODIFIED;
+    orientation_ = DEFAULT_MEDIA_ORIENTATION;
+    width_ = DEFAULT_MEDIA_WIDTH;
+    height_ = DEFAULT_MEDIA_HEIGHT;
+    relativePath_ = DEFAULT_MEDIA_RELATIVE_PATH;
+    album_ = DEFAULT_MEDIA_ALBUM;
+    artist_ = DEFAULT_MEDIA_TITLE;
+    filePath_ = DEFAULT_MEDIA_PATH;
+    displayName_ = DEFAULT_MEDIA_NAME;
+    duration_ = DEFAULT_MEDIA_DURATION;
 }
 
 FileAssetNapi::~FileAssetNapi()
@@ -143,7 +144,7 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
     return result;
 }
 
-napi_value FileAssetNapi::CreateFileAsset(napi_env env, Media::FileAsset &iAsset)
+napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -170,7 +171,7 @@ std::string FileAssetNapi::GetFilePath() const
     return filePath_;
 }
 
-Media::MediaType FileAssetNapi::GetFileMediaType() const
+MediaType FileAssetNapi::GetFileMediaType() const
 {
     return mediaType_;
 }
@@ -415,7 +416,7 @@ napi_value FileAssetNapi::JSSetMediaType(napi_env env, napi_callback_info info)
 
         status = napi_get_value_int32(env, argv[PARAM0], &mediaType);
         if (status == napi_ok) {
-            obj->mediaType_ = static_cast<Media::MediaType>(mediaType);
+            obj->mediaType_ = static_cast<MediaType>(mediaType);
         }
     }
 
@@ -742,7 +743,7 @@ void FileAssetNapi::UpdateFileAssetInfo()
     filePath_ = sFileAsset_->GetPath();
     displayName_ = sFileAsset_->GetDisplayName();
     mimeType_ = sFileAsset_->GetMimeType();
-    mediaType_ = static_cast<Media::MediaType>(sFileAsset_->GetMediaType());
+    mediaType_ = static_cast<MediaType>(sFileAsset_->GetMediaType());
     title_ = sFileAsset_->GetTitle();
     size_ = sFileAsset_->GetSize();
     albumId_ = sFileAsset_->GetAlbumId();
@@ -757,4 +758,5 @@ void FileAssetNapi::UpdateFileAssetInfo()
     artist_ = sFileAsset_->GetArtist();
     duration_ = sFileAsset_->GetDuration();
 }
+} // namespace Media
 } // namespace OHOS

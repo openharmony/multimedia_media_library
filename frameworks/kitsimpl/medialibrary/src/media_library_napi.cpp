@@ -27,6 +27,7 @@ namespace {
 }
 
 namespace OHOS {
+namespace Media {
 unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 bool g_isNewApi = false;
 
@@ -102,9 +103,8 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
     if (status == napi_ok) {
         if (napi_create_reference(env, ctorObj, refCount, &sConstructor_) == napi_ok) {
             status = napi_set_named_property(env, exports, MEDIA_LIB_NAPI_CLASS_NAME.c_str(), ctorObj);
-            if (status == napi_ok &&
-                napi_define_properties(env, exports, sizeof(static_prop) / sizeof(static_prop[PARAM0]),
-                    static_prop) == napi_ok) {
+            if (status == napi_ok && napi_define_properties(env, exports,
+                sizeof(static_prop) / sizeof(static_prop[PARAM0]), static_prop) == napi_ok) {
                 return exports;
             }
         }
@@ -124,7 +124,7 @@ shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper
     AppExecFwk::Ability *ability = nullptr;
     NAPI_CALL(env, napi_get_value_external(env, abilityObj, (void **)&ability));
 
-    string strUri = Media::MEDIALIBRARY_DATA_URI;
+    string strUri = MEDIALIBRARY_DATA_URI;
 
     return AppExecFwk::DataAbilityHelper::Creator(ability->GetContext(), make_shared<Uri>(strUri));
 }
@@ -135,16 +135,18 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     napi_status status;
     napi_value result = nullptr;
     napi_value thisVar = nullptr;
+
     napi_get_undefined(env, &result);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Error while obtaining js environment information");
         return result;
     }
+
     unique_ptr<MediaLibraryNapi> obj = make_unique<MediaLibraryNapi>();
     if (obj != nullptr) {
         obj->env_ = env;
-        obj->mediaLibrary_ = Media::IMediaLibraryClient::GetMediaLibraryClientInstance();
+        obj->mediaLibrary_ = IMediaLibraryClient::GetMediaLibraryClientInstance();
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->mediaLibrary_, result, "MediaLibrary instance creation failed");
 
         if (g_isNewApi) {
@@ -188,14 +190,17 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
             HiLog::Error(LABEL, "New instance could not be obtained");
         }
     }
+
     napi_get_undefined(env, &result);
     return result;
 }
+
 napi_value MediaLibraryNapi::GetMediaLibraryOldInstance(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value result = nullptr;
     napi_value ctor;
+
     status = napi_get_reference_value(env, sConstructor_, &ctor);
     if (status == napi_ok) {
         g_isNewApi = false;
@@ -234,7 +239,7 @@ napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
 
     status = napi_create_object(env, &result);
     if (status == napi_ok) {
-        for (unsigned int i = Media::MEDIA_TYPE_DEFAULT; i < mediaTypesEnum.size(); i++) {
+        for (unsigned int i = MEDIA_TYPE_DEFAULT; i < mediaTypesEnum.size(); i++) {
             propName = mediaTypesEnum[i];
             status = AddIntegerNamedProperty(env, result, propName, i);
             if (status != napi_ok) {
@@ -290,6 +295,7 @@ napi_value MediaLibraryNapi::CreateFileKeyEnum(napi_env env)
             propName.clear();
         }
     }
+
     if (status == napi_ok) {
         // The reference count is for creating File Key Enum Reference
         status = napi_create_reference(env, result, refCount, &sFileKeyEnumRef_);
@@ -303,16 +309,16 @@ napi_value MediaLibraryNapi::CreateFileKeyEnum(napi_env env)
     return result;
 }
 
-Media::IMediaLibraryClient* MediaLibraryNapi::GetMediaLibClientInstance()
+IMediaLibraryClient* MediaLibraryNapi::GetMediaLibClientInstance()
 {
-    Media::IMediaLibraryClient *ins = this->mediaLibrary_;
+    IMediaLibraryClient *ins = this->mediaLibrary_;
     return ins;
 }
 
 static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibraryAsyncContext &context, bool &err)
 {
     MediaLibraryAsyncContext *asyncContext = const_cast<MediaLibraryAsyncContext *>(&context);
-    char buffer[SIZE];
+    char buffer[PATH_MAX];
     size_t res = 0;
     uint32_t len = 0;
     napi_value property = nullptr;
@@ -322,13 +328,13 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibrar
     napi_has_named_property(env, arg, "selections", &present);
     if (present) {
         if (napi_get_named_property(env, arg, "selections", &property) != napi_ok
-            || napi_get_value_string_utf8(env, property, buffer, SIZE, &res) != napi_ok) {
+            || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
             HiLog::Error(LABEL, "Could not get the string argument!");
             err = true;
             return;
         } else {
             asyncContext->selection = buffer;
-            CHECK_IF_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         }
         present = false;
     }
@@ -336,13 +342,13 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibrar
     napi_has_named_property(env, arg, "order", &present);
     if (present) {
         if (napi_get_named_property(env, arg, "order", &property) != napi_ok
-            || napi_get_value_string_utf8(env, property, buffer, SIZE, &res) != napi_ok) {
+            || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
             HiLog::Error(LABEL, "Could not get the string argument!");
             err = true;
             return;
         } else {
             asyncContext->order = buffer;
-            CHECK_IF_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         }
         present = false;
     }
@@ -352,9 +358,9 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibrar
         napi_get_array_length(env, property, &len);
         for (size_t i = 0; i < len; i++) {
             napi_get_element(env, property, i, &stringItem);
-            napi_get_value_string_utf8(env, stringItem, buffer, SIZE, &res);
+            napi_get_value_string_utf8(env, stringItem, buffer, PATH_MAX, &res);
             asyncContext->selectionArgs.push_back(string(buffer));
-            CHECK_IF_EQUAL(memset_s(buffer, SIZE, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         }
     } else {
         HiLog::Error(LABEL, "Could not get the string argument!");
@@ -867,28 +873,28 @@ napi_value MediaLibraryNapi::GetImageAlbums(napi_env env, napi_callback_info inf
     return result;
 }
 
-napi_value GetAssetJSObject(napi_env env, AssetType type, Media::IMediaLibraryClient &mediaLibrary)
+napi_value GetAssetJSObject(napi_env env, NapiAssetType type, IMediaLibraryClient &mediaLibrary)
 {
     napi_value assetObj = nullptr;
 
     switch (type) {
         case TYPE_AUDIO: {
-            unique_ptr<Media::AudioAsset> audioObj = make_unique<Media::AudioAsset>();
+            unique_ptr<AudioAsset> audioObj = make_unique<AudioAsset>();
             assetObj = AudioAssetNapi::CreateAudioAsset(env, *(audioObj), mediaLibrary);
             break;
         }
         case TYPE_VIDEO: {
-            unique_ptr<Media::VideoAsset> videoObj = make_unique<Media::VideoAsset>();
+            unique_ptr<VideoAsset> videoObj = make_unique<VideoAsset>();
             assetObj = VideoAssetNapi::CreateVideoAsset(env, *(videoObj), mediaLibrary);
             break;
         }
         case TYPE_IMAGE: {
-            unique_ptr<Media::ImageAsset> imageObj = make_unique<Media::ImageAsset>();
+            unique_ptr<ImageAsset> imageObj = make_unique<ImageAsset>();
             assetObj = ImageAssetNapi::CreateImageAsset(env, *(imageObj), mediaLibrary);
             break;
         }
         case TYPE_ALBUM: {
-            unique_ptr<Media::AlbumAsset> albumObj = make_unique<Media::AlbumAsset>();
+            unique_ptr<AlbumAsset> albumObj = make_unique<AlbumAsset>();
             assetObj = AlbumAssetNapi::CreateAlbumAsset(env, TYPE_NONE, "", *(albumObj), mediaLibrary);
             break;
         }
@@ -928,7 +934,7 @@ void CreateAssetAsyncCbComplete(napi_env env, napi_status status, void* data)
 
 void CreateAsyncWork(napi_env env, napi_value resource,
                      const MediaLibraryAsyncContext& mediaLibContext,
-                     AssetType type, bool &err)
+                     NapiAssetType type, bool &err)
 {
     napi_status status;
     MediaLibraryAsyncContext* asyncContext = const_cast<MediaLibraryAsyncContext *>(&mediaLibContext);
@@ -1091,6 +1097,7 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     napi_get_undefined(env, &jsContext->data);
+
     vector<string> columns;
     NativeRdb::DataAbilityPredicates predicates;
     if (!context->selection.empty()) {
@@ -1100,9 +1107,9 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.OrderByAsc(context->order);
-    predicates.NotEqualTo(Media::MEDIA_DATA_DB_MEDIA_TYPE, to_string(Media::MEDIA_TYPE_ALBUM));
+    predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
-    Uri uri(Media::MEDIALIBRARY_DATA_URI);
+    Uri uri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet;
 
     if (context->objectInfo->sAbilityHelper_ == nullptr
@@ -1111,7 +1118,7 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
             "Query for get fileAssets failed");
     } else {
         // Create FetchResult object using the contents of resultSet
-        context->fetchFileResult = make_unique<Media::FetchResult>(move(resultSet));
+        context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
         if (context->fetchFileResult != nullptr) {
             fileResult = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchFileResult));
             if (fileResult == nullptr) {
@@ -1146,7 +1153,7 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1205,6 +1212,7 @@ static napi_value GetResultData(napi_env env, const MediaLibraryAsyncContext &as
     MediaLibraryAsyncContext *context = const_cast<MediaLibraryAsyncContext *>(&asyncContext);
     NativeRdb::DataAbilityPredicates predicates;
     napi_value result = nullptr;
+
     if (context->objectInfo->sAbilityHelper_ == nullptr) {
         HiLog::Error(LABEL, "Ability Helper is null");
         return result;
@@ -1219,39 +1227,39 @@ static napi_value GetResultData(napi_env env, const MediaLibraryAsyncContext &as
     if (!context->order.empty()) {
         predicates.OrderByAsc(context->order);
     }
-    predicates.EqualTo(Media::MEDIA_DATA_DB_MEDIA_TYPE, to_string(Media::MEDIA_TYPE_ALBUM));
+    predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
     vector<string> columns;
-    Uri uri(Media::MEDIALIBRARY_DATA_URI);
+    Uri uri(MEDIALIBRARY_DATA_URI);
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sAbilityHelper_->Query(
         uri, columns, predicates);
 
     if (resultSet != nullptr) {
-        vector<unique_ptr<Media::AlbumAsset>> albumNativeArray;
+        vector<unique_ptr<AlbumAsset>> albumNativeArray;
 
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            unique_ptr<Media::AlbumAsset> albumData = make_unique<Media::AlbumAsset>();
+            unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
             if (albumData != nullptr) {
                 // Get album id index and value
-                albumData->SetAlbumId(get<int32_t>(GetValFromColumn(Media::MEDIA_DATA_DB_ID, resultSet)));
+                albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_ID, resultSet)));
 
                 // Get album name index and value
-                albumData->SetAlbumName(get<string>(GetValFromColumn(Media::MEDIA_DATA_DB_ALBUM_NAME, resultSet)));
+                albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_ALBUM_NAME, resultSet)));
 
                 // Get album path index and value
-                albumData->SetAlbumPath(get<string>(GetValFromColumn(Media::MEDIA_DATA_DB_FILE_PATH, resultSet)));
+                albumData->SetAlbumPath(get<string>(GetValFromColumn(MEDIA_DATA_DB_FILE_PATH, resultSet)));
 
                 // Get album relative path index and value
                 albumData->SetAlbumRelativePath(get<string>(GetValFromColumn(
-                    Media::MEDIA_DATA_DB_RELATIVE_PATH, resultSet)));
+                    MEDIA_DATA_DB_RELATIVE_PATH, resultSet)));
 
                 // Get album virtual index and value
-                albumData->SetAlbumVirtual(get<int32_t>(GetValFromColumn(Media::MEDIA_DATA_DB_VIRTUAL, resultSet)));
+                albumData->SetAlbumVirtual(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_VIRTUAL, resultSet)));
 
                 // Get album date modified index and value
                 int64_t albumDateModified;
                 int index = 0;
-                resultSet->GetColumnIndex(Media::MEDIA_DATA_DB_DATE_MODIFIED, index);
+                resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_MODIFIED, index);
                 resultSet->GetLong(index, albumDateModified);
                 albumData->SetAlbumDateModified(albumDateModified);
             }
@@ -1313,7 +1321,7 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1349,8 +1357,8 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
     jsContext->status = false;
 
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-        Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
+        string abilityUri = MEDIALIBRARY_DATA_URI;
+        Uri createAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
 
         int index = context->objectInfo->sAbilityHelper_->Insert(createAssetUri,
             context->valuesBucket);
@@ -1361,18 +1369,19 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
         } else {
             string createUri = "";
             NativeRdb::ValueObject valueObject;
-            int32_t mediaType = static_cast<int32_t>(Media::MEDIA_TYPE_FILE);
-            context->valuesBucket.GetObject(Media::MEDIA_DATA_DB_MEDIA_TYPE, valueObject);
+            int32_t mediaType = static_cast<int32_t>(MEDIA_TYPE_FILE);
+            context->valuesBucket.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject);
             valueObject.GetInt(mediaType);
-            if (mediaType == Media::MEDIA_TYPE_AUDIO) {
-                createUri = Media::MEDIALIBRARY_AUDIO_URI;
-            } else if (mediaType == Media::MEDIA_TYPE_IMAGE) {
-                createUri = Media::MEDIALIBRARY_IMAGE_URI;
-            } else if (mediaType == Media::MEDIA_TYPE_VIDEO) {
-                createUri = Media::MEDIALIBRARY_VIDEO_URI;
+            if (mediaType == MEDIA_TYPE_AUDIO) {
+                createUri = MEDIALIBRARY_AUDIO_URI;
+            } else if (mediaType == MEDIA_TYPE_IMAGE) {
+                createUri = MEDIALIBRARY_IMAGE_URI;
+            } else if (mediaType == MEDIA_TYPE_VIDEO) {
+                createUri = MEDIALIBRARY_VIDEO_URI;
             } else {
-                createUri = Media::MEDIALIBRARY_FILE_URI;
+                createUri = MEDIALIBRARY_FILE_URI;
             }
+
             createUri += "/" + to_string(index);
             napi_create_string_utf8(env, createUri.c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
             jsContext->status = true;
@@ -1415,8 +1424,8 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
         }
     }
 
-    context->valuesBucket.PutString(Media::MEDIA_DATA_DB_FILE_PATH, fileAssetObj->GetFilePath());
-    context->valuesBucket.PutInt(Media::MEDIA_DATA_DB_MEDIA_TYPE, fileAssetObj->GetFileMediaType());
+    context->valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, fileAssetObj->GetFilePath());
+    context->valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAssetObj->GetFileMediaType());
 
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -1433,7 +1442,7 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1470,12 +1479,12 @@ static void JSModifyAssetCompleteCallback(napi_env env, napi_status status, void
     jsContext->status = false;
 
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-        Uri updateAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET);
+        string abilityUri = MEDIALIBRARY_DATA_URI;
+        Uri updateAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
 
         NativeRdb::ValueObject valueObject;
         string notifyUri;
-        context->valuesBucket.GetObject(Media::MEDIA_DATA_DB_URI, valueObject);
+        context->valuesBucket.GetObject(MEDIA_DATA_DB_URI, valueObject);
         valueObject.GetString(notifyUri);
         size_t index = notifyUri.rfind('/');
         if (index != string::npos) {
@@ -1536,8 +1545,8 @@ napi_value GetJSArgsForModifyAsset(napi_env env, size_t argc, const napi_value a
         }
     }
 
-    context->valuesBucket.PutString(Media::MEDIA_DATA_DB_URI, string(buffer));
-    context->valuesBucket.PutString(Media::MEDIA_DATA_DB_NAME, fileAssetObj->GetFileDisplayName());
+    context->valuesBucket.PutString(MEDIA_DATA_DB_URI, string(buffer));
+    context->valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, fileAssetObj->GetFilePath());
 
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -1554,7 +1563,7 @@ napi_value MediaLibraryNapi::JSModifyAsset(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_THREE, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1591,12 +1600,12 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status, void
     jsContext->status = false;
 
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-        Uri deleteAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_DELETEASSET);
+        string abilityUri = MEDIALIBRARY_DATA_URI;
+        Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
 
         NativeRdb::ValueObject valueObject;
         string notifyUri;
-        context->valuesBucket.GetObject(Media::MEDIA_DATA_DB_URI, valueObject);
+        context->valuesBucket.GetObject(MEDIA_DATA_DB_URI, valueObject);
         valueObject.GetString(notifyUri);
         size_t index = notifyUri.rfind('/');
         if (index != string::npos) {
@@ -1654,7 +1663,7 @@ napi_value GetJSArgsForDeleteAsset(napi_env env, size_t argc, const napi_value a
         }
     }
 
-    context->valuesBucket.PutString(Media::MEDIA_DATA_DB_URI, string(buffer));
+    context->valuesBucket.PutString(MEDIA_DATA_DB_URI, string(buffer));
 
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -1671,7 +1680,7 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1707,11 +1716,20 @@ static void JSOpenAssetCompleteCallback(napi_env env, napi_status status, void* 
     jsContext->status = false;
 
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-        Uri openAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_OPENASSET);
+        NativeRdb::ValueObject valueObject;
+        string fileUri = "";
+        string mode = MEDIA_FILEMODE_READONLY;
 
-        int retVal = context->objectInfo->sAbilityHelper_->Insert(openAssetUri,
-            context->valuesBucket);
+        if (context->valuesBucket.GetObject(MEDIA_DATA_DB_URI, valueObject)) {
+            valueObject.GetString(fileUri);
+        }
+
+        if (context->valuesBucket.GetObject(MEDIA_FILEMODE, valueObject)) {
+            valueObject.GetString(mode);
+        }
+
+        Uri openFileUri(fileUri);
+        int32_t retVal = context->objectInfo->sAbilityHelper_->OpenFile(openFileUri, mode);
         if (retVal <= 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
                 "File open asset failed");
@@ -1761,8 +1779,8 @@ napi_value GetJSArgsForOpenAsset(napi_env env, size_t argc, const napi_value arg
         }
     }
 
-    context->valuesBucket.PutString(Media::MEDIA_DATA_DB_URI, string(buffer1));
-    context->valuesBucket.PutString(Media::MEDIA_FILEMODE, string(buffer2));
+    context->valuesBucket.PutString(MEDIA_DATA_DB_URI, string(buffer1));
+    context->valuesBucket.PutString(MEDIA_FILEMODE, string(buffer2));
 
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -1779,7 +1797,7 @@ napi_value MediaLibraryNapi::JSOpenAsset(napi_env env, napi_callback_info info)
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_THREE, "requires 3 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1815,20 +1833,26 @@ static void JSCloseAssetCompleteCallback(napi_env env, napi_status status, void*
     jsContext->status = false;
 
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-        Uri closeAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CLOSEASSET);
+        string abilityUri = MEDIALIBRARY_DATA_URI;
+        Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
+        ValueObject valueObject;
+        int fd = 0;
 
-        int retVal = context->objectInfo->sAbilityHelper_->Insert(closeAssetUri,
-            context->valuesBucket);
-        if (retVal != 0) {
-            HiLog::Error(LABEL, "negatve ret");
+        if (context->valuesBucket.GetObject(MEDIA_FILEDESCRIPTOR, valueObject)) {
+            valueObject.GetInt(fd);
+        }
+
+        int32_t retVal = close(fd);
+        if ((retVal == DATA_ABILITY_SUCCESS) && (context->objectInfo->sAbilityHelper_->Insert(closeAssetUri,
+            context->valuesBucket) == DATA_ABILITY_SUCCESS)) {
+            napi_create_int32(env, DATA_ABILITY_SUCCESS, &jsContext->data);
+            napi_get_undefined(env, &jsContext->error);
+            jsContext->status = true;
+        } else {
+            HiLog::Error(LABEL, "negative ret");
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
                 "File close asset failed");
             napi_get_undefined(env, &jsContext->data);
-        } else {
-            napi_create_int32(env, retVal, &jsContext->data);
-            napi_get_undefined(env, &jsContext->error);
-            jsContext->status = true;
         }
     } else {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
@@ -1871,8 +1895,8 @@ napi_value GetJSArgsForCloseAsset(napi_env env, size_t argc, const napi_value ar
         }
     }
 
-    context->valuesBucket.PutString(Media::MEDIA_DATA_DB_URI, string(buffer));
-    context->valuesBucket.PutInt(Media::MEDIA_FILEDESCRIPTOR, fd);
+    context->valuesBucket.PutString(MEDIA_DATA_DB_URI, string(buffer));
+    context->valuesBucket.PutInt(MEDIA_FILEDESCRIPTOR, fd);
 
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -1889,7 +1913,7 @@ napi_value MediaLibraryNapi::JSCloseAsset(napi_env env, napi_callback_info info)
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_THREE, "requires 3 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1925,8 +1949,8 @@ static void JSCreateAlbumCompleteCallback(napi_env env, napi_status status, void
     jsContext->status = false;
 
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-        Uri createAlbumUri(abilityUri + "/" + Media::MEDIA_ALBUMOPRN + "/" + Media::MEDIA_ALBUMOPRN_CREATEALBUM);
+        string abilityUri = MEDIALIBRARY_DATA_URI;
+        Uri createAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
 
         int albumId = context->objectInfo->sAbilityHelper_->Insert(createAlbumUri,
             context->valuesBucket);
@@ -1977,7 +2001,7 @@ napi_value GetJSArgsForCreateAlbum(napi_env env, size_t argc, const napi_value a
         }
     }
 
-    context->valuesBucket.PutString(Media::MEDIA_DATA_DB_FILE_PATH, albumNapiObj->GetAlbumPath());
+    context->valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, albumNapiObj->GetAlbumPath());
 
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -1994,7 +2018,7 @@ napi_value MediaLibraryNapi::JSCreateAlbum(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -2030,8 +2054,8 @@ static void JSModifyAlbumCompleteCallback(napi_env env, napi_status status, void
     jsContext->status = false;
 
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-        Uri modifyAlbumUri(abilityUri + "/" + Media::MEDIA_ALBUMOPRN + "/" + Media::MEDIA_ALBUMOPRN_MODIFYALBUM);
+        string abilityUri = MEDIALIBRARY_DATA_URI;
+        Uri modifyAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_MODIFYALBUM);
 
         int retVal = context->objectInfo->sAbilityHelper_->Insert(modifyAlbumUri,
             context->valuesBucket);
@@ -2084,8 +2108,8 @@ napi_value GetJSArgsForModifyAlbum(napi_env env, size_t argc, const napi_value a
         }
     }
 
-    context->valuesBucket.PutInt(Media::MEDIA_DATA_DB_ID, albumId);
-    context->valuesBucket.PutString(Media::MEDIA_DATA_DB_ALBUM_NAME, albumNapiObj->GetAlbumName());
+    context->valuesBucket.PutInt(MEDIA_DATA_DB_ID, albumId);
+    context->valuesBucket.PutString(MEDIA_DATA_DB_ALBUM_NAME, albumNapiObj->GetAlbumName());
 
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -2102,7 +2126,7 @@ napi_value MediaLibraryNapi::JSModifyAlbum(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_THREE, "requires 3 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -2128,7 +2152,6 @@ napi_value MediaLibraryNapi::JSModifyAlbum(napi_env env, napi_callback_info info
     return result;
 }
 
-
 static void JSDeleteAlbumCompleteCallback(napi_env env, napi_status status, void* data)
 {
     auto context = static_cast<MediaLibraryAsyncContext*>(data);
@@ -2139,8 +2162,8 @@ static void JSDeleteAlbumCompleteCallback(napi_env env, napi_status status, void
     jsContext->status = false;
 
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-        Uri deleteAlbumUri(abilityUri + "/" + Media::MEDIA_ALBUMOPRN + "/" + Media::MEDIA_ALBUMOPRN_DELETEALBUM);
+        string abilityUri = MEDIALIBRARY_DATA_URI;
+        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM);
 
         int retVal = context->objectInfo->sAbilityHelper_->Insert(deleteAlbumUri,
             context->valuesBucket);
@@ -2190,7 +2213,7 @@ napi_value GetJSArgsForDeleteAlbum(napi_env env, size_t argc, const napi_value a
         }
     }
 
-    context->valuesBucket.PutInt(Media::MEDIA_DATA_DB_ID, albumId);
+    context->valuesBucket.PutInt(MEDIA_DATA_DB_ID, albumId);
 
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -2207,7 +2230,7 @@ napi_value MediaLibraryNapi::JSDeleteAlbum(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -2255,20 +2278,20 @@ void MediaLibraryNapi::RegisterChangeByType(string type, const ChangeListenerNap
 {
     ChangeListenerNapi *listObj = const_cast<ChangeListenerNapi *>(&listenerObj);
     if (type.compare(AUDIO_LISTENER) == 0) {
-        listObj->audioDataObserver_ = new(nothrow) MediaObserver(*listObj, Media::MEDIA_TYPE_AUDIO);
-        Uri onCbURI(Media::MEDIALIBRARY_AUDIO_URI);
+        listObj->audioDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_AUDIO);
+        Uri onCbURI(MEDIALIBRARY_AUDIO_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->audioDataObserver_);
     } else if (type.compare(VIDEO_LISTENER) == 0) {
-        listObj->videoDataObserver_ = new(nothrow) MediaObserver(*listObj, Media::MEDIA_TYPE_VIDEO);
-        Uri onCbURI(Media::MEDIALIBRARY_VIDEO_URI);
+        listObj->videoDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_VIDEO);
+        Uri onCbURI(MEDIALIBRARY_VIDEO_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->videoDataObserver_);
     } else if (type.compare(IMAGE_LISTENER) == 0) {
-        listObj->imageDataObserver_ = new(nothrow) MediaObserver(*listObj, Media::MEDIA_TYPE_IMAGE);
-        Uri onCbURI(Media::MEDIALIBRARY_IMAGE_URI);
+        listObj->imageDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_IMAGE);
+        Uri onCbURI(MEDIALIBRARY_IMAGE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->imageDataObserver_);
     } else if (type.compare(FILE_LISTENER) == 0) {
-        listObj->fileDataObserver_ = new(nothrow) MediaObserver(*listObj, Media::MEDIA_TYPE_FILE);
-        Uri onCbURI(Media::MEDIALIBRARY_FILE_URI);
+        listObj->fileDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_FILE);
+        Uri onCbURI(MEDIALIBRARY_FILE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->fileDataObserver_);
     } else {
         HiLog::Error(LABEL, "Media Type mismatch!");
@@ -2345,12 +2368,12 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
 void MediaLibraryNapi::UnregisterChangeByType(string type, const ChangeListenerNapi &listenerObj)
 {
     ChangeListenerNapi *listObj = const_cast<ChangeListenerNapi *>(&listenerObj);
-    Media::MediaType mediaType;
+    MediaType mediaType;
     if (type.compare(AUDIO_LISTENER) == 0) {
         CHECK_NULL_PTR_RETURN_VOID(listObj->audioDataObserver_, "Failed to obtain audio data observer");
 
-        mediaType = Media::MEDIA_TYPE_AUDIO;
-        Uri offCbURI(Media::MEDIALIBRARY_AUDIO_URI);
+        mediaType = MEDIA_TYPE_AUDIO;
+        Uri offCbURI(MEDIALIBRARY_AUDIO_URI);
         sAbilityHelper_->UnregisterObserver(offCbURI, listObj->audioDataObserver_);
 
         delete listObj->audioDataObserver_;
@@ -2358,8 +2381,8 @@ void MediaLibraryNapi::UnregisterChangeByType(string type, const ChangeListenerN
     } else if (type.compare(VIDEO_LISTENER) == 0) {
         CHECK_NULL_PTR_RETURN_VOID(listObj->videoDataObserver_, "Failed to obtain video data observer");
 
-        mediaType = Media::MEDIA_TYPE_VIDEO;
-        Uri offCbURI(Media::MEDIALIBRARY_VIDEO_URI);
+        mediaType = MEDIA_TYPE_VIDEO;
+        Uri offCbURI(MEDIALIBRARY_VIDEO_URI);
         sAbilityHelper_->UnregisterObserver(offCbURI, listObj->videoDataObserver_);
 
         delete listObj->videoDataObserver_;
@@ -2367,8 +2390,8 @@ void MediaLibraryNapi::UnregisterChangeByType(string type, const ChangeListenerN
     } else if (type.compare(IMAGE_LISTENER) == 0) {
         CHECK_NULL_PTR_RETURN_VOID(listObj->imageDataObserver_, "Failed to obtain image data observer");
 
-        mediaType = Media::MEDIA_TYPE_IMAGE;
-        Uri offCbURI(Media::MEDIALIBRARY_IMAGE_URI);
+        mediaType = MEDIA_TYPE_IMAGE;
+        Uri offCbURI(MEDIALIBRARY_IMAGE_URI);
         sAbilityHelper_->UnregisterObserver(offCbURI, listObj->imageDataObserver_);
 
         delete listObj->imageDataObserver_;
@@ -2376,8 +2399,8 @@ void MediaLibraryNapi::UnregisterChangeByType(string type, const ChangeListenerN
     } else if (type.compare(FILE_LISTENER) == 0) {
         CHECK_NULL_PTR_RETURN_VOID(listObj->fileDataObserver_, "Failed to obtain file data observer");
 
-        mediaType = Media::MEDIA_TYPE_FILE;
-        Uri offCbURI(Media::MEDIALIBRARY_FILE_URI);
+        mediaType = MEDIA_TYPE_FILE;
+        Uri offCbURI(MEDIALIBRARY_FILE_URI);
         sAbilityHelper_->UnregisterObserver(offCbURI, listObj->fileDataObserver_);
 
         delete listObj->fileDataObserver_;
@@ -2462,4 +2485,5 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
 
     return undefinedResult;
 }
+} // namespace Media
 } // namespace OHOS

@@ -17,6 +17,8 @@
 #define MEDIALIBRARY_DATA_ABILITY_UTILS
 
 #include <string>
+#include <sys/stat.h>
+
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
 #include "media_log.h"
@@ -30,6 +32,7 @@ public:
     ~MediaLibraryDataAbilityUtils();
 
     static bool IsNumber(const std::string &str);
+    static int64_t GetAlbumDateModified(const std::string &albumPath);
     static std::string GetOperationType(const std::string &uri);
     static std::string GetIdFromUri(const std::string &uri);
     static std::string GetMediaTypeUri(MediaType mediaType);

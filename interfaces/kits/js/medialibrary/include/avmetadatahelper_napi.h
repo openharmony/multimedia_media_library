@@ -22,6 +22,7 @@
 #include "medialibrary_napi_utils.h"
 
 namespace OHOS {
+namespace Media {
 class AVMetadataHelperNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
@@ -45,5 +46,6 @@ private:
 
     std::shared_ptr<OHOS::Media::AVMetadataHelper> nativeAVMetadataHelper_ = nullptr;
 };
+} // namespace Media
 } // namespace OHOS
 #endif /* AVMETADATAHELPER_NAPI_H_ */

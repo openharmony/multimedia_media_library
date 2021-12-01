@@ -21,11 +21,10 @@ using OHOS::HiviewDFX::HiLogLabel;
 
 namespace {
     constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AlbumAssetNapi"};
-    const int32_t DEFAULT_ALBUM_ID = 0;
-    const std::string DEFAULT_ALBUM_NAME = "Unknown";
 }
 
 namespace OHOS {
+namespace Media {
 napi_ref AlbumAssetNapi::sConstructor_ = nullptr;
 Media::AlbumAsset *AlbumAssetNapi::sAlbumAsset_ = nullptr;
 AlbumType AlbumAssetNapi::sAlbumType_ = TYPE_NONE;
@@ -630,4 +629,5 @@ napi_value AlbumAssetNapi::CommitModify(napi_env env, napi_callback_info info)
 
     return result;
 }
+} // namespace Media
 } // namespace OHOS

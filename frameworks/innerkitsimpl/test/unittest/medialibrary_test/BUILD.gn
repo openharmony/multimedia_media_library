@@ -15,11 +15,10 @@ import("//build/test.gni")
 
 MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
 MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
-MEDIA_LIB_TEST_DIR = "$MEDIA_LIB_INNERKITS_DIR/media_library/media_library/test/"
 
 module_output_path = "medialibrary/gtest"
 
-group("medialibrary_unit_test") {
+group("medialibrary_native_unit_test") {
   testonly = true
 
   deps = [ ":medialibrary_test" ]
@@ -31,7 +30,6 @@ ohos_unittest("medialibrary_test") {
     "./include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
     "$MEDIA_LIB_INNERKITS_DIR/media_library/include/",
-    "$MEDIA_LIB_TEST_DIR/unittest/cpp/medialibrary_test/include/",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include/",
     "//utils/native/base/include",
   ]
@@ -39,8 +37,8 @@ ohos_unittest("medialibrary_test") {
   sources = [ "src/medialibrary_unit_test.cpp" ]
 
   deps = [
-    "$MEDIA_LIB_INNERKITS_DIR/media_library:media_library",
     "$MEDIA_LIB_BASE_DIR/services/media_library_service:medialibrary_proxy",
+    "$MEDIA_LIB_INNERKITS_DIR/media_library:media_library",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
     "//utils/native/base:utils",
   ]

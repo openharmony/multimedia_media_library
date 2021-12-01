@@ -91,6 +91,7 @@
     } while (0)
 
 namespace OHOS {
+namespace Media {
 /* Constants for array index */
 const int32_t PARAM0 = 0;
 const int32_t PARAM1 = 1;
@@ -109,7 +110,7 @@ const int32_t ERR_INVALID_OUTPUT = 3;
 
 const std::string ALBUM_ROOT_PATH = "/data/media";
 
-enum AssetType {
+enum NapiAssetType {
     TYPE_AUDIO = 0,
     TYPE_VIDEO = 1,
     TYPE_IMAGE = 2,
@@ -132,20 +133,20 @@ const std::vector<std::string> fileKeyEnum {
 };
 
 const std::vector<std::string> fileKeyEnumValues {
-    Media::MEDIA_DATA_DB_ID,
-    Media::MEDIA_DATA_DB_FILE_PATH,
-    Media::MEDIA_DATA_DB_RELATIVE_PATH,
-    Media::MEDIA_DATA_DB_MIME_TYPE,
-    Media::MEDIA_DATA_DB_MEDIA_TYPE,
-    Media::MEDIA_DATA_DB_NAME,
-    Media::MEDIA_DATA_DB_SIZE,
-    Media::MEDIA_DATA_DB_DATE_ADDED,
-    Media::MEDIA_DATA_DB_DATE_MODIFIED,
-    Media::MEDIA_DATA_DB_TITLE,
-    Media::MEDIA_DATA_DB_ARTIST,
-    Media::MEDIA_DATA_DB_ALBUM,
-    Media::MEDIA_DATA_DB_ALBUM_ID,
-    Media::MEDIA_DATA_DB_ALBUM_NAME
+    MEDIA_DATA_DB_ID,
+    MEDIA_DATA_DB_FILE_PATH,
+    MEDIA_DATA_DB_RELATIVE_PATH,
+    MEDIA_DATA_DB_MIME_TYPE,
+    MEDIA_DATA_DB_MEDIA_TYPE,
+    MEDIA_DATA_DB_NAME,
+    MEDIA_DATA_DB_SIZE,
+    MEDIA_DATA_DB_DATE_ADDED,
+    MEDIA_DATA_DB_DATE_MODIFIED,
+    MEDIA_DATA_DB_TITLE,
+    MEDIA_DATA_DB_ARTIST,
+    MEDIA_DATA_DB_ALBUM,
+    MEDIA_DATA_DB_ALBUM_ID,
+    MEDIA_DATA_DB_ALBUM_NAME
 };
 
 struct JSAsyncContextOutput {
@@ -157,25 +158,25 @@ struct JSAsyncContextOutput {
 /* Util class used by napi asynchronous methods for making call to js callback function */
 class MediaLibraryNapiUtils {
 public:
-    static Media::AssetType GetAssetType(Media::MediaType type)
+    static AssetType GetAssetType(MediaType type)
     {
-        Media::AssetType result;
+        AssetType result;
 
         switch (type) {
-            case Media::MEDIA_TYPE_AUDIO:
-                result = Media::ASSET_AUDIO;
+            case MEDIA_TYPE_AUDIO:
+                result = ASSET_AUDIO;
                 break;
-            case Media::MEDIA_TYPE_VIDEO:
-                result = Media::ASSET_VIDEO;
+            case MEDIA_TYPE_VIDEO:
+                result = ASSET_VIDEO;
                 break;
-            case Media::MEDIA_TYPE_IMAGE:
-                result = Media::ASSET_IMAGE;
+            case MEDIA_TYPE_IMAGE:
+                result = ASSET_IMAGE;
                 break;
-            case Media::MEDIA_TYPE_MEDIA:
-                result = Media::ASSET_MEDIA;
+            case MEDIA_TYPE_MEDIA:
+                result = ASSET_MEDIA;
                 break;
             default:
-                result = Media::ASSET_NONE;
+                result = ASSET_NONE;
                 break;
         }
 
@@ -217,5 +218,6 @@ public:
         napi_delete_async_work(env, work);
     }
 };
+} // namespace Media
 } // namespace OHOS
 #endif /* MEDIALIBRARY_NAPI_UTILS_H */

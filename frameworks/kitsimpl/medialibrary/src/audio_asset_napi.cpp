@@ -21,6 +21,9 @@ using OHOS::HiviewDFX::HiLogLabel;
 
 namespace {
     constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AudioAssetNapi"};
+}
+
+namespace AudioAssetConstants {
     const int32_t DEFAULT_AUDIO_DURATION = 0;
     const std::string DEFAULT_AUDIO_TITLE = "Unknown";
     const std::string DEFAULT_AUDIO_ARTIST = "Unknown";
@@ -28,6 +31,7 @@ namespace {
 }
 
 namespace OHOS {
+namespace Media {
 napi_ref AudioAssetNapi::sConstructor_ = nullptr;
 Media::AudioAsset *AudioAssetNapi::sAudioAsset_ = nullptr;
 Media::IMediaLibraryClient *AudioAssetNapi::sMediaLibrary_ = nullptr;
@@ -35,10 +39,10 @@ Media::IMediaLibraryClient *AudioAssetNapi::sMediaLibrary_ = nullptr;
 AudioAssetNapi::AudioAssetNapi()
     : env_(nullptr), wrapper_(nullptr)
 {
-    duration_ = DEFAULT_AUDIO_DURATION;
-    title_ = DEFAULT_AUDIO_TITLE;
-    artist_ = DEFAULT_AUDIO_ARTIST;
-    mimeType_ = DEFAULT_AUDIO_MIME_TYPE;
+    duration_ = AudioAssetConstants::DEFAULT_AUDIO_DURATION;
+    title_ = AudioAssetConstants::DEFAULT_AUDIO_TITLE;
+    artist_ = AudioAssetConstants::DEFAULT_AUDIO_ARTIST;
+    mimeType_ = AudioAssetConstants::DEFAULT_AUDIO_MIME_TYPE;
 }
 
 AudioAssetNapi::~AudioAssetNapi()
@@ -290,4 +294,5 @@ void AudioAssetNapi::UpdateAudioAssetInfo()
     artist_ = sAudioAsset_->artist_;
     duration_ = sAudioAsset_->duration_;
 }
+} // namespace Media
 } // namespace OHOS

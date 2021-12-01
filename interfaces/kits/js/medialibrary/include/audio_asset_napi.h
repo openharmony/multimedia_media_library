@@ -22,6 +22,7 @@
 #include "napi/native_node_api.h"
 
 namespace OHOS {
+namespace Media {
 static const std::string AUDIO_ASSET_NAPI_CLASS_NAME = "AudioAsset";
 
 class AudioAssetNapi : public MediaAssetNapi {
@@ -56,5 +57,6 @@ private:
     static Media::AudioAsset *sAudioAsset_;
     static Media::IMediaLibraryClient *sMediaLibrary_;
 };
+} // namespace Media
 } // namespace OHOS
 #endif /* AUDIO_ASSET_NAPI_H */

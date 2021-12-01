@@ -358,7 +358,7 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(mediaType));
 
     if (rdbhelper_ != nullptr) {
-        Uri uri(MEDIALIBRARY_ALBUM_URI);
+        Uri uri(MEDIALIBRARY_DATA_URI);
         vector<string> columns = {MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_DATE_MODIFIED};
         resultSet = rdbhelper_->Query(uri, columns, predicates);
     }
@@ -383,7 +383,7 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         Metadata metadata;
         resultSet->GetInt(columnIndexId, intValue);
-        metadata.SetAlbumId(intValue);
+        metadata.SetFileId(intValue);
 
         resultSet->GetString(columnIndexPath, strValue);
         metadata.SetFilePath(strValue);

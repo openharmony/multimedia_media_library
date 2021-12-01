@@ -21,6 +21,9 @@ using OHOS::HiviewDFX::HiLogLabel;
 
 namespace {
     constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoAssetNapi"};
+}
+
+namespace VideoAssetConstants {
     const int32_t DEFAULT_VIDEO_WIDTH = 1280;
     const int32_t DEFAULT_VIDEO_HEIGHT = 720;
     const int32_t DEFAULT_VIDEO_DURATION = 0;
@@ -28,6 +31,7 @@ namespace {
 }
 
 namespace OHOS {
+namespace Media {
 napi_ref VideoAssetNapi::sConstructor_ = nullptr;
 Media::VideoAsset *VideoAssetNapi::sVideoAsset_ = nullptr;
 Media::IMediaLibraryClient *VideoAssetNapi::sMediaLibrary_ = nullptr;
@@ -35,10 +39,10 @@ Media::IMediaLibraryClient *VideoAssetNapi::sMediaLibrary_ = nullptr;
 VideoAssetNapi::VideoAssetNapi()
     : env_(nullptr), wrapper_(nullptr)
 {
-    width_ = DEFAULT_VIDEO_WIDTH;
-    height_ = DEFAULT_VIDEO_HEIGHT;
-    duration_ = DEFAULT_VIDEO_DURATION;
-    mimeType_ = DEFAULT_VIDEO_MIME_TYPE;
+    width_ = VideoAssetConstants::DEFAULT_VIDEO_WIDTH;
+    height_ = VideoAssetConstants::DEFAULT_VIDEO_HEIGHT;
+    duration_ = VideoAssetConstants::DEFAULT_VIDEO_DURATION;
+    mimeType_ = VideoAssetConstants::DEFAULT_VIDEO_MIME_TYPE;
 }
 
 VideoAssetNapi::~VideoAssetNapi()
@@ -290,4 +294,5 @@ void VideoAssetNapi::UpdateVideoAssetInfo()
     height_ = sVideoAsset_->height_;
     duration_ = sVideoAsset_->duration_;
 }
+} // namespace Media
 } // namespace OHOS

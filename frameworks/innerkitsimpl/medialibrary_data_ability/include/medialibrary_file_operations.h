@@ -36,7 +36,6 @@ public:
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleCloseAsset(std::string &srcPath, const NativeRdb::ValuesBucket &values,
                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    int32_t HandleOpenAsset(const std::string &srcPath, const NativeRdb::ValuesBucket &values);
     int32_t HandleFileOperation(const std::string &uri, const NativeRdb::ValuesBucket &values,
                                 const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleModifyAsset(const std::string &rowNum, const std::string &srcPath,

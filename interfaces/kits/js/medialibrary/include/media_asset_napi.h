@@ -23,6 +23,7 @@
 #include "napi/native_node_api.h"
 
 namespace OHOS {
+namespace Media {
 static const std::string MEDIA_ASSET_NAPI_CLASS_NAME = "MediaAsset";
 
 class MediaAssetNapi {
@@ -110,5 +111,6 @@ struct MediaAssetAsyncContext {
     MediaAssetNapi* targetCopyObject;
     bool status;
 };
+} // namespace Media
 } // namespace OHOS
 #endif /* MEDIA_ASSET_NAPI_H */

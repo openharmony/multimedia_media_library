@@ -18,6 +18,9 @@
 
 #include <string>
 #include <variant>
+#include <grp.h>
+#include <securec.h>
+#include <unistd.h>
 
 #include "album_asset.h"
 #include "media_data_ability_const.h"

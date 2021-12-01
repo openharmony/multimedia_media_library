@@ -23,6 +23,7 @@
 #include "napi/native_node_api.h"
 
 namespace OHOS {
+namespace Media {
 static const std::string FETCH_FILE_RESULT_CLASS_NAME = "FetchFileResult";
 class FetchFileResultNapi {
 public:
@@ -30,8 +31,8 @@ public:
     ~FetchFileResultNapi();
 
     static napi_value Init(napi_env env, napi_value exports);
-    static napi_value CreateFetchFileResult(napi_env env, Media::FetchResult &fileResult);
-    Media::FetchResult *GetFetchResultObject();
+    static napi_value CreateFetchFileResult(napi_env env, FetchResult &fileResult);
+    FetchResult *GetFetchResultObject();
 
 private:
     static void FetchFileResultNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -47,10 +48,10 @@ private:
 
     napi_env env_;
     napi_ref wrapper_;
-    Media::FetchResult *fetchFileResult_ = nullptr;
+    FetchResult *fetchFileResult_ = nullptr;
 
     static napi_ref sConstructor_;
-    static Media::FetchResult *sFetchFileResult_;
+    static FetchResult *sFetchFileResult_;
 };
 
 class FetchFileResultAsyncContext {
@@ -62,8 +63,9 @@ public:
     FetchFileResultNapi* objectInfo;
     bool status;
     int32_t position;
-    std::unique_ptr<Media::FileAsset> fileAsset;
-    std::vector<std::unique_ptr<Media::FileAsset>> fileAssetArray;
+    std::unique_ptr<FileAsset> fileAsset;
+    std::vector<std::unique_ptr<FileAsset>> fileAssetArray;
 };
+} // namespace Media
 } // namespace OHOS
 #endif /* FETCH_FILE_RESULT_NAPI_H */
