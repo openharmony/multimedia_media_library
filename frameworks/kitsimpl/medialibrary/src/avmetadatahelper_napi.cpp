@@ -585,7 +585,7 @@ napi_value AVMetadataHelperNapi::FetchVideoPixelMapByTime(napi_env env, napi_cal
     napi_value argv[2] = {0};
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= 2, "FetchVideoPixelMapByTime requires 2 parameter maximum");
+    NAPI_ASSERT(env, argc <= 2, "FetchVideoPixelMapByTime requires 2 parameter maximum"); // 2 agrs
 
     std::unique_ptr<AVMetadataHelperAsyncContext> asyncContext = std::make_unique<AVMetadataHelperAsyncContext>();
 
