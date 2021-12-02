@@ -346,6 +346,7 @@ napi_value AVMetadataHelperNapi::Constructor(napi_env env, napi_callback_info in
     avMetadataHelperNapi->env_ = env;
     avMetadataHelperNapi->nativeAVMetadataHelper_ = OHOS::Media::AVMetadataHelperFactory::CreateAVMetadataHelper();
     if (avMetadataHelperNapi->nativeAVMetadataHelper_ == nullptr) {
+        delete avMetadataHelperNapi;
         HiLog::Error(LABEL, "nativeAVMetadataHelper_ no memory");
         return result;
     }
@@ -580,8 +581,8 @@ napi_value AVMetadataHelperNapi::FetchVideoPixelMapByTime(napi_env env, napi_cal
     napi_value undefinedResult = nullptr;
     napi_get_undefined(env, &undefinedResult);
 
-    size_t argc = 2; // 2 agrs
-    napi_value argv[2] = {0}; // 2 agrs
+    size_t argc = 2;
+    napi_value argv[2] = {0};
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= 2, "FetchVideoPixelMapByTime requires 2 parameter maximum"); // 2 agrs
