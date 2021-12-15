@@ -451,11 +451,13 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
 
     auto fName = (char *)calloc(FILENAME_MAX, sizeof(char));
     if (fName == nullptr) {
+        closedir(dirPath);
         return ERR_MEM_ALLOC_FAIL;
     }
 
     if (strcpy_s(fName, FILENAME_MAX, path.c_str()) != ERR_SUCCESS) {
         free(fName);
+        closedir(dirPath);
         return ERR_MEM_ALLOC_FAIL;
     }
     fName[len++] = '/';

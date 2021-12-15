@@ -144,7 +144,7 @@ napi_value MediaScannerNapi::GetMediaScannerInstance(napi_env env, napi_callback
 void InvokeJSCallback(napi_env env, const int32_t errCode, const std::string &uri, napi_ref callbackRef)
 {
     napi_value retVal = nullptr;
-    napi_value results[ARGS_TWO];
+    napi_value results[ARGS_TWO] = {nullptr};
     napi_get_undefined(env, &results[PARAM0]);
     napi_create_object(env, &results[PARAM1]);
 
