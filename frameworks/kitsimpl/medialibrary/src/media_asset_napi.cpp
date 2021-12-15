@@ -1011,5 +1011,5 @@ napi_value MediaAssetNapi::CommitCopy(napi_env env, napi_callback_info info)
 
     return result;
 }
-} // namespace OHOS
+} // namespace Media
 } // namespace OHOS

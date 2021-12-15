@@ -21,11 +21,11 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-IMediaLibraryClient* mediaLibClientInstance = nullptr;
+IMediaLibraryClient* g_mediaLibClientInstance = nullptr;
 
 void MediaLibraryUnitTest::SetUpTestCase(void)
 {
-    mediaLibClientInstance = IMediaLibraryClient::GetMediaLibraryClientInstance();
+    g_mediaLibClientInstance = IMediaLibraryClient::GetMediaLibraryClientInstance();
 }
 
 void MediaLibraryUnitTest::TearDownTestCase(void)
@@ -35,11 +35,11 @@ void MediaLibraryUnitTest::TearDownTestCase(void)
     AssetType assetType = ASSET_IMAGEALBUM;
 
     albumUri = "/data/media/gtest";
-    if (mediaLibClientInstance != nullptr) {
-        (void)mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);
+    if (g_mediaLibClientInstance != nullptr) {
+        (void)g_mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);
     }
 
-    mediaLibClientInstance = nullptr;
+    g_mediaLibClientInstance = nullptr;
 }
 
 /* SetUp:Execute before each test case */
@@ -62,8 +62,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_testlevel0_001, Tes
     AssetType assetType = ASSET_AUDIO;
     mediaAsset.name_ = "test_001_audio.mp3";
     mediaAsset.albumName_ = "gtest/001/audio";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -84,12 +84,12 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_002, TestSize.
 
     mediaAsset.name_ = "gtest_002_audio.mp3";
     mediaAsset.albumName_ = "";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
 
         // clearing the file created
         mediaAsset.uri_ = "/data/media/gtest_002_audio.mp3";
-        (void)mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
+        (void)g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -112,8 +112,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetAudioAssets_testlevel0_001, TestS
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
-            if (mediaLibClientInstance != nullptr) {
-                audioAssetList = mediaLibClientInstance->GetAudioAssets(dirPath, selectionArgs);
+            if (g_mediaLibClientInstance != nullptr) {
+                audioAssetList = g_mediaLibClientInstance->GetAudioAssets(dirPath, selectionArgs);
             }
         }
     }
@@ -135,8 +135,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetAudioAssets_test_002, TestSize.Le
     string dirPath = ""; // ROOT_DIR
     vector<string> selectionArgs;
 
-    if (mediaLibClientInstance != nullptr) {
-        audioAssetList = mediaLibClientInstance->GetAudioAssets(dirPath, selectionArgs);
+    if (g_mediaLibClientInstance != nullptr) {
+        audioAssetList = g_mediaLibClientInstance->GetAudioAssets(dirPath, selectionArgs);
     }
     EXPECT_NE(audioAssetList.size(), size);
 }
@@ -157,8 +157,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_testlevel0_003, Tes
 
     mediaAsset.name_ = "test_002_video.mp4";
     mediaAsset.albumName_ = "gtest/002/video";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -179,12 +179,12 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_004, TestSize.
 
     mediaAsset.name_ = "test_002_video.mp4";
     mediaAsset.albumName_ = "";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
 
         // clearing the file created
         mediaAsset.uri_ = "/data/media/test_002_video.mp4";
-        (void)mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
+        (void)g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -208,8 +208,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAssets_testlevel0_001, TestS
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
-            if (mediaLibClientInstance != nullptr) {
-                videoAssetList = mediaLibClientInstance->GetVideoAssets(dirPath, selectionArgs);
+            if (g_mediaLibClientInstance != nullptr) {
+                videoAssetList = g_mediaLibClientInstance->GetVideoAssets(dirPath, selectionArgs);
             }
         }
     }
@@ -231,8 +231,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAssets_test_002, TestSize.Le
     string dirPath = "";
     vector<string> selectionArgs;
 
-    if (mediaLibClientInstance != nullptr) {
-        videoAssetList = mediaLibClientInstance->GetVideoAssets(dirPath, selectionArgs);
+    if (g_mediaLibClientInstance != nullptr) {
+        videoAssetList = g_mediaLibClientInstance->GetVideoAssets(dirPath, selectionArgs);
     }
     EXPECT_NE(videoAssetList.size(), size);
 }
@@ -253,8 +253,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_testlevel0_005, Tes
 
     mediaAsset.name_ = "test_003_image.jpg";
     mediaAsset.albumName_ = "gtest/003/image";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -275,12 +275,12 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_006, TestSize.
 
     mediaAsset.name_ = "test_003_image.jpg";
     mediaAsset.albumName_ = "";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
 
         // clearing the file created
         mediaAsset.uri_ = "/data/media/test_003_image.jpg";
-        (void)mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
+        (void)g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -301,8 +301,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_007, TestSize.
     // create existing file
     mediaAsset.name_ = "test_003_image.jpg";
     mediaAsset.albumName_ = "gtest/003/image";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
     }
     EXPECT_EQ(errCode, false);
 }
@@ -326,8 +326,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAssets_testlevel0_001, TestS
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
-            if (mediaLibClientInstance != nullptr) {
-                imageAssetList = mediaLibClientInstance->GetImageAssets(dirPath, selectionArgs);
+            if (g_mediaLibClientInstance != nullptr) {
+                imageAssetList = g_mediaLibClientInstance->GetImageAssets(dirPath, selectionArgs);
             }
         }
     }
@@ -349,8 +349,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAssets_test_002, TestSize.Le
     string dirPath = "";
     vector<string> selectionArgs;
 
-    if (mediaLibClientInstance != nullptr) {
-        imageAssetList = mediaLibClientInstance->GetImageAssets(dirPath, selectionArgs);
+    if (g_mediaLibClientInstance != nullptr) {
+        imageAssetList = g_mediaLibClientInstance->GetImageAssets(dirPath, selectionArgs);
     }
     EXPECT_NE(imageAssetList.size(), size);
 }
@@ -374,8 +374,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetMediaAssets_testlevel0_001, TestS
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
-            if (mediaLibClientInstance != nullptr) {
-                mediaAssetList = mediaLibClientInstance->GetMediaAssets(dirPath, selectionArgs);
+            if (g_mediaLibClientInstance != nullptr) {
+                mediaAssetList = g_mediaLibClientInstance->GetMediaAssets(dirPath, selectionArgs);
             }
         }
     }
@@ -397,8 +397,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetMediaAssets_test_002, TestSize.Le
     string dirPath = "";
     vector<string> selectionArgs;
 
-    if (mediaLibClientInstance != nullptr) {
-        mediaAssetList = mediaLibClientInstance->GetMediaAssets(dirPath, selectionArgs);
+    if (g_mediaLibClientInstance != nullptr) {
+        mediaAssetList = g_mediaLibClientInstance->GetMediaAssets(dirPath, selectionArgs);
     }
     EXPECT_NE(mediaAssetList.size(), size);
 }
@@ -422,8 +422,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetIMageAlbumAssets_testlevel0_001, 
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
-            if (mediaLibClientInstance != nullptr) {
-                albumAssetList = mediaLibClientInstance->GetImageAlbumAssets(dirPath, selectionArgs);
+            if (g_mediaLibClientInstance != nullptr) {
+                albumAssetList = g_mediaLibClientInstance->GetImageAlbumAssets(dirPath, selectionArgs);
             }
         }
     }
@@ -440,15 +440,35 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetIMageAlbumAssets_testlevel0_001, 
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAlbumAssets_test_002, TestSize.Level1)
 {
+    bool errCode = false;
+    AlbumAsset albumAsset;
+    AssetType assetType = ASSET_IMAGEALBUM;
+
+    albumAsset.SetAlbumName("crtalbum002");
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CreateMediaAlbumAsset(assetType, albumAsset);
+    }
+    EXPECT_NE(errCode, false);
+
     vector<unique_ptr<AlbumAsset>> albumAssetList;
     unsigned int size = 0;
     string dirPath = "";
     vector<string> selectionArgs;
 
-    if (mediaLibClientInstance != nullptr) {
-        albumAssetList = mediaLibClientInstance->GetImageAlbumAssets(dirPath, selectionArgs);
+    if (g_mediaLibClientInstance != nullptr) {
+        albumAssetList = g_mediaLibClientInstance->GetImageAlbumAssets(dirPath, selectionArgs);
     }
-    EXPECT_EQ(albumAssetList.size(), size);
+    EXPECT_NE(albumAssetList.size(), size);
+
+    errCode = false;
+    string albumUri;
+
+    // delete the empty album
+    albumUri = "/data/media/crtalbum002";
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);
+    }
+    EXPECT_NE(errCode, false);
 }
 
 /*
@@ -470,8 +490,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAlbumAssets_testlevel0_003, 
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
-            if (mediaLibClientInstance != nullptr) {
-                albumAssetList = mediaLibClientInstance->GetVideoAlbumAssets(dirPath, selectionArgs);
+            if (g_mediaLibClientInstance != nullptr) {
+                albumAssetList = g_mediaLibClientInstance->GetVideoAlbumAssets(dirPath, selectionArgs);
             }
         }
     }
@@ -493,8 +513,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAlbumAssets_test_004, TestSi
     string dirPath = "";
     vector<string> selectionArgs;
 
-    if (mediaLibClientInstance != nullptr) {
-        albumAssetList = mediaLibClientInstance->GetVideoAlbumAssets(dirPath, selectionArgs);
+    if (g_mediaLibClientInstance != nullptr) {
+        albumAssetList = g_mediaLibClientInstance->GetVideoAlbumAssets(dirPath, selectionArgs);
     }
     EXPECT_EQ(albumAssetList.size(), size);
 }
@@ -518,8 +538,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAsset_testlevel0_001, Tes
     srcMediaAsset.uri_ = "/data/media/gtest/001/audio/test_001_audio.mp3";
     dstMediaAsset.name_ = "test_001_audio_modify.mp3";
     dstMediaAsset.uri_ = "/data/media/gtest/001/audio/test_001_audio.mp3";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->ModifyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->ModifyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -543,8 +563,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAsset_test_002, TestSize.
     srcMediaAsset.uri_ = "/data/media/gtest/001/audio/test_002_audio.mp3";
     dstMediaAsset.name_ = "test_002_audio_modify.wav";
     dstMediaAsset.uri_ = "/data/media/gtest/001/audio/test_002_audio.mp3";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->ModifyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->ModifyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     }
     EXPECT_EQ(errCode, false);
 }
@@ -568,8 +588,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAsset_test_003, TestSize.
     srcMediaAsset.uri_ = "/data/media/gtest/001/audio_nofile/test_002_audio.mp3";
     dstMediaAsset.uri_ = "/data/media/gtest/001/audio_nofile/test_002_audio.mp3";
     dstMediaAsset.name_ = "test_002_audio_modify.mp3";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->ModifyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->ModifyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     }
     EXPECT_EQ(errCode, false);
 }
@@ -592,8 +612,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_testlevel0_001, TestS
     srcMediaAsset.name_ = "test_001_audio_modify.mp3";
     srcMediaAsset.uri_ = "/data/media/gtest/001/audio/test_001_audio_modify.mp3";
     dstMediaAsset.albumName_ = "gtest/001/copyaudio";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -616,8 +636,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_testlevel0_002, TestS
     srcMediaAsset.name_ = "test_003_image.jpg";
     srcMediaAsset.uri_ = "/data/media/gtest/003/image/test_003_image.jpg";
     dstMediaAsset.albumName_ = "gtest/copyjpg/001/image";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -640,8 +660,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_test_003, TestSize.Le
     srcMediaAsset.name_ = "test_001_audio_modify.mp3";
     srcMediaAsset.uri_ = "/data/media/gtest/001/copyaudio/test_001_audio_modify.mp3";
     dstMediaAsset.albumName_ = "";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     }
     EXPECT_EQ(errCode, false);
 }
@@ -664,8 +684,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_test_004, TestSize.Le
     srcMediaAsset.name_ = "";
     srcMediaAsset.uri_ = "/data/media/gtest/001/audio/test_fail.mp3";
     dstMediaAsset.albumName_ = "";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     }
     EXPECT_EQ(errCode, false);
 }
@@ -686,8 +706,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAsset_testlevel0_001, Tes
 
     mediaAsset.name_ = "test_001_audio_modify.mp3";
     mediaAsset.uri_ = "/data/media/gtest/001/copyaudio/test_001_audio_modify.mp3";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -708,8 +728,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAsset_testlevel0_002, Tes
 
     mediaAsset.name_ = "test_002_video.mp4";
     mediaAsset.uri_ = "/data/media/gtest/002/video/test_002_video.mp4";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -730,8 +750,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAsset_testlevel0_003, Tes
 
     mediaAsset.name_ = "test_003_image.jpg";
     mediaAsset.uri_ = "/data/media/gtest/003/image/test_003_image.jpg";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -752,8 +772,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAsset_test_004, TestSize.
 
     mediaAsset.name_ = "";
     mediaAsset.uri_ = "";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_EQ(errCode, false);
 }
@@ -773,8 +793,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAlbumAsset_testlevel0_001
     AssetType assetType = ASSET_GENERIC_ALBUM;
 
     albumAsset.SetAlbumName("gtest/crtalbum001");
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->CreateMediaAlbumAsset(assetType, albumAsset);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->CreateMediaAlbumAsset(assetType, albumAsset);
     }
     EXPECT_NE(errCode, false);
 }
@@ -798,8 +818,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAlbumAsset_testlevel0_001
     srcAlbumAsset.SetAlbumName("gtest/copyjpg/001/image");
     dstAlbumAsset.SetAlbumName("modify_image001");
     albumUri = "/data/media/gtest/copyjpg/001/image";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->ModifyMediaAlbumAsset(assetType, srcAlbumAsset, dstAlbumAsset, albumUri);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->ModifyMediaAlbumAsset(assetType, srcAlbumAsset, dstAlbumAsset, albumUri);
     }
     EXPECT_NE(errCode, false);
 }
@@ -823,8 +843,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAlbumAsset_test_002, Test
     srcAlbumAsset.SetAlbumName("test/album001");
     dstAlbumAsset.SetAlbumName("modify_album002");
     albumUri = "/data/media/test2/album001";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->ModifyMediaAlbumAsset(assetType, srcAlbumAsset, dstAlbumAsset, albumUri);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->ModifyMediaAlbumAsset(assetType, srcAlbumAsset, dstAlbumAsset, albumUri);
     }
     EXPECT_EQ(errCode, false);
 }
@@ -849,8 +869,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAlbumAsset_testlevel0_001
     albumUri = "/data/media/gtest/copyjpg/001/modify_image001";
     if (stat(albumUri.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
-            if (mediaLibClientInstance != nullptr) {
-                errCode = mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);
+            if (g_mediaLibClientInstance != nullptr) {
+                errCode = g_mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);
             }
         }
     }
@@ -874,8 +894,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAlbumAsset_test_002, Test
 
     albumAsset.SetAlbumName("gtest/modify_album001");
     albumUri = "/data/media/test/modify_album002";
-    if (mediaLibClientInstance != nullptr) {
-        errCode = mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);
+    if (g_mediaLibClientInstance != nullptr) {
+        errCode = g_mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);
     }
     EXPECT_EQ(errCode, false);
 }

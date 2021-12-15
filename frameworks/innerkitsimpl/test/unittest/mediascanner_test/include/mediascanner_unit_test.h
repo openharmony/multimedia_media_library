@@ -22,6 +22,7 @@
 #include <iostream>
 #include <mutex>
 #include <string>
+#include <sys/stat.h>
 #include <thread>
 
 #include "gtest/gtest.h"

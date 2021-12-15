@@ -17,7 +17,7 @@
 #define MEDIA_ASSET_NAPI_H
 
 #include "media_asset.h"
-#include "IMediaLibraryClient.h"
+#include "imedia_library_client.h"
 #include "medialibrary_napi_utils.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"

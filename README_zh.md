@@ -115,7 +115,7 @@ MediaLibrary 给应用提供了操作相册的接口, 如创建，修改和删�
     bool errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     ```
 
-更多接口请参考 [**IMediaLibraryClient.h**](https://gitee.com/openharmony/multimedia_medialibrary_standard/blob/master/interfaces/innerkits/native/include/IMediaLibraryClient.h) 。
+更多接口请参考 [**imedia_library_client.h**](https://gitee.com/openharmony/multimedia_medialibrary_standard/blob/master/interfaces/innerkits/native/include/imedia_library_client.h) 。
 
 
 ## 相关仓<a name="section1533973044317"></a>

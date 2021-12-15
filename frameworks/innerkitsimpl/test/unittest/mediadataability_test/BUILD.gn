@@ -16,9 +16,9 @@ import("//build/test.gni")
 MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
 MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
 
-module_output_path = "mediadataability/gtest"
+module_output_path = "medialibrary_standard/mediadataability"
 
-group("media_data_ability_unit_test") {
+group("unittest") {
   testonly = true
 
   deps = [ ":mediadataability_test" ]

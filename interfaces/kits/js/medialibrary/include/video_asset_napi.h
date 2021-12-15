@@ -57,6 +57,6 @@ private:
     static Media::VideoAsset *sVideoAsset_;
     static Media::IMediaLibraryClient *sMediaLibrary_;
 };
-} // namespace OHOS
+} // namespace Media
 } // namespace OHOS
 #endif /* VIDEO_ASSET_NAPI_H */

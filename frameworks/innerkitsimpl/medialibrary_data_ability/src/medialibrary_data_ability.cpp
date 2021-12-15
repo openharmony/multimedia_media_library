@@ -25,12 +25,14 @@ REGISTER_AA(MediaLibraryDataAbility);
 
 void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
 {
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::OnStart");
     Ability::OnStart(want);
     InitMediaLibraryRdbStore();
 }
 
 void MediaLibraryDataAbility::OnStop()
 {
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::OnStop");
     Ability::OnStop();
     rdbStore = nullptr;
     isRdbStoreInitialized = false;

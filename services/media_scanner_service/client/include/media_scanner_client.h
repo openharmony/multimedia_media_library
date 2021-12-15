@@ -17,11 +17,10 @@
 #define MEDIA_SCANNER_CLIENT_H
 
 #include <list>
+#include <mutex>
 #include <stdint.h>
 #include <string>
-#include <refbase.h>
 #include <unordered_map>
-#include <mutex>
 
 #include "media_scanner_const.h"
 #include "imedia_scanner_client.h"
@@ -46,7 +45,7 @@ struct ScanRequest {
     std::shared_ptr<IMediaScannerAppCallback> appCallback;
 };
 
-class MediaScannerClient : public IMediaScannerClient, public RefBase {
+class MediaScannerClient : public IMediaScannerClient {
 public:
     MediaScannerClient() = default;
     ~MediaScannerClient();
@@ -55,9 +54,11 @@ public:
     ScanState ScanDir(std::string &scanDirPath, const std::shared_ptr<IMediaScannerAppCallback> &appCb) override;
     ScanState ScanFile(std::string &scanFilePath, const std::shared_ptr<IMediaScannerAppCallback> &appCb) override;
 
+    static std::shared_ptr<MediaScannerClient> GetMediaScannerInstance();
     void OnDisconnectAbility();
     void OnConnectAbility(const sptr<IRemoteObject> &remoteObject, int32_t result);
-    int32_t Init();
+    void DisconnectAbility();
+    int32_t ConnectAbility();
 
 private:
     bool UpdateScanRequestQueue(ScanRequest &scanRequest);
@@ -71,23 +72,24 @@ private:
     sptr<AAFwk::IAbilityManager> abilityMgrProxy_;
     ConnectionState connectionState_ = CONN_NONE;
 
-    std::mutex mutex_;
     sptr<IMediaScannerAbility> abilityProxy_;
     std::list<ScanRequest> scanList_;
     std::shared_ptr<IMediaScannerAppCallback> applicationCb_;
+    static std::shared_ptr<MediaScannerClient> msInstance_;
+    static std::mutex mutex_;
 };
 
 class MediaScannerConnectCallbackStub : public  OHOS::AAFwk::AbilityConnectionStub {
 public:
-    MediaScannerConnectCallbackStub(const sptr<MediaScannerClient> &msInstance);
-    virtual ~MediaScannerConnectCallbackStub() = default;
+    MediaScannerConnectCallbackStub();
+    ~MediaScannerConnectCallbackStub();
 
     void OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int32_t resultCode) override;
     void OnAbilityConnectDone(const AppExecFwk::ElementName &element, const sptr<IRemoteObject> &remoteObject,
             int32_t resultCode) override;
 
 private:
-    sptr<MediaScannerClient> msInstance_;
+    std::shared_ptr<MediaScannerClient> scannerClientInstance_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

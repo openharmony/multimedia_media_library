@@ -16,14 +16,14 @@ import("//build/test.gni")
 MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
 MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
 
-group("media_scanner_unit_test") {
+group("unittest") {
   testonly = true
 
   deps = [ ":mediascanner_unittest" ]
 }
 
 ohos_unittest("mediascanner_unittest") {
-  module_out_path = "mediascanner/gtest"
+  module_out_path = "medialibrary_standard/mediascanner"
   sources = [ "./src/mediascanner_unit_test.cpp" ]
 
   include_dirs = [

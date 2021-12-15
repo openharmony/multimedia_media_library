@@ -139,12 +139,12 @@ unique_ptr<ImageAsset> UpdateImageData(const string &assetUri, const struct stat
     return imageAsset;
 }
 
-void ScanMediaAssetInfo(MediaType mediaType, const string &path, const struct stat *statInfo)
+void ScanMediaAssetInfo(MediaType mediaType, const string &path, const struct stat &statInfo)
 {
     switch (mediaType) {
         case MEDIA_TYPE_AUDIO: {
             if (MediaLibraryUtils::requestedMediaType == MEDIA_TYPE_AUDIO) {
-                unique_ptr<AudioAsset> audioAsset = UpdateAudioData(path, *statInfo);
+                unique_ptr<AudioAsset> audioAsset = UpdateAudioData(path, statInfo);
                 if (audioAsset != nullptr) {
                     vector<unique_ptr<AudioAsset>> &audioAssetList
                         = MediaLibraryUtils::GetAudioAssetsInternal();
@@ -156,7 +156,7 @@ void ScanMediaAssetInfo(MediaType mediaType, const string &path, const struct st
         }
         case MEDIA_TYPE_VIDEO: {
             if (MediaLibraryUtils::requestedMediaType == MEDIA_TYPE_VIDEO) {
-                unique_ptr<VideoAsset> videoAsset = UpdateVideoData(path, *statInfo);
+                unique_ptr<VideoAsset> videoAsset = UpdateVideoData(path, statInfo);
                 if (videoAsset != nullptr) {
                     vector<unique_ptr<VideoAsset>> &videoAssetList
                         = MediaLibraryUtils::GetVideoAssetsInternal();
@@ -168,7 +168,7 @@ void ScanMediaAssetInfo(MediaType mediaType, const string &path, const struct st
         }
         case MEDIA_TYPE_IMAGE: {
             if (MediaLibraryUtils::requestedMediaType == MEDIA_TYPE_IMAGE) {
-                unique_ptr<ImageAsset> imageAsset = UpdateImageData(path, *statInfo);
+                unique_ptr<ImageAsset> imageAsset = UpdateImageData(path, statInfo);
                 if (imageAsset != nullptr) {
                     vector<unique_ptr<ImageAsset>> &imageAssetList
                         = MediaLibraryUtils::GetImageAssetsInternal();
@@ -207,7 +207,7 @@ int32_t ScanCallback(const char *path, const struct stat *statInfo, int32_t type
                 mediaAssetList.push_back(std::move(mediaAsset));
             }
         }
-        ScanMediaAssetInfo(mediaType, string(path), statInfo);
+        ScanMediaAssetInfo(mediaType, string(path), *statInfo);
     }
 
     return 0;

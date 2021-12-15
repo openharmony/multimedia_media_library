@@ -1106,7 +1106,7 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
 
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
-    predicates.OrderByAsc(context->order);
+    predicates.SetOrder(context->order);
     predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
     Uri uri(MEDIALIBRARY_DATA_URI);
@@ -1225,7 +1225,7 @@ static napi_value GetResultData(napi_env env, const MediaLibraryAsyncContext &as
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     if (!context->order.empty()) {
-        predicates.OrderByAsc(context->order);
+        predicates.SetOrder(context->order);
     }
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
@@ -1849,7 +1849,6 @@ static void JSCloseAssetCompleteCallback(napi_env env, napi_status status, void*
             napi_get_undefined(env, &jsContext->error);
             jsContext->status = true;
         } else {
-            HiLog::Error(LABEL, "negative ret");
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
                 "File close asset failed");
             napi_get_undefined(env, &jsContext->data);

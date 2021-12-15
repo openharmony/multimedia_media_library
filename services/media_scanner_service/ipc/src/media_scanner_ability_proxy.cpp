@@ -81,5 +81,23 @@ int32_t MediaScannerAbilityProxy::ScanFileService(std::string &scanFilePath, con
 
     return result;
 }
+
+bool MediaScannerAbilityProxy::IsScannerRunning()
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    int32_t error = Remote()->SendRequest(MEDIA_GET_SCAN_STATUS, data, reply, option);
+    if (error != ERR_NONE) {
+        MEDIA_ERR_LOG("%{public}s:: IsScannerRunning IPC failed, error: %{public}d", __func__, error);
+        return SCAN_IPC_ERR;
+    }
+
+    auto result(false);
+    reply.ReadBool(result);
+
+    return result;
+}
 } // namespace Media
 } // namespace OHOS

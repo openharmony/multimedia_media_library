@@ -21,28 +21,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-string GetFileName(const string &path)
-{
-    string name;
-    size_t slashIndex = path.rfind("/");
-    if (slashIndex != string::npos) {
-        name = path.substr(slashIndex + 1);
-    }
-
-    return name;
-}
-
-string GetParentPath(const string &path)
-{
-    string name;
-    size_t slashIndex = path.rfind("/");
-    if (slashIndex != string::npos) {
-        name = path.substr(0, slashIndex);
-    }
-
-    return name;
-}
-
 void UpdateDateModifiedForAlbum(const shared_ptr<RdbStore> &rdbStore, const string &albumPath)
 {
     if (!albumPath.empty()) {
@@ -80,10 +58,10 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
     }
 
     errCode = fileAsset.CreateAsset(path);
-    string fileName = GetFileName(path);
+    string fileName = MediaLibraryDataAbilityUtils::GetFileName(path);
     if ((errCode == DATA_ABILITY_SUCCESS) && (fileName == ".nomedia")) {
         int32_t deletedRows(ALBUM_OPERATION_ERR);
-        string albumPath = GetParentPath(path);
+        string albumPath = MediaLibraryDataAbilityUtils::GetParentPath(path);
         if (albumPath.empty()) {
             MEDIA_ERR_LOG("Album path for hidden file is empty");
             return errCode;
@@ -99,8 +77,10 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
     }
 
     if ((errCode == DATA_ABILITY_SUCCESS) && (!fileName.empty()) && (fileName.at(0) != '.')) {
+        string parentPath = MediaLibraryDataAbilityUtils::GetParentPath(path);
+        int32_t parentId = MediaLibraryDataAbilityUtils::GetParentIdFromDb(parentPath, rdbStore);
         // Fill basic file information into DB
-        ValuesBucket updatedAssetInfo = UpdateBasicAssetDetails(mediaType, path);
+        ValuesBucket updatedAssetInfo = UpdateBasicAssetDetails(mediaType, path, parentId);
 
         // will return row id
         return fileDbOprn.Insert(updatedAssetInfo, rdbStore);
@@ -114,9 +94,9 @@ int32_t MediaLibraryFileOperations::HandleCloseAsset(string &srcPath, const Valu
 {
     string fileName;
 
-    if (!srcPath.empty() &&
-        ((fileName = GetFileName(srcPath)).length() != 0) && (fileName.at(0) != '.')) {
-        string albumPath = GetParentPath(srcPath);
+    if (!srcPath.empty() && ((fileName = MediaLibraryDataAbilityUtils::GetFileName(srcPath)).length() != 0) &&
+        (fileName.at(0) != '.')) {
+        string albumPath = MediaLibraryDataAbilityUtils::GetParentPath(srcPath);
         UpdateDateModifiedForAlbum(rdbStore, albumPath);
     }
 
@@ -137,8 +117,8 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
         valueObject.GetString(dstFilePath);
     }
 
-    string destAlbumPath = GetParentPath(dstFilePath);
-    dstFileName = GetFileName(dstFilePath);
+    string destAlbumPath = MediaLibraryDataAbilityUtils::GetParentPath(dstFilePath);
+    dstFileName = MediaLibraryDataAbilityUtils::GetFileName(dstFilePath);
 
     errCode = fileAsset.ModifyAsset(srcPath, dstFilePath);
     if (errCode == DATA_ABILITY_FAIL) {
@@ -180,7 +160,7 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     if (fileDbOprn.Modify(rowNum, dstFilePath, rdbStore) > 0) {
         UpdateDateModifiedForAlbum(rdbStore, destAlbumPath);
 
-        string srcAlbumPath = GetParentPath(srcPath);
+        string srcAlbumPath = MediaLibraryDataAbilityUtils::GetParentPath(srcPath);
         UpdateDateModifiedForAlbum(rdbStore, srcAlbumPath);
     }
 
@@ -200,7 +180,7 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, cons
 
     if (errCode == DATA_ABILITY_SUCCESS) {
         if (fileDbOprn.Delete(rowNum, rdbStore) > 0) {
-            string albumPath = GetParentPath(srcPath);
+            string albumPath = MediaLibraryDataAbilityUtils::GetParentPath(srcPath);
             UpdateDateModifiedForAlbum(rdbStore, albumPath);
         }
     }
@@ -239,7 +219,8 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
     return errCode;
 }
 
-ValuesBucket MediaLibraryFileOperations::UpdateBasicAssetDetails(int32_t mediaType, const string &path)
+ValuesBucket MediaLibraryFileOperations::UpdateBasicAssetDetails(int32_t mediaType, const string &path,
+    const int32_t parentId)
 {
     string relPath("");
     string fileName("");
@@ -247,8 +228,8 @@ ValuesBucket MediaLibraryFileOperations::UpdateBasicAssetDetails(int32_t mediaTy
     ValuesBucket assetInfoBucket;
 
     if (!path.empty()) {
-        relPath = GetParentPath(path);
-        fileName = GetFileName(path);
+        relPath = MediaLibraryDataAbilityUtils::GetParentPath(path);
+        fileName = MediaLibraryDataAbilityUtils::GetFileName(path);
         assetInfoBucket.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, relPath);
         assetInfoBucket.PutString(Media::MEDIA_DATA_DB_NAME, fileName);
 
@@ -262,6 +243,7 @@ ValuesBucket MediaLibraryFileOperations::UpdateBasicAssetDetails(int32_t mediaTy
         assetInfoBucket.PutString(Media::MEDIA_DATA_DB_URI, mediaUri);
         assetInfoBucket.PutInt(Media::MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
         assetInfoBucket.PutString(Media::MEDIA_DATA_DB_FILE_PATH, path);
+        assetInfoBucket.PutInt(Media::MEDIA_DATA_DB_PARENT_ID, parentId);
     }
 
     return assetInfoBucket;

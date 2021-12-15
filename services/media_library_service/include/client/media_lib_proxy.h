@@ -20,7 +20,7 @@
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
 
-#include "IMediaLibraryClient.h"
+#include "imedia_library_client.h"
 #include "media_lib_service_const.h"
 #include "media_lib_service_stub.h"
 

@@ -505,7 +505,7 @@ static void GetFileAssetsNative(napi_env env, const AlbumNapiAsyncContext &album
     context->selection += " AND ";
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
-    predicates.OrderByAsc(context->order);
+    predicates.SetOrder(context->order);
     predicates.EqualTo(MEDIA_DATA_DB_PARENT_ID, std::to_string(context->objectInfo->GetAlbumId()));
     predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(MEDIA_TYPE_ALBUM));
 
