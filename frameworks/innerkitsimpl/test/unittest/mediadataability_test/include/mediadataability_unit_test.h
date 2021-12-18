@@ -16,6 +16,9 @@
 #ifndef MEDIADATAABILITY_UNIT_TEST_H
 #define MEDIADATAABILITY_UNIT_TEST_H
 
+#include <thread>
+#include <cstdio>
+
 #include "gtest/gtest.h"
 #include "medialibrary_data_ability.h"
 #include "fetch_result.h"

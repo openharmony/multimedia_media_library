@@ -22,8 +22,9 @@ namespace OHOS {
 namespace Media {
 enum ScannerApiTypes : int32_t {
     MEDIA_SCAN_DIR_ABILITY = 0,
-    MEDIA_SCAN_FILE_ABILITY = 1,
-    MEDIA_SCAN_ON_CALLBACK = 2
+    MEDIA_SCAN_FILE_ABILITY,
+    MEDIA_SCAN_ON_CALLBACK,
+    MEDIA_GET_SCAN_STATUS
 };
 
 enum ScanType : uint32_t {

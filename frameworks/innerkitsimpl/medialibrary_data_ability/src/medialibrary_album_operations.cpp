@@ -61,6 +61,10 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket, const string &albu
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
         MediaLibraryDataAbilityUtils::GetAlbumDateModified(albumPath));
 
+    string parentPath = MediaLibraryDataAbilityUtils::GetParentPath(albumPath);
+    int32_t parentId = MediaLibraryDataAbilityUtils::GetParentIdFromDb(parentPath, rdbStore);
+    values.PutInt(Media::MEDIA_DATA_DB_PARENT_ID, parentId);
+
     return const_cast<MediaLibraryAlbumDb &>(albumDbOprn).InsertAlbumInfo(values, rdbStore);
 }
 

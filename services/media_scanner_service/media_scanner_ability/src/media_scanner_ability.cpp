@@ -24,11 +24,13 @@ REGISTER_AA(MediaScannerAbility);
 
 void MediaScannerAbility::OnStart(const Want &want)
 {
+    MEDIA_INFO_LOG("MediaScannerAbility::%{public}s ", __func__);
     OHOS::AppExecFwk::Ability::OnStart(want);
 }
 
 sptr<IRemoteObject> MediaScannerAbility::OnConnect(const Want &want)
 {
+    MEDIA_INFO_LOG("MediaScannerAbility::%{public}s ", __func__);
     OHOS::AppExecFwk::Ability::OnConnect(want);
 
     // Creating context of parent class and setting the context at scanner

@@ -27,5 +27,10 @@ int32_t MediaScannerAbilityService::ScanFileService(string &scanFilePath, const 
 {
     return MediaScanner::GetMediaScannerInstance()->ScanFile(scanFilePath, callback);
 }
+
+bool MediaScannerAbilityService::IsScannerRunning()
+{
+    return MediaScanner::GetMediaScannerInstance()->IsScannerRunning();
+}
 } // namespace Media
 } // namespace OHOS

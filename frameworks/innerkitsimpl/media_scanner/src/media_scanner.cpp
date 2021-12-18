@@ -25,6 +25,7 @@ MediaScanner::MediaScanner()
     if (mediaScannerDb_ == nullptr) {
         mediaScannerDb_ = MediaScannerDb::GetDatabaseInstance();
     }
+
     isScannerInitDone_ = false;
     scanExector_.SetCallbackFunction(ScanQueueCB);
 }
@@ -207,7 +208,10 @@ void MediaScanner::CleanupDirectory(const string &path)
     for (auto id : toBeDeletedIds) {
         deleteIdList.push_back(to_string(id));
     }
-    mediaScannerDb_->DeleteMetadata(deleteIdList);
+
+    if (!deleteIdList.empty()) {
+        mediaScannerDb_->DeleteMetadata(deleteIdList);
+    }
 
     // Send notify to the modified URIs
     for (const MediaType &mediaType : mediaTypeSet) {
@@ -647,7 +651,16 @@ void MediaScanner::ReleaseAbilityHelper()
     if (rdbhelper_ != nullptr) {
         rdbhelper_->Release();
         rdbhelper_ = nullptr;
+        mediaScannerDb_->SetRdbHelper(rdbhelper_);
     }
+
+    isScannerInitDone_ = false;
+    abilityContext_ = nullptr;
+}
+
+bool MediaScanner::IsScannerRunning()
+{
+    return !scanResultCbMap_.empty();
 }
 } // namespace Media
 } // namespace OHOS

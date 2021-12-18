@@ -11,12 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-group("medialibrary_unit_test") {
+group("test") {
   testonly = true
 
   deps = [
-    "unittest/mediadataability_test:media_data_ability_unit_test",
-    "unittest/medialibrary_test:medialibrary_native_unit_test",
-    "unittest/mediascanner_test:media_scanner_unit_test",
+    "unittest/mediadataability_test:unittest",
+    "unittest/medialibrary_test:unittest",
   ]
 }

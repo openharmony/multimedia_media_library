@@ -114,7 +114,7 @@ File operations are supported via APIs like **CreateMediaAsset**, **ModifyMediaA
     bool errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     ```
 
-Please refer [**IMediaLibraryClient.h**](https://gitee.com/openharmony/multimedia_medialibrary_standard/blob/master/interfaces/innerkits/native/include/IMediaLibraryClient.h) for more APIs.
+Please refer [**imedia_library_client.h**](https://gitee.com/openharmony/multimedia_medialibrary_standard/blob/master/interfaces/innerkits/native/include/imedia_library_client.h) for more APIs.
 
 
 ## Repositories Involved<a name="section1533973044317"></a>

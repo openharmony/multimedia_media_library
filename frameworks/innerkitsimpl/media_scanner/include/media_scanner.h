@@ -59,6 +59,7 @@ public:
     static MediaScanner *GetMediaScannerInstance();
     int32_t ScanFile(std::string &path, const sptr<IRemoteObject> &callback);
     int32_t ScanDir(std::string &path, const sptr<IRemoteObject> &callback);
+    bool IsScannerRunning();
     void SetAbilityContext(const std::shared_ptr<OHOS::AppExecFwk::Context> &context);
     void ReleaseAbilityHelper();
 

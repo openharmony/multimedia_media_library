@@ -23,49 +23,80 @@ namespace OHOS {
 namespace Media {
 std::shared_ptr<IMediaScannerClient> MediaScannerHelperFactory::CreateScannerHelper()
 {
-    std::shared_ptr<MediaScannerClient> msInstance = std::make_shared<MediaScannerClient>();
-    CHECK_AND_RETURN_RET_LOG(msInstance != nullptr, nullptr, "Failed to create new media scanner client");
-
-    int32_t ret = msInstance->Init();
-    CHECK_AND_RETURN_RET_LOG(ret == CONN_SUCCESS, nullptr, "Failed to initialise MediaScannerClient");
-
-    return msInstance;
+    return OHOS::Media::MediaScannerClient::GetMediaScannerInstance();
 }
 
-int32_t MediaScannerClient::Init()
+std::mutex MediaScannerClient::mutex_;
+std::shared_ptr<MediaScannerClient> MediaScannerClient::msInstance_ = nullptr;
+
+std::shared_ptr<MediaScannerClient> MediaScannerClient::GetMediaScannerInstance()
 {
-    // Obtain ability manager service for connecting to ability
-    auto abilityMgrService = DelayedSingleton<SysMrgClient>::GetInstance()->GetSystemAbility(ABILITY_MGR_SERVICE_ID);
-    CHECK_AND_RETURN_RET_LOG(abilityMgrService != nullptr, CONN_ERROR, "Ability Mgr instance not available");
+    if (msInstance_ == nullptr) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (msInstance_ == nullptr) {
+            msInstance_ = std::make_shared<MediaScannerClient>();
+        }
+    }
 
-    abilityMgrProxy_ = iface_cast<IAbilityManager>(abilityMgrService);
-    CHECK_AND_RETURN_RET_LOG(abilityMgrProxy_ != nullptr, CONN_ERROR, "Ability Mgr proxy is null");
+    CHECK_AND_RETURN_RET_LOG(msInstance_ != nullptr, nullptr, "Failed to create new media scanner client");
 
-    // Create callback stub object and pass to fwk connect request.
-    connection_ = new (std::nothrow) MediaScannerConnectCallbackStub(this);
-    CHECK_AND_RETURN_RET_LOG(connection_ != nullptr, CONN_ERROR, "connect cb object create failed");
+    return msInstance_;
+}
 
-    Want want;
-    want.SetElementName(SCANNER_BUNDLE_NAME, SCANNER_ABILITY_NAME);
+MediaScannerClient::~MediaScannerClient()
+{
+    connectionState_ = ConnectionState::CONN_NONE;
+    abilityMgrProxy_ = nullptr;
+    connection_ = nullptr;
+    scanList_.clear();
+}
 
-    // Connect to the service ability. Dest ability name mentioned in want param
-    SetConnectionState(ConnectionState::CONN_IN_PROGRESS);
-    int32_t ret = abilityMgrProxy_->ConnectAbility(want, connection_, nullptr);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("MediaScannerClient:: Connect ability failed");
-        SetConnectionState(ConnectionState::CONN_ERROR);
-        return CONN_ERROR;
+
+int32_t MediaScannerClient::ConnectAbility()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!IsScannerServiceConnected()) {
+        // Obtain ability manager service for connecting to ability
+        auto abilityMgr = DelayedSingleton<SysMrgClient>::GetInstance()->GetSystemAbility(ABILITY_MGR_SERVICE_ID);
+        CHECK_AND_RETURN_RET_LOG(abilityMgr != nullptr, CONN_ERROR, "Ability Mgr instance not available");
+
+        abilityMgrProxy_ = iface_cast<IAbilityManager>(abilityMgr);
+        CHECK_AND_RETURN_RET_LOG(abilityMgrProxy_ != nullptr, CONN_ERROR, "Ability Mgr proxy is null");
+
+        // Create callback stub object and pass to fwk connect request.
+        connection_ = new (std::nothrow) MediaScannerConnectCallbackStub();
+        CHECK_AND_RETURN_RET_LOG(connection_ != nullptr, CONN_ERROR, "connect cb object create failed");
+
+        Want want;
+        want.SetElementName(SCANNER_BUNDLE_NAME, SCANNER_ABILITY_NAME);
+
+        // Connect to the service ability. Dest ability name mentioned in want param
+        SetConnectionState(ConnectionState::CONN_IN_PROGRESS);
+        int32_t ret = abilityMgrProxy_->ConnectAbility(want, connection_, nullptr);
+        if (ret != 0) {
+            MEDIA_ERR_LOG("MediaScannerClient:: Connect ability failed");
+            SetConnectionState(ConnectionState::CONN_ERROR);
+            return CONN_ERROR;
+        }
     }
 
     return CONN_SUCCESS;
 }
 
-MediaScannerClient::~MediaScannerClient()
+void MediaScannerClient::DisconnectAbility()
 {
-    scanList_.clear();
+    CHECK_AND_RETURN_LOG(connection_ != nullptr && abilityMgrProxy_ != nullptr, "Connection unavailable");
+
+    int32_t ret = abilityMgrProxy_->DisconnectAbility(connection_);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("MediaScannerClient:: Disconnect ability failed %{public}d", ret);
+        return;
+    }
+
+    connectionState_ = ConnectionState::CONN_NONE;
     abilityMgrProxy_ = nullptr;
     connection_ = nullptr;
-    connectionState_ = ConnectionState::CONN_NONE;
+    scanList_.clear();
 }
 
 void MediaScannerClient::Release()
@@ -76,19 +107,15 @@ void MediaScannerClient::Release()
         return;
     }
 
-    CHECK_AND_RETURN_LOG(connection_ != nullptr, "No connection available for disconnect");
-    CHECK_AND_RETURN_LOG(abilityMgrProxy_ != nullptr, "No proxy available for disconnect");
+    CHECK_AND_RETURN_LOG(abilityProxy_ != nullptr, "Ability service proxy unavailable");
 
-    int32_t ret = abilityMgrProxy_->DisconnectAbility(connection_);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("MediaScannerClient:: Disconnect ability failed %{public}d", ret);
+    if (abilityProxy_->IsScannerRunning()) {
+        MEDIA_ERR_LOG("scanner is running. Cannot release ability now");
         return;
     }
 
-    SetConnectionState(ConnectionState::CONN_NONE);
-    abilityMgrProxy_ = nullptr;
-    connection_ = nullptr;
-    scanList_.clear();
+    // Scanner is not running. Release ability
+    DisconnectAbility();
 }
 
 ScanState MediaScannerClient::ScanDir(string &scanDirPath, const shared_ptr<IMediaScannerAppCallback> &scanDircb)
@@ -104,11 +131,8 @@ ScanState MediaScannerClient::ScanFile(string &scanFilePath, const shared_ptr<IM
 ScanState MediaScannerClient::ScanInternal(string &path, const shared_ptr<IMediaScannerAppCallback> &appCb,
     ScanType scanType)
 {
-    auto state = GetConnectionState();
-    if (state == ConnectionState::CONN_ERROR || state == ConnectionState::CONN_NONE) {
-        MEDIA_ERR_LOG("Scanner service not available. Try to connect first %{public}d", state);
-        return SCAN_SERVICE_NOT_READY;
-    }
+    auto connectResult = ConnectAbility();
+    CHECK_AND_RETURN_RET_LOG(connectResult == CONN_SUCCESS, SCAN_ERROR, "Service error %{public}d", connectResult);
 
     auto callbackStub = new(std::nothrow) MediaScannerOperationCallbackStub();
     CHECK_AND_RETURN_RET_LOG(callbackStub != nullptr, SCAN_MEM_ALLOC_FAIL, "ScannerOperCallback creation failed");
@@ -119,7 +143,7 @@ ScanState MediaScannerClient::ScanInternal(string &path, const shared_ptr<IMedia
     CHECK_AND_RETURN_RET_LOG(callbackRemoteObj != nullptr, SCAN_MEM_ALLOC_FAIL, "callback remote obj is null");
 
     // If service is not connected, add the request into queue. Queue will be processed OnAbilityConnected callback
-    if (state == ConnectionState::CONN_IN_PROGRESS) {
+    if (GetConnectionState() == ConnectionState::CONN_IN_PROGRESS) {
         ScanRequest scanRequest;
         scanRequest.scanType = scanType;
         scanRequest.path = path;
@@ -132,7 +156,7 @@ ScanState MediaScannerClient::ScanInternal(string &path, const shared_ptr<IMedia
         }
     }
 
-    CHECK_AND_RETURN_RET_LOG(abilityProxy_ != nullptr, SCAN_ERROR, "Ability service unavailable for scanning");
+    CHECK_AND_RETURN_RET_LOG(abilityProxy_ != nullptr, SCAN_ERROR, "Ability service proxy unavailable for scanning");
 
     if (scanType == ScanType::SCAN_FILE) {
         int32_t ret = abilityProxy_->ScanFileService(path, callbackRemoteObj);
@@ -172,7 +196,7 @@ void MediaScannerClient::EmptyScanRequestQueue(bool isConnected)
             MEDIA_ERR_LOG("Remote object unavailable. Notify registered clients");
             CHECK_AND_RETURN_LOG(scanRequest.appCallback != nullptr, "Invalid app callback object");
             scanRequest.appCallback->OnScanFinished(SCAN_ERROR, "", scanRequest.path);
-            break;
+            continue;
         }
 
         CHECK_AND_RETURN_LOG(abilityProxy_ != nullptr, "Ability service unavailable");
@@ -196,6 +220,8 @@ void MediaScannerClient::EmptyScanRequestQueue(bool isConnected)
                 break;
         }
     }
+
+    scanList_.clear();
 }
 
 bool MediaScannerClient::UpdateScanRequestQueue(ScanRequest &scanRequest)
@@ -239,22 +265,27 @@ void MediaScannerClient::OnDisconnectAbility()
 }
 
 // Connect callback impl
-MediaScannerConnectCallbackStub::MediaScannerConnectCallbackStub(const sptr<MediaScannerClient> &msInstance)
+MediaScannerConnectCallbackStub::MediaScannerConnectCallbackStub()
 {
-    msInstance_ = msInstance;
+    scannerClientInstance_ = MediaScannerClient::GetMediaScannerInstance();
+}
+
+MediaScannerConnectCallbackStub::~MediaScannerConnectCallbackStub()
+{
+    scannerClientInstance_ = nullptr;
 }
 
 void MediaScannerConnectCallbackStub::OnAbilityConnectDone(const OHOS::AppExecFwk::ElementName &element,
     const sptr<IRemoteObject> &remoteObject, int32_t result)
 {
-    CHECK_AND_RETURN_LOG(msInstance_ != nullptr, "Mediascanner instance is null at OnAbilityConnectDone");
-    msInstance_->OnConnectAbility(remoteObject, result);
+    CHECK_AND_RETURN_LOG(scannerClientInstance_ != nullptr, "Scanner instance is down in OnAbilityConnectDone");
+    scannerClientInstance_->OnConnectAbility(remoteObject, result);
 }
 
 void MediaScannerConnectCallbackStub::OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int32_t result)
 {
-    CHECK_AND_RETURN_LOG(msInstance_ != nullptr, "Mediascanner instance is null at OnAbilityDisconnectDone");
-    msInstance_->OnDisconnectAbility();
+    CHECK_AND_RETURN_LOG(scannerClientInstance_ != nullptr, "Scanner instance is down in OnAbilityDisconnectDone");
+    scannerClientInstance_->OnDisconnectAbility();
 }
 } // namespace Media
 } // namespace OHOS

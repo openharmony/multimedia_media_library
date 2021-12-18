@@ -31,14 +31,21 @@ shared_ptr<NativeRdb::AbsSharedResultSet> g_resultSet1 = nullptr;
 shared_ptr<NativeRdb::AbsSharedResultSet> g_resultSet2 = nullptr;
 shared_ptr<NativeRdb::AbsSharedResultSet> g_resultSet3 = nullptr;
 
-void MediaDataAbilityUnitTest::SetUpTestCase(void) {}
-
-void MediaDataAbilityUnitTest::TearDownTestCase(void) {}
-
-void MediaDataAbilityUnitTest::SetUp(void)
+void MediaDataAbilityUnitTest::SetUpTestCase(void)
 {
     g_rdbStoreTest.InitMediaLibraryRdbStore();
 }
+
+void MediaDataAbilityUnitTest::TearDownTestCase(void)
+{
+    if (remove("/data/media/media_library.db") != 0
+        || remove("/data/media/media_library.db-shm") != 0
+        || remove("/data/media/media_library.db-wal") != 0) {
+        MEDIA_ERR_LOG("Db deletion failed");
+    }
+}
+
+void MediaDataAbilityUnitTest::SetUp(void) {}
 
 void MediaDataAbilityUnitTest::TearDown(void) {}
 
@@ -93,6 +100,9 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseAsset_Test_001, TestSiz
     EXPECT_NE((ret != 0), true);
     ret = g_rdbStoreTest.Insert(closeAssetUri, valuesBucket);
     EXPECT_NE((ret != 0), true);
+
+    // Timer for scan file to finish after close asset
+    std::this_thread::sleep_for(2000ms);
 }
 
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_ModifyAsset_Test_001, TestSize.Level0)
@@ -147,11 +157,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_GetFileAssets_Test_001, Test
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     string selection = MEDIA_DATA_DB_FILE_PATH + " LIKE ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND ";
     vector<string> selectionArgs = { "/data/media/gtest/%", to_string(MEDIA_TYPE_IMAGE) };
-    string order = MEDIA_DATA_DB_ID;
+    string order = MEDIA_DATA_DB_ID + " ASC";
 
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
-    predicates.OrderByAsc(order);
+    predicates.SetOrder(order);
     predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
     g_resultSet1 = g_rdbStoreTest.Query(uri, columns, predicates);
@@ -299,6 +309,9 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseAssetInAlbum_Test_002, 
     EXPECT_NE((ret != 0), true);
     ret = g_rdbStoreTest.Insert(closeAssetUri, valuesBucket);
     EXPECT_NE((ret != 0), true);
+
+    // Timer for scan file to finish after close asset
+    std::this_thread::sleep_for(2000ms);
 }
 
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_GetAlbumFileAssets_Test_001, TestSize.Level0)
@@ -373,13 +386,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_GetPositionObject_Test_001, 
     EXPECT_EQ(ret, NativeRdb::E_OK);
     ret = g_resultSet3->GetString(columnIndex, strVal);
     EXPECT_EQ(ret, NativeRdb::E_OK);
-    EXPECT_EQ("dataability:///com.ohos.medialibrary.MediaLibraryDataAbility/image/4", strVal);
-
-    ret = g_resultSet3->GetColumnIndex(MEDIA_DATA_DB_ALBUM_NAME, columnIndex);
-    EXPECT_EQ(ret, NativeRdb::E_OK);
-    ret = g_resultSet3->GetString(columnIndex, strVal);
-    EXPECT_EQ(ret, NativeRdb::E_OK);
-    EXPECT_EQ("gtest_modified_album001", strVal);
+    EXPECT_EQ("dataability:///com.ohos.medialibrary.MediaLibraryDataAbility/image", strVal);
 }
 
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAsset_Test_001, TestSize.Level0)

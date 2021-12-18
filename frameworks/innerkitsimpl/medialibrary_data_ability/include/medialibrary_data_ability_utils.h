@@ -31,6 +31,9 @@ public:
     MediaLibraryDataAbilityUtils();
     ~MediaLibraryDataAbilityUtils();
 
+    static std::string GetFileName(const std::string &path);
+    static std::string GetParentPath(const std::string &path);
+    static int32_t GetParentIdFromDb(const std::string &path, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static bool IsNumber(const std::string &str);
     static int64_t GetAlbumDateModified(const std::string &albumPath);
     static std::string GetOperationType(const std::string &uri);

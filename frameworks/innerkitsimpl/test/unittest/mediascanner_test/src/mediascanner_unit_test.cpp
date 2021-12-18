@@ -14,6 +14,10 @@
  */
 
 #include "mediascanner_unit_test.h"
+#include "hilog/log.h"
+
+using OHOS::HiviewDFX::HiLog;
+using OHOS::HiviewDFX::HiLogLabel;
 
 using namespace std;
 using namespace OHOS;
@@ -26,6 +30,7 @@ MediaLibraryDataAbility g_rdbStoreTest;
 int g_albumId;
 
 namespace {
+    constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "ApplicationMediaScannerGtest"};
     shared_ptr<IMediaScannerClient> g_msInstance = nullptr;
 
     int32_t g_callbackStatus(0);
@@ -35,6 +40,7 @@ namespace {
     std::string g_callbackName("");
     std::mutex g_mutex;
     std::condition_variable g_condVar;
+    const mode_t RWX_USR_GRP_OTH = 0777;
 } // namespace
 
 ApplicationCallback::ApplicationCallback(const std::string &testCaseName) : testCaseName_(testCaseName) {}
@@ -57,6 +63,15 @@ void MediaScannerUnitTest::WaitForCallback()
 void MediaScannerUnitTest::SetUpTestCase(void)
 {
     g_msInstance = MediaScannerHelperFactory::CreateScannerHelper();
+    if (g_msInstance == nullptr) {
+        HiLog::Error(LABEL, "Scanner instance not available");
+    }
+
+    g_rdbStoreTest.InitMediaLibraryRdbStore();
+
+    chmod("/data/media/media_library.db", RWX_USR_GRP_OTH);
+    chmod("/data/media/media_library.db-shm", RWX_USR_GRP_OTH);
+    chmod("/data/media/media_library.db-wal", RWX_USR_GRP_OTH);
 }
 
 void MediaScannerUnitTest::TearDownTestCase(void)
@@ -69,13 +84,16 @@ void MediaScannerUnitTest::TearDownTestCase(void)
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(MEDIA_DATA_DB_ID, g_albumId);
     g_rdbStoreTest.Insert(deleteAlbumUri, valuesBucket);
+
+    if (remove("/data/media/media_library.db") != 0
+        || remove("/data/media/media_library.db-shm") != 0
+        || remove("/data/media/media_library.db-wal") != 0) {
+        HiLog::Error(LABEL, "Db deletion failed");
+    }
 }
 
 // SetUp:Execute before each test case
-void MediaScannerUnitTest::SetUp()
-{
-    g_rdbStoreTest.InitMediaLibraryRdbStore();
-}
+void MediaScannerUnitTest::SetUp() {}
 
 void MediaScannerUnitTest::TearDown(void) {}
 
@@ -104,10 +122,9 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
-    int errCode = 0;
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
     result = g_msInstance->ScanDir(path, appCallback);
-    EXPECT_EQ(g_filescanstatus, errCode);
+    EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -150,7 +167,9 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
     Uri closeAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CLOSEASSET);
     NativeRdb::ValuesBucket valuesBucket2;
     valuesBucket2.PutString(MEDIA_DATA_DB_URI, createUri);
-    ret = close(fd1);
+    if (fd1 >= 0) {
+        ret = close(fd1);
+    }
     EXPECT_NE((ret != 0), true);
     ret = g_rdbStoreTest.Insert(closeAssetUri, valuesBucket2);
     EXPECT_NE((ret != 0), true);
@@ -207,7 +226,9 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanVideo_Test_001, TestSize.Level0)
     Uri closeAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CLOSEASSET);
     NativeRdb::ValuesBucket valuesBucket2;
     valuesBucket2.PutString(MEDIA_DATA_DB_URI, createUri);
-    ret = close(fd1);
+    if (fd1 >= 0) {
+        ret = close(fd1);
+    }
     EXPECT_NE((ret != 0), true);
     ret = g_rdbStoreTest.Insert(closeAssetUri, valuesBucket2);
     EXPECT_NE((ret != 0), true);
@@ -263,7 +284,9 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanAudio_Test_001, TestSize.Level0)
     Uri closeAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CLOSEASSET);
     NativeRdb::ValuesBucket valuesBucket2;
     valuesBucket2.PutString(MEDIA_DATA_DB_URI, createUri);
-    ret = close(fd1);
+    if (fd1 >= 0) {
+        ret = close(fd1);
+    }
     EXPECT_NE((ret != 0), true);
     ret = g_rdbStoreTest.Insert(closeAssetUri, valuesBucket2);
     EXPECT_NE((ret != 0), true);
@@ -326,7 +349,9 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanTextFile_Test_001, TestSize.Leve
     Uri closeAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CLOSEASSET);
     NativeRdb::ValuesBucket valuesBucket2;
     valuesBucket2.PutString(MEDIA_DATA_DB_URI, createUri);
-    ret = close(fd1);
+    if (fd1 >= 0) {
+        ret = close(fd1);
+    }
     EXPECT_NE((ret != 0), true);
     ret = g_rdbStoreTest.Insert(closeAssetUri, valuesBucket2);
     EXPECT_NE((ret != 0), true);
@@ -405,12 +430,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_002, TestSize.Level0)
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
-    int errCode = 0;
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
     EXPECT_EQ((g_msInstance != nullptr), true);
     result = g_msInstance->ScanDir(path, appCallback);
-    EXPECT_EQ(g_filescanstatus, errCode);
+    EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -456,12 +480,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_Nomedia_test_001, TestSize.
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
-    int errCode = 0;
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
     EXPECT_EQ((g_msInstance != nullptr), true);
     result = g_msInstance->ScanDir(path, appCallback);
-    EXPECT_EQ(g_filescanstatus, errCode);
+    EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -487,12 +510,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_CononicalPathtest_001, Test
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
-    int errCode = 0;
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
     EXPECT_EQ((g_msInstance != nullptr), true);
     result = g_msInstance->ScanDir(path, appCallback);
-    EXPECT_EQ(g_filescanstatus, errCode);
+    EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -526,12 +548,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_HiddenDirtest_001, TestSize
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
-    int errCode = 0;
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
     EXPECT_EQ((g_msInstance != nullptr), true);
     result = g_msInstance->ScanDir(path, appCallback);
-    EXPECT_EQ(g_filescanstatus, errCode);
+    EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -577,12 +598,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_OnlyFoldersAsContent_001, T
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
-    int errCode = 0;
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
     EXPECT_EQ((g_msInstance != nullptr), true);
     result = g_msInstance->ScanDir(path, appCallback);
-    EXPECT_EQ(g_filescanstatus, errCode);
+    EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -608,12 +628,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_RecursiveScan_001, TestSize
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
-    int errCode = 0;
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
     EXPECT_EQ((g_msInstance != nullptr), true);
     result = g_msInstance->ScanDir(path, appCallback);
-    EXPECT_EQ(g_filescanstatus, errCode);
+    EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step

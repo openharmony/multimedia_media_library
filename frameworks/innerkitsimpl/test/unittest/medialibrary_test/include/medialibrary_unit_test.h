@@ -17,7 +17,7 @@
 #define MEDIALIBRARY_UNIT_TEST_H
 
 #include "gtest/gtest.h"
-#include "IMediaLibraryClient.h"
+#include "imedia_library_client.h"
 #include "media_library.h"
 
 namespace OHOS {

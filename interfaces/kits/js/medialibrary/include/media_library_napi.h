@@ -36,7 +36,7 @@
 #include "fetch_file_result_napi.h"
 #include "file_asset_napi.h"
 #include "image_asset_napi.h"
-#include "IMediaLibraryClient.h"
+#include "imedia_library_client.h"
 #include "media_asset_napi.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_data_ability.h"

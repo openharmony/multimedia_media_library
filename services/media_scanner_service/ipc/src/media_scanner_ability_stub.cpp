@@ -30,6 +30,9 @@ int32_t MediaScannerAbilityStub::OnRemoteRequest(
         case MEDIA_SCAN_FILE_ABILITY:
             errCode = MediaScannerAbilityStub::HandleScanFile(data, reply);
             break;
+        case MEDIA_GET_SCAN_STATUS:
+            errCode = MediaScannerAbilityStub::HandleGetScanStatus(data, reply);
+            break;
         default:
             MEDIA_ERR_LOG("MediaScannerAbilityStub request code %{public}d not handled", code);
             errCode = IPCObjectStub::OnRemoteRequest(code, data, reply, option);
@@ -66,6 +69,13 @@ int32_t MediaScannerAbilityStub::HandleScanFile(MessageParcel& data, MessageParc
     int32_t result = ScanFileService(filePath, remoteObject);
     reply.WriteInt32(result);
 
+    return ERR_NONE;
+}
+
+int32_t MediaScannerAbilityStub::HandleGetScanStatus(MessageParcel& data, MessageParcel &reply)
+{
+    bool result = IsScannerRunning();
+    reply.WriteBool(result);
     return ERR_NONE;
 }
 } // namespace Media

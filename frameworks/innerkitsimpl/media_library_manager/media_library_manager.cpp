@@ -52,7 +52,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptio
 
     predicates.SetWhereClause(fetchOptions.selections);
     predicates.SetWhereArgs(fetchOptions.selectionArgs);
-    predicates.OrderByAsc(fetchOptions.order);
+    predicates.SetOrder(fetchOptions.order);
     predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
     Uri uri(MEDIALIBRARY_DATA_URI);
@@ -117,7 +117,7 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
     predicates.SetWhereClause(fetchOptions.selections);
     predicates.SetWhereArgs(fetchOptions.selectionArgs);
     if (!fetchOptions.order.empty()) {
-        predicates.OrderByAsc(fetchOptions.order);
+        predicates.SetOrder(fetchOptions.order);
     }
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
@@ -344,7 +344,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
         fetchOptions.selections += " AND ";
         predicates.SetWhereClause(fetchOptions.selections);
         predicates.SetWhereArgs(fetchOptions.selectionArgs);
-        predicates.OrderByAsc(fetchOptions.order);
+        predicates.SetOrder(fetchOptions.order);
         predicates.EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(albumId));
         predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 

@@ -20,6 +20,56 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+string MediaLibraryDataAbilityUtils::GetFileName(const string &path)
+{
+    string name;
+    size_t slashIndex = path.rfind("/");
+    if (slashIndex != string::npos) {
+        name = path.substr(slashIndex + 1);
+    }
+
+    return name;
+}
+
+string MediaLibraryDataAbilityUtils::GetParentPath(const string &path)
+{
+    string name;
+    size_t slashIndex = path.rfind("/");
+    if (slashIndex != string::npos) {
+        name = path.substr(0, slashIndex);
+    }
+
+    return name;
+}
+
+int32_t MediaLibraryDataAbilityUtils::GetParentIdFromDb(const string &path, const shared_ptr<RdbStore> &rdbStore)
+{
+    int32_t parentId = 0;
+    int32_t columnIndex(0);
+
+    if (rdbStore != nullptr && !path.empty()) {
+        AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+        absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
+
+        vector<string> columns;
+        columns.push_back(MEDIA_DATA_DB_ID);
+
+        unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+        CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, parentId, "Failed to obtain parentId from database");
+
+        auto ret = queryResultSet->GoToFirstRow();
+        CHECK_AND_RETURN_RET_LOG(ret == 0, parentId, "Failed to shift at first row");
+
+        ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndex);
+        CHECK_AND_RETURN_RET_LOG(ret == 0, parentId, "Failed to obtain column index");
+
+        ret = queryResultSet->GetInt(columnIndex, parentId);
+        CHECK_AND_RETURN_RET_LOG(ret == 0, parentId, "Failed to obtain parent id");
+    }
+
+    return parentId;
+}
+
 bool MediaLibraryDataAbilityUtils::IsNumber(const string &str)
 {
     if (str.length() == 0) {
