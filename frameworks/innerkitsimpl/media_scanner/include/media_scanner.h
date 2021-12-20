@@ -69,7 +69,6 @@ private:
 
     static void ScanQueueCB(ScanRequest sr);
     std::unique_ptr<Metadata> GetFileMetadata(const std::string &path, const int32_t parentId);
-    std::vector<std::string> GetSupportedMimeTypes();
 
     void InitSkipList();
     void CheckIfFolderScanCompleted(const int32_t reqId);

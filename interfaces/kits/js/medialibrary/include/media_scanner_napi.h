@@ -28,16 +28,22 @@ namespace OHOS {
 namespace Media {
 static const std::string SCANNER_HELPER_NAPI_CLASS_NAME = "MediaScannerHelper";
 
+struct ScannerAsyncContext {
+    napi_ref callbackRef;
+    napi_deferred deferred;
+};
+
 class MediaScannerNapiCallback : public IMediaScannerAppCallback {
 public:
     void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
-    void SetToMap(const std::string &path, const napi_ref &cbRef);
+    void SetToMap(const std::string &path, const ScannerAsyncContext &scannerContext);
+    void RemoveFromMap(const std::string &path);
 
     explicit MediaScannerNapiCallback(napi_env env) : env_(env) {}
     ~MediaScannerNapiCallback() = default;
 
 private:
-    std::unordered_map<std::string, napi_ref> scannerMap_;
+    std::unordered_map<std::string, ScannerAsyncContext> scannerMap_;
     napi_env env_;
 };
 

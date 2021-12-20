@@ -51,7 +51,6 @@ MediaScannerClient::~MediaScannerClient()
     scanList_.clear();
 }
 
-
 int32_t MediaScannerClient::ConnectAbility()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -85,7 +84,7 @@ int32_t MediaScannerClient::ConnectAbility()
 
 void MediaScannerClient::DisconnectAbility()
 {
-    CHECK_AND_RETURN_LOG(connection_ != nullptr && abilityMgrProxy_ != nullptr, "Connection unavailable");
+    CHECK_AND_RETURN_LOG((connection_ != nullptr && abilityMgrProxy_ != nullptr), "Connection unavailable");
 
     int32_t ret = abilityMgrProxy_->DisconnectAbility(connection_);
     if (ret != 0) {
@@ -110,7 +109,7 @@ void MediaScannerClient::Release()
     CHECK_AND_RETURN_LOG(abilityProxy_ != nullptr, "Ability service proxy unavailable");
 
     if (abilityProxy_->IsScannerRunning()) {
-        MEDIA_ERR_LOG("scanner is running. Cannot release ability now");
+        MEDIA_ERR_LOG("Scanner is running. Cannot release the ability now");
         return;
     }
 
@@ -262,6 +261,9 @@ void MediaScannerClient::OnDisconnectAbility()
     if (!scanList_.empty()) {
         MediaScannerClient::EmptyScanRequestQueue(false);
     }
+
+    abilityMgrProxy_ = nullptr;
+    connection_ = nullptr;
 }
 
 // Connect callback impl
@@ -278,13 +280,13 @@ MediaScannerConnectCallbackStub::~MediaScannerConnectCallbackStub()
 void MediaScannerConnectCallbackStub::OnAbilityConnectDone(const OHOS::AppExecFwk::ElementName &element,
     const sptr<IRemoteObject> &remoteObject, int32_t result)
 {
-    CHECK_AND_RETURN_LOG(scannerClientInstance_ != nullptr, "Scanner instance is down in OnAbilityConnectDone");
+    CHECK_AND_RETURN_LOG(scannerClientInstance_ != nullptr, "Scanner client is down in OnAbilityConnectDone");
     scannerClientInstance_->OnConnectAbility(remoteObject, result);
 }
 
 void MediaScannerConnectCallbackStub::OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int32_t result)
 {
-    CHECK_AND_RETURN_LOG(scannerClientInstance_ != nullptr, "Scanner instance is down in OnAbilityDisconnectDone");
+    CHECK_AND_RETURN_LOG(scannerClientInstance_ != nullptr, "Scanner client is down in OnAbilityDisconnectDone");
     scannerClientInstance_->OnDisconnectAbility();
 }
 } // namespace Media

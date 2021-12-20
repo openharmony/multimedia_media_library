@@ -141,7 +141,8 @@ napi_value MediaScannerNapi::GetMediaScannerInstance(napi_env env, napi_callback
     return result;
 }
 
-void InvokeJSCallback(napi_env env, const int32_t errCode, const std::string &uri, napi_ref callbackRef)
+void InvokeJSCallback(napi_env env, const int32_t errCode, const std::string &uri,
+    const ScannerAsyncContext &scannerContext)
 {
     napi_value retVal = nullptr;
     napi_value results[ARGS_TWO] = {nullptr};
@@ -156,9 +157,14 @@ void InvokeJSCallback(napi_env env, const int32_t errCode, const std::string &ur
     napi_create_string_utf8(env, uri.c_str(), NAPI_AUTO_LENGTH, &jsUri);
     napi_set_named_property(env, results[PARAM1], "fileUri", jsUri);
 
-    napi_value callback = nullptr;
-    napi_get_reference_value(env, callbackRef, &callback);
-    napi_call_function(env, nullptr, callback, ARGS_TWO, results, &retVal);
+    if (scannerContext.deferred != nullptr) {
+        napi_resolve_deferred(env, scannerContext.deferred, results[PARAM1]);
+    } else if (scannerContext.callbackRef != nullptr) {
+        napi_value callback = nullptr;
+        napi_get_reference_value(env, scannerContext.callbackRef, &callback);
+        napi_call_function(env, nullptr, callback, ARGS_TWO, results, &retVal);
+        napi_delete_reference(env, scannerContext.callbackRef);
+    }
 }
 
 napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info, const string &scanType)
@@ -171,34 +177,37 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
     napi_value thisVar = nullptr;
     MediaScannerNapi *obj = nullptr;
     string path = "";
-    napi_ref callbackRef = nullptr;
+    ScannerAsyncContext scannerContext = { nullptr, nullptr };
     const int32_t refCount = 1;
     size_t res = 0;
     int32_t errCode = 0;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameters");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters");
 
     napi_get_undefined(env, &result);
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
     if (status == napi_ok && obj != nullptr) {
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[PARAM0], &valueType);
+        if (valueType == napi_string) {
+            napi_get_value_string_utf8(env, argv[PARAM0], buffer, PATH_MAX, &res);
+            path = string(buffer);
+        } else {
+            HiLog::Error(LABEL, "Invalid arg");
+            return result;
+        }
+
         if (argc == ARGS_TWO) {
-            napi_valuetype valueType = napi_undefined;
-            napi_typeof(env, argv[PARAM0], &valueType);
-            if (valueType == napi_string) {
-                napi_get_value_string_utf8(env, argv[PARAM0], buffer, PATH_MAX, &res);
-                path = string(buffer);
-            } else {
-                HiLog::Error(LABEL, "Invalid arg");
-                return result;
-            }
             napi_typeof(env, argv[PARAM1], &valueType);
             if (valueType == napi_function) {
-                napi_create_reference(env, argv[PARAM1], refCount, &callbackRef);
+                napi_create_reference(env, argv[PARAM1], refCount, &(scannerContext.callbackRef));
             } else {
                 HiLog::Error(LABEL, "Invalid arg");
                 return result;
             }
+        } else {
+            NAPI_CREATE_PROMISE(env, scannerContext.callbackRef, scannerContext.deferred, result);
         }
 
         if (scanType == "FILE") {
@@ -208,10 +217,11 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
         }
 
         if (errCode == 0) {
-            obj->mediaScannerNapiCallbackObj_->SetToMap(path, callbackRef);
+            obj->mediaScannerNapiCallbackObj_->SetToMap(path, scannerContext);
         } else {
             // Invoke JS callback functions based on results
-            InvokeJSCallback(env, errCode, "", callbackRef);
+            InvokeJSCallback(env, errCode, "", scannerContext);
+            obj->mediaScannerNapiCallbackObj_->RemoveFromMap(path);
         }
     }
 
@@ -239,9 +249,14 @@ void MediaScannerNapiCallback::OnScanFinished(const int32_t status, const std::s
     }
 }
 
-void MediaScannerNapiCallback::SetToMap(const std::string &path, const napi_ref &cbRef)
+void MediaScannerNapiCallback::SetToMap(const std::string &path, const ScannerAsyncContext &scannerContext)
 {
-    scannerMap_.insert(std::make_pair(path, cbRef));
+    scannerMap_.insert(std::make_pair(path, scannerContext));
+}
+
+void MediaScannerNapiCallback::RemoveFromMap(const std::string &path)
+{
+    scannerMap_.erase(path);
 }
 } // namespace Media
 } // namespace OHOS

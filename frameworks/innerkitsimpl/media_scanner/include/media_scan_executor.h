@@ -28,8 +28,8 @@ using namespace std;
 
 class ScanRequest {
 public:
-    ScanRequest(string path) : requestId_(0), path_(path), isDir_(false) {}
-    ScanRequest() : ScanRequest("") {}
+    ScanRequest(string path, string appPath) : requestId_(0), path_(path), appReqPath_(appPath), isDir_(false) {}
+    ScanRequest() : ScanRequest("", "") {}
     ~ScanRequest() = default;
 
     int32_t GetRequestId() const
@@ -57,9 +57,15 @@ public:
         return isDir_;
     }
 
+    const string &GetAppReqPath() const
+    {
+        return appReqPath_;
+    }
+
 private:
     int32_t requestId_;
     string path_;
+    string appReqPath_;
     bool isDir_;
 };
 
