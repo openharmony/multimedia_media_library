@@ -30,7 +30,8 @@ void UpdateDateModifiedForAlbum(const shared_ptr<RdbStore> &rdbStore, const stri
         valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
             MediaLibraryDataAbilityUtils::GetAlbumDateModified(albumPath));
 
-        int32_t updateResult = rdbStore->Update(count, MEDIALIBRARY_TABLE, valuesBucket, "path = ?", whereArgs);
+        int32_t updateResult = rdbStore->Update(count, MEDIALIBRARY_TABLE, valuesBucket,
+                                                MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
         if (updateResult != E_OK) {
             MEDIA_ERR_LOG("Update failed for album");
         }
@@ -69,7 +70,8 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
 
         vector<string> whereArgs = { (albumPath.back() != '/' ? (albumPath + "/%") : (albumPath + "%")), albumPath };
 
-        int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, "path LIKE ? OR path = ?", whereArgs);
+        int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
+            MEDIA_DATA_DB_FILE_PATH + " LIKE ? OR " + MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
         if (deleteResult != E_OK) {
             MEDIA_ERR_LOG("Delete rows failed");
         }
@@ -132,14 +134,15 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
             (destAlbumPath.back() != '/' ? (destAlbumPath + "/%") : (destAlbumPath + "%")), destAlbumPath
         };
 
-        int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, "path LIKE ? OR path = ?", whereArgs);
+        int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
+            MEDIA_DATA_DB_FILE_PATH + " LIKE ? OR " + MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
         if (deleteResult != E_OK) {
             MEDIA_ERR_LOG("Delete rows for the hidden album failed");
         }
 
         whereArgs.clear();
         whereArgs.push_back(srcPath);
-        deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, "path = ?", whereArgs);
+        deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
         if (deleteResult != E_OK) {
             MEDIA_ERR_LOG("Delete rows for the old path failed");
         }
@@ -150,7 +153,8 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
         int32_t deletedRows(ALBUM_OPERATION_ERR);
         vector<string> whereArgs = { srcPath };
 
-        int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, "path = ?", whereArgs);
+        int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
+                                                MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
         if (deleteResult != E_OK) {
             MEDIA_ERR_LOG("Delete rows failed");
         }

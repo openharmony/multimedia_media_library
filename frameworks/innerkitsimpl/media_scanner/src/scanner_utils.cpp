@@ -86,12 +86,10 @@ string ScannerUtils::GetMimeTypeFromExtension(const string &extension)
     }
 
     transform(extn.begin(), extn.end(), extn.begin(), ::tolower);
-    if (SUPPORTED_AUDIO_FORMATS_SET.find(extn) != SUPPORTED_AUDIO_FORMATS_SET.end()) {
-        mimeType = DEFAULT_AUDIO_MIME_TYPE;
-    } else if (SUPPORTED_VIDEO_FORMATS_SET.find(extn) != SUPPORTED_VIDEO_FORMATS_SET.end()) {
-        mimeType = DEFAULT_VIDEO_MIME_TYPE;
-    } else if (SUPPORTED_IMAGE_FORMATS_SET.find(extn) != SUPPORTED_IMAGE_FORMATS_SET.end()) {
-        mimeType = DEFAULT_IMAGE_MIME_TYPE;
+
+    auto it = SUPPORTED_EXTN_MAP.find(extn);
+    if (it != SUPPORTED_EXTN_MAP.end()) {
+        mimeType = it->second;
     }
 
     return mimeType;

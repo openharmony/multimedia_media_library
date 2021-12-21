@@ -34,7 +34,12 @@ int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
     std::shared_ptr<AVMetadataHelper> avMetadataHelper = nullptr;
     std::unordered_map<int32_t, std::string> metadataMap;
 
-    if (fileMetadata.GetFileMediaType() == MEDIA_TYPE_IMAGE) {
+    // If the file type is not audio/video/image
+    auto mimeType = ScannerUtils::GetMimeTypeFromExtension(fileMetadata.GetFileExtension());
+    fileMetadata.SetFileMimeType(mimeType);
+    auto isSupported = std::find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(), mimeType) !=
+        EXTRACTOR_SUPPORTED_MIME.end();
+    if (!isSupported) {
         return ERR_SUCCESS;
     }
 

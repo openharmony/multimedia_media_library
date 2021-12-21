@@ -2277,18 +2277,22 @@ void MediaLibraryNapi::RegisterChangeByType(string type, const ChangeListenerNap
 {
     ChangeListenerNapi *listObj = const_cast<ChangeListenerNapi *>(&listenerObj);
     if (type.compare(AUDIO_LISTENER) == 0) {
+        CHECK_IF_EQUAL((listObj->audioDataObserver_ == nullptr), "Audio data observer already present");
         listObj->audioDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_AUDIO);
         Uri onCbURI(MEDIALIBRARY_AUDIO_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->audioDataObserver_);
     } else if (type.compare(VIDEO_LISTENER) == 0) {
+        CHECK_IF_EQUAL((listObj->videoDataObserver_ == nullptr), "Video data observer already present");
         listObj->videoDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_VIDEO);
         Uri onCbURI(MEDIALIBRARY_VIDEO_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->videoDataObserver_);
     } else if (type.compare(IMAGE_LISTENER) == 0) {
+        CHECK_IF_EQUAL((listObj->imageDataObserver_ == nullptr), "Image data observer already present");
         listObj->imageDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_IMAGE);
         Uri onCbURI(MEDIALIBRARY_IMAGE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->imageDataObserver_);
     } else if (type.compare(FILE_LISTENER) == 0) {
+        CHECK_IF_EQUAL((listObj->fileDataObserver_ == nullptr), "File data observer already present");
         listObj->fileDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_FILE);
         Uri onCbURI(MEDIALIBRARY_FILE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->fileDataObserver_);
@@ -2344,6 +2348,7 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
             return undefinedResult;
         }
 
+        obj->subscribeList_.clear();
         napi_get_array_length(env, argv[PARAM0], &len);
         for (size_t i = 0; i < len; i++) {
             napi_get_element(env, argv[PARAM0], i, &stringItem);
@@ -2459,6 +2464,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
             return undefinedResult;
         }
 
+        obj->unsubscribeList_.clear();
         napi_get_array_length(env, argv[PARAM0], &len);
         for (size_t i = 0; i < len; i++) {
             napi_get_element(env, argv[PARAM0], i, &stringItem);

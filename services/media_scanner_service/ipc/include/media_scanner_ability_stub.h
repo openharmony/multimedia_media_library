@@ -32,7 +32,7 @@ private:
     int32_t HandleScanDir(MessageParcel& data, MessageParcel &reply);
     int32_t HandleScanFile(MessageParcel& data, MessageParcel &reply);
     int32_t HandleMediaScannerAbilitySetCallback(MessageParcel& data);
-    int32_t HandleGetScanStatus(MessageParcel& data, MessageParcel& reply);
+    int32_t HandleGetScanStatus(MessageParcel& data, MessageParcel &reply);
 };
 } // namespace Media
 } // namespace OHOS
