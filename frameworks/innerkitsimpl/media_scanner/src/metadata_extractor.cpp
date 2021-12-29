@@ -27,6 +27,28 @@ int32_t MetadataExtractor::ConvertStringToInteger(const string &str)
     return integer;
 }
 
+int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/" + fileMetadata.GetFileExtension();
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(fileMetadata.GetFilePath(), opts, errorCode);
+    if (errorCode != ERR_SUCCESS || imageSource == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain image source");
+        return ERR_SUCCESS;
+    }
+
+    ImageInfo imageInfo;
+    uint32_t ret = imageSource->GetImageInfo(0, imageInfo);
+    if (ret == ERR_SUCCESS) {
+        fileMetadata.SetFileWidth(imageInfo.size.width);
+        fileMetadata.SetFileHeight(imageInfo.size.height);
+    }
+
+    return ERR_SUCCESS;
+}
+
 int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
 {
     int32_t errCode = ERR_FAIL;
@@ -41,6 +63,10 @@ int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
         EXTRACTOR_SUPPORTED_MIME.end();
     if (!isSupported) {
         return ERR_SUCCESS;
+    }
+
+    if (fileMetadata.GetFileMediaType() == MEDIA_TYPE_IMAGE) {
+        return ExtractImageMetadata(fileMetadata);
     }
 
     avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
