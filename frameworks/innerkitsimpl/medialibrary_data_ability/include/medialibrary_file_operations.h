@@ -46,7 +46,7 @@ public:
     int32_t HandleDeleteAsset(const std::string &rowNum, const std::string &srcPath,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleIsDirectoryAsset(const NativeRdb::ValuesBucket &values,
-                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);                          
+                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     NativeRdb::ValuesBucket UpdateBasicAssetDetails(int32_t mediaType,
                                                     const std::string &fileName,
                                                     const std::string &relPath,

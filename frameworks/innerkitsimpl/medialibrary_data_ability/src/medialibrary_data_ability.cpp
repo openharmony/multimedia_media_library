@@ -468,15 +468,14 @@ void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_
     }
 }
 /**
- * @brief 
- * 
- * @param uri 
+ * @brief
+ * @param uri
  * @param  mode Indicates the file open mode, which can be "r" for read-only access, "w" for write-only access
  * (erasing whatever data is currently in the file), "wt" for write access that truncates any existing file,
  * "wa" for write-only access to append to any existing data, "rw" for read and write access on any existing data,
  *  or "rwt" for read and write access that truncates any existing file.
- * / 
- * @return int32_t 
+ * /
+ * @return int32_t
  */
 int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mode)
 {
@@ -485,14 +484,12 @@ int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mod
     shared_ptr<FileAsset> fileAsset = MediaLibraryDataAbilityUtils::GetFileAssetFromDb(id, rdbStore);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, DATA_ABILITY_FAIL, "Failed to obtain path from Database");
     bool isWriteMode = MediaLibraryDataAbilityUtils::checkOpenMode(mode);
-
     if (isWriteMode && MediaLibraryDataAbilityUtils::checkFilePending(fileAsset)) {
         return DATA_ABILITY_HAS_OPENED_FAIL;
     }
     MEDIA_ERR_LOG("MediaLibraryDataAbility OpenAsset begin");
     int32_t fd = fileAsset->OpenAsset(fileAsset->GetPath(), mode);
     MEDIA_ERR_LOG("MediaLibraryDataAbility OpenAsset end");
-
     if (isWriteMode && fd > 0) {
         int32_t errorCode = MediaLibraryDataAbilityUtils::setFilePending(id, true, rdbStore);
         if (errorCode == DATA_ABILITY_FAIL) {

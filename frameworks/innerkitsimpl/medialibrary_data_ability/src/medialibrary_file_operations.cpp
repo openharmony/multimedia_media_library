@@ -70,23 +70,17 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
     vector<int32_t> outIds;
     nativeAlbumAsset = MediaLibraryDataAbilityUtils::CreateDirectorys(relativePath, rdbStore, outIds);
     if (nativeAlbumAsset.GetAlbumId() < 0) {
-        MEDIA_ERR_LOG("fileAsset CreateAlbum faild error");
         return nativeAlbumAsset.GetAlbumId();
     }
-
     nativeAlbumAsset = MediaLibraryDataAbilityUtils::GetAlbumAsset(to_string(nativeAlbumAsset.GetAlbumId()), rdbStore);
     if (MediaLibraryDataAbilityUtils::isFileExistInDb(path, rdbStore)) {
         if (fileAsset.IsFileExists(path)) {
-            MEDIA_ERR_LOG("fileAsset File is Exists error");
             return DATA_ABILITY_DUPLICATE_CREATE;
         } else {
-            MEDIA_ERR_LOG("fileAsset File not Exists");
             int32_t deletedRows(FILE_OPERATION_ERR);
             vector<string> whereArgs = { path };
-
             int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, "data = ?", whereArgs);
             if (deleteResult != E_OK) {
-                MEDIA_ERR_LOG("Delete rows failed");
                 return errCode;
             }
         }

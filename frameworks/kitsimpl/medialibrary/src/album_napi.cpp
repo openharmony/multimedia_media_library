@@ -693,10 +693,10 @@ static void CommitModifyNative(napi_env env, const AlbumNapiAsyncContext &albumC
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetAlbumId()));
         valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
-                         MediaFileUtils::GetAlbumDateModified(context->objectInfo->GetAlbumPath()));
+                             MediaFileUtils::GetAlbumDateModified(context->objectInfo->GetAlbumPath()));
         Uri uri(MEDIALIBRARY_DATA_URI);
         changedRows =
-            context->objectInfo->GetDataAbilityHelper()->Update(uri, valuesBucket, predicates); 
+            context->objectInfo->GetDataAbilityHelper()->Update(uri, valuesBucket, predicates);
     } else {
         changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;
     }

@@ -959,7 +959,6 @@ napi_value GetAssetJSObject(napi_env env, NapiAssetType type, IMediaLibraryClien
 void CreateAssetAsyncCbComplete(napi_env env, napi_status status,
                                 MediaLibraryAsyncContext *context)
 {
-
     if (context != nullptr) {
         unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
         jsContext->status = true;
@@ -1132,14 +1131,10 @@ napi_value MediaLibraryNapi::CreateAlbum(napi_env env, napi_callback_info info)
 
     return result;
 }
-
-STATIC_COMPLETE_FUNC(GetPublicDirectory)
+static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status,
+                                               MediaLibraryAsyncContext *context)
 {
-    HiLog::Debug(LABEL, "GetPublicDirectoryCompleteCallback in");
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     unsigned int dirIndex = context->dirType;
@@ -1201,7 +1196,8 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
         status = napi_create_async_work(
             env, nullptr, resource,
             [](napi_env env, void* data) {},
-            GetPublicDirectoryCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(GetPublicDirectoryCallbackComplete),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1399,9 +1395,7 @@ static napi_value GetResultData(napi_env env, const MediaLibraryAsyncContext &as
 static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
                                         MediaLibraryAsyncContext *context)
 {
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     napi_get_undefined(env, &jsContext->error);
@@ -1655,10 +1649,8 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForCreateAsset(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
-
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCreateAsset");
-
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
             reinterpret_cast<CompleteCallback>(JSCreateAssetCompleteCallback),
@@ -1677,9 +1669,7 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
 static void JSModifyAssetCompleteCallback(napi_env env, napi_status status,
                                           MediaLibraryAsyncContext *context)
 {
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
@@ -1798,9 +1788,7 @@ napi_value MediaLibraryNapi::JSModifyAsset(napi_env env, napi_callback_info info
 static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status,
                                           MediaLibraryAsyncContext *context)
 {
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
@@ -1921,9 +1909,7 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
 static void JSOpenAssetCompleteCallback(napi_env env, napi_status status,
                                         MediaLibraryAsyncContext *context)
 {
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
@@ -2039,9 +2025,7 @@ napi_value MediaLibraryNapi::JSOpenAsset(napi_env env, napi_callback_info info)
 static void JSCloseAssetCompleteCallback(napi_env env, napi_status status,
                                          MediaLibraryAsyncContext *context)
 {
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
@@ -2156,9 +2140,7 @@ napi_value MediaLibraryNapi::JSCloseAsset(napi_env env, napi_callback_info info)
 static void JSCreateAlbumCompleteCallback(napi_env env, napi_status status,
                                           MediaLibraryAsyncContext *context)
 {
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
@@ -2262,9 +2244,7 @@ napi_value MediaLibraryNapi::JSCreateAlbum(napi_env env, napi_callback_info info
 static void JSModifyAlbumCompleteCallback(napi_env env, napi_status status,
                                           MediaLibraryAsyncContext *context)
 {
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
@@ -2371,9 +2351,7 @@ napi_value MediaLibraryNapi::JSModifyAlbum(napi_env env, napi_callback_info info
 static void JSDeleteAlbumCompleteCallback(napi_env env, napi_status status,
                                           MediaLibraryAsyncContext *context)
 {
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 

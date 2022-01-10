@@ -275,25 +275,23 @@ bool MediaFileUtils::RenameDir(const string& oldPath, const string& newPath)
 
     return errRet;
 }
-bool MediaFileUtils::CheckDisplayName(const std::string &displayName)
-{   
+bool MediaFileUtils::CheckDisplayName(std::string displayName)
+{
     bool isDisplayName = true;
     int size = displayName.length();
-	if (size <= 0 || size > 128) {
+    if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
-    char* pStr = new char[size + 1];
-    strcpy(pStr, displayName.c_str());
-    for (int i = 0; i < size; i++)
-	{
-		if (displayName.at(0) == '.' || ispunct(pStr[i]))
-		{   
+    const char *pStr = new char[size + 1];
+    pStr = displayName.c_str();
+    for (int i = 0; i < size; i++) {
+        if (displayName.at(0) == '.' || ispunct(pStr[i])) {
             MEDIA_ERR_LOG("CheckDisplayName displayName fail");
-			isDisplayName = false;
+            isDisplayName = false;
             break;
-		}
-	}
-	return isDisplayName;
+        }
+    }
+    return isDisplayName;
 }
 int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)
 {

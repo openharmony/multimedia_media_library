@@ -45,8 +45,8 @@ public:
     static bool isFileExistInDb(const std::string &relativePath,
                                      const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::string GetPathFromDb(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    static shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-
+    static shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &id,
+                                                    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static bool checkFilePending(const std::shared_ptr<FileAsset> fileAsset);
     static bool checkOpenMode(const std::string &mode);
     static int32_t setFilePending(string &id, bool isPending, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
@@ -63,7 +63,7 @@ public:
     static NativeAlbumAsset GetLastAlbumExistInDb(const std::string &relativePath,
                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static int64_t UTCTimeSeconds();
-    static bool CheckDisplayName(const std::string &displayName);
+    static bool CheckDisplayName(std::string displayName);
 };
 } // namespace Media
 } // namespace OHOS

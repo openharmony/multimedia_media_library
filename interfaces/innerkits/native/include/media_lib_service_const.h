@@ -128,6 +128,8 @@ const char SLASH_CHAR = '/';
 const int32_t OPEN_FDS = 64;
 const int32_t MILLISECONDS = 1000;
 const char DOT_CHAR = '.';
+const int32_t DISPLAYNAME_MAX = 128;
+const int32_t TIMEPENDING_MIN = 30 * 60;
 
 const std::string SKIPLIST_FILE_PATH = "/data/SkipScanFile.txt";
 

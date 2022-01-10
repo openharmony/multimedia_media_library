@@ -36,7 +36,7 @@ public:
                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleAlbumOperations(const std::string &uri, const NativeRdb::ValuesBucket &values,
                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                                  vector<int32_t> &outIds);                              
+                                  vector<int32_t> &outIds);
     void ChangeGroupToMedia(const std::string &path);
     std::shared_ptr<NativeAlbumAsset> nativeAlbumAsset_ = std::make_shared<NativeAlbumAsset>();
     void SetNativeAlbumAsset(std::shared_ptr<NativeAlbumAsset> nativeAlbumAsset)

@@ -293,7 +293,8 @@ string MediaLibraryDataAbilityUtils::GetPathFromDb(const string &id, const share
     return filePath;
 }
 
-shared_ptr<FileAsset> MediaLibraryDataAbilityUtils::GetFileAssetFromDb(const string &id, const shared_ptr<RdbStore> &rdbStore)
+shared_ptr<FileAsset> MediaLibraryDataAbilityUtils::GetFileAssetFromDb(const string &id,
+    const shared_ptr<RdbStore> &rdbStore)
 {
     vector<string> selectionArgs = {};
 
@@ -327,7 +328,7 @@ bool MediaLibraryDataAbilityUtils::checkFilePending(const shared_ptr<FileAsset> 
         MEDIA_INFO_LOG("checkFilePending IsPending true");
         return true;
     } else if (fileAsset->GetTimePending() > 0 &&
-        (UTCTimeSeconds() - fileAsset->GetTimePending()) > 30 * 60) {
+        (UTCTimeSeconds() - fileAsset->GetTimePending()) > TIMEPENDING_MIN) {
         MEDIA_INFO_LOG("checkFilePending UTCTimeSeconds is %{public}lld", UTCTimeSeconds());
         MEDIA_INFO_LOG("checkFilePending TimePending is %{public}lld", fileAsset->GetTimePending());
         return true;
@@ -346,7 +347,7 @@ bool MediaLibraryDataAbilityUtils::checkOpenMode(const string &mode)
         return std::tolower(c);
     });
     
-    MEDIA_INFO_LOG("checkOpenMode in lowModeStr %{public}s", lowModeStr.c_str()); 
+    MEDIA_INFO_LOG("checkOpenMode in lowModeStr %{public}s", lowModeStr.c_str());
     size_t wIndex = lowModeStr.rfind('w');
     if (wIndex != string::npos) {
         MEDIA_INFO_LOG("checkOpenMode out true");
@@ -427,25 +428,24 @@ int64_t MediaLibraryDataAbilityUtils::UTCTimeSeconds()
     MEDIA_INFO_LOG("UTCTimeSeconds = %{public}lld", (int64_t)(t.tv_sec));
     return (int64_t)(t.tv_sec);
 }
-bool MediaLibraryDataAbilityUtils::CheckDisplayName(const std::string &displayName)
-{   
+bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
+{
     bool isDisplayName = true;
     int size = displayName.length();
-	if (size <= 0 || size > 128) {
-        OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName size <= 0 || size > 128");
+    if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
-    char* pStr = new char[size + 1];
-    strcpy(pStr, displayName.c_str());
+    const char *pStr = new char[size + 1];
+    pStr = displayName.c_str();
     for (int i = 0; i < size; i++) {
-		if (displayName.at(0) == '.' || ispunct(pStr[i])) {
+        if (displayName.at(0) == '.' || ispunct(pStr[i])) {
             OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName ispunct");
-			isDisplayName = false;
+            isDisplayName = false;
             break;
-		}
-	}
+        }
+    }
     OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName");
-	return isDisplayName;
+    return isDisplayName;
 }
 } // namespace Media
 } // namespace OHOS
