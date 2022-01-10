@@ -443,7 +443,7 @@ int32_t MediaLibraryDataAbility::BatchInsert(const Uri &uri, const vector<Values
     return rowCount;
 }
 
-void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1)
 {
     if (scannerClient_ == nullptr) {
         scannerClient_ = MediaScannerHelperFactory::CreateScannerHelper();
@@ -458,7 +458,7 @@ void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_
         }
 
         string id = MediaLibraryDataAbilityUtils::GetIdFromUri(actualUri);
-        string srcPath = MediaLibraryDataAbilityUtils::GetPathFromDb(id, rdbStore);
+        string srcPath = MediaLibraryDataAbilityUtils::GetPathFromDb(id, rdbStore1);
         if (!srcPath.empty()) {
             std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
             CHECK_AND_RETURN_LOG(scanFileCb != nullptr, "Failed to create scan file callback object");

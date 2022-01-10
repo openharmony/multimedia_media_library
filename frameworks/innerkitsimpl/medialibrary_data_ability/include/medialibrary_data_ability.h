@@ -49,19 +49,19 @@ namespace Media {
     };
     class MediaLibraryDataAbility : public AppExecFwk::Ability {
     public:
-        MediaLibraryDataAbility();
-        ~MediaLibraryDataAbility();
+        EXPORT MediaLibraryDataAbility();
+        EXPORT ~MediaLibraryDataAbility();
 
-        int32_t InitMediaLibraryRdbStore();
-        int32_t Insert(const Uri &uri, const NativeRdb::ValuesBucket &value) override;
-        int32_t Delete(const Uri &uri, const NativeRdb::DataAbilityPredicates &predicates) override;
-        int32_t BatchInsert(const Uri &uri, const std::vector<NativeRdb::ValuesBucket> &values) override;
-        int32_t Update(const Uri &uri, const NativeRdb::ValuesBucket &value,
+        EXPORT int32_t InitMediaLibraryRdbStore();
+        EXPORT int32_t Insert(const Uri &uri, const NativeRdb::ValuesBucket &value) override;
+        EXPORT int32_t Delete(const Uri &uri, const NativeRdb::DataAbilityPredicates &predicates) override;
+        EXPORT int32_t BatchInsert(const Uri &uri, const std::vector<NativeRdb::ValuesBucket> &values) override;
+        EXPORT int32_t Update(const Uri &uri, const NativeRdb::ValuesBucket &value,
                        const NativeRdb::DataAbilityPredicates &predicates) override;
-        std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(const Uri &uri,
+        EXPORT std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(const Uri &uri,
             const std::vector<std::string> &columns,
             const NativeRdb::DataAbilityPredicates &predicates) override;
-        int32_t OpenFile(const Uri &uri, const std::string &mode) override;
+        EXPORT int32_t OpenFile(const Uri &uri, const std::string &mode) override;
 
     protected:
         void OnStart(const AAFwk::Want &want) override;
@@ -69,7 +69,7 @@ namespace Media {
 
     private:
         std::string GetOperationType(const std::string &uri);
-        void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+        void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
 
         std::shared_ptr<IMediaScannerClient> scannerClient_;
         std::shared_ptr<NativeRdb::RdbStore> rdbStore;

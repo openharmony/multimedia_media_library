@@ -20,6 +20,7 @@
 #include "pixel_map.h"
 #include "single_kvstore.h"
 
+#define EXPORT __attribute__ ((visibility ("default")))
 namespace OHOS {
 namespace Media {
 static const Size DEFAULT_THUMBNAIL_SIZE = {

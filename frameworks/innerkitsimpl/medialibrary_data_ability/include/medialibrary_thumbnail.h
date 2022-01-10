@@ -18,6 +18,7 @@
 
 #include "media_thumbnail_helper.h"
 #include "rdb_helper.h"
+#include "avmetadatahelper.h"
 
 namespace OHOS {
 namespace Media {
@@ -37,7 +38,8 @@ struct ThumbnailData {
     std::string path;
     std::string thumbnailKey;
     std::string lcdKey;
-    std::unique_ptr<PixelMap> source;
+    int mediaType;
+    std::shared_ptr<PixelMap> source;
     std::vector<uint8_t> thumbnail;
     std::vector<uint8_t> lcd;
 };
@@ -47,27 +49,29 @@ struct ThumbnailRdbData {
     std::string path;
     std::string thumbnailKey;
     std::string lcdKey;
+    int mediaType;
 };
 
 class MediaLibraryThumbnail : public MediaThumbnailHelper {
 public:
-    MediaLibraryThumbnail();
-    ~MediaLibraryThumbnail() = default;
+    EXPORT MediaLibraryThumbnail();
+    EXPORT ~MediaLibraryThumbnail() = default;
 
-    bool CreateThumbnail(ThumbRdbOpt &opts, std::string &key);
+    EXPORT bool CreateThumbnail(ThumbRdbOpt &opts, std::string &key);
 
-    bool CreateLcd(ThumbRdbOpt &opts, std::string &key);
+    EXPORT bool CreateLcd(ThumbRdbOpt &opts, std::string &key);
 
-    void CreateThumbnails(ThumbRdbOpt &opts);
+    EXPORT void CreateThumbnails(ThumbRdbOpt &opts);
 
-    std::string GetThumbnailKey(ThumbRdbOpt &opts, Size &size);
-    std::unique_ptr<PixelMap> GetThumbnailByRdb(ThumbRdbOpt &opts, Size &size);
+    EXPORT std::string GetThumbnailKey(ThumbRdbOpt &opts, Size &size);
+    EXPORT std::unique_ptr<PixelMap> GetThumbnailByRdb(ThumbRdbOpt &opts, Size &size);
 
 private:
     // utils
-    bool LoadImageFile(std::string &path, std::unique_ptr<PixelMap> &pixelMap);
+    bool LoadImageFile(std::string &path, std::shared_ptr<PixelMap> &pixelMap);
+    bool LoadVideoFile(std::string &path, std::shared_ptr<PixelMap> &pixelMap);
     bool GenKey(std::vector<uint8_t> &data, std::string &key);
-    bool CompressImage(std::unique_ptr<PixelMap> &pixelMap, Size &size, std::vector<uint8_t> &data);
+    bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, Size &size, std::vector<uint8_t> &data);
 
     // KV Store
     bool SaveImage(std::string &key, std::vector<uint8_t> &image);
@@ -92,6 +96,7 @@ private:
     bool ResizeLcdToTarget(ThumbnailData &data, Size &size, std::unique_ptr<PixelMap> &pixelMap);
 
     bool CreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, std::string &key);
+    std::shared_ptr<AVMetadataHelper> avMetadataHelper_ = nullptr;
 };
 } // namespace Media
 } // namespace  OHOS

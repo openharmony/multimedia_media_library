@@ -92,7 +92,7 @@ HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_002, TestSize.Level0)
     Uri createAssetUri(abilityUri);
     NativeRdb::ValuesBucket valuesBucket;
     string relativePath = "";
-    string displayName = "test.jpg";
+    string displayName = "Receiver_buffer7.jpg";
 
     MediaType mediaType = MEDIA_TYPE_IMAGE;
 
@@ -192,6 +192,60 @@ HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_004, TestSize.Level0)
         bool fromLcd = g_mediaThumbnail.isThumbnailFromLcd(size);
         auto pixelmap = g_mediaThumbnail.GetThumbnail(fromLcd?lcdKey:thumbnailKey, size);
 
+        EXPECT_NE(pixelmap, nullptr);
+        if (pixelmap != nullptr) {
+            EXPECT_EQ(pixelmap->GetWidth(), size.width);
+        }
+    }
+}
+static void BuildTestValuesBucket(NativeRdb::ValuesBucket &valuesBucket, string abilityUri)
+{
+    string relativePath = "", displayName = "test.mp4";
+    MediaType mediaType = MEDIA_TYPE_VIDEO;
+    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, std::string("/data/media/test.mp4"));
+    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+}
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_005, TestSize.Level0)
+{
+    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
+    Uri createAssetUri(abilityUri);
+    NativeRdb::ValuesBucket valuesBucket;
+    BuildTestValuesBucket(valuesBucket, abilityUri);
+    g_index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
+    EXPECT_NE((g_index <= 0), true);
+    Uri closeUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CLOSEASSET);
+    valuesBucket.Clear();
+    valuesBucket.PutString(MEDIA_DATA_DB_URI, "/" + to_string(g_index));
+    int res = g_rdbStoreTest.Insert(closeUri, valuesBucket);
+    EXPECT_NE((res < 0), true);
+    Size size = {
+        .width = 300, .height = 300
+    };
+    Uri queryUri(abilityUri  + "/" + to_string(g_index) + "?" +
+        MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
+        MEDIA_DATA_DB_WIDTH + "=" + to_string(size.width) + "&" +
+        MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height));
+    NativeRdb::DataAbilityPredicates predicates;
+    std::vector<std::string> columns = {
+        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_THUMBNAIL, MEDIA_DATA_DB_LCD,
+    };
+    auto g_resultSet = g_rdbStoreTest.Query(queryUri, columns, predicates);
+    if (g_resultSet != nullptr) {
+        string id, thumbnailKey, lcdKey;
+        g_resultSet->GoToFirstRow();
+        int rowCount = 0;
+        g_resultSet->GetRowCount(rowCount);
+        EXPECT_EQ(1, rowCount);
+        int ret = g_resultSet->GetString(0, id);
+        ret = g_resultSet->GetString(1, thumbnailKey);
+        ret = g_resultSet->GetString(2, lcdKey);
+        EXPECT_EQ(to_string(g_index), id);
+        EXPECT_NE(thumbnailKey.empty(), true);
+        EXPECT_NE(lcdKey.empty(), true);
+        bool fromLcd = g_mediaThumbnail.isThumbnailFromLcd(size);
+        auto pixelmap = g_mediaThumbnail.GetThumbnail(fromLcd?lcdKey:thumbnailKey, size);
         EXPECT_NE(pixelmap, nullptr);
         if (pixelmap != nullptr) {
             EXPECT_EQ(pixelmap->GetWidth(), size.width);

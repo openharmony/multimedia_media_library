@@ -32,15 +32,18 @@ namespace OHOS {
 namespace Media {
 const string THUMBNAIL_END_SUFFIX = "_THU";
 const string THUMBNAIL_LCD_END_SUFFIX = "_LCD";
+const string FILE_URI_PREX = "file://";
 
 const string THUMBNAIL_FORMAT = "image/jpeg";
 static constexpr uint8_t THUMBNAIL_QUALITY = 80;
 static constexpr uint32_t THUMBNAIL_QUERY_MAX = 1000;
+static constexpr int64_t AV_FRAME_TIME = 0;
 
 static constexpr uint8_t NUM_0 = 0;
 static constexpr uint8_t NUM_1 = 1;
 static constexpr uint8_t NUM_2 = 2;
 static constexpr uint8_t NUM_3 = 3;
+static constexpr uint8_t NUM_4 = 4;
 
 void ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData)
 {
@@ -48,11 +51,16 @@ void ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData)
     data.path = rdbData.path;
     data.thumbnailKey = rdbData.thumbnailKey;
     data.lcdKey = rdbData.lcdKey;
+    data.mediaType = rdbData.mediaType;
 }
 
 MediaLibraryThumbnail::MediaLibraryThumbnail()
 {
     InitKvStore();
+    avMetadataHelper_ = OHOS::Media::AVMetadataHelperFactory::CreateAVMetadataHelper();
+    if (avMetadataHelper_ == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryThumbnail CreateAVMetadataHelper failed");
+    }
 }
 
 bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
@@ -244,8 +252,37 @@ void MediaLibraryThumbnail::CreateThumbnails(ThumbRdbOpt &opts)
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnails OUT");
 }
 
+bool MediaLibraryThumbnail::LoadVideoFile(string &path,
+                                          shared_ptr<PixelMap> &pixelMap)
+{
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadVideoFile IN");
+    if (avMetadataHelper_ == nullptr) {
+        MEDIA_ERR_LOG("Av meta data helper is not init");
+        return false;
+    }
+    string uri = FILE_URI_PREX + path;
+    int32_t errorCode = avMetadataHelper_->SetSource(uri);
+    if (errorCode != 0) {
+        MEDIA_ERR_LOG("Av meta data helper set source failed %{public}d", errorCode);
+        return false;
+    }
+    PixelMapParams param;
+    param.colorFormat = PixelFormat::RGBA_8888;
+    pixelMap = avMetadataHelper_->FetchFrameAtTime(AV_FRAME_TIME,
+                                                   AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
+                                                   param);
+    if (pixelMap == nullptr) {
+        MEDIA_ERR_LOG("Av meta data helper fetch frame at time failed");
+        return false;
+    }
+    if (pixelMap->GetAlphaType() == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
+        pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    }
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadVideoFile OUT");
+    return true;
+}
 bool MediaLibraryThumbnail::LoadImageFile(string &path,
-                                          unique_ptr<PixelMap> &pixelMap)
+                                          shared_ptr<PixelMap> &pixelMap)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadImageFile IN");
     uint32_t errorCode = 0;
@@ -304,13 +341,15 @@ bool MediaLibraryThumbnail::GenKey(vector<uint8_t> &data, string &key)
     return true;
 }
 
-bool MediaLibraryThumbnail::CompressImage(std::unique_ptr<PixelMap> &pixelMap,
+bool MediaLibraryThumbnail::CompressImage(std::shared_ptr<PixelMap> &pixelMap,
                                           Size &size,
                                           std::vector<uint8_t> &data)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CompressImage IN");
     InitializationOptions opts = {
-        .size = size
+        .size = size,
+        .pixelFormat = PixelFormat::BGRA_8888,
+        .alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL
     };
 
     unique_ptr<PixelMap> compressImage = PixelMap::Create(*pixelMap, opts);
@@ -392,6 +431,8 @@ void ParseQueryResult(shared_ptr<ResultSet> resultSet,
     ParseStringResult(resultSet, NUM_1, data.path, errorCode);
     ParseStringResult(resultSet, NUM_2, data.thumbnailKey, errorCode);
     ParseStringResult(resultSet, NUM_3, data.lcdKey, errorCode);
+    data.mediaType = MediaType::MEDIA_TYPE_DEFAULT;
+    errorCode = resultSet->GetInt(NUM_4, data.mediaType);
 }
 
 bool MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
@@ -404,7 +445,8 @@ bool MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_THUMBNAIL,
-        MEDIA_DATA_DB_LCD
+        MEDIA_DATA_DB_LCD,
+        MEDIA_DATA_DB_MEDIA_TYPE
     };
 
     vector<string> selectionArgs;
@@ -466,7 +508,8 @@ bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_THUMBNAIL,
-        MEDIA_DATA_DB_LCD
+        MEDIA_DATA_DB_LCD,
+        MEDIA_DATA_DB_MEDIA_TYPE
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.IsNull(MEDIA_DATA_DB_THUMBNAIL);
@@ -553,7 +596,12 @@ bool MediaLibraryThumbnail::LoadSourceImage(ThumbnailData &data)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadSourceImage IN");
 
-    bool ret = LoadImageFile(data.path, data.source);
+    bool ret = false;
+    if (data.mediaType == MEDIA_TYPE_VIDEO) {
+        ret = LoadVideoFile(data.path, data.source);
+    } else {
+        ret = LoadImageFile(data.path, data.source);
+    }
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadSourceImage OUT");
     return ret;

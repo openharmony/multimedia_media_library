@@ -35,6 +35,7 @@ config("media_data_ability_public_config") {
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
     "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler/include",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
+    "//foundation/multimedia/media_standard/interfaces/innerkits/native/media/include/",
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
     "//third_party/json/include",
@@ -81,6 +82,7 @@ ohos_shared_library("medialibrary_data_ability") {
 
   external_deps = [
     "hiviewdfx_hilog_native:libhilog",
+    "multimedia_media_standard:media_client",
     "ipc:ipc_core",
     "native_appdatamgr:native_appdatafwk",
     "native_appdatamgr:native_dataability",

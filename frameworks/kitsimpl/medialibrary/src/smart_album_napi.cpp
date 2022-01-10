@@ -29,6 +29,7 @@ using namespace std;
 napi_ref AlbumNapi::sConstructor_ = nullptr;
 AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> AlbumNapi::sAbilityHelper = nullptr;
+using CompleteCallback = napi_async_complete_callback;
 
 AlbumNapi::AlbumNapi()
     : env_(nullptr), wrapper_(nullptr)
