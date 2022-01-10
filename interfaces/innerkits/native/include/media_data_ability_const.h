@@ -277,6 +277,7 @@ const std::string MEDIA_FILEOPRN_MODIFYASSET = "modify_asset";
 const std::string MEDIA_FILEOPRN_DELETEASSET = "delete_asset";
 const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
 const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
+const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
 
 const std::string MEDIA_ALBUMOPRN_CREATEALBUM = "create_album";
 const std::string MEDIA_ALBUMOPRN_MODIFYALBUM = "modify_album";

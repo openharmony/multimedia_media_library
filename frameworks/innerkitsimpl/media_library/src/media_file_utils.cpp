@@ -130,12 +130,16 @@ string MediaFileUtils::GetFilename(const string& filePath)
 bool MediaFileUtils::IsDirectory(const string& dirName)
 {
     struct stat statInfo {};
+    MEDIA_ERR_LOG("IsDirectory in %{public}s = ", dirName.c_str());
     if (stat(dirName.c_str(), &statInfo) == SUCCESS) {
+        MEDIA_ERR_LOG("IsDirectory statInfo SUCCESS st_mode %{public}u", statInfo.st_mode);
+        MEDIA_ERR_LOG("IsDirectory statInfo SUCCESS S_IFDIR %{public}u", S_IFDIR);
         if (statInfo.st_mode & S_IFDIR) {
+            MEDIA_ERR_LOG("IsDirectory st_mode SUCCESS");
             return true;
         }
     }
-
+    MEDIA_ERR_LOG("IsDirectory out %{public}d", errno);
     return false;
 }
 

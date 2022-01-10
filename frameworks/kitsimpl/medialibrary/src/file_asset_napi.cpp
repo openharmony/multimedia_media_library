@@ -14,7 +14,11 @@
  */
 
 #include "file_asset_napi.h"
+#include "data_ability_predicates.h"
 #include "hilog/log.h"
+#include "abs_shared_result_set.h"
+#include "rdb_errno.h"
+#include "media_file_utils.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -221,6 +225,10 @@ std::string FileAssetNapi::GetTitle() const
 std::string FileAssetNapi::GetFileUri() const
 {
     return "/" + to_string(fileId_);
+}
+int FileAssetNapi::GetFileId() const
+{
+    return fileId_;
 }
 
 napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
@@ -1064,7 +1072,119 @@ STATIC_COMPLETE_FUNC(JSClose)
     }
     delete context;
 }
+STATIC_COMPLETE_FUNC(JSFavourite)
+{
+    auto context = static_cast<FileAssetAsyncContext*>(data);
 
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    if (context->objectInfo->sAbilityHelper_ != nullptr) {
+        string abilityUri = MEDIALIBRARY_DATA_URI;
+        Uri uri(abilityUri);
+        ValueObject valueObject;
+        NativeRdb::DataAbilityPredicates predicates;
+        NativeRdb::ValuesBucket valuesBucket;
+        bool isFavourite = false;
+        if (context->valuesBucket.GetObject(MEDIA_DATA_DB_IS_FAV, valueObject)) {
+            valueObject.GetBool(isFavourite);
+        }
+        valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavourite);
+        predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId())); 
+        context->objectInfo->sAbilityHelper_->Update(uri, valuesBucket, predicates);
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Ability helper is null");
+        napi_get_undefined(env, &jsContext->data);
+    }
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+static bool GetIsFavouriteNative(napi_env env, const FileAssetAsyncContext &fileContext)
+{
+    FileAssetAsyncContext *context = const_cast<FileAssetAsyncContext *>(&fileContext);
+    NativeRdb::DataAbilityPredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
+    std::vector<std::string> columns;
+    columns.push_back(MEDIA_DATA_DB_IS_FAV);
+    Uri uri(MEDIALIBRARY_DATA_URI);
+    std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
+        context->objectInfo->sAbilityHelper_->Query(uri, columns, predicates);
+    int32_t columnIndex;
+    bool isFavourite = false;
+    int favourite = 0;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        resultSet->GetColumnIndex(MEDIA_DATA_DB_IS_FAV, columnIndex);
+        resultSet->GetInt(columnIndex, favourite);
+    }
+    if (favourite == 1) {
+        isFavourite = true;
+    }
+    return isFavourite;
+}
+STATIC_COMPLETE_FUNC(JSIsFavourite)
+{
+    auto context = static_cast<FileAssetAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    bool isFavourite = false;
+    if (context->objectInfo->sAbilityHelper_ != nullptr) {
+       isFavourite = GetIsFavouriteNative(env, *context);
+       napi_get_boolean(env, isFavourite, &jsContext->data);
+       napi_get_undefined(env, &jsContext->error);
+       jsContext->status = true;
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Ability helper is null");
+        napi_get_undefined(env, &jsContext->data);
+    }
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+static bool GetIsDirectoryiteNative(napi_env env, const FileAssetAsyncContext &fileContext)
+{
+    FileAssetAsyncContext *context = const_cast<FileAssetAsyncContext *>(&fileContext);
+    bool IsDirectory = false;
+    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
+    Uri isDirectoryAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_ISDIRECTORY);
+    context->valuesBucket.PutInt(Media::MEDIA_DATA_DB_ID, context->objectInfo->GetFileId());
+    int retVal = context->objectInfo->sAbilityHelper_->Insert(isDirectoryAssetUri, context->valuesBucket);
+    HiLog::Error(LABEL, "GetIsDirectoryiteNative retVal = %{public}d", retVal);
+    if (retVal == SUCCESS) {
+        IsDirectory = true;
+    }
+    return IsDirectory;
+}
+STATIC_COMPLETE_FUNC(JSIsDirectory)
+{
+    auto context = static_cast<FileAssetAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    bool IsDirectory = false;
+    if (context->objectInfo->sAbilityHelper_ != nullptr) {
+       IsDirectory = GetIsDirectoryiteNative(env, *context);
+       napi_get_boolean(env, IsDirectory, &jsContext->data);
+       napi_get_undefined(env, &jsContext->error);
+       jsContext->status = true;
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Ability helper is null");
+        napi_get_undefined(env, &jsContext->data);
+    }
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
 napi_value GetJSArgsForClose(napi_env env,
                              size_t argc,
                              const napi_value argv[],
@@ -1095,7 +1215,93 @@ napi_value GetJSArgsForClose(napi_env env,
     napi_get_boolean(env, true, &result);
     return result;
 }
+static napi_value GetJSArgsForIsFavourite(napi_env env,
+                                          size_t argc,
+                                          const napi_value argv[],
+                                          FileAssetAsyncContext &asyncContext)
+{
+    HiLog::Error(LABEL, "ConvertCommitJSArgsToNative");
+    string str = "";
+    vector<string> strArr;
+    string order = "";
+    const int32_t refCount = 1;
+    napi_value result;
+    auto context = &asyncContext;
 
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    for (size_t i = PARAM0; i < argc; i++) {
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[i], &valueType);
+        if (i == PARAM0 && valueType == napi_object) {
+        } else if (i == PARAM0 && valueType == napi_function) {
+            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
+            break;
+        } else if (i == PARAM1 && valueType == napi_function) {
+            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
+            break;
+        } else {
+            NAPI_ASSERT(env, false, "type mismatch");
+        }
+    }
+    napi_get_boolean(env, true, &result);
+    return result;
+}
+static napi_value GetJSArgsForIsDirectory(napi_env env,
+                                          size_t argc,
+                                          const napi_value argv[],
+                                          FileAssetAsyncContext &asyncContext)
+{
+    HiLog::Error(LABEL, "ConvertCommitJSArgsToNative");
+    string str = "";
+    vector<string> strArr;
+    string order = "";
+    const int32_t refCount = 1;
+    napi_value result;
+    auto context = &asyncContext;
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    for (size_t i = PARAM0; i < argc; i++) {
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[i], &valueType);
+        if (i == PARAM0 && valueType == napi_object) {
+        } else if (i == PARAM0 && valueType == napi_function) {
+            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
+            break;
+        } else if (i == PARAM1 && valueType == napi_function) {
+            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
+            break;
+        } else {
+            NAPI_ASSERT(env, false, "type mismatch");
+        }
+    }
+    napi_get_boolean(env, true, &result);
+    return result;
+}
+napi_value GetJSArgsForFavourite(napi_env env,
+                                 size_t argc,
+                                 const napi_value argv[],
+                                 FileAssetAsyncContext &asyncContext)
+{
+    const int32_t refCount = 1;
+    napi_value result = nullptr;
+    auto context = &asyncContext;
+    bool isFavourite = false;
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    for (size_t i = PARAM0; i < argc; i++) {
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[i], &valueType);
+        if (i == PARAM0 && valueType == napi_boolean) {
+            napi_get_value_bool(env, argv[i], &isFavourite);
+        } else if (i == PARAM1 && valueType == napi_function) {
+            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
+            break;
+        } else {
+            NAPI_ASSERT(env, false, "type mismatch");
+        }
+    }
+    context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavourite);
+    napi_get_boolean(env, true, &result);
+    return result;
+}
 napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -1135,13 +1341,63 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
 
 napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
 {
+    napi_status status;
     napi_value result = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
+    napi_value resource = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    napi_get_undefined(env, &result);
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+        result = GetJSArgsForFavourite(env, argc, argv, *asyncContext);
+        ASSERT_NULLPTR_CHECK(env, result);
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
+        status = napi_create_async_work(
+            env, nullptr, resource, [](napi_env env, void* data) {},
+            JSFavouriteCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        if (status != napi_ok) {
+            napi_get_undefined(env, &result);
+        } else {
+            napi_queue_async_work(env, asyncContext->work);
+            asyncContext.release();
+        }
+    }
     return result;
 }
 
 napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
 {
+    napi_status status;
     napi_value result = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
+    napi_value resource = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    napi_get_undefined(env, &result);
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+        result = GetJSArgsForIsFavourite(env, argc, argv, *asyncContext);
+        ASSERT_NULLPTR_CHECK(env, result);
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
+        status = napi_create_async_work(
+            env, nullptr, resource, [](napi_env env, void* data) {},
+            JSIsFavouriteCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        if (status != napi_ok) {
+            napi_get_undefined(env, &result);
+        } else {
+            napi_queue_async_work(env, asyncContext->work);
+            asyncContext.release();
+        }
+    }
     return result;
 }
 
@@ -1159,7 +1415,32 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
 
 napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
 {
+    napi_status status;
     napi_value result = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
+    napi_value resource = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    napi_get_undefined(env, &result);
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+        result = GetJSArgsForIsDirectory(env, argc, argv, *asyncContext);
+        ASSERT_NULLPTR_CHECK(env, result);
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
+        status = napi_create_async_work(
+            env, nullptr, resource, [](napi_env env, void* data) {},
+            JSIsDirectoryCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        if (status != napi_ok) {
+            napi_get_undefined(env, &result);
+        } else {
+            napi_queue_async_work(env, asyncContext->work);
+            asyncContext.release();
+        }
+    }
     return result;
 }
 

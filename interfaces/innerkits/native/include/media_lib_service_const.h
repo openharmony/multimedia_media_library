@@ -45,7 +45,8 @@ enum MediaType {
     MEDIA_TYPE_AUDIO,
     MEDIA_TYPE_ALBUM_LIST,
     MEDIA_TYPE_ALBUM_LIST_INFO,
-    MEDIA_TYPE_ALBUM
+    MEDIA_TYPE_ALBUM,
+    MEDIA_TYPE_ALL
 };
 
 /* ENUM Asset types */

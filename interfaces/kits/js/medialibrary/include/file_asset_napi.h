@@ -41,6 +41,7 @@ public:
     std::string GetRelativePath() const;
     std::string GetTitle() const;
     std::string GetFileUri() const;
+    int32_t GetFileId() const;
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
 private:

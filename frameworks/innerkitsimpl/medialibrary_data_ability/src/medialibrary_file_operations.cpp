@@ -15,6 +15,7 @@
 
 #include "medialibrary_file_operations.h"
 #include "media_log.h"
+#include "media_file_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -202,7 +203,36 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, cons
 
     return errCode;
 }
-
+int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &values,
+                                                           const shared_ptr<RdbStore> &rdbStore)
+{
+    int32_t errCode = DATA_ABILITY_FAIL;
+    ValueObject valueObject;
+    int32_t id = 0;
+    unique_ptr<AbsSharedResultSet> queryResultSet;
+    std::vector<std::string> columns;
+    int32_t columnIndex;
+    string path = "";
+    columns.push_back(MEDIA_DATA_DB_FILE_PATH);
+    if (values.GetObject(MEDIA_DATA_DB_ID, valueObject)) {
+        valueObject.GetInt(id);
+    }
+    MEDIA_ERR_LOG("HandleIsDirectoryAsset id = %{public}d", id);
+    if (id != 0) {
+        AbsRdbPredicates mediaLibAbsPredFile(MEDIALIBRARY_TABLE);
+        mediaLibAbsPredFile.EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
+        queryResultSet = rdbStore->Query(mediaLibAbsPredFile, columns);
+        while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+            queryResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, columnIndex);
+            queryResultSet->GetString(columnIndex, path);
+            MEDIA_ERR_LOG("HandleIsDirectoryAsset path = %{public}s", path.c_str());
+        }
+        if (MediaFileUtils::IsDirectory(path)) {
+            errCode = SUCCESS;
+        }
+    }
+    return errCode;
+}
 int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, const ValuesBucket &values,
     const shared_ptr<RdbStore> &rdbStore)
 {
@@ -210,6 +240,8 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
 
     if (oprn == MEDIA_FILEOPRN_CREATEASSET) {
         return HandleCreateAsset(values, rdbStore);
+    } else if (oprn == MEDIA_FILEOPRN_ISDIRECTORY) {
+        return HandleIsDirectoryAsset(values, rdbStore);
     }
 
     string actualUri;
