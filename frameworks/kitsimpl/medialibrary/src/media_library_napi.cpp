@@ -15,6 +15,7 @@
 
 #include "media_library_napi.h"
 #include "hilog/log.h"
+#include "medialibrary_data_ability_utils.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -1797,13 +1798,19 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status, void
 
         NativeRdb::ValueObject valueObject;
         string notifyUri;
+        string mediaType;
         context->valuesBucket.GetObject(MEDIA_DATA_DB_URI, valueObject);
         valueObject.GetString(notifyUri);
         size_t index = notifyUri.rfind('/');
         if (index != string::npos) {
             notifyUri = notifyUri.substr(0, index);
+            size_t indexType = notifyUri.rfind('/');
+            if (indexType != string::npos) {
+                mediaType = notifyUri.substr(indexType + 1);
+            }
         }
-
+        notifyUri = MEDIALIBRARY_DATA_URI + "/" + mediaType;
+        HiLog::Error(LABEL, "JSDeleteAssetCompleteCallback notifyUri = %{public}s", notifyUri.c_str());
         int retVal = context->objectInfo->sAbilityHelper_->Insert(deleteAssetUri,
             context->valuesBucket);
         if (retVal < 0) {
