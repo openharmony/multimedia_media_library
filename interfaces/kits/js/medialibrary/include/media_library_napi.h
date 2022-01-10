@@ -57,6 +57,8 @@ const std::string AUDIO_LISTENER = "audio";
 const std::string VIDEO_LISTENER = "video";
 const std::string IMAGE_LISTENER = "image";
 const std::string FILE_LISTENER = "file";
+const std::string SMARTALBUM_LISTENER = "smartalbum";
+const std::string DEVICE_LISTENER = "device";
 const std::string MEDIA_DATA_Path = "/data/media/";
 
 struct MediaChangeListener {
@@ -77,6 +79,8 @@ public:
     sptr<AAFwk::IDataAbilityObserver> videoDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> imageDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> fileDataObserver_ = nullptr;
+    sptr<AAFwk::IDataAbilityObserver> smartAlbumDataObserver_ = nullptr;
+    sptr<AAFwk::IDataAbilityObserver> deviceDataObserver_ = nullptr;
 
 private:
     napi_env env_ = nullptr;
@@ -89,6 +93,7 @@ public:
     {
         listObj_ = const_cast<ChangeListenerNapi *>(&listObj);
         mediaType_ = mediaType;
+        MEDIA_INFO_LOG("MediaObserver init mediaType_ = %{public}d", mediaType);
     }
 
     ~MediaObserver() = default;
@@ -97,6 +102,7 @@ public:
     {
         MediaChangeListener listener;
         listener.mediaType = mediaType_;
+        MEDIA_INFO_LOG("MediaObserver OnChange mediaType_ = %{public}d", mediaType_);
         listObj_->OnChange(listener, listObj_->cbOnRef_);
     }
 

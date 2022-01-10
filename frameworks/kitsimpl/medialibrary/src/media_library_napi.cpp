@@ -2371,15 +2371,9 @@ void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const nap
     napi_value result[ARGS_TWO] = {nullptr};
     napi_value callback = nullptr;
     napi_value retVal = nullptr;
-    napi_value propValue = nullptr;
     string propName = "mediaType";
-
     napi_get_undefined(env_, &result[PARAM0]);
-
-    napi_create_object(env_, &result[PARAM1]);
-    napi_create_int32(env_, listener.mediaType, &propValue);
-    napi_set_named_property(env_, result[PARAM1], propName.c_str(), propValue);
-
+    napi_get_undefined(env_, &result[PARAM1]);
     napi_get_reference_value(env_, cbRef, &callback);
     napi_call_function(env_, nullptr, callback, ARGS_TWO, result, &retVal);
 }
@@ -2391,18 +2385,32 @@ void MediaLibraryNapi::RegisterChangeByType(string type, const ChangeListenerNap
         listObj->audioDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_AUDIO);
         Uri onCbURI(MEDIALIBRARY_AUDIO_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->audioDataObserver_);
+        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
     } else if (type.compare(VIDEO_LISTENER) == 0) {
         listObj->videoDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_VIDEO);
         Uri onCbURI(MEDIALIBRARY_VIDEO_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->videoDataObserver_);
+        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
     } else if (type.compare(IMAGE_LISTENER) == 0) {
         listObj->imageDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_IMAGE);
         Uri onCbURI(MEDIALIBRARY_IMAGE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->imageDataObserver_);
+        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
     } else if (type.compare(FILE_LISTENER) == 0) {
         listObj->fileDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_FILE);
         Uri onCbURI(MEDIALIBRARY_FILE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->fileDataObserver_);
+        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
+    } else if (type.compare(SMARTALBUM_LISTENER) == 0) {
+        listObj->smartAlbumDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_SMARTALBUM);
+        Uri onCbURI(MEDIALIBRARY_SMARTALBUM_CHANGE_URI);
+        sAbilityHelper_->RegisterObserver(onCbURI, listObj->smartAlbumDataObserver_);
+        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
+    } else if (type.compare(FILE_LISTENER) == 0) {
+        listObj->deviceDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_DEVICE);
+        Uri onCbURI(MEDIALIBRARY_DEVICE_URI);
+        sAbilityHelper_->RegisterObserver(onCbURI, listObj->deviceDataObserver_);
+        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
     } else {
         HiLog::Error(LABEL, "Media Type mismatch!");
         return;
@@ -2411,12 +2419,14 @@ void MediaLibraryNapi::RegisterChangeByType(string type, const ChangeListenerNap
 
 void MediaLibraryNapi::RegisterChange(napi_env env, const ChangeListenerNapi &listObj)
 {
+    HiLog::Error(LABEL, "RegisterChange");
     if (subscribeList_.empty()) {
         HiLog::Error(LABEL, "No types are received for subscribe");
         return;
     }
 
     for (string type : subscribeList_) {
+        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
         RegisterChangeByType(type, listObj);
     }
 }
@@ -2435,7 +2445,7 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
     napi_value stringItem = nullptr;
     MediaLibraryNapi *obj = nullptr;
     napi_status status;
-
+    HiLog::Error(LABEL, "JSOnCallback");
     napi_get_undefined(env, &undefinedResult);
 
     GET_JS_ARGS(env, info, argCount, argv, thisVar);

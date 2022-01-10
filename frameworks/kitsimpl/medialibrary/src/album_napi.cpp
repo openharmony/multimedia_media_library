@@ -15,6 +15,7 @@
 
 #include "album_napi.h"
 #include "hilog/log.h"
+#include "medialibrary_data_ability_utils.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -688,6 +689,8 @@ static void CommitModifyNative(napi_env env, const AlbumNapiAsyncContext &albumC
     context->selection += " AND ";
     valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
     predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetAlbumId()));
+    valuesBucket.PutLong(MEDIA_DATA_DB_DATE_ADDED,
+                         MediaLibraryDataAbilityUtils::GetAlbumDateModified(context->objectInfo->GetAlbumPath()));
     Uri uri(MEDIALIBRARY_DATA_URI);
     int32_t changedRows =
         context->objectInfo->GetDataAbilityHelper()->Update(uri, valuesBucket, predicates);

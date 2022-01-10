@@ -882,7 +882,7 @@ napi_value GetJSArgsForCommitModify(napi_env env, size_t argc,
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
-        if (i == PARAM2 && valueType == napi_function) {
+        if (i == PARAM0 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
