@@ -356,20 +356,23 @@ bool MediaLibraryDataAbilityUtils::checkOpenMode(const string &mode)
     return false;
 }
 
-int32_t MediaLibraryDataAbilityUtils::setFilePending(int32_t id, bool isPending, const shared_ptr<RdbStore> &rdbStore)
+int32_t MediaLibraryDataAbilityUtils::setFilePending(string &id, bool isPending, const shared_ptr<RdbStore> &rdbStore)
 {
     MEDIA_INFO_LOG("setFilePending in");
-    MEDIA_INFO_LOG("setFilePending id = %{public}d,isPending = %{public}d", id, isPending);
+    MEDIA_INFO_LOG("setFilePending id = %{public}s,isPending = %{public}d", id.c_str(), isPending);
     vector<string> selectionArgs = {};
-    string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(id);
+    string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + id;
 
     ValuesBucket values;
     values.PutBool(MEDIA_DATA_DB_IS_PENDING, isPending);
+    int64_t timeNow = UTCTimeSeconds();
     if (isPending) {
-        values.PutBool(MEDIA_DATA_DB_TIME_PENDING, UTCTimeSeconds());
+        values.PutLong(MEDIA_DATA_DB_TIME_PENDING, timeNow);
     } else {
-        values.PutBool(MEDIA_DATA_DB_TIME_PENDING, 0);
+        values.PutLong(MEDIA_DATA_DB_TIME_PENDING, 0);
     }
+
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, timeNow);
 
     int32_t changedRows = DATA_ABILITY_FAIL;
 
@@ -408,13 +411,15 @@ string MediaLibraryDataAbilityUtils::GetMediaTypeUri(MediaType mediaType)
             break;
     }
 }
+
 int64_t MediaLibraryDataAbilityUtils::UTCTimeSeconds()
-    {
-        struct timespec t;
-        t.tv_sec = 0;
-        t.tv_nsec = 0;
-        clock_gettime(CLOCK_REALTIME, &t);
-        return (int64_t)(t.tv_sec);
-    }
+{
+    struct timespec t;
+    t.tv_sec = 0;
+    t.tv_nsec = 0;
+    clock_gettime(CLOCK_REALTIME, &t);
+    MEDIA_INFO_LOG("UTCTimeSeconds = %{public}lld", (int64_t)(t.tv_sec));
+    return (int64_t)(t.tv_sec);
+}
 } // namespace Media
 } // namespace OHOS

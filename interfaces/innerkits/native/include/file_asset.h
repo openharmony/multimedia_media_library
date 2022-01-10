@@ -101,14 +101,17 @@ public:
     void SetAlbumUri(const std::string &albumUri);
     int64_t GetDateTaken() const;
     void SetDateTaken(int64_t dataTaken);
+
     bool IsPending() const;
     void SetPending(bool isPending);
     int64_t GetTimePending() const;
     void SetTimePending(int64_t timePending);
+
     bool IsFavorite() const;
     void SetFavorite(bool isFavorite);
     int64_t GetDateTrashed() const;
     void SetDateTrashed(int64_t dateTrashed);
+
     int32_t CreateAsset(const std::string &filePath);
     int32_t ModifyAsset(const std::string& oldPath, const std::string &newPath);
     int32_t DeleteAsset(const std::string &filePath);

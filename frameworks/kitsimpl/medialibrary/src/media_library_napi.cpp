@@ -1128,12 +1128,15 @@ STATIC_COMPLETE_FUNC(GetPublicDirectory)
 {
     HiLog::Debug(LABEL, "GetPublicDirectoryCompleteCallback in");
     auto context = static_cast<MediaLibraryAsyncContext*>(data);
+
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     unsigned int dirIndex = context->dirType;
     if (dirIndex < directoryEnumValues.size()) {
         HiLog::Debug(LABEL, "GetPublicDirectoryCompleteCallback dirIndex < directoryEnumValues.size()");
+        
         napi_create_string_utf8(env, directoryEnumValues[dirIndex].c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
@@ -1143,6 +1146,7 @@ STATIC_COMPLETE_FUNC(GetPublicDirectory)
             "dirIndex is illegal");
         napi_get_undefined(env, &jsContext->data);
     }
+
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -1150,6 +1154,7 @@ STATIC_COMPLETE_FUNC(GetPublicDirectory)
     HiLog::Debug(LABEL, "GetPublicDirectoryCompleteCallback end");
     delete context;
 }
+
 napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -1159,8 +1164,10 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     const int32_t refCount = 1;
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1168,6 +1175,7 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
         for (size_t i = PARAM0; i < argc; i++) {
             napi_valuetype valueType = napi_undefined;
             napi_typeof(env, argv[i], &valueType);
+
             if (i == PARAM0 && valueType == napi_number) {
                 napi_get_value_int32(env, argv[i], &asyncContext->dirType);
             } else if (i == PARAM1 && valueType == napi_function) {
@@ -1177,8 +1185,10 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
                 NAPI_ASSERT(env, false, "type mismatch");
             }
         }
+
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetPublicDirectory");
+
         status = napi_create_async_work(
             env, nullptr, resource,
             [](napi_env env, void* data) {},

@@ -49,7 +49,7 @@ public:
 
     static bool checkFilePending(const std::shared_ptr<FileAsset> fileAsset);
     static bool checkOpenMode(const std::string &mode);
-    static int32_t setFilePending(int32_t id, bool isPending, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static int32_t setFilePending(string &id, bool isPending, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static NativeAlbumAsset CreateDirectorys(const std::string relativePath,
                                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                                              vector<int32_t> &outIds);

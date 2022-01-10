@@ -356,11 +356,13 @@ int32_t MediaLibraryDataAbility::BatchInsert(const Uri &uri, const vector<Values
 
 void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
+    MEDIA_INFO_LOG("ScanFile in");
     if (scannerClient_ == nullptr) {
         scannerClient_ = MediaScannerHelperFactory::CreateScannerHelper();
     }
 
     if (scannerClient_ != nullptr) {
+        MEDIA_INFO_LOG("scannerClient_ != nullptr");
         string actualUri;
         ValueObject valueObject;
 
@@ -373,12 +375,13 @@ void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_
         if (!srcPath.empty()) {
             std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
             CHECK_AND_RETURN_LOG(scanFileCb != nullptr, "Failed to create scan file callback object");
+            MEDIA_INFO_LOG("scannerClient_->ScanFile(srcPath = %{public}s, scanFileCb);", srcPath.c_str());
             auto ret = scannerClient_->ScanFile(srcPath, scanFileCb);
             CHECK_AND_RETURN_LOG(ret == 0, "Failed to initiate scan request");
         }
     }
+    MEDIA_INFO_LOG("ScanFile out");
 }
-
 /**
  * @brief 
  * 
@@ -406,7 +409,7 @@ int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mod
     MEDIA_ERR_LOG("MediaLibraryDataAbility OpenAsset end");
 
     if (isWriteMode && fd > 0) {
-        int32_t errorCode = MediaLibraryDataAbilityUtils::setFilePending(fileAsset->GetId(), true, rdbStore);
+        int32_t errorCode = MediaLibraryDataAbilityUtils::setFilePending(id, true, rdbStore);
         if (errorCode == DATA_ABILITY_FAIL) {
             fileAsset->CloseAsset(fd);
             MEDIA_ERR_LOG("MediaLibraryDataAbility OpenFile: Set file to pending DB error");

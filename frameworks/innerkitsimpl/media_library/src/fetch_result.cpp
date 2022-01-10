@@ -250,9 +250,13 @@ unique_ptr<FileAsset> FetchResult::GetObject()
     fileAsset->SetAlbumName(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_BUCKET_NAME, TYPE_STRING)));
 
     fileAsset->SetTimePending(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_TIME_PENDING, TYPE_INT64)));
+
     fileAsset->SetPending((get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_PENDING, TYPE_INT32)) != 0));
+
     fileAsset->SetFavorite((get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_FAV, TYPE_INT32)) != 0));
+
     fileAsset->SetDateTrashed(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64)));
+
     fileAsset->SetUri(GetMediaTypeUri(fileAsset->GetMediaType()) + "/" + to_string(fileAsset->GetId()));
 
     return fileAsset;

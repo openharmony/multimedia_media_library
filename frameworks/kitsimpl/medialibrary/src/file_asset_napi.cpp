@@ -1075,6 +1075,70 @@ STATIC_COMPLETE_FUNC(JSClose)
     }
     delete context;
 }
+
+napi_value GetJSArgsForClose(napi_env env,
+                             size_t argc,
+                             const napi_value argv[],
+                             FileAssetAsyncContext &asyncContext)
+{
+    const int32_t refCount = 1;
+    napi_value result = nullptr;
+    auto context = &asyncContext;
+    int32_t fd = 0;
+
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+
+    for (size_t i = PARAM0; i < argc; i++) {
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[i], &valueType);
+
+        if (i == PARAM0 && valueType == napi_number) {
+            napi_get_value_int32(env, argv[i], &fd);
+        } else if (i == PARAM1 && valueType == napi_function) {
+            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
+            break;
+        } else {
+            NAPI_ASSERT(env, false, "type mismatch");
+        }
+    }
+    context->valuesBucket.PutInt(MEDIA_FILEDESCRIPTOR, fd);
+    context->valuesBucket.PutString(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
+    // Return true napi_value if params are successfully obtained
+    napi_get_boolean(env, true, &result);
+    return result;
+}
+
+napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value result = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
+    napi_value resource = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    napi_get_undefined(env, &result);
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+        result = GetJSArgsForClose(env, argc, argv, *asyncContext);
+        ASSERT_NULLPTR_CHECK(env, result);
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
+        status = napi_create_async_work(
+            env, nullptr, resource, [](napi_env env, void* data) {},
+            JSCloseCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        if (status != napi_ok) {
+            napi_get_undefined(env, &result);
+        } else {
+            napi_queue_async_work(env, asyncContext->work);
+            asyncContext.release();
+        }
+    }
+    return result;
+}
+
 STATIC_COMPLETE_FUNC(JSFavourite)
 {
     auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -1128,6 +1192,7 @@ static bool GetIsFavouriteNative(napi_env env, const FileAssetAsyncContext &file
     }
     return isFavourite;
 }
+
 STATIC_COMPLETE_FUNC(JSIsFavourite)
 {
     auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -1151,6 +1216,7 @@ STATIC_COMPLETE_FUNC(JSIsFavourite)
     }
     delete context;
 }
+
 static bool GetIsDirectoryiteNative(napi_env env, const FileAssetAsyncContext &fileContext)
 {
     FileAssetAsyncContext *context = const_cast<FileAssetAsyncContext *>(&fileContext);
@@ -1165,6 +1231,7 @@ static bool GetIsDirectoryiteNative(napi_env env, const FileAssetAsyncContext &f
     }
     return IsDirectory;
 }
+
 STATIC_COMPLETE_FUNC(JSIsDirectory)
 {
     auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -1188,36 +1255,7 @@ STATIC_COMPLETE_FUNC(JSIsDirectory)
     }
     delete context;
 }
-napi_value GetJSArgsForClose(napi_env env,
-                             size_t argc,
-                             const napi_value argv[],
-                             FileAssetAsyncContext &asyncContext)
-{
-    const int32_t refCount = 1;
-    napi_value result = nullptr;
-    auto context = &asyncContext;
-    int32_t fd = 0;
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
-
-    for (size_t i = PARAM0; i < argc; i++) {
-        napi_valuetype valueType = napi_undefined;
-        napi_typeof(env, argv[i], &valueType);
-
-        if (i == PARAM0 && valueType == napi_number) {
-            napi_get_value_int32(env, argv[i], &fd);
-        } else if (i == PARAM1 && valueType == napi_function) {
-            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
-            break;
-        } else {
-            NAPI_ASSERT(env, false, "type mismatch");
-        }
-    }
-    context->valuesBucket.PutInt(MEDIA_FILEDESCRIPTOR, fd);
-    // Return true napi_value if params are successfully obtained
-    napi_get_boolean(env, true, &result);
-    return result;
-}
 static napi_value GetJSArgsForIsFavourite(napi_env env,
                                           size_t argc,
                                           const napi_value argv[],
@@ -1303,36 +1341,6 @@ napi_value GetJSArgsForFavourite(napi_env env,
     }
     context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavourite);
     napi_get_boolean(env, true, &result);
-    return result;
-}
-napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
-{
-    napi_status status;
-    napi_value result = nullptr;
-    size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {0};
-    napi_value thisVar = nullptr;
-    napi_value resource = nullptr;
-    GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
-    napi_get_undefined(env, &result);
-    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
-        result = GetJSArgsForClose(env, argc, argv, *asyncContext);
-        ASSERT_NULLPTR_CHECK(env, result);
-        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
-        status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
-            JSCloseCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
-        if (status != napi_ok) {
-            napi_get_undefined(env, &result);
-        } else {
-            napi_queue_async_work(env, asyncContext->work);
-            asyncContext.release();
-        }
-    }
     return result;
 }
 
