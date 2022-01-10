@@ -86,8 +86,9 @@ bool MediaLibraryDataAbilityUtils::IsNumber(const string &str)
 
     return true;
 }
-NativeAlbumAsset MediaLibraryDataAbilityUtils::CreateAlbum(const string relativePath,
-                                                           const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+NativeAlbumAsset MediaLibraryDataAbilityUtils::CreateDirectorys(const string relativePath,
+                                                                const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                                                                vector<int32_t> &outIds)
 {
     NativeAlbumAsset albumAsset;
     if (!relativePath.empty()) {
@@ -100,11 +101,26 @@ NativeAlbumAsset MediaLibraryDataAbilityUtils::CreateAlbum(const string relative
         ValuesBucket values;
         values.PutString(MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_Path + path);
         MediaLibraryAlbumOperations albumOprn;
-        int32_t errorcode = albumOprn.HandleAlbumOperations(MEDIA_ALBUMOPRN_CREATEALBUM, values, rdbStore);
+        int32_t errorcode = albumOprn.HandleAlbumOperations(MEDIA_ALBUMOPRN_CREATEALBUM, values, rdbStore, outIds);
         albumAsset.SetAlbumId(errorcode);
         albumAsset.SetAlbumName(albumOprn.GetNativeAlbumAsset()->GetAlbumName());
     }
     return albumAsset;
+}
+int32_t MediaLibraryDataAbilityUtils::DeleteDirectorys(vector<int32_t> &outIds,
+                                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    int32_t errorCode = -1;
+    if (!outIds.empty()) {
+        MediaLibraryAlbumOperations albumOprn;
+        for (vector<int32_t>::reverse_iterator it = outIds.rbegin(); it != outIds.rend(); it++) {
+            ValuesBucket values;
+            int32_t id = *it;
+            values.PutInt(MEDIA_DATA_DB_ID, id);
+            errorCode = albumOprn.HandleAlbumOperations(MEDIA_ALBUMOPRN_DELETEALBUM, values, rdbStore, outIds);
+        }
+    }
+    return errorCode;
 }
 NativeAlbumAsset MediaLibraryDataAbilityUtils::GetAlbumAsset(const std::string &id,
                                                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)

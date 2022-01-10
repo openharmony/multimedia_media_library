@@ -43,7 +43,10 @@ public:
     static bool isFileExistInDb(const std::string &relativePath,
                                      const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::string GetPathFromDb(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    static NativeAlbumAsset CreateAlbum(const std::string relativePath,
+    static NativeAlbumAsset CreateDirectorys(const std::string relativePath,
+                                             const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                                             vector<int32_t> &outIds);
+    static int32_t DeleteDirectorys(vector<int32_t> &outIds,
                                         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static NativeAlbumAsset GetAlbumAsset(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::string GetFileTitle(const std::string& displayName);

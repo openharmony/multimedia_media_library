@@ -67,8 +67,8 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
         valueObject.GetInt(mediaType);
         fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
     }
-
-    nativeAlbumAsset = MediaLibraryDataAbilityUtils::CreateAlbum(relativePath, rdbStore);
+    vector<int32_t> outIds;
+    nativeAlbumAsset = MediaLibraryDataAbilityUtils::CreateDirectorys(relativePath, rdbStore, outIds);
     if (nativeAlbumAsset.GetAlbumId() < 0) {
         MEDIA_ERR_LOG("fileAsset CreateAlbum faild error");
         return errCode;
