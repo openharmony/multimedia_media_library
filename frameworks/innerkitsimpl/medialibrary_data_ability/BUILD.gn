@@ -58,9 +58,9 @@ ohos_shared_library("medialibrary_data_ability") {
     "src/medialibrary_file_db.cpp",
     "src/medialibrary_file_operations.cpp",
     "src/medialibrary_smartalbum_db.cpp",
-    "src/medialibrary_smartalbum_operations.cpp",
     "src/medialibrary_smartalbum_map_db.cpp",
     "src/medialibrary_smartalbum_map_operations.cpp",
+    "src/medialibrary_smartalbum_operations.cpp",
     "src/medialibrary_thumbnail.cpp",
   ]
 
@@ -73,8 +73,8 @@ ohos_shared_library("medialibrary_data_ability") {
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
-    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
+    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//utils/native/base:utils",
   ]
@@ -82,8 +82,8 @@ ohos_shared_library("medialibrary_data_ability") {
 
   external_deps = [
     "hiviewdfx_hilog_native:libhilog",
-    "multimedia_media_standard:media_client",
     "ipc:ipc_core",
+    "multimedia_media_standard:media_client",
     "native_appdatamgr:native_appdatafwk",
     "native_appdatamgr:native_dataability",
     "native_appdatamgr:native_rdb",
