@@ -93,3 +93,25 @@ ohos_executable("media_library_test") {
   part_name = "multimedia_media_library_standard"
   subsystem_name = "multimedia"
 }
+ohos_static_library("media_thumbnail_helper") {
+  sources = [ "src/media_thumbnail_helper.cpp" ]
+  include_dirs = [
+    "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
+    "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
+    "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
+    "//utils/native/base/include",
+  ]
+  deps = [
+    "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
+    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
+    "//utils/native/base:utils",
+  ]
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "native_appdatamgr:native_appdatafwk",
+    "native_appdatamgr:native_dataability",
+    "native_appdatamgr:native_rdb",
+  ]
+  subsystem_name = "multimedia"
+  part_name = "multimedia_media_library_standard"
+}

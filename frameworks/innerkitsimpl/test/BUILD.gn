@@ -17,5 +17,6 @@ group("test") {
   deps = [
     "unittest/mediadataability_test:unittest",
     "unittest/medialibrary_test:unittest",
+    "unittest/mediathumbnail_test:unittest",
   ]
 }

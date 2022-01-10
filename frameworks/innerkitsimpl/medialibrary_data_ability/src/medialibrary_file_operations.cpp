@@ -210,6 +210,22 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, cons
 
     return errCode;
 }
+void CreateThumbnail(const shared_ptr<RdbStore> &rdbStore,
+    const shared_ptr<MediaLibraryThumbnail> &mediaThumbnail, string id)
+{
+    if (!id.empty()) {
+        string kvId;
+        ThumbRdbOpt opts = {
+            .store = rdbStore,
+            .table = MEDIALIBRARY_TABLE,
+            .row = id
+        };
+
+        if (!mediaThumbnail->CreateThumbnail(opts, kvId)) {
+            MEDIA_ERR_LOG("Create thumbnail error");
+        }
+    }
+}
 int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &values,
                                                            const shared_ptr<RdbStore> &rdbStore)
 {
@@ -241,7 +257,7 @@ int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &v
     return errCode;
 }
 int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, const ValuesBucket &values,
-    const shared_ptr<RdbStore> &rdbStore)
+    const shared_ptr<RdbStore> &rdbStore, const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail)
 {
     int32_t errCode = DATA_ABILITY_FAIL;
 
@@ -268,6 +284,10 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
         errCode = HandleDeleteAsset(id, srcPath, rdbStore);
     } else if (oprn == MEDIA_FILEOPRN_CLOSEASSET) {
         errCode = HandleCloseAsset(id, srcPath, values, rdbStore);
+    }
+    if (oprn == MEDIA_FILEOPRN_MODIFYASSET ||
+        oprn == MEDIA_FILEOPRN_CLOSEASSET) {
+        CreateThumbnail(rdbStore, mediaThumbnail, id);
     }
 
     return errCode;

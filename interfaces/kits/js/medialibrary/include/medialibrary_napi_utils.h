@@ -146,16 +146,17 @@ const std::vector<std::string> directoryEnum {
 };
 
 const std::vector<std::string> directoryEnumValues {
-    "CDSA/",
-    "Movies/",
-    "Pictures/",
-    "Music/",
-    "Rings/",
-    "Notices/",
-    "Clocks/",
-    "Documents/",
-    "Download/",
-    "Bluetooth/"
+    "cdsa/",
+    "video/",
+    "image/",
+    "audio/",
+    "audio/rings/",
+    "audio/notice/",
+    "audio/clock/",
+    "documents/",
+    "download/",
+    "download/bluetooth/",
+    "Pictures/"
 };
 
 const std::vector<std::string> fileKeyEnumValues {

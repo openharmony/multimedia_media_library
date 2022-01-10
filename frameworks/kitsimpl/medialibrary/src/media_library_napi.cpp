@@ -35,6 +35,8 @@ napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::sAbilityHelper_ = nullptr;
 napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
 napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
+using CompleteCallback = napi_async_complete_callback;
+using Context = MediaLibraryAsyncContext* ;
 
 MediaLibraryNapi::MediaLibraryNapi()
     : mediaLibrary_(nullptr), env_(nullptr), wrapper_(nullptr) {}
@@ -424,10 +426,6 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
 
         if (i == PARAM0 && valueType == napi_object) {
             GetFetchOptionsParam(env, argv[PARAM0], asyncContext, err);
-            if (err) {
-                HiLog::Error(LABEL, "fetch options retrieval failed");
-                NAPI_ASSERT(env, false, "type mismatch");
-            }
         } else if (i == PARAM0 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
@@ -437,6 +435,10 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
         } else {
             NAPI_ASSERT(env, false, "type mismatch");
         }
+        if (err) {
+            HiLog::Error(LABEL, "fetch options retrieval failed");
+            NAPI_ASSERT(env, false, "type mismatch");
+        }
     }
 
     // Return true napi_value if params are successfully obtained
@@ -444,9 +446,9 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
     return result;
 }
 
-static void MediaAssetsAsyncCallbackComplete(napi_env env, napi_status status, void* data)
+static void MediaAssetsAsyncCallbackComplete(napi_env env, napi_status status,
+                                             MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
     napi_value mediaArray = nullptr;
     napi_value mAsset = nullptr;
 
@@ -501,7 +503,9 @@ napi_value MediaLibraryNapi::GetMediaAssets(napi_env env, napi_callback_info inf
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+    if (!(status == napi_ok && asyncContext->objectInfo != nullptr)) {
+        return result;
+    }
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
@@ -516,21 +520,20 @@ napi_value MediaLibraryNapi::GetMediaAssets(napi_env env, napi_callback_info inf
                                                                                           context->selectionArgs);
                 context->status = 0;
             },
-            MediaAssetsAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        reinterpret_cast<CompleteCallback>(MediaAssetsAsyncCallbackComplete),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
             napi_queue_async_work(env, asyncContext->work);
             asyncContext.release();
-        }
     }
-
     return result;
 }
 
-static void AudioAssetsAsyncCallbackComplete(napi_env env, napi_status status, void* data)
+static void AudioAssetsAsyncCallbackComplete(napi_env env, napi_status status,
+                                             MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
     napi_value audioArray = nullptr;
     napi_value aAsset = nullptr;
 
@@ -585,7 +588,9 @@ napi_value MediaLibraryNapi::GetAudioAssets(napi_env env, napi_callback_info inf
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+    if (!(status == napi_ok && asyncContext->objectInfo != nullptr)) {
+        return result;
+    }
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
@@ -600,21 +605,20 @@ napi_value MediaLibraryNapi::GetAudioAssets(napi_env env, napi_callback_info inf
                                                                                           context->selectionArgs);
                 context->status = 0;
             },
-            AudioAssetsAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        reinterpret_cast<CompleteCallback>(AudioAssetsAsyncCallbackComplete),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
             napi_queue_async_work(env, asyncContext->work);
             asyncContext.release();
-        }
     }
-
     return result;
 }
 
-static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status, void* data)
+static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status,
+                                             MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
     napi_value videoArray = nullptr;
     napi_value vAsset = nullptr;
 
@@ -669,7 +673,9 @@ napi_value MediaLibraryNapi::GetVideoAssets(napi_env env, napi_callback_info inf
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+    if (!(status == napi_ok && asyncContext->objectInfo != nullptr)) {
+        return result;
+    }
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
@@ -684,21 +690,20 @@ napi_value MediaLibraryNapi::GetVideoAssets(napi_env env, napi_callback_info inf
                                                                                           context->selectionArgs);
                 context->status = 0;
             },
-            VideoAssetsAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        reinterpret_cast<CompleteCallback>(VideoAssetsAsyncCallbackComplete),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
             napi_queue_async_work(env, asyncContext->work);
             asyncContext.release();
-        }
     }
-
     return result;
 }
 
-static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status, void* data)
+static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status,
+                                             MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
     napi_value imageArray = nullptr;
     napi_value iAsset = nullptr;
 
@@ -768,7 +773,8 @@ napi_value MediaLibraryNapi::GetImageAssets(napi_env env, napi_callback_info inf
                                                                                           context->selectionArgs);
                 context->status = 0;
             },
-            ImageAssetsAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(ImageAssetsAsyncCallbackComplete),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -780,9 +786,9 @@ napi_value MediaLibraryNapi::GetImageAssets(napi_env env, napi_callback_info inf
     return result;
 }
 
-static void AlbumAssetsAsyncCallbackComplete(napi_env env, napi_status status, void* data)
+static void AlbumAssetsAsyncCallbackComplete(napi_env env, napi_status status,
+                                             MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
     napi_value albumArray = nullptr;
     napi_value albumAsset = nullptr;
 
@@ -854,7 +860,8 @@ napi_value MediaLibraryNapi::GetVideoAlbums(napi_env env, napi_callback_info inf
                 context->albumType = TYPE_VIDEO_ALBUM;
                 context->status = 0;
             },
-            AlbumAssetsAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(AlbumAssetsAsyncCallbackComplete),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -898,7 +905,8 @@ napi_value MediaLibraryNapi::GetImageAlbums(napi_env env, napi_callback_info inf
                 context->albumType = TYPE_IMAGE_ALBUM;
                 context->status = 0;
             },
-            AlbumAssetsAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(AlbumAssetsAsyncCallbackComplete),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -948,9 +956,9 @@ napi_value GetAssetJSObject(napi_env env, NapiAssetType type, IMediaLibraryClien
     return assetObj;
 }
 
-void CreateAssetAsyncCbComplete(napi_env env, napi_status status, void* data)
+void CreateAssetAsyncCbComplete(napi_env env, napi_status status,
+                                MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
     if (context != nullptr) {
         unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
@@ -980,7 +988,8 @@ void CreateAsyncWork(napi_env env, napi_value resource,
     status = napi_create_async_work(
         env, nullptr, resource,
         [](napi_env env, void* data) {},
-        CreateAssetAsyncCbComplete, (void*)asyncContext, &asyncContext->work);
+        reinterpret_cast<CompleteCallback>(CreateAssetAsyncCbComplete),
+        (void*)asyncContext, &asyncContext->work);
     if (status != napi_ok) {
         err = true;
     } else {
@@ -1204,9 +1213,9 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     return result;
 }
 
-static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status, void* data)
+static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
+                                               MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
     napi_value fileResult = nullptr;
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -1285,7 +1294,8 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
         status = napi_create_async_work(
             env, nullptr, resource,
             [](napi_env env, void* data) {},
-            GetFileAssetsAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(GetFileAssetsAsyncCallbackComplete),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1386,9 +1396,9 @@ static napi_value GetResultData(napi_env env, const MediaLibraryAsyncContext &as
     return result;
 }
 
-static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status, void* data)
+static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
+                                        MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -1439,7 +1449,8 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            AlbumsAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(AlbumsAsyncCallbackComplete),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1451,10 +1462,10 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
     return result;
 }
 
-STATIC_COMPLETE_FUNC(JSCreateAsset)
+static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
+                                          MediaLibraryAsyncContext *context)
 {
     HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback IN");
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -1650,7 +1661,8 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSCreateAssetCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSCreateAssetCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1662,9 +1674,9 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
     return result;
 }
 
-STATIC_COMPLETE_FUNC(JSModifyAsset)
+static void JSModifyAssetCompleteCallback(napi_env env, napi_status status,
+                                          MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -1770,7 +1782,8 @@ napi_value MediaLibraryNapi::JSModifyAsset(napi_env env, napi_callback_info info
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSModifyAssetCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSModifyAssetCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1782,9 +1795,9 @@ napi_value MediaLibraryNapi::JSModifyAsset(napi_env env, napi_callback_info info
     return result;
 }
 
-static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status, void* data)
+static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status,
+                                          MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -1892,7 +1905,8 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSDeleteAssetCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSDeleteAssetCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1904,9 +1918,9 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
     return result;
 }
 
-static void JSOpenAssetCompleteCallback(napi_env env, napi_status status, void* data)
+static void JSOpenAssetCompleteCallback(napi_env env, napi_status status,
+                                        MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -2009,7 +2023,8 @@ napi_value MediaLibraryNapi::JSOpenAsset(napi_env env, napi_callback_info info)
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSOpenAssetCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSOpenAssetCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2021,9 +2036,9 @@ napi_value MediaLibraryNapi::JSOpenAsset(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void JSCloseAssetCompleteCallback(napi_env env, napi_status status, void* data)
+static void JSCloseAssetCompleteCallback(napi_env env, napi_status status,
+                                         MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -2125,7 +2140,8 @@ napi_value MediaLibraryNapi::JSCloseAsset(napi_env env, napi_callback_info info)
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSCloseAssetCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSCloseAssetCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2137,9 +2153,9 @@ napi_value MediaLibraryNapi::JSCloseAsset(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void JSCreateAlbumCompleteCallback(napi_env env, napi_status status, void* data)
+static void JSCreateAlbumCompleteCallback(napi_env env, napi_status status,
+                                          MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -2230,7 +2246,8 @@ napi_value MediaLibraryNapi::JSCreateAlbum(napi_env env, napi_callback_info info
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSCreateAlbumCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSCreateAlbumCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2242,9 +2259,9 @@ napi_value MediaLibraryNapi::JSCreateAlbum(napi_env env, napi_callback_info info
     return result;
 }
 
-static void JSModifyAlbumCompleteCallback(napi_env env, napi_status status, void* data)
+static void JSModifyAlbumCompleteCallback(napi_env env, napi_status status,
+                                          MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -2338,7 +2355,8 @@ napi_value MediaLibraryNapi::JSModifyAlbum(napi_env env, napi_callback_info info
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSModifyAlbumCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSModifyAlbumCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2350,9 +2368,9 @@ napi_value MediaLibraryNapi::JSModifyAlbum(napi_env env, napi_callback_info info
     return result;
 }
 
-static void JSDeleteAlbumCompleteCallback(napi_env env, napi_status status, void* data)
+static void JSDeleteAlbumCompleteCallback(napi_env env, napi_status status,
+                                          MediaLibraryAsyncContext *context)
 {
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -2442,7 +2460,8 @@ napi_value MediaLibraryNapi::JSDeleteAlbum(napi_env env, napi_callback_info info
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSDeleteAlbumCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSDeleteAlbumCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2695,10 +2714,10 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
     return undefinedResult;
 }
 
-STATIC_COMPLETE_FUNC(JSRelease)
+static void JSReleaseCompleteCallback(napi_env env, napi_status status,
+                                      MediaLibraryAsyncContext *context)
 {
     HiLog::Error(LABEL, "JSReleaseCompleteCallback in");
-    auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -2757,7 +2776,8 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSReleaseCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSReleaseCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {

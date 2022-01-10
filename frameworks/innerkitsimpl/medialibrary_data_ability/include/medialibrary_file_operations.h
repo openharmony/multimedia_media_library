@@ -27,6 +27,7 @@
 #include "rdb_store.h"
 #include "values_bucket.h"
 #include "value_object.h"
+#include "medialibrary_thumbnail.h"
 
 namespace OHOS {
 namespace Media {
@@ -37,7 +38,8 @@ public:
     int32_t HandleCloseAsset(std::string &rowNum, std::string &srcPath, const NativeRdb::ValuesBucket &values,
                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleFileOperation(const std::string &uri, const NativeRdb::ValuesBucket &values,
-                                const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+                                const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                                const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail);
     int32_t HandleModifyAsset(const std::string &rowNum, const std::string &srcPath,
                               const NativeRdb::ValuesBucket &values,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);

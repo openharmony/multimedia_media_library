@@ -37,6 +37,7 @@
 #include "values_bucket.h"
 #include "want.h"
 #include "hilog/log.h"
+#include "medialibrary_thumbnail.h"
 
 namespace OHOS {
 namespace Media {
@@ -74,6 +75,8 @@ namespace Media {
         std::shared_ptr<NativeRdb::RdbStore> rdbStore;
         std::shared_ptr<NativeRdb::RdbStore> smartAlbumrdbStore;
         std::shared_ptr<NativeRdb::RdbStore> smartAlbumMaprdbStore;
+        std::shared_ptr<MediaLibraryThumbnail> mediaThumbnail_;
+
         bool isRdbStoreInitialized;
 };
 

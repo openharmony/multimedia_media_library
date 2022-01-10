@@ -98,6 +98,7 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
         return errCode;
     }
     isRdbStoreInitialized = true;
+    mediaThumbnail_ = std::make_shared<MediaLibraryThumbnail>();
     MEDIA_INFO_LOG("DATA_ABILITY_SUCCESS");
     return DATA_ABILITY_SUCCESS;
 }
@@ -121,7 +122,7 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
         string operationType = MediaLibraryDataAbilityUtils::GetOperationType(insertUri);
         MEDIA_INFO_LOG("operationType = %{public}s", operationType.c_str());
         if (insertUri.find(MEDIA_FILEOPRN) != string::npos) {
-            result = fileOprn.HandleFileOperation(operationType, value, rdbStore);
+            result = fileOprn.HandleFileOperation(operationType, value, rdbStore, mediaThumbnail_);
             MEDIA_INFO_LOG("HandleFileOperation result = %{public}d", result);
             // After successfull close asset operation, do a scan file
             if ((result >= 0) && (operationType == MEDIA_FILEOPRN_CLOSEASSET)) {
@@ -248,6 +249,96 @@ unique_ptr<AbsSharedResultSet> QueryByFileTableType(TableType tabletype,
     }
     return queryResultSet;
 }
+void SplitKeyValue(const string& keyValue, string &key, string &value)
+{
+    string::size_type pos = keyValue.find('=');
+    if (string::npos != pos) {
+        key = keyValue.substr(0, pos);
+        value = keyValue.substr(pos + 1);
+    }
+}
+void SplitKeys(const string& query, vector<string>& keys)
+{
+    string::size_type pos1 = 0;
+    string::size_type pos2 = query.find('&');
+    while (string::npos != pos2) {
+        keys.push_back(query.substr(pos1, pos2-pos1));
+        pos1 = pos2 + 1;
+        pos2 = query.find('&', pos1);
+    }
+    if (pos1 != query.length()) {
+        keys.push_back(query.substr(pos1));
+    }
+}
+bool ParseThumbnailInfo(string &uriString, int &width, int &height)
+{
+    string::size_type pos = uriString.find_last_of('?');
+    string queryKeys;
+    if (string::npos == pos) {
+        return false;
+    }
+    vector<string> keyWords = {
+        MEDIA_OPERN_KEYWORD,
+        MEDIA_DATA_DB_WIDTH,
+        MEDIA_DATA_DB_HEIGHT
+    };
+    queryKeys = uriString.substr(pos + 1);
+    uriString = uriString.substr(0, pos);
+    vector<string> vectorKeys;
+    SplitKeys(queryKeys, vectorKeys);
+    if (vectorKeys.size() != keyWords.size()) {
+        MEDIA_ERR_LOG("Parse error keys count %{public}d", vectorKeys.size());
+        return false;
+    }
+    string action;
+    width = 0;
+    height = 0;
+    for (uint32_t i = 0; i < vectorKeys.size(); i++) {
+        string subKey, subVal;
+        SplitKeyValue(vectorKeys[i], subKey, subVal);
+        if (subKey.empty()) {
+            MEDIA_ERR_LOG("Parse key error [ %{public}s ]", vectorKeys[i].c_str());
+            return false;
+        }
+        if (subKey == MEDIA_OPERN_KEYWORD) {
+            action = subVal;
+        } else if (subKey == MEDIA_DATA_DB_WIDTH) {
+            if (MediaLibraryDataAbilityUtils::IsNumber(subVal)) {
+                width = stoi(subVal);
+            }
+        } else if (subKey == MEDIA_DATA_DB_HEIGHT) {
+            if (MediaLibraryDataAbilityUtils::IsNumber(subVal)) {
+                height = stoi(subVal);
+            }
+        }
+    }
+    MEDIA_INFO_LOG("ParseThumbnailInfo| action [%{public}s] width %{public}d height %{public}d",
+        action.c_str(), width, height);
+    if (action != MEDIA_DATA_DB_THUMBNAIL || width <= 0 || height <= 0) {
+        MEDIA_ERR_LOG("ParseThumbnailInfo | Error args");
+        return false;
+    }
+    return true;
+}
+void GenThumbnail(shared_ptr<RdbStore> rdb,
+                  shared_ptr<MediaLibraryThumbnail> thumbnail,
+                  string rowId, int width, int height)
+{
+    ThumbRdbOpt opts = {
+        .store = rdb,
+        .table = MEDIALIBRARY_TABLE,
+        .row = rowId
+    };
+    Size size = {
+        .width = width,
+        .height = height
+    };
+    MEDIA_ERR_LOG("Get thumbnail [ %{public}s ]", opts.row.c_str());
+    string kvId = thumbnail->GetThumbnailKey(opts, size);
+    if (kvId.empty()) {
+        MEDIA_ERR_LOG("Get thumbnail error");
+    }
+}
 shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
                                                               const vector<string> &columns,
                                                               const DataAbilityPredicates &predicates)
@@ -257,33 +348,28 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
         return nullptr;
     }
 
-    string uriString = uri.ToString();
     unique_ptr<AbsSharedResultSet> queryResultSet;
-    string strRow;
     TableType tabletype = TYPE_DATA;
-    string strQueryCondition = predicates.GetWhereClause();
+    string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
+    int width = 0, height = 0;
+    bool thumbnailQuery = ParseThumbnailInfo(uriString, width, height);
+
+    string::size_type pos = uriString.find_last_of('/');
     if (uriString == MEDIALIBRARY_DATA_URI+"/"+MEDIA_ALBUMOPRN_QUERYALBUM) {
         tabletype = TYPE_ALBUM_TABLE;
         uriString = MEDIALIBRARY_DATA_URI;
-        } else {
-    if (strQueryCondition.empty()) {
-        string::size_type pos = uriString.find_last_of('/');
+    } else if (strQueryCondition.empty() && pos != string::npos) {
+        strRow = uriString.substr(pos + 1);
+        uriString = uriString.substr(0, pos);
         if (pos == MEDIALIBRARY_DATA_URI.length()) {
-            strRow = uriString.substr(pos + 1);
             tabletype = TYPE_DATA;
-            uriString = uriString.substr(0, pos);
             strQueryCondition = MEDIA_DATA_DB_ID + " = " + strRow;
         } else if (pos == MEDIALIBRARY_SMARTALBUM_URI.length()) {
-            strRow = uriString.substr(pos + 1);
             tabletype = TYPE_SMARTALBUM;
-            uriString = uriString.substr(0, pos);
             strQueryCondition = SMARTALBUM_DB_ID + " = " + strRow;
         } else if (pos == MEDIALIBRARY_SMARTALBUM_MAP_URI.length()) {
-            strRow = uriString.substr(pos + 1);
             tabletype = TYPE_SMARTALBUM_MAP;
-            uriString = uriString.substr(0, pos);
             strQueryCondition = SMARTALBUMMAP_DB_ID + " = " + strRow;
-        }
     }
         }
     // After removing the index values, check whether URI is correct
@@ -292,6 +378,9 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
                              uriString == MEDIALIBRARY_SMARTALBUM_MAP_URI),
                              nullptr,
                              "Not Data ability Uri");
+    if (thumbnailQuery) {
+        GenThumbnail(rdbStore, mediaThumbnail_, strRow, width, height);
+    }
     if (tabletype == TYPE_SMARTALBUM || tabletype == TYPE_SMARTALBUM_MAP) {
         queryResultSet = QueryBySmartTableType(tabletype, strQueryCondition, predicates, columns, rdbStore);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
@@ -356,13 +445,11 @@ int32_t MediaLibraryDataAbility::BatchInsert(const Uri &uri, const vector<Values
 
 void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
-    MEDIA_INFO_LOG("ScanFile in");
     if (scannerClient_ == nullptr) {
         scannerClient_ = MediaScannerHelperFactory::CreateScannerHelper();
     }
 
     if (scannerClient_ != nullptr) {
-        MEDIA_INFO_LOG("scannerClient_ != nullptr");
         string actualUri;
         ValueObject valueObject;
 
@@ -375,12 +462,10 @@ void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_
         if (!srcPath.empty()) {
             std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
             CHECK_AND_RETURN_LOG(scanFileCb != nullptr, "Failed to create scan file callback object");
-            MEDIA_INFO_LOG("scannerClient_->ScanFile(srcPath = %{public}s, scanFileCb);", srcPath.c_str());
             auto ret = scannerClient_->ScanFile(srcPath, scanFileCb);
             CHECK_AND_RETURN_LOG(ret == 0, "Failed to initiate scan request");
         }
     }
-    MEDIA_INFO_LOG("ScanFile out");
 }
 /**
  * @brief 

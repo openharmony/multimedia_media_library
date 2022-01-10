@@ -380,7 +380,13 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
         flags = O_RDWR | O_TRUNC;
     }
 
+    if (filePath.size() >= PATH_MAX) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path");
+        return errCode;
+    }
+
     char actualPath[PATH_MAX];
+    memset_s(actualPath, PATH_MAX, '\0', PATH_MAX);
     auto absFilePath = realpath(filePath.c_str(), actualPath);
     if (absFilePath == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain the canonical path for source path");

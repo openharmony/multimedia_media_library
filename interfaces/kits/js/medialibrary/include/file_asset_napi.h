@@ -24,6 +24,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "values_bucket.h"
+#include "media_thumbnail_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -45,6 +46,7 @@ public:
     Media::MediaType GetMediaType() const;
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
+    static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
 private:
     static void FileAssetNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value FileAssetNapiConstructor(napi_env env, napi_callback_info info);
@@ -131,6 +133,8 @@ struct FileAssetAsyncContext {
     bool status;
     FileAssetNapi *objectInfo;
     OHOS::NativeRdb::ValuesBucket valuesBucket;
+    int32_t thumbWidth;
+    int32_t thumbHeight;
 };
 } // namespace Media
 } // namespace OHOS

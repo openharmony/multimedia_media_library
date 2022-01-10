@@ -126,7 +126,7 @@ int32_t UpdateAlbumInfoUtil(const ValuesBucket &valuesBucket,
         vector<string> whereArgs = {(albumPath.back() != '/' ? (albumPath + "/%") : (albumPath + "%")),
         albumPath};
 
-int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
+    int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
     MEDIA_DATA_DB_FILE_PATH + " LIKE ? OR " + MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
         if (deleteResult != E_OK) {
             MEDIA_ERR_LOG("Delete rows failed");
@@ -174,7 +174,7 @@ int32_t DeleteAlbumInfoUtil(const ValuesBucket &valuesBucket, int32_t albumId, c
         int32_t deletedRows = ALBUM_OPERATION_ERR;
         vector<string> whereArgs = {(albumPath.back() != '/' ? (albumPath + "/%") : (albumPath + "%"))};
 
-int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
+    int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
     MEDIA_DATA_DB_FILE_PATH + " LIKE ?", whereArgs);
         if (deleteResult != E_OK) {
             MEDIA_ERR_LOG("Delete rows failed");

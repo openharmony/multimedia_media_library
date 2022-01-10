@@ -14,11 +14,12 @@
  */
 
 #include "file_asset_napi.h"
+#include "abs_shared_result_set.h"
 #include "data_ability_predicates.h"
 #include "hilog/log.h"
-#include "abs_shared_result_set.h"
 #include "rdb_errno.h"
 #include "media_file_utils.h"
+#include "pixel_map_napi.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -36,6 +37,8 @@ namespace Media {
 napi_ref FileAssetNapi::sConstructor_ = nullptr;
 FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> FileAssetNapi::sAbilityHelper_ = nullptr;
+std::shared_ptr<MediaThumbnailHelper> FileAssetNapi::sThumbnailHelper_ = nullptr;
+using CompleteCallback = napi_async_complete_callback;
 
 FileAssetNapi::FileAssetNapi()
     : env_(nullptr), wrapper_(nullptr)
@@ -171,6 +174,9 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
                 CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sAbilityHelper_, result, "Helper creation failed");
             }
 
+            if (obj->sThumbnailHelper_ == nullptr) {
+                obj->sThumbnailHelper_ = std::make_shared<MediaThumbnailHelper>();
+            }
             status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
                                FileAssetNapi::FileAssetNapiDestructor, nullptr, &(obj->wrapper_));
             if (status == napi_ok) {
@@ -224,10 +230,10 @@ std::string FileAssetNapi::GetTitle() const
 
 std::string FileAssetNapi::GetFileUri() const
 {
-    return fileUri_;
+    return "/" + to_string(fileId_);
 }
 
-int FileAssetNapi::GetFileId() const
+int32_t FileAssetNapi::GetFileId() const
 {
     return fileId_;
 }
@@ -840,9 +846,9 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
     return jsResult;
 }
 
-STATIC_COMPLETE_FUNC(JSCommitModify)
+static void JSCommitModifyCompleteCallback(napi_env env, napi_status status,
+                                           FileAssetAsyncContext *context)
 {
-    auto context = static_cast<FileAssetAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -864,14 +870,14 @@ STATIC_COMPLETE_FUNC(JSCommitModify)
             context->objectInfo->sAbilityHelper_->Update(uri, valuesBucket, predicates);
         if (changedRows < 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, changedRows,
-            "File asset modification failed");
-        napi_get_undefined(env, &jsContext->data);
-    } else {
+                                                         "File asset modification failed");
+            napi_get_undefined(env, &jsContext->data);
+        } else {
             napi_create_int32(env, changedRows, &jsContext->data);
-        jsContext->status = true;
-        napi_get_undefined(env, &jsContext->error);
-        Uri modifyNotify(notifyUri);
-        context->objectInfo->sAbilityHelper_->NotifyChange(modifyNotify);
+            jsContext->status = true;
+            napi_get_undefined(env, &jsContext->error);
+            Uri modifyNotify(notifyUri);
+            context->objectInfo->sAbilityHelper_->NotifyChange(modifyNotify);
         }
     } else {
         HiLog::Debug(LABEL, "JSCommitModify CheckDisplayName fail");
@@ -928,7 +934,8 @@ napi_value FileAssetNapi::JSCommitModify(napi_env env, napi_callback_info info)
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCommitModify");
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSCommitModifyCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSCommitModifyCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -939,9 +946,9 @@ napi_value FileAssetNapi::JSCommitModify(napi_env env, napi_callback_info info)
     return result;
 }
 
-STATIC_COMPLETE_FUNC(JSOpen)
+static void JSOpenCompleteCallback(napi_env env, napi_status status,
+                                   FileAssetAsyncContext *context)
 {
-    auto context = static_cast<FileAssetAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -1035,7 +1042,8 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSOpen");
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSOpenCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSOpenCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1046,9 +1054,9 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
     return result;
 }
 
-STATIC_COMPLETE_FUNC(JSClose)
+static void JSCloseCompleteCallback(napi_env env, napi_status status,
+                                    FileAssetAsyncContext *context)
 {
-    auto context = static_cast<FileAssetAsyncContext*>(data);
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -1142,7 +1150,8 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSCloseCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSCloseCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1152,7 +1161,189 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     }
     return result;
 }
+static string GetStringInfo(shared_ptr<NativeRdb::AbsSharedResultSet> resultSet, int pos)
+{
+    string res;
+    int errorCode = resultSet->GetString(pos, res);
+    if (errorCode != 0) {
+        MEDIA_ERR_LOG("Failed to get string column %{public}d %{public}d", pos, errorCode);
+    }
+    return res;
+}
 
+static unique_ptr<PixelMap> QueryThumbnail(
+    shared_ptr<DataAbilityHelper> &abilityHelper,
+    shared_ptr<MediaThumbnailHelper> &thumbnailHelper,
+    int32_t &fileId, int32_t &width, int32_t &height)
+{
+    Uri queryUri1(Media::MEDIALIBRARY_DATA_URI + "/" + to_string(fileId) + "?" +
+        MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
+        MEDIA_DATA_DB_WIDTH + "=" + to_string(width) + "&" +
+        MEDIA_DATA_DB_HEIGHT + "=" + to_string(height));
+
+    NativeRdb::DataAbilityPredicates predicates;
+    vector<string> columns;
+    Size size = { .width = width, .height = height };
+
+    columns.push_back(MEDIA_DATA_DB_ID);
+    if (thumbnailHelper->isThumbnailFromLcd(size)) {
+        columns.push_back(MEDIA_DATA_DB_LCD);
+    } else {
+        columns.push_back(MEDIA_DATA_DB_THUMBNAIL);
+    }
+
+    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet =
+        abilityHelper->Query(queryUri1, columns, predicates);
+    if (resultSet == nullptr) {
+        HiLog::Error(LABEL, "Query thumbnail error");
+        return nullptr;
+    }
+
+    resultSet->GoToFirstRow();
+
+    string id = GetStringInfo(resultSet, PARAM0);
+    string thumbnailKey = GetStringInfo(resultSet, PARAM1);
+
+    if (to_string(fileId) != id) {
+        HiLog::Error(LABEL, "Query thumbnail id error as %{public}s", id.c_str());
+        return nullptr;
+    }
+
+    if (thumbnailKey.empty()) {
+        HiLog::Error(LABEL, "thumbnailKey is empty");
+        return nullptr;
+    }
+
+    HiLog::Info(LABEL, "Query thumbnail id %{public}s with key %{public}s",
+        id.c_str(), thumbnailKey.c_str());
+
+    return thumbnailHelper->GetThumbnail(thumbnailKey, size);
+}
+
+static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
+                                           FileAssetAsyncContext* context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->objectInfo->sAbilityHelper_ != nullptr &&
+        context->objectInfo->sThumbnailHelper_ != nullptr) {
+        int32_t fileId = context->objectInfo->GetFileId();
+        shared_ptr<PixelMap> pixelmap = QueryThumbnail(context->objectInfo->sAbilityHelper_,
+            context->objectInfo->sThumbnailHelper_, fileId,
+            context->thumbWidth, context->thumbHeight);
+
+        if (pixelmap != nullptr) {
+            jsContext->data = Media::PixelMapNapi::CreatePixelMap(env, pixelmap);
+            napi_get_undefined(env, &jsContext->error);
+            jsContext->status = true;
+        } else {
+            HiLog::Error(LABEL, "negative ret");
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+                "Get thumbnail failed");
+            napi_get_undefined(env, &jsContext->data);
+        }
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Ability helper or thumbnail helper is null");
+        napi_get_undefined(env, &jsContext->data);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void GetSizeInfo(napi_env env, napi_value configObj, std::string type, int32_t &result)
+{
+    napi_value item = nullptr;
+    bool exist = false;
+    napi_status status = napi_has_named_property(env, configObj, type.c_str(), &exist);
+    if (status != napi_ok || !exist) {
+        HiLog::Error(LABEL, "can not find named property");
+        return;
+    }
+
+    if (napi_get_named_property(env, configObj, type.c_str(), &item) != napi_ok) {
+        HiLog::Error(LABEL, "get named property fail");
+        return;
+    }
+
+    if (napi_get_value_int32(env, item, &result) != napi_ok) {
+        HiLog::Error(LABEL, "get property value fail");
+    }
+}
+
+napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value argv[],
+                                    FileAssetAsyncContext &asyncContext)
+{
+    const int32_t refCount = 1;
+    napi_value result = nullptr;
+    auto context = &asyncContext;
+
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+
+    context->thumbWidth = Media::DEFAULT_THUMBNAIL_SIZE.width;
+    context->thumbHeight = Media::DEFAULT_THUMBNAIL_SIZE.height;
+
+    for (size_t i = PARAM0; i < argc; i++) {
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[i], &valueType);
+
+        if (i == PARAM0 && valueType == napi_object) {
+            GetSizeInfo(env, argv[PARAM0], "width", context->thumbWidth);
+            GetSizeInfo(env, argv[PARAM0], "height", context->thumbHeight);
+        } else if (i == PARAM0 && valueType == napi_function) {
+            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
+            break;
+        } else if (i == PARAM1 && valueType == napi_function) {
+            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
+            break;
+        } else {
+            NAPI_ASSERT(env, false, "type mismatch");
+        }
+    }
+
+    // Return true napi_value if params are successfully obtained
+    napi_get_boolean(env, true, &result);
+    return result;
+}
+
+napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value result = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
+    napi_value resource = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    napi_get_undefined(env, &result);
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+        result = GetJSArgsForGetThumbnail(env, argc, argv, *asyncContext);
+        ASSERT_NULLPTR_CHECK(env, result);
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetThumbnail");
+        status = napi_create_async_work(
+            env, nullptr, resource, [](napi_env env, void* data) {},
+            reinterpret_cast<CompleteCallback>(JSGetThumbnailCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        if (status != napi_ok) {
+            napi_get_undefined(env, &result);
+        } else {
+            napi_queue_async_work(env, asyncContext->work);
+            asyncContext.release();
+        }
+    }
+    return result;
+}
 STATIC_COMPLETE_FUNC(JSFavourite)
 {
     auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -1357,13 +1548,6 @@ napi_value GetJSArgsForFavourite(napi_env env,
     napi_get_boolean(env, true, &result);
     return result;
 }
-
-napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
-{
-    napi_value result = nullptr;
-    return result;
-}
-
 napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -1472,7 +1656,8 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
 void FileAssetNapi::UpdateFileAssetInfo()
 {
     fileId_ = sFileAsset_->GetId();
-    fileUri_ = sFileAsset_->GetUri();
+    string uri = sFileAsset_->GetUri();
+    fileUri_ = (!uri.empty()) ? (uri + "/" + std::to_string(fileId_)) : uri;
     filePath_ = sFileAsset_->GetPath();
     displayName_ = sFileAsset_->GetDisplayName();
     mimeType_ = sFileAsset_->GetMimeType();

@@ -518,7 +518,8 @@ static void GetFileAssetsNative(napi_env env, const AlbumNapiAsyncContext &album
     context->fetchResult = std::make_unique<FetchResult>(resultSet);
 }
 
-STATIC_COMPLETE_FUNC(JSGetFileAssets)
+static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status,
+                                            AlbumNapiAsyncContext *context)
 {
     auto context = static_cast<AlbumNapiAsyncContext*>(data);
     napi_value fetchRes = nullptr;
@@ -581,7 +582,8 @@ napi_value AlbumNapi::JSGetAlbumFileAssets(napi_env env, napi_callback_info info
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            JSGetFileAssetsCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<CompleteCallback>(JSGetFileAssetsCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
