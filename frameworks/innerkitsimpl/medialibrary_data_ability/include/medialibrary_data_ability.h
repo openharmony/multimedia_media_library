@@ -26,7 +26,6 @@
 #include "medialibrary_smartalbum_operations.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_file_operations.h"
-#include "medialibrary_data_ability_utils.h"
 #include "media_log.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
@@ -47,8 +46,7 @@ namespace Media {
         TYPE_SMARTALBUM_MAP,
         TYPE_ALBUM_TABLE
     };
-    class MediaLibraryDataAbility : public AppExecFwk::Ability
-    {
+    class MediaLibraryDataAbility : public AppExecFwk::Ability {
     public:
         MediaLibraryDataAbility();
         ~MediaLibraryDataAbility();
@@ -59,8 +57,9 @@ namespace Media {
         int32_t BatchInsert(const Uri &uri, const std::vector<NativeRdb::ValuesBucket> &values) override;
         int32_t Update(const Uri &uri, const NativeRdb::ValuesBucket &value,
                        const NativeRdb::DataAbilityPredicates &predicates) override;
-        std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(const Uri &uri, const std::vector<std::string> &columns,
-                                                             const NativeRdb::DataAbilityPredicates &predicates) override;
+        std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(const Uri &uri,
+            const std::vector<std::string> &columns,
+            const NativeRdb::DataAbilityPredicates &predicates) override;
         int32_t OpenFile(const Uri &uri, const std::string &mode) override;
 
     protected:

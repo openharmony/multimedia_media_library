@@ -34,14 +34,12 @@ using namespace std;
  */
 class NativeAlbumAsset {
 public:
-    NativeAlbumAsset(){
-        
-    };
+    NativeAlbumAsset() {};
     virtual ~NativeAlbumAsset() = default;
 
     void SetAlbumId(const int32_t albumId)
     {
-      albumId_ = albumId;
+        albumId_ = albumId;
     };
     void SetAlbumName(const string albumName)
     {
@@ -51,14 +49,12 @@ public:
     void SetAlbumDateModified(const int64_t albumDateModified);
     void SetCount(const int32_t count);
     void SetAlbumRelativePath(const string albumRelativePath);
-    void SetCoverUri(const string coverUri); 
-
-    void SetAlbumPath(const string albumPath){
+    void SetCoverUri(const string coverUri);
+    void SetAlbumPath(const string albumPath)
+    {
         albumPath_ = albumPath;
     };
     void SetAlbumVirtual(const bool albumVirtual);
-    
-
     int32_t GetAlbumId() const
     {
         return albumId_;
@@ -72,14 +68,11 @@ public:
     int32_t GetCount() const;
     string GetAlbumRelativePath() const;
     string GetCoverUri() const;
-
     string GetAlbumPath() const
     {
         return albumPath_;
     };
     bool GetAlbumVirtual() const;
-    
-
     bool CreateAlbumAsset();
     bool DeleteAlbumAsset(const std::string &albumUri);
     bool ModifyAlbumAsset(const std::string &albumUri);
@@ -92,10 +85,8 @@ private:
     int32_t count_;
     string albumRelativePath_;
     string coverUri_;
-    
     string albumPath_;
     bool albumVirtual_;
-    
 };
 } // namespace Media
 } // namespace OHOS

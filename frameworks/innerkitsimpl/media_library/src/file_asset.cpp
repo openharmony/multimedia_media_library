@@ -14,7 +14,7 @@
  */
 
 #include "file_asset.h"
-#include <errno.h>
+#include <cerrno>
 
 using namespace std;
 

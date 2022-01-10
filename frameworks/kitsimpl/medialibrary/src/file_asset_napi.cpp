@@ -94,7 +94,7 @@ napi_value FileAssetNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_GETTER("artist", JSGetArtist),
         DECLARE_NAPI_GETTER("audioAlbum", JSGetAlbum),
         DECLARE_NAPI_GETTER("width", JSGetWidth),
-        DECLARE_NAPI_GETTER("height", JSGetHeight),   
+        DECLARE_NAPI_GETTER("height", JSGetHeight),
         DECLARE_NAPI_GETTER("orientation", JSGetOrientation),
         DECLARE_NAPI_GETTER("duration", JSGetDuration),
         DECLARE_NAPI_GETTER("albumId", JSGetAlbumId),
@@ -827,7 +827,7 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
     return jsResult;
 }
 
-static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, void* data)
+STATIC_COMPLETE_FUNC(JSCommitModify)
 {
     auto context = static_cast<FileAssetAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -863,8 +863,9 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, voi
     }
     delete context;
 }
-napi_value GetJSArgsForCommitModify(napi_env env, size_t argc, const napi_value argv[],
-                                   FileAssetAsyncContext &asyncContext)
+napi_value GetJSArgsForCommitModify(napi_env env, size_t argc,
+                                    const napi_value argv[],
+                                    FileAssetAsyncContext &asyncContext)
 {
     const int32_t refCount = 1;
     napi_value result = nullptr;
@@ -915,7 +916,7 @@ napi_value FileAssetNapi::JSCommitModify(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void JSOpenCompleteCallback(napi_env env, napi_status status, void* data)
+STATIC_COMPLETE_FUNC(JSOpen)
 {
     auto context = static_cast<FileAssetAsyncContext*>(data);
 
@@ -957,8 +958,10 @@ static void JSOpenCompleteCallback(napi_env env, napi_status status, void* data)
     delete context;
 }
 
-napi_value GetJSArgsForOpen(napi_env env, size_t argc, const napi_value argv[],
-                                   FileAssetAsyncContext &asyncContext)
+napi_value GetJSArgsForOpen(napi_env env,
+                            size_t argc,
+                            const napi_value argv[],
+                            FileAssetAsyncContext &asyncContext)
 {
     const int32_t refCount = 1;
     napi_value result = nullptr;
@@ -972,7 +975,7 @@ napi_value GetJSArgsForOpen(napi_env env, size_t argc, const napi_value argv[],
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
 
-         if (i == PARAM0 && valueType == napi_string) {
+        if (i == PARAM0 && valueType == napi_string) {
             napi_get_value_string_utf8(env, argv[i], buffer, SIZE, &res);
         } else if (i == PARAM1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
@@ -981,9 +984,7 @@ napi_value GetJSArgsForOpen(napi_env env, size_t argc, const napi_value argv[],
             NAPI_ASSERT(env, false, "type mismatch");
         }
     }
-
     context->valuesBucket.PutString(MEDIA_FILEMODE, string(buffer));
-
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
     return result;
@@ -1020,7 +1021,7 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void JSCloseCompleteCallback(napi_env env, napi_status status, void* data)
+STATIC_COMPLETE_FUNC(JSClose)
 {
     auto context = static_cast<FileAssetAsyncContext*>(data);
 
@@ -1064,8 +1065,10 @@ static void JSCloseCompleteCallback(napi_env env, napi_status status, void* data
     delete context;
 }
 
-napi_value GetJSArgsForClose(napi_env env, size_t argc, const napi_value argv[],
-                                   FileAssetAsyncContext &asyncContext)
+napi_value GetJSArgsForClose(napi_env env,
+                             size_t argc,
+                             const napi_value argv[],
+                             FileAssetAsyncContext &asyncContext)
 {
     const int32_t refCount = 1;
     napi_value result = nullptr;
@@ -1087,10 +1090,7 @@ napi_value GetJSArgsForClose(napi_env env, size_t argc, const napi_value argv[],
             NAPI_ASSERT(env, false, "type mismatch");
         }
     }
-
-    //context->valuesBucket.PutString(MEDIA_DATA_DB_URI, string(buffer));
     context->valuesBucket.PutInt(MEDIA_FILEDESCRIPTOR, fd);
-
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
     return result;

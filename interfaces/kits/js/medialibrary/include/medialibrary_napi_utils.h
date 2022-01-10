@@ -94,6 +94,8 @@ using OHOS::HiviewDFX::HiLogLabel;
         }                                   \
     } while (0)
 
+#define STATIC_COMPLETE_FUNC(name) static void name ## CompleteCallback(napi_env env, napi_status status, void *data)
+
 namespace OHOS {
 namespace Media {
 /* Constants for array index */

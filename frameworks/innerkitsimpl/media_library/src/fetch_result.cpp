@@ -219,8 +219,6 @@ unique_ptr<FileAsset> FetchResult::GetObject()
 
     fileAsset->SetParent(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_PARENT_ID, TYPE_INT32)));
 
-    // fileAsset->SetUri(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_URI, TYPE_STRING)));
-
     fileAsset->SetSize(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_SIZE, TYPE_INT64)));
 
     fileAsset->SetDateAdded(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64)));
@@ -252,8 +250,6 @@ unique_ptr<FileAsset> FetchResult::GetObject()
     fileAsset->SetAlbumName(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_BUCKET_NAME, TYPE_STRING)));
 
     fileAsset->SetUri(GetMediaTypeUri(fileAsset->GetMediaType()));
-
-    //fileAsset->SetAlbumUri(MediaLibraryDataAbilityUtils::GetMediaTypeUri(fileAsset->getMediaType()));
 
     return fileAsset;
 }

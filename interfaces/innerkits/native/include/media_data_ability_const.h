@@ -36,8 +36,8 @@ const std::string DEVICE_TABLE = "Device";
 const std::string MEDIA_DATA_ABILITY_DB_NAME = MEDIA_DATA_DB_Path + "media_library.db";
 
 const std::string MEDIALIBRARY_DATA_URI = "dataability:///com.ohos.medialibrary.MediaLibraryDataAbility";
-const std::string MEDIALIBRARY_SMARTALBUM_URI = "dataability:///com.ohos.medialibrary.MediaLibraryDataAbility.SmartAlbum";
-const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = "dataability:///com.ohos.medialibrary.MediaLibraryDataAbility.SmartAlbumMap";
+const std::string MEDIALIBRARY_SMARTALBUM_URI = MEDIALIBRARY_DATA_URI + "." + SMARTALBUM_TABLE;
+const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "." + SMARTALBUM_MAP_TABLE;
 
 const std::string MEDIALIBRARY_AUDIO_URI = MEDIALIBRARY_DATA_URI + '/' + "audio";
 const std::string MEDIALIBRARY_VIDEO_URI = MEDIALIBRARY_DATA_URI + '/' + "video";
@@ -192,9 +192,8 @@ const std::string CREATE_AUDIO_VIEW = "CREATE VIEW Audio AS SELECT "
 const std::string FILE_TABLE = "file";
 const std::string ABLUM_TABLE = "album";
 const std::string ABLUM_VIEW_NAME = "Album";
-const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME + " AS SELECT count(*) AS "+ MEDIA_DATA_DB_COUNT + ", "
-                                      + FILE_TABLE + "." + MEDIA_DATA_DB_ID + ", "
-                                      + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_NAME + ", "
+const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
+                                      + " AS SELECT count(*) AS "+ MEDIA_DATA_DB_COUNT + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_RELATIVE_PATH + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_FILE_PATH + ", "
@@ -211,9 +210,9 @@ const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME + " AS SE
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID
                                       + " FROM Files "+ FILE_TABLE + ", "
                                       + " Files " + ABLUM_TABLE
-                                      + " WHERE " 
+                                      + " WHERE "
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID + " = "
-                                      + ABLUM_TABLE + "."+ MEDIA_DATA_DB_ID 
+                                      + ABLUM_TABLE + "."+ MEDIA_DATA_DB_ID
                                       + " GROUP BY "
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID +", "
                                       + FILE_TABLE + "." +MEDIA_DATA_DB_BUCKET_NAME;
@@ -239,7 +238,7 @@ const std::string CREATE_SMARTALBUM_TABLE = "CREATE TABLE IF NOT EXISTS " + SMAR
 const std::string SMARTALBUMMAP_DB_ID = "map_id";
 const std::string SMARTALBUMMAP_DB_ALBUM_ID = "id";
 const std::string SMARTALBUMMAP_DB_SUB_ALBUM_ID = "album_id";
-const std::string SMARTALBUMMAP_DB_ASSET_ID = "asset_id";  
+const std::string SMARTALBUMMAP_DB_ASSET_ID = "asset_id";
 const std::string SMARTALBUMMAP_DB_SELF_ID = "self_id";
 const std::string CREATE_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXISTS " + SMARTALBUM_MAP_TABLE + " ("
                                             + SMARTALBUMMAP_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -248,13 +247,13 @@ const std::string CREATE_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXISTS " + S
                                             + SMARTALBUMMAP_DB_SELF_ID + " TEXT) ";
 
 const std::string DEVICE_DB_ID = "device_id";
-const std::string DEVICE_DB_NAME = "device_name";  
+const std::string DEVICE_DB_NAME = "device_name";
 const std::string DEVICE_DB_IP = "device_ip";
 const std::string DEVICE_DB_SYNC_STATUS = "sync_status";
 const std::string DEVICE_DB_SELF_ID = "self_id";
 const std::string DEVICE_DB_TYPE = "device_type";
 const std::string DEVICE_DB_PREPATH = "pre_path";
-const std::string DEVICE_DB_DATE_ADDED = "date_added"; 
+const std::string DEVICE_DB_DATE_ADDED = "date_added";
 const std::string DEVICE_DB_DATE_MODIFIED = "date_modified";
 const std::string CREATE_DEVICE_TABLE = "CREATE TABLE IF NOT EXISTS " + DEVICE_TABLE + " ("
                                             + SMARTALBUMMAP_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "

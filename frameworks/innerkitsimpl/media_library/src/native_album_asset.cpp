@@ -23,7 +23,6 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-
 void NativeAlbumAsset::SetAlbumId(const int32_t albumId)
 {
     albumId_ = albumId;
@@ -92,8 +91,6 @@ string NativeAlbumAsset::GetCoverUri() const
 {
     return coverUri_;
 }
-
-
 string NativeAlbumAsset::GetAlbumPath() const
 {
     return albumPath_;
@@ -103,8 +100,6 @@ bool NativeAlbumAsset::GetAlbumVirtual() const
 {
     return albumVirtual_;
 }
-
-
 bool NativeAlbumAsset::CreateAlbumAsset()
 {
     if (!(MediaFileUtils::IsDirectory(albumPath_))) {
@@ -114,12 +109,10 @@ bool NativeAlbumAsset::CreateAlbumAsset()
         return false;
     }
 }
-
 bool NativeAlbumAsset::DeleteAlbumAsset(const string &albumUri)
 {
     return MediaFileUtils::DeleteDir(albumUri);
 }
-
 bool NativeAlbumAsset::ModifyAlbumAsset(const string &albumUri)
 {
     string newAlbumUri;

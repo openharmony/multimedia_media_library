@@ -86,27 +86,29 @@ bool MediaLibraryDataAbilityUtils::IsNumber(const string &str)
 
     return true;
 }
-NativeAlbumAsset MediaLibraryDataAbilityUtils::CreateAlbum(const string relativePath, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+NativeAlbumAsset MediaLibraryDataAbilityUtils::CreateAlbum(const string relativePath,
+                                                           const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
     NativeAlbumAsset albumAsset;
     if (!relativePath.empty()) {
-    string path = relativePath;
-    OHOS::HiviewDFX::HiLog::Error(LABEL, "path = %{public}s",path.c_str());
-    vector<string> columns;
-    AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
-    absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_Path+relativePath);
-    unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+        string path = relativePath;
+        vector<string> columns;
+        AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+        absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_Path + relativePath);
+        unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
         OHOS::HiviewDFX::HiLog::Error(LABEL, "no");
         ValuesBucket values;
-        values.PutString(MEDIA_DATA_DB_FILE_PATH,MEDIA_DATA_DB_Path + path);
+        values.PutString(MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_Path + path);
         MediaLibraryAlbumOperations albumOprn;
         int32_t errorcode = albumOprn.HandleAlbumOperations(MEDIA_ALBUMOPRN_CREATEALBUM, values, rdbStore);
         albumAsset.SetAlbumId(errorcode);
         albumAsset.SetAlbumName(albumOprn.GetNativeAlbumAsset()->GetAlbumName());
-    } 
+    }
     return albumAsset;
 }
-NativeAlbumAsset MediaLibraryDataAbilityUtils::GetAlbumAsset(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore) {
+NativeAlbumAsset MediaLibraryDataAbilityUtils::GetAlbumAsset(const std::string &id,
+                                                             const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
     NativeAlbumAsset albumAsset;
     vector<string> columns;
     AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
@@ -119,10 +121,8 @@ NativeAlbumAsset MediaLibraryDataAbilityUtils::GetAlbumAsset(const std::string &
         string nameVal;
         queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
         queryResultSet->GetInt(columnIndexId, idVal);
-        OHOS::HiviewDFX::HiLog::Error(LABEL, "id = %{public}d",idVal);
         queryResultSet->GetColumnIndex(MEDIA_DATA_DB_TITLE, columnIndexName);
         queryResultSet->GetString(columnIndexName, nameVal);
-        OHOS::HiviewDFX::HiLog::Error(LABEL, "name = %{public}s",nameVal.c_str());
         albumAsset.SetAlbumId(idVal);
         albumAsset.SetAlbumName(nameVal);
     }
@@ -144,57 +144,54 @@ std::string MediaLibraryDataAbilityUtils::GetFileTitle(const std::string& displa
     return title;
 }
 NativeAlbumAsset MediaLibraryDataAbilityUtils::GetLastAlbumExistInDb(const std::string &relativePath,
-                      const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
     NativeAlbumAsset nativeAlbumAsset;
     int32_t idVal = 0;
     int32_t columnIndexId;
     int32_t maxColumnIndexPath;
     string maxVal = MEDIA_DATA_DB_Path;
-    int32_t max = maxVal.length();
+    string::size_type max = maxVal.length();
     string maxPath = MEDIA_DATA_DB_Path;
     int32_t maxId = 0;
     string::size_type idx;
-    string sql = "SELECT "+MEDIA_DATA_DB_RELATIVE_PATH+","+MEDIA_DATA_DB_FILE_PATH+","+MEDIA_DATA_DB_ID+" FROM "+MEDIALIBRARY_TABLE;
+    string sql = "SELECT " + MEDIA_DATA_DB_RELATIVE_PATH + ","
+    + MEDIA_DATA_DB_FILE_PATH + "," + MEDIA_DATA_DB_ID + " FROM " + MEDIALIBRARY_TABLE;
     unique_ptr<ResultSet> queryResultSet = rdbStore->QuerySql(sql);
-    while (queryResultSet->GoToNextRow() == NativeRdb::E_OK)
-    {
+    while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         queryResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, maxColumnIndexPath);
         queryResultSet->GetString(maxColumnIndexPath, maxPath);
         queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
         queryResultSet->GetInt(columnIndexId, idVal);
         idx = relativePath.find(maxPath);
-        if ( idx != string::npos && max < maxPath.length()) {
-        max = maxPath.length();
-        maxVal = maxPath;
-        maxId = idVal;
-        OHOS::HiviewDFX::HiLog::Error(LABEL, "while id = %{public}d",maxId);
-        OHOS::HiviewDFX::HiLog::Error(LABEL, "while rp = %{public}s",maxVal.c_str());
+        if (idx != string::npos && max < maxPath.length()) {
+            max = maxPath.length();
+            maxVal = maxPath;
+            maxId = idVal;
         }
     }
-    OHOS::HiviewDFX::HiLog::Error(LABEL, "id = %{public}d",maxId);
-    OHOS::HiviewDFX::HiLog::Error(LABEL, "rp = %{public}s",maxVal.c_str());
     nativeAlbumAsset.SetAlbumId(maxId);
     nativeAlbumAsset.SetAlbumPath(maxVal);
     return nativeAlbumAsset;
 }
 bool MediaLibraryDataAbilityUtils::isAlbumExistInDb(const std::string &relativePath,
-                      const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t &outRow)
+    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    int32_t &outRow)
 {
     vector<string> columns;
     AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
     absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, relativePath);
     unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     if (queryResultSet != nullptr) {
-    if(queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
-    int32_t columnIndexId;
-    int32_t idVal;
-    queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
-    queryResultSet->GetInt(columnIndexId, idVal);
+        if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+            int32_t columnIndexId;
+            int32_t idVal;
+            queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
+            queryResultSet->GetInt(columnIndexId, idVal);
             OHOS::HiviewDFX::HiLog::Error(LABEL, "id = %{public}d", idVal);
             outRow = idVal;
             return true;
-    }
+        }
 }
     return false;
 }

@@ -338,18 +338,15 @@ napi_value AlbumAssetNapi::GetAlbumCount(napi_env env, napi_callback_info info)
 
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
-    if (status != napi_ok || thisVar == nullptr)
-    {
+    if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    if (status == napi_ok && obj != nullptr)
-    {
+    if (status == napi_ok && obj != nullptr) {
         count = obj->count_;
         status = napi_create_int32(env, count, &jsResult);
-        if (status == napi_ok)
-        {
+        if (status == napi_ok) {
             return jsResult;
         }
     }

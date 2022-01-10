@@ -21,7 +21,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
 void UpdateDateModifiedForAlbum(const shared_ptr<RdbStore> &rdbStore, const string &albumPath)
 {
     if (!albumPath.empty()) {
@@ -39,7 +38,8 @@ void UpdateDateModifiedForAlbum(const shared_ptr<RdbStore> &rdbStore, const stri
     }
 }
 
-int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values,
+                                                      const shared_ptr<RdbStore> &rdbStore)
 {
     string relativePath("");
     string path("");
@@ -58,10 +58,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
     // Obtain relative path
     if (values.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
         valueObject.GetString(relativePath);
-        MEDIA_ERR_LOG("relativePath = %{public}s", relativePath.c_str());
-        MEDIA_ERR_LOG("displayName = %{public}s", displayName.c_str());
         path = MEDIA_DATA_DB_Path + relativePath + displayName;
-        MEDIA_ERR_LOG("path = %{public}s", path.c_str());
     }
 
     // Obtain mediatype
@@ -71,8 +68,6 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
     }
 
     nativeAlbumAsset = MediaLibraryDataAbilityUtils::CreateAlbum(relativePath, rdbStore);
-    MEDIA_ERR_LOG("fileNativeAlbumAsset id = %{public}d", nativeAlbumAsset.GetAlbumId());
-    MEDIA_ERR_LOG("fileNativeAlbumAsset name= %{public}s", (nativeAlbumAsset.GetAlbumName()).c_str());
     if (nativeAlbumAsset.GetAlbumId() < 0) {
         MEDIA_ERR_LOG("fileAsset CreateAlbum faild error");
         return errCode;
@@ -95,10 +90,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
             }
         }
     }
-
     errCode = fileAsset.CreateAsset(path);
-
-
     if ((errCode == DATA_ABILITY_SUCCESS) && (!displayName.empty()) && (displayName.at(0) != '.')) {
         // Fill basic file information into DB
         ValuesBucket updatedAssetInfo = UpdateBasicAssetDetails(mediaType, displayName, relativePath, path);
@@ -107,7 +99,6 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
         // will return row id
         return fileDbOprn.Insert(updatedAssetInfo, rdbStore);
     }
-
     return errCode;
 }
 
@@ -243,12 +234,12 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
     return errCode;
 }
 
-ValuesBucket MediaLibraryFileOperations::UpdateBasicAssetDetails(int32_t mediaType, 
-    const string &fileName, const string &relPath, const string &path)
+ValuesBucket MediaLibraryFileOperations::UpdateBasicAssetDetails(int32_t mediaType,
+                                                                 const string &fileName,
+                                                                 const string &relPath,
+                                                                 const string &path)
 {
-
     ValuesBucket assetInfoBucket;
-
     assetInfoBucket.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, relPath);
     assetInfoBucket.PutString(Media::MEDIA_DATA_DB_NAME, fileName);
     assetInfoBucket.PutString(Media::MEDIA_DATA_DB_TITLE, MediaLibraryDataAbilityUtils::GetFileTitle(fileName));

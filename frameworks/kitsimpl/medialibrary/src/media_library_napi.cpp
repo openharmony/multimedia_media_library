@@ -1240,7 +1240,7 @@ variant<int, string> GetValFromColumn(string columnName,
             cellValue = integerVal;
             break;
         default:
-        HiLog::Error(LABEL, "No type");
+            HiLog::Error(LABEL, "No type");
             break;
     }
 
@@ -1258,11 +1258,6 @@ static napi_value GetResultData(napi_env env, const MediaLibraryAsyncContext &as
         HiLog::Error(LABEL, "Ability Helper is null");
         return result;
     }
-
-    if (!context->selection.empty()) {
-        context->selection += " AND ";
-    }
-
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     if (!context->order.empty()) {
@@ -1281,22 +1276,15 @@ static napi_value GetResultData(napi_env env, const MediaLibraryAsyncContext &as
             unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
             if (albumData != nullptr) {
                 // Get album id index and value
-                albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet)));
+                albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_ID, resultSet)));
                 HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_ID");
-                // Get album name index and value
-                albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_NAME, resultSet)));
+                // Get album title index and value
+                albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet)));
                 HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_NAME");
-                // Get album path index and value
+                // Get album asset count index and value
                 albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet)));
                 HiLog::Error(LABEL, "MEDIA_DATA_DB_ID");
-                // Get album relative path index and value
-                HiLog::Error(LABEL, "id = %{public}d",get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet)));
-                // Get album virtual index and value
-                HiLog::Error(LABEL, "name = %{public}s",get<string>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_NAME, resultSet)).c_str());
-                HiLog::Error(LABEL, "count = %{public}d",get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet)));
-                // Get album date modified index and value
             }
-
             // Add to album array
             albumNativeArray.push_back(move(albumData));
         }
@@ -1358,7 +1346,6 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
     HiLog::Error(LABEL, "JSGetAlbums");
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
-
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1383,7 +1370,7 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void* data)
+STATIC_COMPLETE_FUNC(JSCreateAsset)
 {
     HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback IN");
     auto context = static_cast<MediaLibraryAsyncContext*>(data);
@@ -1394,15 +1381,12 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
     jsContext->status = false;
 
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback sAbilityHelper_ != nullptr");
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri createAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
 
         int index = context->objectInfo->sAbilityHelper_->Insert(createAssetUri,
             context->valuesBucket);
-        HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback Insert");
         if (index < 0) {
-            HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback File asset creation failed");
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, index,
                 "File asset creation failed");
             napi_get_undefined(env, &jsContext->data);
@@ -1430,7 +1414,6 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
             napi_get_undefined(env, &jsContext->error);
         }
     } else {
-        HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback sAbilityHelper_ == nullptr");
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Ability helper is null");
         napi_get_undefined(env, &jsContext->data);
@@ -1498,7 +1481,7 @@ static bool CheckRelativePathPrams(const string& relativePath)
     if (!firstDirName.empty() && IsDirectory(firstDirName)) {
         HiLog::Debug(LABEL, "CheckRelativePathPrams firstDirName exist return true");
         return true;
-    } 
+    }
     
     if (!firstDirName.empty()) {
         for (unsigned int i = 0; i < directoryEnumValues.size(); i++) {
@@ -1598,7 +1581,7 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
     return result;
 }
 
-static void JSModifyAssetCompleteCallback(napi_env env, napi_status status, void* data)
+STATIC_COMPLETE_FUNC(JSModifyAsset)
 {
     auto context = static_cast<MediaLibraryAsyncContext*>(data);
 
@@ -2614,7 +2597,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
     return undefinedResult;
 }
 
-static void JSReleaseCompleteCallback(napi_env env, napi_status status, void* data)
+STATIC_COMPLETE_FUNC(JSRelease)
 {
     HiLog::Error(LABEL, "JSReleaseCompleteCallback in");
     auto context = static_cast<MediaLibraryAsyncContext*>(data);

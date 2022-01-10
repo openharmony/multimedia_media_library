@@ -43,8 +43,10 @@ public:
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleDeleteAsset(const std::string &rowNum, const std::string &srcPath,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    NativeRdb::ValuesBucket UpdateBasicAssetDetails(int32_t mediaType, const std::string &fileName, 
-                                                    const std::string &relPath, const std::string &path);
+    NativeRdb::ValuesBucket UpdateBasicAssetDetails(int32_t mediaType,
+                                                    const std::string &fileName,
+                                                    const std::string &relPath,
+                                                    const std::string &path);
 };
 } // namespace Media
 } // namespace OHOS

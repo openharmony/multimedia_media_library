@@ -24,9 +24,7 @@
 
 #include "album_asset.h"
 #include "native_album_asset.h"
-#include "media_data_ability_const.h"
 #include "medialibrary_album_db.h"
-#include "medialibrary_data_ability_utils.h"
 #include "rdb_store.h"
 #include "values_bucket.h"
 

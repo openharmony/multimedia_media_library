@@ -40,14 +40,16 @@ public:
     static std::string GetOperationType(const std::string &uri);
     static std::string GetIdFromUri(const std::string &uri);
     static std::string GetMediaTypeUri(MediaType mediaType);
-    static bool isFileExistInDb(const std::string &relativePath, 
+    static bool isFileExistInDb(const std::string &relativePath,
                                      const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::string GetPathFromDb(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    static NativeAlbumAsset CreateAlbum(const std::string relativePath, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static NativeAlbumAsset CreateAlbum(const std::string relativePath,
+                                        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static NativeAlbumAsset GetAlbumAsset(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::string GetFileTitle(const std::string& displayName);
-    static bool isAlbumExistInDb(const std::string &relativePath, 
-                                     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t &id);
+    static bool isAlbumExistInDb(const std::string &relativePath,
+                                 const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                                 int32_t &outRow);
     static NativeAlbumAsset GetLastAlbumExistInDb(const std::string &relativePath,
                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 };

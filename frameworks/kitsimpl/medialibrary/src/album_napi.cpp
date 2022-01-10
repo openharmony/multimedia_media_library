@@ -148,7 +148,7 @@ napi_value AlbumNapi::CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
     napi_status status;
     napi_value result = nullptr;
     napi_value constructor;
-     HiLog::Error(LABEL, "CreateAlbumNapi");
+    HiLog::Error(LABEL, "CreateAlbumNapi");
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (status == napi_ok) {
         sAlbumData_ = &albumData;
@@ -233,7 +233,6 @@ napi_value AlbumNapi::JSGetAlbumName(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         name = obj->albumName_;
-        HiLog::Error(LABEL, "get albumName_ = %{public}s",obj->albumName_.c_str());
         status = napi_create_string_utf8(env, name.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -270,7 +269,6 @@ napi_value AlbumNapi::JSAlbumNameSetter(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         obj->albumName_ = std::string(buffer);
-        HiLog::Error(LABEL, "set albumName_ = %{public}s",obj->albumName_.c_str());
     } else {
         HiLog::Error(LABEL, "status != napi_ok");
     }
@@ -341,22 +339,18 @@ napi_value AlbumNapi::JSGetCount(napi_env env, napi_callback_info info)
 
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
-    if (status != napi_ok || thisVar == nullptr)
-    {
+    if (status != napi_ok || thisVar == nullptr) {
         HiLog::Error(LABEL, "Invalid arguments!");
         return undefinedResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    if (status == napi_ok && obj != nullptr)
-    {
+    if (status == napi_ok && obj != nullptr) {
         count = obj->count_;
         status = napi_create_int32(env, count, &jsResult);
-        if (status == napi_ok)
-        {
+        if (status == napi_ok) {
             return jsResult;
         }
     }
-
     return undefinedResult;
 }
 napi_value AlbumNapi::JSGetAlbumRelativePath(napi_env env, napi_callback_info info)
@@ -634,24 +628,22 @@ static void GetFileAssetsNative(napi_env env, const AlbumNapiAsyncContext &album
 {
     AlbumNapiAsyncContext *context = const_cast<AlbumNapiAsyncContext *>(&albumContext);
     NativeRdb::DataAbilityPredicates predicates;
-
-    context->selection += " AND ";
-    predicates.SetWhereClause(context->selection);
-    predicates.SetWhereArgs(context->selectionArgs);
-    predicates.SetOrder(context->order);
-    predicates.EqualTo(MEDIA_DATA_DB_PARENT_ID, std::to_string(context->objectInfo->GetAlbumId()));
-    predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(MEDIA_TYPE_ALBUM));
-
+    if (!context->selection.empty()) {
+        context->selection += " AND ";
+        predicates.SetWhereClause(context->selection);
+        predicates.SetWhereArgs(context->selectionArgs);
+    }
+    predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(context->objectInfo->GetAlbumId()));
+    predicates.OrderByAsc(context->order);
     std::vector<std::string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
-
     std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
         context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
 
     context->fetchResult = std::make_unique<FetchResult>(resultSet);
 }
 
-static void GetFileAssetsCompleteCallback(napi_env env, napi_status status, void* data)
+STATIC_COMPLETE_FUNC(JSGetFileAssets)
 {
     auto context = static_cast<AlbumNapiAsyncContext*>(data);
     napi_value fetchRes = nullptr;
@@ -694,19 +686,14 @@ static void CommitModifyNative(napi_env env, const AlbumNapiAsyncContext &albumC
     NativeRdb::DataAbilityPredicates predicates;
     NativeRdb::ValuesBucket valuesBucket;
     context->selection += " AND ";
-    HiLog::Error(LABEL, "albumName_ = %{public}s",context->objectInfo->GetAlbumName().c_str());
-    HiLog::Error(LABEL, "id_ = %{public}d",context->objectInfo->GetAlbumId());
     valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
     predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetAlbumId()));
-    
     Uri uri(MEDIALIBRARY_DATA_URI);
-
     int32_t changedRows =
         context->objectInfo->GetDataAbilityHelper()->Update(uri, valuesBucket, predicates);
-    HiLog::Error(LABEL, "changedRows = %{public}d",changedRows);
     context->changedRows = changedRows;
 }
-static void CommitModifyCompleteCallback(napi_env env, napi_status status, void* data)
+STATIC_COMPLETE_FUNC(JSCommitModify)
 {
     auto context = static_cast<AlbumNapiAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -754,7 +741,7 @@ napi_value AlbumNapi::JSGetAlbumFileAssets(napi_env env, napi_callback_info info
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            GetFileAssetsCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            JSGetFileAssetsCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -790,7 +777,7 @@ napi_value AlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
-            CommitModifyCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            JSCommitModifyCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
