@@ -139,6 +139,7 @@ private:
     static napi_value CreateAlbum(napi_env env, napi_callback_info info);
 
     // New APIs For L2
+    static napi_value JSGetPublicDirectory(napi_env env, napi_callback_info info);
     static napi_value JSGetFileAssets(napi_env env, napi_callback_info info);
     static napi_value JSGetAlbums(napi_env env, napi_callback_info info);
 
@@ -198,6 +199,7 @@ struct MediaLibraryAsyncContext {
     std::vector<std::unique_ptr<AlbumAsset>> albumAssets;
     std::unique_ptr<FetchResult> fetchFileResult;
     OHOS::NativeRdb::ValuesBucket valuesBucket;
+    int32_t dirType = 0;
 };
 } // namespace Media
 } // namespace OHOS

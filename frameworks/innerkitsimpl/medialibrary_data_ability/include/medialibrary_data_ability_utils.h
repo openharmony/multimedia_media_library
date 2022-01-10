@@ -24,6 +24,8 @@
 #include "media_log.h"
 #include "rdb_store.h"
 #include "medialibrary_album_operations.h"
+#include "fetch_result.h"
+#include "file_asset.h"
 
 namespace OHOS {
 namespace Media {
@@ -43,6 +45,11 @@ public:
     static bool isFileExistInDb(const std::string &relativePath,
                                      const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::string GetPathFromDb(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+
+    static bool checkFilePending(const std::shared_ptr<FileAsset> fileAsset);
+    static bool checkOpenMode(const std::string &mode);
+    static int32_t setFilePending(int32_t id, bool isPending, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static NativeAlbumAsset CreateDirectorys(const std::string relativePath,
                                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                                              vector<int32_t> &outIds);
@@ -55,6 +62,7 @@ public:
                                  int32_t &outRow);
     static NativeAlbumAsset GetLastAlbumExistInDb(const std::string &relativePath,
                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static int64_t UTCTimeSeconds();
 };
 } // namespace Media
 } // namespace OHOS

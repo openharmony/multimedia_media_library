@@ -235,11 +235,11 @@ void FileAsset::SetAlbumName(const string &albumName)
     albumName_ = albumName;
 }
 
-const int32_t &FileAsset::GetParent() const
+int32_t FileAsset::GetParent() const
 {
     return parent_;
 }
-void FileAsset::SetParent(const int32_t &parent)
+void FileAsset::SetParent(int32_t parent)
 {
     parent_ = parent;
 }
@@ -258,6 +258,38 @@ int64_t FileAsset::GetDateTaken() const
 void FileAsset::SetDateTaken(int64_t dateTaken)
 {
     dateTaken_ = dateTaken;
+}
+bool FileAsset::IsPending() const
+{
+    return isPending_;
+}
+void FileAsset::SetPending(bool dateTaken)
+{
+    isPending_ = dateTaken;
+}
+int64_t FileAsset::GetTimePending() const
+{
+    return timePending_;
+}
+void FileAsset::SetTimePending(int64_t timePending)
+{
+    timePending_ = timePending;
+}
+bool FileAsset::IsFavorite() const
+{
+    return isFavorite_;
+}
+void FileAsset::SetFavorite(bool isFavorite)
+{
+    isFavorite_ = isFavorite;
+}
+int64_t FileAsset::GetDateTrashed() const
+{
+    return dateTrashed_;
+}
+void FileAsset::SetDateTrashed(int64_t dateTrashed)
+{
+    dateTrashed_ = dateTrashed;
 }
 int32_t FileAsset::CreateAsset(const string &filePath)
 {

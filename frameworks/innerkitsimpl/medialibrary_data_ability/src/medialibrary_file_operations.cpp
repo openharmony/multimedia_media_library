@@ -96,6 +96,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
         // Fill basic file information into DB
         ValuesBucket updatedAssetInfo = UpdateBasicAssetDetails(mediaType, displayName, relativePath, path);
         updatedAssetInfo.PutInt(MEDIA_DATA_DB_BUCKET_ID, nativeAlbumAsset.GetAlbumId());
+        updatedAssetInfo.PutInt(MEDIA_DATA_DB_PARENT_ID, nativeAlbumAsset.GetAlbumId());
         updatedAssetInfo.PutString(MEDIA_DATA_DB_BUCKET_NAME, nativeAlbumAsset.GetAlbumName());
         // will return row id
         return fileDbOprn.Insert(updatedAssetInfo, rdbStore);

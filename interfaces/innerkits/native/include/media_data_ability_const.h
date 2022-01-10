@@ -20,6 +20,9 @@ namespace OHOS {
 namespace Media {
 const int32_t DATA_ABILITY_SUCCESS = 0;
 const int32_t DATA_ABILITY_FAIL = -1;
+const int32_t DATA_ABILITY_HAS_OPENED_FAIL = -10;
+const int32_t DATA_ABILITY_HAS_DB_ERROR = -100;
+
 const int32_t ALBUM_OPERATION_ERR = -1;
 const int32_t FILE_OPERATION_ERR = -1;
 const int32_t MEDIA_RDB_VERSION = 1;

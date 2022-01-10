@@ -293,6 +293,91 @@ string MediaLibraryDataAbilityUtils::GetPathFromDb(const string &id, const share
     return filePath;
 }
 
+shared_ptr<FileAsset> MediaLibraryDataAbilityUtils::GetFileAssetFromDb(const string &id, const shared_ptr<RdbStore> &rdbStore)
+{
+    vector<string> selectionArgs = {};
+
+    if ((id.empty()) || (!IsNumber(id)) || (stoi(id) == -1) || (rdbStore == nullptr)) {
+        MEDIA_ERR_LOG("Id for the path is incorrect or rdbStore is null");
+        return nullptr;
+    }
+
+    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + id;
+
+    AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+    absPredicates.SetWhereClause(strQueryCondition);
+    absPredicates.SetWhereArgs(selectionArgs);
+
+    vector<string> columns;
+
+    shared_ptr<AbsSharedResultSet> resultSet = rdbStore->Query(absPredicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Failed to obtain path from database");
+
+    shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>(resultSet);
+    if (fetchFileResult == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain fetch file result");
+    }
+    return fetchFileResult->GetFirstObject();
+}
+
+bool MediaLibraryDataAbilityUtils::checkFilePending(const shared_ptr<FileAsset> fileAsset)
+{
+    MEDIA_INFO_LOG("checkFilePending in");
+    if (fileAsset->IsPending()) {
+        MEDIA_INFO_LOG("checkFilePending IsPending true");
+        return true;
+    } else if (fileAsset->GetTimePending() > 0 &&
+        (UTCTimeSeconds() - fileAsset->GetTimePending()) > 30 * 60) {
+        MEDIA_INFO_LOG("checkFilePending UTCTimeSeconds is %{public}lld", UTCTimeSeconds());
+        MEDIA_INFO_LOG("checkFilePending TimePending is %{public}lld", fileAsset->GetTimePending());
+        return true;
+    }
+    MEDIA_INFO_LOG("checkFilePending IsPending false");
+    return false;
+}
+
+bool MediaLibraryDataAbilityUtils::checkOpenMode(const string &mode)
+{
+    MEDIA_INFO_LOG("checkOpenMode in");
+    MEDIA_INFO_LOG("checkOpenMode in mode %{public}s", mode.c_str());
+    
+    std::string lowModeStr = mode;
+    std::transform(lowModeStr.begin(), lowModeStr.end(), lowModeStr.begin(), [](unsigned char c) {
+        return std::tolower(c);
+    });
+    
+    MEDIA_INFO_LOG("checkOpenMode in lowModeStr %{public}s", lowModeStr.c_str()); 
+    size_t wIndex = lowModeStr.rfind('w');
+    if (wIndex != string::npos) {
+        MEDIA_INFO_LOG("checkOpenMode out true");
+        return true;
+    }
+    MEDIA_INFO_LOG("checkOpenMode out false");
+    return false;
+}
+
+int32_t MediaLibraryDataAbilityUtils::setFilePending(int32_t id, bool isPending, const shared_ptr<RdbStore> &rdbStore)
+{
+    MEDIA_INFO_LOG("setFilePending in");
+    MEDIA_INFO_LOG("setFilePending id = %{public}d,isPending = %{public}d", id, isPending);
+    vector<string> selectionArgs = {};
+    string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(id);
+
+    ValuesBucket values;
+    values.PutBool(MEDIA_DATA_DB_IS_PENDING, isPending);
+    if (isPending) {
+        values.PutBool(MEDIA_DATA_DB_TIME_PENDING, UTCTimeSeconds());
+    } else {
+        values.PutBool(MEDIA_DATA_DB_TIME_PENDING, 0);
+    }
+
+    int32_t changedRows = DATA_ABILITY_FAIL;
+
+    (void)rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, selectionArgs);
+    MEDIA_INFO_LOG("setFilePending out");
+    return changedRows;
+}
+
 string MediaLibraryDataAbilityUtils::GetIdFromUri(const string &uri)
 {
     string rowNum = "-1";
@@ -323,5 +408,13 @@ string MediaLibraryDataAbilityUtils::GetMediaTypeUri(MediaType mediaType)
             break;
     }
 }
+int64_t MediaLibraryDataAbilityUtils::UTCTimeSeconds()
+    {
+        struct timespec t;
+        t.tv_sec = 0;
+        t.tv_nsec = 0;
+        clock_gettime(CLOCK_REALTIME, &t);
+        return (int64_t)(t.tv_sec);
+    }
 } // namespace Media
 } // namespace OHOS

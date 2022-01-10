@@ -224,8 +224,9 @@ std::string FileAssetNapi::GetTitle() const
 
 std::string FileAssetNapi::GetFileUri() const
 {
-    return "/" + to_string(fileId_);
+    return fileUri_;
 }
+
 int FileAssetNapi::GetFileId() const
 {
     return fileId_;
@@ -943,12 +944,14 @@ STATIC_COMPLETE_FUNC(JSOpen)
         }
 
         Uri openFileUri(fileUri);
+        HiLog::Debug(LABEL, "openFileUri = %{public}s", openFileUri.ToString().c_str());
         int32_t retVal = context->objectInfo->sAbilityHelper_->OpenFile(openFileUri, mode);
         if (retVal <= 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
                 "File open asset failed");
             napi_get_undefined(env, &jsContext->data);
         } else {
+            HiLog::Debug(LABEL, "return fd = %{public}d", retVal);
             napi_create_int32(env, retVal, &jsContext->data);
             napi_get_undefined(env, &jsContext->error);
             jsContext->status = true;
@@ -1447,8 +1450,7 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
 void FileAssetNapi::UpdateFileAssetInfo()
 {
     fileId_ = sFileAsset_->GetId();
-    string uri = sFileAsset_->GetUri();
-    fileUri_ = (!uri.empty()) ? (uri + "/" + std::to_string(fileId_)) : uri;
+    fileUri_ = sFileAsset_->GetUri();
     filePath_ = sFileAsset_->GetPath();
     displayName_ = sFileAsset_->GetDisplayName();
     mimeType_ = sFileAsset_->GetMimeType();
