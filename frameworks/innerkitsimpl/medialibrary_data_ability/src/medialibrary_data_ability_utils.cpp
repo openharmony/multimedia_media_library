@@ -435,12 +435,10 @@ bool MediaLibraryDataAbilityUtils::CheckDisplayName(const std::string &displayNa
         OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName size <= 0 || size > 128");
         return false;
     }
-    char* pStr = new char[size];
+    char* pStr = new char[size + 1];
     strcpy(pStr, displayName.c_str());
-    for (int i = 0; i < size; i++)
-	{
-		if (ispunct(pStr[i]))
-		{
+    for (int i = 0; i < size; i++) {
+		if (displayName.at(0) == '.' || ispunct(pStr[i])) {
             OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName ispunct");
 			isDisplayName = false;
             break;

@@ -686,14 +686,19 @@ static void CommitModifyNative(napi_env env, const AlbumNapiAsyncContext &albumC
     AlbumNapiAsyncContext *context = const_cast<AlbumNapiAsyncContext *>(&albumContext);
     NativeRdb::DataAbilityPredicates predicates;
     NativeRdb::ValuesBucket valuesBucket;
+    int32_t changedRows;
     context->selection += " AND ";
+    if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetAlbumName())) {
     valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
     predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetAlbumId()));
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
                          MediaFileUtils::GetAlbumDateModified(context->objectInfo->GetAlbumPath()));
     Uri uri(MEDIALIBRARY_DATA_URI);
-    int32_t changedRows =
+        changedRows =
         context->objectInfo->GetDataAbilityHelper()->Update(uri, valuesBucket, predicates);
+    } else {
+        changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;
+    }
     context->changedRows = changedRows;
 }
 STATIC_COMPLETE_FUNC(JSCommitModify)

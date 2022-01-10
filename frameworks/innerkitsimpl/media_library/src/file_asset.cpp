@@ -306,7 +306,7 @@ int32_t FileAsset::CreateAsset(const string &filePath)
 
     if (filePath.empty()) {
         MEDIA_ERR_LOG("Filepath is empty");
-        return errCode;
+        return DATA_ABILITY_VIOLATION_PARAMETERS;
     }
 
     if (MediaFileUtils::IsFileExists(filePath)) {

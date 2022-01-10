@@ -855,11 +855,12 @@ STATIC_COMPLETE_FUNC(JSCommitModify)
     notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
     NativeRdb::DataAbilityPredicates predicates;
     NativeRdb::ValuesBucket valuesBucket;
+    int32_t changedRows;
     if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetTitle())) {
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
         Uri uri(MEDIALIBRARY_DATA_URI);
-        int32_t changedRows =
+        changedRows =
             context->objectInfo->sAbilityHelper_->Update(uri, valuesBucket, predicates);
         if (changedRows < 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, changedRows,
@@ -874,6 +875,10 @@ STATIC_COMPLETE_FUNC(JSCommitModify)
         }
     } else {
         HiLog::Debug(LABEL, "JSCommitModify CheckDisplayName fail");
+        changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, changedRows,
+                                                         "CheckDisplayName fail");
+        napi_get_undefined(env, &jsContext->data);
     }
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,

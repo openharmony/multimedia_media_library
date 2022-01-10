@@ -282,11 +282,11 @@ bool MediaFileUtils::CheckDisplayName(const std::string &displayName)
 	if (size <= 0 || size > 128) {
         return false;
     }
-    char* pStr = new char[size];
+    char* pStr = new char[size + 1];
     strcpy(pStr, displayName.c_str());
     for (int i = 0; i < size; i++)
 	{
-		if (displayName.at(0) == '.' || (ispunct(pStr[i]) && pStr[i] != '.'))
+		if (displayName.at(0) == '.' || ispunct(pStr[i]))
 		{   
             MEDIA_ERR_LOG("CheckDisplayName displayName fail");
 			isDisplayName = false;

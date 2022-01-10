@@ -79,6 +79,13 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
                 relativePath = "";
             }
         }
+        MEDIA_ERR_LOG("InsertAlbumInfoUtil title = %{public}s", title.c_str());
+        if (!MediaLibraryDataAbilityUtils::CheckDisplayName(title)) {
+            MEDIA_ERR_LOG("CheckDisplayName(title)");
+            parentId = DATA_ABILITY_VIOLATION_PARAMETERS;
+            MediaLibraryDataAbilityUtils::DeleteDirectorys(outIds, rdbStore);
+            break;
+        }
         values.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
         values.PutString(Media::MEDIA_DATA_DB_TITLE, title);
         values.PutString(Media::MEDIA_DATA_DB_NAME, title);
@@ -204,6 +211,8 @@ int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(const string &oprn,
             OHOS::HiviewDFX::HiLog::Error(LABEL, "row = %{public}d", outRow);
             if (!MediaFileUtils::IsDirectory(albumPath)) {
                 albumAsset.CreateAlbumAsset();
+            } else {
+                outRow = DATA_ABILITY_DUPLICATE_CREATE;
             }
             return outRow;
         }
