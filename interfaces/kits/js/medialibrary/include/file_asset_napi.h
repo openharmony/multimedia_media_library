@@ -42,6 +42,7 @@ public:
     std::string GetTitle() const;
     std::string GetFileUri() const;
     int32_t GetFileId() const;
+    Media::MediaType GetMediaType() const;
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
 private:

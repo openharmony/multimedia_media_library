@@ -63,6 +63,7 @@ public:
     static NativeAlbumAsset GetLastAlbumExistInDb(const std::string &relativePath,
                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static int64_t UTCTimeSeconds();
+    static bool CheckDisplayName(const std::string &displayName);
 };
 } // namespace Media
 } // namespace OHOS

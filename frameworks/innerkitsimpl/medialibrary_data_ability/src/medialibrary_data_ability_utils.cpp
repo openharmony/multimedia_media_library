@@ -421,5 +421,27 @@ int64_t MediaLibraryDataAbilityUtils::UTCTimeSeconds()
     MEDIA_INFO_LOG("UTCTimeSeconds = %{public}lld", (int64_t)(t.tv_sec));
     return (int64_t)(t.tv_sec);
 }
+bool MediaLibraryDataAbilityUtils::CheckDisplayName(const std::string &displayName)
+{   
+    bool isDisplayName = true;
+    int size = displayName.length();
+	if (size <= 0 || size > 128) {
+        OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName size <= 0 || size > 128");
+        return false;
+    }
+    char* pStr = new char[size];
+    strcpy(pStr, displayName.c_str());
+    for (int i = 0; i < size; i++)
+	{
+		if (ispunct(pStr[i]))
+		{
+            OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName ispunct");
+			isDisplayName = false;
+            break;
+		}
+	}
+    OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName");
+	return isDisplayName;
+}
 } // namespace Media
 } // namespace OHOS

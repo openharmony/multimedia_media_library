@@ -19,6 +19,7 @@
 #include "abs_shared_result_set.h"
 #include "rdb_errno.h"
 #include "media_file_utils.h"
+#include "medialibrary_data_ability_utils.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -230,6 +231,10 @@ std::string FileAssetNapi::GetFileUri() const
 int FileAssetNapi::GetFileId() const
 {
     return fileId_;
+}
+Media::MediaType FileAssetNapi::GetMediaType() const
+{
+    return mediaType_;
 }
 
 napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
@@ -846,25 +851,30 @@ STATIC_COMPLETE_FUNC(JSCommitModify)
     Uri updateAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET);
     NativeRdb::ValueObject valueObject;
     string notifyUri;
-    context->valuesBucket.PutString(Media::MEDIA_DATA_DB_NAME, context->objectInfo->GetFileDisplayName());
-    context->valuesBucket.PutString(Media::MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
-    context->valuesBucket.GetObject(Media::MEDIA_DATA_DB_URI, valueObject);
-    valueObject.GetString(notifyUri);
-    size_t index = notifyUri.rfind('/');
-    if (index != string::npos) {
-        notifyUri = notifyUri.substr(0, index);
-    }
-    int retVal = context->objectInfo->sAbilityHelper_->Insert(updateAssetUri, context->valuesBucket);
-    if (retVal < 0) {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
+    Media::MediaType mediaType;
+    mediaType = context->objectInfo->GetMediaType();
+    notifyUri = MediaLibraryDataAbilityUtils::GetMediaTypeUri(mediaType);
+    NativeRdb::DataAbilityPredicates predicates;
+    NativeRdb::ValuesBucket valuesBucket;
+    if (MediaLibraryDataAbilityUtils::CheckDisplayName(context->objectInfo->GetTitle())) {
+        valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
+        predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
+        Uri uri(MEDIALIBRARY_DATA_URI);
+        int32_t changedRows =
+            context->objectInfo->sAbilityHelper_->Update(uri, valuesBucket, predicates);
+        if (changedRows < 0) {
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, changedRows,
             "File asset modification failed");
         napi_get_undefined(env, &jsContext->data);
     } else {
-        napi_create_int32(env, retVal, &jsContext->data);
+            napi_create_int32(env, changedRows, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
         Uri modifyNotify(notifyUri);
         context->objectInfo->sAbilityHelper_->NotifyChange(modifyNotify);
+        }
+    } else {
+        HiLog::Debug(LABEL, "JSCommitModify CheckDisplayName fail");
     }
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
