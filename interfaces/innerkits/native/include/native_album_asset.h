@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ALBUM_ASSET_H
-#define ALBUM_ASSET_H
+#ifndef NATIVE_ALBUM_ASSET_H
+#define NATIVE_ALBUM_ASSET_H
 
 #include <string>
 #include <vector>
@@ -32,37 +32,57 @@ using namespace std;
  * @since 1.0
  * @version 1.0
  */
-class AlbumAsset {
+class NativeAlbumAsset {
 public:
-    AlbumAsset();
-    virtual ~AlbumAsset();
+    NativeAlbumAsset(){
+        
+    };
+    virtual ~NativeAlbumAsset() = default;
 
-    void SetAlbumId(const int32_t albumId);
-    void SetAlbumName(const string albumName);
+    void SetAlbumId(const int32_t albumId)
+    {
+      albumId_ = albumId;
+    };
+    void SetAlbumName(const string albumName)
+    {
+        albumName_ = albumName;
+    };
     void SetAlbumUri(const string albumUri);
     void SetAlbumDateModified(const int64_t albumDateModified);
     void SetCount(const int32_t count);
     void SetAlbumRelativePath(const string albumRelativePath);
     void SetCoverUri(const string coverUri); 
 
-    void SetAlbumPath(const string albumPath);
+    void SetAlbumPath(const string albumPath){
+        albumPath_ = albumPath;
+    };
     void SetAlbumVirtual(const bool albumVirtual);
-    int32_t GetAlbumId() const;
-    string GetAlbumName() const;
+    
+
+    int32_t GetAlbumId() const
+    {
+        return albumId_;
+    };
+    string GetAlbumName() const
+    {
+        return albumName_;
+    };
     string GetAlbumUri() const;
     int64_t GetAlbumDateModified() const;
     int32_t GetCount() const;
     string GetAlbumRelativePath() const;
     string GetCoverUri() const;
-    string GetAlbumPath() const;
+
+    string GetAlbumPath() const
+    {
+        return albumPath_;
+    };
     bool GetAlbumVirtual() const;
+    
 
     bool CreateAlbumAsset();
     bool DeleteAlbumAsset(const std::string &albumUri);
     bool ModifyAlbumAsset(const std::string &albumUri);
-
-    std::vector<std::unique_ptr<ImageAsset>> imageAssetList_;
-    std::vector<std::unique_ptr<VideoAsset>> videoAssetList_;
 
 private:
     int32_t albumId_;
@@ -72,10 +92,11 @@ private:
     int32_t count_;
     string albumRelativePath_;
     string coverUri_;
-
+    
     string albumPath_;
     bool albumVirtual_;
+    
 };
 } // namespace Media
 } // namespace OHOS
-#endif // ALBUM_ASSET_H
+#endif // NATIVE_ALBUM_ASSET_H

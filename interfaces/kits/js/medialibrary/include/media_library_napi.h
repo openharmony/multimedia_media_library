@@ -23,6 +23,8 @@
 #include <securec.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <variant>
 
 #include "ability.h"
@@ -55,6 +57,7 @@ const std::string AUDIO_LISTENER = "audio";
 const std::string VIDEO_LISTENER = "video";
 const std::string IMAGE_LISTENER = "image";
 const std::string FILE_LISTENER = "file";
+const std::string MEDIA_DATA_Path = "/data/media/";
 
 struct MediaChangeListener {
     MediaType mediaType;
@@ -146,8 +149,11 @@ private:
     static napi_value JSOnCallback(napi_env env, napi_callback_info info);
     static napi_value JSOffCallback(napi_env env, napi_callback_info info);
 
+    static napi_value JSRelease(napi_env env, napi_callback_info info);
+
     static napi_value CreateMediaTypeEnum(napi_env env);
     static napi_value CreateFileKeyEnum(napi_env env);
+    static napi_value CreateDirectoryTypeEnum(napi_env env);
 
     void RegisterChange(napi_env env, const ChangeListenerNapi &listObj);
     void RegisterChangeByType(std::string type, const ChangeListenerNapi &listObj);

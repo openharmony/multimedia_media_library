@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
-#define OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
+#ifndef OHOS_MEDIALIBRARY_SMARTALBUM_MAP_OPERATIONS_H
+#define OHOS_MEDIALIBRARY_SMARTALBUM_MAP_OPERATIONS_H
 
 #include <string>
 #include <variant>
@@ -22,31 +22,20 @@
 #include <securec.h>
 #include <unistd.h>
 
-#include "album_asset.h"
-#include "native_album_asset.h"
 #include "media_data_ability_const.h"
-#include "medialibrary_album_db.h"
+#include "medialibrary_smartalbum_map_db.h"
 #include "medialibrary_data_ability_utils.h"
 #include "rdb_store.h"
 #include "values_bucket.h"
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryAlbumOperations {
+class MediaLibrarySmartAlbumMapOperations {
 public:
-    int32_t HandleAlbumOperations(const std::string &uri, const NativeRdb::ValuesBucket &values,
-                                  const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    void ChangeGroupToMedia(const std::string &path);
-    std::shared_ptr<NativeAlbumAsset> nativeAlbumAsset_ = std::make_shared<NativeAlbumAsset>();
-    void SetNativeAlbumAsset(std::shared_ptr<NativeAlbumAsset> nativeAlbumAsset)
-    {
-        nativeAlbumAsset_ = nativeAlbumAsset;
-    }
-    std::shared_ptr<NativeAlbumAsset> GetNativeAlbumAsset()
-    {
-        return nativeAlbumAsset_;
-    }
+    int32_t HandleSmartAlbumMapOperations(const std::string &uri,
+                                          const NativeRdb::ValuesBucket &values,
+                                          const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
+#endif // OHOS_MEDIALIBRARY_SMARTALBUM_MAP_OPERATIONS_H

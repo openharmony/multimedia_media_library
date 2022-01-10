@@ -14,97 +14,133 @@
  */
 
 #include "medialibrary_album_operations.h"
+#include "media_file_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 
-namespace OHOS {
-namespace Media {
-void MediaLibraryAlbumOperations::ChangeGroupToMedia(const string &path)
+namespace OHOS
 {
-    uid_t usrId;
-    gid_t grpId;
-    struct group *grp = nullptr;
+    namespace Media
+    {
+        constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaLibraryAlbumOperations"};
+        void MediaLibraryAlbumOperations::ChangeGroupToMedia(const string &path)
+        {
+            uid_t usrId;
+            gid_t grpId;
+            struct group *grp = nullptr;
 
-    usrId = getuid();
+            usrId = getuid();
 
-    grp = getgrnam("media_rw");
-    if (grp == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain the group information");
-        return;
-    }
-    grpId = grp->gr_gid;
+            grp = getgrnam("media_rw");
+            if (grp == nullptr) {
+                MEDIA_ERR_LOG("Failed to obtain the group information");
+                return;
+            }
+            grpId = grp->gr_gid;
 
-    if (chown(path.c_str(), usrId, grpId) == DATA_ABILITY_FAIL) {
-        MEDIA_ERR_LOG("chown failed for the given path");
-    }
-}
+            if (chown(path.c_str(), usrId, grpId) == DATA_ABILITY_FAIL) {
+                MEDIA_ERR_LOG("chown failed for the given path");
+            }
+        }
 
-int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket, const string &albumPath, shared_ptr<RdbStore> rdbStore,
-    const MediaLibraryAlbumDb &albumDbOprn)
-{
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
+        int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket, const string &albumPath, shared_ptr<RdbStore> rdbStore,
+                                    const MediaLibraryAlbumDb &albumDbOprn)
+        {
+            NativeAlbumAsset albumAsset;
+            string albumName;
+            string parentPath;
+            int32_t parentId;
+            string title;
+            string path;
+            albumAsset = MediaLibraryDataAbilityUtils::GetLastAlbumExistInDb(albumPath, rdbStore);
+            parentPath = albumAsset.GetAlbumPath();
+            parentId = albumAsset.GetAlbumId();
+            OHOS::HiviewDFX::HiLog::Error(LABEL, "parentPath= %{public}s", albumPath.c_str());
+            OHOS::HiviewDFX::HiLog::Error(LABEL, "parentPath parentId = %{public}d", parentId);
+            OHOS::HiviewDFX::HiLog::Error(LABEL, "before parentPath = %{public}s", parentPath.c_str());
+            path = albumPath;
+            while (parentPath.length() < path.length() - 1)
+            {
+                ValuesBucket values;
+                OHOS::HiviewDFX::HiLog::Error(LABEL, "last char = %{public}s", path.substr(path.length() - 1).c_str());
 
-    string albumName;
-    size_t index = albumPath.rfind('/');
-    if (index != string::npos) {
-        albumName = albumPath.substr(index + 1);
-        values.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, albumPath.substr(0, index));
-    }
+                if (path.substr(path.length() - 1) != "/") {
+                    path = path + "/";
+                }
+                int32_t index = path.find("/", parentPath.length() + 1);
+                OHOS::HiviewDFX::HiLog::Error(LABEL, "index1 = %{public}d", index);
+                parentPath = path.substr(0, index);
+                OHOS::HiviewDFX::HiLog::Error(LABEL, "after parentPath = %{public}s", parentPath.c_str());
+                OHOS::HiviewDFX::HiLog::Error(LABEL, "parentPath.length() = %{public}d", parentPath.length());
+                OHOS::HiviewDFX::HiLog::Error(LABEL, "path.length() = %{public}d", path.length());
+                values.PutString(Media::MEDIA_DATA_DB_FILE_PATH, parentPath);
+                title = parentPath;
+                size_t titleIndex = parentPath.rfind('/');
+                if (index != string::npos) {
+                    title = path.substr(titleIndex + 1);
+                    title.pop_back();
+                    OHOS::HiviewDFX::HiLog::Error(LABEL, "title2 = %{public}s", title.c_str());
+                }
+                OHOS::HiviewDFX::HiLog::Error(LABEL, "title = %{public}s", title.c_str());
+                values.PutString(Media::MEDIA_DATA_DB_TITLE, title);
+                values.PutString(Media::MEDIA_DATA_DB_NAME, title);
+                values.PutInt(Media::MEDIA_DATA_DB_MEDIA_TYPE, MediaType::MEDIA_TYPE_ALBUM);
+                values.PutInt(Media::MEDIA_DATA_DB_PARENT_ID, parentId);
+                values.PutLong(MEDIA_DATA_DB_DATE_ADDED,
+                               MediaLibraryDataAbilityUtils::GetAlbumDateModified(path));
+                values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
+                               MediaLibraryDataAbilityUtils::GetAlbumDateModified(path));
+                parentId = const_cast<MediaLibraryAlbumDb &>(albumDbOprn).InsertAlbumInfo(values, rdbStore);
+                OHOS::HiviewDFX::HiLog::Error(LABEL, "parentId = %{public}d", parentId);
+                if (index == -1) {
+                    albumName = parentPath;
+                    std::shared_ptr<NativeAlbumAsset> nativeAlbumAsset = std::make_shared<NativeAlbumAsset>();
+                    nativeAlbumAsset->SetAlbumId(parentId);
+                    nativeAlbumAsset->SetAlbumName(albumName);
+                    break;
+                }
+            }
+            //return const_cast<MediaLibraryAlbumDb &>(albumDbOprn).InsertAlbumInfo(values, rdbStore);
+            return parentId;
+        }
+        int32_t UpdateAlbumInfoUtil(const ValuesBucket &valuesBucket, const string &albumPath,
+                                    const string &albumNewName, shared_ptr<RdbStore> rdbStore, const MediaLibraryAlbumDb &albumDbOprn)
+        {
+            int32_t retVal = DATA_ABILITY_FAIL;
+            ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
+            string newAlbumPath;
 
-    if ((!albumName.empty()) && (albumName.at(0) == '.')) {
-        return 0;
-    }
+            if ((rdbStore == nullptr) || (albumPath.empty()) || (albumNewName.empty())) {
+                return retVal;
+            }
 
-    values.PutString(Media::MEDIA_DATA_DB_ALBUM_NAME, albumName);
-    values.PutInt(Media::MEDIA_DATA_DB_MEDIA_TYPE, MediaType::MEDIA_TYPE_ALBUM);
-    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
-        MediaLibraryDataAbilityUtils::GetAlbumDateModified(albumPath));
-
-    string parentPath = MediaLibraryDataAbilityUtils::GetParentPath(albumPath);
-    int32_t parentId = MediaLibraryDataAbilityUtils::GetParentIdFromDb(parentPath, rdbStore);
-    values.PutInt(Media::MEDIA_DATA_DB_PARENT_ID, parentId);
-
-    return const_cast<MediaLibraryAlbumDb &>(albumDbOprn).InsertAlbumInfo(values, rdbStore);
-}
-
-int32_t UpdateAlbumInfoUtil(const ValuesBucket &valuesBucket, const string &albumPath,
-    const string &albumNewName, shared_ptr<RdbStore> rdbStore, const MediaLibraryAlbumDb &albumDbOprn)
-{
-    int32_t retVal = DATA_ABILITY_FAIL;
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
-    string newAlbumPath;
-
-    if ((rdbStore == nullptr) || (albumPath.empty()) || (albumNewName.empty())) {
-        return retVal;
-    }
-
-    if (albumNewName.at(0) == '.') {
-        int32_t deletedRows = ALBUM_OPERATION_ERR;
-        vector<string> whereArgs = { (albumPath.back() != '/' ? (albumPath + "/%") : (albumPath + "%")), albumPath };
+            if (albumNewName.at(0) == '.') {
+                int32_t deletedRows = ALBUM_OPERATION_ERR;
+                vector<string> whereArgs = {(albumPath.back() != '/' ? (albumPath + "/%") : (albumPath + "%")), albumPath};
 
         int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
             MEDIA_DATA_DB_FILE_PATH + " LIKE ? OR " + MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
-        if (deleteResult != E_OK) {
-            MEDIA_ERR_LOG("Delete rows failed");
-        }
-        return DATA_ABILITY_SUCCESS;
-    }
+                if (deleteResult != E_OK) {
+                    MEDIA_ERR_LOG("Delete rows failed");
+                }
+                return DATA_ABILITY_SUCCESS;
+            }
 
-    size_t slashIndex = albumPath.rfind("/");
-    if (slashIndex != string::npos) {
-        newAlbumPath = albumPath.substr(0, slashIndex) + "/" + albumNewName;
-        values.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, albumPath.substr(0, slashIndex));
-    }
+            size_t slashIndex = albumPath.rfind("/");
+            if (slashIndex != string::npos) {
+                newAlbumPath = albumPath.substr(0, slashIndex) + "/" + albumNewName;
+                values.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, albumPath.substr(0, slashIndex));
+            }
 
-    values.PutString(Media::MEDIA_DATA_DB_FILE_PATH, newAlbumPath);
-    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
-        MediaLibraryDataAbilityUtils::GetAlbumDateModified(newAlbumPath));
+            values.PutString(Media::MEDIA_DATA_DB_FILE_PATH, newAlbumPath);
+            values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
+                           MediaLibraryDataAbilityUtils::GetAlbumDateModified(newAlbumPath));
 
-    retVal = const_cast<MediaLibraryAlbumDb &>(albumDbOprn).UpdateAlbumInfo(values, rdbStore);
-    if ((retVal == DATA_ABILITY_SUCCESS) && (!newAlbumPath.empty())) {
-        // Update the path, relative path and album Name for internal files
-        const std::string modifyAlbumInternalsStmt =
+            retVal = const_cast<MediaLibraryAlbumDb &>(albumDbOprn).UpdateAlbumInfo(values, rdbStore);
+            if ((retVal == DATA_ABILITY_SUCCESS) && (!newAlbumPath.empty())) {
+                // Update the path, relative path and album Name for internal files
+                const std::string modifyAlbumInternalsStmt =
             "UPDATE " + MEDIALIBRARY_TABLE + " SET " + MEDIA_DATA_DB_FILE_PATH + " = replace("
             + MEDIA_DATA_DB_FILE_PATH + ", '" + albumPath + "/' , '" + newAlbumPath + "/'), "
             + MEDIA_DATA_DB_RELATIVE_PATH + " = replace(" + MEDIA_DATA_DB_RELATIVE_PATH
@@ -113,85 +149,91 @@ int32_t UpdateAlbumInfoUtil(const ValuesBucket &valuesBucket, const string &albu
             + albumPath.substr(slashIndex + 1) + "', '" + albumNewName + "')"
             + "where " + MEDIA_DATA_DB_FILE_PATH + " LIKE '" + albumPath + "/%'";
 
-        auto ret = rdbStore->ExecuteSql(modifyAlbumInternalsStmt);
-        CHECK_AND_PRINT_LOG(ret == 0, "Album update sql failed");
-    }
+                auto ret = rdbStore->ExecuteSql(modifyAlbumInternalsStmt);
+                CHECK_AND_PRINT_LOG(ret == 0, "Album update sql failed");
+            }
 
-    return retVal;
-}
+            return retVal;
+        }
 
-int32_t DeleteAlbumInfoUtil(const ValuesBucket &valuesBucket, int32_t albumId, const string &albumPath,
-    shared_ptr<RdbStore> rdbStore, const MediaLibraryAlbumDb &albumDbOprn)
-{
-    int32_t retVal;
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
+        int32_t DeleteAlbumInfoUtil(const ValuesBucket &valuesBucket, int32_t albumId, const string &albumPath,
+                                    shared_ptr<RdbStore> rdbStore, const MediaLibraryAlbumDb &albumDbOprn)
+        {
+            int32_t retVal;
+            ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
 
-    retVal = const_cast<MediaLibraryAlbumDb &>(albumDbOprn).DeleteAlbumInfo(albumId, rdbStore);
-    if ((retVal == DATA_ABILITY_SUCCESS) && (rdbStore != nullptr) && (!albumPath.empty())) {
-        int32_t deletedRows = ALBUM_OPERATION_ERR;
-        vector<string> whereArgs = { (albumPath.back() != '/' ? (albumPath + "/%") : (albumPath + "%")) };
+            retVal = const_cast<MediaLibraryAlbumDb &>(albumDbOprn).DeleteAlbumInfo(albumId, rdbStore);
+            if ((retVal == DATA_ABILITY_SUCCESS) && (rdbStore != nullptr) && (!albumPath.empty())) {
+                int32_t deletedRows = ALBUM_OPERATION_ERR;
+                vector<string> whereArgs = {(albumPath.back() != '/' ? (albumPath + "/%") : (albumPath + "%"))};
 
         int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
             MEDIA_DATA_DB_FILE_PATH + " LIKE ?", whereArgs);
-        if (deleteResult != E_OK) {
-            MEDIA_ERR_LOG("Delete rows failed");
-        }
-    }
+                if (deleteResult != E_OK) {
+                    MEDIA_ERR_LOG("Delete rows failed");
+                }
+            }
 
-    return retVal;
-}
-
-int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(const string &oprn, const ValuesBucket &valuesBucket,
-    const shared_ptr<RdbStore> &rdbStore)
-{
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
-    AlbumAsset albumAsset;
-    MediaLibraryAlbumDb albumDbOprn;
-    int32_t errCode = DATA_ABILITY_FAIL;
-    ValueObject valueObject;
-
-    if (oprn == MEDIA_ALBUMOPRN_CREATEALBUM) {
-        string albumPath = "";
-        if (values.GetObject(MEDIA_DATA_DB_FILE_PATH, valueObject)) {
-            valueObject.GetString(albumPath);
-        }
-        CHECK_AND_RETURN_RET_LOG(!albumPath.empty(), DATA_ABILITY_FAIL, "Path is empty");
-
-        albumAsset.SetAlbumPath(albumPath);
-
-        if (albumAsset.CreateAlbumAsset() == true) {
-            ChangeGroupToMedia(albumPath);
-            errCode = InsertAlbumInfoUtil(values, albumPath, rdbStore, albumDbOprn);
-        }
-    } else {
-        int32_t albumId = 0;
-        if (values.GetObject(MEDIA_DATA_DB_ID, valueObject)) {
-            valueObject.GetInt(albumId);
+            return retVal;
         }
 
-        string albumPath = MediaLibraryDataAbilityUtils::GetPathFromDb(to_string(albumId), rdbStore);
-        if (albumPath.empty()) {
+        int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(const string &oprn, const ValuesBucket &valuesBucket,
+                                                                   const shared_ptr<RdbStore> &rdbStore)
+        {
+            ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
+            AlbumAsset albumAsset;
+            MediaLibraryAlbumDb albumDbOprn;
+            int32_t errCode = DATA_ABILITY_FAIL;
+            ValueObject valueObject;
+            int32_t outRow = -1;
+            if (oprn == MEDIA_ALBUMOPRN_CREATEALBUM) {
+                string albumPath = "";
+                if (values.GetObject(MEDIA_DATA_DB_FILE_PATH, valueObject)) {
+                    valueObject.GetString(albumPath);
+                }
+                CHECK_AND_RETURN_RET_LOG(!albumPath.empty(), DATA_ABILITY_FAIL, "Path is empty");
+                OHOS::HiviewDFX::HiLog::Error(LABEL, "HandleAlbumOperations path = %{public}s", albumPath.c_str());
+                albumAsset.SetAlbumPath(albumPath);
+                if (!MediaLibraryDataAbilityUtils::isAlbumExistInDb(albumPath, rdbStore, outRow)) {
+                    OHOS::HiviewDFX::HiLog::Error(LABEL, "row = %{public}d", outRow);
+                    albumAsset.CreateAlbumAsset();
+                    errCode = InsertAlbumInfoUtil(values, albumPath, rdbStore, albumDbOprn);
+                } else {
+                    OHOS::HiviewDFX::HiLog::Error(LABEL, "row = %{public}d", outRow);
+                    if (!MediaFileUtils::IsDirectory(albumPath)) {
+                        albumAsset.CreateAlbumAsset();
+                    }
+                    return outRow;
+                }
+            } else {
+                int32_t albumId = 0;
+                if (values.GetObject(MEDIA_DATA_DB_ID, valueObject)) {
+                    valueObject.GetInt(albumId);
+                }
+
+                string albumPath = MediaLibraryDataAbilityUtils::GetPathFromDb(to_string(albumId), rdbStore);
+                if (albumPath.empty()) {
+                    return errCode;
+                }
+
+                if (oprn == MEDIA_ALBUMOPRN_MODIFYALBUM) {
+                    string albumNewName = "";
+            if (values.GetObject(MEDIA_DATA_DB_ALBUM_NAME, valueObject)) {
+                        valueObject.GetString(albumNewName);
+                    }
+                    albumAsset.SetAlbumName(albumNewName);
+
+                    if (albumAsset.ModifyAlbumAsset(albumPath) == true) {
+                        errCode = UpdateAlbumInfoUtil(values, albumPath, albumNewName, rdbStore, albumDbOprn);
+                    }
+                } else if (oprn == MEDIA_ALBUMOPRN_DELETEALBUM) {
+                    if (albumAsset.DeleteAlbumAsset(albumPath) == true) {
+                        errCode = DeleteAlbumInfoUtil(values, albumId, albumPath, rdbStore, albumDbOprn);
+                    }
+                }
+            }
+
             return errCode;
         }
-
-        if (oprn == MEDIA_ALBUMOPRN_MODIFYALBUM) {
-            string albumNewName = "";
-            if (values.GetObject(MEDIA_DATA_DB_ALBUM_NAME, valueObject)) {
-                valueObject.GetString(albumNewName);
-            }
-            albumAsset.SetAlbumName(albumNewName);
-
-            if (albumAsset.ModifyAlbumAsset(albumPath) == true) {
-                errCode = UpdateAlbumInfoUtil(values, albumPath, albumNewName, rdbStore, albumDbOprn);
-            }
-        } else if (oprn == MEDIA_ALBUMOPRN_DELETEALBUM) {
-            if (albumAsset.DeleteAlbumAsset(albumPath) == true) {
-                errCode = DeleteAlbumInfoUtil(values, albumId, albumPath, rdbStore, albumDbOprn);
-            }
-        }
-    }
-
-    return errCode;
-}
-} // namespace Media
+    } // namespace Media
 } // namespace OHOS

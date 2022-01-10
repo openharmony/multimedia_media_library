@@ -14,6 +14,7 @@
  */
 
 #include "file_asset.h"
+#include <errno.h>
 
 using namespace std;
 
@@ -38,7 +39,10 @@ FileAsset::FileAsset()
     duration_(DEFAULT_MEDIA_DURATION),
     orientation_(DEFAULT_MEDIA_ORIENTATION),
     albumId_(DEFAULT_ALBUM_ID),
-    albumName_(DEFAULT_ALBUM_NAME)
+    albumName_(DEFAULT_ALBUM_NAME),
+    parent_(DEFAULT_MEDIA_PARENT),
+    albumUri_(DEFAULT_MEDIA_ALBUM_URI),
+    dateTaken_(DEFAULT_MEDIA_DATE_TAKEN)
 {}
 
 int32_t FileAsset::GetId() const
@@ -231,13 +235,43 @@ void FileAsset::SetAlbumName(const string &albumName)
     albumName_ = albumName;
 }
 
+const int32_t &FileAsset::GetParent() const
+{
+    return parent_;
+}
+void FileAsset::SetParent(const int32_t &parent)
+{
+    parent_ = parent;
+}
+const string &FileAsset::GetAlbumUri() const
+{
+    return albumUri_;
+}
+void FileAsset::SetAlbumUri(const string &albumUri)
+{
+    albumUri_ = albumUri;
+}
+int64_t FileAsset::GetDateTaken() const
+{
+    return dateTaken_;
+}
+void FileAsset::SetDateTaken(int64_t dateTaken)
+{
+    dateTaken_ = dateTaken;
+}
 int32_t FileAsset::CreateAsset(const string &filePath)
 {
+    MEDIA_ERR_LOG("CreateAsset in");
     int32_t errCode = FAIL;
 
-    if (filePath.empty() || MediaFileUtils::IsFileExists(filePath)) {
-        MEDIA_ERR_LOG("Filepath is empty or the file exists");
+    if (filePath.empty()) {
+        MEDIA_ERR_LOG("Filepath is empty");
         return errCode;
+    }
+
+    if (MediaFileUtils::IsFileExists(filePath)) {
+        MEDIA_ERR_LOG("the file exists");
+        remove(filePath.c_str());
     }
 
     size_t slashIndex = filePath.rfind('/');
@@ -253,7 +287,7 @@ int32_t FileAsset::CreateAsset(const string &filePath)
 
     ofstream file(filePath);
     if (!file) {
-        MEDIA_ERR_LOG("Output file path could not be created");
+        MEDIA_ERR_LOG("Output file path could not be created errno %{public}d", errno);
         return errCode;
     }
 
@@ -273,6 +307,11 @@ int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
     }
 
     return errRet;
+}
+
+bool FileAsset::IsFileExists(const string &filePath)
+{
+    return MediaFileUtils::IsFileExists(filePath);
 }
 
 int32_t FileAsset::DeleteAsset(const string &filePath)

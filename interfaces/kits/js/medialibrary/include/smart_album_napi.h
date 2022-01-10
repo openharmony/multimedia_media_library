@@ -22,7 +22,6 @@
 #include "ability.h"
 #include "ability_loader.h"
 #include "abs_shared_result_set.h"
-#include "album_asset.h"
 #include "data_ability_helper.h"
 #include "data_ability_predicates.h"
 #include "fetch_file_result_napi.h"
@@ -37,18 +36,16 @@
 
 namespace OHOS {
 namespace Media {
-static const std::string ALBUM_NAPI_CLASS_NAME = "Album";
+static const std::string ALBUM_NAPI_CLASS_NAME = "SmartAlbum";
 
-class AlbumNapi {
+class SmartAlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
-    static napi_value CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
+    static napi_value CreateSmartAlbumNapi(napi_env env, AlbumAsset &albumData,
         std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper);
-    int32_t GetAlbumId() const;
+    int32_t GetSmartAlbumId() const;
     std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper() const;
     std::string GetAlbumName() const;
-    std::string GetAlbumPath() const;
-
     AlbumNapi();
     ~AlbumNapi();
 
@@ -57,30 +54,21 @@ private:
     static napi_value AlbumNapiConstructor(napi_env env, napi_callback_info info);
     void SetAlbumNapiProperties(const AlbumAsset &albumData);
 
-    static napi_value JSGetAlbumId(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumDateModified(napi_env env, napi_callback_info info);
-    static napi_value JSGetCount(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumRelativePath(napi_env env, napi_callback_info info);
-    static napi_value JSGetCoverUri(napi_env env, napi_callback_info info);
-    static napi_value JSCommitModify(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumFileAssets(napi_env env, napi_callback_info info);
-    static napi_value JSAlbumNameSetter(napi_env env, napi_callback_info info);
-
-    static napi_value JSGetAlbumPath(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumVirtual(napi_env env, napi_callback_info info);
-    static napi_value JSSetAlbumPath(napi_env env, napi_callback_info info);
-
+    static napi_value JSGetSmartAlbumId(napi_env env, napi_callback_info info);
+    static napi_value JSGetSmartAlbumcapacity(napi_env env, napi_callback_info info);
+    static napi_value JSGetSmartAlbumName(napi_env env, napi_callback_info info);
+    static napi_value JSGetSmartAlbumTag(napi_env env, napi_callback_info info);
+    static napi_value JSGetSmartAlbumCategoryId(napi_env env, napi_callback_info info);
+    static napi_value JSGetSmartAlbumCategoryName(napi_env env, napi_callback_info info);
+    static napi_value JSGetSmartAlbumCoverUri(napi_env env, napi_callback_info info);
+    
     int32_t albumId_;
+    std::String albumcapacity_;
     std::string albumName_;
-    std::string albumUri_;
-    int64_t albumDateModified_;
-    int32_t count_;
-    std::string albumRelativePath_;
-    std::string coverUri_;
-    bool albumVirtual_;
-    std::string albumPath_ = "";
+    std::string albumTag_;
+    int32_t albumCategoryId_;
+    std::string albumCategoryName_;
+    std::string albumCoverUri_;
 
     std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper_;
 
@@ -88,7 +76,6 @@ private:
     napi_ref wrapper_;
 
     static napi_ref sConstructor_;
-    static AlbumAsset *sAlbumData_;
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
 };
 
@@ -99,7 +86,6 @@ struct AlbumNapiAsyncContext {
     napi_ref callbackRef;
     AlbumNapi *objectInfo;
     bool status;
-    int32_t changedRows;
     std::string selection;
     std::vector<std::string> selectionArgs;
     std::string order;

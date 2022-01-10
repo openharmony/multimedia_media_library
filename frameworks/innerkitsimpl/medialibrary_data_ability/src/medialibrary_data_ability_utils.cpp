@@ -20,6 +20,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaLibraryDataAbilityUtils"};
 string MediaLibraryDataAbilityUtils::GetFileName(const string &path)
 {
     string name;
@@ -27,7 +28,6 @@ string MediaLibraryDataAbilityUtils::GetFileName(const string &path)
     if (slashIndex != string::npos) {
         name = path.substr(slashIndex + 1);
     }
-
     return name;
 }
 
@@ -86,7 +86,118 @@ bool MediaLibraryDataAbilityUtils::IsNumber(const string &str)
 
     return true;
 }
-
+NativeAlbumAsset MediaLibraryDataAbilityUtils::CreateAlbum(const string relativePath, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    NativeAlbumAsset albumAsset;
+    if (!relativePath.empty()) {
+    string path = relativePath;
+    OHOS::HiviewDFX::HiLog::Error(LABEL, "path = %{public}s",path.c_str());
+    vector<string> columns;
+    AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+    absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_Path+relativePath);
+    unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+        OHOS::HiviewDFX::HiLog::Error(LABEL, "no");
+        ValuesBucket values;
+        values.PutString(MEDIA_DATA_DB_FILE_PATH,MEDIA_DATA_DB_Path + path);
+        MediaLibraryAlbumOperations albumOprn;
+        int32_t errorcode = albumOprn.HandleAlbumOperations(MEDIA_ALBUMOPRN_CREATEALBUM, values, rdbStore);
+        albumAsset.SetAlbumId(errorcode);
+        albumAsset.SetAlbumName(albumOprn.GetNativeAlbumAsset()->GetAlbumName());
+    } 
+    return albumAsset;
+}
+NativeAlbumAsset MediaLibraryDataAbilityUtils::GetAlbumAsset(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore) {
+    NativeAlbumAsset albumAsset;
+    vector<string> columns;
+    AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+    absPredicates.EqualTo(MEDIA_DATA_DB_ID, id);
+    unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+    if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t columnIndexId;
+        int32_t idVal;
+        int32_t columnIndexName;
+        string nameVal;
+        queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
+        queryResultSet->GetInt(columnIndexId, idVal);
+        OHOS::HiviewDFX::HiLog::Error(LABEL, "id = %{public}d",idVal);
+        queryResultSet->GetColumnIndex(MEDIA_DATA_DB_TITLE, columnIndexName);
+        queryResultSet->GetString(columnIndexName, nameVal);
+        OHOS::HiviewDFX::HiLog::Error(LABEL, "name = %{public}s",nameVal.c_str());
+        albumAsset.SetAlbumId(idVal);
+        albumAsset.SetAlbumName(nameVal);
+    }
+    return albumAsset;
+}
+std::string MediaLibraryDataAbilityUtils::GetFileTitle(const std::string& displayName)
+{
+    std::string title = "";
+    if (!displayName.empty()) {
+        std::string::size_type pos = displayName.find_first_of('.');
+        HiviewDFX::HiLog::Debug(LABEL, "title pos = %{public}d", pos);
+        if (pos == displayName.length()) {
+            return displayName;
+        }
+        title = displayName.substr(0, pos);
+        HiviewDFX::HiLog::Debug(LABEL, "title substr = %{public}s", title.c_str());
+    }
+    HiviewDFX::HiLog::Debug(LABEL, "title = %{public}s", title.c_str());
+    return title;
+}
+NativeAlbumAsset MediaLibraryDataAbilityUtils::GetLastAlbumExistInDb(const std::string &relativePath,
+                      const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    NativeAlbumAsset nativeAlbumAsset;
+    int32_t idVal = 0;
+    int32_t columnIndexId;
+    int32_t maxColumnIndexPath;
+    string maxVal = MEDIA_DATA_DB_Path;
+    int32_t max = maxVal.length();
+    string maxPath = MEDIA_DATA_DB_Path;
+    int32_t maxId = 0;
+    string::size_type idx;
+    string sql = "SELECT "+MEDIA_DATA_DB_RELATIVE_PATH+","+MEDIA_DATA_DB_FILE_PATH+","+MEDIA_DATA_DB_ID+" FROM "+MEDIALIBRARY_TABLE;
+    unique_ptr<ResultSet> queryResultSet = rdbStore->QuerySql(sql);
+    while (queryResultSet->GoToNextRow() == NativeRdb::E_OK)
+    {
+        queryResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, maxColumnIndexPath);
+        queryResultSet->GetString(maxColumnIndexPath, maxPath);
+        queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
+        queryResultSet->GetInt(columnIndexId, idVal);
+        idx = relativePath.find(maxPath);
+        if ( idx != string::npos && max < maxPath.length()) {
+        max = maxPath.length();
+        maxVal = maxPath;
+        maxId = idVal;
+        OHOS::HiviewDFX::HiLog::Error(LABEL, "while id = %{public}d",maxId);
+        OHOS::HiviewDFX::HiLog::Error(LABEL, "while rp = %{public}s",maxVal.c_str());
+        }
+    }
+    OHOS::HiviewDFX::HiLog::Error(LABEL, "id = %{public}d",maxId);
+    OHOS::HiviewDFX::HiLog::Error(LABEL, "rp = %{public}s",maxVal.c_str());
+    nativeAlbumAsset.SetAlbumId(maxId);
+    nativeAlbumAsset.SetAlbumPath(maxVal);
+    return nativeAlbumAsset;
+}
+bool MediaLibraryDataAbilityUtils::isAlbumExistInDb(const std::string &relativePath,
+                      const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t &outRow)
+{
+    vector<string> columns;
+    AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+    absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, relativePath);
+    unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+    if (queryResultSet != nullptr) {
+    if(queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+    int32_t columnIndexId;
+    int32_t idVal;
+    queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
+    queryResultSet->GetInt(columnIndexId, idVal);
+            OHOS::HiviewDFX::HiLog::Error(LABEL, "id = %{public}d", idVal);
+            outRow = idVal;
+            return true;
+    }
+}
+    return false;
+}
 int64_t MediaLibraryDataAbilityUtils::GetAlbumDateModified(const string &albumPath)
 {
     struct stat statInfo {};
@@ -106,6 +217,32 @@ string MediaLibraryDataAbilityUtils::GetOperationType(const string &uri)
     }
 
     return oprn;
+}
+
+bool MediaLibraryDataAbilityUtils::isFileExistInDb(const string &path, const shared_ptr<RdbStore> &rdbStore)
+{
+    int32_t count = 0;
+    vector<string> selectionArgs = {};
+    if ((path.empty()) || (rdbStore == nullptr)) {
+        MEDIA_ERR_LOG("path is incorrect or rdbStore is null");
+        return false;
+    }
+    string strQueryCondition = MEDIA_DATA_DB_FILE_PATH + " = '" + path + "'";
+    AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+    absPredicates.SetWhereClause(strQueryCondition);
+    absPredicates.SetWhereArgs(selectionArgs);
+    vector<string> columns;
+    columns.push_back(MEDIA_DATA_DB_FILE_PATH);
+    unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+    if (queryResultSet != nullptr) {
+        queryResultSet->GetRowCount(count);
+        MEDIA_ERR_LOG("count is %{public}d", count);
+        if (count > 0) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 string MediaLibraryDataAbilityUtils::GetPathFromDb(const string &id, const shared_ptr<RdbStore> &rdbStore)

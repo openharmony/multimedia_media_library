@@ -76,7 +76,7 @@ napi_value FetchFileResultNapi::Init(napi_env env, napi_value exports)
             }
         }
     }
-
+    HiLog::Debug(LABEL, "Init success");
     return nullptr;
 }
 

@@ -22,6 +22,8 @@
 #include "ability_loader.h"
 #include "data_ability_predicates.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_smartalbum_map_operations.h"
+#include "medialibrary_smartalbum_operations.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_file_operations.h"
 #include "medialibrary_data_ability_utils.h"
@@ -35,38 +37,58 @@
 #include "uri.h"
 #include "values_bucket.h"
 #include "want.h"
+#include "hilog/log.h"
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryDataAbility : public AppExecFwk::Ability {
-public:
-    MediaLibraryDataAbility();
-    ~MediaLibraryDataAbility();
+    enum TableType {
+        TYPE_DATA,
+        TYPE_SMARTALBUM,
+        TYPE_SMARTALBUM_MAP,
+        TYPE_ALBUM_TABLE
+    };
+    class MediaLibraryDataAbility : public AppExecFwk::Ability
+    {
+    public:
+        MediaLibraryDataAbility();
+        ~MediaLibraryDataAbility();
 
-    int32_t InitMediaLibraryRdbStore();
-    int32_t Insert(const Uri &uri, const NativeRdb::ValuesBucket &value) override;
-    int32_t Delete(const Uri &uri, const NativeRdb::DataAbilityPredicates &predicates) override;
-    int32_t BatchInsert(const Uri &uri, const std::vector<NativeRdb::ValuesBucket> &values) override;
-    int32_t Update(const Uri &uri, const NativeRdb::ValuesBucket &value,
-            const NativeRdb::DataAbilityPredicates &predicates) override;
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(const Uri &uri, const std::vector<std::string> &columns,
-            const NativeRdb::DataAbilityPredicates &predicates) override;
-    int32_t OpenFile(const Uri &uri, const std::string &mode) override;
+        int32_t InitMediaLibraryRdbStore();
+        int32_t Insert(const Uri &uri, const NativeRdb::ValuesBucket &value) override;
+        int32_t Delete(const Uri &uri, const NativeRdb::DataAbilityPredicates &predicates) override;
+        int32_t BatchInsert(const Uri &uri, const std::vector<NativeRdb::ValuesBucket> &values) override;
+        int32_t Update(const Uri &uri, const NativeRdb::ValuesBucket &value,
+                       const NativeRdb::DataAbilityPredicates &predicates) override;
+        std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(const Uri &uri, const std::vector<std::string> &columns,
+                                                             const NativeRdb::DataAbilityPredicates &predicates) override;
+        int32_t OpenFile(const Uri &uri, const std::string &mode) override;
 
-protected:
-    void OnStart(const AAFwk::Want& want) override;
-    void OnStop() override;
+    protected:
+        void OnStart(const AAFwk::Want &want) override;
+        void OnStop() override;
 
-private:
-    std::string GetOperationType(const std::string &uri);
-    void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    private:
+        std::string GetOperationType(const std::string &uri);
+        void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
 
-    std::shared_ptr<IMediaScannerClient> scannerClient_;
-    std::shared_ptr<NativeRdb::RdbStore> rdbStore;
-    bool isRdbStoreInitialized;
+        std::shared_ptr<IMediaScannerClient> scannerClient_;
+        std::shared_ptr<NativeRdb::RdbStore> rdbStore;
+        std::shared_ptr<NativeRdb::RdbStore> smartAlbumrdbStore;
+        std::shared_ptr<NativeRdb::RdbStore> smartAlbumMaprdbStore;
+        bool isRdbStoreInitialized;
 };
 
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
+public:
+    int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
+    int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
+};
+class MediaLibrarySmartAlbumCallBack : public NativeRdb::RdbOpenCallback {
+public:
+    int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
+    int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
+};
+class MediaLibrarySmartAlbumMapCallBack : public NativeRdb::RdbOpenCallback {
 public:
     int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
     int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;

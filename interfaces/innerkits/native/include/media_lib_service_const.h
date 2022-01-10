@@ -111,10 +111,15 @@ const int32_t DEFAULT_MEDIA_ORIENTATION = 0;
 const int32_t DEFAULT_ALBUM_ID = 0;
 const std::string DEFAULT_ALBUM_NAME = "Unknown";
 const std::string DEFAULT_ALBUM_PATH = "";
+const std::string DEFAULT_ALBUM_URI = "";
 const int64_t DEFAULT_ALBUM_DATE_MODIFIED = 0;
-const bool DEFAULT_ALBUM_VIRTUAL = false;
+const int32_t DEFAULT_COUNT = 0;
 const std::string DEFAULT_ALBUM_RELATIVE_PATH = "";
-
+const std::string DEFAULT_COVERURI = "";
+const int32_t DEFAULT_MEDIA_PARENT = 0;
+const bool DEFAULT_ALBUM_VIRTUAL = false;
+const uint64_t DEFAULT_MEDIA_DATE_TAKEN = 0;
+const std::string DEFAULT_MEDIA_ALBUM_URI = "";
 const std::string ROOT_MEDIA_DIR = "/data/media";
 const char SLASH_CHAR = '/';
 const int32_t OPEN_FDS = 64;
