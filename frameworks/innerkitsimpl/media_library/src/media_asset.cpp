@@ -14,7 +14,9 @@
  */
 
 #include "media_asset.h"
+
 #include "media_file_utils.h"
+#include "media_lib_service_const.h"
 #include "media_log.h"
 
 using namespace std;
@@ -50,9 +52,11 @@ MediaType MediaAsset::GetMediaType(const std::string &filePath)
         transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
         if (SUPPORTED_AUDIO_FORMATS_SET.find(extension) != SUPPORTED_AUDIO_FORMATS_SET.end()) {
             mediaType = MEDIA_TYPE_AUDIO;
-        } else if (SUPPORTED_VIDEO_FORMATS_SET.find(extension) != SUPPORTED_VIDEO_FORMATS_SET.end()) {
+        } else if (SUPPORTED_VIDEO_FORMATS_SET.find(extension)
+                   != SUPPORTED_VIDEO_FORMATS_SET.end()) {
             mediaType = MEDIA_TYPE_VIDEO;
-        } else if (SUPPORTED_IMAGE_FORMATS_SET.find(extension) != SUPPORTED_IMAGE_FORMATS_SET.end()) {
+        } else if (SUPPORTED_IMAGE_FORMATS_SET.find(extension)
+                   != SUPPORTED_IMAGE_FORMATS_SET.end()) {
             mediaType = MEDIA_TYPE_IMAGE;
         } else {
             mediaType = MEDIA_TYPE_FILE;

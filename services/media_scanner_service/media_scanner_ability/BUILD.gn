@@ -38,7 +38,6 @@ config("media_scanner_ability_public_config") {
     "//foundation/distributeddatamgr/appdatamgr/interfaces/innerkits/native_rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/innerkitsimpl/native_rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/innerkitsimpl/native_appdatafwk/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
   ]
 
   if (target_cpu == "arm") {
@@ -76,7 +75,6 @@ ohos_shared_library("media_scanner_service") {
   external_deps = [
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
-    "multimedia_image_standard:image_native",
     "native_appdatamgr:native_appdatafwk",
     "native_appdatamgr:native_dataability",
     "native_appdatamgr:native_rdb",

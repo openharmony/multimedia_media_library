@@ -501,13 +501,13 @@ static void GetFileAssetsNative(napi_env env, const AlbumNapiAsyncContext &album
 {
     AlbumNapiAsyncContext *context = const_cast<AlbumNapiAsyncContext *>(&albumContext);
     NativeRdb::DataAbilityPredicates predicates;
-    string prefix = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
-    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, prefix);
-    context->selectionArgs.insert(context->selectionArgs.begin(), std::to_string(MEDIA_TYPE_ALBUM));
-    context->selectionArgs.insert(context->selectionArgs.begin(), std::to_string(context->objectInfo->GetAlbumId()));
+
+    context->selection += " AND ";
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
+    predicates.EqualTo(MEDIA_DATA_DB_PARENT_ID, std::to_string(context->objectInfo->GetAlbumId()));
+    predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(MEDIA_TYPE_ALBUM));
 
     std::vector<std::string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);

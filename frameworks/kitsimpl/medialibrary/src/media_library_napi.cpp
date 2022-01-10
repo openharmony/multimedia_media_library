@@ -1100,14 +1100,14 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
 
     vector<string> columns;
     NativeRdb::DataAbilityPredicates predicates;
-
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
-    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, prefix);
-    context->selectionArgs.insert(context->selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
+    if (!context->selection.empty()) {
+        context->selection += " AND ";
+    }
 
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
+    predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet;
@@ -1218,14 +1218,16 @@ static napi_value GetResultData(napi_env env, const MediaLibraryAsyncContext &as
         return result;
     }
 
-    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, MEDIA_DATA_DB_MEDIA_TYPE + " = ? ");
-    context->selectionArgs.insert(context->selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
+    if (!context->selection.empty()) {
+        context->selection += " AND ";
+    }
 
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     if (!context->order.empty()) {
         predicates.SetOrder(context->order);
     }
+    predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
@@ -1250,9 +1252,6 @@ static napi_value GetResultData(napi_env env, const MediaLibraryAsyncContext &as
                 // Get album relative path index and value
                 albumData->SetAlbumRelativePath(get<string>(GetValFromColumn(
                     MEDIA_DATA_DB_RELATIVE_PATH, resultSet)));
-
-                // Get album virtual index and value
-                albumData->SetAlbumVirtual(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_VIRTUAL, resultSet)));
 
                 // Get album date modified index and value
                 int64_t albumDateModified;
@@ -2275,22 +2274,18 @@ void MediaLibraryNapi::RegisterChangeByType(string type, const ChangeListenerNap
 {
     ChangeListenerNapi *listObj = const_cast<ChangeListenerNapi *>(&listenerObj);
     if (type.compare(AUDIO_LISTENER) == 0) {
-        CHECK_IF_EQUAL((listObj->audioDataObserver_ == nullptr), "Audio data observer already present");
         listObj->audioDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_AUDIO);
         Uri onCbURI(MEDIALIBRARY_AUDIO_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->audioDataObserver_);
     } else if (type.compare(VIDEO_LISTENER) == 0) {
-        CHECK_IF_EQUAL((listObj->videoDataObserver_ == nullptr), "Video data observer already present");
         listObj->videoDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_VIDEO);
         Uri onCbURI(MEDIALIBRARY_VIDEO_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->videoDataObserver_);
     } else if (type.compare(IMAGE_LISTENER) == 0) {
-        CHECK_IF_EQUAL((listObj->imageDataObserver_ == nullptr), "Image data observer already present");
         listObj->imageDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_IMAGE);
         Uri onCbURI(MEDIALIBRARY_IMAGE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->imageDataObserver_);
     } else if (type.compare(FILE_LISTENER) == 0) {
-        CHECK_IF_EQUAL((listObj->fileDataObserver_ == nullptr), "File data observer already present");
         listObj->fileDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_FILE);
         Uri onCbURI(MEDIALIBRARY_FILE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->fileDataObserver_);
@@ -2346,7 +2341,6 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
             return undefinedResult;
         }
 
-        obj->subscribeList_.clear();
         napi_get_array_length(env, argv[PARAM0], &len);
         for (size_t i = 0; i < len; i++) {
             napi_get_element(env, argv[PARAM0], i, &stringItem);
@@ -2462,7 +2456,6 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
             return undefinedResult;
         }
 
-        obj->unsubscribeList_.clear();
         napi_get_array_length(env, argv[PARAM0], &len);
         for (size_t i = 0; i < len; i++) {
             napi_get_element(env, argv[PARAM0], i, &stringItem);

@@ -641,18 +641,5 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_RecursiveScan_001, TestSize
         EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
     }
 }
-
-HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_NonPublicDirScan_001, TestSize.Level0)
-{
-    string path = "/data/accounts";
-
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    int result;
-
-    std::string testcaseName("mediascanner_ScanDir_NonPublicDirScan_001");
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-    result = g_msInstance->ScanDir(path, appCallback);
-    EXPECT_EQ(result, ERR_INCORRECT_PATH);
-}
 } // namespace Media
 } // namespace OHOS

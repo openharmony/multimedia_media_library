@@ -183,17 +183,6 @@ public:
         return result;
     }
 
-    static void UpdateFetchOptionSelection(std::string &selection, const std::string &prefix)
-    {
-        if (!prefix.empty()) {
-            if (!selection.empty()) {
-                selection = prefix + "AND " + selection;
-            } else {
-                selection = prefix;
-            }
-        }
-    }
-
     static void CreateNapiErrorObject(napi_env env, napi_value &errorObj,
         const int32_t errCode, const std::string errMsg)
     {

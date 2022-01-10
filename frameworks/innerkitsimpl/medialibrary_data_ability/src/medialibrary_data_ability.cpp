@@ -275,6 +275,7 @@ int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mod
     CHECK_AND_RETURN_RET_LOG(!srcPath.empty(), DATA_ABILITY_FAIL, "Failed to obtain path from Database");
 
     int32_t fd = fileAsset.OpenAsset(srcPath, mode);
+
     return fd;
 }
 

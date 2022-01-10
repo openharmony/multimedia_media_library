@@ -105,10 +105,13 @@ int32_t UpdateAlbumInfoUtil(const ValuesBucket &valuesBucket, const string &albu
     if ((retVal == DATA_ABILITY_SUCCESS) && (!newAlbumPath.empty())) {
         // Update the path, relative path and album Name for internal files
         const std::string modifyAlbumInternalsStmt =
-            "UPDATE MEDIALIBRARY_DATA SET path = replace(path, '" + albumPath + "/' , '" + newAlbumPath + "/'), "
-            + "relative_path = replace(relative_path, '" + albumPath + "', '" + newAlbumPath + "'), "
-            + "album_name = replace(album_name, '" + albumPath.substr(slashIndex + 1) + "', '" + albumNewName + "')"
-            + "where path LIKE '" + albumPath + "/%'";
+            "UPDATE " + MEDIALIBRARY_TABLE + " SET " + MEDIA_DATA_DB_FILE_PATH + " = replace("
+            + MEDIA_DATA_DB_FILE_PATH + ", '" + albumPath + "/' , '" + newAlbumPath + "/'), "
+            + MEDIA_DATA_DB_RELATIVE_PATH + " = replace(" + MEDIA_DATA_DB_RELATIVE_PATH
+            + ", '" + albumPath + "', '" + newAlbumPath + "'), "
+            + MEDIA_DATA_DB_ALBUM_NAME + " = replace(" + MEDIA_DATA_DB_ALBUM_NAME + ", '"
+            + albumPath.substr(slashIndex + 1) + "', '" + albumNewName + "')"
+            + "where " + MEDIA_DATA_DB_FILE_PATH + " LIKE '" + albumPath + "/%'";
 
         auto ret = rdbStore->ExecuteSql(modifyAlbumInternalsStmt);
         CHECK_AND_PRINT_LOG(ret == 0, "Album update sql failed");

@@ -155,17 +155,14 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_GetFileAssets_Test_001, Test
     std::vector<std::string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
     unique_ptr<FetchResult> fetchFileResult = nullptr;
-    string selection = MEDIA_DATA_DB_FILE_PATH + " LIKE ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " = ? ";
+    string selection = MEDIA_DATA_DB_FILE_PATH + " LIKE ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND ";
     vector<string> selectionArgs = { "/data/media/gtest/%", to_string(MEDIA_TYPE_IMAGE) };
     string order = MEDIA_DATA_DB_ID + " ASC";
-
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
-    selection = prefix + "AND " + selection;
-    selectionArgs.insert(selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
 
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
     predicates.SetOrder(order);
+    predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
     g_resultSet1 = g_rdbStoreTest.Query(uri, columns, predicates);
     if (g_resultSet1 != nullptr) {
@@ -220,14 +217,12 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_GetAlbums_Test_001, TestSize
     NativeRdb::DataAbilityPredicates predicates;
     std::vector<std::string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
-    string selection = MEDIA_DATA_DB_FILE_PATH + " LIKE ? AND " + MEDIA_DATA_DB_RELATIVE_PATH + " = ? ";
+    string selection = MEDIA_DATA_DB_FILE_PATH + " LIKE ? AND " + MEDIA_DATA_DB_RELATIVE_PATH + " = ? AND ";
     vector<string> selectionArgs = { "/data/media/gtest/%", "/data/media/gtest" };
-
-    selection = MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND " + selection;
-    selectionArgs.insert(selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
 
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
+    predicates.EqualTo(Media::MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
     g_resultSet2 = g_rdbStoreTest.Query(uri, columns, predicates);
     if (g_resultSet2 != nullptr) {
@@ -326,16 +321,13 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_GetAlbumFileAssets_Test_001,
     std::vector<std::string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
     unique_ptr<FetchResult> fetchFileResult = nullptr;
-    string selection = MEDIA_DATA_DB_MEDIA_TYPE + " = ? ";
+    string selection = MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND ";
     vector<string> selectionArgs = { to_string(MEDIA_TYPE_IMAGE) };
-
-    string prefix = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
-    selection = prefix + "AND " + selection;
-    selectionArgs.insert(selectionArgs.begin(), std::to_string(MEDIA_TYPE_ALBUM));
-    selectionArgs.insert(selectionArgs.begin(), std::to_string(g_albumId2));
 
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
+    predicates.EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(g_albumId2));
+    predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
     g_resultSet3 = g_rdbStoreTest.Query(uri, columns, predicates);
     if (g_resultSet3 != nullptr) {
