@@ -1527,7 +1527,6 @@ static string GetFirstDirName(const string& relativePath)
     string firstDirName = "";
     if (!relativePath.empty()) {
         string::size_type pos = relativePath.find_first_of('/');
-        HiLog::Debug(LABEL, "firstDirName pos = %{public}d", pos);
         if (pos == relativePath.length()) {
             MEDIA_ERR_LOG("relativePath is first dir");
             return relativePath;
@@ -1592,7 +1591,6 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
     size_t res = 0;
     char relativePathBuffer[PATH_MAX];
     char titleBuffer[PATH_MAX];
-    HiLog::Debug(LABEL, "GetJSArgsForCreateAsset IN %{public}d", argc);
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
@@ -2733,7 +2731,6 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     int32_t refCount = 1;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    HiLog::Error(LABEL, "NAPI_ASSERT begin %{public}d", argc);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == 0), "requires 1 parameters maximum");
     HiLog::Error(LABEL, "NAPI_ASSERT end");
     napi_get_undefined(env, &result);

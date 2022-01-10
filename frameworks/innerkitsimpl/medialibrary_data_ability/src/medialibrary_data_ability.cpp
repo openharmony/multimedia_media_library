@@ -143,7 +143,6 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
     MEDIA_INFO_LOG("MediaLibraryDataAbility Insert: Normal URI scenario");
     int64_t outRowId = DATA_ABILITY_FAIL;
     (void)rdbStore->Insert(outRowId, MEDIALIBRARY_TABLE, value);
-    MEDIA_INFO_LOG("no outRowId = %{public}lld", outRowId);
     MEDIA_INFO_LOG("MediaLibraryDataAbility Insert: END");
     return outRowId;
 }
@@ -287,7 +286,6 @@ bool ParseThumbnailInfo(string &uriString, int &width, int &height)
     vector<string> vectorKeys;
     SplitKeys(queryKeys, vectorKeys);
     if (vectorKeys.size() != keyWords.size()) {
-        MEDIA_ERR_LOG("Parse error keys count %{public}d", vectorKeys.size());
         return false;
     }
     string action;

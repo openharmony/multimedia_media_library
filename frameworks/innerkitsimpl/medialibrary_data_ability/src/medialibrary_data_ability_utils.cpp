@@ -149,7 +149,6 @@ std::string MediaLibraryDataAbilityUtils::GetFileTitle(const std::string& displa
     std::string title = "";
     if (!displayName.empty()) {
         std::string::size_type pos = displayName.find_first_of('.');
-        HiviewDFX::HiLog::Debug(LABEL, "title pos = %{public}d", pos);
         if (pos == displayName.length()) {
             return displayName;
         }
@@ -329,8 +328,6 @@ bool MediaLibraryDataAbilityUtils::checkFilePending(const shared_ptr<FileAsset> 
         return true;
     } else if (fileAsset->GetTimePending() > 0 &&
         (UTCTimeSeconds() - fileAsset->GetTimePending()) > TIMEPENDING_MIN) {
-        MEDIA_INFO_LOG("checkFilePending UTCTimeSeconds is %{public}lld", UTCTimeSeconds());
-        MEDIA_INFO_LOG("checkFilePending TimePending is %{public}lld", fileAsset->GetTimePending());
         return true;
     }
     MEDIA_INFO_LOG("checkFilePending IsPending false");
@@ -425,7 +422,6 @@ int64_t MediaLibraryDataAbilityUtils::UTCTimeSeconds()
     t.tv_sec = 0;
     t.tv_nsec = 0;
     clock_gettime(CLOCK_REALTIME, &t);
-    MEDIA_INFO_LOG("UTCTimeSeconds = %{public}lld", (int64_t)(t.tv_sec));
     return (int64_t)(t.tv_sec);
 }
 bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
