@@ -49,11 +49,20 @@ void MediaThumbnailHelper::InitKvStore()
 
     AppId appId = { THUMBNAIL_APP_ID };
     StoreId storeId = { THUMBNAIL_STORE_ID };
+#ifdef OLD_KV_API
+    manager.GetSingleKvStore(options, appId, storeId, [&](Status status, unique_ptr<SingleKvStore> store) {
+        if (status != Status::SUCCESS) {
+            MEDIA_ERR_LOG("KvStore get failed! %{public}d", status);
+        } else {
+            singleKvStorePtr_ = std::move(store);
+        }
+    });
+#else
     Status status = manager.GetSingleKvStore(options, appId, storeId, singleKvStorePtr_);
     if (status != Status::SUCCESS) {
         MEDIA_ERR_LOG("KvStore get failed! %{public}d", status);
     }
-
+#endif
     MEDIA_INFO_LOG("MediaThumbnailHelper::InitMediaThumbnaiKvStore OUT");
 }
 
