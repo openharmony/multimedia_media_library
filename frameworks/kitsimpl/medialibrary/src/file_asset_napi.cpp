@@ -19,7 +19,6 @@
 #include "abs_shared_result_set.h"
 #include "rdb_errno.h"
 #include "media_file_utils.h"
-#include "medialibrary_data_ability_utils.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -853,10 +852,10 @@ STATIC_COMPLETE_FUNC(JSCommitModify)
     string notifyUri;
     Media::MediaType mediaType;
     mediaType = context->objectInfo->GetMediaType();
-    notifyUri = MediaLibraryDataAbilityUtils::GetMediaTypeUri(mediaType);
+    notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
     NativeRdb::DataAbilityPredicates predicates;
     NativeRdb::ValuesBucket valuesBucket;
-    if (MediaLibraryDataAbilityUtils::CheckDisplayName(context->objectInfo->GetTitle())) {
+    if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetTitle())) {
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
         Uri uri(MEDIALIBRARY_DATA_URI);

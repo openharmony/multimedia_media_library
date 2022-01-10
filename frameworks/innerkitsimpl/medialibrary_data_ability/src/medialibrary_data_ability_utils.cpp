@@ -405,6 +405,12 @@ string MediaLibraryDataAbilityUtils::GetMediaTypeUri(MediaType mediaType)
         case MEDIA_TYPE_IMAGE:
             return MEDIALIBRARY_IMAGE_URI;
             break;
+        case MEDIA_TYPE_SMARTALBUM:
+            return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
+            break;
+        case MEDIA_TYPE_DEVICE:
+            return MEDIALIBRARY_DEVICE_URI;
+            break;
         case MEDIA_TYPE_FILE:
         default:
             return MEDIALIBRARY_FILE_URI;

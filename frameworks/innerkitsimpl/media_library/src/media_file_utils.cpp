@@ -275,5 +275,33 @@ bool MediaFileUtils::RenameDir(const string& oldPath, const string& newPath)
 
     return errRet;
 }
+bool MediaFileUtils::CheckDisplayName(const std::string &displayName)
+{   
+    bool isDisplayName = true;
+    int size = displayName.length();
+	if (size <= 0 || size > 128) {
+        return false;
+    }
+    char* pStr = new char[size];
+    strcpy(pStr, displayName.c_str());
+    for (int i = 0; i < size; i++)
+	{
+		if (displayName.at(0) == '.' || (ispunct(pStr[i]) && pStr[i] != '.'))
+		{   
+            MEDIA_ERR_LOG("CheckDisplayName displayName fail");
+			isDisplayName = false;
+            break;
+		}
+	}
+	return isDisplayName;
+}
+int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)
+{
+    struct stat statInfo {};
+    if (!albumPath.empty() && stat(albumPath.c_str(), &statInfo) == 0) {
+        return (statInfo.st_mtime);
+    }
+    return 0;
+}
 } // namespace Media
 } // namespace OHOS

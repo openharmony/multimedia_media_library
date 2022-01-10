@@ -15,7 +15,6 @@
 
 #include "media_library_napi.h"
 #include "hilog/log.h"
-#include "medialibrary_data_ability_utils.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
