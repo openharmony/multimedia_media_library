@@ -14,6 +14,7 @@
  */
 
 #include "medialibrary_smartalbum_operations.h"
+#include "media_log.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -24,8 +25,16 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
                             shared_ptr<RdbStore> rdbStore,
                             const MediaLibrarySmartAlbumDb &smartAlbumDbOprn)
 {
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
-    return const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn).InsertSmartAlbumInfo(values, rdbStore);
+    ValueObject valueObject;
+    int32_t id = 0;
+    int32_t insertId = const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn).InsertSmartAlbumInfo(valuesBucket, rdbStore);
+    if (insertId > 0) {
+        ValuesBucket values;
+        values.PutInt(CATEGORY_SMARTALBUMMAP_DB_CATEGORY_ID, id);
+        values.PutInt(CATEGORY_SMARTALBUMMAP_DB_ALBUM_ID, insertId);
+        const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn).InsertCategorySmartAlbumInfo(values, rdbStore);
+    }
+    return insertId;
 }
 
 int32_t MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperations(const string &oprn,

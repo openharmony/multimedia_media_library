@@ -29,5 +29,16 @@ int64_t MediaLibrarySmartAlbumMapDb::InsertSmartAlbumMapInfo(const ValuesBucket 
     CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, ALBUM_OPERATION_ERR, "Insert failed");
     return outRowId;
 }
+int32_t MediaLibrarySmartAlbumMapDb::DeleteSmartAlbumMapInfo(const int32_t albumId,
+                                                             const int32_t assetId,
+                                                             const shared_ptr<RdbStore> &rdbStore)
+{
+    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (albumId > 0) && (assetId > 0), ALBUM_OPERATION_ERR, "Invalid input");
+    int32_t deletedRows(ALBUM_OPERATION_ERR);
+    vector<string> whereArgs = { std::to_string(albumId), std::to_string(assetId)};
+    int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_MAP_TABLE, SMARTALBUM_MAP_DB_COND, whereArgs);
+    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, ALBUM_OPERATION_ERR, "Delete failed");
+    return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
+}
 }  // namespace Media
 }  // namespace OHOS
