@@ -93,13 +93,11 @@ static const std::unordered_map<std::string, std::string> SUPPORTED_EXTN_MAP = {
     {VIDEO_CONTAINER_TYPE_MOV, DEFAULT_VIDEO_MIME_TYPE},
     {VIDEO_CONTAINER_TYPE_WEBM, DEFAULT_VIDEO_MIME_TYPE},
     {VIDEO_CONTAINER_TYPE_MKV, DEFAULT_VIDEO_MIME_TYPE},
-    /** Supported audio container types */
     {AUDIO_CONTAINER_TYPE_AAC, DEFAULT_AUDIO_MIME_TYPE},
     {AUDIO_CONTAINER_TYPE_MP3, DEFAULT_AUDIO_MIME_TYPE},
     {AUDIO_CONTAINER_TYPE_FLAC, DEFAULT_AUDIO_MIME_TYPE},
     {AUDIO_CONTAINER_TYPE_WAV, DEFAULT_AUDIO_MIME_TYPE},
     {AUDIO_CONTAINER_TYPE_OGG, DEFAULT_AUDIO_MIME_TYPE},
-    /** File extenstions */
     {"7z", "application/x-7z-compressed"},
     {"bz", "application/x-bzip"},
     {"bz2", "application/x-bzip2"},
@@ -168,7 +166,6 @@ static const std::unordered_map<std::string, std::string> SUPPORTED_EXTN_MAP = {
     {"yaml", "text/yaml"},
     {"zip", "application/zip"},
 };
-
 class ScannerUtils {
 public:
     ScannerUtils();

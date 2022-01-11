@@ -131,6 +131,10 @@ variant<int32_t, int64_t, string> ReturnDefaultOnError(string errMsg, ResultSetD
 
 variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string columnName, ResultSetDataType dataType)
 {
+    MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn in");
+
+    MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn columnName is %{public}s", columnName.c_str());
+    
     int index;
     variant<int32_t, int64_t, string> cellValue;
     int integerVal = 0;
@@ -149,13 +153,15 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
 
     switch (dataType) {
         case TYPE_STRING:
+            MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn TYPE_STRING");
             status = resultset_->GetString(index, stringVal);
             if (status != NativeRdb::E_OK) {
-                ReturnDefaultOnError("failed to obtain string value from resultse", dataType);
+                ReturnDefaultOnError("failed to obtain string value from resultset", dataType);
             }
             cellValue = stringVal;
             break;
         case TYPE_INT32:
+            MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn TYPE_INT32");
             status = resultset_->GetInt(index, integerVal);
             if (status != NativeRdb::E_OK) {
                 ReturnDefaultOnError("failed to obtain int value from resultset", dataType);
@@ -163,6 +169,7 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
             cellValue = integerVal;
             break;
         case TYPE_INT64:
+            MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn TYPE_INT64");
             status = resultset_->GetLong(index, longVal);
             if (status != NativeRdb::E_OK) {
                 ReturnDefaultOnError("failed to obtain long value from resultset", dataType);
@@ -171,10 +178,30 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
             cellValue = longVal;
             break;
         default:
+            MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn else!!!!!");
             break;
     }
 
     return cellValue;
+}
+
+static string GetMediaTypeUri(MediaType mediaType)
+{
+    switch (mediaType) {
+        case MEDIA_TYPE_AUDIO:
+            return MEDIALIBRARY_AUDIO_URI;
+            break;
+        case MEDIA_TYPE_VIDEO:
+            return MEDIALIBRARY_VIDEO_URI;
+            break;
+        case MEDIA_TYPE_IMAGE:
+            return MEDIALIBRARY_IMAGE_URI;
+            break;
+        case MEDIA_TYPE_FILE:
+        default:
+            return MEDIALIBRARY_FILE_URI;
+            break;
+    }
 }
 
 unique_ptr<FileAsset> FetchResult::GetObject()
@@ -183,24 +210,26 @@ unique_ptr<FileAsset> FetchResult::GetObject()
 
     fileAsset->SetId(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_ID, TYPE_INT32)));
 
-    fileAsset->SetUri(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_URI, TYPE_STRING)));
-
-    fileAsset->SetMimeType(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_MIME_TYPE, TYPE_STRING)));
-
     fileAsset->SetMediaType(static_cast<Media::MediaType>(get<ARG1>(
         GetRowValFromColumnn(MEDIA_DATA_DB_MEDIA_TYPE, TYPE_INT32))));
 
-    fileAsset->SetPath(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_FILE_PATH, TYPE_STRING)));
+    fileAsset->SetDisplayName(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_NAME, TYPE_STRING)));
 
     fileAsset->SetRelativePath(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_RELATIVE_PATH, TYPE_STRING)));
 
-    fileAsset->SetDisplayName(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_NAME, TYPE_STRING)));
+    fileAsset->SetParent(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_PARENT_ID, TYPE_INT32)));
 
     fileAsset->SetSize(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_SIZE, TYPE_INT64)));
 
     fileAsset->SetDateAdded(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64)));
 
     fileAsset->SetDateModified(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_MODIFIED, TYPE_INT64)));
+
+    fileAsset->SetDateTaken(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64)));
+
+    fileAsset->SetPath(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_FILE_PATH, TYPE_STRING)));
+
+    fileAsset->SetMimeType(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_MIME_TYPE, TYPE_STRING)));
 
     fileAsset->SetTitle(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_TITLE, TYPE_STRING)));
 
@@ -216,9 +245,19 @@ unique_ptr<FileAsset> FetchResult::GetObject()
 
     fileAsset->SetOrientation(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_ORIENTATION, TYPE_INT32)));
 
-    fileAsset->SetAlbumId(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_PARENT_ID, TYPE_INT32)));
+    fileAsset->SetAlbumId(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32)));
 
-    fileAsset->SetAlbumName(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_ALBUM_NAME, TYPE_STRING)));
+    fileAsset->SetAlbumName(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_BUCKET_NAME, TYPE_STRING)));
+
+    fileAsset->SetTimePending(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_TIME_PENDING, TYPE_INT64)));
+
+    fileAsset->SetPending((get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_PENDING, TYPE_INT32)) != 0));
+
+    fileAsset->SetFavorite((get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_FAV, TYPE_INT32)) != 0));
+
+    fileAsset->SetDateTrashed(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64)));
+
+    fileAsset->SetUri(GetMediaTypeUri(fileAsset->GetMediaType()) + "/" + to_string(fileAsset->GetId()));
 
     return fileAsset;
 }

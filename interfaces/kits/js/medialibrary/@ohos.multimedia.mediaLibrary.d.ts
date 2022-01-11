@@ -638,7 +638,6 @@ declare namespace mediaLibrary {
          * @version 1
          */
         scanDir(scanDirPath: string, callback: AsyncCallback<ScanResult>): void;
-        scanDir(scanDirPath: string): Promise<ScanResult>;
 
         /**
          * This API will help to scan the specified file and updates the metadata to database
@@ -649,6 +648,5 @@ declare namespace mediaLibrary {
          * @version 1
          */
         scanFile(scanFilePath: string, callback: AsyncCallback<ScanResult>): void;
-        scanFile(scanFilePath: string): Promise<ScanResult>;
      }
 }

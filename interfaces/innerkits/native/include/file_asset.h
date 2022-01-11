@@ -95,12 +95,29 @@ public:
     const std::string &GetAlbumName() const;
     void SetAlbumName(const std::string &albumName);
 
+    int32_t GetParent() const;
+    void SetParent(int32_t parent);
+    const std::string &GetAlbumUri() const;
+    void SetAlbumUri(const std::string &albumUri);
+    int64_t GetDateTaken() const;
+    void SetDateTaken(int64_t dataTaken);
+
+    bool IsPending() const;
+    void SetPending(bool isPending);
+    int64_t GetTimePending() const;
+    void SetTimePending(int64_t timePending);
+
+    bool IsFavorite() const;
+    void SetFavorite(bool isFavorite);
+    int64_t GetDateTrashed() const;
+    void SetDateTrashed(int64_t dateTrashed);
+
     int32_t CreateAsset(const std::string &filePath);
     int32_t ModifyAsset(const std::string& oldPath, const std::string &newPath);
     int32_t DeleteAsset(const std::string &filePath);
     int32_t OpenAsset(const std::string &filePath, const std::string &mode);
     int32_t CloseAsset(int32_t fd);
-
+    bool IsFileExists(const std::string &filePath);
 private:
     int32_t id_;
     std::string uri_;
@@ -127,6 +144,15 @@ private:
     // album
     int32_t albumId_;
     std::string albumName_;
+    int32_t parent_;
+    std::string albumUri_;
+    int64_t dateTaken_;
+
+    bool isPending_;
+    int64_t timePending_;
+
+    bool isFavorite_;
+    int64_t dateTrashed_;
 };
 } // namespace Media
 } // namespace OHOS

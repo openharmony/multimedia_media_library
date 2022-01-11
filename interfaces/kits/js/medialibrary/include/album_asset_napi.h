@@ -48,6 +48,11 @@ private:
     static napi_value GetAlbumId(napi_env env, napi_callback_info info);
     static napi_value GetAlbumName(napi_env env, napi_callback_info info);
     static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
+    static napi_value GetAlbumUri(napi_env env, napi_callback_info info);
+    static napi_value GetAlbumDateModified(napi_env env, napi_callback_info info);
+    static napi_value GetAlbumCount(napi_env env, napi_callback_info info);
+    static napi_value GetAlbumRelativePath(napi_env env, napi_callback_info info);
+    static napi_value GetAlbumCoverUri(napi_env env, napi_callback_info info);
     static napi_value GetVideoAssets(napi_env env, napi_callback_info info);
     static napi_value GetImageAssets(napi_env env, napi_callback_info info);
 
@@ -59,6 +64,11 @@ private:
 
     int32_t albumId_;
     std::string albumName_;
+    std::string albumUri_;
+    int64_t albumDateModified_;
+    int32_t count_;
+    std::string albumRelativePath_;
+    std::string coverUri_;
     std::vector<std::unique_ptr<Media::VideoAsset>> videoAssets_;
     std::vector<std::unique_ptr<Media::ImageAsset>> imageAssets_;
     std::string newAlbumName_ = "";

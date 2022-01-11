@@ -67,7 +67,7 @@ void MediaScanner::ScanQueueCB(ScanRequest scanReq)
             fileUri = scanner->mediaUri_;
         }
 
-        scanner->ExecuteScannerClientCallback(scanReq.GetRequestId(), errCode, fileUri, scanReq.GetAppReqPath());
+        scanner->ExecuteScannerClientCallback(scanReq.GetRequestId(), errCode, fileUri, path);
     }
 }
 
@@ -85,19 +85,28 @@ bool MediaScanner::InitScanner(const std::shared_ptr<Context> &context)
     return false;
 }
 
+vector<string> MediaScanner::GetSupportedMimeTypes()
+{
+    vector<string> mimeTypeList;
+    mimeTypeList.push_back(DEFAULT_AUDIO_MIME_TYPE);
+    mimeTypeList.push_back(DEFAULT_VIDEO_MIME_TYPE);
+    mimeTypeList.push_back(DEFAULT_IMAGE_MIME_TYPE);
+    mimeTypeList.push_back(DEFAULT_FILE_MIME_TYPE);
+
+    return mimeTypeList;
+}
+
 int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCallback)
 {
     int32_t errCode = ERR_MEM_ALLOC_FAIL;
     bool isDir = false;
-    string appReqPath = path;
 
     if (path.empty()) {
         MEDIA_ERR_LOG("Scanfile: Path is empty");
         return ERR_EMPTY_ARGS;
     }
 
-    if ((ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS)
-        || (path.find(ROOT_MEDIA_DIR) != 0)) {
+    if (ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS) {
         MEDIA_ERR_LOG("Scanfile: Incorrect path or insufficient permission %{public}s", path.c_str());
         unique_ptr<Metadata> metaData = mediaScannerDb_->ReadMetadata(path);
         if (metaData != nullptr && !metaData->GetFilePath().empty()) {
@@ -114,7 +123,7 @@ int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCa
         return ERR_INCORRECT_PATH;
     }
 
-    unique_ptr<ScanRequest> scanReq = make_unique<ScanRequest>(path, appReqPath);
+    unique_ptr<ScanRequest> scanReq = make_unique<ScanRequest>(path);
     if (scanReq != nullptr) {
         scanReq->SetIsDirectory(isDir);
 
@@ -138,7 +147,6 @@ int32_t MediaScanner::ScanDir(string &path, const sptr<IRemoteObject> &remoteCal
 {
     int32_t errCode = ERR_MEM_ALLOC_FAIL;
     bool isDir = true;
-    string appReqPath = path;
 
     if (path.empty()) {
         MEDIA_ERR_LOG("ScanDir: Path is empty");
@@ -146,8 +154,7 @@ int32_t MediaScanner::ScanDir(string &path, const sptr<IRemoteObject> &remoteCal
     }
 
     // Get Absolute path
-    if ((ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS)
-        || (path.find(ROOT_MEDIA_DIR) != 0)) {
+    if (ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS) {
         MEDIA_ERR_LOG("ScanDir: Incorrect path or insufficient permission %{public}s", path.c_str());
         // If the path is not available, clear the same from database too if present
         CleanupDirectory(path);
@@ -159,7 +166,7 @@ int32_t MediaScanner::ScanDir(string &path, const sptr<IRemoteObject> &remoteCal
         return ERR_INCORRECT_PATH;
     }
 
-    std::unique_ptr<ScanRequest> scanReq = std::make_unique<ScanRequest>(path, appReqPath);
+    std::unique_ptr<ScanRequest> scanReq = std::make_unique<ScanRequest>(path);
     if (scanReq != nullptr) {
         scanReq->SetIsDirectory(isDir);
 
@@ -266,8 +273,7 @@ bool MediaScanner::IsFileScanned(Metadata &fileMetadata)
     if (md != nullptr &&
         md->GetFileDateModified() == fileMetadata.GetFileDateModified() &&
         md->GetFileName() == fileMetadata.GetFileName() &&
-        md->GetFileSize() == fileMetadata.GetFileSize() &&
-        (!md->GetFileMimeType().empty())) {
+        md->GetFileSize() == fileMetadata.GetFileSize()) {
         scannedIds_.insert(md->GetFileId());
         return true;
     }
@@ -293,13 +299,20 @@ int32_t MediaScanner::RetrieveMetadata(Metadata &fileMetadata)
 // Visit the File
 int32_t MediaScanner::VisitFile(const Metadata &fileMD)
 {
-    int32_t errCode = ERR_SUCCESS;
-
     auto fileMetadata = const_cast<Metadata *>(&fileMD);
-    if (!IsFileScanned(*fileMetadata)) {
-        errCode = RetrieveMetadata(*fileMetadata);
-        if (errCode == ERR_SUCCESS) {
-            errCode = BatchUpdateRequest(*fileMetadata);
+    string mimeType = DEFAULT_FILE_MIME_TYPE;
+    vector<string> supportedMimeTypes;
+    int32_t errCode = ERR_MIMETYPE_NOTSUPPORT;
+
+    mimeType = ScannerUtils::GetMimeTypeFromExtension(fileMetadata->GetFileExtension());
+    supportedMimeTypes = GetSupportedMimeTypes();
+    if (find(supportedMimeTypes.begin(), supportedMimeTypes.end(), mimeType) != supportedMimeTypes.end()) {
+        errCode = ERR_SUCCESS;
+        if (!IsFileScanned(*fileMetadata)) {
+            errCode = RetrieveMetadata(*fileMetadata);
+            if (errCode == ERR_SUCCESS) {
+                errCode = BatchUpdateRequest(*fileMetadata);
+            }
         }
     }
 
@@ -398,7 +411,7 @@ int32_t MediaScanner::InsertAlbumInfo(string &albumPath, int32_t parentId, strin
         albumId = albumInfo.GetFileId();
 
         if (stat(albumPath.c_str(), &statInfo) == ERR_SUCCESS) {
-            if ((albumInfo.GetFileDateModified() == statInfo.st_mtime) && (!albumInfo.GetFileMimeType().empty())) {
+            if (albumInfo.GetFileDateModified() == statInfo.st_mtime) {
                 scannedIds_.insert(albumId);
                 return albumId;
             } else {
@@ -454,12 +467,11 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
     fName[len++] = '/';
 
     while ((ent = readdir(dirPath)) != nullptr && errCode != ERR_MEM_ALLOC_FAIL) {
-        if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")
-            || (len + strlen(ent->d_name) > (FILENAME_MAX - 1))) {
+        if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
             continue;
         }
 
-        strncpy_s(fName + len, FILENAME_MAX - len, ent->d_name, FILENAME_MAX - len - 1);
+        strncpy_s(fName + len, FILENAME_MAX, ent->d_name, FILENAME_MAX - len);
         if (lstat(fName, &statInfo) == -1) {
             MEDIA_ERR_LOG("Obtaining Stat info failed");
             continue;

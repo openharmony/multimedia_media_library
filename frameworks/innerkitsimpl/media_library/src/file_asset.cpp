@@ -14,6 +14,7 @@
  */
 
 #include "file_asset.h"
+#include <cerrno>
 
 using namespace std;
 
@@ -38,7 +39,10 @@ FileAsset::FileAsset()
     duration_(DEFAULT_MEDIA_DURATION),
     orientation_(DEFAULT_MEDIA_ORIENTATION),
     albumId_(DEFAULT_ALBUM_ID),
-    albumName_(DEFAULT_ALBUM_NAME)
+    albumName_(DEFAULT_ALBUM_NAME),
+    parent_(DEFAULT_MEDIA_PARENT),
+    albumUri_(DEFAULT_MEDIA_ALBUM_URI),
+    dateTaken_(DEFAULT_MEDIA_DATE_TAKEN)
 {}
 
 int32_t FileAsset::GetId() const
@@ -231,13 +235,83 @@ void FileAsset::SetAlbumName(const string &albumName)
     albumName_ = albumName;
 }
 
+int32_t FileAsset::GetParent() const
+{
+    return parent_;
+}
+void FileAsset::SetParent(int32_t parent)
+{
+    parent_ = parent;
+}
+const string &FileAsset::GetAlbumUri() const
+{
+    return albumUri_;
+}
+void FileAsset::SetAlbumUri(const string &albumUri)
+{
+    albumUri_ = albumUri;
+}
+int64_t FileAsset::GetDateTaken() const
+{
+    return dateTaken_;
+}
+void FileAsset::SetDateTaken(int64_t dateTaken)
+{
+    dateTaken_ = dateTaken;
+}
+
+bool FileAsset::IsPending() const
+{
+    return isPending_;
+}
+void FileAsset::SetPending(bool dateTaken)
+{
+    isPending_ = dateTaken;
+}
+
+int64_t FileAsset::GetTimePending() const
+{
+    return timePending_;
+}
+
+void FileAsset::SetTimePending(int64_t timePending)
+{
+    timePending_ = timePending;
+}
+
+bool FileAsset::IsFavorite() const
+{
+    return isFavorite_;
+}
+
+void FileAsset::SetFavorite(bool isFavorite)
+{
+    isFavorite_ = isFavorite;
+}
+
+int64_t FileAsset::GetDateTrashed() const
+{
+    return dateTrashed_;
+}
+
+void FileAsset::SetDateTrashed(int64_t dateTrashed)
+{
+    dateTrashed_ = dateTrashed;
+}
+
 int32_t FileAsset::CreateAsset(const string &filePath)
 {
+    MEDIA_ERR_LOG("CreateAsset in");
     int32_t errCode = FAIL;
 
-    if (filePath.empty() || MediaFileUtils::IsFileExists(filePath)) {
-        MEDIA_ERR_LOG("Filepath is empty or the file exists");
-        return errCode;
+    if (filePath.empty()) {
+        MEDIA_ERR_LOG("Filepath is empty");
+        return DATA_ABILITY_VIOLATION_PARAMETERS;
+    }
+
+    if (MediaFileUtils::IsFileExists(filePath)) {
+        MEDIA_ERR_LOG("the file exists");
+        remove(filePath.c_str());
     }
 
     size_t slashIndex = filePath.rfind('/');
@@ -253,7 +327,7 @@ int32_t FileAsset::CreateAsset(const string &filePath)
 
     ofstream file(filePath);
     if (!file) {
-        MEDIA_ERR_LOG("Output file path could not be created");
+        MEDIA_ERR_LOG("Output file path could not be created errno %{public}d", errno);
         return errCode;
     }
 
@@ -273,6 +347,11 @@ int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
     }
 
     return errRet;
+}
+
+bool FileAsset::IsFileExists(const string &filePath)
+{
+    return MediaFileUtils::IsFileExists(filePath);
 }
 
 int32_t FileAsset::DeleteAsset(const string &filePath)
@@ -301,7 +380,13 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
         flags = O_RDWR | O_TRUNC;
     }
 
+    if (filePath.size() >= PATH_MAX) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path");
+        return errCode;
+    }
+
     char actualPath[PATH_MAX];
+    memset_s(actualPath, PATH_MAX, '\0', PATH_MAX);
     auto absFilePath = realpath(filePath.c_str(), actualPath);
     if (absFilePath == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain the canonical path for source path");

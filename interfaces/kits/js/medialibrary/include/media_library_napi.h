@@ -23,6 +23,8 @@
 #include <securec.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <variant>
 
 #include "ability.h"
@@ -55,6 +57,9 @@ const std::string AUDIO_LISTENER = "audio";
 const std::string VIDEO_LISTENER = "video";
 const std::string IMAGE_LISTENER = "image";
 const std::string FILE_LISTENER = "file";
+const std::string SMARTALBUM_LISTENER = "smartalbum";
+const std::string DEVICE_LISTENER = "device";
+const std::string MEDIA_DATA_Path = "/data/media/";
 
 struct MediaChangeListener {
     MediaType mediaType;
@@ -74,6 +79,8 @@ public:
     sptr<AAFwk::IDataAbilityObserver> videoDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> imageDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> fileDataObserver_ = nullptr;
+    sptr<AAFwk::IDataAbilityObserver> smartAlbumDataObserver_ = nullptr;
+    sptr<AAFwk::IDataAbilityObserver> deviceDataObserver_ = nullptr;
 
 private:
     napi_env env_ = nullptr;
@@ -86,6 +93,7 @@ public:
     {
         listObj_ = const_cast<ChangeListenerNapi *>(&listObj);
         mediaType_ = mediaType;
+        MEDIA_INFO_LOG("MediaObserver init mediaType_ = %{public}d", mediaType);
     }
 
     ~MediaObserver() = default;
@@ -94,6 +102,7 @@ public:
     {
         MediaChangeListener listener;
         listener.mediaType = mediaType_;
+        MEDIA_INFO_LOG("MediaObserver OnChange mediaType_ = %{public}d", mediaType_);
         listObj_->OnChange(listener, listObj_->cbOnRef_);
     }
 
@@ -130,6 +139,7 @@ private:
     static napi_value CreateAlbum(napi_env env, napi_callback_info info);
 
     // New APIs For L2
+    static napi_value JSGetPublicDirectory(napi_env env, napi_callback_info info);
     static napi_value JSGetFileAssets(napi_env env, napi_callback_info info);
     static napi_value JSGetAlbums(napi_env env, napi_callback_info info);
 
@@ -146,8 +156,11 @@ private:
     static napi_value JSOnCallback(napi_env env, napi_callback_info info);
     static napi_value JSOffCallback(napi_env env, napi_callback_info info);
 
+    static napi_value JSRelease(napi_env env, napi_callback_info info);
+
     static napi_value CreateMediaTypeEnum(napi_env env);
     static napi_value CreateFileKeyEnum(napi_env env);
+    static napi_value CreateDirectoryTypeEnum(napi_env env);
 
     void RegisterChange(napi_env env, const ChangeListenerNapi &listObj);
     void RegisterChangeByType(std::string type, const ChangeListenerNapi &listObj);
@@ -186,6 +199,7 @@ struct MediaLibraryAsyncContext {
     std::vector<std::unique_ptr<AlbumAsset>> albumAssets;
     std::unique_ptr<FetchResult> fetchFileResult;
     OHOS::NativeRdb::ValuesBucket valuesBucket;
+    int32_t dirType = 0;
 };
 } // namespace Media
 } // namespace OHOS

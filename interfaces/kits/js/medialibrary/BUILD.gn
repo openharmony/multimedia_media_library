@@ -28,6 +28,9 @@ ohos_copy("medialibrary_declaration") {
 
 ohos_shared_library("medialibrary") {
   include_dirs = [
+    "//drivers/peripheral/display/interfaces/include",
+    "//drivers/peripheral/base",
+    "//foundation/multimedia/media_standard/interfaces/innerkits/native/media/include",
     "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary/include",
     "//third_party/node/src",
     "//foundation/ace/napi/interfaces/kits",
@@ -37,12 +40,15 @@ ohos_shared_library("medialibrary") {
     "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_ability/include",
     "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager/include",
+    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/image_standard/interfaces/kits/js/common/include",
   ]
 
   sources = [
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/album_asset_napi.cpp",
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/album_napi.cpp",
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/audio_asset_napi.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/avmetadatahelper_napi.cpp",
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/fetch_file_result_napi.cpp",
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/file_asset_napi.cpp",
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/image_asset_napi.cpp",
@@ -53,6 +59,8 @@ ohos_shared_library("medialibrary") {
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/video_asset_napi.cpp",
   ]
 
+  ldflags = [ "-Wl,-rpath=/system/lib/module/multimedia/" ]
+
   deps = [
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
     "//foundation/aafwk/standard/interfaces/innerkits/base:base",
@@ -60,6 +68,8 @@ ohos_shared_library("medialibrary") {
     "//foundation/ace/napi:ace_napi",
     "//foundation/appexecfwk/standard/kits:appkit_native",
     "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
+    "//foundation/multimedia/image_standard/interfaces/innerkits:image",
+    "//foundation/multimedia/media_standard/interfaces/innerkits/native/media:media_client",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_ability:medialibrary_data_ability",
     "//foundation/multimedia/medialibrary_standard/services/media_library_service:medialibrary_proxy",

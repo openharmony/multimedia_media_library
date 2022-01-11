@@ -48,7 +48,6 @@ int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
 
     return ERR_SUCCESS;
 }
-
 int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
 {
     int32_t errCode = ERR_FAIL;

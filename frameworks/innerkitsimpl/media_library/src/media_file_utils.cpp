@@ -275,5 +275,40 @@ bool MediaFileUtils::RenameDir(const string& oldPath, const string& newPath)
 
     return errRet;
 }
+bool MediaFileUtils::CheckDisplayName(std::string displayName)
+{
+    bool isDisplayName = true;
+    int size = displayName.length();
+    if (size <= 0 || size > DISPLAYNAME_MAX) {
+        return false;
+    }
+    const char *pStr = new char[size + 1];
+    pStr = displayName.c_str();
+    for (int i = 0; i < size; i++) {
+        if (displayName.at(0) == '.' || ispunct(pStr[i])) {
+            MEDIA_ERR_LOG("CheckDisplayName displayName fail");
+            isDisplayName = false;
+            break;
+        }
+    }
+    return isDisplayName;
+}
+int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)
+{
+    struct stat statInfo {};
+    if (!albumPath.empty() && stat(albumPath.c_str(), &statInfo) == 0) {
+        return (statInfo.st_mtime);
+    }
+    return 0;
+}
+
+int64_t MediaFileUtils::UTCTimeSeconds()
+{
+    struct timespec t;
+    t.tv_sec = 0;
+    t.tv_nsec = 0;
+    clock_gettime(CLOCK_REALTIME, &t);
+    return (int64_t)(t.tv_sec);
+}
 } // namespace Media
 } // namespace OHOS

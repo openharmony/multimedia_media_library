@@ -39,17 +39,23 @@ public:
 
     void SetAlbumId(const int32_t albumId);
     void SetAlbumName(const string albumName);
-    void SetAlbumPath(const string albumPath);
+    void SetAlbumUri(const string albumUri);
     void SetAlbumDateModified(const int64_t albumDateModified);
-    void SetAlbumVirtual(const bool albumVirtual);
+    void SetCount(const int32_t count);
     void SetAlbumRelativePath(const string albumRelativePath);
+    void SetCoverUri(const string coverUri);
 
+    void SetAlbumPath(const string albumPath);
+    void SetAlbumVirtual(const bool albumVirtual);
     int32_t GetAlbumId() const;
     string GetAlbumName() const;
-    string GetAlbumPath() const;
+    string GetAlbumUri() const;
     int64_t GetAlbumDateModified() const;
-    bool GetAlbumVirtual() const;
+    int32_t GetCount() const;
     string GetAlbumRelativePath() const;
+    string GetCoverUri() const;
+    string GetAlbumPath() const;
+    bool GetAlbumVirtual() const;
 
     bool CreateAlbumAsset();
     bool DeleteAlbumAsset(const std::string &albumUri);
@@ -61,10 +67,14 @@ public:
 private:
     int32_t albumId_;
     std::string albumName_;
-    string albumPath_;
+    string albumUri_;
     int64_t albumDateModified_;
-    bool albumVirtual_;
+    int32_t count_;
     string albumRelativePath_;
+    string coverUri_;
+
+    string albumPath_;
+    bool albumVirtual_;
 };
 } // namespace Media
 } // namespace OHOS

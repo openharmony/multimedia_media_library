@@ -23,9 +23,8 @@
 #include <unistd.h>
 
 #include "album_asset.h"
-#include "media_data_ability_const.h"
+#include "native_album_asset.h"
 #include "medialibrary_album_db.h"
-#include "medialibrary_data_ability_utils.h"
 #include "rdb_store.h"
 #include "values_bucket.h"
 
@@ -35,7 +34,19 @@ class MediaLibraryAlbumOperations {
 public:
     int32_t HandleAlbumOperations(const std::string &uri, const NativeRdb::ValuesBucket &values,
                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    int32_t HandleAlbumOperations(const std::string &uri, const NativeRdb::ValuesBucket &values,
+                                  const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                                  vector<int32_t> &outIds);
     void ChangeGroupToMedia(const std::string &path);
+    std::shared_ptr<NativeAlbumAsset> nativeAlbumAsset_ = std::make_shared<NativeAlbumAsset>();
+    void SetNativeAlbumAsset(std::shared_ptr<NativeAlbumAsset> nativeAlbumAsset)
+    {
+        nativeAlbumAsset_ = nativeAlbumAsset;
+    }
+    std::shared_ptr<NativeAlbumAsset> GetNativeAlbumAsset()
+    {
+        return nativeAlbumAsset_;
+    }
 };
 } // namespace Media
 } // namespace OHOS

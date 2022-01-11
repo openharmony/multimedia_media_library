@@ -34,6 +34,12 @@ public:
     int32_t ScanDirService(std::string &scanDirPath, const sptr<IRemoteObject> &callback) override;
     int32_t ScanFileService(std::string &scanFilePath, const sptr<IRemoteObject> &callback) override;
     bool IsScannerRunning() override;
+
+private:
+    int32_t GetAvailableRequestId();
+
+    MediaScanner *mediaScannerInstance_ = nullptr;
+    void StoreCallbackPtrInMap(int32_t reqId, sptr<IRemoteObject>& callback);
 };
 } // namespace Media
 } // namespace OHOS

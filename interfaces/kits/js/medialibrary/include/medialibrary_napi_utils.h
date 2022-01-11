@@ -21,6 +21,10 @@
 #include "napi/native_node_api.h"
 #include "media_lib_service_const.h"
 #include "media_data_ability_const.h"
+#include "hilog/log.h"
+
+using OHOS::HiviewDFX::HiLog;
+using OHOS::HiviewDFX::HiLogLabel;
 
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \
     do {                                                                    \
@@ -89,18 +93,19 @@
             return;                         \
         }                                   \
     } while (0)
-
 namespace OHOS {
 namespace Media {
 /* Constants for array index */
 const int32_t PARAM0 = 0;
 const int32_t PARAM1 = 1;
 const int32_t PARAM2 = 2;
+const int32_t PARAM3 = 3;
 
 /* Constants for array size */
 const int32_t ARGS_ONE = 1;
 const int32_t ARGS_TWO = 2;
 const int32_t ARGS_THREE = 3;
+const int32_t ARGS_FORE = 4;
 const int32_t SIZE = 100;
 const int32_t REFERENCE_COUNT_ONE = 1;
 
@@ -132,6 +137,25 @@ const std::vector<std::string> fileKeyEnum {
     "DATE_ADDED", "DATE_MODIFIED", "TITLE", "ARTIST", "ALBUM", "ALBUM_ID", "ALBUM_NAME"
 };
 
+const std::vector<std::string> directoryEnum {
+    "DIR_CDSA", "DIR_VIDEO", "DIR_IMAGE", "DIR_AUDIO", "DIR_AUDIO_RINGS", "DIR_AUDIO_NOTICE", "DIR_AUDIO_CLOCK",
+    "DIR_DOCUMENTS", "DIR_DOWNLOAD", "DIR_DOWNLOAD_BLUETOOTH"
+};
+
+const std::vector<std::string> directoryEnumValues {
+    "cdsa/",
+    "video/",
+    "image/",
+    "audio/",
+    "audio/rings/",
+    "audio/notice/",
+    "audio/clock/",
+    "documents/",
+    "download/",
+    "download/bluetooth/",
+    "Pictures/"
+};
+
 const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_ID,
     MEDIA_DATA_DB_FILE_PATH,
@@ -145,8 +169,8 @@ const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_TITLE,
     MEDIA_DATA_DB_ARTIST,
     MEDIA_DATA_DB_ALBUM,
-    MEDIA_DATA_DB_ALBUM_ID,
-    MEDIA_DATA_DB_ALBUM_NAME
+    MEDIA_DATA_DB_BUCKET_ID,
+    MEDIA_DATA_DB_BUCKET_NAME
 };
 
 struct JSAsyncContextOutput {
@@ -182,7 +206,6 @@ public:
 
         return result;
     }
-
     static void UpdateFetchOptionSelection(std::string &selection, const std::string &prefix)
     {
         if (!prefix.empty()) {
@@ -193,7 +216,30 @@ public:
             }
         }
     }
-
+    static std::string GetMediaTypeUri(MediaType mediaType)
+    {
+    switch (mediaType) {
+        case MEDIA_TYPE_AUDIO:
+            return MEDIALIBRARY_AUDIO_URI;
+            break;
+        case MEDIA_TYPE_VIDEO:
+            return MEDIALIBRARY_VIDEO_URI;
+            break;
+        case MEDIA_TYPE_IMAGE:
+            return MEDIALIBRARY_IMAGE_URI;
+            break;
+        case MEDIA_TYPE_SMARTALBUM:
+            return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
+            break;
+        case MEDIA_TYPE_DEVICE:
+            return MEDIALIBRARY_DEVICE_URI;
+            break;
+        case MEDIA_TYPE_FILE:
+        default:
+            return MEDIALIBRARY_FILE_URI;
+            break;
+    }
+    }
     static void CreateNapiErrorObject(napi_env env, napi_value &errorObj,
         const int32_t errCode, const std::string errMsg)
     {
@@ -208,17 +254,21 @@ public:
     static void InvokeJSAsyncMethod(napi_env env, napi_deferred deferred,
         napi_ref callbackRef, napi_async_work work, const JSAsyncContextOutput &asyncContext)
     {
+        HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaLibraryNapiUtils"};
+        HiLog::Error(LABEL, "InvokeJSAsyncMethod IN");
         napi_value retVal;
         napi_value callback = nullptr;
 
         /* Deferred is used when JS Callback method expects a promise value */
         if (deferred) {
+            HiLog::Error(LABEL, "InvokeJSAsyncMethod promise");
             if (asyncContext.status) {
                 napi_resolve_deferred(env, deferred, asyncContext.data);
             } else {
                 napi_reject_deferred(env, deferred, asyncContext.error);
             }
         } else {
+            HiLog::Error(LABEL, "InvokeJSAsyncMethod callback");
             napi_value result[ARGS_TWO];
             result[PARAM0] = asyncContext.error;
             result[PARAM1] = asyncContext.data;
@@ -227,6 +277,7 @@ public:
             napi_delete_reference(env, callbackRef);
         }
         napi_delete_async_work(env, work);
+        HiLog::Error(LABEL, "InvokeJSAsyncMethod OUT");
     }
 };
 } // namespace Media
