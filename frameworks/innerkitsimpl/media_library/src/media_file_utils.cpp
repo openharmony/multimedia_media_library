@@ -291,6 +291,7 @@ bool MediaFileUtils::CheckDisplayName(std::string displayName)
             break;
         }
     }
+    delete []pStr;
     return isDisplayName;
 }
 int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)
