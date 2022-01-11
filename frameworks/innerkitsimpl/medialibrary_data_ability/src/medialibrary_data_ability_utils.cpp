@@ -441,6 +441,7 @@ bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
             break;
         }
     }
+    delete []pStr;
     OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName");
     return isDisplayName;
 }
