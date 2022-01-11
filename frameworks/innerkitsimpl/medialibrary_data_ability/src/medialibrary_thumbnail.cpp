@@ -256,6 +256,10 @@ bool MediaLibraryThumbnail::LoadAudioFile(string &path,
                                           shared_ptr<PixelMap> &pixelMap)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadAudioFile IN");
+#ifdef OLD_MEDIA_STD_API
+    MEDIA_ERR_LOG("Audio FetchArtPicture API is not ready!");
+    return false;
+#else
     if (avMetadataHelper_ == nullptr) {
         MEDIA_ERR_LOG("Av meta data helper is not init");
         return false;
@@ -293,6 +297,7 @@ bool MediaLibraryThumbnail::LoadAudioFile(string &path,
     if (pixelMap->GetAlphaType() == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
         pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     }
+#endif
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadAudioFile OUT");
     return true;
 }
