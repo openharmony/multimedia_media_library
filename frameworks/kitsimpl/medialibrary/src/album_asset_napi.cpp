@@ -82,12 +82,17 @@ napi_value AlbumAssetNapi::Init(napi_env env, napi_value exports)
     napi_property_descriptor album_asset_props[] = {
         DECLARE_NAPI_GETTER("albumId", GetAlbumId),
         DECLARE_NAPI_GETTER_SETTER("albumName", GetAlbumName, JSSetAlbumName),
+        DECLARE_NAPI_GETTER("albumUri", GetAlbumUri),
+        DECLARE_NAPI_GETTER("albumDateModified", GetAlbumDateModified),
+        DECLARE_NAPI_GETTER("count", GetAlbumCount),
+        DECLARE_NAPI_GETTER("albumRelativePath", GetAlbumRelativePath),
+        DECLARE_NAPI_GETTER("coverUri", GetAlbumCoverUri),
+        
         DECLARE_NAPI_FUNCTION("getVideoAssets", GetVideoAssets),
         DECLARE_NAPI_FUNCTION("getImageAssets", GetImageAssets),
         DECLARE_NAPI_FUNCTION("commitCreate", CommitCreate),
         DECLARE_NAPI_FUNCTION("commitDelete", CommitDelete),
-        DECLARE_NAPI_FUNCTION("commitModify", CommitModify)
-    };
+        DECLARE_NAPI_FUNCTION("commitModify", CommitModify)};
 
     status = napi_define_class(env, ALBUM_ASSET_NAPI_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
                                AlbumAssetNapiConstructor, nullptr,
@@ -268,7 +273,140 @@ napi_value AlbumAssetNapi::GetAlbumName(napi_env env, napi_callback_info info)
 
     return undefinedResult;
 }
+napi_value AlbumAssetNapi::GetAlbumUri(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value jsResult = nullptr;
+    napi_value undefinedResult = nullptr;
+    AlbumAssetNapi* obj = nullptr;
+    std::string albumUri = "";
+    napi_value thisVar = nullptr;
 
+    napi_get_undefined(env, &undefinedResult);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    if (status != napi_ok || thisVar == nullptr) {
+        HiLog::Error(LABEL, "Invalid arguments!");
+        return undefinedResult;
+    }
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if (status == napi_ok && obj != nullptr) {
+        albumUri = obj->albumUri_;
+        status = napi_create_string_utf8(env, albumUri.c_str(), NAPI_AUTO_LENGTH, &jsResult);
+        if (status == napi_ok) {
+            return jsResult;
+        }
+    }
+
+    return undefinedResult;
+}
+napi_value AlbumAssetNapi::GetAlbumDateModified(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value jsResult = nullptr;
+    napi_value undefinedResult = nullptr;
+    AlbumAssetNapi* obj = nullptr;
+    int64_t dateModified;
+    napi_value thisVar = nullptr;
+
+    napi_get_undefined(env, &undefinedResult);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    if (status != napi_ok || thisVar == nullptr) {
+        HiLog::Error(LABEL, "Invalid arguments!");
+        return undefinedResult;
+    }
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if (status == napi_ok && obj != nullptr) {
+        dateModified = obj->albumDateModified_;
+        status = napi_create_int64(env, dateModified, &jsResult);
+        if (status == napi_ok) {
+            return jsResult;
+        }
+    }
+
+    return undefinedResult;
+}
+napi_value AlbumAssetNapi::GetAlbumCount(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value jsResult = nullptr;
+    napi_value undefinedResult = nullptr;
+    AlbumAssetNapi *obj = nullptr;
+    int32_t count;
+    napi_value thisVar = nullptr;
+
+    napi_get_undefined(env, &undefinedResult);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    if (status != napi_ok || thisVar == nullptr) {
+        HiLog::Error(LABEL, "Invalid arguments!");
+        return undefinedResult;
+    }
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if (status == napi_ok && obj != nullptr) {
+        count = obj->count_;
+        status = napi_create_int32(env, count, &jsResult);
+        if (status == napi_ok) {
+            return jsResult;
+        }
+    }
+
+    return undefinedResult;
+}
+napi_value AlbumAssetNapi::GetAlbumRelativePath(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value jsResult = nullptr;
+    napi_value undefinedResult = nullptr;
+    AlbumAssetNapi* obj = nullptr;
+    std::string relativePath = "";
+    napi_value thisVar = nullptr;
+
+    napi_get_undefined(env, &undefinedResult);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    if (status != napi_ok || thisVar == nullptr) {
+        HiLog::Error(LABEL, "Invalid arguments!");
+        return undefinedResult;
+    }
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if (status == napi_ok && obj != nullptr) {
+        relativePath = obj->albumRelativePath_;
+        status = napi_create_string_utf8(env, relativePath.c_str(), NAPI_AUTO_LENGTH, &jsResult);
+        if (status == napi_ok) {
+            return jsResult;
+        }
+    }
+
+    return undefinedResult;
+}
+napi_value AlbumAssetNapi::GetAlbumCoverUri(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value jsResult = nullptr;
+    napi_value undefinedResult = nullptr;
+    AlbumAssetNapi* obj = nullptr;
+    std::string coverUri = "";
+    napi_value thisVar = nullptr;
+
+    napi_get_undefined(env, &undefinedResult);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    if (status != napi_ok || thisVar == nullptr) {
+        HiLog::Error(LABEL, "Invalid arguments!");
+        return undefinedResult;
+    }
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if (status == napi_ok && obj != nullptr) {
+        coverUri = obj->coverUri_;
+        status = napi_create_string_utf8(env, coverUri.c_str(), NAPI_AUTO_LENGTH, &jsResult);
+        if (status == napi_ok) {
+            return jsResult;
+        }
+    }
+
+    return undefinedResult;
+}
 Media::IMediaLibraryClient* AlbumAssetNapi::GetMediaLibClientInstance()
 {
     Media::IMediaLibraryClient *ins = this->mediaLibrary_;

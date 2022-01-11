@@ -49,7 +49,6 @@ static void UpdateFetchOptionSelection(std::string &selection, const std::string
         }
     }
 }
-
 unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptions &fetchOps)
 {
     unique_ptr<FetchResult> fetchFileResult = nullptr;
@@ -150,9 +149,6 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
                 // Get album relative path index and value
                 albumData->SetAlbumRelativePath(get<string>(GetValFromColumn(
                     MEDIA_DATA_DB_RELATIVE_PATH, resultSet)));
-
-                // Get album virtual index and value
-                albumData->SetAlbumVirtual(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_VIRTUAL, resultSet)));
 
                 // Get album date modified index and value
                 int64_t albumDateModified;

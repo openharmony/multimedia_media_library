@@ -23,6 +23,9 @@
 #include "media_lib_service_const.h"
 #include "media_log.h"
 #include "rdb_store.h"
+#include "medialibrary_album_operations.h"
+#include "fetch_result.h"
+#include "file_asset.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,7 +42,28 @@ public:
     static std::string GetOperationType(const std::string &uri);
     static std::string GetIdFromUri(const std::string &uri);
     static std::string GetMediaTypeUri(MediaType mediaType);
+    static bool isFileExistInDb(const std::string &relativePath,
+                                     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::string GetPathFromDb(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &id,
+                                                    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static bool checkFilePending(const std::shared_ptr<FileAsset> fileAsset);
+    static bool checkOpenMode(const std::string &mode);
+    static int32_t setFilePending(string &id, bool isPending, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static NativeAlbumAsset CreateDirectorys(const std::string relativePath,
+                                             const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                                             vector<int32_t> &outIds);
+    static int32_t DeleteDirectorys(vector<int32_t> &outIds,
+                                        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static NativeAlbumAsset GetAlbumAsset(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static std::string GetFileTitle(const std::string& displayName);
+    static bool isAlbumExistInDb(const std::string &relativePath,
+                                 const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                                 int32_t &outRow);
+    static NativeAlbumAsset GetLastAlbumExistInDb(const std::string &relativePath,
+                                      const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static int64_t UTCTimeSeconds();
+    static bool CheckDisplayName(std::string displayName);
 };
 } // namespace Media
 } // namespace OHOS

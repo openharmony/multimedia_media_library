@@ -55,6 +55,9 @@ public:
     static bool CopyFile(const std::string& filePath, const std::string& newPath);
     static bool RenameDir(const std::string& oldPath, const std::string& newPath);
     static bool CreateDirectory(const std::string& dirPath);
+    static bool CheckDisplayName(std::string displayName);
+    static int64_t GetAlbumDateModified(const std::string &albumPath);
+    static int64_t UTCTimeSeconds();
 };
 } // namespace Media
 } // namespace  OHOS

@@ -18,7 +18,6 @@
 
 #include <thread>
 #include <cstdio>
-
 #include "gtest/gtest.h"
 #include "medialibrary_data_ability.h"
 #include "fetch_result.h"

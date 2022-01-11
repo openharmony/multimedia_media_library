@@ -216,7 +216,6 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
     columns.push_back(MEDIA_DATA_DB_SIZE);
     columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
     columns.push_back(MEDIA_DATA_DB_NAME);
-    columns.push_back(MEDIA_DATA_DB_MIME_TYPE);
 
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
     DataAbilityPredicates predicates;
@@ -360,12 +359,7 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
 
     if (rdbhelper_ != nullptr) {
         Uri uri(MEDIALIBRARY_DATA_URI);
-        vector<string> columns = {};
-        columns.push_back(MEDIA_DATA_DB_ID);
-        columns.push_back(MEDIA_DATA_DB_FILE_PATH);
-        columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
-        columns.push_back(MEDIA_DATA_DB_MIME_TYPE);
-
+        vector<string> columns = {MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_DATE_MODIFIED};
         resultSet = rdbhelper_->Query(uri, columns, predicates);
     }
 
@@ -381,12 +375,10 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
     int32_t columnIndexId(0);
     int32_t columnIndexPath(0);
     int32_t columnIndexDateModified(0);
-    int32_t columnIndexMimeType(0);
 
     resultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
     resultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, columnIndexPath);
     resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_MODIFIED, columnIndexDateModified);
-    resultSet->GetColumnIndex(MEDIA_DATA_DB_MIME_TYPE, columnIndexMimeType);
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         Metadata metadata;
@@ -399,9 +391,6 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
         resultSet->GetLong(columnIndexDateModified, dateModified);
         metadata.SetFileDateModified(dateModified);
 
-        string mimetype("");
-        resultSet->GetString(columnIndexMimeType, mimetype);
-        metadata.SetFileMimeType(mimetype);
         albumMap.insert(make_pair(strValue, metadata));
     }
 

@@ -19,6 +19,7 @@
 #include "album_asset_napi.h"
 #include "album_napi.h"
 #include "audio_asset_napi.h"
+#include "avmetadatahelper_napi.h"
 #include "fetch_file_result_napi.h"
 #include "file_asset_napi.h"
 #include "image_asset_napi.h"

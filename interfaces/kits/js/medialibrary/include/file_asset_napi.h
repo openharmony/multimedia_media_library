@@ -16,10 +16,15 @@
 #ifndef FILE_ASSET_NAPI_H
 #define FILE_ASSET_NAPI_H
 
+#include "ability.h"
+#include "ability_loader.h"
 #include "file_asset.h"
+#include "data_ability_helper.h"
 #include "medialibrary_napi_utils.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "values_bucket.h"
+#include "media_thumbnail_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -33,10 +38,15 @@ public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value CreateFileAsset(napi_env env, FileAsset &iAsset);
 
-    std::string GetFilePath() const;
-    MediaType GetFileMediaType() const;
     std::string GetFileDisplayName() const;
-
+    std::string GetRelativePath() const;
+    std::string GetTitle() const;
+    std::string GetFileUri() const;
+    int32_t GetFileId() const;
+    Media::MediaType GetMediaType() const;
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env);
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
+    static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
 private:
     static void FileAssetNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value FileAssetNapiConstructor(napi_env env, napi_callback_info info);
@@ -61,22 +71,37 @@ private:
     static napi_value JSGetDuration(napi_env env, napi_callback_info info);
     static napi_value JSGetRelativePath(napi_env env, napi_callback_info info);
 
-    static napi_value JSSetFilePath(napi_env env, napi_callback_info info);
-    static napi_value JSSetMediaType(napi_env env, napi_callback_info info);
     static napi_value JSSetFileDisplayName(napi_env env, napi_callback_info info);
+    static napi_value JSSetRelativePath(napi_env env, napi_callback_info info);
+    static napi_value JSSetTitle(napi_env env, napi_callback_info info);
 
+    static napi_value JSParent(napi_env env, napi_callback_info info);
+    static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
+    static napi_value JSGetDateTaken(napi_env env, napi_callback_info info);
+    static napi_value JSIsDirectory(napi_env env, napi_callback_info info);
+    static napi_value JSCommitModify(napi_env env, napi_callback_info info);
+    static napi_value JSOpen(napi_env env, napi_callback_info info);
+    static napi_value JSClose(napi_env env, napi_callback_info info);
+    static napi_value JSGetThumbnail(napi_env env, napi_callback_info info);
+    static napi_value JSFavorite(napi_env env, napi_callback_info info);
+    static napi_value JSIsFavorite(napi_env env, napi_callback_info info);
+    static napi_value JSTrash(napi_env env, napi_callback_info info);
+    static napi_value JSIsTrash(napi_env env, napi_callback_info info);
     void UpdateFileAssetInfo();
 
     int32_t fileId_;
     std::string fileUri_;
+    Media::MediaType mediaType_;
     std::string displayName_;
+    std::string relativePath_;
     std::string filePath_;
-    std::string mimeType_;
-    MediaType mediaType_;
+    std::string parent_;
+
     int64_t size_;
     int64_t dateAdded_;
     int64_t dateModified_;
-    std::string relativePath_;
+    int64_t dateTaken_;
+    std::string mimeType_;
 
     // audio
     std::string title_;
@@ -91,6 +116,7 @@ private:
 
     // album
     int32_t albumId_;
+    std::string albumUri_;
     std::string albumName_;
 
     napi_env env_;
@@ -98,6 +124,17 @@ private:
 
     static napi_ref sConstructor_;
     static FileAsset *sFileAsset_;
+};
+struct FileAssetAsyncContext {
+    napi_env env;
+    napi_async_work work;
+    napi_deferred deferred;
+    napi_ref callbackRef;
+    bool status;
+    FileAssetNapi *objectInfo;
+    OHOS::NativeRdb::ValuesBucket valuesBucket;
+    int32_t thumbWidth;
+    int32_t thumbHeight;
 };
 } // namespace Media
 } // namespace OHOS

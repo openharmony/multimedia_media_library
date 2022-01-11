@@ -22,6 +22,7 @@ namespace OHOS {
 namespace Media {
 int32_t MediaLibraryFileDb::Insert(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
+    MEDIA_ERR_LOG("MediaLibraryFileDb::Insert in");
     int64_t outRowId = -1;
     if (rdbStore != nullptr) {
         (void)rdbStore->Insert(outRowId, MEDIALIBRARY_TABLE, values);

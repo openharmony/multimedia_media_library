@@ -23,10 +23,11 @@
 #include "medialibrary_data_ability_utils.h"
 #include "medialibrary_file_db.h"
 #include "imedia_scanner_client.h"
-
+#include "native_album_asset.h"
 #include "rdb_store.h"
 #include "values_bucket.h"
 #include "value_object.h"
+#include "medialibrary_thumbnail.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,17 +35,22 @@ class MediaLibraryFileOperations {
 public:
     int32_t HandleCreateAsset(const NativeRdb::ValuesBucket &values,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    int32_t HandleCloseAsset(std::string &srcPath, const NativeRdb::ValuesBucket &values,
+    int32_t HandleCloseAsset(std::string &rowNum, std::string &srcPath, const NativeRdb::ValuesBucket &values,
                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleFileOperation(const std::string &uri, const NativeRdb::ValuesBucket &values,
-                                const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+                                const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                                const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail);
     int32_t HandleModifyAsset(const std::string &rowNum, const std::string &srcPath,
                               const NativeRdb::ValuesBucket &values,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleDeleteAsset(const std::string &rowNum, const std::string &srcPath,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    NativeRdb::ValuesBucket UpdateBasicAssetDetails(int32_t mediaType, const std::string &path,
-                                                    const int32_t parentId);
+    int32_t HandleIsDirectoryAsset(const NativeRdb::ValuesBucket &values,
+                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    NativeRdb::ValuesBucket UpdateBasicAssetDetails(int32_t mediaType,
+                                                    const std::string &fileName,
+                                                    const std::string &relPath,
+                                                    const std::string &path);
 };
 } // namespace Media
 } // namespace OHOS

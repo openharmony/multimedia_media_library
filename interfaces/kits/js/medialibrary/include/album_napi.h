@@ -59,21 +59,28 @@ private:
 
     static napi_value JSGetAlbumId(napi_env env, napi_callback_info info);
     static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumPath(napi_env env, napi_callback_info info);
+    static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
     static napi_value JSGetAlbumDateModified(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumVirtual(napi_env env, napi_callback_info info);
+    static napi_value JSGetCount(napi_env env, napi_callback_info info);
     static napi_value JSGetAlbumRelativePath(napi_env env, napi_callback_info info);
+    static napi_value JSGetCoverUri(napi_env env, napi_callback_info info);
+    static napi_value JSCommitModify(napi_env env, napi_callback_info info);
     static napi_value JSGetAlbumFileAssets(napi_env env, napi_callback_info info);
-
-    static napi_value JSSetAlbumPath(napi_env env, napi_callback_info info);
     static napi_value JSAlbumNameSetter(napi_env env, napi_callback_info info);
+
+    static napi_value JSGetAlbumPath(napi_env env, napi_callback_info info);
+    static napi_value JSGetAlbumVirtual(napi_env env, napi_callback_info info);
+    static napi_value JSSetAlbumPath(napi_env env, napi_callback_info info);
 
     int32_t albumId_;
     std::string albumName_;
-    std::string albumPath_ = "";
+    std::string albumUri_;
     int64_t albumDateModified_;
-    bool albumVirtual_;
+    int32_t count_;
     std::string albumRelativePath_;
+    std::string coverUri_;
+    bool albumVirtual_;
+    std::string albumPath_ = "";
 
     std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper_;
 
@@ -92,6 +99,7 @@ struct AlbumNapiAsyncContext {
     napi_ref callbackRef;
     AlbumNapi *objectInfo;
     bool status;
+    int32_t changedRows;
     std::string selection;
     std::vector<std::string> selectionArgs;
     std::string order;

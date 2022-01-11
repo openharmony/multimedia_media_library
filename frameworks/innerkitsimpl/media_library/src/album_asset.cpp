@@ -27,10 +27,13 @@ AlbumAsset::AlbumAsset()
 {
     albumId_ = DEFAULT_ALBUM_ID;
     albumName_ = DEFAULT_ALBUM_NAME;
-    albumPath_ = DEFAULT_ALBUM_PATH;
+    albumUri_ = DEFAULT_ALBUM_URI;
     albumDateModified_ = DEFAULT_ALBUM_DATE_MODIFIED;
-    albumVirtual_ = DEFAULT_ALBUM_VIRTUAL;
+    count_ = DEFAULT_COUNT;
     albumRelativePath_ = DEFAULT_ALBUM_RELATIVE_PATH;
+    coverUri_ = DEFAULT_COVERURI;
+    albumPath_ = DEFAULT_ALBUM_PATH;
+    albumVirtual_ = DEFAULT_ALBUM_VIRTUAL;
 }
 
 AlbumAsset::~AlbumAsset() = default;
@@ -46,9 +49,9 @@ void AlbumAsset::SetAlbumName(const string albumName)
     albumName_ = albumName;
 }
 
-void AlbumAsset::SetAlbumPath(const string albumPath)
+void AlbumAsset::SetAlbumUri(const string albumUri)
 {
-    albumPath_ = albumPath;
+    albumUri_ = albumUri;
 }
 
 void AlbumAsset::SetAlbumDateModified(const int64_t albumDateModified)
@@ -56,16 +59,28 @@ void AlbumAsset::SetAlbumDateModified(const int64_t albumDateModified)
     albumDateModified_ = albumDateModified;
 }
 
-void AlbumAsset::SetAlbumVirtual(const bool albumVirtual)
+void AlbumAsset::SetCount(const int32_t count)
 {
-    albumVirtual_ = albumVirtual;
+    count_ = count;
 }
 
 void AlbumAsset::SetAlbumRelativePath(const string albumRelativePath)
 {
     albumRelativePath_ = albumRelativePath;
 }
+void AlbumAsset::SetCoverUri(const string coverUri)
+{
+    coverUri_ = coverUri;
+}
 
+void AlbumAsset::SetAlbumPath(const string albumPath)
+{
+    albumPath_ = albumPath;
+}
+void AlbumAsset::SetAlbumVirtual(const bool albumVirtual)
+{
+    albumVirtual_ = albumVirtual;
+}
 int32_t AlbumAsset::GetAlbumId() const
 {
     return albumId_;
@@ -76,9 +91,9 @@ string AlbumAsset::GetAlbumName() const
     return albumName_;
 }
 
-string AlbumAsset::GetAlbumPath() const
+string AlbumAsset::GetAlbumUri() const
 {
-    return albumPath_;
+    return albumUri_;
 }
 
 int64_t AlbumAsset::GetAlbumDateModified() const
@@ -86,14 +101,26 @@ int64_t AlbumAsset::GetAlbumDateModified() const
     return albumDateModified_;
 }
 
-bool AlbumAsset::GetAlbumVirtual() const
+int32_t AlbumAsset::GetCount() const
 {
-    return albumVirtual_;
+    return count_;
 }
 
 string AlbumAsset::GetAlbumRelativePath() const
 {
     return albumRelativePath_;
+}
+string AlbumAsset::GetCoverUri() const
+{
+    return coverUri_;
+}
+string AlbumAsset::GetAlbumPath() const
+{
+    return albumPath_;
+}
+bool AlbumAsset::GetAlbumVirtual() const
+{
+    return albumVirtual_;
 }
 
 bool AlbumAsset::CreateAlbumAsset()
