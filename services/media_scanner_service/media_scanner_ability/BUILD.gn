@@ -69,14 +69,15 @@ ohos_shared_library("media_scanner_service") {
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
     "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
+    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//foundation/multimedia/media_standard/interfaces/innerkits/native/media:media_client",
     "//utils/native/base:utils",
-    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
   ]
 
   external_deps = [
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
+
     # "multimedia_image_standard:image_native",
     "native_appdatamgr:native_appdatafwk",
     "native_appdatamgr:native_dataability",
