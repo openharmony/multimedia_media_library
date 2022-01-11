@@ -643,7 +643,7 @@ bool MediaLibraryThumbnail::LoadSourceImage(ThumbnailData &data)
     bool ret = false;
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
         ret = LoadVideoFile(data.path, data.source);
-    } else if(data.mediaType == MEDIA_TYPE_AUDIO) {
+    } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
         ret = LoadAudioFile(data.path, data.source);
     } else {
         ret = LoadImageFile(data.path, data.source);
