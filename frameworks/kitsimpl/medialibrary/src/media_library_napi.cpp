@@ -1222,14 +1222,14 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
 
     vector<string> columns;
     NativeRdb::DataAbilityPredicates predicates;
-    if (!context->selection.empty()) {
-        context->selection += " AND ";
-    }
+
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
+    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, prefix);
+    context->selectionArgs.insert(context->selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
 
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
-    predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALL));
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet;
@@ -1345,6 +1345,8 @@ static napi_value GetResultData(napi_env env, const MediaLibraryAsyncContext &as
         HiLog::Error(LABEL, "Ability Helper is null");
         return result;
     }
+    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, MEDIA_DATA_DB_MEDIA_TYPE + " = ? ");
+    context->selectionArgs.insert(context->selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     if (!context->order.empty()) {

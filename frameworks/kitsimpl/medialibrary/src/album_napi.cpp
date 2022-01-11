@@ -630,13 +630,13 @@ static void GetFileAssetsNative(napi_env env, const AlbumNapiAsyncContext &album
 {
     AlbumNapiAsyncContext *context = const_cast<AlbumNapiAsyncContext *>(&albumContext);
     NativeRdb::DataAbilityPredicates predicates;
-    if (!context->selection.empty()) {
-        context->selection += " AND ";
+    string prefix = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
+    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, prefix);
+    context->selectionArgs.insert(context->selectionArgs.begin(), std::to_string(MEDIA_TYPE_ALBUM));
+    context->selectionArgs.insert(context->selectionArgs.begin(), std::to_string(context->objectInfo->GetAlbumId()));
         predicates.SetWhereClause(context->selection);
         predicates.SetWhereArgs(context->selectionArgs);
-    }
-    predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(context->objectInfo->GetAlbumId()));
-    predicates.OrderByAsc(context->order);
+    predicates.SetOrder(context->order);
     std::vector<std::string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
     std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =

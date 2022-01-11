@@ -206,6 +206,16 @@ public:
 
         return result;
     }
+    static void UpdateFetchOptionSelection(std::string &selection, const std::string &prefix)
+    {
+        if (!prefix.empty()) {
+            if (!selection.empty()) {
+                selection = prefix + "AND " + selection;
+            } else {
+                selection = prefix;
+            }
+        }
+    }
     static std::string GetMediaTypeUri(MediaType mediaType)
     {
     switch (mediaType) {

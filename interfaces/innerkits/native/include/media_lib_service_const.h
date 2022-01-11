@@ -150,8 +150,11 @@ const std::string VIDEO_CONTAINER_TYPE_MKV = "mkv";
 
 /** Supported image types */
 const std::string IMAGE_CONTAINER_TYPE_BMP = "bmp";
+const std::string IMAGE_CONTAINER_TYPE_BM = "bm";
 const std::string IMAGE_CONTAINER_TYPE_GIF = "gif";
 const std::string IMAGE_CONTAINER_TYPE_JPG = "jpg";
+const std::string IMAGE_CONTAINER_TYPE_JPEG = "jpeg";
+const std::string IMAGE_CONTAINER_TYPE_JPE = "jpe";
 const std::string IMAGE_CONTAINER_TYPE_PNG = "png";
 const std::string IMAGE_CONTAINER_TYPE_WEBP = "webp";
 const std::string IMAGE_CONTAINER_TYPE_RAW = "raw";

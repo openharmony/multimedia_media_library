@@ -20,6 +20,8 @@
 #include <string.h>
 
 #include "avmetadatahelper.h"
+#include "image_source.h"
+#include "image_type.h"
 #include "metadata.h"
 #include "media_log.h"
 
@@ -31,6 +33,7 @@ public:
     ~MetadataExtractor() = default;
 
     int32_t Extract(Metadata &fileMetadata, const std::string &uri);
+    int32_t ExtractImageMetadata(Metadata &fileMetadata);
     int32_t ConvertStringToInteger(const std::string &str);
 };
 } // namespace Media
