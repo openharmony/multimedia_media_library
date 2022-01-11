@@ -162,6 +162,9 @@ private:
     static napi_value CreateFileKeyEnum(napi_env env);
     static napi_value CreateDirectoryTypeEnum(napi_env env);
 
+    static napi_value JSGetPrivateAlbum(napi_env env, napi_callback_info info);
+    static napi_value JSCreateSmartAlbum(napi_env env, napi_callback_info info);
+    static napi_value JSDeleteSmartAlbum(napi_env env, napi_callback_info info);
     void RegisterChange(napi_env env, const ChangeListenerNapi &listObj);
     void RegisterChangeByType(std::string type, const ChangeListenerNapi &listObj);
     void UnregisterChange(napi_env env, const ChangeListenerNapi &listObj);
@@ -200,6 +203,7 @@ struct MediaLibraryAsyncContext {
     std::unique_ptr<FetchResult> fetchFileResult;
     OHOS::NativeRdb::ValuesBucket valuesBucket;
     int32_t dirType = 0;
+    int32_t privateAlbumType = DEFAULT_PRIVATEALBUMTYPE;
 };
 } // namespace Media
 } // namespace OHOS

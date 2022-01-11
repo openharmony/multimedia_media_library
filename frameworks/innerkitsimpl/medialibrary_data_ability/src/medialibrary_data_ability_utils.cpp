@@ -433,7 +433,7 @@ bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
         return false;
     }
     for (int i = 0; i < size; i++) {
-        if (displayName.at(0) == '.' || std::ispunct(pStr[i])) {
+        if (displayName.at(0) == '.' || std::ispunct(displayName[i])) {
             OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName ispunct");
             isDisplayName = false;
             break;

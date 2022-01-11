@@ -50,6 +50,11 @@ enum MediaType {
     MEDIA_TYPE_DEVICE,
     MEDIA_TYPE_ALL
 };
+enum PrivateAlbumType {
+    TYPE_FAVORITE = 0,
+    TYPE_TRASH,
+    TYPE_USER
+};
 
 /* ENUM Asset types */
 enum AssetType {
@@ -115,6 +120,10 @@ const int32_t DEFAULT_ALBUM_ID = 0;
 const std::string DEFAULT_ALBUM_NAME = "Unknown";
 const std::string DEFAULT_ALBUM_PATH = "";
 const std::string DEFAULT_ALBUM_URI = "";
+const std::string DEFAULT_SMART_ALBUM_TAG = "";
+const int32_t DEFAULT_SMART_ALBUM_ALBUMCAPACITY = 0;
+const int32_t DEFAULT_SMART_ALBUM_CATEGORYID = 0;
+const std::string DEFAULT_SMART_ALBUM_CATEGORYNAME = "";
 const int64_t DEFAULT_ALBUM_DATE_MODIFIED = 0;
 const int32_t DEFAULT_COUNT = 0;
 const std::string DEFAULT_ALBUM_RELATIVE_PATH = "";

@@ -14,19 +14,38 @@
  */
 
 #include "medialibrary_smartalbum_map_operations.h"
-
+#include "media_log.h"
 using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
+int32_t InsertAlbumAssetsInfoUtil(const ValuesBucket &valuesBucket,
                             shared_ptr<RdbStore> rdbStore,
                             const MediaLibrarySmartAlbumMapDb &smartAlbumMapDbOprn)
 {
     ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
-    return const_cast<MediaLibrarySmartAlbumMapDb &>(smartAlbumMapDbOprn).
-    InsertSmartAlbumMapInfo(values, rdbStore);
+    int32_t insertResult = const_cast<MediaLibrarySmartAlbumMapDb &>(smartAlbumMapDbOprn)
+    .InsertSmartAlbumMapInfo(values, rdbStore);
+    return insertResult;
+}
+int32_t RemoveAlbumAssetsInfoUtil(const ValuesBucket &valuesBucket,
+                                  shared_ptr<RdbStore> rdbStore,
+                                  const MediaLibrarySmartAlbumMapDb &smartAlbumMapDbOprn)
+{
+    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
+    ValueObject valueObject;
+    int32_t albumId = 0;
+    int32_t assetId = 0;
+    if (values.GetObject(SMARTALBUMMAP_DB_ALBUM_ID, valueObject)) {
+        valueObject.GetInt(albumId);
+    }
+    if (values.GetObject(SMARTALBUMMAP_DB_ASSET_ID, valueObject)) {
+        valueObject.GetInt(assetId);
+    }
+    int32_t deleteResult = const_cast<MediaLibrarySmartAlbumMapDb &>(smartAlbumMapDbOprn)
+    .DeleteSmartAlbumMapInfo(albumId, assetId, rdbStore);
+    return deleteResult;
 }
 int32_t MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperations(const string &oprn,
                                                                            const ValuesBucket &valuesBucket,
@@ -35,10 +54,10 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperations(const
     ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
     MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
     int32_t errCode = DATA_ABILITY_FAIL;
-    ValueObject valueObject;
-
     if (oprn == MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM) {
-        errCode = InsertAlbumInfoUtil(values, rdbStore, smartAlbumMapDbOprn);
+        errCode = InsertAlbumAssetsInfoUtil(values, rdbStore, smartAlbumMapDbOprn);
+    } else if (oprn == MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM) {
+        errCode = RemoveAlbumAssetsInfoUtil(values, rdbStore, smartAlbumMapDbOprn);
     }
     return errCode;
 }

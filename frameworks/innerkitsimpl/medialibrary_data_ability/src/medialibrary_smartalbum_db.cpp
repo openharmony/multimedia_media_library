@@ -34,5 +34,19 @@ int64_t MediaLibrarySmartAlbumDb::InsertSmartAlbumInfo(const ValuesBucket &value
     CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, ALBUM_OPERATION_ERR, "Insert failed");
     return outRowId;
 }
+int64_t MediaLibrarySmartAlbumDb::InsertCategorySmartAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid RDB store");
+    int64_t outRowId(0);
+    int32_t albumId = 0;
+    ValuesBucket value = const_cast<ValuesBucket &>(values);
+    ValueObject valueObject;
+    if (value.GetObject(SMARTALBUM_DB_ID, valueObject)) {
+            valueObject.GetInt(albumId);
+        }
+    int32_t insertResult = rdbStore->Insert(outRowId, CATEGORY_SMARTALBUM_MAP_TABLE, values);
+    CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, ALBUM_OPERATION_ERR, "Insert failed");
+    return outRowId;
+}
 }  // namespace Media
 }  // namespace OHOS

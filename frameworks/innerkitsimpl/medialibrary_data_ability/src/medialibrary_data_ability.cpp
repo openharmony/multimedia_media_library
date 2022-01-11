@@ -65,6 +65,9 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         error_code = store.ExecuteSql(CREATE_DEVICE_TABLE);
     }
     if (error_code == NativeRdb::E_OK) {
+        error_code = store.ExecuteSql(CREATE_CATEGORY_SMARTALBUMMAP_TABLE);
+    }
+    if (error_code == NativeRdb::E_OK) {
         error_code = store.ExecuteSql(CREATE_IMAGE_VIEW);
     }
     if (error_code == NativeRdb::E_OK) {
@@ -75,6 +78,12 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     }
     if (error_code == NativeRdb::E_OK) {
         error_code= store.ExecuteSql(CREATE_ABLUM_VIEW);
+    }
+    if (error_code == NativeRdb::E_OK) {
+        error_code= store.ExecuteSql(CREATE_SMARTABLUMASSETS_VIEW);
+    }
+    if (error_code == NativeRdb::E_OK) {
+        error_code= store.ExecuteSql(CREATE_ASSETMAP_VIEW);
     }
     return error_code;
 }
@@ -131,9 +140,9 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
         } else if (insertUri.find(MEDIA_ALBUMOPRN) != string::npos) {
             result = albumOprn.HandleAlbumOperations(operationType, value, rdbStore);
         } else if (insertUri.find(MEDIA_SMARTALBUMOPRN) != string::npos) {
-            result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, smartAlbumrdbStore);
+            result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore);
         } else if (insertUri.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
-            result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, smartAlbumMaprdbStore);
+            result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, rdbStore);
         }
         MEDIA_INFO_LOG("MediaLibraryDataAbility Insert: MEDIA_OPERN_KEYWORD END");
         return result;
@@ -198,7 +207,21 @@ unique_ptr<AbsSharedResultSet> QueryBySmartTableType(TableType tabletype,
 
         queryResultSet = rdbStore->Query(mediaLibSAAbsPred, columns);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
+    } else if (tabletype == TYPE_SMARTALBUMASSETS_TABLE) {
+        AbsRdbPredicates mediaLibAbsPredAlbum(SMARTABLUMASSETS_VIEW_NAME);
+        if (strQueryCondition.empty()) {
+            queryResultSet = rdbStore->QuerySql("SELECT * FROM " + SMARTABLUMASSETS_VIEW_NAME);
     } else {
+            if (predicates.IsDistinct()) {
+                mediaLibAbsPredAlbum.Distinct();
+            }
+            mediaLibAbsPredAlbum.SetWhereClause(strQueryCondition);
+            mediaLibAbsPredAlbum.SetWhereArgs(predicates.GetWhereArgs());
+            mediaLibAbsPredAlbum.Limit(predicates.GetLimit());
+            mediaLibAbsPredAlbum.SetOrder(predicates.GetOrder());
+            queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
+        }
+    } else if (tabletype == TYPE_SMARTALBUM_MAP){
         AbsRdbPredicates mediaLibSAMAbsPred(SMARTALBUM_MAP_TABLE);
         if (predicates.IsDistinct()) {
             mediaLibSAMAbsPred.Distinct();
@@ -356,6 +379,11 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
     if (uriString == MEDIALIBRARY_DATA_URI+"/"+MEDIA_ALBUMOPRN_QUERYALBUM) {
         tabletype = TYPE_ALBUM_TABLE;
         uriString = MEDIALIBRARY_DATA_URI;
+    } else if (uriString == MEDIALIBRARY_DATA_URI + "/"
+               + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
+               + SMARTABLUMASSETS_VIEW_NAME) {
+        tabletype = TYPE_SMARTALBUMASSETS_TABLE;
+        uriString = MEDIALIBRARY_SMARTALBUM_URI;
     } else if (strQueryCondition.empty() && pos != string::npos) {
         strRow = uriString.substr(pos + 1);
         uriString = uriString.substr(0, pos);
@@ -367,7 +395,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
             strQueryCondition = SMARTALBUM_DB_ID + " = " + strRow;
         } else if (pos == MEDIALIBRARY_SMARTALBUM_MAP_URI.length()) {
             tabletype = TYPE_SMARTALBUM_MAP;
-            strQueryCondition = SMARTALBUMMAP_DB_ID + " = " + strRow;
+            strQueryCondition = SMARTALBUMMAP_DB_ALBUM_ID + " = " + strRow;
     }
         }
     // After removing the index values, check whether URI is correct
@@ -379,7 +407,9 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
     if (thumbnailQuery) {
         GenThumbnail(rdbStore, mediaThumbnail_, strRow, width, height);
     }
-    if (tabletype == TYPE_SMARTALBUM || tabletype == TYPE_SMARTALBUM_MAP) {
+    if (tabletype == TYPE_SMARTALBUM ||
+        tabletype == TYPE_SMARTALBUM_MAP ||
+        tabletype == TYPE_SMARTALBUMASSETS_TABLE) {
         queryResultSet = QueryBySmartTableType(tabletype, strQueryCondition, predicates, columns, rdbStore);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     } else {
@@ -398,7 +428,7 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
         MEDIA_ERR_LOG("MediaLibraryDataAbility Update:Input parameter is invalid ");
         return DATA_ABILITY_FAIL;
     }
-
+    int32_t changedRows = DATA_ABILITY_FAIL;
     string uriString = uri.ToString();
     MEDIA_INFO_LOG("Update uriString = %{public}s", uriString.c_str());
     string strUpdateCondition = predicates.GetWhereClause();
@@ -413,13 +443,17 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
         uriString = uriString.substr(0, pos);
         strUpdateCondition = MEDIA_DATA_DB_ID + " = " + strRow;
     }
-
     // After removing the index values, check whether URI is correct
-    CHECK_AND_RETURN_RET_LOG(uriString == MEDIALIBRARY_DATA_URI, DATA_ABILITY_FAIL, "Not Data ability Uri");
 
-    int32_t changedRows = DATA_ABILITY_FAIL;
     vector<string> whereArgs = predicates.GetWhereArgs();
+    if (uriString.find(MEDIA_SMARTALBUMOPRN) != string::npos) {
+        (void)rdbStore->Update(changedRows, SMARTALBUM_TABLE, value, strUpdateCondition, whereArgs);
+    } else if (uriString.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
+        (void)rdbStore->Update(changedRows, SMARTALBUM_MAP_TABLE, value, strUpdateCondition, whereArgs);
+    } else {
+        CHECK_AND_RETURN_RET_LOG(uriString == MEDIALIBRARY_DATA_URI, DATA_ABILITY_FAIL, "Not Data ability Uri");
     (void)rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, value, strUpdateCondition, whereArgs);
+    }
 
     return changedRows;
 }
