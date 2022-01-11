@@ -320,7 +320,7 @@ bool ParseThumbnailInfo(string &uriString, int &width, int &height)
 }
 void GenThumbnail(shared_ptr<RdbStore> rdb,
                   shared_ptr<MediaLibraryThumbnail> thumbnail,
-                  string rowId, int width, int height)
+                  string &rowId, int width, int height)
 {
     ThumbRdbOpt opts = {
         .store = rdb,

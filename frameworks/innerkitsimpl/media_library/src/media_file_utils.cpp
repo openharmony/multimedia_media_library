@@ -282,16 +282,13 @@ bool MediaFileUtils::CheckDisplayName(std::string displayName)
     if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
-    const char *pStr = new char[size + 1];
-    pStr = displayName.c_str();
     for (int i = 0; i < size; i++) {
-        if (displayName.at(0) == '.' || ispunct(pStr[i])) {
+        if (displayName.at(0) == '.' || std::ispunct(displayName[i])) {
             MEDIA_ERR_LOG("CheckDisplayName displayName fail");
             isDisplayName = false;
             break;
         }
     }
-    delete []pStr;
     return isDisplayName;
 }
 int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)
