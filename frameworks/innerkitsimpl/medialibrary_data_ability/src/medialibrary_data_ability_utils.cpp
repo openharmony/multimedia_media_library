@@ -113,7 +113,7 @@ int32_t MediaLibraryDataAbilityUtils::DeleteDirectorys(vector<int32_t> &outIds,
     int32_t errorCode = -1;
     if (!outIds.empty()) {
         MediaLibraryAlbumOperations albumOprn;
-        for (vector<int32_t>::reverse_iterator it = outIds.rbegin(); it != outIds.rend(); it++) {
+        for (vector<int32_t>::reverse_iterator it = outIds.rbegin(); it != outIds.rend(); ++it) {
             ValuesBucket values;
             int32_t id = *it;
             values.PutInt(MEDIA_DATA_DB_ID, id);
@@ -432,16 +432,13 @@ bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
     if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
-    const char *pStr = new char[size + 1];
-    pStr = displayName.c_str();
     for (int i = 0; i < size; i++) {
-        if (displayName.at(0) == '.' || ispunct(pStr[i])) {
+        if (displayName.at(0) == '.' || std::ispunct(pStr[i])) {
             OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName ispunct");
             isDisplayName = false;
             break;
         }
     }
-    delete []pStr;
     OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName");
     return isDisplayName;
 }
