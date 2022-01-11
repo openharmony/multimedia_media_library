@@ -301,5 +301,15 @@ int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)
     }
     return 0;
 }
+
+int64_t MediaFileUtils::UTCTimeSeconds()
+{
+    struct timespec t;
+    t.tv_sec = 0;
+    t.tv_nsec = 0;
+    clock_gettime(CLOCK_REALTIME, &t);
+    MEDIA_INFO_LOG("UTCTimeSeconds = %{public}lld", (int64_t)(t.tv_sec));
+    return (int64_t)(t.tv_sec);
+}
 } // namespace Media
 } // namespace OHOS

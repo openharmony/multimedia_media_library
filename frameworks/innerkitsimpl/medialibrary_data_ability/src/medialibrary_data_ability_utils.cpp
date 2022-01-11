@@ -424,6 +424,7 @@ int64_t MediaLibraryDataAbilityUtils::UTCTimeSeconds()
     clock_gettime(CLOCK_REALTIME, &t);
     return (int64_t)(t.tv_sec);
 }
+
 bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
 {
     bool isDisplayName = true;

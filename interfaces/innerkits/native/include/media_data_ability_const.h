@@ -83,6 +83,7 @@ const std::string MEDIA_DATA_DB_WIDTH = "width";
 const std::string MEDIA_DATA_DB_OWNER_PACKAGE = "owner_package";
 
 const std::string MEDIA_DATA_DB_IS_FAV = "is_favorite";
+const std::string MEDIA_DATA_DB_IS_TRASH = "is_trash";
 const std::string MEDIA_DATA_DB_DATE_TRASHED = "date_trashed";
 const std::string MEDIA_DATA_DB_IS_PENDING = "is_pending";
 const std::string MEDIA_DATA_DB_TIME_PENDING = "time_pending";
