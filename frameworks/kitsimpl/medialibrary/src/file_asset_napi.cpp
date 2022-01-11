@@ -1643,7 +1643,7 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
 }
 
 static void JSTrashCallbackComplete(napi_env env, napi_status status,
-                                        FileAssetAsyncContext* context)
+                                    FileAssetAsyncContext* context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
@@ -1669,9 +1669,9 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status,
 }
 
 napi_value GetJSArgsForTrash(napi_env env,
-                                 size_t argc,
-                                 const napi_value argv[],
-                                 FileAssetAsyncContext &asyncContext)
+                             size_t argc,
+                             const napi_value argv[],
+                             FileAssetAsyncContext &asyncContext)
 {
     const int32_t refCount = 1;
     napi_value result = nullptr;
@@ -1776,7 +1776,7 @@ static bool GetIsTrashNative(napi_env env, const FileAssetAsyncContext &fileCont
 }
 
 static void JSIsTrashCallbackComplete(napi_env env, napi_status status,
-                                          FileAssetAsyncContext* context)
+                                      FileAssetAsyncContext* context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
@@ -1800,9 +1800,9 @@ static void JSIsTrashCallbackComplete(napi_env env, napi_status status,
 }
 
 static napi_value GetJSArgsForIsTrash(napi_env env,
-                                          size_t argc,
-                                          const napi_value argv[],
-                                          FileAssetAsyncContext &asyncContext)
+                                      size_t argc,
+                                      const napi_value argv[],
+                                      FileAssetAsyncContext &asyncContext)
 {
     HiLog::Error(LABEL, "GetJSArgsForIsTrash");
     string str = "";
