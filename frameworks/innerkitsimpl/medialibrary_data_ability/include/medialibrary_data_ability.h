@@ -26,6 +26,7 @@
 #include "medialibrary_smartalbum_operations.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_file_operations.h"
+#include "medialibrary_kvstore_operations.h"
 #include "media_log.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
@@ -38,9 +39,13 @@
 #include "want.h"
 #include "hilog/log.h"
 #include "medialibrary_thumbnail.h"
+#include "distributed_kv_data_manager.h"
 
 namespace OHOS {
 namespace Media {
+// kvstore constants
+    const DistributedKv::AppId KVSTORE_APPID { "soundmanager" };
+    const DistributedKv::StoreId KVSTORE_STOREID { "ringtone" };
     enum TableType {
         TYPE_DATA,
         TYPE_SMARTALBUM,
@@ -54,6 +59,7 @@ namespace Media {
         EXPORT ~MediaLibraryDataAbility();
 
         EXPORT int32_t InitMediaLibraryRdbStore();
+        EXPORT void InitialiseKvStore();
         EXPORT int32_t Insert(const Uri &uri, const NativeRdb::ValuesBucket &value) override;
         EXPORT int32_t Delete(const Uri &uri, const NativeRdb::DataAbilityPredicates &predicates) override;
         EXPORT int32_t BatchInsert(const Uri &uri, const std::vector<NativeRdb::ValuesBucket> &values) override;
@@ -63,6 +69,7 @@ namespace Media {
             const std::vector<std::string> &columns,
             const NativeRdb::DataAbilityPredicates &predicates) override;
         EXPORT int32_t OpenFile(const Uri &uri, const std::string &mode) override;
+        EXPORT std::string GetType(const Uri &uri) override;
 
     protected:
         void OnStart(const AAFwk::Want &want) override;
@@ -72,6 +79,8 @@ namespace Media {
         std::string GetOperationType(const std::string &uri);
         void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
 
+        std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
+        DistributedKv::DistributedKvDataManager dataManager_;
         std::shared_ptr<IMediaScannerClient> scannerClient_;
         std::shared_ptr<NativeRdb::RdbStore> rdbStore;
         std::shared_ptr<NativeRdb::RdbStore> smartAlbumrdbStore;
