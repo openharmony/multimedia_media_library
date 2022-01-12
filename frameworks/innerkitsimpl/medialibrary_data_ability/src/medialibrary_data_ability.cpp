@@ -18,6 +18,7 @@
 using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DistributedKv;
 
 namespace OHOS {
 namespace Media {
@@ -28,6 +29,7 @@ void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
     MEDIA_INFO_LOG("MediaLibraryDataAbility::OnStart");
     Ability::OnStart(want);
     InitMediaLibraryRdbStore();
+    InitialiseKvStore();
 }
 
 void MediaLibraryDataAbility::OnStop()
@@ -41,15 +43,27 @@ void MediaLibraryDataAbility::OnStop()
         scannerClient_->Release();
         scannerClient_ = nullptr;
     }
+
+    if (kvStorePtr_ != nullptr) {
+        dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
+        kvStorePtr_ = nullptr;
+    }
 }
 
 MediaLibraryDataAbility::MediaLibraryDataAbility(void)
 {
     isRdbStoreInitialized = false;
     rdbStore = nullptr;
+    kvStorePtr_ = nullptr;
 }
 
-MediaLibraryDataAbility::~MediaLibraryDataAbility(void) {}
+MediaLibraryDataAbility::~MediaLibraryDataAbility(void)
+{
+    if (kvStorePtr_ != nullptr) {
+        dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
+        kvStorePtr_ = nullptr;
+    }
+}
 
 int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 {
@@ -98,19 +112,37 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
     if (isRdbStoreInitialized) {
         return DATA_ABILITY_SUCCESS;
     }
+
     int32_t errCode(DATA_ABILITY_FAIL);
     RdbStoreConfig config(MEDIA_DATA_ABILITY_DB_NAME);
     MediaLibraryDataCallBack rdbDataCallBack;
+
     rdbStore = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility::InitMediaRdbStore GetRdbStore is failed ");
         return errCode;
     }
+
     isRdbStoreInitialized = true;
     mediaThumbnail_ = std::make_shared<MediaLibraryThumbnail>();
     MEDIA_INFO_LOG("DATA_ABILITY_SUCCESS");
     return DATA_ABILITY_SUCCESS;
 }
+
+std::string MediaLibraryDataAbility::GetType(const Uri &uri)
+{
+    string getTypeUri = uri.ToString();
+    // If get uri contains media operation keyword, follow media operation procedure
+    if (getTypeUri.find(MEDIA_OPERN_KEYWORD) != string::npos) {
+        MediaLibraryKvStoreOperations kvStoreOprn;
+
+        if (getTypeUri.find(MEDIA_KVSTOREOPRN) != string::npos) {
+            return kvStoreOprn.HandleKvStoreGetOperations(getTypeUri, kvStorePtr_);
+        }
+    }
+    return "";
+}
+
 int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &value)
 {
     MEDIA_INFO_LOG("MediaLibraryDataAbility Insert: IN");
@@ -118,7 +150,7 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
         MEDIA_ERR_LOG("MediaLibraryDataAbility Insert: Input parameter is invalid");
         return DATA_ABILITY_FAIL;
     }
-    
+
     string insertUri = uri.ToString();
     // If insert uri contains media opearation, follow media operation procedure
     if (insertUri.find(MEDIA_OPERN_KEYWORD) != string::npos) {
@@ -126,6 +158,8 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
         MediaLibraryAlbumOperations albumOprn;
         MediaLibrarySmartAlbumOperations smartalbumOprn;
         MediaLibrarySmartAlbumMapOperations smartalbumMapOprn;
+        MediaLibraryKvStoreOperations kvStoreOprn;
+
         string scanPath("");
         int32_t result(DATA_ABILITY_FAIL);
         string operationType = MediaLibraryDataAbilityUtils::GetOperationType(insertUri);
@@ -143,6 +177,8 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
             result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore);
         } else if (insertUri.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
             result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, rdbStore);
+        } else if (insertUri.find(MEDIA_KVSTOREOPRN) != string::npos) {
+            result = kvStoreOprn.HandleKvStoreInsertOperations(operationType, value, kvStorePtr_);
         }
         MEDIA_INFO_LOG("MediaLibraryDataAbility Insert: MEDIA_OPERN_KEYWORD END");
         return result;
@@ -532,6 +568,26 @@ int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mod
     }
     MEDIA_ERR_LOG("MediaLibraryDataAbility OpenFile: Success");
     return fd;
+}
+
+void MediaLibraryDataAbility::InitialiseKvStore()
+{
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::InitialiseKvStore");
+    if (kvStorePtr_ != nullptr) {
+        return;
+    }
+
+    Options options = {
+        .createIfMissing = true,
+        .encrypt = false,
+        .autoSync = false,
+        .kvStoreType = KvStoreType::SINGLE_VERSION
+    };
+
+    Status status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_STOREID, kvStorePtr_);
+    if (status != Status::SUCCESS || kvStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryDataAbility::InitialiseKvStore failed %{public}d", status);
+    }
 }
 
 void ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) {}
