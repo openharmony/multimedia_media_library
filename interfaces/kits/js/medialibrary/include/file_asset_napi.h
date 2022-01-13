@@ -135,6 +135,7 @@ struct FileAssetAsyncContext {
     OHOS::NativeRdb::ValuesBucket valuesBucket;
     int32_t thumbWidth;
     int32_t thumbHeight;
+    bool isDirectory;
 };
 } // namespace Media
 } // namespace OHOS

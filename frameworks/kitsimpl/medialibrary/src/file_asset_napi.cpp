@@ -231,7 +231,7 @@ std::string FileAssetNapi::GetTitle() const
 
 std::string FileAssetNapi::GetFileUri() const
 {
-    return "/" + to_string(fileId_);
+    return fileUri_;
 }
 
 int32_t FileAssetNapi::GetFileId() const
@@ -1346,19 +1346,8 @@ static void JSFavouriteCallbackComplete(napi_env env, napi_status status,
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri uri(abilityUri);
-        ValueObject valueObject;
-        NativeRdb::DataAbilityPredicates predicates;
-        NativeRdb::ValuesBucket valuesBucket;
-        bool isFavourite = false;
-        if (context->valuesBucket.GetObject(MEDIA_DATA_DB_IS_FAV, valueObject)) {
-            valueObject.GetBool(isFavourite);
-        }
-        valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavourite);
-        predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
-        context->objectInfo->sAbilityHelper_->Update(uri, valuesBucket, predicates);
+    if (context->status) {
+        jsContext->status = true;
     } else {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Ability helper is null");
@@ -1391,10 +1380,9 @@ static void JSIsDirectoryCallbackComplete(napi_env env, napi_status status,
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    bool IsDirectory = false;
-    if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        IsDirectory = GetIsDirectoryiteNative(env, *context);
-        napi_get_boolean(env, IsDirectory, &jsContext->data);
+
+    if (context->status) {
+        napi_get_boolean(env, context->isDirectory, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
@@ -1459,7 +1447,15 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                FileAssetAsyncContext* context = static_cast<FileAssetAsyncContext*>(data);
+                if (context->objectInfo->sAbilityHelper_ != nullptr) {
+                    context->isDirectory = GetIsDirectoryiteNative(env, *context);
+                    context->status = true;
+                } else {
+                    context->status = false;
+                }
+            },
             reinterpret_cast<CompleteCallback>(JSIsDirectoryCallbackComplete),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -1565,7 +1561,26 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                FileAssetAsyncContext* context = static_cast<FileAssetAsyncContext*>(data);
+                if (context->objectInfo->sAbilityHelper_ != nullptr) {
+                    string abilityUri = MEDIALIBRARY_DATA_URI;
+                    Uri uri(abilityUri);
+                    ValueObject valueObject;
+                    NativeRdb::DataAbilityPredicates predicates;
+                    NativeRdb::ValuesBucket valuesBucket;
+                    bool isFavourite = false;
+                    if (context->valuesBucket.GetObject(MEDIA_DATA_DB_IS_FAV, valueObject)) {
+                        valueObject.GetBool(isFavourite);
+                    }
+                    valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavourite);
+                    predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
+                    context->objectInfo->sAbilityHelper_->Update(uri, valuesBucket, predicates);
+                    context->status = true;
+                } else {
+                    context->status = false;
+                }
+            },
             reinterpret_cast<CompleteCallback>(JSFavouriteCallbackComplete),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -1645,10 +1660,12 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
 static void JSTrashCallbackComplete(napi_env env, napi_status status,
                                     FileAssetAsyncContext* context)
 {
+    HiLog::Error(LABEL, "JSTrashCallbackComplete in");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
+        HiLog::Error(LABEL, "JSTrashCallbackComplete sAbilityHelper_ != nullptr");
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri uri(abilityUri);
         ValueObject valueObject;
@@ -1662,9 +1679,11 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->data);
     }
     if (context->work != nullptr) {
+        HiLog::Error(LABEL, "JSTrashCallbackComplete context->work != nullptr");
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+    HiLog::Error(LABEL, "JSTrashCallbackComplete out");
     delete context;
 }
 
@@ -1684,18 +1703,19 @@ napi_value GetJSArgsForTrash(napi_env env,
         if (i == PARAM0 && valueType == napi_boolean) {
             napi_get_value_bool(env, argv[i], &isTrash);
         } else if (i == PARAM1 && valueType == napi_function) {
+            HiLog::Error(LABEL, "JSTrash GET_JS_ARGS context->callbackRef");
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
             NAPI_ASSERT(env, false, "type mismatch");
         }
     }
-    context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_TRASH, isTrash);
+
     int64_t timeNow = MediaFileUtils::UTCTimeSeconds();
     if (isTrash) {
-        context->valuesBucket.PutLong(MEDIA_DATA_DB_TIME_PENDING, timeNow);
+        context->valuesBucket.PutLong(MEDIA_DATA_DB_DATE_TRASHED, timeNow);
     } else {
-        context->valuesBucket.PutLong(MEDIA_DATA_DB_TIME_PENDING, 0);
+        context->valuesBucket.PutLong(MEDIA_DATA_DB_DATE_TRASHED, 0);
     }
     napi_get_boolean(env, true, &result);
     return result;
@@ -1703,6 +1723,7 @@ napi_value GetJSArgsForTrash(napi_env env,
 
 napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
 {
+    HiLog::Error(LABEL, "JSTrash in");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
@@ -1711,11 +1732,13 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+
+    HiLog::Error(LABEL, "JSTrash GET_JS_ARGS argc = %{public}d", argc);
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
-        result = GetJSArgsForFavourite(env, argc, argv, *asyncContext);
+        result = GetJSArgsForTrash(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSTrash");
@@ -1730,6 +1753,7 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
             asyncContext.release();
         }
     }
+    HiLog::Error(LABEL, "JSTrash out");
     return result;
 }
 
@@ -1767,10 +1791,10 @@ static bool GetIsTrashNative(napi_env env, const FileAssetAsyncContext &fileCont
         context->objectInfo->sAbilityHelper_);
 
     if (fileAsset != nullptr && fileAsset->GetDateTrashed() > 0) {
-        MEDIA_INFO_LOG("fileAsset->GetDateTrashed() > 0");
+        MEDIA_INFO_LOG("isTrashed = true");
         isTrashed = true;
     } else {
-        MEDIA_ERR_LOG("Failed to obtain file asset");
+        MEDIA_INFO_LOG("isTrashed = false");
     }
     return isTrashed;
 }
@@ -1862,8 +1886,7 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
 void FileAssetNapi::UpdateFileAssetInfo()
 {
     fileId_ = sFileAsset_->GetId();
-    string uri = sFileAsset_->GetUri();
-    fileUri_ = (!uri.empty()) ? (uri + "/" + std::to_string(fileId_)) : uri;
+    fileUri_ = sFileAsset_->GetUri();
     filePath_ = sFileAsset_->GetPath();
     displayName_ = sFileAsset_->GetDisplayName();
     mimeType_ = sFileAsset_->GetMimeType();

@@ -223,6 +223,7 @@ const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + " GROUP BY "
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID +", "
                                       + FILE_TABLE + "." +MEDIA_DATA_DB_BUCKET_NAME;
+
 const std::string SMARTALBUM_DB_ID = "album_id";
 const std::string SMARTALBUM_DB_NAME = "name";
 const std::string SMARTALBUM_DB_DESCRIPTION = "description";
@@ -252,7 +253,6 @@ const std::string CREATE_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXISTS " + S
                                             + SMARTALBUMMAP_DB_ALBUM_ID + " INT, "
                                             + SMARTALBUMMAP_DB_ASSET_ID + " INT, "
                                             + SMARTALBUMMAP_DB_SELF_ID + " INT DEFAULT 0) ";
-
 const std::string CATEGORY_SMARTALBUMMAP_DB_ID = "category_map_id";
 const std::string CATEGORY_SMARTALBUMMAP_DB_CATEGORY_ID = "category_id";
 const std::string CATEGORY_SMARTALBUMMAP_DB_CATEGORY_NAME = "category_name";
@@ -276,7 +276,7 @@ const std::string DEVICE_DB_PREPATH = "pre_path";
 const std::string DEVICE_DB_DATE_ADDED = "date_added";
 const std::string DEVICE_DB_DATE_MODIFIED = "date_modified";
 const std::string CREATE_DEVICE_TABLE = "CREATE TABLE IF NOT EXISTS " + DEVICE_TABLE + " ("
-                                            + SMARTALBUMMAP_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                            + DEVICE_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                                             + DEVICE_DB_NAME + " TEXT, "
                                             + DEVICE_DB_IP + " TEXT, "
                                             + DEVICE_DB_SYNC_STATUS + " TEXT, "
@@ -311,7 +311,6 @@ const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW " + ASSETMAP_VIEW_NAME
                         + " WHERE "
                         + SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_ALBUM_ID + " = "
                         + MEDIALIBRARY_TABLE + "." + MEDIA_DATA_DB_ID;
-
 
 // File operations constants
 const std::string MEDIA_OPERN_KEYWORD = "operation";

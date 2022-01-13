@@ -68,7 +68,6 @@ private:
     static napi_value JSAddAsset(napi_env env, napi_callback_info info);
     static napi_value JSRemoveAsset(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumFileAssets(napi_env env, napi_callback_info info);
-
     int32_t albumId_;
     std::string albumName_;
     std::string albumUri_;
@@ -103,4 +102,4 @@ struct SmartAlbumNapiAsyncContext {
 };
 } // namespace Media
 } // namespace OHOS
-#endif /* SMART_ALBUM_NAPI_H */
+#endif /* ALBUM_NAPI_H */
