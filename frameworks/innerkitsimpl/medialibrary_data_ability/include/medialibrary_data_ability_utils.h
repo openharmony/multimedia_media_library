@@ -64,6 +64,10 @@ public:
                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static int64_t UTCTimeSeconds();
     static bool CheckDisplayName(std::string displayName);
+    static std::unique_ptr<AbsSharedResultSet> QueryFiles(const std::string &strQueryCondition,
+        const std::shared_ptr<RdbStore> &rdbStore);
+    static std::unique_ptr<AbsSharedResultSet> QueryFavFiles(const std::shared_ptr<RdbStore> &rdbStore);
+    static std::unique_ptr<AbsSharedResultSet> QueryTrashFiles(const std::shared_ptr<RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS

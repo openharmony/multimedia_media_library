@@ -338,12 +338,12 @@ bool MediaLibraryDataAbilityUtils::checkOpenMode(const string &mode)
 {
     MEDIA_INFO_LOG("checkOpenMode in");
     MEDIA_INFO_LOG("checkOpenMode in mode %{public}s", mode.c_str());
-    
+
     std::string lowModeStr = mode;
     std::transform(lowModeStr.begin(), lowModeStr.end(), lowModeStr.begin(), [](unsigned char c) {
         return std::tolower(c);
     });
-    
+
     MEDIA_INFO_LOG("checkOpenMode in lowModeStr %{public}s", lowModeStr.c_str());
     size_t wIndex = lowModeStr.rfind('w');
     if (wIndex != string::npos) {
@@ -441,6 +441,38 @@ bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
     }
     OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName");
     return isDisplayName;
+}
+
+unique_ptr<AbsSharedResultSet> QueryFiles(const string &strQueryCondition, const shared_ptr<RdbStore> &rdbStore)
+{
+    vector<string> selectionArgs = {};
+
+    if ((strQueryCondition.empty()) || (rdbStore == nullptr)) {
+        MEDIA_ERR_LOG("QueryFiles params is incorrect or rdbStore is null");
+        return nullptr;
+    }
+
+    AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+    absPredicates.SetWhereClause(strQueryCondition);
+    absPredicates.SetWhereArgs(selectionArgs);
+
+    vector<string> columns;
+
+    unique_ptr<AbsSharedResultSet> resultSet = rdbStore->Query(absPredicates, columns);
+
+    return resultSet;
+}
+
+unique_ptr<AbsSharedResultSet> QueryFavFiles(const shared_ptr<RdbStore> &rdbStore)
+{
+    string strQueryCondition = MEDIA_DATA_DB_IS_FAV + " = 0";
+    return QueryFiles(strQueryCondition, rdbStore);
+}
+
+unique_ptr<AbsSharedResultSet> QueryTrashFiles(const shared_ptr<RdbStore> &rdbStore)
+{
+    string strQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + " > 0";
+    return QueryFiles(strQueryCondition, rdbStore);
 }
 } // namespace Media
 } // namespace OHOS
