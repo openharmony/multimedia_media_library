@@ -443,7 +443,7 @@ bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
     return isDisplayName;
 }
 
-unique_ptr<AbsSharedResultSet> QueryFiles(const string &strQueryCondition, const shared_ptr<RdbStore> &rdbStore)
+unique_ptr<AbsSharedResultSet> MediaLibraryDataAbilityUtils::QueryFiles(const string &strQueryCondition, const shared_ptr<RdbStore> &rdbStore)
 {
     vector<string> selectionArgs = {};
 
@@ -463,15 +463,15 @@ unique_ptr<AbsSharedResultSet> QueryFiles(const string &strQueryCondition, const
     return resultSet;
 }
 
-unique_ptr<AbsSharedResultSet> QueryFavFiles(const shared_ptr<RdbStore> &rdbStore)
+unique_ptr<AbsSharedResultSet> MediaLibraryDataAbilityUtils::QueryFavFiles(const shared_ptr<RdbStore> &rdbStore)
 {
-    string strQueryCondition = MEDIA_DATA_DB_IS_FAV + " = 0";
+    string strQueryCondition = MEDIA_DATA_DB_IS_FAV + " = 1 AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> 8";
     return QueryFiles(strQueryCondition, rdbStore);
 }
 
-unique_ptr<AbsSharedResultSet> QueryTrashFiles(const shared_ptr<RdbStore> &rdbStore)
+unique_ptr<AbsSharedResultSet> MediaLibraryDataAbilityUtils::QueryTrashFiles(const shared_ptr<RdbStore> &rdbStore)
 {
-    string strQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + " > 0";
+    string strQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + " > 0 AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> 8";
     return QueryFiles(strQueryCondition, rdbStore);
 }
 } // namespace Media

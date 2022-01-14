@@ -38,6 +38,7 @@ SmartAlbumNapi::SmartAlbumNapi()
     albumName_ = DEFAULT_ALBUM_NAME;
     albumUri_ = DEFAULT_ALBUM_URI;
     albumTag_ = DEFAULT_SMART_ALBUM_TAG;
+    albumPrivateType_ = DEFAULT_SMART_ALBUM_PRIVATE_TYPE;
     albumCapacity_ = DEFAULT_SMART_ALBUM_ALBUMCAPACITY;
     albumCategoryId_ = DEFAULT_SMART_ALBUM_CATEGORYID;
     albumCategoryName_ = DEFAULT_SMART_ALBUM_CATEGORYNAME;
@@ -105,6 +106,7 @@ void SmartAlbumNapi::SetSmartAlbumNapiProperties(const SmartAlbumAsset &albumDat
     this->albumId_ = albumData.GetAlbumId();
     this->albumName_ = albumData.GetAlbumName();
     this->albumTag_ = albumData.GetAlbumTag();
+    this->albumPrivateType_ = albumData.GetAlbumPrivateType();
     this->albumCapacity_ = albumData.GetAlbumCapacity();
     this->albumCategoryId_ = albumData.GetCategoryId();
     this->albumCategoryName_ = albumData.GetCategoryName();
@@ -177,6 +179,11 @@ std::shared_ptr<AppExecFwk::DataAbilityHelper> SmartAlbumNapi::GetDataAbilityHel
 std::string SmartAlbumNapi::GetSmartAlbumName() const
 {
     return albumName_;
+}
+
+int32_t SmartAlbumNapi::GetAlbumPrivateType() const
+{
+    return albumPrivateType_;
 }
 
 int32_t SmartAlbumNapi::GetSmartAlbumId() const
@@ -444,7 +451,7 @@ static void RemoveAssetNative(const SmartAlbumNapiAsyncContext &albumContext)
 {
     SmartAlbumNapiAsyncContext *context = const_cast<SmartAlbumNapiAsyncContext *>(&albumContext);
     context->valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
-
+    HiLog::Error(LABEL, "RemoveAssetNative id = %{public}d", context->objectInfo->GetSmartAlbumId());
     int32_t changedRows;
     Uri RemoveAsseturi(MEDIALIBRARY_DATA_URI + "/"
     + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
@@ -457,8 +464,6 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Sma
     HiLog::Error(LABEL, "JSCommitModifyCompleteCallback");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
-    jsContext->status = false;
-    CommitModifyNative(*context);
     if (context->changedRows != -1) {
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
@@ -501,7 +506,7 @@ static void JSRemoveAssetCompleteCallback(napi_env env, napi_status status, Smar
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    RemoveAssetNative(*context);
+    HiLog::Error(LABEL, "JSRemoveAssetCompleteCallback id = %{public}d", context->changedRows);
     if (context->changedRows != -1) {
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
@@ -788,9 +793,43 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
     return result;
 }
 
-static void GetFileAssetsNative(napi_env env, const SmartAlbumNapiAsyncContext &albumContext)
+static void GetTrashFileAssetsNative(napi_env env, SmartAlbumNapiAsyncContext *context)
 {
-    SmartAlbumNapiAsyncContext *context = const_cast<SmartAlbumNapiAsyncContext *>(&albumContext);
+    HiLog::Error(LABEL, "GetTrashFileAssetsNative in");
+    NativeRdb::DataAbilityPredicates predicates;
+
+    predicates.NotEqualTo(MEDIA_DATA_DB_DATE_TRASHED, "0");
+    predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
+
+    std::vector<std::string> columns;
+    Uri uri(MEDIALIBRARY_DATA_URI);
+
+    std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
+        context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
+
+    context->fetchResult = std::make_unique<FetchResult>(resultSet);
+    HiLog::Error(LABEL, "GetTrashFileAssetsNative out");
+}
+
+static void GetFavFileAssetsNative(napi_env env, SmartAlbumNapiAsyncContext *context)
+{
+    HiLog::Error(LABEL, "GetFavFileAssetsNative in");
+    NativeRdb::DataAbilityPredicates predicates;
+
+    predicates.EqualTo(MEDIA_DATA_DB_IS_FAV, "1");
+    predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
+
+    std::vector<std::string> columns;
+    Uri uri(MEDIALIBRARY_DATA_URI);
+
+    std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
+        context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
+
+    context->fetchResult = std::make_unique<FetchResult>(resultSet);
+    HiLog::Error(LABEL, "GetFavFileAssetsNative out");
+}
+static void GetFileAssetsNative(napi_env env, SmartAlbumNapiAsyncContext *context)
+{
     NativeRdb::DataAbilityPredicates predicates;
 
     predicates.EqualTo(SMARTALBUMMAP_DB_ALBUM_ID, std::to_string(context->objectInfo->GetSmartAlbumId()));
@@ -814,8 +853,13 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status,
 
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-
-    GetFileAssetsNative(env, *context);
+    if (context->objectInfo->GetAlbumPrivateType() == TYPE_FAVORITE) {
+        GetFavFileAssetsNative(env, context);
+    } else if (context->objectInfo->GetAlbumPrivateType() == TYPE_TRASH) {
+        GetTrashFileAssetsNative(env, context);
+    } else {
+        GetFileAssetsNative(env, context);
+    }
 
     if (context->fetchResult != nullptr) {
         fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult));

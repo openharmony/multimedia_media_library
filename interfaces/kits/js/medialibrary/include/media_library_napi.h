@@ -161,6 +161,7 @@ private:
     static napi_value CreateMediaTypeEnum(napi_env env);
     static napi_value CreateFileKeyEnum(napi_env env);
     static napi_value CreateDirectoryTypeEnum(napi_env env);
+    static napi_value CreatePrivateAlbumTypeEnum(napi_env env);
 
     static napi_value JSGetPrivateAlbum(napi_env env, napi_callback_info info);
     static napi_value JSCreateSmartAlbum(napi_env env, napi_callback_info info);

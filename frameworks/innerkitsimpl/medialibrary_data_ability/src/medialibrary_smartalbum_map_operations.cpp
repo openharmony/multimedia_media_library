@@ -43,6 +43,8 @@ int32_t RemoveAlbumAssetsInfoUtil(const ValuesBucket &valuesBucket,
     if (values.GetObject(SMARTALBUMMAP_DB_ASSET_ID, valueObject)) {
         valueObject.GetInt(assetId);
     }
+    MEDIA_ERR_LOG("mediasmartmap albumId = %{public}d", albumId);
+    MEDIA_ERR_LOG("mediasmartmap albumId = %{public}d", assetId);
     int32_t deleteResult = const_cast<MediaLibrarySmartAlbumMapDb &>(smartAlbumMapDbOprn)
     .DeleteSmartAlbumMapInfo(albumId, assetId, rdbStore);
     return deleteResult;

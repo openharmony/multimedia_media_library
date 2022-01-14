@@ -110,7 +110,7 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        + MEDIA_DATA_DB_TITLE + " TEXT, "
                                        + MEDIA_DATA_DB_DESCRIPTION + " TEXT, "
                                        + MEDIA_DATA_DB_NAME + " TEXT, "
-                                       + MEDIA_DATA_DB_ORIENTATION + " INT, "
+                                       + MEDIA_DATA_DB_ORIENTATION + " INT DEFAULT 0, "
                                        + MEDIA_DATA_DB_LATITUDE + " DOUBLE DEFAULT 0, "
                                        + MEDIA_DATA_DB_LONGITUDE + " DOUBLE DEFAULT 0, "
                                        + MEDIA_DATA_DB_DATE_TAKEN + " BIGINT DEFAULT 0, "
@@ -321,6 +321,7 @@ const std::string MEDIA_SMARTALBUMMAPOPRN = "smartalbummap_operation";
 const std::string MEDIA_FILEOPRN_CREATEASSET = "create_asset";
 const std::string MEDIA_FILEOPRN_MODIFYASSET = "modify_asset";
 const std::string MEDIA_FILEOPRN_DELETEASSET = "delete_asset";
+const std::string MEDIA_FILEOPRN_GETALBUMCAPACITY = "get_album_capacity";
 const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
 const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
 const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
@@ -344,7 +345,9 @@ const std::string MEDIA_FILEMODE_WRITEAPPEND = "wa";
 const std::string MEDIA_FILEMODE_READWRITETRUNCATE = "rwt";
 
 const std::string ALBUM_DB_COND = MEDIA_DATA_DB_ID + " = ?";
-const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ? AND " + SMARTALBUMMAP_DB_ASSET_ID;
+const std::string SMARTALBUM_DB_COND = SMARTALBUM_DB_ID + " = ?";
+const std::string SMARTALBUM_MAP_DEDB_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ?";
+const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ? AND " + SMARTALBUMMAP_DB_ASSET_ID + " = ?";
 } // namespace OHOS
 } // namespace Media
 #endif // MEDIA_DATA_ABILITY_CONST_H

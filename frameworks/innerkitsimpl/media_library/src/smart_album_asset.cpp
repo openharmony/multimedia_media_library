@@ -29,6 +29,7 @@ SmartAlbumAsset::SmartAlbumAsset()
     albumName_ = DEFAULT_ALBUM_NAME;
     albumUri_ = DEFAULT_ALBUM_URI;
     albumTag_ = DEFAULT_SMART_ALBUM_TAG;
+    albumPrivateType_ = DEFAULT_SMART_ALBUM_PRIVATE_TYPE;
     albumCapacity_ = DEFAULT_SMART_ALBUM_ALBUMCAPACITY;
     categoryId_ = DEFAULT_SMART_ALBUM_CATEGORYID;
     categoryName_ = DEFAULT_SMART_ALBUM_CATEGORYNAME;
@@ -78,6 +79,10 @@ void SmartAlbumAsset::SetCoverUri(const string coverUri)
     coverUri_ = coverUri;
 }
 
+void SmartAlbumAsset::SetAlbumPrivateType(const int32_t albumPrivateType)
+{
+    albumPrivateType_ = albumPrivateType;
+}
 
 int32_t SmartAlbumAsset::GetAlbumId() const
 {
@@ -119,5 +124,9 @@ string SmartAlbumAsset::GetCoverUri() const
     return coverUri_;
 }
 
+int32_t SmartAlbumAsset::GetAlbumPrivateType() const
+{
+    return albumPrivateType_;
+}
 }  // namespace Media
 }  // namespace OHOS
