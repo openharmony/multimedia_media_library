@@ -47,6 +47,7 @@ public:
     int32_t GetSmartAlbumId() const;
     std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper() const;
     std::string GetSmartAlbumName() const;
+    int32_t GetAlbumPrivateType() const;
     SmartAlbumNapi();
     ~SmartAlbumNapi();
 
@@ -72,6 +73,7 @@ private:
     std::string albumName_;
     std::string albumUri_;
     std::string albumTag_;
+    int32_t albumPrivateType_;
     int32_t albumCapacity_;
     int32_t albumCategoryId_;
     std::string albumCategoryName_;

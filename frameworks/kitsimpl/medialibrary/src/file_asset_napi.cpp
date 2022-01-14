@@ -103,7 +103,7 @@ napi_value FileAssetNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_GETTER("audioAlbum", JSGetAlbum),
         DECLARE_NAPI_GETTER("width", JSGetWidth),
         DECLARE_NAPI_GETTER("height", JSGetHeight),
-        DECLARE_NAPI_GETTER("orientation", JSGetOrientation),
+        DECLARE_NAPI_GETTER_SETTER("orientation", JSGetOrientation, JSSetOrientation),
         DECLARE_NAPI_GETTER("duration", JSGetDuration),
         DECLARE_NAPI_GETTER("albumId", JSGetAlbumId),
         DECLARE_NAPI_GETTER("albumUri", JSGetAlbumUri),
@@ -242,7 +242,10 @@ Media::MediaType FileAssetNapi::GetMediaType() const
 {
     return mediaType_;
 }
-
+int32_t FileAssetNapi::GetOrientation() const
+{
+    return orientation_;
+}
 napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -614,6 +617,38 @@ napi_value FileAssetNapi::JSGetOrientation(napi_env env, napi_callback_info info
 
     return jsResult;
 }
+napi_value FileAssetNapi::JSSetOrientation(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value undefinedResult = nullptr;
+    FileAssetNapi* obj = nullptr;
+    napi_valuetype valueType = napi_undefined;
+    int32_t orientation;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+    HiLog::Error(LABEL, "JSSetOrientation");
+    napi_get_undefined(env, &undefinedResult);
+
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if (status == napi_ok && obj != nullptr) {
+        if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_number) {
+            HiLog::Error(LABEL, "Invalid arguments type!");
+            return undefinedResult;
+        }
+
+        status = napi_get_value_int32(env, argv[PARAM0], &orientation);
+        HiLog::Error(LABEL, "JSSetOrientation orientation = %{public}d", orientation);
+        if (status == napi_ok) {
+            obj->orientation_ = orientation;
+        }
+    }
+
+    return undefinedResult;
+}
 
 napi_value FileAssetNapi::JSGetWidth(napi_env env, napi_callback_info info)
 {
@@ -864,6 +899,9 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status,
     int32_t changedRows;
     if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetTitle())) {
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
+        if (context->objectInfo->GetOrientation() >= 0) {
+            valuesBucket.PutInt(MEDIA_DATA_DB_ORIENTATION, context->objectInfo->GetOrientation());
+        }
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
         Uri uri(MEDIALIBRARY_DATA_URI);
         changedRows =
