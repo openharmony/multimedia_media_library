@@ -16,6 +16,7 @@
 #include "medialibrary_file_operations.h"
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "medialibrary_smartalbum_map_db.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -224,7 +225,7 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, cons
     int32_t errCode = DATA_ABILITY_FAIL;
     FileAsset fileAsset;
     MediaLibraryFileDb fileDbOprn;
-
+    MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
     if (!srcPath.empty()) {
         errCode = fileAsset.DeleteAsset(srcPath);
     }
@@ -233,6 +234,7 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, cons
         if (fileDbOprn.Delete(rowNum, rdbStore) > 0) {
             string albumPath = MediaLibraryDataAbilityUtils::GetParentPath(srcPath);
             UpdateDateModifiedForAlbum(rdbStore, albumPath);
+            smartAlbumMapDbOprn.DeleteAllAssetsMapInfo(std::stoi(rowNum), rdbStore);
         }
     }
 

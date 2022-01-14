@@ -33,19 +33,33 @@ int32_t MediaLibrarySmartAlbumMapDb::DeleteSmartAlbumMapInfo(const int32_t album
                                                              const int32_t assetId,
                                                              const shared_ptr<RdbStore> &rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (albumId > 0) && (assetId > 0), ALBUM_OPERATION_ERR, "Invalid input");
+    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (albumId > 0) && (assetId > 0),
+        ALBUM_OPERATION_ERR, "Invalid input");
     int32_t deletedRows(ALBUM_OPERATION_ERR);
     vector<string> whereArgs = { std::to_string(albumId), std::to_string(assetId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_MAP_TABLE, SMARTALBUM_MAP_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, ALBUM_OPERATION_ERR, "Delete failed");
     return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
-int32_t MediaLibrarySmartAlbumMapDb::DeleteAllSmartAlbumMapInfo(const int32_t albumId, const shared_ptr<RdbStore> &rdbStore)
+int32_t MediaLibrarySmartAlbumMapDb::DeleteAllSmartAlbumMapInfo(const int32_t albumId,
+                                                                const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (albumId > 0), ALBUM_OPERATION_ERR, "Invalid input");
     int32_t deletedRows(ALBUM_OPERATION_ERR);
     vector<string> whereArgs = { std::to_string(albumId)};
-    int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_MAP_TABLE, SMARTALBUM_MAP_DEDB_COND, whereArgs);
+    int32_t deleteResult = rdbStore->Delete(deletedRows,
+        SMARTALBUM_MAP_TABLE, SMARTALBUM_MAP_DE_SMARTALBUM_COND, whereArgs);
+    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, ALBUM_OPERATION_ERR, "Delete failed");
+    return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
+}
+int32_t MediaLibrarySmartAlbumMapDb::DeleteAllAssetsMapInfo(const int32_t assetId,
+                                                            const shared_ptr<RdbStore> &rdbStore)
+{
+    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (assetId > 0), ALBUM_OPERATION_ERR, "Invalid input");
+    int32_t deletedRows(ALBUM_OPERATION_ERR);
+    vector<string> whereArgs = { std::to_string(assetId)};
+    int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_MAP_TABLE,
+        SMARTALBUM_MAP_DE_ASSETS_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, ALBUM_OPERATION_ERR, "Delete failed");
     return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }

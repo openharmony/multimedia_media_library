@@ -28,7 +28,8 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
 {
     ValueObject valueObject;
     int32_t id = 0;
-    int32_t insertId = const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn).InsertSmartAlbumInfo(valuesBucket, rdbStore);
+    int32_t insertId = const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn).
+        InsertSmartAlbumInfo(valuesBucket, rdbStore);
     if (insertId > 0) {
         ValuesBucket values;
         values.PutInt(CATEGORY_SMARTALBUMMAP_DB_CATEGORY_ID, id);

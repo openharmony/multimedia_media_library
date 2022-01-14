@@ -443,7 +443,8 @@ bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
     return isDisplayName;
 }
 
-unique_ptr<AbsSharedResultSet> MediaLibraryDataAbilityUtils::QueryFiles(const string &strQueryCondition, const shared_ptr<RdbStore> &rdbStore)
+unique_ptr<AbsSharedResultSet> MediaLibraryDataAbilityUtils::QueryFiles(const string &strQueryCondition,
+    const shared_ptr<RdbStore> &rdbStore)
 {
     vector<string> selectionArgs = {};
 

@@ -987,6 +987,7 @@ napi_value FileAssetNapi::JSCommitModify(napi_env env, napi_callback_info info)
 static void JSOpenCompleteCallback(napi_env env, napi_status status,
                                    FileAssetAsyncContext *context)
 {
+    HiLog::Debug(LABEL, "JSOpenCompleteCallback IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -1023,6 +1024,7 @@ static void JSOpenCompleteCallback(napi_env env, napi_status status,
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+    HiLog::Debug(LABEL, "JSOpenCompleteCallback OUT");
     delete context;
 }
 
@@ -1031,6 +1033,7 @@ napi_value GetJSArgsForOpen(napi_env env,
                             const napi_value argv[],
                             FileAssetAsyncContext &asyncContext)
 {
+    HiLog::Debug(LABEL, "GetJSArgsForOpen IN");
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
@@ -1055,11 +1058,13 @@ napi_value GetJSArgsForOpen(napi_env env,
     context->valuesBucket.PutString(MEDIA_FILEMODE, string(buffer));
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
+    HiLog::Debug(LABEL, "GetJSArgsForOpen OUT");
     return result;
 }
 
 napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
 {
+    HiLog::Debug(LABEL, "JSOpen IN");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
@@ -1087,6 +1092,7 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
             asyncContext.release();
         }
     }
+    HiLog::Debug(LABEL, "JSOpen OUT");
     return result;
 }
 
