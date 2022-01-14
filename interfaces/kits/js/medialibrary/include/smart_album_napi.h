@@ -48,6 +48,7 @@ public:
     std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper() const;
     std::string GetSmartAlbumName() const;
     int32_t GetAlbumPrivateType() const;
+    void SetAlbumCapacity(int32_t albumCapacity);
     SmartAlbumNapi();
     ~SmartAlbumNapi();
 
@@ -58,6 +59,7 @@ private:
 
     static napi_value JSGetSmartAlbumId(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumName(napi_env env, napi_callback_info info);
+    static napi_value JSGetSmartAlbumUri(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumTag(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumCapacity(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumCategoryId(napi_env env, napi_callback_info info);

@@ -34,7 +34,8 @@ int64_t MediaLibrarySmartAlbumDb::InsertSmartAlbumInfo(const ValuesBucket &value
     CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, ALBUM_OPERATION_ERR, "Insert failed");
     return outRowId;
 }
-int64_t MediaLibrarySmartAlbumDb::InsertCategorySmartAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+int64_t MediaLibrarySmartAlbumDb::InsertCategorySmartAlbumInfo(const ValuesBucket &values,
+    const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid RDB store");
     int64_t outRowId(0);

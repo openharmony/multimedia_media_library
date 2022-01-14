@@ -221,7 +221,7 @@ unique_ptr<AbsSharedResultSet> QueryBySmartTableType(TableType tabletype,
             mediaLibAbsPredAlbum.SetOrder(predicates.GetOrder());
             queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
         }
-    } else if (tabletype == TYPE_SMARTALBUM_MAP){
+    } else if (tabletype == TYPE_SMARTALBUM_MAP) {
         AbsRdbPredicates mediaLibSAMAbsPred(SMARTALBUM_MAP_TABLE);
         if (predicates.IsDistinct()) {
             mediaLibSAMAbsPred.Distinct();

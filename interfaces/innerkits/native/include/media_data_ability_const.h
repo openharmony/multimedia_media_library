@@ -45,7 +45,8 @@ const std::string MEDIA_DATA_ABILITY_DB_NAME = MEDIA_DATA_DB_Path + "media_libra
 const std::string MEDIALIBRARY_DATA_URI = "dataability:///com.ohos.medialibrary.MediaLibraryDataAbility";
 const std::string MEDIALIBRARY_SMARTALBUM_URI = MEDIALIBRARY_DATA_URI + "." + SMARTALBUM_TABLE;
 const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "." + SMARTALBUM_MAP_TABLE;
-const std::string MEDIALIBRARY_CATEGORY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "." + CATEGORY_SMARTALBUM_MAP_TABLE;
+const std::string MEDIALIBRARY_CATEGORY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "."
+                                                             + CATEGORY_SMARTALBUM_MAP_TABLE;
 
 const std::string MEDIALIBRARY_AUDIO_URI = MEDIALIBRARY_DATA_URI + '/' + "audio";
 const std::string MEDIALIBRARY_VIDEO_URI = MEDIALIBRARY_DATA_URI + '/' + "video";
@@ -54,6 +55,7 @@ const std::string MEDIALIBRARY_FILE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "file"
 const std::string MEDIALIBRARY_ALBUM_URI  =  MEDIALIBRARY_DATA_URI + '/' + "album";
 const std::string MEDIALIBRARY_SMARTALBUM_CHANGE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "smartalbum";
 const std::string MEDIALIBRARY_DEVICE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "device";
+const std::string MEDIALIBRARY_SMART_URI = MEDIALIBRARY_DATA_URI + '/' + "smart";
 
 const std::string MEDIA_DATA_DB_ID = "file_id";
 const std::string MEDIA_DATA_DB_URI = "uri";
@@ -346,7 +348,8 @@ const std::string MEDIA_FILEMODE_READWRITETRUNCATE = "rwt";
 
 const std::string ALBUM_DB_COND = MEDIA_DATA_DB_ID + " = ?";
 const std::string SMARTALBUM_DB_COND = SMARTALBUM_DB_ID + " = ?";
-const std::string SMARTALBUM_MAP_DEDB_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ?";
+const std::string SMARTALBUM_MAP_DE_SMARTALBUM_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ?";
+const std::string SMARTALBUM_MAP_DE_ASSETS_COND = SMARTALBUMMAP_DB_ASSET_ID + " = ?";
 const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ? AND " + SMARTALBUMMAP_DB_ASSET_ID + " = ?";
 } // namespace OHOS
 } // namespace Media

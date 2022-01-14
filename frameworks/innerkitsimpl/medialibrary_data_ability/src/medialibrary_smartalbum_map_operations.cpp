@@ -21,8 +21,8 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 int32_t InsertAlbumAssetsInfoUtil(const ValuesBucket &valuesBucket,
-                            shared_ptr<RdbStore> rdbStore,
-                            const MediaLibrarySmartAlbumMapDb &smartAlbumMapDbOprn)
+                                  shared_ptr<RdbStore> rdbStore,
+                                  const MediaLibrarySmartAlbumMapDb &smartAlbumMapDbOprn)
 {
     ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
     int32_t insertResult = const_cast<MediaLibrarySmartAlbumMapDb &>(smartAlbumMapDbOprn)
