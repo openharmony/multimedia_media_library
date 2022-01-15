@@ -252,6 +252,55 @@ void MediaLibraryThumbnail::CreateThumbnails(ThumbRdbOpt &opts)
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnails OUT");
 }
 
+bool MediaLibraryThumbnail::LoadAudioFile(string &path,
+                                          shared_ptr<PixelMap> &pixelMap)
+{
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadAudioFile IN");
+#ifdef OLD_MEDIA_STD_API
+    MEDIA_ERR_LOG("Audio FetchArtPicture API is not ready!");
+    return false;
+#else
+    if (avMetadataHelper_ == nullptr) {
+        MEDIA_ERR_LOG("Av meta data helper is not init");
+        return false;
+    }
+    string uri = FILE_URI_PREX + path;
+    int32_t errorCode = avMetadataHelper_->SetSource(uri);
+    if (errorCode != 0) {
+        MEDIA_ERR_LOG("Av meta data helper set source failed %{public}d", errorCode);
+        return false;
+    }
+
+    auto audioPicMemory = avMetadataHelper_->FetchArtPicture();
+    if (audioPicMemory == nullptr) {
+        MEDIA_ERR_LOG("FetchArtPicture failed!");
+        return false;
+    }
+
+    SourceOptions opts;
+    uint32_t error = SUCCESS;
+    unique_ptr<ImageSource> audioImageSource = ImageSource::CreateImageSource(audioPicMemory->GetBase(),
+                                                                              audioPicMemory->GetSize(),
+                                                                              opts, error);
+    if (audioImageSource == nullptr) {
+        MEDIA_ERR_LOG("Failed to create image source! %{public}d", error);
+        return false;
+    }
+
+    error = SUCCESS;
+    DecodeOptions decOpts;
+    pixelMap = audioImageSource->CreatePixelMap(decOpts, error);
+    if (pixelMap == nullptr) {
+        MEDIA_ERR_LOG("Av meta data helper fetch frame at time failed");
+        return false;
+    }
+    if (pixelMap->GetAlphaType() == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
+        pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    }
+#endif
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadAudioFile OUT");
+    return true;
+}
 bool MediaLibraryThumbnail::LoadVideoFile(string &path,
                                           shared_ptr<PixelMap> &pixelMap)
 {
@@ -599,6 +648,8 @@ bool MediaLibraryThumbnail::LoadSourceImage(ThumbnailData &data)
     bool ret = false;
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
         ret = LoadVideoFile(data.path, data.source);
+    } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
+        ret = LoadAudioFile(data.path, data.source);
     } else {
         ret = LoadImageFile(data.path, data.source);
     }

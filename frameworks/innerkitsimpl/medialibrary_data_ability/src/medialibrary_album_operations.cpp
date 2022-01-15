@@ -49,11 +49,8 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
                             vector<int32_t> &outIds)
 {
     NativeAlbumAsset albumAsset;
-    string albumName;
-    string parentPath;
+    string albumName, parentPath, title, path;
     int32_t parentId;
-    string title;
-    string path;
     albumAsset = MediaLibraryDataAbilityUtils::GetLastAlbumExistInDb(albumPath, rdbStore);
     parentPath = albumAsset.GetAlbumPath();
     parentId = albumAsset.GetAlbumId();
@@ -74,6 +71,8 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
             relativePath = parentPath.substr(0, titleIndex);
             if (relativePath.length() > MEDIA_DATA_DB_Path.length()) {
                 relativePath = relativePath.substr(MEDIA_DATA_DB_Path.length()) + "/";
+            } else {
+                relativePath = "";
             }
         }
         if (!MediaLibraryDataAbilityUtils::CheckDisplayName(title)) {

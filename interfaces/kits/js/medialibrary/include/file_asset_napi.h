@@ -43,6 +43,7 @@ public:
     std::string GetTitle() const;
     std::string GetFileUri() const;
     int32_t GetFileId() const;
+    int32_t GetOrientation() const;
     Media::MediaType GetMediaType() const;
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
@@ -74,6 +75,7 @@ private:
     static napi_value JSSetFileDisplayName(napi_env env, napi_callback_info info);
     static napi_value JSSetRelativePath(napi_env env, napi_callback_info info);
     static napi_value JSSetTitle(napi_env env, napi_callback_info info);
+    static napi_value JSSetOrientation(napi_env env, napi_callback_info info);
 
     static napi_value JSParent(napi_env env, napi_callback_info info);
     static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
@@ -135,6 +137,7 @@ struct FileAssetAsyncContext {
     OHOS::NativeRdb::ValuesBucket valuesBucket;
     int32_t thumbWidth;
     int32_t thumbHeight;
+    bool isDirectory;
 };
 } // namespace Media
 } // namespace OHOS

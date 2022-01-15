@@ -14,6 +14,8 @@
  */
 
 #include "medialibrary_smartalbum_operations.h"
+#include "medialibrary_smartalbum_map_db.h"
+#include "media_log.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -24,20 +26,53 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
                             shared_ptr<RdbStore> rdbStore,
                             const MediaLibrarySmartAlbumDb &smartAlbumDbOprn)
 {
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
-    return const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn).InsertSmartAlbumInfo(values, rdbStore);
+    ValueObject valueObject;
+    int32_t id = 0;
+    int32_t insertId = const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn).
+        InsertSmartAlbumInfo(valuesBucket, rdbStore);
+    if (insertId > 0) {
+        ValuesBucket values;
+        values.PutInt(CATEGORY_SMARTALBUMMAP_DB_CATEGORY_ID, id);
+        values.PutInt(CATEGORY_SMARTALBUMMAP_DB_ALBUM_ID, insertId);
+        const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn).InsertCategorySmartAlbumInfo(values, rdbStore);
+    }
+    return insertId;
 }
+int32_t DeleteAlbumInfoUtil(const ValuesBucket &valuesBucket,
+                            shared_ptr<RdbStore> rdbStore,
+                            const MediaLibrarySmartAlbumDb &smartAlbumDbOprn)
+{
+    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
+    ValueObject valueObject;
+    int32_t albumId = 0;
+    MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
+    if (values.GetObject(SMARTALBUM_DB_ID, valueObject)) {
+        valueObject.GetInt(albumId);
+    }
+    MEDIA_ERR_LOG("mediasmart albumId = %{public}d", albumId);
+
+    int32_t deleteErrorCode = const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn)
+    .DeleteSmartAlbumInfo(albumId, rdbStore);
+    if (deleteErrorCode != -1) {
+        smartAlbumMapDbOprn.DeleteAllSmartAlbumMapInfo(albumId, rdbStore);
+    }
+    return deleteErrorCode;
+}
+
 
 int32_t MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperations(const string &oprn,
                                                                      const ValuesBucket &valuesBucket,
                                                                      const shared_ptr<RdbStore> &rdbStore)
 {
+    MEDIA_ERR_LOG("HandleSmartAlbumOperations");
     ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
     MediaLibrarySmartAlbumDb smartAlbumDbOprn;
     int32_t errCode = DATA_ABILITY_FAIL;
     ValueObject valueObject;
     if (oprn == MEDIA_SMARTALBUMOPRN_CREATEALBUM) {
         errCode = InsertAlbumInfoUtil(values, rdbStore, smartAlbumDbOprn);
+    } else if (oprn == MEDIA_SMARTALBUMOPRN_DELETEALBUM) {
+        errCode = DeleteAlbumInfoUtil(values, rdbStore, smartAlbumDbOprn);
     }
     return errCode;
 }

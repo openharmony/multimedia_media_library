@@ -45,7 +45,8 @@ namespace Media {
         TYPE_DATA,
         TYPE_SMARTALBUM,
         TYPE_SMARTALBUM_MAP,
-        TYPE_ALBUM_TABLE
+        TYPE_ALBUM_TABLE,
+        TYPE_SMARTALBUMASSETS_TABLE
     };
     class MediaLibraryDataAbility : public AppExecFwk::Ability {
     public:
@@ -81,16 +82,6 @@ namespace Media {
 };
 
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
-public:
-    int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
-    int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
-};
-class MediaLibrarySmartAlbumCallBack : public NativeRdb::RdbOpenCallback {
-public:
-    int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
-    int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
-};
-class MediaLibrarySmartAlbumMapCallBack : public NativeRdb::RdbOpenCallback {
 public:
     int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
     int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;

@@ -65,6 +65,7 @@ ohos_shared_library("medialibrary_data_ability") {
   ]
 
   public_configs = [ ":media_data_ability_public_config" ]
+  cflags = [ "-DOLD_MEDIA_STD_API" ]
 
   deps = [
     "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client:media_scanner_client",
