@@ -1777,7 +1777,7 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
-    HiLog::Error(LABEL, "JSTrash GET_JS_ARGS argc = %{public}d", argc);
+    HiLog::Error(LABEL, "JSTrash GET_JS_ARGS argc = %{public}zu", argc);
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
