@@ -114,6 +114,10 @@ const int32_t ERR_MEM_ALLOCATION = 2;
 const int32_t ERR_INVALID_OUTPUT = 3;
 
 const std::string ALBUM_ROOT_PATH = "/data/media";
+const int32_t FAVORIT_SMART_ALBUM_ID = -1;
+const std::string FAVORIT_SMART_ALBUM_NAME = "FavoritAlbum";
+const int32_t TRASH_SMART_ALBUM_ID = -10;
+const std::string TRASH_SMART_ALBUM_NAME = "TrashAlbum";
 
 enum NapiAssetType {
     TYPE_AUDIO = 0,
@@ -126,6 +130,16 @@ enum AlbumType {
     TYPE_VIDEO_ALBUM = 0,
     TYPE_IMAGE_ALBUM = 1,
     TYPE_NONE = 2,
+};
+
+enum PrivateAlbumType {
+    TYPE_FAVORITE = 0,
+    TYPE_TRASH,
+    TYPE_USER
+};
+
+const std::vector<std::string> privateAlbumTypeNameEnum {
+    "TYPE_FAVORITE", "TYPE_TRASH", "TYPE_USER"
 };
 
 const std::vector<std::string> mediaTypesEnum {
@@ -143,17 +157,16 @@ const std::vector<std::string> directoryEnum {
 };
 
 const std::vector<std::string> directoryEnumValues {
-    "cdsa/",
-    "video/",
-    "image/",
-    "audio/",
-    "audio/rings/",
-    "audio/notice/",
-    "audio/clock/",
-    "documents/",
-    "download/",
-    "download/bluetooth/",
-    "Pictures/"
+    "CDSA/",
+    "Movies/",
+    "Pictures/",
+    "Music/",
+    "Rings/",
+    "Notices/",
+    "Clocks/",
+    "Documents/",
+    "Download/",
+    "Bluetooth/"
 };
 
 const std::vector<std::string> fileKeyEnumValues {

@@ -113,7 +113,7 @@ int32_t MediaLibraryDataAbilityUtils::DeleteDirectorys(vector<int32_t> &outIds,
     int32_t errorCode = -1;
     if (!outIds.empty()) {
         MediaLibraryAlbumOperations albumOprn;
-        for (vector<int32_t>::reverse_iterator it = outIds.rbegin(); it != outIds.rend(); it++) {
+        for (vector<int32_t>::reverse_iterator it = outIds.rbegin(); it != outIds.rend(); ++it) {
             ValuesBucket values;
             int32_t id = *it;
             values.PutInt(MEDIA_DATA_DB_ID, id);
@@ -338,12 +338,12 @@ bool MediaLibraryDataAbilityUtils::checkOpenMode(const string &mode)
 {
     MEDIA_INFO_LOG("checkOpenMode in");
     MEDIA_INFO_LOG("checkOpenMode in mode %{public}s", mode.c_str());
-    
+
     std::string lowModeStr = mode;
     std::transform(lowModeStr.begin(), lowModeStr.end(), lowModeStr.begin(), [](unsigned char c) {
         return std::tolower(c);
     });
-    
+
     MEDIA_INFO_LOG("checkOpenMode in lowModeStr %{public}s", lowModeStr.c_str());
     size_t wIndex = lowModeStr.rfind('w');
     if (wIndex != string::npos) {
@@ -432,10 +432,8 @@ bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
     if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
-    const char *pStr = new char[size + 1];
-    pStr = displayName.c_str();
     for (int i = 0; i < size; i++) {
-        if (displayName.at(0) == '.' || ispunct(pStr[i])) {
+        if (displayName.at(0) == '.' || std::ispunct(displayName[i])) {
             OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName ispunct");
             isDisplayName = false;
             break;
@@ -443,6 +441,39 @@ bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
     }
     OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName");
     return isDisplayName;
+}
+
+unique_ptr<AbsSharedResultSet> MediaLibraryDataAbilityUtils::QueryFiles(const string &strQueryCondition,
+    const shared_ptr<RdbStore> &rdbStore)
+{
+    vector<string> selectionArgs = {};
+
+    if ((strQueryCondition.empty()) || (rdbStore == nullptr)) {
+        MEDIA_ERR_LOG("QueryFiles params is incorrect or rdbStore is null");
+        return nullptr;
+    }
+
+    AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+    absPredicates.SetWhereClause(strQueryCondition);
+    absPredicates.SetWhereArgs(selectionArgs);
+
+    vector<string> columns;
+
+    unique_ptr<AbsSharedResultSet> resultSet = rdbStore->Query(absPredicates, columns);
+
+    return resultSet;
+}
+
+unique_ptr<AbsSharedResultSet> MediaLibraryDataAbilityUtils::QueryFavFiles(const shared_ptr<RdbStore> &rdbStore)
+{
+    string strQueryCondition = MEDIA_DATA_DB_IS_FAV + " = 1 AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> 8";
+    return QueryFiles(strQueryCondition, rdbStore);
+}
+
+unique_ptr<AbsSharedResultSet> MediaLibraryDataAbilityUtils::QueryTrashFiles(const shared_ptr<RdbStore> &rdbStore)
+{
+    string strQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + " > 0 AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> 8";
+    return QueryFiles(strQueryCondition, rdbStore);
 }
 } // namespace Media
 } // namespace OHOS

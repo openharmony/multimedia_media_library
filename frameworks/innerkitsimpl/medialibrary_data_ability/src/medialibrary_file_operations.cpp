@@ -16,6 +16,7 @@
 #include "medialibrary_file_operations.h"
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "medialibrary_smartalbum_map_db.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -118,6 +119,40 @@ int32_t MediaLibraryFileOperations::HandleCloseAsset(string &rowNum, string &src
     return DATA_ABILITY_SUCCESS;
 }
 
+int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(const ValuesBucket &values,
+    const shared_ptr<RdbStore> &rdbStore)
+{
+    MEDIA_INFO_LOG("HandleGetAlbumCapacity IN");
+    int32_t errorCode = DATA_ABILITY_FAIL;
+    unique_ptr<AbsSharedResultSet> resultSet = nullptr;
+    ValueObject valueObject;
+    bool isFavourite = false;
+    if (values.GetObject(MEDIA_DATA_DB_IS_FAV, valueObject)) {
+        valueObject.GetBool(isFavourite);
+    }
+
+    bool isTrash = false;
+    if (values.GetObject(MEDIA_DATA_DB_IS_TRASH, valueObject)) {
+        valueObject.GetBool(isTrash);
+    }
+
+    if (isFavourite) {
+        MEDIA_INFO_LOG("HandleGetAlbumCapacity isFavourite");
+        resultSet= MediaLibraryDataAbilityUtils::QueryFavFiles(rdbStore);
+    } else if (isTrash) {
+        MEDIA_INFO_LOG("HandleGetAlbumCapacity isTrash");
+        resultSet= MediaLibraryDataAbilityUtils::QueryTrashFiles(rdbStore);
+    }
+
+    if (resultSet != nullptr) {
+        resultSet->GetRowCount(errorCode);
+        MEDIA_INFO_LOG("HandleGetAlbumCapacity GetRowCount %{public}d", errorCode);
+    }
+
+    MEDIA_INFO_LOG("HandleGetAlbumCapacity OUT");
+    return errorCode;
+}
+
 int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, const string &srcPath,
     const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
@@ -190,7 +225,7 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, cons
     int32_t errCode = DATA_ABILITY_FAIL;
     FileAsset fileAsset;
     MediaLibraryFileDb fileDbOprn;
-
+    MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
     if (!srcPath.empty()) {
         errCode = fileAsset.DeleteAsset(srcPath);
     }
@@ -199,6 +234,7 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, cons
         if (fileDbOprn.Delete(rowNum, rdbStore) > 0) {
             string albumPath = MediaLibraryDataAbilityUtils::GetParentPath(srcPath);
             UpdateDateModifiedForAlbum(rdbStore, albumPath);
+            smartAlbumMapDbOprn.DeleteAllAssetsMapInfo(std::stoi(rowNum), rdbStore);
         }
     }
 
@@ -259,6 +295,8 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
         return HandleCreateAsset(values, rdbStore);
     } else if (oprn == MEDIA_FILEOPRN_ISDIRECTORY) {
         return HandleIsDirectoryAsset(values, rdbStore);
+    } else if (oprn == MEDIA_FILEOPRN_GETALBUMCAPACITY) {
+        return HandleGetAlbumCapacity(values, rdbStore);
     }
 
     string actualUri;
@@ -279,6 +317,7 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
     } else if (oprn == MEDIA_FILEOPRN_CLOSEASSET) {
         errCode = HandleCloseAsset(id, srcPath, values, rdbStore);
     }
+
     if (oprn == MEDIA_FILEOPRN_MODIFYASSET ||
         oprn == MEDIA_FILEOPRN_CLOSEASSET) {
         CreateThumbnail(rdbStore, mediaThumbnail, id);

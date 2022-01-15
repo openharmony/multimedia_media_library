@@ -70,6 +70,7 @@ private:
     // utils
     bool LoadImageFile(std::string &path, std::shared_ptr<PixelMap> &pixelMap);
     bool LoadVideoFile(std::string &path, std::shared_ptr<PixelMap> &pixelMap);
+    bool LoadAudioFile(std::string &path, std::shared_ptr<PixelMap> &pixelMap);
     bool GenKey(std::vector<uint8_t> &data, std::string &key);
     bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, Size &size, std::vector<uint8_t> &data);
 

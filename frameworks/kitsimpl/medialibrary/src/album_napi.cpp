@@ -682,7 +682,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
     }
     delete context;
 }
-static void CommitModifyNative(napi_env env, const AlbumNapiAsyncContext &albumContext)
+static void CommitModifyNative(const AlbumNapiAsyncContext &albumContext)
 {
     AlbumNapiAsyncContext *context = const_cast<AlbumNapiAsyncContext *>(&albumContext);
     NativeRdb::DataAbilityPredicates predicates;
@@ -707,7 +707,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Alb
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CommitModifyNative(env, *context);
+    CommitModifyNative(*context);
     if (context->changedRows != -1) {
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
@@ -785,7 +785,10 @@ napi_value AlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAlbumFileAssets");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                auto context = static_cast<AlbumNapiAsyncContext*>(data);
+                CommitModifyNative(*context);
+            },
             reinterpret_cast<CompleteCallback>(JSCommitModifyCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
