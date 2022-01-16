@@ -100,6 +100,8 @@ const std::string MEDIA_DATA_DB_ALBUM = "album";
 const std::string MEDIA_DATA_DB_ALBUM_ID = "album_id";
 const std::string MEDIA_DATA_DB_ALBUM_NAME = "album_name";
 const std::string MEDIA_DATA_DB_COUNT = "count";
+const std::string MEDIA_DATA_DB_RINGTONE_URI = "ringtone_uri";
+const std::string MEDIA_DATA_DB_RINGTONE_TYPE = "ringtone_type";
 
 const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " ("
                                        + MEDIA_DATA_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -318,6 +320,7 @@ const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW " + ASSETMAP_VIEW_NAME
 const std::string MEDIA_OPERN_KEYWORD = "operation";
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_ALBUMOPRN = "album_operation";
+const std::string MEDIA_KVSTOREOPRN = "kvstore_operation";
 const std::string MEDIA_SMARTALBUMOPRN = "albumsmart_operation";
 const std::string MEDIA_SMARTALBUMMAPOPRN = "smartalbummap_operation";
 const std::string MEDIA_FILEOPRN_CREATEASSET = "create_asset";
@@ -327,6 +330,8 @@ const std::string MEDIA_FILEOPRN_GETALBUMCAPACITY = "get_album_capacity";
 const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
 const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
 const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
+const std::string MEDIA_KVSTOREOPRN_SET_URI = "set_ringtone_uri";
+const std::string MEDIA_KVSTOREOPRN_GET_URI = "get_ringtone_uri";
 
 const std::string MEDIA_ALBUMOPRN_CREATEALBUM = "create_album";
 const std::string MEDIA_ALBUMOPRN_MODIFYALBUM = "modify_album";
