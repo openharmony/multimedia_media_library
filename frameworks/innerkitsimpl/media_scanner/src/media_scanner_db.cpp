@@ -53,7 +53,7 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
 
     values.PutString(MEDIA_DATA_DB_TITLE, metadata.GetFileTitle());
-    values.PutString(MEDIA_DATA_DB_ALBUM, metadata.GetAlbum());
+    values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
     values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
 
     values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
@@ -61,8 +61,9 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
     values.PutInt(MEDIA_DATA_DB_DURATION, metadata.GetFileDuration());
     values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
 
-    values.PutString(MEDIA_DATA_DB_ALBUM_NAME, metadata.GetAlbumName());
+    values.PutString(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
+    values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
 
     if (rdbhelper_ != nullptr) {
         Uri abilityUri(MEDIALIBRARY_DATA_URI);
@@ -135,7 +136,7 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
 
     values.PutString(MEDIA_DATA_DB_TITLE, metadata.GetFileTitle());
-    values.PutString(MEDIA_DATA_DB_ALBUM, metadata.GetAlbum());
+    values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
     values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
 
     values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
@@ -143,8 +144,9 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
     values.PutInt(MEDIA_DATA_DB_DURATION, metadata.GetFileDuration());
 
-    values.PutString(MEDIA_DATA_DB_ALBUM_NAME, metadata.GetAlbumName());
+    values.PutString(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
+    values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
 
     if (rdbhelper_ != nullptr) {
         Uri uri(MEDIALIBRARY_DATA_URI);

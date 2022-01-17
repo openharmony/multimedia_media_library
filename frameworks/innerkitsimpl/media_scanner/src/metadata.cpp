@@ -60,12 +60,12 @@ void Metadata::Init()
     memberFuncMap_[MEDIA_DATA_DB_DATE_ADDED] = make_pair(DataType::TYPE_LONG, &Metadata::SetFileDateAdded);
     memberFuncMap_[MEDIA_DATA_DB_TITLE] = make_pair(DataType::TYPE_STRING, &Metadata::SetFileTitle);
     memberFuncMap_[MEDIA_DATA_DB_ARTIST] = make_pair(DataType::TYPE_STRING, &Metadata::SetFileArtist);
-    memberFuncMap_[MEDIA_DATA_DB_ALBUM] = make_pair(DataType::TYPE_STRING, &Metadata::SetAlbum);
+    memberFuncMap_[MEDIA_DATA_DB_AUDIO_ALBUM] = make_pair(DataType::TYPE_STRING, &Metadata::SetAlbum);
     memberFuncMap_[MEDIA_DATA_DB_HEIGHT] = make_pair(DataType::TYPE_INT, &Metadata::SetFileHeight);
     memberFuncMap_[MEDIA_DATA_DB_WIDTH] = make_pair(DataType::TYPE_INT, &Metadata::SetFileWidth);
     memberFuncMap_[MEDIA_DATA_DB_ORIENTATION] = make_pair(DataType::TYPE_INT, &Metadata::SetOrientation);
     memberFuncMap_[MEDIA_DATA_DB_DURATION] = make_pair(DataType::TYPE_INT, &Metadata::SetFileDuration);
-    memberFuncMap_[MEDIA_DATA_DB_ALBUM_NAME] = make_pair(DataType::TYPE_STRING, &Metadata::SetAlbumName);
+    memberFuncMap_[MEDIA_DATA_DB_BUCKET_NAME] = make_pair(DataType::TYPE_STRING, &Metadata::SetAlbumName);
     memberFuncMap_[MEDIA_DATA_DB_PARENT_ID] = make_pair(DataType::TYPE_INT, &Metadata::SetParentId);
 }
 
