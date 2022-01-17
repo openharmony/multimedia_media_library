@@ -24,12 +24,7 @@ group("media_library_service_packages") {
 }
 
 ohos_prebuilt_etc("medialibrary_service.rc") {
-  if (use_musl) {
-    source = "etc/medialibrary_service.cfg"
-  } else {
-    source = "etc/medialibrary_service.rc"
-  }
-
+  source = "etc/medialibrary_service.cfg"
   relative_install_dir = "init"
   part_name = "multimedia_media_library_standard"
   subsystem_name = "multimedia"
