@@ -76,10 +76,38 @@ int32_t MediaLibraryKvStoreOperations::HandleKvStoreInsertOperations(const strin
 
         auto key = GetRingtoneUriKey(ringtoneType);
         Value value = Value(ringtoneUri);
+        if (kvStorePtr->Put(key, value) != Status::SUCCESS) {
+            MEDIA_ERR_LOG("ringtone put to kvStore error");
+            return DATA_ABILITY_FAIL;
+        }
 
-        auto status = kvStorePtr->Put(key, value);
-        if (status != Status::SUCCESS) {
-            MEDIA_ERR_LOG("put to kvStore error: %{public}d", status);
+        return DATA_ABILITY_SUCCESS;
+    } else if (oprn == MEDIA_KVSTOREOPRN_SET_NOTIFICATION_URI) {
+        string notificationUri = "";
+        if (values.GetObject(MEDIA_DATA_DB_NOTIFICATION_URI, valueObject)) {
+            valueObject.GetString(notificationUri);
+        }
+
+        CHECK_AND_RETURN_RET_LOG(!notificationUri.empty(), DATA_ABILITY_FAIL, "notification uri is empty");
+
+        Value value = Value(notificationUri);
+        if (kvStorePtr->Put(RINGTONE_NOTIFICATION_KEY, value) != Status::SUCCESS) {
+            MEDIA_ERR_LOG("notification put to kvStore error");
+            return DATA_ABILITY_FAIL;
+        }
+
+        return DATA_ABILITY_SUCCESS;
+    } else if (oprn == MEDIA_KVSTOREOPRN_SET_ALARM_URI) {
+        string alarmUri = "";
+        if (values.GetObject(MEDIA_DATA_DB_ALARM_URI, valueObject)) {
+            valueObject.GetString(alarmUri);
+        }
+
+        CHECK_AND_RETURN_RET_LOG(!alarmUri.empty(), DATA_ABILITY_FAIL, "notification uri is empty");
+
+        Value value = Value(alarmUri);
+        if (kvStorePtr->Put(RINGTONE_ALARM_KEY, value) != Status::SUCCESS) {
+            MEDIA_ERR_LOG("alarm put to kvStore error");
             return DATA_ABILITY_FAIL;
         }
 
@@ -103,7 +131,17 @@ string MediaLibraryKvStoreOperations::HandleKvStoreGetOperations(const string &u
         string key = GetRingtoneUriKey(stoi(keyString));
         auto status = kvStorePtr->Get(key, value);
         if (status != Status::SUCCESS) {
-            MEDIA_ERR_LOG("MediaLibraryKvStoreOperations::%{public}s Get key error: %{public}d", __func__, status);
+            MEDIA_ERR_LOG("%{public}s Get key error: %{public}d", __func__, status);
+        }
+    } else if (uri.find(MEDIA_KVSTOREOPRN_GET_NOTIFICATION_URI) != string::npos) {
+        auto status = kvStorePtr->Get(RINGTONE_NOTIFICATION_KEY, value);
+        if (status != Status::SUCCESS) {
+            MEDIA_ERR_LOG("%{public}s Get notification key error: %{public}d", __func__, status);
+        }
+    } else if (uri.find(MEDIA_KVSTOREOPRN_GET_ALARM_URI) != string::npos) {
+        auto status = kvStorePtr->Get(RINGTONE_ALARM_KEY, value);
+        if (status != Status::SUCCESS) {
+            MEDIA_ERR_LOG("%{public}s Get alarm key error: %{public}d", __func__, status);
         }
     }
 
