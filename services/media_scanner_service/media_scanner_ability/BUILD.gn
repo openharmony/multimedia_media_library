@@ -46,6 +46,16 @@ config("media_scanner_ability_public_config") {
   }
 }
 
+ohos_hap("mediascanner_dynamic_hap") {
+  hap_profile = "./config.json"
+  js2abc = false
+  shared_libraries = [ ":media_scanner_service" ]
+  certificate_profile = "$MEDIA_LIB_INNERKITS_DIR/signature/medialib.p7b"
+  hap_name = "Media_Scanner"
+  part_name = "prebuilt_hap"
+  subsystem_name = "applications"
+}
+
 ohos_shared_library("media_scanner_service") {
   install_enable = true
   sources = [
