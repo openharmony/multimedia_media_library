@@ -64,10 +64,10 @@ ohos_shared_library("medialibrary") {
 
   deps = [
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
+    "//foundation/aafwk/standard/frameworks/kits/appkit:appkit_native",
     "//foundation/aafwk/standard/interfaces/innerkits/base:base",
     "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager:dataobs_manager",
     "//foundation/ace/napi:ace_napi",
-    "//foundation/appexecfwk/standard/kits:appkit_native",
     "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_standard/interfaces/innerkits/native/media:media_client",
@@ -79,7 +79,7 @@ ohos_shared_library("medialibrary") {
   ]
 
   external_deps = [
-    "aafwk_standard:ability_manager",
+    "ability_runtime:ability_manager",
     "hiviewdfx_hilog_native:libhilog",
     "native_appdatamgr:native_appdatafwk",
     "native_appdatamgr:native_dataability",
