@@ -185,21 +185,27 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
     return cellValue;
 }
 
-static string GetMediaTypeUri(MediaType mediaType)
+static string getNetworkId(string selfId)
 {
+    return "";
+}
+
+static string GetFileMediaTypeUri(MediaType mediaType, string networkId)
+{
+    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     switch (mediaType) {
         case MEDIA_TYPE_AUDIO:
-            return MEDIALIBRARY_AUDIO_URI;
+            return uri + MEDIALIBRARY_TYPE_AUDIO_URI;
             break;
         case MEDIA_TYPE_VIDEO:
-            return MEDIALIBRARY_VIDEO_URI;
+            return uri + MEDIALIBRARY_TYPE_VIDEO_URI;
             break;
         case MEDIA_TYPE_IMAGE:
-            return MEDIALIBRARY_IMAGE_URI;
+            return uri + MEDIALIBRARY_TYPE_IMAGE_URI;
             break;
         case MEDIA_TYPE_FILE:
         default:
-            return MEDIALIBRARY_FILE_URI;
+            return uri + MEDIALIBRARY_TYPE_FILE_URI;
             break;
     }
 }
@@ -257,7 +263,10 @@ unique_ptr<FileAsset> FetchResult::GetObject()
 
     fileAsset->SetDateTrashed(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64)));
 
-    fileAsset->SetUri(GetMediaTypeUri(fileAsset->GetMediaType()) + "/" + to_string(fileAsset->GetId()));
+    fileAsset->SetSelfId(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_SELF_ID, TYPE_STRING)));
+
+    fileAsset->SetUri(GetFileMediaTypeUri(fileAsset->GetMediaType(), getNetworkId(fileAsset->GetSelfId()))
+        + "/" + to_string(fileAsset->GetId()));
 
     return fileAsset;
 }

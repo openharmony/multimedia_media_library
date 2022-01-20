@@ -36,7 +36,7 @@
                 "type": "data",
                 "visible": true,
                 "srcLanguage": "c++",
-                "uri": "dataability://com.ohos.medialibrary.MediaLibraryDataAbility"
+                "uri": "dataability://media"
             }
         ]
     }
