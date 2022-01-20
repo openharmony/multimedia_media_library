@@ -626,7 +626,7 @@ static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const n
     napi_get_boolean(env, true, &result);
     return result;
 }
-static void GetFileAssetsNative(napi_env env, const AlbumNapiAsyncContext &albumContext)
+static void GetFileAssetsNative(const AlbumNapiAsyncContext &albumContext)
 {
     AlbumNapiAsyncContext *context = const_cast<AlbumNapiAsyncContext *>(&albumContext);
     NativeRdb::DataAbilityPredicates predicates;
@@ -654,9 +654,6 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
 
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-
-    GetFileAssetsNative(env, *context);
-
     if (context->fetchResult != nullptr) {
         fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult));
         if (fetchRes == nullptr) {
@@ -748,7 +745,10 @@ napi_value AlbumNapi::JSGetAlbumFileAssets(napi_env env, napi_callback_info info
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAlbumFileAssets");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                auto context = static_cast<AlbumNapiAsyncContext*>(data);
+                GetFileAssetsNative(*context);
+            },
             reinterpret_cast<CompleteCallback>(JSGetFileAssetsCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {

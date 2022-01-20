@@ -49,6 +49,7 @@
 #include "video_asset_napi.h"
 #include "data_ability_observer_stub.h"
 #include "media_log.h"
+#include "smart_album_asset.h"
 
 namespace OHOS {
 namespace Media {
@@ -121,6 +122,10 @@ public:
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
 
+public:
+    static const std::string PERMISSION_NAME_READ_MEDIA;
+    static const std::string PERMISSION_NAME_WRITE_MEDIA;
+
 private:
     static void MediaLibraryNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value MediaLibraryNapiConstructor(napi_env env, napi_callback_info info);
@@ -186,6 +191,7 @@ private:
 
 struct MediaLibraryAsyncContext {
     napi_env env;
+    int32_t error = ERR_DEFAULT;
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
@@ -202,9 +208,16 @@ struct MediaLibraryAsyncContext {
     std::vector<std::unique_ptr<ImageAsset>> imageAssets;
     std::vector<std::unique_ptr<AlbumAsset>> albumAssets;
     std::unique_ptr<FetchResult> fetchFileResult;
+    std::unique_ptr<FileAsset> fileAsset;
+    std::unique_ptr<SmartAlbumAsset> smartAlbumData;
     OHOS::NativeRdb::ValuesBucket valuesBucket;
     int32_t dirType = 0;
     int32_t privateAlbumType = DEFAULT_PRIVATEALBUMTYPE;
+    int32_t retVal;
+    std::string directoryRelativePath;
+    std::vector<std::unique_ptr<AlbumAsset>> albumNativeArray;
+    std::vector<std::unique_ptr<SmartAlbumAsset>> smartAlbumNativeArray;
+    std::vector<std::unique_ptr<SmartAlbumAsset>> privateSmartAlbumNativeArray;
 };
 } // namespace Media
 } // namespace OHOS
