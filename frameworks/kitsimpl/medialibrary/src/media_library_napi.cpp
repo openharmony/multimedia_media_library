@@ -1228,9 +1228,7 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {0};
-    napi_value thisVar = nullptr;
-    napi_value resource = nullptr;
+    napi_value argv[ARGS_TWO] = {0}, thisVar = nullptr, resource = nullptr;
     const int32_t refCount = 1;
 
     if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
@@ -1268,10 +1266,8 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
                 auto context = static_cast<MediaLibraryAsyncContext*>(data);
                 unsigned int dirIndex = context->dirType;
                 if (dirIndex < directoryEnumValues.size()) {
-                    HiLog::Debug(LABEL, "GetPublicDirectoryCompleteCallback dirIndex < directoryEnumValues.size()");
                     context->directoryRelativePath = directoryEnumValues[dirIndex];
                 } else {
-                    HiLog::Debug(LABEL, "dirIndex is illegal");
                     context->error = ERR_INVALID_OUTPUT;
                 }
             },
@@ -1493,13 +1489,13 @@ static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
         HiLog::Error(LABEL, "AlbumsAsyncCallbackComplete 1");
         napi_get_undefined(env, &jsContext->data);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                                                        "No albums found");
+            "No albums found");
         } else {
             napi_value albumArray = nullptr;
             napi_create_array(env, &albumArray);
             for (size_t i = 0; i < context->albumNativeArray.size(); i++) {
                 napi_value albumNapiObj = AlbumNapi::CreateAlbumNapi(env, *(context->albumNativeArray[i]),
-                                                                        context->objectInfo->sAbilityHelper_);
+                    context->objectInfo->sAbilityHelper_);
                 napi_set_element(env, albumArray, i, albumNapiObj);
             }
             jsContext->status = true;
@@ -1566,7 +1562,6 @@ static void getFileAssetById(int32_t id, const string& selfId, MediaLibraryAsync
     NativeRdb::DataAbilityPredicates predicates;
 
     predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(id));
-    //predicates.EqualTo(MEDIA_DATA_DB_SELF_ID, selfId);
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet;
@@ -1579,7 +1574,7 @@ static void getFileAssetById(int32_t id, const string& selfId, MediaLibraryAsync
         if (context->fetchFileResult != nullptr && context->fetchFileResult->GetCount() >= 1) {
             HiLog::Debug(LABEL, "getFileAssetById fetchFileResult->GetCount() >= 1");
             context->fileAsset = context->fetchFileResult->GetFirstObject();
-        } 
+        }
     }
 }
 
@@ -2979,9 +2974,8 @@ static void GetTrashSmartAlbumExecute(MediaLibraryAsyncContext *context)
     context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_TRASH, true);
     context->smartAlbumData->SetAlbumCapacity(GetAlbumCapacity(context));
     HiLog::Error(LABEL, "AlbumCapacity = %{public}d", context->smartAlbumData->GetAlbumCapacity());
-    context->smartAlbumData->SetAlbumPrivateType(TYPE_TRASH); 
+    context->smartAlbumData->SetAlbumPrivateType(TYPE_TRASH);
     HiLog::Error(LABEL, "GetFavSmartAlbum OUT");
-
 }
 
 static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
@@ -3065,7 +3059,7 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status,
         if (context->smartAlbumData != nullptr) {
             jsContext->status = true;
             napi_value albumArray = nullptr;
-            napi_create_array(env, &albumArray); 
+            napi_create_array(env, &albumArray);
             napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *context->smartAlbumData,
                 context->objectInfo->sAbilityHelper_);
             napi_set_element(env, albumArray, 0, albumNapiObj);
@@ -3077,8 +3071,8 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status,
             napi_create_array(env, &albumArray);
             for (size_t i = 0; i < context->privateSmartAlbumNativeArray.size(); i++) {
                 napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env,
-                                                                               *(context->privateSmartAlbumNativeArray[i]),
-                                                                               context->objectInfo->sAbilityHelper_);
+                    *(context->privateSmartAlbumNativeArray[i]),
+                    context->objectInfo->sAbilityHelper_);
                 napi_set_element(env, albumArray, i, albumNapiObj);
             }
             napi_get_undefined(env, &jsContext->error);
@@ -3185,7 +3179,7 @@ static void JSCreateSmartAlbumCompleteCallback(napi_env env, napi_status status,
             HiLog::Error(LABEL, "JSCreateSmartAlbumCompleteCallback 1");
             napi_get_undefined(env, &jsContext->data);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                                                        "No albums found");
+                "No albums found");
         } else {
             jsContext->status = true;
             napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumNativeArray[0]),
@@ -3210,9 +3204,7 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {0};
-    napi_value thisVar = nullptr;
-    napi_value resource = nullptr;
+    napi_value argv[ARGS_TWO] = {0}, thisVar = nullptr, resource = nullptr;
 
     if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
         HiLog::Error(LABEL, "Process do not have permission of write media!");
@@ -3234,10 +3226,10 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
                 if (context->objectInfo->sAbilityHelper_ != nullptr) {
                     string abilityUri = MEDIALIBRARY_DATA_URI;
-                    Uri CreateSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" + MEDIA_SMARTALBUMOPRN_CREATEALBUM);
+                    Uri CreateSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" +
+                        MEDIA_SMARTALBUMOPRN_CREATEALBUM);
                     int retVal = context->objectInfo->sAbilityHelper_->Insert(CreateSmartAlbumUri,
-                                                                          context->valuesBucket);
-                    HiLog::Error(LABEL, "JSCreateSmartAlbumCompleteCallback retVal = %{public}d", retVal);
+                        context->valuesBucket);
                     if (retVal > 0) {
                         context->selection = SMARTALBUM_DB_ID + " = ?";
                         context->selectionArgs = {std::to_string(retVal)};
@@ -3317,15 +3309,14 @@ static void JSDeleteSmartAlbumExecute(MediaLibraryAsyncContext *context)
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri DeleteSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" + MEDIA_SMARTALBUMOPRN_DELETEALBUM);
         int retVal = context->objectInfo->sAbilityHelper_->Insert(DeleteSmartAlbumUri,
-                                                                    context->valuesBucket);
+            context->valuesBucket);
         HiLog::Error(LABEL, "JSDeleteSmartAlbumCompleteCallback retVal = %{public}d", retVal);
         if (retVal < 0) {
             context->error = retVal;
         } else {
             context->retVal = retVal;
         }
-    }
-    else {
+    } else {
         context->error = ERR_INVALID_OUTPUT;
     }
 }

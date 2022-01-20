@@ -425,28 +425,23 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
                                                               const DataAbilityPredicates &predicates)
 {
     if ((!isRdbStoreInitialized) || (rdbStore == nullptr)) {
-        MEDIA_ERR_LOG("MediaLibraryDataAbility Query:Rdb Store is not initialized");
         return nullptr;
     }
-
     unique_ptr<AbsSharedResultSet> queryResultSet;
     TableType tabletype = TYPE_DATA;
     string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
     int width = 0, height = 0;
     bool thumbnailQuery = ParseThumbnailInfo(uriString, width, height);
-
     string::size_type pos = uriString.find_last_of('/');
     if (uriString == MEDIALIBRARY_DATA_URI+"/"+MEDIA_ALBUMOPRN_QUERYALBUM) {
         tabletype = TYPE_ALBUM_TABLE;
         uriString = MEDIALIBRARY_DATA_URI;
     } else if (uriString == MEDIALIBRARY_DATA_URI + "/"
-               + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
-               + SMARTABLUMASSETS_VIEW_NAME) {
+               + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTABLUMASSETS_VIEW_NAME) {
         tabletype = TYPE_SMARTALBUMASSETS_TABLE;
         uriString = MEDIALIBRARY_SMARTALBUM_URI;
     } else if (uriString == MEDIALIBRARY_DATA_URI + "/"
-               + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
-               + ASSETMAP_VIEW_NAME) {
+               + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME) {
         tabletype = TYPE_ASSETSMAP_TABLE;
         uriString = MEDIALIBRARY_SMARTALBUM_URI;
     } else if (strQueryCondition.empty() && pos != string::npos) {
@@ -461,29 +456,23 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
         } else if (pos == MEDIALIBRARY_SMARTALBUM_MAP_URI.length()) {
             tabletype = TYPE_SMARTALBUM_MAP;
             strQueryCondition = SMARTALBUMMAP_DB_ALBUM_ID + " = " + strRow;
-    }
         }
-    // After removing the index values, check whether URI is correct
+    }
     CHECK_AND_RETURN_RET_LOG((uriString == MEDIALIBRARY_DATA_URI ||
-                             uriString == MEDIALIBRARY_SMARTALBUM_URI ||
-                             uriString == MEDIALIBRARY_SMARTALBUM_MAP_URI),
-                             nullptr,
-                             "Not Data ability Uri");
+        uriString == MEDIALIBRARY_SMARTALBUM_URI || uriString == MEDIALIBRARY_SMARTALBUM_MAP_URI),
+        nullptr, "Not Data ability Uri");
     if (thumbnailQuery) {
         GenThumbnail(rdbStore, mediaThumbnail_, strRow, width, height);
     }
-    if (tabletype == TYPE_SMARTALBUM ||
-        tabletype == TYPE_SMARTALBUM_MAP) {
+    if (tabletype == TYPE_SMARTALBUM || tabletype == TYPE_SMARTALBUM_MAP) {
         queryResultSet = QueryBySmartTableType(tabletype, strQueryCondition, predicates, columns, rdbStore);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
-    } else if (tabletype == TYPE_ASSETSMAP_TABLE ||
-        tabletype == TYPE_SMARTALBUMASSETS_TABLE) {
+    } else if (tabletype == TYPE_ASSETSMAP_TABLE || tabletype == TYPE_SMARTALBUMASSETS_TABLE) {
         queryResultSet = QueryByViewType(tabletype, strQueryCondition, predicates, columns, rdbStore);
     } else {
         queryResultSet = QueryByFileTableType(tabletype, strQueryCondition, predicates, columns, rdbStore);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     }
-    
     return queryResultSet;
 }
 
