@@ -186,6 +186,7 @@ private:
 
 struct MediaLibraryAsyncContext {
     napi_env env;
+    int32_t error = ERR_DEFAULT;
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
@@ -202,9 +203,12 @@ struct MediaLibraryAsyncContext {
     std::vector<std::unique_ptr<ImageAsset>> imageAssets;
     std::vector<std::unique_ptr<AlbumAsset>> albumAssets;
     std::unique_ptr<FetchResult> fetchFileResult;
+    std::unique_ptr<FileAsset> fileAsset;
     OHOS::NativeRdb::ValuesBucket valuesBucket;
     int32_t dirType = 0;
     int32_t privateAlbumType = DEFAULT_PRIVATEALBUMTYPE;
+    int32_t retVal;
+    std::string directoryRelativePath;
 };
 } // namespace Media
 } // namespace OHOS
