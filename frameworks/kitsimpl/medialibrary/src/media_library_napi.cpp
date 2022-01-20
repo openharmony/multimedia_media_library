@@ -16,6 +16,8 @@
 #include "media_library_napi.h"
 #include "hilog/log.h"
 #include "smart_album_napi.h"
+#include "file_ex.h"
+#include "permission/permission_kit.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -29,6 +31,8 @@ namespace {
 
 namespace OHOS {
 namespace Media {
+const std::string MediaLibraryNapi::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
+const std::string MediaLibraryNapi::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 bool g_isNewApi = false;
 
@@ -111,6 +115,37 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         }
     }
     return nullptr;
+}
+
+std::string GetPackageName(napi_env env, int& userId)
+{
+    napi_value global = nullptr;
+    NAPI_CALL(env, napi_get_global(env, &global));
+
+    napi_value abilityObj = nullptr;
+    NAPI_CALL(env, napi_get_named_property(env, global, "ability", &abilityObj));
+
+    AppExecFwk::Ability *ability = nullptr;
+    NAPI_CALL(env, napi_get_value_external(env, abilityObj, (void **)&ability));
+
+    if (ability != nullptr) {
+        userId = (ability->GetAbilityInfo())->applicationInfo.uid;
+        return ability->GetBundleName();
+    }
+    return "";
+}
+
+bool CheckUserGrantedPermission(napi_env env, const std::string& permissionName)
+{
+    if (!FileExists("/data/local/tmp/media_permission")) {
+        return true;
+    }
+    int userId = -1;
+    std::string bundleName = GetPackageName(env, userId);
+    HiLog::Debug(LABEL, "CheckUserGrantedPermission --- bundleName is %{public}s, userId is %{public}d ",
+        bundleName.c_str(), userId);
+    return (Security::Permission::PermissionKit::VerifyPermission(bundleName,
+        permissionName, userId) == Security::Permission::PermissionState::PERMISSION_GRANTED);
 }
 
 shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper(napi_env env)
@@ -1198,6 +1233,11 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     napi_value resource = nullptr;
     const int32_t refCount = 1;
 
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of read media!");
+        return nullptr;
+    }
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
@@ -1326,6 +1366,11 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
+
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of read media!");
+        return nullptr;
+    }
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
@@ -1478,6 +1523,12 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
+
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of read media!");
+        return nullptr;
+    }
+
     HiLog::Error(LABEL, "JSGetAlbums");
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
@@ -1702,6 +1753,11 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
 
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of write media!");
+        return nullptr;
+    }
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_THREE || argc == ARGS_FORE), "requires 4 parameters maximum");
 
@@ -1834,6 +1890,11 @@ napi_value MediaLibraryNapi::JSModifyAsset(napi_env env, napi_callback_info info
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
 
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of write media!");
+        return nullptr;
+    }
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 2 parameters maximum");
 
@@ -1964,6 +2025,11 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
 
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of write media!");
+        return nullptr;
+    }
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
@@ -2083,6 +2149,11 @@ napi_value MediaLibraryNapi::JSOpenAsset(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
 
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of read media!");
+        return nullptr;
+    }
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
 
@@ -2198,6 +2269,11 @@ napi_value MediaLibraryNapi::JSCloseAsset(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
 
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of read media!");
+        return nullptr;
+    }
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
 
@@ -2301,6 +2377,11 @@ napi_value MediaLibraryNapi::JSCreateAlbum(napi_env env, napi_callback_info info
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
+
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of write media!");
+        return nullptr;
+    }
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
@@ -2409,6 +2490,11 @@ napi_value MediaLibraryNapi::JSModifyAlbum(napi_env env, napi_callback_info info
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
 
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of write media!");
+        return nullptr;
+    }
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
 
@@ -2511,6 +2597,11 @@ napi_value MediaLibraryNapi::JSDeleteAlbum(napi_env env, napi_callback_info info
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
+
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of write media!");
+        return nullptr;
+    }
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
@@ -3015,6 +3106,12 @@ napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info 
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     const int32_t refCount = 1;
+
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of read media!");
+        return nullptr;
+    }
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
@@ -3116,6 +3213,12 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
+
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of write media!");
+        return nullptr;
+    }
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
@@ -3234,6 +3337,12 @@ napi_value MediaLibraryNapi::JSDeleteSmartAlbum(napi_env env, napi_callback_info
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
+
+    if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
+        HiLog::Error(LABEL, "Process do not have permission of write media!");
+        return nullptr;
+    }
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);

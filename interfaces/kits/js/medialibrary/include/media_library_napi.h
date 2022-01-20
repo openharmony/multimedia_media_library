@@ -122,6 +122,10 @@ public:
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
 
+public:
+    static const std::string PERMISSION_NAME_READ_MEDIA;
+    static const std::string PERMISSION_NAME_WRITE_MEDIA;
+
 private:
     static void MediaLibraryNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value MediaLibraryNapiConstructor(napi_env env, napi_callback_info info);
