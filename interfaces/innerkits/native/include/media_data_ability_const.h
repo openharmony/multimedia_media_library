@@ -310,11 +310,11 @@ const std::string CREATE_SMARTABLUMASSETS_VIEW = "CREATE VIEW " + SMARTABLUMASSE
 const std::string ASSETMAP_VIEW_NAME = "AssetMap";
 const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW " + ASSETMAP_VIEW_NAME
                         + " AS SELECT * FROM "
-                        + SMARTALBUM_MAP_TABLE + ", "
-                        + MEDIALIBRARY_TABLE
+                        + MEDIALIBRARY_TABLE + " a " + ", "
+                        + SMARTALBUM_MAP_TABLE + " b "
                         + " WHERE "
-                        + SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_ALBUM_ID + " = "
-                        + MEDIALIBRARY_TABLE + "." + MEDIA_DATA_DB_ID;
+                        + "a." + MEDIA_DATA_DB_ID + " = "
+                        + "b." + SMARTALBUMMAP_DB_ASSET_ID;
 
 // File operations constants
 const std::string MEDIA_OPERN_KEYWORD = "operation";
