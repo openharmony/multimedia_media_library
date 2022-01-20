@@ -1257,6 +1257,10 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, prefix);
     context->selectionArgs.insert(context->selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
 
+    string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
+    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
+    context->selectionArgs.insert(context->selectionArgs.begin(), "0");
+
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
