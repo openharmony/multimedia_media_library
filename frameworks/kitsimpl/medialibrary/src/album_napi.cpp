@@ -654,8 +654,6 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
 
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-
-
     if (context->fetchResult != nullptr) {
         fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult));
         if (fetchRes == nullptr) {
