@@ -29,6 +29,7 @@ const int32_t ALBUM_OPERATION_ERR = -1;
 const int32_t FILE_OPERATION_ERR = -1;
 const int32_t DEFAULT_PRIVATEALBUMTYPE = -1;
 const int32_t MEDIA_RDB_VERSION = 1;
+const int32_t MEDIA_RDB_VERSION_NEW = 5;
 const int32_t MEDIA_SMARTALBUM_RDB_VERSION = 1;
 const int32_t MEDIA_SMARTALBUMMAP_RDB_VERSION = 1;
 
@@ -42,7 +43,18 @@ const std::string DEVICE_TABLE = "Device";
 
 const std::string MEDIA_DATA_ABILITY_DB_NAME = MEDIA_DATA_DB_Path + "media_library.db";
 
-const std::string MEDIALIBRARY_DATA_URI = "dataability:///com.ohos.medialibrary.MediaLibraryDataAbility";
+const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "dataability://";
+const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
+const std::string MEDIALIBRARY_TYPE_AUDIO_URI = "/audio";
+const std::string MEDIALIBRARY_TYPE_VIDEO_URI = "/video";
+const std::string MEDIALIBRARY_TYPE_IMAGE_URI = "/image";
+const std::string MEDIALIBRARY_TYPE_FILE_URI  =  "/file";
+const std::string MEDIALIBRARY_TYPE_ALBUM_URI  =  "/album";
+const std::string MEDIALIBRARY_TYPE_SMARTALBUM_CHANGE_URI  =  "/smartalbum";
+const std::string MEDIALIBRARY_TYPE_DEVICE_URI  =  "/device";
+const std::string MEDIALIBRARY_TYPE_SMART_URI = "/smart";
+
+const std::string MEDIALIBRARY_DATA_URI = "dataability:///media";
 const std::string MEDIALIBRARY_SMARTALBUM_URI = MEDIALIBRARY_DATA_URI + "." + SMARTALBUM_TABLE;
 const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "." + SMARTALBUM_MAP_TABLE;
 const std::string MEDIALIBRARY_CATEGORY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "."

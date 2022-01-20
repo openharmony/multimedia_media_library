@@ -194,6 +194,7 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
     }
 
     napi_get_undefined(env, &result);
+    HiLog::Debug(LABEL, "GetMediaLibraryNewInstance OUT");
     return result;
 }
 
@@ -1259,6 +1260,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
     context->selectionArgs.insert(context->selectionArgs.begin(), "0");
+
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
@@ -1904,6 +1906,7 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status,
     jsContext->status = false;
 
     if (context->error == ERR_DEFAULT) {
+        HiLog::Debug(LABEL, "Delete result = %{public}d", context->retVal);
         napi_create_int32(env, context->retVal, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
@@ -3145,7 +3148,7 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
                 }
             },
             reinterpret_cast<CompleteCallback>(JSCreateSmartAlbumCompleteCallback),
-            static_cast<void *>(asyncContext.get()), &asyncContext->work);
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {

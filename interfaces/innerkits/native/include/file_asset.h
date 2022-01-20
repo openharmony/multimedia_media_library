@@ -112,6 +112,9 @@ public:
     int64_t GetDateTrashed() const;
     void SetDateTrashed(int64_t dateTrashed);
 
+    const std::string &GetSelfId() const;
+    void SetSelfId(const std::string &selfId);
+
     int32_t CreateAsset(const std::string &filePath);
     int32_t ModifyAsset(const std::string& oldPath, const std::string &newPath);
     int32_t DeleteAsset(const std::string &filePath);
@@ -153,6 +156,8 @@ private:
 
     bool isFavorite_;
     int64_t dateTrashed_;
+
+    std::string selfId_;
 };
 } // namespace Media
 } // namespace OHOS

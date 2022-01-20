@@ -231,7 +231,8 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, cons
     }
 
     if (errCode == DATA_ABILITY_SUCCESS) {
-        if (fileDbOprn.Delete(rowNum, rdbStore) > 0) {
+        errCode = fileDbOprn.Delete(rowNum, rdbStore);
+        if (errCode > 0) {
             string albumPath = MediaLibraryDataAbilityUtils::GetParentPath(srcPath);
             UpdateDateModifiedForAlbum(rdbStore, albumPath);
             smartAlbumMapDbOprn.DeleteAllAssetsMapInfo(std::stoi(rowNum), rdbStore);
