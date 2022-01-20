@@ -901,7 +901,7 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
     return result;
 }
 
-static void GetTrashFileAssetsNative(napi_env env, SmartAlbumNapiAsyncContext *context)
+static void GetTrashFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
     HiLog::Error(LABEL, "GetTrashFileAssetsNative in");
     NativeRdb::DataAbilityPredicates predicates;
@@ -919,7 +919,7 @@ static void GetTrashFileAssetsNative(napi_env env, SmartAlbumNapiAsyncContext *c
     HiLog::Error(LABEL, "GetTrashFileAssetsNative out");
 }
 
-static void GetFavFileAssetsNative(napi_env env, SmartAlbumNapiAsyncContext *context)
+static void GetFavFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
     HiLog::Error(LABEL, "GetFavFileAssetsNative in");
     NativeRdb::DataAbilityPredicates predicates;
@@ -937,15 +937,16 @@ static void GetFavFileAssetsNative(napi_env env, SmartAlbumNapiAsyncContext *con
     HiLog::Error(LABEL, "GetFavFileAssetsNative out");
 }
 
-static void GetFileAssetsNative(napi_env env, SmartAlbumNapiAsyncContext *context)
+static void GetFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
     NativeRdb::DataAbilityPredicates predicates;
-
     predicates.EqualTo(SMARTALBUMMAP_DB_ALBUM_ID, std::to_string(context->objectInfo->GetSmartAlbumId()));
     predicates.NotEqualTo(SMARTALBUMMAP_DB_ASSET_ID, "");
 
     std::vector<std::string> columns;
-    Uri uri(MEDIALIBRARY_SMARTALBUM_MAP_URI);
+    Uri uri(MEDIALIBRARY_DATA_URI + "/"
+               + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
+               + ASSETMAP_VIEW_NAME);
 
     std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
         context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
@@ -962,13 +963,6 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status,
 
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    if (context->objectInfo->GetAlbumPrivateType() == TYPE_FAVORITE) {
-        GetFavFileAssetsNative(env, context);
-    } else if (context->objectInfo->GetAlbumPrivateType() == TYPE_TRASH) {
-        GetTrashFileAssetsNative(env, context);
-    } else {
-        GetFileAssetsNative(env, context);
-    }
 
     if (context->fetchResult != nullptr) {
         fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult));
@@ -1020,7 +1014,16 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumFileAssets(napi_env env, napi_callback
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetSmartAlbumFileAssets");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                    auto context = static_cast<SmartAlbumNapiAsyncContext*>(data);
+                    if (context->objectInfo->GetAlbumPrivateType() == TYPE_FAVORITE) {
+                        GetFavFileAssetsNative(context);
+                    } else if (context->objectInfo->GetAlbumPrivateType() == TYPE_TRASH) {
+                        GetTrashFileAssetsNative(context);
+                    } else {
+                        GetFileAssetsNative(context);
+                    }
+            },
             reinterpret_cast<CompleteCallback>(JSGetFileAssetsCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
