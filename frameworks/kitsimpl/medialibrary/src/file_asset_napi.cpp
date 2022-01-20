@@ -882,12 +882,8 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
     return jsResult;
 }
 
-static void JSCommitModifyCompleteCallback(napi_env env, napi_status status,
-                                           FileAssetAsyncContext *context)
+static void JSCommitModifyExecute(FileAssetAsyncContext *context)
 {
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
-    jsContext->status = false;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri updateAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET);
     NativeRdb::ValueObject valueObject;
@@ -907,20 +903,39 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status,
         changedRows =
             context->objectInfo->sAbilityHelper_->Update(uri, valuesBucket, predicates);
         if (changedRows < 0) {
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, changedRows,
-                                                         "File asset modification failed");
-            napi_get_undefined(env, &jsContext->data);
+            context->error = changedRows;
+            HiLog::Error(LABEL, "File asset modification failed");
         } else {
-            napi_create_int32(env, changedRows, &jsContext->data);
-            jsContext->status = true;
-            napi_get_undefined(env, &jsContext->error);
+            context->changedRows = changedRows;
             Uri modifyNotify(notifyUri);
             context->objectInfo->sAbilityHelper_->NotifyChange(modifyNotify);
         }
     } else {
-        HiLog::Debug(LABEL, "JSCommitModify CheckDisplayName fail");
-        changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, changedRows,
+        HiLog::Error(LABEL, "JSCommitModify CheckDisplayName fail");
+        context->error = DATA_ABILITY_VIOLATION_PARAMETERS;
+    }
+}
+
+static void JSCommitModifyCompleteCallback(napi_env env, napi_status status,
+                                           FileAssetAsyncContext *context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        if (context->changedRows < 0) {
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->changedRows,
+                                                         "File asset modification failed");
+            napi_get_undefined(env, &jsContext->data);
+        } else {
+            napi_create_int32(env, context->changedRows, &jsContext->data);
+            jsContext->status = true;
+            napi_get_undefined(env, &jsContext->error);
+        }
+    } else {
+        HiLog::Error(LABEL, "JSCommitModify CheckDisplayName fail");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
                                                      "CheckDisplayName fail");
         napi_get_undefined(env, &jsContext->data);
     }
@@ -971,7 +986,10 @@ napi_value FileAssetNapi::JSCommitModify(napi_env env, napi_callback_info info)
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCommitModify");
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                auto context = static_cast<FileAssetAsyncContext*>(data);
+                JSCommitModifyExecute(context);
+            },
             reinterpret_cast<CompleteCallback>(JSCommitModifyCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -984,14 +1002,8 @@ napi_value FileAssetNapi::JSCommitModify(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void JSOpenCompleteCallback(napi_env env, napi_status status,
-                                   FileAssetAsyncContext *context)
+static void JSOpenExecute(FileAssetAsyncContext *context)
 {
-    HiLog::Debug(LABEL, "JSOpenCompleteCallback IN");
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
-    jsContext->status = false;
-
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
         NativeRdb::ValueObject valueObject;
         string fileUri = context->objectInfo->GetFileUri();
@@ -1005,18 +1017,34 @@ static void JSOpenCompleteCallback(napi_env env, napi_status status,
         HiLog::Debug(LABEL, "openFileUri = %{public}s", openFileUri.ToString().c_str());
         int32_t retVal = context->objectInfo->sAbilityHelper_->OpenFile(openFileUri, mode);
         if (retVal <= 0) {
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
-                "File open asset failed");
-            napi_get_undefined(env, &jsContext->data);
+            context->error = retVal;
+            HiLog::Debug(LABEL, "File open asset failed");
         } else {
-            HiLog::Debug(LABEL, "return fd = %{public}d", retVal);
-            napi_create_int32(env, retVal, &jsContext->data);
-            napi_get_undefined(env, &jsContext->error);
-            jsContext->status = true;
+            HiLog::Error(LABEL, "return fd = %{public}d", retVal);
+            context->fd = retVal;
         }
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Ability helper is null");
+        context->error = ERR_INVALID_OUTPUT;
+        HiLog::Error(LABEL, "Ability helper is null");
+    }
+}
+
+static void JSOpenCompleteCallback(napi_env env, napi_status status,
+                                   FileAssetAsyncContext *context)
+{
+    HiLog::Debug(LABEL, "JSOpenCompleteCallback IN");
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        HiLog::Debug(LABEL, "return fd = %{public}d", context->fd);
+        napi_create_int32(env, context->fd, &jsContext->data);
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->status = true;
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
+            "File open asset failed");
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -1082,7 +1110,10 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSOpen");
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                auto context = static_cast<FileAssetAsyncContext*>(data);
+                JSOpenExecute(context);
+            },
             reinterpret_cast<CompleteCallback>(JSOpenCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -1096,13 +1127,8 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void JSCloseCompleteCallback(napi_env env, napi_status status,
-                                    FileAssetAsyncContext *context)
+static void JSCloseExecute(FileAssetAsyncContext *context)
 {
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
-    jsContext->status = false;
-
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
@@ -1114,19 +1140,30 @@ static void JSCloseCompleteCallback(napi_env env, napi_status status,
         }
 
         int32_t retVal = close(fd);
-        if ((retVal == DATA_ABILITY_SUCCESS) && (context->objectInfo->sAbilityHelper_->Insert(closeAssetUri,
-            context->valuesBucket) == DATA_ABILITY_SUCCESS)) {
-            napi_create_int32(env, DATA_ABILITY_SUCCESS, &jsContext->data);
-            napi_get_undefined(env, &jsContext->error);
-            jsContext->status = true;
-        } else {
-            HiLog::Error(LABEL, "negative ret");
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
-                "File close asset failed");
-            napi_get_undefined(env, &jsContext->data);
+        if ((retVal != DATA_ABILITY_SUCCESS) || (context->objectInfo->sAbilityHelper_->Insert(closeAssetUri,
+            context->valuesBucket) != DATA_ABILITY_SUCCESS)) {
+            context->error = retVal;
+            HiLog::Error(LABEL, "File close asset failed");
         }
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+        context->error = ERR_INVALID_OUTPUT;
+        HiLog::Error(LABEL, "Ability helper is null");
+    }
+}
+
+static void JSCloseCompleteCallback(napi_env env, napi_status status,
+                                    FileAssetAsyncContext *context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        napi_create_int32(env, DATA_ABILITY_SUCCESS, &jsContext->data);
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->status = true;
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "Ability helper is null");
         napi_get_undefined(env, &jsContext->data);
     }
@@ -1189,7 +1226,10 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                auto context = static_cast<FileAssetAsyncContext*>(data);
+                JSCloseExecute(context);
+            },
             reinterpret_cast<CompleteCallback>(JSCloseCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -1512,7 +1552,7 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
     return result;
 }
 
-static bool GetIsFavouriteNative(napi_env env, const FileAssetAsyncContext &fileContext)
+static bool GetIsFavouriteNative(const FileAssetAsyncContext &fileContext)
 {
     FileAssetAsyncContext *context = const_cast<FileAssetAsyncContext *>(&fileContext);
     NativeRdb::DataAbilityPredicates predicates;
@@ -1535,20 +1575,29 @@ static bool GetIsFavouriteNative(napi_env env, const FileAssetAsyncContext &file
     return isFavourite;
 }
 
+static void JSIsFavoriteExecute(FileAssetAsyncContext* context)
+{
+    if (context->objectInfo->sAbilityHelper_ != nullptr) {
+        context->isFavourite = GetIsFavouriteNative(*context);
+    } else {
+        context->error = ERR_INVALID_OUTPUT;
+        HiLog::Error(LABEL, "Ability helper is null");
+    }
+}
+
 static void JSIsFavouriteCallbackComplete(napi_env env, napi_status status,
                                           FileAssetAsyncContext* context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    bool isFavourite = false;
-    if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        isFavourite = GetIsFavouriteNative(env, *context);
-        napi_get_boolean(env, isFavourite, &jsContext->data);
+    if (context->error == ERR_DEFAULT) {
+        napi_get_boolean(env, context->isFavourite, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+        HiLog::Error(LABEL, "Get IsFavourite failed");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "Ability helper is null");
         napi_get_undefined(env, &jsContext->data);
     }
@@ -1688,7 +1737,10 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsFavorite");
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                auto context = static_cast<FileAssetAsyncContext*>(data);
+                JSIsFavoriteExecute(context);
+            },
             reinterpret_cast<CompleteCallback>(JSIsFavouriteCallbackComplete),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -1701,13 +1753,8 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void JSTrashCallbackComplete(napi_env env, napi_status status,
-                                    FileAssetAsyncContext* context)
+static void JSTrashExecute(FileAssetAsyncContext* context)
 {
-    HiLog::Error(LABEL, "JSTrashCallbackComplete in");
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
-    jsContext->status = false;
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
         HiLog::Error(LABEL, "JSTrashCallbackComplete sAbilityHelper_ != nullptr");
         string abilityUri = MEDIALIBRARY_DATA_URI;
@@ -1718,7 +1765,22 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status,
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
         context->objectInfo->sAbilityHelper_->Update(uri, context->valuesBucket, predicates);
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+        context->error = ERR_INVALID_OUTPUT;
+        HiLog::Error(LABEL, "Ability helper is null");
+    }
+}
+
+static void JSTrashCallbackComplete(napi_env env, napi_status status,
+                                    FileAssetAsyncContext* context)
+{
+    HiLog::Error(LABEL, "JSTrashCallbackComplete in");
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    if (context->error == ERR_DEFAULT) {
+        HiLog::Debug(LABEL, "JSTrashCallbackComplete success");
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "Ability helper is null");
         napi_get_undefined(env, &jsContext->data);
     }
@@ -1787,7 +1849,10 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSTrash");
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                auto context = static_cast<FileAssetAsyncContext*>(data);
+                JSTrashExecute(context);
+            },
             reinterpret_cast<CompleteCallback>(JSTrashCallbackComplete),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -1825,7 +1890,7 @@ static unique_ptr<FileAsset> GetFileAssetById(const int32_t id,
     return fileAsset;
 }
 
-static bool GetIsTrashNative(napi_env env, const FileAssetAsyncContext &fileContext)
+static bool GetIsTrashNative(const FileAssetAsyncContext &fileContext)
 {
     FileAssetAsyncContext *context = const_cast<FileAssetAsyncContext *>(&fileContext);
 
@@ -1843,20 +1908,28 @@ static bool GetIsTrashNative(napi_env env, const FileAssetAsyncContext &fileCont
     return isTrashed;
 }
 
+static void JSIsTrashExecute(FileAssetAsyncContext* context)
+{
+    if (context->objectInfo->sAbilityHelper_ != nullptr) {
+        context->isTrash = GetIsTrashNative(*context);
+    } else {
+        context->error = ERR_INVALID_OUTPUT;
+        MEDIA_INFO_LOG("Ability helper is null");
+    }
+}
+
 static void JSIsTrashCallbackComplete(napi_env env, napi_status status,
                                       FileAssetAsyncContext* context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    bool isTrash = false;
-    if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        isTrash = GetIsTrashNative(env, *context);
-        napi_get_boolean(env, isTrash, &jsContext->data);
+    if (context->error == ERR_DEFAULT) {
+        napi_get_boolean(env, context->isTrash, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "Ability helper is null");
         napi_get_undefined(env, &jsContext->data);
     }
@@ -1914,7 +1987,10 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsTrash");
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                auto context = static_cast<FileAssetAsyncContext*>(data);
+                JSIsTrashExecute(context);
+            },
             reinterpret_cast<CompleteCallback>(JSIsTrashCallbackComplete),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {

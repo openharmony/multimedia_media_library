@@ -51,7 +51,8 @@ namespace Media {
         TYPE_SMARTALBUM,
         TYPE_SMARTALBUM_MAP,
         TYPE_ALBUM_TABLE,
-        TYPE_SMARTALBUMASSETS_TABLE
+        TYPE_SMARTALBUMASSETS_TABLE,
+        TYPE_ASSETSMAP_TABLE
     };
     class MediaLibraryDataAbility : public AppExecFwk::Ability {
     public:

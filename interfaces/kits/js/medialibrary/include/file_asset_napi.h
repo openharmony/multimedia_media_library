@@ -138,6 +138,11 @@ struct FileAssetAsyncContext {
     int32_t thumbWidth;
     int32_t thumbHeight;
     bool isDirectory;
+    int32_t error = ERR_DEFAULT;
+    int32_t changedRows;
+    int32_t fd;
+    bool isFavourite = false;
+    bool isTrash = false;
 };
 } // namespace Media
 } // namespace OHOS

@@ -299,6 +299,16 @@ void FileAsset::SetDateTrashed(int64_t dateTrashed)
     dateTrashed_ = dateTrashed;
 }
 
+const string &FileAsset::GetSelfId() const
+{
+    return selfId_;
+}
+
+void FileAsset::SetSelfId(const string &selfId)
+{
+    selfId_ = selfId;
+}
+
 int32_t FileAsset::CreateAsset(const string &filePath)
 {
     MEDIA_ERR_LOG("CreateAsset in");
