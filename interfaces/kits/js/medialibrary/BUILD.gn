@@ -62,7 +62,7 @@ ohos_shared_library("medialibrary") {
   if (target_cpu == "arm") {
     ldflags = [ "-Wl,-rpath=/system/lib/module/multimedia/" ]
   } else if (target_cpu == "arm64") {
-    ldflags = [ "-Wl,-rpath=/system/lib64/module/multimedia/" ]    
+    ldflags = [ "-Wl,-rpath=/system/lib64/module/multimedia/" ]
   }
 
   deps = [
