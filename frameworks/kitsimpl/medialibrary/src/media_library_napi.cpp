@@ -2951,6 +2951,8 @@ static int32_t GetAlbumCapacity(MediaLibraryAsyncContext *context)
 static void GetFavSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
     HiLog::Error(LABEL, "GetFavSmartAlbum IN");
+    context->smartAlbumData = make_unique<SmartAlbumAsset>();
+
     context->smartAlbumData->SetAlbumId(FAVORIT_SMART_ALBUM_ID);
     HiLog::Error(LABEL, "SMARTALBUM_DB_ID = %{public}d", context->smartAlbumData->GetAlbumId());
     context->smartAlbumData->SetAlbumName(FAVORIT_SMART_ALBUM_NAME);
@@ -2965,7 +2967,9 @@ static void GetFavSmartAlbumExecute(MediaLibraryAsyncContext *context)
 
 static void GetTrashSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
-    HiLog::Error(LABEL, "GetFavSmartAlbum IN");
+    HiLog::Error(LABEL, "GetTrashSmartAlbumExecute IN");
+    context->smartAlbumData = make_unique<SmartAlbumAsset>();
+
     context->smartAlbumData->SetAlbumId(TRASH_SMART_ALBUM_ID);
     HiLog::Error(LABEL, "SMARTALBUM_DB_ID = %{public}d", context->smartAlbumData->GetAlbumId());
     context->smartAlbumData->SetAlbumName(TRASH_SMART_ALBUM_NAME);
@@ -2975,7 +2979,7 @@ static void GetTrashSmartAlbumExecute(MediaLibraryAsyncContext *context)
     context->smartAlbumData->SetAlbumCapacity(GetAlbumCapacity(context));
     HiLog::Error(LABEL, "AlbumCapacity = %{public}d", context->smartAlbumData->GetAlbumCapacity());
     context->smartAlbumData->SetAlbumPrivateType(TYPE_TRASH);
-    HiLog::Error(LABEL, "GetFavSmartAlbum OUT");
+    HiLog::Error(LABEL, "GetTrashSmartAlbumExecute OUT");
 }
 
 static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
