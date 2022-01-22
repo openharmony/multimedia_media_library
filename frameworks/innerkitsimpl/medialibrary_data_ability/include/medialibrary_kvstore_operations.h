@@ -26,6 +26,8 @@ namespace OHOS {
 namespace Media {
 const std::string RINGTONE_DEFAULT_KEY = "default_ringtone";
 const std::string RINGTONE_MULTISIM_KEY = "multisim_ringtone";
+const std::string RINGTONE_NOTIFICATION_KEY = "notification_tone";
+const std::string RINGTONE_ALARM_KEY = "alarm_tone";
 
 enum RingtoneSimType : int32_t {
     DEFAULT = 0,

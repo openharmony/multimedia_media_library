@@ -112,7 +112,11 @@ const std::string MEDIA_DATA_DB_ALBUM = "album";
 const std::string MEDIA_DATA_DB_ALBUM_ID = "album_id";
 const std::string MEDIA_DATA_DB_ALBUM_NAME = "album_name";
 const std::string MEDIA_DATA_DB_COUNT = "count";
+
+// ringtone uri constants
 const std::string MEDIA_DATA_DB_RINGTONE_URI = "ringtone_uri";
+const std::string MEDIA_DATA_DB_ALARM_URI = "alarm_uri";
+const std::string MEDIA_DATA_DB_NOTIFICATION_URI = "notification_uri";
 const std::string MEDIA_DATA_DB_RINGTONE_TYPE = "ringtone_type";
 
 const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " ("
@@ -342,8 +346,14 @@ const std::string MEDIA_FILEOPRN_GETALBUMCAPACITY = "get_album_capacity";
 const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
 const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
 const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
+
+// ringtone uris
 const std::string MEDIA_KVSTOREOPRN_SET_URI = "set_ringtone_uri";
+const std::string MEDIA_KVSTOREOPRN_SET_NOTIFICATION_URI = "set_notification_uri";
+const std::string MEDIA_KVSTOREOPRN_SET_ALARM_URI = "set_alarm_uri";
 const std::string MEDIA_KVSTOREOPRN_GET_URI = "get_ringtone_uri";
+const std::string MEDIA_KVSTOREOPRN_GET_NOTIFICATION_URI = "get_notification_uri";
+const std::string MEDIA_KVSTOREOPRN_GET_ALARM_URI = "get_alarm_uri";
 
 const std::string MEDIA_ALBUMOPRN_CREATEALBUM = "create_album";
 const std::string MEDIA_ALBUMOPRN_MODIFYALBUM = "modify_album";
