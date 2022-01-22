@@ -113,6 +113,7 @@ const int32_t REFERENCE_COUNT_ONE = 1;
 const int32_t ERR_DEFAULT = 0;
 const int32_t ERR_MEM_ALLOCATION = 2;
 const int32_t ERR_INVALID_OUTPUT = 3;
+const int32_t ERR_PERMISSION_DENIED = 4;
 
 const std::string ALBUM_ROOT_PATH = "/data/media";
 const int32_t FAVORIT_SMART_ALBUM_ID = -1;
