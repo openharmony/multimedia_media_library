@@ -16,11 +16,11 @@
 <info>
     <process>medialibrary_service</process>
     <loadlibs>
-        <libpath>/system/lib/libmedialibrary_service.z.so</libpath>
+        <libpath>libmedialibrary_service.z.so</libpath>
     </loadlibs>
     <systemability>
        <name>3007</name>
-       <libpath>/system/lib/libmedialibrary_service.z.so</libpath>
+       <libpath>libmedialibrary_service.z.so</libpath>
        <run-on-create>true</run-on-create>
        <distributed>false</distributed>
        <dump-level>1</dump-level>
