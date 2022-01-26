@@ -1,0 +1,85 @@
+{
+    "name": "@ohos/multimedia_media_library_standard",
+    "description": "provides a set of easy-to-use APIs for getting media file metadata information",
+    "version": "3.1",
+    "license": "Apache License 2.0",
+    "publishAs": "code-segment",
+    "segment": {
+        "destPath": "foundation/multimedia/medialibrary_standard"
+    },
+    "component": {
+      "name": "multimedia_media_library_standard",
+      "subsystem": "multimedia",
+      "syscap": [ "SystemCapability.Multimedia.MediaLibrary" ],
+      "features": [],
+      "adapted_system_type": [ "standard" ],
+      "rom": "4068KB",
+      "ram": "4068KB",
+      "deps": {
+        "components": [
+          "hilog",
+          "ability_runtime",
+          "bundle_framework",
+          "distributedschedule_dms_fwk",
+          "image_standard",
+          "media_standard",
+          "utils_base",
+          "ipc",
+          "distributeddatamgr_appdatamgr",
+          "distributedschedule_samgr",
+          "distributedschedule_safwk",
+          "distributeddatamgr_datamgr",
+          "ace_napi"
+        ],
+        "third_party": [
+          "json",
+          "node",
+          "openssl"
+        ]
+      },
+      "build": {
+        "sub_component": [
+            "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library_packages",
+            "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
+            "//foundation/multimedia/medialibrary_standard/sa_profile:medialibrary_service_sa_profile",
+            "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary",
+            "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary_js",
+            "//foundation/multimedia/medialibrary_standard/services/media_library_service:media_library_service_packages",
+            "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_ability:medialibrary_data_ability",
+            "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/media_scanner_ability:media_scanner_service",
+            "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/client:media_scanner_client"
+        ],
+        "inner_kits": [
+            {
+                "header": {
+                  "header_base": "////foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include/",
+                  "header_files": [
+                    "album_asset.h",
+                    "fetch_result.h",
+                    "image_asset.h",
+                    "imedia_scanner_client.h",
+                    "media_data_ability_const.h",
+                    "media_library.h",
+                    "media_log.h",
+                    "media_thumbnail_helper.h",
+                    "smart_album_asset.h",
+                    "audio_asset.h",
+                    "file_asset.h",
+                    "imedia_library_client.h",
+                    "media_asset.h",
+                    "media_lib_service_const.h",
+                    "media_library_manager.h",
+                    "media_scanner_const.h",
+                    "native_album_asset.h",
+                    "video_asset.h"
+                  ]
+                },
+                "name": "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library"
+            }
+        ],
+        "test": [
+          "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/test:test"
+        ]
+      }
+    }
+  }
