@@ -23,6 +23,7 @@ namespace OHOS {
 namespace Media {
 MediaLibraryDataAbility g_rdbStoreTest;
 string g_createUri1, g_createUri2;
+
 int g_fd1 = DATA_ABILITY_FAIL;
 int g_fd2 = DATA_ABILITY_FAIL;
 int g_albumId1 = DATA_ABILITY_FAIL;
@@ -39,13 +40,49 @@ void MediaDataAbilityUnitTest::SetUpTestCase(void)
 void MediaDataAbilityUnitTest::TearDownTestCase(void) {}
 void MediaDataAbilityUnitTest::SetUp(void) {}
 void MediaDataAbilityUnitTest::TearDown(void) {}
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAllFiles_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::Start");
+
+    unique_ptr<FetchResult> fetchFileResult = nullptr;
+    vector<string> columns;
+    DataAbilityPredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    predicates.SetWhereClause(prefix);
+
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
+    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    EXPECT_NE((resultSet == nullptr), true);
+    // Create FetchResult object using the contents of resultSet
+    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    EXPECT_NE((fetchFileResult == nullptr), true);
+    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
+    while (fileAsset != nullptr) {
+        Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
+        NativeRdb::ValuesBucket valuesBucketDelete;
+        MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::uri :%{public}s", fileAsset->GetUri().c_str());
+        MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::path :%{public}s", fileAsset->GetPath().c_str());
+        valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
+        int retVal = g_rdbStoreTest.Insert(deleteAssetUri, valuesBucketDelete);
+        EXPECT_NE((retVal < 0), true);
+
+        fileAsset = fetchFileResult->GetNextObject();
+    }
+
+    MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::End");
+}
+
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_001, TestSize.Level0)
 {
+    MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_001::Start");
     int index = DATA_ABILITY_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket;
-    string relativePath = "test/";
+    string relativePath = "Pictures/";
     string displayName = "gtest_new_file001.jpg";
     MediaType mediaType = MEDIA_TYPE_IMAGE;
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
@@ -54,14 +91,17 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_001, TestSi
     index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
     g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
     EXPECT_NE((index <= 0), true);
+    MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_001::End");
 }
-HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_003, TestSize.Level0)
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_002, TestSize.Level0)
 {
+    MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_002::Start");
     int index = DATA_ABILITY_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket;
-    string relativePath = "test1/";
+    string relativePath = "Pictures/";
     string displayName = "gtest_new_file_0102.jpg";
     MediaType mediaType = MEDIA_TYPE_IMAGE;
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
@@ -70,14 +110,17 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_003, TestSi
     index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
     g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
     EXPECT_NE((index <= 0), true);
+    MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_002::End");
 }
-HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_004, TestSize.Level0)
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_003, TestSize.Level0)
 {
+    MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_003::Start");
     int index = DATA_ABILITY_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket;
-    string relativePath = "test/createAsset/";
+    string relativePath = "Pictures/createAsset/";
     string displayName = "gtest_new_file0103.jpg";
     MediaType mediaType = MEDIA_TYPE_IMAGE;
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
@@ -86,10 +129,306 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_004, TestSi
     index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
     g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
     EXPECT_NE((index <= 0), true);
+    MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_003::End");
 }
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_004::Start");
+    int index = DATA_ABILITY_FAIL;
+    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
+    Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
+    NativeRdb::ValuesBucket valuesBucket;
+    string relativePath = "Pictures/createAsset/";
+    string displayName = ".gtest_new_file0103.jpg";
+    MediaType mediaType = MEDIA_TYPE_IMAGE;
+    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
+    EXPECT_NE((index <= 0), false);
+    MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_004::End");
+}
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_005::Start");
+    int index = DATA_ABILITY_FAIL;
+    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
+    Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
+    NativeRdb::ValuesBucket valuesBucket;
+    string relativePath = "Pictures/createAsset/";
+    MediaType mediaType = MEDIA_TYPE_IMAGE;
+    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
+    EXPECT_NE((index <= 0), false);
+    MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_005::End");
+}
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAsset_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataAbility_DeleteAsset_Test_001::Start");
+    int index = DATA_ABILITY_FAIL;
+    Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
+    NativeRdb::ValuesBucket valuesBucket;
+    string relativePath = "Pictures/";
+    string displayName = "gtest_delete_file001.jpg";
+    MediaType mediaType = MEDIA_TYPE_IMAGE;
+    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
+    g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
+    EXPECT_NE((index <= 0), true);
+
+    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
+    NativeRdb::ValuesBucket valuesBucketDelete;
+    valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, g_createUri1);
+    int retVal = g_rdbStoreTest.Insert(deleteAssetUri, valuesBucketDelete);
+    EXPECT_NE((retVal < 0), true);
+    MEDIA_INFO_LOG("MediaDataAbility_DeleteAsset_Test_001::End");
+}
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_QueryFiles_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_001::Start");
+    vector<string> columns;
+    DataAbilityPredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    predicates.SetWhereClause(prefix);
+
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
+    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    EXPECT_NE((resultSet == nullptr), true);
+    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_001::End");
+}
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_QueryFiles_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::Start");
+    unique_ptr<FetchResult> fetchFileResult = nullptr;
+    vector<string> columns;
+    DataAbilityPredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    predicates.SetWhereClause(prefix);
+
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
+    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    EXPECT_NE((resultSet == nullptr), true);
+    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::resultSet != nullptr");
+
+    // Create FetchResult object using the contents of resultSet
+    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    EXPECT_NE((fetchFileResult == nullptr), true);
+    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::fetchFileResult != nullptr");
+    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
+    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::GetCount > 0");
+
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    fileAsset = fetchFileResult->GetFirstObject();
+    EXPECT_NE((fileAsset == nullptr), true);
+    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::fileAsset != nullptr");
+    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::End");
+}
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::Start");
+    unique_ptr<FetchResult> fetchFileResult = nullptr;
+    vector<string> columns;
+    DataAbilityPredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    predicates.SetWhereClause(prefix);
+
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
+    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    EXPECT_NE((resultSet == nullptr), true);
+
+    // Create FetchResult object using the contents of resultSet
+    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    EXPECT_NE((fetchFileResult == nullptr), true);
+    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
+
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    fileAsset = fetchFileResult->GetFirstObject();
+    EXPECT_NE((fileAsset == nullptr), true);
+
+    NativeRdb::ValuesBucket valuesBucketUpdate;
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_TITLE, "UpdateAsset_Test_001");
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
+
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::GetId = %{public}d", fileAsset->GetId());
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::GetUri = %{public}s", fileAsset->GetUri().c_str());
+    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
+    int changedRows = g_rdbStoreTest.Update(updateAssetUri, valuesBucketUpdate, predicates);
+    EXPECT_NE(changedRows < 0, true);
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::changedRows = %{public}d", changedRows);
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::End");
+}
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::Start");
+    unique_ptr<FetchResult> fetchFileResult = nullptr;
+    vector<string> columns;
+    DataAbilityPredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    predicates.SetWhereClause(prefix);
+
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
+    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    EXPECT_NE((resultSet == nullptr), true);
+
+    // Create FetchResult object using the contents of resultSet
+    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    EXPECT_NE((fetchFileResult == nullptr), true);
+    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
+
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    fileAsset = fetchFileResult->GetFirstObject();
+    EXPECT_NE((fileAsset == nullptr), true);
+
+    NativeRdb::ValuesBucket valuesBucketUpdate;
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
+    valuesBucketUpdate.PutInt(MEDIA_DATA_DB_ORIENTATION, 1);
+
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::GetUri = %{public}s", fileAsset->GetUri().c_str());
+    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
+    int changedRows = g_rdbStoreTest.Update(updateAssetUri, valuesBucketUpdate, predicates);
+    EXPECT_NE(changedRows < 0, true);
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::changedRows = %{public}d", changedRows);
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::End");
+}
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::Start");
+    unique_ptr<FetchResult> fetchFileResult = nullptr;
+    vector<string> columns;
+    DataAbilityPredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    predicates.SetWhereClause(prefix);
+
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
+    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    EXPECT_NE((resultSet == nullptr), true);
+
+    // Create FetchResult object using the contents of resultSet
+    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    EXPECT_NE((fetchFileResult == nullptr), true);
+    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
+
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    fileAsset = fetchFileResult->GetFirstObject();
+    EXPECT_NE((fileAsset == nullptr), true);
+
+    NativeRdb::ValuesBucket valuesBucketUpdate;
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_NAME, "U" + fileAsset->GetDisplayName());
+
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::GetUri = %{public}s", fileAsset->GetUri().c_str());
+    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
+    int changedRows = g_rdbStoreTest.Update(updateAssetUri, valuesBucketUpdate, predicates);
+    EXPECT_NE(changedRows < 0, true);
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::changedRows = %{public}d", changedRows);
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::End");
+}
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_OpenFile_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataAbility_OpenFile_Test_001::Start");
+    unique_ptr<FetchResult> fetchFileResult = nullptr;
+    vector<string> columns;
+    DataAbilityPredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    predicates.SetWhereClause(prefix);
+
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
+    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    EXPECT_NE((resultSet == nullptr), true);
+
+    // Create FetchResult object using the contents of resultSet
+    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    EXPECT_NE((fetchFileResult == nullptr), true);
+    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
+
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    fileAsset = fetchFileResult->GetFirstObject();
+    EXPECT_NE((fileAsset == nullptr), true);
+
+    string fileUri = fileAsset->GetUri();
+    string mode = MEDIA_FILEMODE_READONLY;
+
+    Uri openFileUri(fileUri);
+    MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
+    int32_t fd = g_rdbStoreTest.OpenFile(openFileUri, mode);
+
+    EXPECT_NE(fd <= 0, true);
+    MEDIA_INFO_LOG("MediaDataAbility_OpenFile_Test_001::fd = %{public}d", fd);
+    MEDIA_INFO_LOG("MediaDataAbility_OpenFile_Test_001::End");
+}
+
+HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseFile_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataAbility_CloseFile_Test_001::Start");
+    unique_ptr<FetchResult> fetchFileResult = nullptr;
+    vector<string> columns;
+    DataAbilityPredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    predicates.SetWhereClause(prefix);
+
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
+    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    EXPECT_NE((resultSet == nullptr), true);
+
+    // Create FetchResult object using the contents of resultSet
+    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    EXPECT_NE((fetchFileResult == nullptr), true);
+    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
+
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    fileAsset = fetchFileResult->GetFirstObject();
+    EXPECT_NE((fileAsset == nullptr), true);
+
+    string fileUri = fileAsset->GetUri();
+    string mode = MEDIA_FILEMODE_READWRITE;
+
+    Uri openFileUri(fileUri);
+    MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
+    int32_t fd = g_rdbStoreTest.OpenFile(openFileUri, mode);
+
+    EXPECT_NE(fd <= 0, true);
+    MEDIA_INFO_LOG("MediaDataAbility_CloseFile_Test_001::fd = %{public}d", fd);
+
+    Uri closeAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
+
+    int32_t retVal = close(fd);
+    EXPECT_NE(retVal != DATA_ABILITY_SUCCESS, true);
+
+    NativeRdb::ValuesBucket valuesBucketClose;
+    valuesBucketClose.PutString(MEDIA_DATA_DB_URI, fileUri);
+    int32_t retValClose = g_rdbStoreTest.Insert(closeAssetUri, valuesBucketClose);
+    EXPECT_NE(retValClose != DATA_ABILITY_SUCCESS, true);
+
+    MEDIA_INFO_LOG("MediaDataAbility_CloseFile_Test_001::End");
+}
+
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_GetAlbum_Test_001, TestSize.Level0)
 {
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI +"/"+Media::MEDIA_ALBUMOPRN_QUERYALBUM;
+    string abilityUri = Media::MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_ALBUMOPRN_QUERYALBUM;
     Uri createAssetUri(abilityUri);
     string queryAssetUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri1(queryAssetUri);
@@ -102,6 +441,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_GetAlbum_Test_001, TestSize.
     queryPredicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(1));
     std::vector<std::string> queryColumns;
     g_rdbStoreTest.Query(createAssetUri1, queryColumns, queryPredicates);
+
     NativeRdb::DataAbilityPredicates predicates2;
     NativeRdb::ValuesBucket valuesBucket1;
     valuesBucket1.PutString(MEDIA_DATA_DB_TITLE, "newTest");
