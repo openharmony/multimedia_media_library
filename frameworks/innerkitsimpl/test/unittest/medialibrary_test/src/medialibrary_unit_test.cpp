@@ -34,7 +34,7 @@ void MediaLibraryUnitTest::TearDownTestCase(void)
     AlbumAsset albumAsset;
     AssetType assetType = ASSET_IMAGEALBUM;
 
-    albumUri = "/data/media/gtest";
+    albumUri = "/storage/media/gtest";
     if (g_mediaLibClientInstance != nullptr) {
         (void)g_mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);
     }
@@ -74,7 +74,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_testlevel0_001, Tes
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Create media audio asset in ROOT_DIR=/data/media directory.
+ * CaseDescription: Create media audio asset in ROOT_DIR=/storage/media directory.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_002, TestSize.Level1)
 {
@@ -88,7 +88,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_002, TestSize.
         errCode = g_mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
 
         // clearing the file created
-        mediaAsset.uri_ = "/data/media/gtest_002_audio.mp3";
+        mediaAsset.uri_ = "/storage/media/gtest_002_audio.mp3";
         (void)g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
@@ -108,7 +108,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetAudioAssets_testlevel0_001, TestS
     string dirPath = "gtest/001/audio";
     vector<string> selectionArgs;
     struct stat statInfo {};
-    string dirPathCheck = "/data/media/" + dirPath;
+    string dirPathCheck = "/storage/media/" + dirPath;
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
@@ -126,7 +126,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetAudioAssets_testlevel0_001, TestS
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get audio assets from ROOT_DIR=/data/media directory and subdirectories.
+ * CaseDescription: Get audio assets from ROOT_DIR=/storage/media directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetAudioAssets_test_002, TestSize.Level1)
 {
@@ -169,7 +169,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_testlevel0_003, Tes
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Create media video sset in ROOT_DIR=/data/media directory.
+ * CaseDescription: Create media video sset in ROOT_DIR=/storage/media directory.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_004, TestSize.Level1)
 {
@@ -183,7 +183,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_004, TestSize.
         errCode = g_mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
 
         // clearing the file created
-        mediaAsset.uri_ = "/data/media/test_002_video.mp4";
+        mediaAsset.uri_ = "/storage/media/test_002_video.mp4";
         (void)g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
@@ -204,7 +204,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAssets_testlevel0_001, TestS
     string dirPath = "gtest/002/video";
     vector<string> selectionArgs;
     struct stat statInfo {};
-    string dirPathCheck = "/data/media/" + dirPath;
+    string dirPathCheck = "/storage/media/" + dirPath;
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
@@ -222,7 +222,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAssets_testlevel0_001, TestS
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get video assets from ROOT_DIR=/data/media directory and subdirectories.
+ * CaseDescription: Get video assets from ROOT_DIR=/storage/media directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAssets_test_002, TestSize.Level1)
 {
@@ -265,7 +265,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_testlevel0_005, Tes
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Create media image asset in ROOT_DIR=/data/media directory.
+ * CaseDescription: Create media image asset in ROOT_DIR=/storage/media directory.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_006, TestSize.Level1)
 {
@@ -279,7 +279,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_006, TestSize.
         errCode = g_mediaLibClientInstance->CreateMediaAsset(assetType, mediaAsset);
 
         // clearing the file created
-        mediaAsset.uri_ = "/data/media/test_003_image.jpg";
+        mediaAsset.uri_ = "/storage/media/test_003_image.jpg";
         (void)g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
     EXPECT_NE(errCode, false);
@@ -322,7 +322,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAssets_testlevel0_001, TestS
     string dirPath = "gtest/003/image";
     vector<string> selectionArgs;
     struct stat statInfo {};
-    string dirPathCheck = "/data/media/" + dirPath;
+    string dirPathCheck = "/storage/media/" + dirPath;
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
@@ -340,7 +340,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAssets_testlevel0_001, TestS
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get image assets from ROOT_DIR=/data/media directory and subdirectories.
+ * CaseDescription: Get image assets from ROOT_DIR=/storage/media directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAssets_test_002, TestSize.Level1)
 {
@@ -370,7 +370,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetMediaAssets_testlevel0_001, TestS
     string dirPath = "gtest/003/image";
     vector<string> selectionArgs;
     struct stat statInfo {};
-    string dirPathCheck = "/data/media/" + dirPath;
+    string dirPathCheck = "/storage/media/" + dirPath;
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
@@ -388,7 +388,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetMediaAssets_testlevel0_001, TestS
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get media assets from ROOT_DIR=/data/media directory and subdirectories.
+ * CaseDescription: Get media assets from ROOT_DIR=/storage/media directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetMediaAssets_test_002, TestSize.Level1)
 {
@@ -418,7 +418,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetIMageAlbumAssets_testlevel0_001, 
     string dirPath = "gtest/003";
     vector<string> selectionArgs;
     struct stat statInfo {};
-    string dirPathCheck = "/data/media/" + dirPath;
+    string dirPathCheck = "/storage/media/" + dirPath;
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
@@ -436,7 +436,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetIMageAlbumAssets_testlevel0_001, 
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get image album assets from ROOT_DIR=/data/media/ directory and subdirectories.
+ * CaseDescription: Get image album assets from ROOT_DIR=/storage/media/ directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAlbumAssets_test_002, TestSize.Level1)
 {
@@ -464,7 +464,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAlbumAssets_test_002, TestSi
     string albumUri;
 
     // delete the empty album
-    albumUri = "/data/media/crtalbum002";
+    albumUri = "/storage/media/crtalbum002";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);
     }
@@ -486,7 +486,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAlbumAssets_testlevel0_003, 
     string dirPath = "gtest/002";
     vector<string> selectionArgs;
     struct stat statInfo {};
-    string dirPathCheck = "/data/media/" + dirPath;
+    string dirPathCheck = "/storage/media/" + dirPath;
 
     if (stat(dirPathCheck.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
@@ -504,7 +504,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAlbumAssets_testlevel0_003, 
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get video album assets from ROOT_DIR=/data/media directory and subdirectories.
+ * CaseDescription: Get video album assets from ROOT_DIR=/storage/media directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAlbumAssets_test_004, TestSize.Level1)
 {
@@ -535,9 +535,9 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAsset_testlevel0_001, Tes
     AssetType assetType = ASSET_AUDIO;
 
     srcMediaAsset.name_ = "test_001_audio.mp3";
-    srcMediaAsset.uri_ = "/data/media/gtest/001/audio/test_001_audio.mp3";
+    srcMediaAsset.uri_ = "/storage/media/gtest/001/audio/test_001_audio.mp3";
     dstMediaAsset.name_ = "test_001_audio_modify.mp3";
-    dstMediaAsset.uri_ = "/data/media/gtest/001/audio/test_001_audio.mp3";
+    dstMediaAsset.uri_ = "/storage/media/gtest/001/audio/test_001_audio.mp3";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->ModifyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     }
@@ -560,9 +560,9 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAsset_test_002, TestSize.
     AssetType assetType = ASSET_AUDIO;
 
     srcMediaAsset.name_ = "test_002_audio.mp3";
-    srcMediaAsset.uri_ = "/data/media/gtest/001/audio/test_002_audio.mp3";
+    srcMediaAsset.uri_ = "/storage/media/gtest/001/audio/test_002_audio.mp3";
     dstMediaAsset.name_ = "test_002_audio_modify.wav";
-    dstMediaAsset.uri_ = "/data/media/gtest/001/audio/test_002_audio.mp3";
+    dstMediaAsset.uri_ = "/storage/media/gtest/001/audio/test_002_audio.mp3";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->ModifyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     }
@@ -585,8 +585,8 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAsset_test_003, TestSize.
     AssetType assetType = ASSET_AUDIO;
 
     srcMediaAsset.name_ = "test_002_audio.mp3";
-    srcMediaAsset.uri_ = "/data/media/gtest/001/audio_nofile/test_002_audio.mp3";
-    dstMediaAsset.uri_ = "/data/media/gtest/001/audio_nofile/test_002_audio.mp3";
+    srcMediaAsset.uri_ = "/storage/media/gtest/001/audio_nofile/test_002_audio.mp3";
+    dstMediaAsset.uri_ = "/storage/media/gtest/001/audio_nofile/test_002_audio.mp3";
     dstMediaAsset.name_ = "test_002_audio_modify.mp3";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->ModifyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
@@ -610,7 +610,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_testlevel0_001, TestS
     AssetType assetType = ASSET_AUDIO;
     // copy to requested albumName
     srcMediaAsset.name_ = "test_001_audio_modify.mp3";
-    srcMediaAsset.uri_ = "/data/media/gtest/001/audio/test_001_audio_modify.mp3";
+    srcMediaAsset.uri_ = "/storage/media/gtest/001/audio/test_001_audio_modify.mp3";
     dstMediaAsset.albumName_ = "gtest/001/copyaudio";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
@@ -634,7 +634,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_testlevel0_002, TestS
     AssetType assetType = ASSET_IMAGE;
     // create and Copy to requested albumName
     srcMediaAsset.name_ = "test_003_image.jpg";
-    srcMediaAsset.uri_ = "/data/media/gtest/003/image/test_003_image.jpg";
+    srcMediaAsset.uri_ = "/storage/media/gtest/003/image/test_003_image.jpg";
     dstMediaAsset.albumName_ = "gtest/copyjpg/001/image";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
@@ -648,7 +648,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_testlevel0_002, TestS
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: copy media asset to ROOT_DIR=/data/media directory.
+ * CaseDescription: copy media asset to ROOT_DIR=/storage/media directory.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_test_003, TestSize.Level1)
 {
@@ -658,7 +658,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_test_003, TestSize.Le
     AssetType assetType = ASSET_AUDIO;
     // copy to ROOT_DIR
     srcMediaAsset.name_ = "test_001_audio_modify.mp3";
-    srcMediaAsset.uri_ = "/data/media/gtest/001/copyaudio/test_001_audio_modify.mp3";
+    srcMediaAsset.uri_ = "/storage/media/gtest/001/copyaudio/test_001_audio_modify.mp3";
     dstMediaAsset.albumName_ = "";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
@@ -682,7 +682,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CopyMediaAsset_test_004, TestSize.Le
     AssetType assetType = ASSET_AUDIO;
 
     srcMediaAsset.name_ = "";
-    srcMediaAsset.uri_ = "/data/media/gtest/001/audio/test_fail.mp3";
+    srcMediaAsset.uri_ = "/storage/media/gtest/001/audio/test_fail.mp3";
     dstMediaAsset.albumName_ = "";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
@@ -705,7 +705,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAsset_testlevel0_001, Tes
     AssetType assetType = ASSET_AUDIO;
 
     mediaAsset.name_ = "test_001_audio_modify.mp3";
-    mediaAsset.uri_ = "/data/media/gtest/001/copyaudio/test_001_audio_modify.mp3";
+    mediaAsset.uri_ = "/storage/media/gtest/001/copyaudio/test_001_audio_modify.mp3";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
@@ -727,7 +727,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAsset_testlevel0_002, Tes
     AssetType assetType = ASSET_VIDEO;
 
     mediaAsset.name_ = "test_002_video.mp4";
-    mediaAsset.uri_ = "/data/media/gtest/002/video/test_002_video.mp4";
+    mediaAsset.uri_ = "/storage/media/gtest/002/video/test_002_video.mp4";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
@@ -749,7 +749,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAsset_testlevel0_003, Tes
     AssetType assetType = ASSET_IMAGE;
 
     mediaAsset.name_ = "test_003_image.jpg";
-    mediaAsset.uri_ = "/data/media/gtest/003/image/test_003_image.jpg";
+    mediaAsset.uri_ = "/storage/media/gtest/003/image/test_003_image.jpg";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->DeleteMediaAsset(assetType, mediaAsset);
     }
@@ -817,7 +817,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAlbumAsset_testlevel0_001
 
     srcAlbumAsset.SetAlbumName("gtest/copyjpg/001/image");
     dstAlbumAsset.SetAlbumName("modify_image001");
-    albumUri = "/data/media/gtest/copyjpg/001/image";
+    albumUri = "/storage/media/gtest/copyjpg/001/image";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->ModifyMediaAlbumAsset(assetType, srcAlbumAsset, dstAlbumAsset, albumUri);
     }
@@ -842,7 +842,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_ModifyMediaAlbumAsset_test_002, Test
 
     srcAlbumAsset.SetAlbumName("test/album001");
     dstAlbumAsset.SetAlbumName("modify_album002");
-    albumUri = "/data/media/test2/album001";
+    albumUri = "/storage/media/test2/album001";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->ModifyMediaAlbumAsset(assetType, srcAlbumAsset, dstAlbumAsset, albumUri);
     }
@@ -866,7 +866,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAlbumAsset_testlevel0_001
     AssetType assetType = ASSET_IMAGEALBUM;
 
     albumAsset.SetAlbumName("gtest/copyjpg/001/modify_image001");
-    albumUri = "/data/media/gtest/copyjpg/001/modify_image001";
+    albumUri = "/storage/media/gtest/copyjpg/001/modify_image001";
     if (stat(albumUri.c_str(), &statInfo) == 0) {
         if (statInfo.st_mode & S_IFDIR) {
             if (g_mediaLibClientInstance != nullptr) {
@@ -893,7 +893,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_DeleteMediaAlbumAsset_test_002, Test
     AssetType assetType = ASSET_IMAGEALBUM;
 
     albumAsset.SetAlbumName("gtest/modify_album001");
-    albumUri = "/data/media/test/modify_album002";
+    albumUri = "/storage/media/test/modify_album002";
     if (g_mediaLibClientInstance != nullptr) {
         errCode = g_mediaLibClientInstance->DeleteMediaAlbumAsset(assetType, albumAsset, albumUri);
     }

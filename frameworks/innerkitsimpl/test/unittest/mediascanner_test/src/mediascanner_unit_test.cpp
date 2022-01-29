@@ -69,9 +69,9 @@ void MediaScannerUnitTest::SetUpTestCase(void)
 
     g_rdbStoreTest.InitMediaLibraryRdbStore();
 
-    chmod("/data/media/media_library.db", RWX_USR_GRP_OTH);
-    chmod("/data/media/media_library.db-shm", RWX_USR_GRP_OTH);
-    chmod("/data/media/media_library.db-wal", RWX_USR_GRP_OTH);
+    chmod("/storage/media/media_library.db", RWX_USR_GRP_OTH);
+    chmod("/storage/media/media_library.db-shm", RWX_USR_GRP_OTH);
+    chmod("/storage/media/media_library.db-wal", RWX_USR_GRP_OTH);
 }
 
 void MediaScannerUnitTest::TearDownTestCase(void)
@@ -85,9 +85,9 @@ void MediaScannerUnitTest::TearDownTestCase(void)
     valuesBucket.PutInt(MEDIA_DATA_DB_ID, g_albumId);
     g_rdbStoreTest.Insert(deleteAlbumUri, valuesBucket);
 
-    if (remove("/data/media/media_library.db") != 0
-        || remove("/data/media/media_library.db-shm") != 0
-        || remove("/data/media/media_library.db-wal") != 0) {
+    if (remove("/storage/media/media_library.db") != 0
+        || remove("/storage/media/media_library.db-shm") != 0
+        || remove("/storage/media/media_library.db-wal") != 0) {
         HiLog::Error(LABEL, "Db deletion failed");
     }
 }
@@ -109,7 +109,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
 {
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAlbumUri(abilityUri + "/" + Media::MEDIA_ALBUMOPRN + "/" + Media::MEDIA_ALBUMOPRN_CREATEALBUM);
-    string path = "/data/media/gtest_scanDir";
+    string path = "/storage/media/gtest_scanDir";
 
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, path);
@@ -149,7 +149,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket1;
-    string path = "/data/media/gtest_scanDir/gtest_new_ScanImgFile001.jpg";
+    string path = "/storage/media/gtest_scanDir/gtest_new_ScanImgFile001.jpg";
     MediaType mediaType = MEDIA_TYPE_IMAGE;
     valuesBucket1.PutString(MEDIA_DATA_DB_FILE_PATH, path);
     valuesBucket1.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
@@ -208,7 +208,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanVideo_Test_001, TestSize.Level0)
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket1;
-    string path = "/data/media/gtest_scanDir/gtest_new_ScanVideoFile002.mp4";
+    string path = "/storage/media/gtest_scanDir/gtest_new_ScanVideoFile002.mp4";
     MediaType mediaType = MEDIA_TYPE_VIDEO;
     valuesBucket1.PutString(MEDIA_DATA_DB_FILE_PATH, path);
     valuesBucket1.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
@@ -266,7 +266,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanAudio_Test_001, TestSize.Level0)
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket1;
-    string path = "/data/media/gtest_scanDir/gtest_new_ScanAudioFile003.aac";
+    string path = "/storage/media/gtest_scanDir/gtest_new_ScanAudioFile003.aac";
     MediaType mediaType = MEDIA_TYPE_AUDIO;
     valuesBucket1.PutString(MEDIA_DATA_DB_FILE_PATH, path);
     valuesBucket1.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
@@ -324,7 +324,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanTextFile_Test_001, TestSize.Leve
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket1;
-    string path = "/data/media/gtest_scanDir/gtest_new_ScanTextFile004.txt";
+    string path = "/storage/media/gtest_scanDir/gtest_new_ScanTextFile004.txt";
     MediaType mediaType = MEDIA_TYPE_FILE;
     valuesBucket1.PutString(MEDIA_DATA_DB_FILE_PATH, path);
     valuesBucket1.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
@@ -389,7 +389,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanHiddenFile_Test_001, TestSize.Le
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket1;
-    string path = "/data/media/gtest_scanDir/.hiddenFile";
+    string path = "/storage/media/gtest_scanDir/.hiddenFile";
     MediaType mediaType = MEDIA_TYPE_FILE;
     valuesBucket1.PutString(MEDIA_DATA_DB_FILE_PATH, path);
     valuesBucket1.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
@@ -424,7 +424,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanHiddenFile_Test_001, TestSize.Le
  */
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_002, TestSize.Level0)
 {
-    string path = "/data/media/gtest_scanDir";
+    string path = "/storage/media/gtest_scanDir";
     int result;
     std::string testcaseName("mediascanner_ScanDir_test_002");
     g_isCallbackReceived = false;
@@ -458,7 +458,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_Nomedia_test_001, TestSize.
     int index = DATA_ABILITY_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAlbumUri(abilityUri + "/" + Media::MEDIA_ALBUMOPRN + "/" + Media::MEDIA_ALBUMOPRN_CREATEALBUM);
-    string path = "/data/media/gtest_scanDir/FolderWithNomedia";
+    string path = "/storage/media/gtest_scanDir/FolderWithNomedia";
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, path);
     int albumId = g_rdbStoreTest.Insert(createAlbumUri, valuesBucket);
@@ -467,7 +467,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_Nomedia_test_001, TestSize.
     // Create a .nomedia file inside the newly created folder
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket1;
-    string filepath = "/data/media/gtest_scanDir/FolderWithNomedia/.nomedia";
+    string filepath = "/storage/media/gtest_scanDir/FolderWithNomedia/.nomedia";
     MediaType mediaType = MEDIA_TYPE_FILE;
     valuesBucket1.PutString(MEDIA_DATA_DB_FILE_PATH, filepath);
     valuesBucket1.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
@@ -504,7 +504,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_Nomedia_test_001, TestSize.
  */
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_CononicalPathtest_001, TestSize.Level0)
 {
-    string path = "/data/media/gtest_scanDir/FolderWithNomedia/..";
+    string path = "/storage/media/gtest_scanDir/FolderWithNomedia/..";
     int result;
     std::string testcaseName("mediascanner_ScanDir_CononicalPathtest_001");
     g_isCallbackReceived = false;
@@ -537,7 +537,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_HiddenDirtest_001, TestSize
     // Create a folder which starts with a .
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAlbumUri(abilityUri + "/" + Media::MEDIA_ALBUMOPRN + "/" + Media::MEDIA_ALBUMOPRN_CREATEALBUM);
-    string path = "/data/media/gtest_scanDir/.HiddenFolder";
+    string path = "/storage/media/gtest_scanDir/.HiddenFolder";
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, path);
     int albumId = g_rdbStoreTest.Insert(createAlbumUri, valuesBucket);
@@ -575,19 +575,19 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_OnlyFoldersAsContent_001, T
     // Create a folder which will contain only folders
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAlbumUri(abilityUri + "/" + Media::MEDIA_ALBUMOPRN + "/" + Media::MEDIA_ALBUMOPRN_CREATEALBUM);
-    string path = "/data/media/gtest_scanDir/DirWithOnlyFolders";
+    string path = "/storage/media/gtest_scanDir/DirWithOnlyFolders";
     NativeRdb::ValuesBucket valuesBucket1;
     valuesBucket1.PutString(MEDIA_DATA_DB_FILE_PATH, path);
     int albumId1 = g_rdbStoreTest.Insert(createAlbumUri, valuesBucket1);
     EXPECT_NE((albumId1 <= 0), true);
 
-    string path2 = "/data/media/gtest_scanDir/DirWithOnlyFolders/Folder1";
+    string path2 = "/storage/media/gtest_scanDir/DirWithOnlyFolders/Folder1";
     NativeRdb::ValuesBucket valuesBucket2;
     valuesBucket2.PutString(MEDIA_DATA_DB_FILE_PATH, path2);
     int albumId2 = g_rdbStoreTest.Insert(createAlbumUri, valuesBucket2);
     EXPECT_NE((albumId2 <= 0), true);
 
-    string path3 = "/data/media/gtest_scanDir/DirWithOnlyFolders/Folder2";
+    string path3 = "/storage/media/gtest_scanDir/DirWithOnlyFolders/Folder2";
     NativeRdb::ValuesBucket valuesBucket3;
     valuesBucket3.PutString(MEDIA_DATA_DB_FILE_PATH, path3);
     int albumId3 = g_rdbStoreTest.Insert(createAlbumUri, valuesBucket3);
@@ -622,7 +622,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_OnlyFoldersAsContent_001, T
  */
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_RecursiveScan_001, TestSize.Level0)
 {
-    string path = "/data/media/gtest_scanDir";
+    string path = "/storage/media/gtest_scanDir";
     int result;
     std::string testcaseName("mediascanner_ScanDir_RecursiveScan_001");
     g_isCallbackReceived = false;

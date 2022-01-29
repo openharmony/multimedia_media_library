@@ -68,7 +68,7 @@ HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_001, TestSize.Level0)
 
     int64_t id = 1;
     ValuesBucket values;
-    values.PutString(MEDIA_DATA_DB_FILE_PATH, std::string("/data/media/Pictures/Receiver_buffer7.jpg"));
+    values.PutString(MEDIA_DATA_DB_FILE_PATH, std::string("/storage/media/Pictures/Receiver_buffer7.jpg"));
     int ret = mstore->Insert(id, MEDIALIBRARY_TABLE, values);
     EXPECT_EQ(ret, E_OK);
     EXPECT_EQ(1, id);
@@ -96,7 +96,7 @@ HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_002, TestSize.Level0)
 
     MediaType mediaType = MEDIA_TYPE_IMAGE;
 
-    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, std::string("/data/media/Pictures/Receiver_buffer7.jpg"));
+    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, std::string("/storage/media/Pictures/Receiver_buffer7.jpg"));
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
@@ -213,7 +213,7 @@ HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_005, TestSize.Level0)
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri);
     NativeRdb::ValuesBucket valuesBucket;
-    BuildTestValuesBucket("test.mp4", "/data/media/test.mp4",
+    BuildTestValuesBucket("test.mp4", "/storage/media/test.mp4",
                           MEDIA_TYPE_VIDEO, valuesBucket, abilityUri);
     g_index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
     EXPECT_NE((g_index <= 0), true);
@@ -259,7 +259,7 @@ HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_006, TestSize.Level0)
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri);
     NativeRdb::ValuesBucket valuesBucket;
-    BuildTestValuesBucket("test.mp3", "/data/media/test.mp3",
+    BuildTestValuesBucket("test.mp3", "/storage/media/test.mp3",
                           MEDIA_TYPE_AUDIO, valuesBucket, abilityUri);
     g_index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
     EXPECT_NE((g_index <= 0), true);
