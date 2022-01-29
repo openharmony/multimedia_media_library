@@ -152,49 +152,27 @@ int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(const ValuesBucket &v
     MEDIA_INFO_LOG("HandleGetAlbumCapacity OUT");
     return errorCode;
 }
-
-int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, const string &srcPath,
-    const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+int ModifyDisName(const string dstFileName,
+    const string destAlbumPath, const string &srcPath, const shared_ptr<RdbStore> &rdbStore)
 {
-    string dstFilePath;
-    int32_t errCode = DATA_ABILITY_FAIL;
-    ValueObject valueObject;
-    string dstFileName;
-    FileAsset fileAsset;
-    MediaLibraryFileDb fileDbOprn;
-
-    if (values.GetObject(MEDIA_DATA_DB_FILE_PATH, valueObject)) {
-        valueObject.GetString(dstFilePath);
-    }
-
-    string destAlbumPath = MediaLibraryDataAbilityUtils::GetParentPath(dstFilePath);
-    dstFileName = MediaLibraryDataAbilityUtils::GetFileName(dstFilePath);
-
-    errCode = fileAsset.ModifyAsset(srcPath, dstFilePath);
-    if (errCode == DATA_ABILITY_FAIL) {
-        MEDIA_ERR_LOG("Failed to modify the file in the device");
-        return errCode;
-    }
-
+    int32_t errCode = DATA_ABILITY_SUCCESS;
     if (dstFileName == ".nomedia") {
         int32_t deletedRows(ALBUM_OPERATION_ERR);
-        vector<string> whereArgs = {
-            (destAlbumPath.back() != '/' ? (destAlbumPath + "/%") : (destAlbumPath + "%")), destAlbumPath
-        };
+        vector<string> whereArgs = {(destAlbumPath.back() != '/' ?
+            (destAlbumPath + "/%") : (destAlbumPath + "%")), destAlbumPath};
 
         int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
             MEDIA_DATA_DB_FILE_PATH + " LIKE ? OR " + MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
         if (deleteResult != E_OK) {
             MEDIA_ERR_LOG("Delete rows for the hidden album failed");
         }
-
         whereArgs.clear();
         whereArgs.push_back(srcPath);
         deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
         if (deleteResult != E_OK) {
             MEDIA_ERR_LOG("Delete rows for the old path failed");
         }
-        return errCode;
+        errCode = DATA_ABILITY_FAIL;
     }
 
     if ((!dstFileName.empty()) && (dstFileName.at(0) == '.')) {
@@ -206,12 +184,45 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
         if (deleteResult != E_OK) {
             MEDIA_ERR_LOG("Delete rows failed");
         }
+        errCode = DATA_ABILITY_FAIL;
+    }
+    return errCode;
+}
+int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, const string &srcPath,
+    const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+{
+    string dstFilePath, dstReFilePath, dstFileName, destAlbumPath, bucketName;
+    int32_t errCode = DATA_ABILITY_FAIL, bucketId = 0;
+    ValueObject valueObject;
+    FileAsset fileAsset;
+    MediaLibraryFileDb fileDbOprn;
+    if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
+        valueObject.GetString(dstFileName);
+    }
+    if (values.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
+        valueObject.GetString(dstReFilePath);
+    }
+    dstFilePath = MEDIA_DATA_DB_Path + dstReFilePath + dstFileName;
+    destAlbumPath = MEDIA_DATA_DB_Path + dstReFilePath;
+    if (destAlbumPath.back() == '/') {
+        destAlbumPath = destAlbumPath.substr(0, destAlbumPath.length() - 1);
+    }
+    MEDIA_ERR_LOG("HandleModifyAsset destAlbumPath = %{public}s", destAlbumPath.c_str());
+    bucketId = MediaLibraryDataAbilityUtils::GetParentIdFromDb(destAlbumPath, rdbStore);
+    MEDIA_ERR_LOG("HandleModifyAsset bucketId = %{public}d", bucketId);
+    bucketName = MediaLibraryDataAbilityUtils::GetParentDisplayNameFromDb(bucketId, rdbStore);
+    MEDIA_ERR_LOG("HandleModifyAsset bucketName = %{public}s", bucketName.c_str());
+    errCode = fileAsset.ModifyAsset(srcPath, dstFilePath);
+    if (errCode == DATA_ABILITY_FAIL) {
+        MEDIA_ERR_LOG("Failed to modify the file in the device");
         return errCode;
     }
-
-    if (fileDbOprn.Modify(rowNum, dstFilePath, rdbStore) > 0) {
+    errCode = ModifyDisName(dstFileName, destAlbumPath, srcPath, rdbStore);
+    if (errCode == DATA_ABILITY_FAIL) {
+        return errCode;
+    }
+    if (fileDbOprn.Modify(rowNum, dstFilePath, bucketId, bucketName, rdbStore) > 0) {
         UpdateDateModifiedForAlbum(rdbStore, destAlbumPath);
-
         string srcAlbumPath = MediaLibraryDataAbilityUtils::GetParentPath(srcPath);
         UpdateDateModifiedForAlbum(rdbStore, srcAlbumPath);
     }
