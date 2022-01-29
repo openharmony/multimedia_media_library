@@ -63,7 +63,7 @@ public:
     /**
      * @brief This API will help to scan the specified directory and updates the metadata to database
      *
-     * @param scanDirPath Valid path to a directory {/data/media}
+     * @param scanDirPath Valid path to a directory {/storage/media}
      * @param appCb Callback object to be passed along with request
      * @return int32_t Returns the request ID of scanDir
      */
@@ -72,7 +72,7 @@ public:
     /**
      * @brief This API will help to scan the specified file and updates the metadata to database
      *
-     * @param scanFilePath Valid path to a file along with filename{/data/media/sample.mp3}
+     * @param scanFilePath Valid path to a file along with filename{/storage/media/sample.mp3}
      * @param appCb Callback object to be passed along with request
      * @return int32_t Returns the request ID of scanFile
      */

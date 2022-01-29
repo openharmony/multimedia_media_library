@@ -83,7 +83,7 @@ bool MediaFileUtils::CreateDirectory(const string& dirPath)
 
     stringstream folderStream(dirPath.c_str());
     while (std::getline(folderStream, segment, '/')) {
-        if (segment == "")    // skip the first "/" in case of "/data/media"
+        if (segment == "")    // skip the first "/" in case of "/storage/media"
             continue;
 
         subStr = subStr + SLASH_CHAR + segment;

@@ -118,7 +118,7 @@ const int32_t ERR_PERMISSION_DENIED = 4;
 const int32_t ERR_DISPLAY_NAME_INVALID = 5;
 const int32_t ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID = 6;
 
-const std::string ALBUM_ROOT_PATH = "/data/media";
+const std::string ALBUM_ROOT_PATH = "/storage/media";
 const int32_t FAVORIT_SMART_ALBUM_ID = -1;
 const std::string FAVORIT_SMART_ALBUM_NAME = "FavoritAlbum";
 const int32_t TRASH_SMART_ALBUM_ID = -10;

@@ -34,7 +34,7 @@ const int32_t MEDIA_RDB_VERSION_NEW = 5;
 const int32_t MEDIA_SMARTALBUM_RDB_VERSION = 1;
 const int32_t MEDIA_SMARTALBUMMAP_RDB_VERSION = 1;
 
-const std::string MEDIA_DATA_DB_Path = "/data/media/";
+const std::string MEDIA_DATA_DB_Path = "/storage/media/";
 
 const std::string MEDIALIBRARY_TABLE = "Files";
 const std::string SMARTALBUM_TABLE = "SmartAlbum";
