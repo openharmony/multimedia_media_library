@@ -482,7 +482,7 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
     napi_value result;
     auto context = &asyncContext;
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -497,11 +497,11 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
         if (err) {
             HiLog::Error(LABEL, "fetch options retrieval failed");
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -562,7 +562,7 @@ napi_value MediaLibraryNapi::GetMediaAssets(napi_env env, napi_callback_info inf
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -647,7 +647,7 @@ napi_value MediaLibraryNapi::GetAudioAssets(napi_env env, napi_callback_info inf
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -732,7 +732,7 @@ napi_value MediaLibraryNapi::GetVideoAssets(napi_env env, napi_callback_info inf
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -817,7 +817,7 @@ napi_value MediaLibraryNapi::GetImageAssets(napi_env env, napi_callback_info inf
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -902,7 +902,7 @@ napi_value MediaLibraryNapi::GetVideoAlbums(napi_env env, napi_callback_info inf
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc >= ARGS_ONE, "requires 1 parameter minimum");
+    MY_NAPI_ASSERT(env, argc >= ARGS_ONE, "requires 1 parameter minimum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -947,7 +947,7 @@ napi_value MediaLibraryNapi::GetImageAlbums(napi_env env, napi_callback_info inf
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc >= ARGS_ONE, "requires 1 parameter minimum");
+    MY_NAPI_ASSERT(env, argc >= ARGS_ONE, "requires 1 parameter minimum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1071,7 +1071,7 @@ napi_value MediaLibraryNapi::CreateAudioAsset(napi_env env, napi_callback_info i
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1105,7 +1105,7 @@ napi_value MediaLibraryNapi::CreateVideoAsset(napi_env env, napi_callback_info i
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1139,7 +1139,7 @@ napi_value MediaLibraryNapi::CreateImageAsset(napi_env env, napi_callback_info i
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1173,7 +1173,7 @@ napi_value MediaLibraryNapi::CreateAlbum(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1231,7 +1231,7 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     napi_value argv[ARGS_TWO] = {0}, thisVar = nullptr, resource = nullptr;
     const int32_t refCount = 1;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1247,7 +1247,7 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
                 napi_create_reference(env, argv[i], refCount, &asyncContext->callbackRef);
                 break;
             } else {
-                NAPI_ASSERT(env, false, "type mismatch");
+                MY_NAPI_ASSERT(env, false, "type mismatch");
             }
         }
 
@@ -1362,7 +1362,7 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1552,7 +1552,7 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
 
     HiLog::Error(LABEL, "JSGetAlbums");
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1734,7 +1734,7 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
     char relativePathBuffer[PATH_MAX];
     char titleBuffer[PATH_MAX];
     HiLog::Debug(LABEL, "GetJSArgsForCreateAsset IN %{public}d", argc);
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -1750,16 +1750,16 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
         } else if (i == PARAM3 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
     if (!CheckTitlePrams(string(titleBuffer))) {
-        NAPI_ASSERT(env, false, "displayName prams invalid");
+        MY_NAPI_ASSERT(env, false, "displayName prams invalid");
     }
 
     if (!CheckRelativePathPrams(string(relativePathBuffer))) {
-        NAPI_ASSERT(env, false, "relativePath prams invalid");
+        MY_NAPI_ASSERT(env, false, "relativePath prams invalid");
     }
 
     context->valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileMediaType);
@@ -1781,7 +1781,7 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_THREE || argc == ARGS_FORE), "requires 4 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_THREE || argc == ARGS_FORE), "requires 4 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -1883,7 +1883,7 @@ napi_value GetJSArgsForModifyAsset(napi_env env, size_t argc, const napi_value a
     size_t res = 0;
     char buffer[PATH_MAX];
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -1897,7 +1897,7 @@ napi_value GetJSArgsForModifyAsset(napi_env env, size_t argc, const napi_value a
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -1918,7 +1918,7 @@ napi_value MediaLibraryNapi::JSModifyAsset(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -2022,7 +2022,7 @@ napi_value GetJSArgsForDeleteAsset(napi_env env, size_t argc, const napi_value a
     size_t res = 0;
     char buffer[PATH_MAX];
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -2034,7 +2034,7 @@ napi_value GetJSArgsForDeleteAsset(napi_env env, size_t argc, const napi_value a
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -2055,7 +2055,7 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -2143,7 +2143,7 @@ napi_value GetJSArgsForOpenAsset(napi_env env, size_t argc, const napi_value arg
     size_t res = 0;
     char buffer1[PATH_MAX], buffer2[SIZE];
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -2157,7 +2157,7 @@ napi_value GetJSArgsForOpenAsset(napi_env env, size_t argc, const napi_value arg
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -2179,7 +2179,7 @@ napi_value MediaLibraryNapi::JSOpenAsset(napi_env env, napi_callback_info info)
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -2265,7 +2265,7 @@ napi_value GetJSArgsForCloseAsset(napi_env env, size_t argc, const napi_value ar
     char buffer[PATH_MAX];
     int32_t fd = 0;
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -2279,7 +2279,7 @@ napi_value GetJSArgsForCloseAsset(napi_env env, size_t argc, const napi_value ar
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -2301,7 +2301,7 @@ napi_value MediaLibraryNapi::JSCloseAsset(napi_env env, napi_callback_info info)
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -2379,7 +2379,7 @@ napi_value GetJSArgsForCreateAlbum(napi_env env, size_t argc, const napi_value a
     auto context = &asyncContext;
     AlbumNapi *albumNapiObj = nullptr;
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -2391,7 +2391,7 @@ napi_value GetJSArgsForCreateAlbum(napi_env env, size_t argc, const napi_value a
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -2412,7 +2412,7 @@ napi_value MediaLibraryNapi::JSCreateAlbum(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -2490,7 +2490,7 @@ napi_value GetJSArgsForModifyAlbum(napi_env env, size_t argc, const napi_value a
     AlbumNapi *albumNapiObj = nullptr;
     int32_t albumId = 0;
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -2504,7 +2504,7 @@ napi_value GetJSArgsForModifyAlbum(napi_env env, size_t argc, const napi_value a
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -2526,7 +2526,7 @@ napi_value MediaLibraryNapi::JSModifyAlbum(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -2603,7 +2603,7 @@ napi_value GetJSArgsForDeleteAlbum(napi_env env, size_t argc, const napi_value a
     auto context = &asyncContext;
     int32_t albumId = 0;
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -2615,7 +2615,7 @@ napi_value GetJSArgsForDeleteAlbum(napi_env env, size_t argc, const napi_value a
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -2636,7 +2636,7 @@ napi_value MediaLibraryNapi::JSDeleteAlbum(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -2752,7 +2752,7 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
 
     GET_JS_ARGS(env, info, argCount, argv, thisVar);
-    NAPI_ASSERT(env, argCount == ARGS_TWO, "requires 2 parameters");
+    MY_NAPI_ASSERT(env, argCount == ARGS_TWO, "requires 2 parameters");
 
     if (thisVar == nullptr || argv[PARAM0] == nullptr || argv[PARAM1] == nullptr) {
         HiLog::Error(LABEL, "Failed to retrieve details about the callback");
@@ -2868,7 +2868,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
     napi_get_undefined(env, &undefinedResult);
 
     GET_JS_ARGS(env, info, argCount, argv, thisVar);
-    NAPI_ASSERT(env, argCount <= ARGS_TWO, "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, argCount <= ARGS_TWO, "requires 2 parameters maximum");
 
     if (thisVar == nullptr || argv[PARAM0] == nullptr) {
         HiLog::Error(LABEL, "Failed to retrieve details about the callback");
@@ -2950,9 +2950,9 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     int32_t refCount = 1;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    HiLog::Error(LABEL, "NAPI_ASSERT begin %{public}d", argc);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == 0), "requires 1 parameters maximum");
-    HiLog::Error(LABEL, "NAPI_ASSERT end");
+    HiLog::Error(LABEL, "MY_NAPI_ASSERT begin %{public}d", argc);
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == 0), "requires 1 parameters maximum");
+    HiLog::Error(LABEL, "MY_NAPI_ASSERT end");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -3151,7 +3151,7 @@ napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info 
     const int32_t refCount = 1;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -3165,7 +3165,7 @@ napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info 
                 napi_create_reference(env, argv[i], refCount, &asyncContext->callbackRef);
                 break;
             } else {
-                NAPI_ASSERT(env, false, "type mismatch");
+                MY_NAPI_ASSERT(env, false, "type mismatch");
             }
         }
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
@@ -3200,7 +3200,7 @@ napi_value GetJSArgsForCreateSmartAlbum(napi_env env, size_t argc, const napi_va
     auto context = &asyncContext;
     size_t res = 0;
     char buffer[PATH_MAX];
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
@@ -3210,7 +3210,7 @@ napi_value GetJSArgsForCreateSmartAlbum(napi_env env, size_t argc, const napi_va
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
     context->valuesBucket.PutString(SMARTALBUM_DB_NAME, string(buffer));
@@ -3256,7 +3256,7 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
     napi_value argv[ARGS_TWO] = {0}, thisVar = nullptr, resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -3310,7 +3310,7 @@ napi_value GetJSArgsForDeleteSmartAlbum(napi_env env, size_t argc, const napi_va
     auto context = &asyncContext;
     size_t res = 0;
     char buffer[PATH_MAX];
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
@@ -3320,7 +3320,7 @@ napi_value GetJSArgsForDeleteSmartAlbum(napi_env env, size_t argc, const napi_va
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
     std::string coverUri = string(buffer);
@@ -3379,7 +3379,7 @@ napi_value MediaLibraryNapi::JSDeleteSmartAlbum(napi_env env, napi_callback_info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));

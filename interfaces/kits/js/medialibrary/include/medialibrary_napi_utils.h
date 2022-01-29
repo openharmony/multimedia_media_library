@@ -26,6 +26,12 @@
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
 
+#define MY_NAPI_ASSERT(env, assertion, message)                                              \
+    do {                                                                                     \
+        if (!(assertion)) {                                                                  \
+            HiLog::Error(LABEL, "MY_NAPI_ASSERT %{public}s", message);                       \
+        }                                                                                    \
+    } while (0)
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \
     do {                                                                    \
         void* data;                                                         \
@@ -45,7 +51,7 @@ using OHOS::HiviewDFX::HiLogLabel;
             napi_create_reference(env, arg, count, &(cbRef));                                   \
         } else {                                                                                \
             HiLog::Error(LABEL, "invalid arguments");                                           \
-            NAPI_ASSERT(env, false, "type mismatch");                                           \
+            MY_NAPI_ASSERT(env, false, "type mismatch");                                           \
         }                                                                                       \
     } while (0)
 

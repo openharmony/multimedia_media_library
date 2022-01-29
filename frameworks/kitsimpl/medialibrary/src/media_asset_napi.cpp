@@ -310,7 +310,7 @@ napi_value MediaAssetNapi::JSSetName(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    MY_NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
@@ -489,7 +489,7 @@ napi_value MediaAssetNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    MY_NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
@@ -588,7 +588,7 @@ napi_value MediaAssetNapi::StartCreate(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<MediaAssetAsyncContext> asyncContext = std::make_unique<MediaAssetAsyncContext>();
@@ -642,7 +642,7 @@ napi_value MediaAssetNapi::CommitCreate(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<MediaAssetAsyncContext> asyncContext = std::make_unique<MediaAssetAsyncContext>();
@@ -702,7 +702,7 @@ napi_value MediaAssetNapi::CancelCreate(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<MediaAssetAsyncContext> asyncContext = std::make_unique<MediaAssetAsyncContext>();
@@ -750,7 +750,7 @@ napi_value MediaAssetNapi::StartModify(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<MediaAssetAsyncContext> asyncContext = std::make_unique<MediaAssetAsyncContext>();
@@ -791,7 +791,7 @@ napi_value MediaAssetNapi::CommitModify(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<MediaAssetAsyncContext> asyncContext = std::make_unique<MediaAssetAsyncContext>();
@@ -850,7 +850,7 @@ napi_value MediaAssetNapi::CancelModify(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<MediaAssetAsyncContext> asyncContext = std::make_unique<MediaAssetAsyncContext>();
@@ -895,7 +895,7 @@ napi_value MediaAssetNapi::CommitDelete(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<MediaAssetAsyncContext> asyncContext = std::make_unique<MediaAssetAsyncContext>();
@@ -935,7 +935,7 @@ napi_value GetCommitCopyParams(napi_env env, size_t argCount, const napi_value a
     napi_value result;
     auto asyncContext = &context;
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argCount; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -945,7 +945,7 @@ napi_value GetCommitCopyParams(napi_env env, size_t argCount, const napi_value a
         } else if ((i == PARAM1) && (valueType == napi_function)) {
             napi_create_reference(env, argv[i], refCount, &asyncContext->callbackRef);
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -964,7 +964,7 @@ napi_value MediaAssetNapi::CommitCopy(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc >= ARGS_ONE, "requires 1 parameter minimum");
+    MY_NAPI_ASSERT(env, argc >= ARGS_ONE, "requires 1 parameter minimum");
 
     status = napi_get_undefined(env, &result);
     std::unique_ptr<MediaAssetAsyncContext> asyncContext = std::make_unique<MediaAssetAsyncContext>();

@@ -239,7 +239,7 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
@@ -279,7 +279,7 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
@@ -319,7 +319,7 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
@@ -360,7 +360,7 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
@@ -471,7 +471,7 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();

@@ -268,7 +268,7 @@ napi_value SmartAlbumNapi::JSSmartAlbumNameSetter(napi_env env, napi_callback_in
 
     napi_get_undefined(env, &jsResult);
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    MY_NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
 
     if (thisVar == nullptr || napi_typeof(env, argv[PARAM0], &valueType) != napi_ok
         || valueType != napi_string) {
@@ -625,7 +625,7 @@ static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const n
     napi_value result;
     auto context = &asyncContext;
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -633,7 +633,7 @@ static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const n
         if (i == PARAM0 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -651,7 +651,7 @@ napi_value GetJSArgsForAsset(napi_env env, size_t argc,
     size_t res = 0;
     char buffer[PATH_MAX];
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -663,7 +663,7 @@ napi_value GetJSArgsForAsset(napi_env env, size_t argc,
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
     std::string coverUri = string(buffer);
@@ -686,7 +686,7 @@ napi_value SmartAlbumNapi::JSAddAsset(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
     napi_get_undefined(env, &result);
     std::unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = std::make_unique<SmartAlbumNapiAsyncContext>();
 
@@ -732,7 +732,7 @@ napi_value SmartAlbumNapi::JSRemoveAsset(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
     napi_get_undefined(env, &result);
     std::unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = std::make_unique<SmartAlbumNapiAsyncContext>();
 
@@ -779,7 +779,7 @@ napi_value SmartAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
     napi_get_undefined(env, &result);
     std::unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = std::make_unique<SmartAlbumNapiAsyncContext>();
 
@@ -874,7 +874,7 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
     napi_value result;
     auto context = &asyncContext;
 
-    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -883,7 +883,7 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
         if (i == PARAM0 && valueType == napi_object) {
             GetFetchOptionsParam(env, argv[PARAM0], asyncContext, err);
             if (err) {
-                NAPI_ASSERT(env, false, "type mismatch");
+                MY_NAPI_ASSERT(env, false, "type mismatch");
             }
         } else if (i == PARAM0 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
@@ -892,7 +892,7 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
+            MY_NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -1008,7 +1008,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumFileAssets(napi_env env, napi_callback
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
+    MY_NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = std::make_unique<SmartAlbumNapiAsyncContext>();
