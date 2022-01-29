@@ -228,7 +228,7 @@ napi_value AlbumAssetNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    MY_NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
@@ -465,7 +465,7 @@ napi_value AlbumAssetNapi::GetVideoAssets(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<AlbumAsyncContext> asyncContext = std::make_unique<AlbumAsyncContext>();
@@ -550,7 +550,7 @@ napi_value AlbumAssetNapi::GetImageAssets(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<AlbumAsyncContext> asyncContext = std::make_unique<AlbumAsyncContext>();
@@ -621,7 +621,7 @@ napi_value AlbumAssetNapi::CommitCreate(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<AlbumAsyncContext> asyncContext = std::make_unique<AlbumAsyncContext>();
@@ -674,7 +674,7 @@ napi_value AlbumAssetNapi::CommitDelete(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= 1, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<AlbumAsyncContext> asyncContext = std::make_unique<AlbumAsyncContext>();
@@ -721,7 +721,7 @@ napi_value AlbumAssetNapi::CommitModify(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<AlbumAsyncContext> asyncContext = std::make_unique<AlbumAsyncContext>();
