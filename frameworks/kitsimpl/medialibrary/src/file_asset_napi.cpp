@@ -357,7 +357,7 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
     napi_get_undefined(env, &undefinedResult);
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
@@ -459,7 +459,7 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_get_undefined(env, &undefinedResult);
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
@@ -631,7 +631,7 @@ napi_value FileAssetNapi::JSSetOrientation(napi_env env, napi_callback_info info
     napi_get_undefined(env, &undefinedResult);
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
@@ -735,7 +735,7 @@ napi_value FileAssetNapi::JSSetRelativePath(napi_env env, napi_callback_info inf
     napi_value thisVar = nullptr;
     napi_get_undefined(env, &undefinedResult);
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
@@ -902,9 +902,8 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
         }
         valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, context->objectInfo->GetRelativePath());
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
-        Uri uri(MEDIALIBRARY_DATA_URI);
         changedRows =
-            context->objectInfo->sAbilityHelper_->Update(uri, valuesBucket, predicates);
+            context->objectInfo->sAbilityHelper_->Update(updateAssetUri, valuesBucket, predicates);
         if (changedRows < 0) {
             context->error = changedRows;
             HiLog::Error(LABEL, "File asset modification failed");
@@ -955,7 +954,7 @@ napi_value GetJSArgsForCommitModify(napi_env env, size_t argc,
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
-    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
@@ -963,7 +962,7 @@ napi_value GetJSArgsForCommitModify(napi_env env, size_t argc,
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            MY_NAPI_ASSERT(env, false, "type mismatch");
+            NAPI_ASSERT(env, false, "type mismatch");
         }
     }
     napi_get_boolean(env, true, &result);
@@ -979,7 +978,7 @@ napi_value FileAssetNapi::JSCommitModify(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= ARGS_THREE, "requires 1 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ZERO || argc == ARGS_ONE), "requires 1 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1071,7 +1070,7 @@ napi_value GetJSArgsForOpen(napi_env env,
     size_t res = 0;
     char buffer[SIZE];
 
-    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -1083,7 +1082,7 @@ napi_value GetJSArgsForOpen(napi_env env,
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            MY_NAPI_ASSERT(env, false, "type mismatch");
+            NAPI_ASSERT(env, false, "type mismatch");
         }
     }
     context->valuesBucket.PutString(MEDIA_FILEMODE, string(buffer));
@@ -1103,7 +1102,7 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1188,7 +1187,7 @@ napi_value GetJSArgsForClose(napi_env env,
     auto context = &asyncContext;
     int32_t fd = 0;
 
-    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -1200,7 +1199,7 @@ napi_value GetJSArgsForClose(napi_env env,
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            MY_NAPI_ASSERT(env, false, "type mismatch");
+            NAPI_ASSERT(env, false, "type mismatch");
         }
     }
     context->valuesBucket.PutInt(MEDIA_FILEDESCRIPTOR, fd);
@@ -1219,7 +1218,7 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1368,7 +1367,7 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
     napi_value result = nullptr;
     auto context = &asyncContext;
 
-    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     context->thumbWidth = Media::DEFAULT_THUMBNAIL_SIZE.width;
     context->thumbHeight = Media::DEFAULT_THUMBNAIL_SIZE.height;
@@ -1387,7 +1386,7 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            MY_NAPI_ASSERT(env, false, "type mismatch");
+            NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -1405,7 +1404,8 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ZERO || argc == ARGS_ONE || argc == ARGS_TWO),
+        "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1433,6 +1433,7 @@ static void JSFavouriteCallbackComplete(napi_env env, napi_status status,
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
     if (context->status) {
         jsContext->status = true;
     } else {
@@ -1496,7 +1497,7 @@ static napi_value GetJSArgsForIsDirectory(napi_env env,
     const int32_t refCount = 1;
     napi_value result;
     auto context = &asyncContext;
-    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
@@ -1508,7 +1509,7 @@ static napi_value GetJSArgsForIsDirectory(napi_env env,
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            MY_NAPI_ASSERT(env, false, "type mismatch");
+            NAPI_ASSERT(env, false, "type mismatch");
         }
     }
     napi_get_boolean(env, true, &result);
@@ -1519,12 +1520,14 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value result = nullptr;
-    size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {0};
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    HiLog::Error(LABEL, "JSIsDirectory = %{public}zu", argc);
+    NAPI_ASSERT(env, (argc == ARGS_ZERO || argc == ARGS_ONE), "requires 2 parameters maximum");
+    HiLog::Error(LABEL, "JSIsDirectory 1");
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1620,7 +1623,7 @@ napi_value GetJSArgsForFavourite(napi_env env,
     napi_value result = nullptr;
     auto context = &asyncContext;
     bool isFavourite = false;
-    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
@@ -1630,7 +1633,7 @@ napi_value GetJSArgsForFavourite(napi_env env,
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            MY_NAPI_ASSERT(env, false, "type mismatch");
+            NAPI_ASSERT(env, false, "type mismatch");
         }
     }
     context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavourite);
@@ -1647,7 +1650,7 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1702,7 +1705,7 @@ static napi_value GetJSArgsForIsFavourite(napi_env env,
     napi_value result;
     auto context = &asyncContext;
 
-    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
@@ -1714,7 +1717,7 @@ static napi_value GetJSArgsForIsFavourite(napi_env env,
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            MY_NAPI_ASSERT(env, false, "type mismatch");
+            NAPI_ASSERT(env, false, "type mismatch");
         }
     }
     napi_get_boolean(env, true, &result);
@@ -1725,12 +1728,12 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value result = nullptr;
-    size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {0};
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ZERO || argc == ARGS_ONE), "requires 1 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1780,12 +1783,13 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status,
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
     if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
         HiLog::Debug(LABEL, "JSTrashCallbackComplete success");
     } else {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "Ability helper is null");
-        napi_get_undefined(env, &jsContext->data);
     }
     if (context->work != nullptr) {
         HiLog::Error(LABEL, "JSTrashCallbackComplete context->work != nullptr");
@@ -1805,7 +1809,7 @@ napi_value GetJSArgsForTrash(napi_env env,
     napi_value result = nullptr;
     auto context = &asyncContext;
     bool isTrash = false;
-    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
@@ -1816,7 +1820,7 @@ napi_value GetJSArgsForTrash(napi_env env,
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            MY_NAPI_ASSERT(env, false, "type mismatch");
+            NAPI_ASSERT(env, false, "type mismatch");
         }
     }
 
@@ -1840,7 +1844,7 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
     HiLog::Error(LABEL, "JSTrash GET_JS_ARGS argc = %{public}zu", argc);
     napi_get_undefined(env, &result);
@@ -1956,7 +1960,7 @@ static napi_value GetJSArgsForIsTrash(napi_env env,
     napi_value result;
     auto context = &asyncContext;
 
-    MY_NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
@@ -1964,7 +1968,7 @@ static napi_value GetJSArgsForIsTrash(napi_env env,
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
-            MY_NAPI_ASSERT(env, false, "type mismatch");
+            NAPI_ASSERT(env, false, "type mismatch");
         }
     }
     napi_get_boolean(env, true, &result);
@@ -1980,7 +1984,7 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ZERO || argc == ARGS_ONE), "requires 1 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));

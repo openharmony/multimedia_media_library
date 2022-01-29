@@ -177,7 +177,7 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
     int32_t errCode = 0;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameters");
+    NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameters");
 
     napi_get_undefined(env, &result);
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));

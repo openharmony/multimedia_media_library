@@ -212,8 +212,9 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     MEDIA_ERR_LOG("HandleModifyAsset bucketId = %{public}d", bucketId);
     bucketName = MediaLibraryDataAbilityUtils::GetParentDisplayNameFromDb(bucketId, rdbStore);
     MEDIA_ERR_LOG("HandleModifyAsset bucketName = %{public}s", bucketName.c_str());
+    if (srcPath.compare(dstFilePath) != 0) {
     errCode = fileAsset.ModifyAsset(srcPath, dstFilePath);
-    if (errCode == DATA_ABILITY_FAIL) {
+    if (errCode == DATA_ABILITY_MODIFY_DATA_FAIL) {
         MEDIA_ERR_LOG("Failed to modify the file in the device");
         return errCode;
     }
@@ -226,7 +227,9 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
         string srcAlbumPath = MediaLibraryDataAbilityUtils::GetParentPath(srcPath);
         UpdateDateModifiedForAlbum(rdbStore, srcAlbumPath);
     }
-
+    } else {
+        errCode = DATA_ABILITY_SUCCESS;
+    }
     return errCode;
 }
 
@@ -329,9 +332,7 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
     } else if (oprn == MEDIA_FILEOPRN_CLOSEASSET) {
         errCode = HandleCloseAsset(id, srcPath, values, rdbStore);
     }
-
-    if (oprn == MEDIA_FILEOPRN_MODIFYASSET ||
-        oprn == MEDIA_FILEOPRN_CLOSEASSET) {
+    if (oprn == MEDIA_FILEOPRN_CLOSEASSET) {
         CreateThumbnail(rdbStore, mediaThumbnail, id);
     }
 

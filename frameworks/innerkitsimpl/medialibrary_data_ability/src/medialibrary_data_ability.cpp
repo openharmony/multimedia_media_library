@@ -510,10 +510,12 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
     } else if (uriString.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
         (void)rdbStore->Update(changedRows, SMARTALBUM_MAP_TABLE, value, strUpdateCondition, whereArgs);
     } else {
+        if (uriString == MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN
+                + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET) {
         int result = fileOprn.HandleFileOperation(MEDIA_FILEOPRN_MODIFYASSET, value, rdbStore, mediaThumbnail_);
-        CHECK_AND_RETURN_RET_LOG(uriString == MEDIALIBRARY_DATA_URI, DATA_ABILITY_FAIL, "Not Data ability Uri");
         if (result < 0) {
             return result;
+            }
         }
     (void)rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, value, strUpdateCondition, whereArgs);
     }

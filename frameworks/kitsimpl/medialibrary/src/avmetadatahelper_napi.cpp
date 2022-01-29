@@ -404,7 +404,7 @@ napi_value AVMetadataHelperNapi::SetSource(napi_env env, napi_callback_info info
     napi_value argv[2] = {0}; // 2 agrs
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= 2, "SetSource requires 2 parameter maximum"); // 2 agrs
+    NAPI_ASSERT(env, argc <= 2, "SetSource requires 2 parameter maximum"); // 2 agrs
 
     std::unique_ptr<AVMetadataHelperAsyncContext> asyncContext = std::make_unique<AVMetadataHelperAsyncContext>();
 
@@ -464,7 +464,7 @@ napi_value AVMetadataHelperNapi::ResolveMetadata(napi_env env, napi_callback_inf
     napi_value argv[2] = {0}; // 2 agrs
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= 2, "ResolveMetadata requires 2 parameter maximum"); // 2 agrs
+    NAPI_ASSERT(env, argc <= 2, "ResolveMetadata requires 2 parameter maximum"); // 2 agrs
 
     std::unique_ptr<AVMetadataHelperAsyncContext> asyncContext = std::make_unique<AVMetadataHelperAsyncContext>();
 
@@ -524,7 +524,7 @@ napi_value AVMetadataHelperNapi::FetchVideoScaledPixelMapByTime(napi_env env, na
     napi_value argv[3] = {0}; // 3 agrs
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= 3, "FetchVideoScaledPixelMapByTime requires 3 parameter maximum"); // 3 agrs
+    NAPI_ASSERT(env, argc <= 3, "FetchVideoScaledPixelMapByTime requires 3 parameter maximum"); // 3 agrs
 
     std::unique_ptr<AVMetadataHelperAsyncContext> asyncContext = std::make_unique<AVMetadataHelperAsyncContext>();
 
@@ -585,7 +585,7 @@ napi_value AVMetadataHelperNapi::FetchVideoPixelMapByTime(napi_env env, napi_cal
     napi_value argv[2] = {0};
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= 2, "FetchVideoPixelMapByTime requires 2 parameter maximum"); // 2 agrs
+    NAPI_ASSERT(env, argc <= 2, "FetchVideoPixelMapByTime requires 2 parameter maximum"); // 2 agrs
 
     std::unique_ptr<AVMetadataHelperAsyncContext> asyncContext = std::make_unique<AVMetadataHelperAsyncContext>();
 
@@ -645,7 +645,7 @@ napi_value AVMetadataHelperNapi::Release(napi_env env, napi_callback_info info)
     napi_value argv[1] = {0};
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    MY_NAPI_ASSERT(env, argc <= 1, "Release requires 1 parameter maximum");
+    NAPI_ASSERT(env, argc <= 1, "Release requires 1 parameter maximum");
 
     std::unique_ptr<AVMetadataHelperAsyncContext> asyncContext = std::make_unique<AVMetadataHelperAsyncContext>();
 
