@@ -1397,7 +1397,36 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
 
     return result;
 }
+static string getNetworkId(string selfId)
+{
+    return "";
+}
 
+static string GetFileMediaTypeUri(MediaType mediaType, string networkId)
+{
+    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
+    switch (mediaType) {
+        case MEDIA_TYPE_AUDIO:
+            return uri + MEDIALIBRARY_TYPE_AUDIO_URI;
+            break;
+        case MEDIA_TYPE_VIDEO:
+            return uri + MEDIALIBRARY_TYPE_VIDEO_URI;
+            break;
+        case MEDIA_TYPE_IMAGE:
+            return uri + MEDIALIBRARY_TYPE_IMAGE_URI;
+            break;
+        case MEDIA_TYPE_ALBUM:
+            return uri + MEDIALIBRARY_TYPE_ALBUM_URI;
+            break;
+        case MEDIA_TYPE_SMARTALBUM:
+            return uri + MEDIALIBRARY_TYPE_SMART_URI;
+            break;
+        case MEDIA_TYPE_FILE:
+        default:
+            return uri + MEDIALIBRARY_TYPE_FILE_URI;
+            break;
+    }
+}
 variant<int, string> GetValFromColumn(string columnName,
     shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
@@ -1462,6 +1491,9 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
                 // Get album asset count index and value
                 albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet)));
                 HiLog::Error(LABEL, "MEDIA_DATA_DB_ID");
+                albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM,
+                    getNetworkId(get<string>(GetValFromColumn(MEDIA_DATA_DB_SELF_ID, resultSet))))
+                    + "/" + to_string(albumData->GetAlbumId()));
             }
             // Add to album array
             context->albumNativeArray.push_back(move(albumData));
@@ -1636,6 +1668,7 @@ static string GetFirstDirName(const string& relativePath)
     string firstDirName = "";
     if (!relativePath.empty()) {
         string::size_type pos = relativePath.find_first_of('/');
+        HiLog::Debug(LABEL, "firstDirName pos = %{public}d", pos);
         if (pos == relativePath.length()) {
             MEDIA_ERR_LOG("relativePath is first dir");
             return relativePath;
@@ -1700,6 +1733,7 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
     size_t res = 0;
     char relativePathBuffer[PATH_MAX];
     char titleBuffer[PATH_MAX];
+    HiLog::Debug(LABEL, "GetJSArgsForCreateAsset IN %{public}d", argc);
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
@@ -2916,6 +2950,7 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     int32_t refCount = 1;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
+    HiLog::Error(LABEL, "NAPI_ASSERT begin %{public}d", argc);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == 0), "requires 1 parameters maximum");
     HiLog::Error(LABEL, "NAPI_ASSERT end");
     napi_get_undefined(env, &result);
@@ -3049,10 +3084,10 @@ static void GetSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
             if (albumData != nullptr) {
                 albumData->SetAlbumId(get<int32_t>(GetValFromColumn(SMARTALBUM_DB_ID, resultSet)));
                 albumData->SetAlbumName(get<string>(GetValFromColumn(SMARTALBUM_DB_NAME, resultSet)));
-                int32_t count = 0;
-                albumData->SetAlbumCapacity(count);
-                albumData->SetAlbumUri(MEDIALIBRARY_SMART_URI + "/"
-                    + std::to_string(get<int32_t>(GetValFromColumn(SMARTALBUM_DB_ID, resultSet))));
+                albumData->SetAlbumCapacity(get<int32_t>(GetValFromColumn(SMARTABLUMASSETS_ALBUMCAPACITY, resultSet)));
+                albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_SMARTALBUM,
+                    getNetworkId(get<string>(GetValFromColumn(SMARTALBUM_DB_SELF_ID, resultSet))))
+                    + "/" + to_string(albumData->GetAlbumId()));
             }
             context->smartAlbumNativeArray.push_back(move(albumData));
         }

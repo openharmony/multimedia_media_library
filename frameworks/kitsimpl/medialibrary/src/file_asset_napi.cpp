@@ -893,11 +893,14 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
     NativeRdb::DataAbilityPredicates predicates;
     NativeRdb::ValuesBucket valuesBucket;
     int32_t changedRows;
+    valuesBucket.PutString(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
     if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetTitle())) {
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
+        valuesBucket.PutString(MEDIA_DATA_DB_NAME, context->objectInfo->GetFileDisplayName());
         if (context->objectInfo->GetOrientation() >= 0) {
             valuesBucket.PutInt(MEDIA_DATA_DB_ORIENTATION, context->objectInfo->GetOrientation());
         }
+        valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, context->objectInfo->GetRelativePath());
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
         Uri uri(MEDIALIBRARY_DATA_URI);
         changedRows =
