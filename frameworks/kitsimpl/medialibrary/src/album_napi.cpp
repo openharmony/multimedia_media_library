@@ -626,14 +626,19 @@ static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const n
     napi_get_boolean(env, true, &result);
     return result;
 }
-static void GetFileAssetsNative(const AlbumNapiAsyncContext &albumContext)
+static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
 {
-    AlbumNapiAsyncContext *context = const_cast<AlbumNapiAsyncContext *>(&albumContext);
+    HiLog::Error(LABEL, "GetFileAssetsNative");
     NativeRdb::DataAbilityPredicates predicates;
-    string prefix = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
-    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, prefix);
-    context->selectionArgs.insert(context->selectionArgs.begin(), std::to_string(MEDIA_TYPE_ALBUM));
+    string idPrefix = MEDIA_DATA_DB_BUCKET_ID + " = ? ";
+    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, idPrefix);
     context->selectionArgs.insert(context->selectionArgs.begin(), std::to_string(context->objectInfo->GetAlbumId()));
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
+    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, prefix);
+    context->selectionArgs.insert(context->selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
+    string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
+    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
+    context->selectionArgs.insert(context->selectionArgs.begin(), "0");
         predicates.SetWhereClause(context->selection);
         predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
@@ -642,12 +647,13 @@ static void GetFileAssetsNative(const AlbumNapiAsyncContext &albumContext)
     std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
         context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
 
-    context->fetchResult = std::make_unique<FetchResult>(resultSet);
+    context->fetchResult = std::make_unique<FetchResult>(move(resultSet));
 }
 
 static void JSGetFileAssetsCompleteCallback(napi_env env,
     napi_status status, AlbumNapiAsyncContext *context)
 {
+    HiLog::Error(LABEL, "JSGetFileAssetsCompleteCallback");
     napi_value fetchRes = nullptr;
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -656,12 +662,14 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
     jsContext->status = false;
     if (context->fetchResult != nullptr) {
         fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult));
+        HiLog::Error(LABEL, "JSGetFileAssetsCompleteCallback 1");
         if (fetchRes == nullptr) {
             HiLog::Error(LABEL, "Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
                 "Failed to create js object for FetchFileResult");
         } else {
+            HiLog::Error(LABEL, "JSGetFileAssetsCompleteCallback 2");
             jsContext->data = fetchRes;
             napi_get_undefined(env, &jsContext->error);
             jsContext->status = true;
@@ -679,9 +687,8 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
     }
     delete context;
 }
-static void CommitModifyNative(const AlbumNapiAsyncContext &albumContext)
+static void CommitModifyNative(AlbumNapiAsyncContext *context)
 {
-    AlbumNapiAsyncContext *context = const_cast<AlbumNapiAsyncContext *>(&albumContext);
     NativeRdb::DataAbilityPredicates predicates;
     NativeRdb::ValuesBucket valuesBucket;
     int32_t changedRows;
@@ -690,7 +697,7 @@ static void CommitModifyNative(const AlbumNapiAsyncContext &albumContext)
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetAlbumId()));
         valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
-                             MediaFileUtils::GetAlbumDateModified(context->objectInfo->GetAlbumPath()));
+                             MediaFileUtils::UTCTimeSeconds());
         Uri uri(MEDIALIBRARY_DATA_URI);
         changedRows =
             context->objectInfo->GetDataAbilityHelper()->Update(uri, valuesBucket, predicates);
@@ -704,7 +711,6 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Alb
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CommitModifyNative(*context);
     if (context->changedRows != -1) {
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
@@ -723,6 +729,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Alb
 }
 napi_value AlbumNapi::JSGetAlbumFileAssets(napi_env env, napi_callback_info info)
 {
+    HiLog::Error(LABEL, "JSGetAlbumFileAssets");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
@@ -747,7 +754,7 @@ napi_value AlbumNapi::JSGetAlbumFileAssets(napi_env env, napi_callback_info info
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<AlbumNapiAsyncContext*>(data);
-                GetFileAssetsNative(*context);
+                GetFileAssetsNative(context);
             },
             reinterpret_cast<CompleteCallback>(JSGetFileAssetsCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
@@ -771,7 +778,7 @@ napi_value AlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ZERO || argc == ARGS_ONE), "requires 1 parameter maximum");
     napi_get_undefined(env, &result);
     std::unique_ptr<AlbumNapiAsyncContext> asyncContext = std::make_unique<AlbumNapiAsyncContext>();
 
@@ -787,7 +794,7 @@ napi_value AlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<AlbumNapiAsyncContext*>(data);
-                CommitModifyNative(*context);
+                CommitModifyNative(context);
             },
             reinterpret_cast<CompleteCallback>(JSCommitModifyCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);

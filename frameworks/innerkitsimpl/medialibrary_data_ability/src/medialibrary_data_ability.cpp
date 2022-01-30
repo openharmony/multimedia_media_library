@@ -109,12 +109,14 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
 int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
 {
+    MEDIA_INFO_LOG("InitMediaLibraryRdbStore IN");
     if (isRdbStoreInitialized) {
         return DATA_ABILITY_SUCCESS;
     }
 
     int32_t errCode(DATA_ABILITY_FAIL);
-    RdbStoreConfig config(MEDIA_DATA_ABILITY_DB_NAME);
+    string databaseDir = AbilityContext::GetDatabaseDir() + "/" + MEDIA_DATA_ABILITY_DB_NAME;
+    RdbStoreConfig config(databaseDir);
     MediaLibraryDataCallBack rdbDataCallBack;
 
     rdbStore = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
@@ -125,7 +127,7 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
 
     isRdbStoreInitialized = true;
     mediaThumbnail_ = std::make_shared<MediaLibraryThumbnail>();
-    MEDIA_INFO_LOG("DATA_ABILITY_SUCCESS");
+    MEDIA_INFO_LOG("InitMediaLibraryRdbStore SUCCESS");
     return DATA_ABILITY_SUCCESS;
 }
 
@@ -484,6 +486,7 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
         MEDIA_ERR_LOG("MediaLibraryDataAbility Update:Input parameter is invalid ");
         return DATA_ABILITY_FAIL;
     }
+    MediaLibraryFileOperations fileOprn;
     int32_t changedRows = DATA_ABILITY_FAIL;
     string uriString = uri.ToString();
     MEDIA_INFO_LOG("Update uriString = %{public}s", uriString.c_str());
@@ -507,7 +510,13 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
     } else if (uriString.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
         (void)rdbStore->Update(changedRows, SMARTALBUM_MAP_TABLE, value, strUpdateCondition, whereArgs);
     } else {
-        CHECK_AND_RETURN_RET_LOG(uriString == MEDIALIBRARY_DATA_URI, DATA_ABILITY_FAIL, "Not Data ability Uri");
+        if (uriString == MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN
+                + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET) {
+        int result = fileOprn.HandleFileOperation(MEDIA_FILEOPRN_MODIFYASSET, value, rdbStore, mediaThumbnail_);
+        if (result < 0) {
+            return result;
+            }
+        }
     (void)rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, value, strUpdateCondition, whereArgs);
     }
 

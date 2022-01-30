@@ -48,7 +48,7 @@ MediaLibrary接口暂不对外部应用开放, 仅内部使用。
     ```
     IMediaLibraryClient* mediaLibClientInstance = IMediaLibraryClient::GetMediaLibraryClientInstance();
     ```
-2. 在 **selection** 内设置音频文件的扫描目录。selection 代表媒体公共根目录的相对路径, i.e. "/data/media"。接口会在指定目录内递归查找所有音频文件。
+2. 在 **selection** 内设置音频文件的扫描目录。selection 代表媒体公共根目录的相对路径, i.e. "/storage/media"。接口会在指定目录内递归查找所有音频文件。
     ```
     string selection = "audios/audio1";
     ```
@@ -80,7 +80,7 @@ MediaLibrary 给应用提供了操作相册的接口, 如创建，修改和删�
     ```
     AssetType assetType = ASSET_VIDEOALBUM;
     ```
-3. 创建一个 **AlbumAsset** 并提供相册名称。如下 "new_video" 相册将在 "/data/media/videos" 内被创建。
+3. 创建一个 **AlbumAsset** 并提供相册名称。如下 "new_video" 相册将在 "/storage/media/videos" 内被创建。
     ```
     AlbumAsset albumAsset;
     albumAsset.albumName_ = "videos/new_video";
@@ -106,11 +106,11 @@ MediaLibrary 给应用提供了操作相册的接口, 如创建，修改和删�
     MediaAsset dstMediaAsset;
 
     srcMediaAsset.name_ = "image1.jpg";
-    srcMediaAsset.uri_ = "/data/media/images/001/image1.jpg";
+    srcMediaAsset.uri_ = "/storage/media/images/001/image1.jpg";
 
     dstMediaAsset.albumName_ = "images/new_image";
     ```
-4. 使用 **CopyMediaAsset** 接口来从源资产拷贝到目标资产相册目录, 接口返回值表示文件操作状态。源文件 "image1.jpg" 将会被拷贝到 "/data/media/images/new_image" 。
+4. 使用 **CopyMediaAsset** 接口来从源资产拷贝到目标资产相册目录, 接口返回值表示文件操作状态。源文件 "image1.jpg" 将会被拷贝到 "/storage/media/images/new_image" 。
     ```
     bool errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     ```

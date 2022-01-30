@@ -47,7 +47,7 @@ We can use APIs like **GetMediaAssets**, **GetAudioAssets**, **GetVideoAssets** 
     ```
     IMediaLibraryClient* mediaLibClientInstance = IMediaLibraryClient::GetMediaLibraryClientInstance();
     ```
-2. Set the scanning directory for audio files in **selection** string. The selection value will be a relative path to a media root directory i.e. "/data/media". It will check for audio files recursively in the given directory.
+2. Set the scanning directory for audio files in **selection** string. The selection value will be a relative path to a media root directory i.e. "/storage/media". It will check for audio files recursively in the given directory.
     ```
     string selection = "audios/audio1";
     ```
@@ -79,7 +79,7 @@ MediaLibrary offers APIs for application to perform album operations like create
     ```
     AssetType assetType = ASSET_VIDEOALBUM;
     ```
-3. Create a new **AlbumAsset** object and provide a new album name. Below album "new_video" will get created in the path "/data/media/videos".
+3. Create a new **AlbumAsset** object and provide a new album name. Below album "new_video" will get created in the path "/storage/media/videos".
     ```
     AlbumAsset albumAsset;
     albumAsset.albumName_ = "videos/new_video";
@@ -105,11 +105,11 @@ File operations are supported via APIs like **CreateMediaAsset**, **ModifyMediaA
     MediaAsset dstMediaAsset;
 
     srcMediaAsset.name_ = "image1.jpg";
-    srcMediaAsset.uri_ = "/data/media/images/001/image1.jpg";
+    srcMediaAsset.uri_ = "/storage/media/images/001/image1.jpg";
 
     dstMediaAsset.albumName_ = "images/new_image";
     ```
-4. Use **CopyMediaAsset** API to copy the source asset to target asset's album name location. The boolean return value denotes the status of the file operation. The source file "image1.jpg" will get copied to "/data/media/images/new_image".
+4. Use **CopyMediaAsset** API to copy the source asset to target asset's album name location. The boolean return value denotes the status of the file operation. The source file "image1.jpg" will get copied to "/storage/media/images/new_image".
     ```
     bool errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     ```

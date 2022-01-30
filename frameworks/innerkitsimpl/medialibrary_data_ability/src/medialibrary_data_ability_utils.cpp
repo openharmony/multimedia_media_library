@@ -69,6 +69,22 @@ int32_t MediaLibraryDataAbilityUtils::GetParentIdFromDb(const string &path, cons
 
     return parentId;
 }
+string MediaLibraryDataAbilityUtils::GetParentDisplayNameFromDb(const int &id, const shared_ptr<RdbStore> &rdbStore)
+{
+    string parentName;
+    int32_t columnIndex(0);
+    if (rdbStore != nullptr) {
+        AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+        absPredicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
+        vector<string> columns;
+        columns.push_back(MEDIA_DATA_DB_NAME);
+        unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+        auto ret = queryResultSet->GoToFirstRow();
+        ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_NAME, columnIndex);
+        ret = queryResultSet->GetString(columnIndex, parentName);
+    }
+    return parentName;
+}
 
 bool MediaLibraryDataAbilityUtils::IsNumber(const string &str)
 {

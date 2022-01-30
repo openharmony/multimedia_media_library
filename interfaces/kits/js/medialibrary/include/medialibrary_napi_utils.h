@@ -102,6 +102,7 @@ const int32_t PARAM2 = 2;
 const int32_t PARAM3 = 3;
 
 /* Constants for array size */
+const int32_t ARGS_ZERO = 0;
 const int32_t ARGS_ONE = 1;
 const int32_t ARGS_TWO = 2;
 const int32_t ARGS_THREE = 3;
@@ -114,8 +115,10 @@ const int32_t ERR_DEFAULT = 0;
 const int32_t ERR_MEM_ALLOCATION = 2;
 const int32_t ERR_INVALID_OUTPUT = 3;
 const int32_t ERR_PERMISSION_DENIED = 4;
+const int32_t ERR_DISPLAY_NAME_INVALID = 5;
+const int32_t ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID = 6;
 
-const std::string ALBUM_ROOT_PATH = "/data/media";
+const std::string ALBUM_ROOT_PATH = "/storage/media";
 const int32_t FAVORIT_SMART_ALBUM_ID = -1;
 const std::string FAVORIT_SMART_ALBUM_NAME = "FavoritAlbum";
 const int32_t TRASH_SMART_ALBUM_ID = -10;
@@ -258,32 +261,40 @@ public:
     static void CreateNapiErrorObject(napi_env env, napi_value &errorObj,
         const int32_t errCode, const std::string errMsg)
     {
+        HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaLibraryNapiUtils"};
+        napi_status statusError;
         napi_value napiErrorCode = nullptr;
         napi_value napiErrorMsg = nullptr;
-
-        napi_create_int32(env, errCode, &napiErrorCode);
-        napi_create_string_utf8(env, errMsg.c_str(), NAPI_AUTO_LENGTH, &napiErrorMsg);
-        napi_create_error(env, napiErrorCode, napiErrorMsg, &errorObj);
+        statusError = napi_create_string_utf8(env, std::to_string(errCode).c_str(), NAPI_AUTO_LENGTH, &napiErrorCode);
+        if (statusError == napi_ok) {
+            statusError = napi_create_string_utf8(env, errMsg.c_str(), NAPI_AUTO_LENGTH, &napiErrorMsg);
+            if (statusError == napi_ok) {
+                statusError = napi_create_error(env, napiErrorCode, napiErrorMsg, &errorObj);
+                if (statusError == napi_ok) {
+                    HiLog::Debug(LABEL, "napi_create_error success");
+                }
+            }
+        }
     }
 
     static void InvokeJSAsyncMethod(napi_env env, napi_deferred deferred,
         napi_ref callbackRef, napi_async_work work, const JSAsyncContextOutput &asyncContext)
     {
         HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaLibraryNapiUtils"};
-        HiLog::Error(LABEL, "InvokeJSAsyncMethod IN");
+        HiLog::Debug(LABEL, "InvokeJSAsyncMethod IN");
         napi_value retVal;
         napi_value callback = nullptr;
 
         /* Deferred is used when JS Callback method expects a promise value */
         if (deferred) {
-            HiLog::Error(LABEL, "InvokeJSAsyncMethod promise");
+            HiLog::Debug(LABEL, "InvokeJSAsyncMethod promise");
             if (asyncContext.status) {
                 napi_resolve_deferred(env, deferred, asyncContext.data);
             } else {
                 napi_reject_deferred(env, deferred, asyncContext.error);
             }
         } else {
-            HiLog::Error(LABEL, "InvokeJSAsyncMethod callback");
+            HiLog::Debug(LABEL, "InvokeJSAsyncMethod callback");
             napi_value result[ARGS_TWO];
             result[PARAM0] = asyncContext.error;
             result[PARAM1] = asyncContext.data;
@@ -292,7 +303,7 @@ public:
             napi_delete_reference(env, callbackRef);
         }
         napi_delete_async_work(env, work);
-        HiLog::Error(LABEL, "InvokeJSAsyncMethod OUT");
+        HiLog::Debug(LABEL, "InvokeJSAsyncMethod OUT");
     }
 };
 } // namespace Media

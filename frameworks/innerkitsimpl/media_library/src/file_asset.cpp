@@ -348,7 +348,7 @@ int32_t FileAsset::CreateAsset(const string &filePath)
 
 int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
 {
-    int32_t errRet = -1;
+    int32_t errRet = DATA_ABILITY_MODIFY_DATA_FAIL;
 
     if (!oldPath.empty() && !newPath.empty() &&
         MediaFileUtils::IsFileExists(oldPath) &&
