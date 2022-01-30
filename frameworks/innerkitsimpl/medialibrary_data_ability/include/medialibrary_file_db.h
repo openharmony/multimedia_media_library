@@ -36,6 +36,7 @@ public:
                    const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
     int32_t Delete(const std::string &strRow, const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
     int32_t Modify(const std::string &rowNum, const std::string &dstPath,
+                   const int &bucketId, const std::string &bucketName,
                    const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
 };
 } // namespace Media

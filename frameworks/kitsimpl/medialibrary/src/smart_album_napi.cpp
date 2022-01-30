@@ -779,7 +779,7 @@ napi_value SmartAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ZERO || argc == ARGS_ONE), "requires 1 parameter maximum");
     napi_get_undefined(env, &result);
     std::unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = std::make_unique<SmartAlbumNapiAsyncContext>();
 
@@ -923,10 +923,15 @@ static void GetFavFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
     HiLog::Error(LABEL, "GetFavFileAssetsNative in");
     NativeRdb::DataAbilityPredicates predicates;
-
-    predicates.EqualTo(MEDIA_DATA_DB_IS_FAV, "1");
-    predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
-
+    string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? AND " + MEDIA_DATA_DB_IS_FAV + " = ? AND "
+        + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
+    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
+    context->selectionArgs.insert(context->selectionArgs.begin(), std::to_string(MEDIA_TYPE_ALBUM));
+    context->selectionArgs.insert(context->selectionArgs.begin(), "1");
+    context->selectionArgs.insert(context->selectionArgs.begin(), "0");
+    predicates.SetWhereClause(context->selection);
+    predicates.SetWhereArgs(context->selectionArgs);
+    predicates.SetOrder(context->order);
     std::vector<std::string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
 
@@ -940,9 +945,14 @@ static void GetFavFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 static void GetFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
     NativeRdb::DataAbilityPredicates predicates;
-    predicates.EqualTo(SMARTALBUMMAP_DB_ALBUM_ID, std::to_string(context->objectInfo->GetSmartAlbumId()));
-    predicates.NotEqualTo(SMARTALBUMMAP_DB_ASSET_ID, "");
-
+    string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? AND " + SMARTALBUMMAP_DB_ALBUM_ID + " = ? ";
+    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
+    context->selectionArgs.insert(context->selectionArgs.begin(),
+        std::to_string(context->objectInfo->GetSmartAlbumId()));
+    context->selectionArgs.insert(context->selectionArgs.begin(), "0");
+    predicates.SetWhereClause(context->selection);
+    predicates.SetWhereArgs(context->selectionArgs);
+    predicates.SetOrder(context->order);
     std::vector<std::string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/"
                + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
@@ -951,7 +961,7 @@ static void GetFileAssetsNative(SmartAlbumNapiAsyncContext *context)
     std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
         context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
 
-    context->fetchResult = std::make_unique<FetchResult>(resultSet);
+    context->fetchResult = std::make_unique<FetchResult>(move(resultSet));
 }
 
 static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status,
@@ -1000,7 +1010,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumFileAssets(napi_env env, napi_callback
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
+    NAPI_ASSERT(env, (argc == ARGS_ZERO || argc == ARGS_ONE), "requires 1 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = std::make_unique<SmartAlbumNapiAsyncContext>();

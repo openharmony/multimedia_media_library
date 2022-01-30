@@ -35,6 +35,11 @@ const std::string MediaLibraryNapi::PERMISSION_NAME_READ_MEDIA = "ohos.permissio
 const std::string MediaLibraryNapi::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 bool g_isNewApi = false;
+const int32_t NUM_2 = 2;
+const int32_t NUM_3 = 3;
+const int32_t NUM_4 = 4;
+const int32_t NUM_5 = 5;
+const int32_t NUM_6 = 6;
 
 napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::sAbilityHelper_ = nullptr;
@@ -1397,7 +1402,36 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
 
     return result;
 }
+static string getNetworkId(string selfId)
+{
+    return "";
+}
 
+static string GetFileMediaTypeUri(MediaType mediaType, string networkId)
+{
+    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
+    switch (mediaType) {
+        case MEDIA_TYPE_AUDIO:
+            return uri + MEDIALIBRARY_TYPE_AUDIO_URI;
+            break;
+        case MEDIA_TYPE_VIDEO:
+            return uri + MEDIALIBRARY_TYPE_VIDEO_URI;
+            break;
+        case MEDIA_TYPE_IMAGE:
+            return uri + MEDIALIBRARY_TYPE_IMAGE_URI;
+            break;
+        case MEDIA_TYPE_ALBUM:
+            return uri + MEDIALIBRARY_TYPE_ALBUM_URI;
+            break;
+        case MEDIA_TYPE_SMARTALBUM:
+            return uri + MEDIALIBRARY_TYPE_SMART_URI;
+            break;
+        case MEDIA_TYPE_FILE:
+        default:
+            return uri + MEDIALIBRARY_TYPE_FILE_URI;
+            break;
+    }
+}
 variant<int, string> GetValFromColumn(string columnName,
     shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
@@ -1454,7 +1488,7 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
             unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
             if (albumData != nullptr) {
                 // Get album id index and value
-                albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_ID, resultSet)));
+                albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet)));
                 HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_ID");
                 // Get album title index and value
                 albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet)));
@@ -1462,6 +1496,9 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
                 // Get album asset count index and value
                 albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet)));
                 HiLog::Error(LABEL, "MEDIA_DATA_DB_ID");
+                albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM,
+                    getNetworkId(get<string>(GetValFromColumn(MEDIA_DATA_DB_SELF_ID, resultSet))))
+                    + "/" + to_string(albumData->GetAlbumId()));
             }
             // Add to album array
             context->albumNativeArray.push_back(move(albumData));
@@ -1622,8 +1659,13 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
     delete context;
 }
 
-static bool CheckTitlePrams(const string& title)
+static bool CheckTitlePrams(MediaLibraryAsyncContext *context)
 {
+    ValueObject valueObject;
+    string title = "";
+    if (context->valuesBucket.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
+        valueObject.GetString(title);
+    }
     if (title.empty()) {
         HiLog::Debug(LABEL, "CheckRelativePathPrams title is empty");
         return false;
@@ -1659,8 +1701,57 @@ static bool IsDirectory(const string& dirName)
     return false;
 }
 
-static bool CheckRelativePathPrams(const string& relativePath)
+static bool CheckTypeOfType(const std::string& firstDirName, int32_t fileMediaType)
 {
+    HiLog::Debug(LABEL, "CheckTypeOfType IN");
+    // "CDSA/"
+    if (!strcmp(firstDirName.c_str(), directoryEnumValues[0].c_str())) {
+        if (fileMediaType == MEDIA_TYPE_IMAGE || fileMediaType == MEDIA_TYPE_VIDEO) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    // "Movies/"
+    if (!strcmp(firstDirName.c_str(), directoryEnumValues[1].c_str())) {
+        if (fileMediaType == MEDIA_TYPE_VIDEO) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    if (!strcmp(firstDirName.c_str(), directoryEnumValues[NUM_2].c_str())) {
+        if (fileMediaType == MEDIA_TYPE_IMAGE || fileMediaType == MEDIA_TYPE_VIDEO) {
+            HiLog::Debug(LABEL, "CheckTypeOfType RETURN TRUE");
+            return true;
+        } else {
+            HiLog::Debug(LABEL, "CheckTypeOfType RETURN FALSE");
+                return false;
+        }
+    }
+    if (!strcmp(firstDirName.c_str(), directoryEnumValues[NUM_3].c_str()) ||
+        !strcmp(firstDirName.c_str(), directoryEnumValues[NUM_4].c_str()) ||
+        !strcmp(firstDirName.c_str(), directoryEnumValues[NUM_5].c_str()) ||
+        !strcmp(firstDirName.c_str(), directoryEnumValues[NUM_6].c_str())) {
+        if (fileMediaType == MEDIA_TYPE_AUDIO) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    HiLog::Debug(LABEL, "CheckTypeOfType END");
+    return true;
+}
+static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
+{
+    ValueObject valueObject;
+    string relativePath = "";
+    if (context->valuesBucket.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
+        valueObject.GetString(relativePath);
+    }
+    int32_t fileMediaType = 0;
+    context->valuesBucket.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject);
+    valueObject.GetInt(fileMediaType);
     if (relativePath.empty()) {
         HiLog::Debug(LABEL, "CheckRelativePathPrams relativePath is empty");
         return false;
@@ -1678,10 +1769,11 @@ static bool CheckRelativePathPrams(const string& relativePath)
     }
     
     if (!firstDirName.empty()) {
+        HiLog::Debug(LABEL, "firstDirName = %{public}s", firstDirName.c_str());
         for (unsigned int i = 0; i < directoryEnumValues.size(); i++) {
             HiLog::Debug(LABEL, "directoryEnumValues%{public}d = %{public}s", i, directoryEnumValues[i].c_str());
             if (!strcmp(firstDirName.c_str(), directoryEnumValues[i].c_str())) {
-                return true;
+                return CheckTypeOfType(firstDirName, fileMediaType);
             }
         }
         HiLog::Debug(LABEL, "firstDirName = %{public}s", firstDirName.c_str());
@@ -1700,6 +1792,7 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
     size_t res = 0;
     char relativePathBuffer[PATH_MAX];
     char titleBuffer[PATH_MAX];
+    HiLog::Debug(LABEL, "GetJSArgsForCreateAsset IN %{public}zu", argc);
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
@@ -1716,16 +1809,9 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
         } else if (i == PARAM3 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
         } else {
-            NAPI_ASSERT(env, false, "type mismatch");
-        }
+            HiLog::Debug(LABEL, "type mismatch");
+            return result;
     }
-
-    if (!CheckTitlePrams(string(titleBuffer))) {
-        NAPI_ASSERT(env, false, "displayName prams invalid");
-    }
-
-    if (!CheckRelativePathPrams(string(relativePathBuffer))) {
-        NAPI_ASSERT(env, false, "relativePath prams invalid");
     }
 
     context->valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileMediaType);
@@ -1762,8 +1848,15 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext*>(data);
                 if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
                     context->error = ERR_PERMISSION_DENIED;
+                    return;
+                }
+                if (!CheckTitlePrams(context)) {
+                    context->error = ERR_DISPLAY_NAME_INVALID;
+                    return;
+                }
+                if (!CheckRelativePathPrams(context)) {
+                    context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
                     return;
                 }
                 if (context->objectInfo->sAbilityHelper_ != nullptr) {
@@ -1772,11 +1865,9 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
                     if (index < 0) {
                         context->error = index;
                     } else {
-                        HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback File asset creation success");
                         getFileAssetById(index, "", context);
                     }
                 } else {
-                    HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback File asset creation failed");
                     context->error = ERR_INVALID_OUTPUT;
                 }
             },
@@ -1789,7 +1880,6 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
             asyncContext.release();
         }
     }
-
     return result;
 }
 
@@ -2889,6 +2979,7 @@ static void JSReleaseCompleteCallback(napi_env env, napi_status status,
         HiLog::Error(LABEL, "JSReleaseCompleteCallback context->objectInfo != nullptr");
         context->objectInfo->~MediaLibraryNapi();
         jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
     } else {
         HiLog::Error(LABEL, "JSReleaseCompleteCallback context->objectInfo == nullptr");
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
@@ -2916,7 +3007,8 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     int32_t refCount = 1;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == 0), "requires 1 parameters maximum");
+    HiLog::Error(LABEL, "NAPI_ASSERT begin %{public}zu", argc);
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_ZERO), "requires 1 parameters maximum");
     HiLog::Error(LABEL, "NAPI_ASSERT end");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -3001,9 +3093,11 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
     }
     if (context->privateAlbumType == TYPE_FAVORITE) {
         GetFavSmartAlbumExecute(context);
+        return;
     }
     if (context->privateAlbumType == TYPE_TRASH) {
         GetTrashSmartAlbumExecute(context);
+        return;
     }
 
     vector<string> columns;
@@ -3049,10 +3143,10 @@ static void GetSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
             if (albumData != nullptr) {
                 albumData->SetAlbumId(get<int32_t>(GetValFromColumn(SMARTALBUM_DB_ID, resultSet)));
                 albumData->SetAlbumName(get<string>(GetValFromColumn(SMARTALBUM_DB_NAME, resultSet)));
-                int32_t count = 0;
-                albumData->SetAlbumCapacity(count);
-                albumData->SetAlbumUri(MEDIALIBRARY_SMART_URI + "/"
-                    + std::to_string(get<int32_t>(GetValFromColumn(SMARTALBUM_DB_ID, resultSet))));
+                albumData->SetAlbumCapacity(get<int32_t>(GetValFromColumn(SMARTABLUMASSETS_ALBUMCAPACITY, resultSet)));
+                albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_SMARTALBUM,
+                    getNetworkId(get<string>(GetValFromColumn(SMARTALBUM_DB_SELF_ID, resultSet))))
+                    + "/" + to_string(albumData->GetAlbumId()));
             }
             context->smartAlbumNativeArray.push_back(move(albumData));
         }
@@ -3074,7 +3168,7 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status,
             jsContext->status = true;
             napi_value albumArray = nullptr;
             napi_create_array(env, &albumArray);
-            napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *context->smartAlbumData,
+            napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumData),
                 context->objectInfo->sAbilityHelper_);
             napi_set_element(env, albumArray, 0, albumNapiObj);
             napi_get_undefined(env, &jsContext->error);
