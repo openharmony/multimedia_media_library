@@ -92,9 +92,6 @@ int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
             intTempMeta = ConvertStringToInteger(strTemp);
             fileMetadata.SetFileDuration(intTempMeta);
 
-            strTemp = metadataMap.at(AV_KEY_TITLE);
-            fileMetadata.SetFileTitle(strTemp);
-
             strTemp = metadataMap.at(AV_KEY_VIDEO_HEIGHT);
             intTempMeta = ConvertStringToInteger(strTemp);
             fileMetadata.SetFileHeight(intTempMeta);

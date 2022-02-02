@@ -160,5 +160,26 @@ int32_t ScannerUtils::GetAbsolutePath(string &path)
 
     return errCode;
 }
+
+int32_t ScannerUtils::GetRootMediaDir(string &dir, int32_t &len)
+{
+    dir = ROOT_MEDIA_DIR;
+    len = dir.length();
+
+    return ERR_SUCCESS;
+}
+
+string ScannerUtils::GetFileTitle(const string& displayName)
+{
+    string title = "";
+    if (!displayName.empty()) {
+        string::size_type pos = displayName.find_first_of('.');
+        if (pos == displayName.length()) {
+            return displayName;
+        }
+        title = displayName.substr(0, pos);
+    }
+    return title;
+}
 } // namespace Media
 } // namespace OHOS
