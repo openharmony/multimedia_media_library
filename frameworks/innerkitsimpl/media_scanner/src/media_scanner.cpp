@@ -323,42 +323,59 @@ int32_t MediaScanner::VisitFile(const Metadata &fileMD)
 unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int32_t parentId)
 {
     unique_ptr<Metadata> fileMetadata = make_unique<Metadata>();
-    if (fileMetadata != nullptr) {
-        struct stat statInfo = { 0 };
-        if (stat(path.c_str(), &statInfo) == ERR_SUCCESS) {
-            fileMetadata->SetFileSize(static_cast<int64_t>(statInfo.st_size));
-            fileMetadata->SetFileDateAdded(static_cast<int64_t>(statInfo.st_ctime));
-            fileMetadata->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
+    if (fileMetadata == nullptr) {
+        return nullptr;
+    }
+
+    struct stat statInfo = { 0 };
+    if (stat(path.c_str(), &statInfo) == ERR_SUCCESS) {
+        fileMetadata->SetFileSize(static_cast<int64_t>(statInfo.st_size));
+        fileMetadata->SetFileDateAdded(static_cast<int64_t>(statInfo.st_ctime));
+        fileMetadata->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
+    }
+
+    fileMetadata->SetFilePath(path);
+    fileMetadata->SetFileName(ScannerUtils::GetFileNameFromUri(path));
+
+    string fileExtn = ScannerUtils::GetFileExtensionFromFileUri(path);
+    fileMetadata->SetFileExtension(fileExtn);
+
+    string mimetype = ScannerUtils::GetMimeTypeFromExtension(fileExtn);
+    fileMetadata->SetFileMimeType(mimetype);
+
+    fileMetadata->SetFileMediaType(ScannerUtils::GetMediatypeFromMimetype(mimetype));
+
+    if (parentId != NO_PARENT) {
+        fileMetadata->SetParentId(parentId);
+    }
+
+    string parentPath = ScannerUtils::GetParentPath(path);
+    if (parentPath != ROOT_PATH) {
+        fileMetadata->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
+    }
+
+    size_t found = path.rfind('/');
+    if (found != string::npos) {
+        int32_t len = 0;
+        string rootDir;
+        int32_t errCode = ScannerUtils::GetRootMediaDir(rootDir, len);
+        if (errCode != ERR_SUCCESS) {
+            return fileMetadata;
         }
 
-        fileMetadata->SetFilePath(path);
-        fileMetadata->SetFileName(ScannerUtils::GetFileNameFromUri(path));
-
-        string fileExtn = ScannerUtils::GetFileExtensionFromFileUri(path);
-        fileMetadata->SetFileExtension(fileExtn);
-
-        string mimetype = ScannerUtils::GetMimeTypeFromExtension(fileExtn);
-        fileMetadata->SetFileMimeType(mimetype);
-
-        fileMetadata->SetFileMediaType(ScannerUtils::GetMediatypeFromMimetype(mimetype));
-
-        if (parentId != NO_PARENT) {
-            fileMetadata->SetParentId(parentId);
-        }
-
-        string parentPath = ScannerUtils::GetParentPath(path);
-        if (parentPath != ROOT_PATH) {
-            fileMetadata->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
-        }
-
-        size_t found = path.rfind('/');
-        if (found != string::npos) {
+        if (path.find(rootDir) != std::string::npos) {
+            // if len and found is same, then no need to set rel path
+            if (len != found) {
+                fileMetadata->SetRelativePath(path.substr(len + 1, found - len));
+            }
+        } else {
             fileMetadata->SetRelativePath(path.substr(0, found));
         }
     }
 
     return fileMetadata;
 }
+
 
 // Get the internal details of the file
 int32_t MediaScanner::ScanFileContent(const string &path, const int32_t parentId)

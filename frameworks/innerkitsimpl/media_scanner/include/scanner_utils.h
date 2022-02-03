@@ -24,6 +24,7 @@
 
 #include "media_lib_service_const.h"
 #include "media_log.h"
+#include "media_scanner_const.h"
 
 namespace OHOS {
 namespace Media {
@@ -180,6 +181,8 @@ public:
     static bool IsFileHidden(const std::string &path);
     static bool IsDirectory(const std::string &path);
     static MediaType GetMediatypeFromMimetype(const std::string &mimetype);
+    static int32_t GetRootMediaDir(std::string &dir, int32_t &len);
+    static std::string GetFileTitle(const std::string& displayName);
 };
 } // namespace Media
 } // namespace OHOS
