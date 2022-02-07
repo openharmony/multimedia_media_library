@@ -34,6 +34,7 @@
 #include "album_napi.h"
 #include "audio_asset_napi.h"
 #include "data_ability_helper.h"
+#include "napi_base_context.h"
 #include "data_ability_predicates.h"
 #include "fetch_file_result_napi.h"
 #include "file_asset_napi.h"
@@ -119,7 +120,7 @@ public:
     MediaLibraryNapi();
     ~MediaLibraryNapi();
 
-    static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env);
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env, napi_callback_info info);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
 
 public:
