@@ -153,20 +153,48 @@ bool CheckUserGrantedPermission(napi_env env, const std::string& permissionName)
         permissionName, userId) == Security::Permission::PermissionState::PERMISSION_GRANTED);
 }
 
-shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper(napi_env env)
+shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper(napi_env env, napi_callback_info info)
 {
-    napi_value global = nullptr;
-    NAPI_CALL(env, napi_get_global(env, &global));
-
-    napi_value abilityObj = nullptr;
-    NAPI_CALL(env, napi_get_named_property(env, global, "ability", &abilityObj));
-
-    AppExecFwk::Ability *ability = nullptr;
-    NAPI_CALL(env, napi_get_value_external(env, abilityObj, (void **)&ability));
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
     string strUri = MEDIALIBRARY_DATA_URI;
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> dataAbilityHelper = nullptr;
 
-    return AppExecFwk::DataAbilityHelper::Creator(ability->GetContext(), make_shared<Uri>(strUri));
+    bool stageMode = false;
+    napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], stageMode);
+    if (status != napi_ok) {
+        HiLog::Info(LABEL, "argv[0] is not a context");
+        auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
+        if (ability == nullptr) {
+            HiLog::Error(LABEL, "Failed to get native context instance");
+            return nullptr;
+        }
+        HiLog::Info(LABEL, "FA Model: ability = %{public}p strUir = %{public}s", ability, strUri.c_str());
+        dataAbilityHelper = DataAbilityHelper::Creator(ability->GetContext(), std::make_shared<Uri>(strUri));
+    } else {
+        HiLog::Info(LABEL, "argv[0] is a context");
+        if (stageMode) {
+            auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
+            if (context == nullptr) {
+                HiLog::Error(LABEL, "Failed to get native context instance");
+                return nullptr;
+            }
+            HiLog::Info(LABEL, "Stage Model: context = %{public}p strUri = %{public}s", context.get(), strUri.c_str());
+            dataAbilityHelper = DataAbilityHelper::Creator(context, std::make_shared<Uri>(strUri));
+        } else {
+            auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
+            if (ability == nullptr) {
+                HiLog::Error(LABEL, "Failed to get native context instance");
+                return nullptr;
+            }
+            HiLog::Info(LABEL, "FA Model: ability = %{public}p strUri = %{public}s", ability, strUri.c_str());
+            dataAbilityHelper = DataAbilityHelper::Creator(ability->GetContext(), std::make_shared<Uri>(strUri));
+        }
+    }
+    return dataAbilityHelper;
 }
 
 // Constructor callback
@@ -196,7 +224,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
             }
 
             if (obj->sAbilityHelper_ == nullptr) {
-                obj->sAbilityHelper_ = GetDataAbilityHelper(env);
+                obj->sAbilityHelper_ = GetDataAbilityHelper(env, info);
                 CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sAbilityHelper_, result, "Helper creation failed");
             }
         }
@@ -219,11 +247,16 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
     napi_status status;
     napi_value result = nullptr;
     napi_value ctor;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+
     HiLog::Debug(LABEL, "GetMediaLibraryNewInstance IN");
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     status = napi_get_reference_value(env, sConstructor_, &ctor);
     if (status == napi_ok) {
         g_isNewApi = true;
-        status = napi_new_instance(env, ctor, 0, nullptr, &result);
+        status = napi_new_instance(env, ctor, argc, argv, &result);
         if (status == napi_ok) {
             return result;
         } else {
@@ -1334,7 +1367,8 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
     } else {
         // Create FetchResult object using the contents of resultSet
         if (context->fetchFileResult != nullptr) {
-            fileResult = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchFileResult));
+            fileResult = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchFileResult),
+                                                                    context->objectInfo->sAbilityHelper_);
             if (fileResult == nullptr) {
                 MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                     "Failed to create js object for Fetch File Result");
@@ -1631,7 +1665,8 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
                 "Obtain file asset failed");
             napi_get_undefined(env, &jsContext->data);
         } else {
-            jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset));
+            jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
+                                                         context->objectInfo->sAbilityHelper_);
             if (jsFileAsset == nullptr) {
                 HiLog::Error(LABEL, "Failed to get file asset napi object");
                 napi_get_undefined(env, &jsContext->data);
