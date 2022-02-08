@@ -34,6 +34,7 @@
 #include "album_napi.h"
 #include "audio_asset_napi.h"
 #include "data_ability_helper.h"
+#include "napi_base_context.h"
 #include "data_ability_predicates.h"
 #include "fetch_file_result_napi.h"
 #include "file_asset_napi.h"
@@ -68,11 +69,23 @@ struct MediaChangeListener {
 
 class ChangeListenerNapi {
 public:
+    class UvChangeMsg {
+    public:
+        UvChangeMsg(napi_env env, napi_ref ref) : env_(env), ref_(ref) {}
+        ~UvChangeMsg() {}
+        napi_env env_;
+        napi_ref ref_;
+    };
+
     explicit ChangeListenerNapi(napi_env env) : env_(env) {}
 
     ~ChangeListenerNapi() = default;
 
     void OnChange(const MediaChangeListener &listener, const napi_ref cbRef);
+    void SetStageMode(bool isStageMode)
+    {
+        this->isStageMode_ = isStageMode;
+    }
 
     napi_ref cbOnRef_ = nullptr;
     napi_ref cbOffRef_ = nullptr;
@@ -85,6 +98,7 @@ public:
 
 private:
     napi_env env_ = nullptr;
+    bool isStageMode_;
 };
 
 class MediaObserver : public AAFwk::DataAbilityObserverStub {
@@ -119,7 +133,7 @@ public:
     MediaLibraryNapi();
     ~MediaLibraryNapi();
 
-    static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env);
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env, napi_callback_info info);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
 
 public:
@@ -183,6 +197,7 @@ private:
 
     napi_env env_;
     napi_ref wrapper_;
+    static bool isStageMode_;
 
     static napi_ref sConstructor_;
     static napi_ref sMediaTypeEnumRef_;

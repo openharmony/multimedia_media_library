@@ -975,7 +975,8 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status,
     jsContext->status = false;
 
     if (context->fetchResult != nullptr) {
-        fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult));
+        fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult),
+                                                              context->objectInfo->sAbilityHelper);
         if (fetchRes == nullptr) {
             HiLog::Error(LABEL, "Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);

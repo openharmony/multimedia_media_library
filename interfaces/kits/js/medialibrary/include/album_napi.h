@@ -52,6 +52,8 @@ public:
     AlbumNapi();
     ~AlbumNapi();
 
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
+
 private:
     static void AlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value AlbumNapiConstructor(napi_env env, napi_callback_info info);
@@ -89,7 +91,6 @@ private:
 
     static napi_ref sConstructor_;
     static AlbumAsset *sAlbumData_;
-    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
 };
 
 struct AlbumNapiAsyncContext {
