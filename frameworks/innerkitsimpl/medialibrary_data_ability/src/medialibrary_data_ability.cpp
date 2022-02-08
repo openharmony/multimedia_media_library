@@ -14,6 +14,9 @@
  */
 
 #include "medialibrary_data_ability.h"
+#include "accesstoken_kit.h"
+#include "ipc_skeleton.h"
+#include "string_ex.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -22,6 +25,8 @@ using namespace OHOS::DistributedKv;
 
 namespace OHOS {
 namespace Media {
+const std::string MediaLibraryDataAbility::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
+const std::string MediaLibraryDataAbility::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 REGISTER_AA(MediaLibraryDataAbility);
 
 void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
@@ -152,7 +157,15 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
         MEDIA_ERR_LOG("MediaLibraryDataAbility Insert: Input parameter is invalid");
         return DATA_ABILITY_FAIL;
     }
-
+    if (false) {
+        Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+        int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller,
+            PERMISSION_NAME_WRITE_MEDIA);
+        if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+            MEDIA_ERR_LOG("MediaLibraryDataAbility Insert: Have no write media permission");
+            return DATA_ABILITY_PERMISSION_DENIED;
+        }
+    }
     string insertUri = uri.ToString();
     // If insert uri contains media opearation, follow media operation procedure
     if (insertUri.find(MEDIA_OPERN_KEYWORD) != string::npos) {
@@ -166,6 +179,10 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
         int32_t result(DATA_ABILITY_FAIL);
         string operationType = MediaLibraryDataAbilityUtils::GetOperationType(insertUri);
         MEDIA_INFO_LOG("operationType = %{public}s", operationType.c_str());
+        if ((operationType == MEDIA_FILEOPRN_CREATEASSET ||
+            operationType == MEDIA_ALBUMOPRN_CREATEALBUM) && !CheckFileNameValid(value)) {
+            return DATA_ABILITY_FILE_NAME_INVALID;
+        }
         if (insertUri.find(MEDIA_FILEOPRN) != string::npos) {
             result = fileOprn.HandleFileOperation(operationType, value, rdbStore, mediaThumbnail_);
             MEDIA_INFO_LOG("HandleFileOperation result = %{public}d", result);
@@ -201,8 +218,16 @@ int32_t MediaLibraryDataAbility::Delete(const Uri &uri, const DataAbilityPredica
         return DATA_ABILITY_FAIL;
     }
 
+    if (false) {
+        Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+        int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller,
+            PERMISSION_NAME_WRITE_MEDIA);
+        if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+            MEDIA_ERR_LOG("MediaLibraryDataAbility Delete: Have no write media permission");
+            return DATA_ABILITY_PERMISSION_DENIED;
+        }
+    }
     string uriString = uri.ToString();
-
     string strDeleteCondition = predicates.GetWhereClause();
     if (strDeleteCondition.empty()) {
         string::size_type pos = uriString.find_last_of('/');
@@ -429,6 +454,15 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
     if ((!isRdbStoreInitialized) || (rdbStore == nullptr)) {
         return nullptr;
     }
+    if (false) {
+        Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+        int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller,
+            PERMISSION_NAME_READ_MEDIA);
+        if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+            MEDIA_ERR_LOG("MediaLibraryDataAbility Query: Have no read media permission");
+            return nullptr;
+        }
+    }
     unique_ptr<AbsSharedResultSet> queryResultSet;
     TableType tabletype = TYPE_DATA;
     string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
@@ -485,6 +519,15 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
     if ((!isRdbStoreInitialized) || (rdbStore == nullptr) || (value.IsEmpty())) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility Update:Input parameter is invalid ");
         return DATA_ABILITY_FAIL;
+    }
+    if (false) {
+        Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+        int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller,
+            PERMISSION_NAME_WRITE_MEDIA);
+        if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+            MEDIA_ERR_LOG("MediaLibraryDataAbility Update: Have no read media permission");
+            return DATA_ABILITY_PERMISSION_DENIED;
+        }
     }
     MediaLibraryFileOperations fileOprn;
     int32_t changedRows = DATA_ABILITY_FAIL;
@@ -597,6 +640,32 @@ int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mod
     }
     MEDIA_ERR_LOG("MediaLibraryDataAbility OpenFile: Success");
     return fd;
+}
+
+bool MediaLibraryDataAbility::CheckFileNameValid(const ValuesBucket &value)
+{
+    ValueObject valueObject;
+    string displayName("");
+    if (!value.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
+        return false;
+    }
+    valueObject.GetString(displayName);
+
+    if (displayName.empty()) {
+        return false;
+    }
+
+    if (displayName.at(0) == '.') {
+        return false;
+    }
+
+    Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+    Security::AccessToken::NativeTokenInfo tokenInfo;
+    Security::AccessToken::AccessTokenKit::GetNativeTokenInfo(tokenCaller, tokenInfo);
+    if (false && IsSameTextStr(displayName, ".nofile") && IsSameTextStr(tokenInfo.processName, "fms_service")) {
+        return true;
+    }
+    return true;
 }
 
 void MediaLibraryDataAbility::InitialiseKvStore()

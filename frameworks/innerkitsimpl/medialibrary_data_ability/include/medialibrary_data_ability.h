@@ -79,7 +79,10 @@ namespace Media {
     private:
         std::string GetOperationType(const std::string &uri);
         void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
+        bool CheckFileNameValid(const ValuesBucket &value);
 
+        static const std::string PERMISSION_NAME_READ_MEDIA;
+        static const std::string PERMISSION_NAME_WRITE_MEDIA;
         std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
         DistributedKv::DistributedKvDataManager dataManager_;
         std::shared_ptr<IMediaScannerClient> scannerClient_;
