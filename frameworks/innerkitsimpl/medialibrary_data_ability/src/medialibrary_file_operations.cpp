@@ -152,8 +152,8 @@ int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(const ValuesBucket &v
     MEDIA_INFO_LOG("HandleGetAlbumCapacity OUT");
     return errorCode;
 }
-int ModifyDisName(const string dstFileName,
-    const string destAlbumPath, const string &srcPath, const shared_ptr<RdbStore> &rdbStore)
+int ModifyDisName(const string &dstFileName,
+    const string &destAlbumPath, const string &srcPath, const shared_ptr<RdbStore> &rdbStore)
 {
     int32_t errCode = DATA_ABILITY_SUCCESS;
     if (dstFileName == ".nomedia") {

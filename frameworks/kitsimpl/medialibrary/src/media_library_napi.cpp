@@ -1726,7 +1726,6 @@ static string GetFirstDirName(const string& relativePath)
     string firstDirName = "";
     if (!relativePath.empty()) {
         string::size_type pos = relativePath.find_first_of('/');
-        HiLog::Debug(LABEL, "firstDirName pos = %{public}u", pos);
         if (pos == relativePath.length()) {
             MEDIA_ERR_LOG("relativePath is first dir");
             return relativePath;
