@@ -28,6 +28,7 @@ namespace OHOS {
 namespace Media {
 napi_ref FetchFileResultNapi::sConstructor_ = nullptr;
 FetchResult *FetchFileResultNapi::sFetchFileResult_ = nullptr;
+std::shared_ptr<AppExecFwk::DataAbilityHelper> FetchFileResultNapi::sAbilityHelper = nullptr;
 
 FetchFileResultNapi::FetchFileResultNapi()
     : env_(nullptr), wrapper_(nullptr) {}
@@ -101,6 +102,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 obj->fetchFileResult_->isContain_ = sFetchFileResult_->isContain_;
                 obj->fetchFileResult_->isClosed_ = sFetchFileResult_->isClosed_;
                 obj->fetchFileResult_->count_ = sFetchFileResult_->count_;
+                obj->sAbilityHelper = sAbilityHelper;
                 fetchRes.release();
             } else {
                 HiLog::Error(LABEL, "No native instance assigned yet");
@@ -122,7 +124,8 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
     return result;
 }
 
-napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult &fileResult)
+napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult &fileResult,
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -130,6 +133,7 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult 
 
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (status == napi_ok) {
+        sAbilityHelper = abilityHelper;
         sFetchFileResult_ = &fileResult;
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         sFetchFileResult_ = nullptr;
@@ -142,6 +146,11 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult 
 
     napi_get_undefined(env, &result);
     return result;
+}
+
+std::shared_ptr<AppExecFwk::DataAbilityHelper> FetchFileResultNapi::GetDataAbilityHelper() const
+{
+    return abilityHelper_;
 }
 
 napi_value FetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info)
@@ -203,7 +212,8 @@ static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, 
     jsContext->status = false;
 
     if (context->fileAsset != nullptr) {
-        jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset));
+        jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
+                                                     context->objectInfo->GetDataAbilityHelper());
         if (jsFileAsset == nullptr) {
             HiLog::Error(LABEL, "Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);
@@ -413,7 +423,8 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, void*
         size_t len = context->fileAssetArray.size();
         size_t i = 0;
         for (i = 0; i < len; i++) {
-            jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAssetArray[i]));
+            jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAssetArray[i]),
+                                                         context->objectInfo->GetDataAbilityHelper());
             if (jsFileAsset == nullptr || napi_set_element(env, jsFileArray, i, jsFileAsset) != napi_ok) {
                 HiLog::Error(LABEL, "Failed to get file asset napi object");
                 napi_get_undefined(env, &jsContext->data);

@@ -661,7 +661,8 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     if (context->fetchResult != nullptr) {
-        fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult));
+        fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult),
+                                                              context->objectInfo->GetDataAbilityHelper());
         HiLog::Error(LABEL, "JSGetFileAssetsCompleteCallback 1");
         if (fetchRes == nullptr) {
             HiLog::Error(LABEL, "Failed to get file asset napi object");

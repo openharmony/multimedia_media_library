@@ -36,7 +36,8 @@ public:
     ~FileAssetNapi();
 
     static napi_value Init(napi_env env, napi_value exports);
-    static napi_value CreateFileAsset(napi_env env, FileAsset &iAsset);
+    static napi_value CreateFileAsset(napi_env env, FileAsset &iAsset,
+                                      std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper);
 
     std::string GetFileDisplayName() const;
     std::string GetRelativePath() const;
@@ -45,7 +46,6 @@ public:
     int32_t GetFileId() const;
     int32_t GetOrientation() const;
     Media::MediaType GetMediaType() const;
-    static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
     static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
 private:

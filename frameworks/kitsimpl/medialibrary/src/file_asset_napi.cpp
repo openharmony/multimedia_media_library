@@ -136,23 +136,6 @@ napi_value FileAssetNapi::Init(napi_env env, napi_value exports)
     return nullptr;
 }
 
-shared_ptr<AppExecFwk::DataAbilityHelper> FileAssetNapi::GetDataAbilityHelper(napi_env env)
-{
-    napi_value global = nullptr;
-    NAPI_CALL(env, napi_get_global(env, &global));
-
-    napi_value abilityObj = nullptr;
-    NAPI_CALL(env, napi_get_named_property(env, global, "ability", &abilityObj));
-
-    AppExecFwk::Ability *ability = nullptr;
-    NAPI_CALL(env, napi_get_value_external(env, abilityObj, (void **)&ability));
-
-    string strUri = MEDIALIBRARY_DATA_URI;
-
-    return AppExecFwk::DataAbilityHelper::Creator(ability->GetContext(), make_shared<Uri>(strUri));
-}
-
-
 // Constructor callback
 napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_info info)
 {
@@ -171,7 +154,7 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
             }
 
             if (obj->sAbilityHelper_ == nullptr) {
-                obj->sAbilityHelper_ = GetDataAbilityHelper(env);
+                obj->sAbilityHelper_ = sAbilityHelper_;
                 CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sAbilityHelper_, result, "Helper creation failed");
             }
 
@@ -192,7 +175,8 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
     return result;
 }
 
-napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset)
+napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -200,6 +184,7 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset)
 
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (status == napi_ok) {
+        sAbilityHelper_ = abilityHelper;
         sFileAsset_ = &iAsset;
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         sFileAsset_ = nullptr;

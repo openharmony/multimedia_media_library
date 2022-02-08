@@ -18,6 +18,7 @@
 #include "smart_album_napi.h"
 #include "file_ex.h"
 #include "permission/permission_kit.h"
+#include "uv.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -47,6 +48,7 @@ napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
 napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 using Context = MediaLibraryAsyncContext* ;
+bool MediaLibraryNapi::isStageMode_ = false;
 
 MediaLibraryNapi::MediaLibraryNapi()
     : mediaLibrary_(nullptr), env_(nullptr), wrapper_(nullptr) {}
@@ -153,20 +155,47 @@ bool CheckUserGrantedPermission(napi_env env, const std::string& permissionName)
         permissionName, userId) == Security::Permission::PermissionState::PERMISSION_GRANTED);
 }
 
-shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper(napi_env env)
+shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper(napi_env env, napi_callback_info info)
 {
-    napi_value global = nullptr;
-    NAPI_CALL(env, napi_get_global(env, &global));
-
-    napi_value abilityObj = nullptr;
-    NAPI_CALL(env, napi_get_named_property(env, global, "ability", &abilityObj));
-
-    AppExecFwk::Ability *ability = nullptr;
-    NAPI_CALL(env, napi_get_value_external(env, abilityObj, (void **)&ability));
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
     string strUri = MEDIALIBRARY_DATA_URI;
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> dataAbilityHelper = nullptr;
 
-    return AppExecFwk::DataAbilityHelper::Creator(ability->GetContext(), make_shared<Uri>(strUri));
+    napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode_);
+    if (status != napi_ok) {
+        HiLog::Info(LABEL, "argv[0] is not a context");
+        auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
+        if (ability == nullptr) {
+            HiLog::Error(LABEL, "Failed to get native context instance");
+            return nullptr;
+        }
+        HiLog::Info(LABEL, "FA Model: ability = %{public}p strUir = %{public}s", ability, strUri.c_str());
+        dataAbilityHelper = DataAbilityHelper::Creator(ability->GetContext(), std::make_shared<Uri>(strUri));
+    } else {
+        HiLog::Info(LABEL, "argv[0] is a context");
+        if (isStageMode_) {
+            auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
+            if (context == nullptr) {
+                HiLog::Error(LABEL, "Failed to get native context instance");
+                return nullptr;
+            }
+            HiLog::Info(LABEL, "Stage Model: context = %{public}p strUri = %{public}s", context.get(), strUri.c_str());
+            dataAbilityHelper = DataAbilityHelper::Creator(context, std::make_shared<Uri>(strUri));
+        } else {
+            auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
+            if (ability == nullptr) {
+                HiLog::Error(LABEL, "Failed to get native context instance");
+                return nullptr;
+            }
+            HiLog::Info(LABEL, "FA Model: ability = %{public}p strUri = %{public}s", ability, strUri.c_str());
+            dataAbilityHelper = DataAbilityHelper::Creator(ability->GetContext(), std::make_shared<Uri>(strUri));
+        }
+    }
+    return dataAbilityHelper;
 }
 
 // Constructor callback
@@ -196,9 +225,10 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
             }
 
             if (obj->sAbilityHelper_ == nullptr) {
-                obj->sAbilityHelper_ = GetDataAbilityHelper(env);
+                obj->sAbilityHelper_ = GetDataAbilityHelper(env, info);
                 CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sAbilityHelper_, result, "Helper creation failed");
             }
+            g_listObj->SetStageMode(isStageMode_);
         }
 
         status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
@@ -219,11 +249,16 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
     napi_status status;
     napi_value result = nullptr;
     napi_value ctor;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+
     HiLog::Debug(LABEL, "GetMediaLibraryNewInstance IN");
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     status = napi_get_reference_value(env, sConstructor_, &ctor);
     if (status == napi_ok) {
         g_isNewApi = true;
-        status = napi_new_instance(env, ctor, 0, nullptr, &result);
+        status = napi_new_instance(env, ctor, argc, argv, &result);
         if (status == napi_ok) {
             return result;
         } else {
@@ -1334,7 +1369,8 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
     } else {
         // Create FetchResult object using the contents of resultSet
         if (context->fetchFileResult != nullptr) {
-            fileResult = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchFileResult));
+            fileResult = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchFileResult),
+                                                                    context->objectInfo->sAbilityHelper_);
             if (fileResult == nullptr) {
                 MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                     "Failed to create js object for Fetch File Result");
@@ -1631,7 +1667,8 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
                 "Obtain file asset failed");
             napi_get_undefined(env, &jsContext->data);
         } else {
-            jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset));
+            jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
+                                                         context->objectInfo->sAbilityHelper_);
             if (jsFileAsset == nullptr) {
                 HiLog::Error(LABEL, "Failed to get file asset napi object");
                 napi_get_undefined(env, &jsContext->data);
@@ -2728,15 +2765,75 @@ napi_value MediaLibraryNapi::JSDeleteAlbum(napi_env env, napi_callback_info info
 
 void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const napi_ref cbRef)
 {
-    napi_value result[ARGS_TWO] = {nullptr};
-    napi_value callback = nullptr;
-    napi_value retVal = nullptr;
-    string propName = "mediaType";
+    if (!isStageMode_) {
+        napi_value result[ARGS_TWO] = {nullptr};
+        napi_value callback = nullptr;
+        napi_value retVal = nullptr;
 
-    napi_get_undefined(env_, &result[PARAM0]);
-    napi_get_undefined(env_, &result[PARAM1]);
-    napi_get_reference_value(env_, cbRef, &callback);
-    napi_call_function(env_, nullptr, callback, ARGS_TWO, result, &retVal);
+        napi_get_undefined(env_, &result[PARAM0]);
+        napi_get_undefined(env_, &result[PARAM1]);
+        napi_get_reference_value(env_, cbRef, &callback);
+        napi_call_function(env_, nullptr, callback, ARGS_TWO, result, &retVal);
+        return;
+    }
+
+    uv_loop_s *loop = nullptr;
+    napi_get_uv_event_loop(env_, &loop);
+    if (loop == nullptr) {
+        return;
+    }
+
+    uv_work_t *work = new (std::nothrow) uv_work_t;
+    if (work == nullptr) {
+        return;
+    }
+
+    UvChangeMsg *msg = new (std::nothrow) UvChangeMsg(env_, cbRef);
+    if (msg == nullptr) {
+        delete work;
+        return;
+    }
+    work->data = reinterpret_cast<void *>(msg);
+
+    int ret = uv_queue_work(loop, work, [](uv_work_t *w) {},
+        [](uv_work_t *w, int s) {
+            // js thread
+            if (w == nullptr) {
+                return;
+            }
+
+            UvChangeMsg *msg = reinterpret_cast<UvChangeMsg *>(w->data);
+            do {
+                if (msg == nullptr) {
+                    HiLog::Error(LABEL, "UvChangeMsg is null");
+                    break;
+                }
+                napi_env env = msg->env_;
+                napi_value result[ARGS_TWO] = { nullptr };
+                napi_get_undefined(env, &result[PARAM0]);
+                napi_get_undefined(env, &result[PARAM1]);
+                napi_value jsCallback = nullptr;
+                napi_status status = napi_get_reference_value(env, msg->ref_, &jsCallback);
+                if (status != napi_ok) {
+                    HiLog::Error(LABEL, "Create reference fail");
+                    break;
+                }
+                napi_value retVal = nullptr;
+                napi_call_function(env, nullptr, jsCallback, ARGS_TWO, result, &retVal);
+                if (status != napi_ok) {
+                    HiLog::Error(LABEL, "CallJs napi_call_function fail");
+                    break;
+                }
+            } while (0);
+            delete msg;
+            delete w;
+        }
+    );
+    if (ret != 0) {
+        HiLog::Error(LABEL, "Failed to execute libuv work queue");
+        delete msg;
+        delete work;
+    }
 }
 
 void MediaLibraryNapi::RegisterChangeByType(string type, const ChangeListenerNapi &listenerObj)

@@ -52,6 +52,8 @@ public:
     SmartAlbumNapi();
     ~SmartAlbumNapi();
 
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
+
 private:
     static void SmartAlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value SmartAlbumNapiConstructor(napi_env env, napi_callback_info info);
@@ -87,7 +89,6 @@ private:
     napi_ref wrapper_;
 
     static napi_ref sConstructor_;
-    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
 };
 
 struct SmartAlbumNapiAsyncContext {
