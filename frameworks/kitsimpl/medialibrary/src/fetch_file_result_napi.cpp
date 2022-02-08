@@ -212,7 +212,8 @@ static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, 
     jsContext->status = false;
 
     if (context->fileAsset != nullptr) {
-        jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset), context->objectInfo->GetDataAbilityHelper());
+        jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
+                                                     context->objectInfo->GetDataAbilityHelper());
         if (jsFileAsset == nullptr) {
             HiLog::Error(LABEL, "Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);
