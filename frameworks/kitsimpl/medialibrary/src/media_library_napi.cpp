@@ -19,6 +19,7 @@
 #include "file_ex.h"
 #include "permission/permission_kit.h"
 #include "uv.h"
+#include "string_ex.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -151,8 +152,18 @@ bool CheckUserGrantedPermission(napi_env env, const std::string& permissionName)
     std::string bundleName = GetPackageName(env, userId);
     HiLog::Debug(LABEL, "CheckUserGrantedPermission --- bundleName is %{public}s, userId is %{public}d ",
         bundleName.c_str(), userId);
-    return (Security::Permission::PermissionKit::VerifyPermission(bundleName,
-        permissionName, userId) == Security::Permission::PermissionState::PERMISSION_GRANTED);
+    std::vector<std::string> bundleNames = {
+        "com.ohos.camera", "com.ohos.photos",
+        "com.ohos.medialibrary.MediaScannerAbilityA", "com.huawei.himovie",
+        "com.ohos.distributedmusicplayer", "fms_service"
+    };
+
+    for (size_t i = 0; i < bundleNames.size(); i++) {
+        if (IsSameTextStr(bundleName, bundleNames[i])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper(napi_env env, napi_callback_info info)
