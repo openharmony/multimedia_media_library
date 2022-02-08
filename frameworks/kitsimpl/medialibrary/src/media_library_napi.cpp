@@ -48,6 +48,7 @@ napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
 napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 using Context = MediaLibraryAsyncContext* ;
+bool MediaLibraryNapi::isStageMode_ = false;
 
 MediaLibraryNapi::MediaLibraryNapi()
     : mediaLibrary_(nullptr), env_(nullptr), wrapper_(nullptr) {}
