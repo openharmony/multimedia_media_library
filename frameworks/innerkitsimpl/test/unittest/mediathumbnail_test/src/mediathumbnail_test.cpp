@@ -18,10 +18,13 @@
 #include "media_data_ability_const.h"
 #include "medialibrary_data_ability.h"
 #include "media_log.h"
+#include "hilog/log.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace testing::ext;
+using OHOS::HiviewDFX::HiLog;
+using OHOS::HiviewDFX::HiLogLabel;
 
 namespace OHOS {
 namespace Media {
@@ -29,7 +32,21 @@ MediaLibraryDataAbility g_rdbStoreTest;
 MediaLibraryThumbnail g_mediaThumbnail;
 int g_index = 0;
 const std::string DATABASE_NAME = MEDIA_DATA_ABILITY_DB_NAME;
+const std::string ABILITY_URI = Media::MEDIALIBRARY_DATA_URI;
+const std::string TEST_PIC_NAME = "test.jpg";
+const std::string TEST_PIC_PATH = "/data/media/Pictures/test.jpg";
+const std::string TEST_VIDEO_NAME = "test.mp4";
+const std::string TEST_VIDEO_PATH = "/data/media/test.mp4";
+const std::string TEST_AUDIO_NAME = "test.mp3";
+const std::string TEST_AUDIO_PATH = "/data/media/test.mp3";
+static constexpr uint8_t NUM_0 = 0;
+static constexpr uint8_t NUM_1 = 1;
+static constexpr uint8_t NUM_2 = 2;
 std::shared_ptr<RdbStore> store = nullptr;
+
+namespace {
+    constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaThumbnailTest"};
+} // namespace
 
 int MediaThumbnailTestCB::OnCreate(RdbStore &store)
 {
@@ -62,21 +79,126 @@ void MediaThumbnailTest::TearDown(void)
     RdbHelper::ClearCache();
 }
 
+static int InsertRdbStore(int64_t &id, const string path)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    ValuesBucket values;
+    values.PutString(MEDIA_DATA_DB_FILE_PATH, path);
+    return mstore->Insert(id, MEDIALIBRARY_TABLE, values);
+}
+
+static void BuildBucket(const string name, const string path, MediaType mediaType,
+                        NativeRdb::ValuesBucket &valuesBucket)
+{
+    string relativePath = "";
+    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, path);
+    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, name);
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+}
+
+static int32_t InsertMediaData(NativeRdb::ValuesBucket &valuesBucket)
+{
+    Uri createAssetUri(ABILITY_URI);
+    return g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
+}
+
+static int32_t CreateThumbnailInAbility(int32_t id)
+{
+    Uri closeUri(ABILITY_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CLOSEASSET);
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutString(MEDIA_DATA_DB_URI, "/" + to_string(id));
+    return g_rdbStoreTest.Insert(closeUri, valuesBucket);
+}
+static bool PrepareThumbnail(const string name, const string path, MediaType mediaType, int32_t &id)
+{
+    NativeRdb::ValuesBucket valuesBucket;
+    BuildBucket(name, path, mediaType, valuesBucket);
+    id = InsertMediaData(valuesBucket);
+    EXPECT_NE((id <= 0), true);
+    if (id < 0) {
+        HiLog::Error(LABEL, "Insert media data error");
+        return false;
+    }
+    int res = CreateThumbnailInAbility(id);
+    EXPECT_NE((res < 0), true);
+    if (res < 0) {
+        HiLog::Error(LABEL, "Create thumbnail in ability failed");
+        return false;
+    }
+    return true;
+}
+static bool PreparePicThumbnail(int32_t &id)
+{
+    return PrepareThumbnail(TEST_PIC_NAME, TEST_PIC_PATH, MEDIA_TYPE_IMAGE, id);
+}
+static bool PrepareAudioThumbnail(int32_t &id)
+{
+    return PrepareThumbnail(TEST_AUDIO_NAME, TEST_AUDIO_PATH, MEDIA_TYPE_AUDIO, id);
+}
+static bool PrepareVideoThumbnail(int32_t &id)
+{
+    return PrepareThumbnail(TEST_VIDEO_NAME, TEST_VIDEO_PATH, MEDIA_TYPE_VIDEO, id);
+}
+static std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> QueryMediaData(const Uri &uri)
+{
+    NativeRdb::DataAbilityPredicates predicates;
+    std::vector<std::string> columns = {
+        Media::MEDIA_DATA_DB_ID, Media::MEDIA_DATA_DB_THUMBNAIL, Media::MEDIA_DATA_DB_LCD,
+    };
+    return g_rdbStoreTest.Query(uri, columns, predicates);
+}
+
+static std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> QueryThumbnailData(int id, Size &size)
+{
+    Uri queryUri(ABILITY_URI  + "/" + to_string(id) + "?" +
+                 Media::MEDIA_OPERN_KEYWORD + "=" + Media::MEDIA_DATA_DB_THUMBNAIL + "&" +
+                 Media::MEDIA_DATA_DB_WIDTH + "=" + to_string(size.width) + "&" +
+                 Media::MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height));
+    return QueryMediaData(queryUri);
+}
+
+static int ParseThumbnailResult(std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> &querySet,
+                                std::string &id, std::string &thumb, std::string &lcd)
+{
+    int rowCount = 0;
+    if (querySet == nullptr) {
+        HiLog::Error(LABEL, "Query media data is empty");
+        return rowCount;
+    }
+
+    querySet->GoToFirstRow();
+    querySet->GetRowCount(rowCount);
+    HiLog::Debug(LABEL, "Query with row %{public}d", rowCount);
+    if (rowCount == 0) {
+        return rowCount;
+    }
+
+    int ret = querySet->GetString(NUM_0, id);
+    ret = querySet->GetString(NUM_1, thumb);
+    ret = querySet->GetString(NUM_2, lcd);
+    return rowCount;
+}
+
+static std::unique_ptr<PixelMap> GetThumbnail(std::string &thumb, std::string &lcd, Size &size)
+{
+    bool fromLcd = g_mediaThumbnail.isThumbnailFromLcd(size);
+    return g_mediaThumbnail.GetThumbnail(fromLcd?lcd:thumb, size);
+}
+
 HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_001, TestSize.Level0)
 {
     std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
 
-    int64_t id = 1;
-    ValuesBucket values;
-    values.PutString(MEDIA_DATA_DB_FILE_PATH, std::string("/storage/media/Pictures/Receiver_buffer7.jpg"));
-    int ret = mstore->Insert(id, MEDIALIBRARY_TABLE, values);
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(1, id);
+    EXPECT_NE(0, id);
 
     ThumbRdbOpt opts = {
         .store = mstore,
         .table = MEDIALIBRARY_TABLE,
-        .row = "1",
+        .row = to_string(id),
     };
 
     std::string key;
@@ -86,219 +208,583 @@ HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_001, TestSize.Level0)
     EXPECT_NE(key.empty(), true);
 }
 
-HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_002, TestSize.Level0)
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_001_1, TestSize.Level0)
 {
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri createAssetUri(abilityUri);
-    NativeRdb::ValuesBucket valuesBucket;
-    string relativePath = "";
-    string displayName = "Receiver_buffer7.jpg";
+    int64_t id = 0;
 
-    MediaType mediaType = MEDIA_TYPE_IMAGE;
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
 
-    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, std::string("/storage/media/Pictures/Receiver_buffer7.jpg"));
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    ThumbRdbOpt opts = {
+        .store = store,
+        .table = MEDIALIBRARY_TABLE,
+        .row = to_string(id),
+    };
 
-    g_index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
-    EXPECT_NE((g_index <= 0), true);
-    Uri closeUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CLOSEASSET);
-    valuesBucket.Clear();
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, "/" + to_string(g_index));
-    int res = g_rdbStoreTest.Insert(closeUri, valuesBucket);
-    EXPECT_NE((res < 0), true);
+    std::string key;
+    bool res = g_mediaThumbnail.CreateThumbnail(opts, key);
+
+    EXPECT_NE(res, false);
+    EXPECT_NE(key.empty(), true);
 }
 
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_001_2, TestSize.Level0)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
+
+    ThumbRdbOpt opts = {
+        .store = mstore,
+        .table = "",
+        .row = to_string(id),
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateThumbnail(opts, key);
+
+    EXPECT_EQ(res, false);
+    EXPECT_EQ(key.empty(), true);
+}
+
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_001_3, TestSize.Level0)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
+
+    ThumbRdbOpt opts = {
+        .store = mstore,
+        .table = MEDIALIBRARY_TABLE,
+        .row = to_string(-1),
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateThumbnail(opts, key);
+
+    EXPECT_EQ(res, false);
+    EXPECT_EQ(key.empty(), true);
+}
+
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_001_4, TestSize.Level0)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
+
+    ThumbRdbOpt opts = {
+        .store = mstore,
+        .table = MEDIALIBRARY_TABLE,
+        .row = to_string(id + 1),
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateThumbnail(opts, key);
+
+    EXPECT_EQ(res, false);
+    EXPECT_EQ(key.empty(), true);
+}
+
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_001_5, TestSize.Level0)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
+
+    ThumbRdbOpt opts = {
+        .store = mstore,
+        .table = MEDIALIBRARY_TABLE,
+        .row = "INVAIL",
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateThumbnail(opts, key);
+
+    EXPECT_EQ(res, false);
+    EXPECT_EQ(key.empty(), true);
+}
+
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_001_6, TestSize.Level0)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
+
+    ThumbRdbOpt opts = {
+        .store = mstore,
+        .table = MEDIALIBRARY_TABLE,
+        .row = "",
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateThumbnail(opts, key);
+
+    EXPECT_EQ(res, false);
+    EXPECT_EQ(key.empty(), true);
+}
+
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_002, TestSize.Level0)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
+
+    ThumbRdbOpt opts = {
+        .store = mstore,
+        .table = MEDIALIBRARY_TABLE,
+        .row = to_string(id),
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateLcd(opts, key);
+
+    EXPECT_NE(res, false);
+}
+
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_002_1, TestSize.Level0)
+{
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(1, id);
+
+    ThumbRdbOpt opts = {
+        .store = store,
+        .table = MEDIALIBRARY_TABLE,
+        .row = to_string(id),
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateLcd(opts, key);
+
+    EXPECT_NE(res, false);
+}
+
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_002_2, TestSize.Level0)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
+
+    ThumbRdbOpt opts = {
+        .store = mstore,
+        .table = "",
+        .row = to_string(id),
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateLcd(opts, key);
+
+    EXPECT_EQ(res, false);
+    EXPECT_EQ(key.empty(), true);
+}
+
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_002_3, TestSize.Level0)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
+
+    ThumbRdbOpt opts = {
+        .store = mstore,
+        .table = MEDIALIBRARY_TABLE,
+        .row = to_string(-1),
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateLcd(opts, key);
+
+    EXPECT_EQ(res, false);
+    EXPECT_EQ(key.empty(), true);
+}
+
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_002_4, TestSize.Level0)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
+
+    ThumbRdbOpt opts = {
+        .store = mstore,
+        .table = MEDIALIBRARY_TABLE,
+        .row = to_string(id + 1),
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateLcd(opts, key);
+
+    EXPECT_EQ(res, false);
+    EXPECT_EQ(key.empty(), true);
+}
+
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_002_5, TestSize.Level0)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
+
+    ThumbRdbOpt opts = {
+        .store = mstore,
+        .table = MEDIALIBRARY_TABLE,
+        .row = "INVAIL",
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateLcd(opts, key);
+
+    EXPECT_EQ(res, false);
+    EXPECT_EQ(key.empty(), true);
+}
+
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_002_6, TestSize.Level0)
+{
+    std::shared_ptr<RdbStore> &mstore = store;
+    int64_t id = 0;
+
+    int ret = InsertRdbStore(id, TEST_PIC_PATH);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(0, id);
+
+    ThumbRdbOpt opts = {
+        .store = mstore,
+        .table = MEDIALIBRARY_TABLE,
+        .row = "",
+    };
+
+    std::string key;
+    bool res = g_mediaThumbnail.CreateLcd(opts, key);
+
+    EXPECT_EQ(res, false);
+    EXPECT_EQ(key.empty(), true);
+}
 HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_003, TestSize.Level0)
 {
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Size size = {
         .width = 56, .height = 56
     };
+    if (!PreparePicThumbnail(g_index)) {
+        return;
+    }
+    auto thumbnailRes = QueryThumbnailData(g_index, size);
+    EXPECT_NE(thumbnailRes, nullptr);
+    if (thumbnailRes == nullptr) {
+        HiLog::Error(LABEL, "Query thumbnail data failed");
+        return;
+    }
+    std::string id, thumbnailKey, lcdKey;
+    int count = ParseThumbnailResult(thumbnailRes, id, thumbnailKey, lcdKey);
+    EXPECT_NE(count, 0);
+    if (count == 0) {
+        HiLog::Error(LABEL, "Query thumbnail data empty");
+        return;
+    }
+    EXPECT_EQ(to_string(g_index), id);
+    EXPECT_NE(thumbnailKey.empty(), true);
+    EXPECT_NE(lcdKey.empty(), false);
 
-    Uri queryUri1(abilityUri  + "/" + to_string(g_index) + "?" +
-        MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
-        MEDIA_DATA_DB_WIDTH + "=" + to_string(size.width) + "&" +
-        MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height));
-
-    NativeRdb::DataAbilityPredicates predicates;
-    std::vector<std::string> columns = {
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_THUMBNAIL,
-        MEDIA_DATA_DB_LCD,
-    };
-
-    auto g_resultSet = g_rdbStoreTest.Query(queryUri1, columns, predicates);
-    if (g_resultSet != nullptr) {
-        string id;
-        string thumbnailKey;
-        string lcdKey;
-        g_resultSet->GoToFirstRow();
-        int rowCount = 0;
-        g_resultSet->GetRowCount(rowCount);
-        EXPECT_EQ(1, rowCount);
-        int ret = g_resultSet->GetString(0, id);
-        ret = g_resultSet->GetString(1, thumbnailKey);
-        ret = g_resultSet->GetString(2, lcdKey);
-        EXPECT_EQ(to_string(g_index), id);
-        EXPECT_NE(thumbnailKey.empty(), true);
-        EXPECT_NE(lcdKey.empty(), false);
-
-        bool fromLcd = g_mediaThumbnail.isThumbnailFromLcd(size);
-        auto pixelmap = g_mediaThumbnail.GetThumbnail(fromLcd?lcdKey:thumbnailKey, size);
-        EXPECT_NE(pixelmap, nullptr);
-        if (pixelmap != nullptr) {
-            EXPECT_EQ(pixelmap->GetWidth(), size.width);
-        }
+    auto pixelmap = GetThumbnail(thumbnailKey, lcdKey, size);
+    EXPECT_NE(pixelmap, nullptr);
+    if (pixelmap != nullptr) {
+        EXPECT_EQ(pixelmap->GetWidth(), size.width);
+        EXPECT_EQ(pixelmap->GetHeight(), size.height);
     }
 }
-
-HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_004, TestSize.Level0)
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_003_1, TestSize.Level0)
 {
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Size size = {
         .width = 300, .height = 300
     };
+    if (!PreparePicThumbnail(g_index)) {
+        return;
+    }
+    auto thumbnailRes = QueryThumbnailData(g_index, size);
+    EXPECT_NE(thumbnailRes, nullptr);
+    if (thumbnailRes == nullptr) {
+        HiLog::Error(LABEL, "Query thumbnail data failed");
+        return;
+    }
+    std::string id, thumbnailKey, lcdKey;
+    int count = ParseThumbnailResult(thumbnailRes, id, thumbnailKey, lcdKey);
+    EXPECT_NE(count, 0);
+    if (count == 0) {
+        HiLog::Error(LABEL, "Query thumbnail data empty");
+        return;
+    }
+    EXPECT_EQ(to_string(g_index), id);
+    EXPECT_NE(thumbnailKey.empty(), true);
+    EXPECT_NE(lcdKey.empty(), true);
 
-    Uri queryUri(abilityUri  + "/" + to_string(g_index) + "?" +
-        MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
-        MEDIA_DATA_DB_WIDTH + "=" + to_string(size.width) + "&" +
-        MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height));
-
-    NativeRdb::DataAbilityPredicates predicates;
-    std::vector<std::string> columns = {
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_THUMBNAIL,
-        MEDIA_DATA_DB_LCD,
-    };
-
-    auto g_resultSet = g_rdbStoreTest.Query(queryUri, columns, predicates);
-    if (g_resultSet != nullptr) {
-        string id;
-        string thumbnailKey;
-        string lcdKey;
-        g_resultSet->GoToFirstRow();
-        int rowCount = 0;
-        g_resultSet->GetRowCount(rowCount);
-        EXPECT_EQ(1, rowCount);
-        int ret = g_resultSet->GetString(0, id);
-        ret = g_resultSet->GetString(1, thumbnailKey);
-        ret = g_resultSet->GetString(2, lcdKey);
-        EXPECT_EQ(to_string(g_index), id);
-        EXPECT_NE(thumbnailKey.empty(), true);
-        EXPECT_NE(lcdKey.empty(), true);
-
-        bool fromLcd = g_mediaThumbnail.isThumbnailFromLcd(size);
-        auto pixelmap = g_mediaThumbnail.GetThumbnail(fromLcd?lcdKey:thumbnailKey, size);
-
-        EXPECT_NE(pixelmap, nullptr);
-        if (pixelmap != nullptr) {
-            EXPECT_EQ(pixelmap->GetWidth(), size.width);
-        }
+    auto pixelmap = GetThumbnail(thumbnailKey, lcdKey, size);
+    EXPECT_NE(pixelmap, nullptr);
+    if (pixelmap != nullptr) {
+        EXPECT_EQ(pixelmap->GetWidth(), size.width);
+        EXPECT_EQ(pixelmap->GetHeight(), size.height);
     }
 }
-
-static void BuildTestValuesBucket(const string name, const string path, MediaType mediaType,
-                                  NativeRdb::ValuesBucket &valuesBucket, string abilityUri)
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_003_2, TestSize.Level0)
 {
-    string relativePath = "";
-    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, path);
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, name);
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    Size size;
+    if (!PreparePicThumbnail(g_index)) {
+        return;
+    }
+    auto thumbnailRes = QueryThumbnailData(g_index, size);
+    EXPECT_NE(thumbnailRes, nullptr);
+}
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_003_3, TestSize.Level0)
+{
+    string empty;
+    Size size = {
+        .width = 56, .height = 56
+    };
+    if (!PreparePicThumbnail(g_index)) {
+        return;
+    }
+
+    auto pixelmap = GetThumbnail(empty, empty, size);
+    EXPECT_EQ(pixelmap, nullptr);
+}
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_003_4, TestSize.Level0)
+{
+    string empty;
+    Size size = {
+        .width = 300, .height = 300
+    };
+    if (!PreparePicThumbnail(g_index)) {
+        return;
+    }
+
+    auto pixelmap = GetThumbnail(empty, empty, size);
+    EXPECT_EQ(pixelmap, nullptr);
+}
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_004, TestSize.Level0)
+{
+    Size size = {
+        .width = 56, .height = 56
+    };
+    if (!PrepareAudioThumbnail(g_index)) {
+        return;
+    }
+    auto thumbnailRes = QueryThumbnailData(g_index, size);
+    EXPECT_NE(thumbnailRes, nullptr);
+    if (thumbnailRes == nullptr) {
+        HiLog::Error(LABEL, "Query thumbnail data failed");
+        return;
+    }
+    std::string id, thumbnailKey, lcdKey;
+    int count = ParseThumbnailResult(thumbnailRes, id, thumbnailKey, lcdKey);
+    EXPECT_NE(count, 0);
+    if (count == 0) {
+        HiLog::Error(LABEL, "Query thumbnail data empty");
+        return;
+    }
+    EXPECT_EQ(to_string(g_index), id);
+    EXPECT_NE(thumbnailKey.empty(), true);
+    EXPECT_NE(lcdKey.empty(), false);
+
+    auto pixelmap = GetThumbnail(thumbnailKey, lcdKey, size);
+    EXPECT_NE(pixelmap, nullptr);
+    if (pixelmap != nullptr) {
+        EXPECT_EQ(pixelmap->GetWidth(), size.width);
+        EXPECT_EQ(pixelmap->GetHeight(), size.height);
+    }
+}
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_004_1, TestSize.Level0)
+{
+    Size size = {
+        .width = 300, .height = 300
+    };
+    if (!PrepareAudioThumbnail(g_index)) {
+        return;
+    }
+    auto thumbnailRes = QueryThumbnailData(g_index, size);
+    EXPECT_NE(thumbnailRes, nullptr);
+    if (thumbnailRes == nullptr) {
+        HiLog::Error(LABEL, "Query thumbnail data failed");
+        return;
+    }
+    std::string id, thumbnailKey, lcdKey;
+    int count = ParseThumbnailResult(thumbnailRes, id, thumbnailKey, lcdKey);
+    EXPECT_NE(count, 0);
+    if (count == 0) {
+        HiLog::Error(LABEL, "Query thumbnail data empty");
+        return;
+    }
+    EXPECT_EQ(to_string(g_index), id);
+    EXPECT_NE(thumbnailKey.empty(), true);
+    EXPECT_NE(lcdKey.empty(), true);
+
+    auto pixelmap = GetThumbnail(thumbnailKey, lcdKey, size);
+    EXPECT_NE(pixelmap, nullptr);
+    if (pixelmap != nullptr) {
+        EXPECT_EQ(pixelmap->GetWidth(), size.width);
+        EXPECT_EQ(pixelmap->GetHeight(), size.height);
+    }
+}
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_004_2, TestSize.Level0)
+{
+    Size size;
+    if (!PrepareAudioThumbnail(g_index)) {
+        return;
+    }
+    auto thumbnailRes = QueryThumbnailData(g_index, size);
+    EXPECT_NE(thumbnailRes, nullptr);
+}
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_004_3, TestSize.Level0)
+{
+    string empty;
+    Size size = {
+        .width = 56, .height = 56
+    };
+    if (!PrepareAudioThumbnail(g_index)) {
+        return;
+    }
+
+    auto pixelmap = GetThumbnail(empty, empty, size);
+    EXPECT_EQ(pixelmap, nullptr);
+}
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_004_4, TestSize.Level0)
+{
+    string empty;
+    Size size = {
+        .width = 300, .height = 300
+    };
+    if (!PrepareAudioThumbnail(g_index)) {
+        return;
+    }
+
+    auto pixelmap = GetThumbnail(empty, empty, size);
+    EXPECT_EQ(pixelmap, nullptr);
 }
 HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_005, TestSize.Level0)
 {
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri createAssetUri(abilityUri);
-    NativeRdb::ValuesBucket valuesBucket;
-    BuildTestValuesBucket("test.mp4", "/storage/media/test.mp4",
-                          MEDIA_TYPE_VIDEO, valuesBucket, abilityUri);
-    g_index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
-    EXPECT_NE((g_index <= 0), true);
-    Uri closeUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CLOSEASSET);
-    valuesBucket.Clear();
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, "/" + to_string(g_index));
-    int res = g_rdbStoreTest.Insert(closeUri, valuesBucket);
-    EXPECT_NE((res < 0), true);
     Size size = {
-        .width = 300, .height = 300
+        .width = 56, .height = 56
     };
-    Uri queryUri(abilityUri  + "/" + to_string(g_index) + "?" +
-        MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
-        MEDIA_DATA_DB_WIDTH + "=" + to_string(size.width) + "&" +
-        MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height));
-    NativeRdb::DataAbilityPredicates predicates;
-    std::vector<std::string> columns = {
-        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_THUMBNAIL, MEDIA_DATA_DB_LCD,
-    };
-    auto g_resultSet = g_rdbStoreTest.Query(queryUri, columns, predicates);
-    if (g_resultSet != nullptr) {
-        string id, thumbnailKey, lcdKey;
-        g_resultSet->GoToFirstRow();
-        int rowCount = 0;
-        g_resultSet->GetRowCount(rowCount);
-        EXPECT_EQ(1, rowCount);
-        int ret = g_resultSet->GetString(0, id);
-        ret = g_resultSet->GetString(1, thumbnailKey);
-        ret = g_resultSet->GetString(2, lcdKey);
-        EXPECT_EQ(to_string(g_index), id);
-        EXPECT_NE(thumbnailKey.empty(), true);
-        EXPECT_NE(lcdKey.empty(), true);
-        bool fromLcd = g_mediaThumbnail.isThumbnailFromLcd(size);
-        auto pixelmap = g_mediaThumbnail.GetThumbnail(fromLcd?lcdKey:thumbnailKey, size);
-        EXPECT_NE(pixelmap, nullptr);
-        if (pixelmap != nullptr) {
-            EXPECT_EQ(pixelmap->GetWidth(), size.width);
-        }
+    if (!PrepareVideoThumbnail(g_index)) {
+        return;
+    }
+    auto thumbnailRes = QueryThumbnailData(g_index, size);
+    EXPECT_NE(thumbnailRes, nullptr);
+    if (thumbnailRes == nullptr) {
+        HiLog::Error(LABEL, "Query thumbnail data failed");
+        return;
+    }
+    std::string id, thumbnailKey, lcdKey;
+    int count = ParseThumbnailResult(thumbnailRes, id, thumbnailKey, lcdKey);
+    EXPECT_NE(count, 0);
+    if (count == 0) {
+        HiLog::Error(LABEL, "Query thumbnail data empty");
+        return;
+    }
+    EXPECT_EQ(to_string(g_index), id);
+    EXPECT_NE(thumbnailKey.empty(), true);
+    EXPECT_NE(lcdKey.empty(), false);
+
+    auto pixelmap = GetThumbnail(thumbnailKey, lcdKey, size);
+    EXPECT_NE(pixelmap, nullptr);
+    if (pixelmap != nullptr) {
+        EXPECT_EQ(pixelmap->GetWidth(), size.width);
+        EXPECT_EQ(pixelmap->GetHeight(), size.height);
     }
 }
-HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_006, TestSize.Level0)
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_005_1, TestSize.Level0)
 {
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri createAssetUri(abilityUri);
-    NativeRdb::ValuesBucket valuesBucket;
-    BuildTestValuesBucket("test.mp3", "/storage/media/test.mp3",
-                          MEDIA_TYPE_AUDIO, valuesBucket, abilityUri);
-    g_index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
-    EXPECT_NE((g_index <= 0), true);
-    Uri closeUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CLOSEASSET);
-    valuesBucket.Clear();
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, "/" + to_string(g_index));
-    int res = g_rdbStoreTest.Insert(closeUri, valuesBucket);
-    EXPECT_NE((res < 0), true);
     Size size = {
         .width = 300, .height = 300
     };
-    Uri queryUri(abilityUri  + "/" + to_string(g_index) + "?" +
-        MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
-        MEDIA_DATA_DB_WIDTH + "=" + to_string(size.width) + "&" +
-        MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height));
-    NativeRdb::DataAbilityPredicates predicates;
-    std::vector<std::string> columns = {
-        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_THUMBNAIL, MEDIA_DATA_DB_LCD,
-    };
-    auto g_resultSet = g_rdbStoreTest.Query(queryUri, columns, predicates);
-    if (g_resultSet != nullptr) {
-        string id, thumbnailKey, lcdKey;
-        g_resultSet->GoToFirstRow();
-        int rowCount = 0;
-        g_resultSet->GetRowCount(rowCount);
-        EXPECT_EQ(1, rowCount);
-        int ret = g_resultSet->GetString(0, id);
-        ret = g_resultSet->GetString(1, thumbnailKey);
-        ret = g_resultSet->GetString(2, lcdKey);
-        EXPECT_EQ(to_string(g_index), id);
-        EXPECT_NE(thumbnailKey.empty(), true);
-        EXPECT_NE(lcdKey.empty(), true);
-        bool fromLcd = g_mediaThumbnail.isThumbnailFromLcd(size);
-        auto pixelmap = g_mediaThumbnail.GetThumbnail(fromLcd?lcdKey:thumbnailKey, size);
-        EXPECT_NE(pixelmap, nullptr);
-        if (pixelmap != nullptr) {
-            EXPECT_EQ(pixelmap->GetWidth(), size.width);
-        }
+    if (!PrepareVideoThumbnail(g_index)) {
+        return;
     }
+    auto thumbnailRes = QueryThumbnailData(g_index, size);
+    EXPECT_NE(thumbnailRes, nullptr);
+    if (thumbnailRes == nullptr) {
+        HiLog::Error(LABEL, "Query thumbnail data failed");
+        return;
+    }
+    std::string id, thumbnailKey, lcdKey;
+    int count = ParseThumbnailResult(thumbnailRes, id, thumbnailKey, lcdKey);
+    EXPECT_NE(count, 0);
+    if (count == 0) {
+        HiLog::Error(LABEL, "Query thumbnail data empty");
+        return;
+    }
+    EXPECT_EQ(to_string(g_index), id);
+    EXPECT_NE(thumbnailKey.empty(), true);
+    EXPECT_NE(lcdKey.empty(), true);
+
+    auto pixelmap = GetThumbnail(thumbnailKey, lcdKey, size);
+    EXPECT_NE(pixelmap, nullptr);
+    if (pixelmap != nullptr) {
+        EXPECT_EQ(pixelmap->GetWidth(), size.width);
+        EXPECT_EQ(pixelmap->GetHeight(), size.height);
+    }
+}
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_005_2, TestSize.Level0)
+{
+    Size size;
+    if (!PrepareVideoThumbnail(g_index)) {
+        return;
+    }
+    auto thumbnailRes = QueryThumbnailData(g_index, size);
+    EXPECT_NE(thumbnailRes, nullptr);
+}
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_005_3, TestSize.Level0)
+{
+    string empty;
+    Size size = {
+        .width = 56, .height = 56
+    };
+    if (!PrepareVideoThumbnail(g_index)) {
+        return;
+    }
+
+    auto pixelmap = GetThumbnail(empty, empty, size);
+    EXPECT_EQ(pixelmap, nullptr);
+}
+HWTEST_F(MediaThumbnailTest, MediaThumbnailTest_005_4, TestSize.Level0)
+{
+    string empty;
+    Size size = {
+        .width = 300, .height = 300
+    };
+    if (!PrepareVideoThumbnail(g_index)) {
+        return;
+    }
+
+    auto pixelmap = GetThumbnail(empty, empty, size);
+    EXPECT_EQ(pixelmap, nullptr);
 }
 }
 }

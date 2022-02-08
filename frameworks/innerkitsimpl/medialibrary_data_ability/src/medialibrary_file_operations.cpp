@@ -87,7 +87,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
         }
     }
     errCode = fileAsset.CreateAsset(path);
-    if ((errCode == DATA_ABILITY_SUCCESS) && (!displayName.empty()) && (displayName.at(0) != '.')) {
+    if (errCode == DATA_ABILITY_SUCCESS) {
         // Fill basic file information into DB
         ValuesBucket updatedAssetInfo = UpdateBasicAssetDetails(mediaType, displayName, relativePath, path);
         updatedAssetInfo.PutInt(MEDIA_DATA_DB_BUCKET_ID, nativeAlbumAsset.GetAlbumId());
@@ -152,8 +152,8 @@ int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(const ValuesBucket &v
     MEDIA_INFO_LOG("HandleGetAlbumCapacity OUT");
     return errorCode;
 }
-int ModifyDisName(const string dstFileName,
-    const string destAlbumPath, const string &srcPath, const shared_ptr<RdbStore> &rdbStore)
+int ModifyDisName(const string &dstFileName,
+    const string &destAlbumPath, const string &srcPath, const shared_ptr<RdbStore> &rdbStore)
 {
     int32_t errCode = DATA_ABILITY_SUCCESS;
     if (dstFileName == ".nomedia") {
