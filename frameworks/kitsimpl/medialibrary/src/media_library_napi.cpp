@@ -154,7 +154,7 @@ bool CheckUserGrantedPermission(napi_env env, const std::string& permissionName)
         bundleName.c_str(), userId);
     std::vector<std::string> bundleNames = {
         "com.ohos.camera", "com.ohos.photos",
-        "com.ohos.medialibrary.MediaScannerAbilityA", "com.huawei.himovie",
+        "com.ohos.medialibrary.MediaScannerAbilityA",
         "com.ohos.distributedmusicplayer", "fms_service"
     };
 
