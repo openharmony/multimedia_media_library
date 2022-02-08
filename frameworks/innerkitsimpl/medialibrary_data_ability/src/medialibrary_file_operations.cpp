@@ -87,7 +87,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
         }
     }
     errCode = fileAsset.CreateAsset(path);
-    if ((errCode == DATA_ABILITY_SUCCESS) && (!displayName.empty()) && (displayName.at(0) != '.')) {
+    if (errCode == DATA_ABILITY_SUCCESS) {
         // Fill basic file information into DB
         ValuesBucket updatedAssetInfo = UpdateBasicAssetDetails(mediaType, displayName, relativePath, path);
         updatedAssetInfo.PutInt(MEDIA_DATA_DB_BUCKET_ID, nativeAlbumAsset.GetAlbumId());
