@@ -197,7 +197,7 @@ private:
 
     napi_env env_;
     napi_ref wrapper_;
-    bool isStageMode_;
+    static bool isStageMode_;
 
     static napi_ref sConstructor_;
     static napi_ref sMediaTypeEnumRef_;
