@@ -36,15 +36,12 @@ const int32_t MEDIA_RDB_VERSION_NEW = 5;
 const int32_t MEDIA_SMARTALBUM_RDB_VERSION = 1;
 const int32_t MEDIA_SMARTALBUMMAP_RDB_VERSION = 1;
 
-const std::string MEDIA_DATA_DB_Path = "/storage/media/";
-
 const std::string MEDIALIBRARY_TABLE = "Files";
 const std::string SMARTALBUM_TABLE = "SmartAlbum";
 const std::string SMARTALBUM_MAP_TABLE = "SmartAlbumMap";
 const std::string CATEGORY_SMARTALBUM_MAP_TABLE = "CategorySmartAlbumMap";
 const std::string DEVICE_TABLE = "Device";
 
-const std::string MEDIA_DATA_ABILITY_DB_PATH = MEDIA_DATA_DB_Path + "media_library.db";
 const std::string MEDIA_DATA_ABILITY_DB_NAME = "media_library.db";
 
 const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "dataability://";
