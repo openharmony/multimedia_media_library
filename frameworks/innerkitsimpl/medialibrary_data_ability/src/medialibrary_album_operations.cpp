@@ -69,8 +69,8 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
         if (index != string::npos) {
             title = parentPath.substr(titleIndex + 1);
             relativePath = parentPath.substr(0, titleIndex);
-            if (relativePath.length() > MEDIA_DATA_DB_Path.length()) {
-                relativePath = relativePath.substr(MEDIA_DATA_DB_Path.length()) + "/";
+            if (relativePath.length() > ROOT_MEDIA_DIR.length()) {
+                relativePath = relativePath.substr(ROOT_MEDIA_DIR.length()) + "/";
             } else {
                 relativePath = "";
             }

@@ -632,7 +632,7 @@ declare namespace mediaLibrary {
         /**
          * This API will help to scan the specified directory and updates the metadata to database
          *
-         * @param scanDirPath Valid path to a directory {/storage/media}
+         * @param scanDirPath Valid path to a directory {/storage/media/local/files}
          * @param callback Callback object to be passed along with request
          * @return int32_t Returns the scan state of scanDir
          * @version 1
@@ -642,7 +642,7 @@ declare namespace mediaLibrary {
         /**
          * This API will help to scan the specified file and updates the metadata to database
          *
-         * @param scanFilePath Valid path to a file along with filename{/storage/media/sample.mp3}
+         * @param scanFilePath Valid path to a file along with filename{/storage/media/local/files/sample.mp3}
          * @param callback Callback object to be passed along with request
          * @return int32_t Returns the scan state of scanFile
          * @version 1

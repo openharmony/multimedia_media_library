@@ -111,11 +111,11 @@ NativeAlbumAsset MediaLibraryDataAbilityUtils::CreateDirectorys(const string rel
         string path = relativePath;
         vector<string> columns;
         AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
-        absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_Path + relativePath);
+        absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR + relativePath);
         unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
         OHOS::HiviewDFX::HiLog::Error(LABEL, "no");
         ValuesBucket values;
-        values.PutString(MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_Path + path);
+        values.PutString(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR + path);
         MediaLibraryAlbumOperations albumOprn;
         int32_t errorcode = albumOprn.HandleAlbumOperations(MEDIA_ALBUMOPRN_CREATEALBUM, values, rdbStore, outIds);
         albumAsset.SetAlbumId(errorcode);
@@ -181,9 +181,9 @@ NativeAlbumAsset MediaLibraryDataAbilityUtils::GetLastAlbumExistInDb(const std::
     int32_t idVal = 0;
     int32_t columnIndexId;
     int32_t maxColumnIndexPath;
-    string maxVal = MEDIA_DATA_DB_Path;
+    string maxVal = ROOT_MEDIA_DIR;
     string::size_type max = maxVal.length();
-    string maxPath = MEDIA_DATA_DB_Path;
+    string maxPath = ROOT_MEDIA_DIR;
     int32_t maxId = 0;
     string::size_type idx;
     string sql = "SELECT " + MEDIA_DATA_DB_RELATIVE_PATH + ","
