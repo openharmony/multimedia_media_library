@@ -60,7 +60,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
     // Obtain relative path
     if (values.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
         valueObject.GetString(relativePath);
-        path = MEDIA_DATA_DB_Path + relativePath + displayName;
+        path = ROOT_MEDIA_DIR + relativePath + displayName;
     }
 
     // Obtain mediatype
@@ -202,8 +202,8 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     if (values.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
         valueObject.GetString(dstReFilePath);
     }
-    dstFilePath = MEDIA_DATA_DB_Path + dstReFilePath + dstFileName;
-    destAlbumPath = MEDIA_DATA_DB_Path + dstReFilePath;
+    dstFilePath = ROOT_MEDIA_DIR + dstReFilePath + dstFileName;
+    destAlbumPath = ROOT_MEDIA_DIR + dstReFilePath;
     if (destAlbumPath.back() == '/') {
         destAlbumPath = destAlbumPath.substr(0, destAlbumPath.length() - 1);
     }

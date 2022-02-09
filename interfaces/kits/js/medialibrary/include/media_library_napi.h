@@ -61,7 +61,7 @@ const std::string IMAGE_LISTENER = "image";
 const std::string FILE_LISTENER = "file";
 const std::string SMARTALBUM_LISTENER = "smartalbum";
 const std::string DEVICE_LISTENER = "device";
-const std::string MEDIA_DATA_Path = "/storage/media/";
+const std::string MEDIA_DATA_Path = ROOT_MEDIA_DIR;
 
 struct MediaChangeListener {
     MediaType mediaType;

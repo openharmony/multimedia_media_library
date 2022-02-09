@@ -235,7 +235,7 @@ void ClearAssets()
 int32_t ScanDir(const string &scanDir)
 {
     int32_t ret = MEDIA_SCAN_SUCCESS;
-    // By default use /storage/media as scan directory
+    // By default use /storage/media/local/files as scan directory
     string scanUri = ROOT_MEDIA_DIR;
 
     if (!scanDir.empty()) {
