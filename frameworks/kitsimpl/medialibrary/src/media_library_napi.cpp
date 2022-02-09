@@ -916,7 +916,7 @@ static void AlbumAssetsAsyncCallbackComplete(napi_env env, napi_status status,
         size_t len = context->albumAssets.size();
         size_t i = 0;
         for (; i < len; i++) {
-            string path = ALBUM_ROOT_PATH;
+            string path = ROOT_MEDIA_DIR;
             if (!context->selection.empty()) {
                 path = "/" + context->selection;
             }
@@ -1740,7 +1740,7 @@ static string GetFirstDirName(const string& relativePath)
 static bool IsDirectory(const string& dirName)
 {
     struct stat statInfo {};
-    if (stat((MEDIA_DATA_Path + dirName).c_str(), &statInfo) == SUCCESS) {
+    if (stat((ROOT_MEDIA_DIR + dirName).c_str(), &statInfo) == SUCCESS) {
         if (statInfo.st_mode & S_IFDIR) {
             return true;
         }
