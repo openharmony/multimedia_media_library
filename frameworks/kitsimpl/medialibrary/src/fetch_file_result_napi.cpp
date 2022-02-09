@@ -102,7 +102,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 obj->fetchFileResult_->isContain_ = sFetchFileResult_->isContain_;
                 obj->fetchFileResult_->isClosed_ = sFetchFileResult_->isClosed_;
                 obj->fetchFileResult_->count_ = sFetchFileResult_->count_;
-                obj->sAbilityHelper = sAbilityHelper;
+                obj->abilityHelper_ = sAbilityHelper;
                 fetchRes.release();
             } else {
                 HiLog::Error(LABEL, "No native instance assigned yet");
