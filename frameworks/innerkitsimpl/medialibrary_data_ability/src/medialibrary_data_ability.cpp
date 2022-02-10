@@ -652,11 +652,8 @@ bool MediaLibraryDataAbility::CheckFileNameValid(const ValuesBucket &value)
 sptr<AppExecFwk::IBundleMgr> MediaLibraryDataAbility::GetSysBundleManager()
 {
     MEDIA_ERR_LOG("MediaLibraryDataAbility::GetBundleManager begin");
-        auto bundleObj =
-            OHOS::DelayedSingleton<SaMgrClient>::GetInstance()->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
-    /*auto bundleObj =
-        OHOS::DelayedSingleton<AppExecFwk::SysMrgClient>::GetInstance()->GetSystemAbility(
-            BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);*/
+    auto bundleObj =
+        OHOS::DelayedSingleton<SaMgrClient>::GetInstance()->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
     if (bundleObj == nullptr) {
         MEDIA_ERR_LOG("failed to get bundle manager service");
         return nullptr;
