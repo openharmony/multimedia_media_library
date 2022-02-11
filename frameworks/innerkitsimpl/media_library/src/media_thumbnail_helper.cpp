@@ -29,7 +29,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-const string THUMBNAIL_APP_ID = "MediaThumbnailHelperAppId1";
+const string THUMBNAIL_APP_ID = "com.ohos.medialibrary.MediaLibraryDataA";
 const string THUMBNAIL_STORE_ID = "MediaThumbnailHelperStoreId1";
 
 void MediaThumbnailHelper::InitKvStore()
