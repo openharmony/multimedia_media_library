@@ -365,8 +365,8 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
 
         if (path.find(rootDir) != std::string::npos) {
             // if len and found is same, then no need to set rel path
-            if (len != found) {
-                fileMetadata->SetRelativePath(path.substr(len + 1, found - len));
+            if (len - 1 != found) {
+                fileMetadata->SetRelativePath(path.substr(len, found - len + 1));
             }
         } else {
             fileMetadata->SetRelativePath(path.substr(0, found));
