@@ -145,7 +145,7 @@ std::string GetPackageName(napi_env env, int& userId)
 
 bool CheckUserGrantedPermission(napi_env env, const std::string& permissionName)
 {
-    if (!FileExists("/data/local/tmp/media_permission")) {
+    if (!FileExists("/data/local/tmp/media_permission_napi")) {
         return true;
     }
     int userId = -1;

@@ -15,8 +15,13 @@
 
 #include "medialibrary_data_ability.h"
 #include "accesstoken_kit.h"
+#include "ipc_singleton.h"
 #include "ipc_skeleton.h"
+#include "file_ex.h"
+#include "sa_mgr_client.h"
 #include "string_ex.h"
+#include "sys_mgr_client.h"
+#include "system_ability_definition.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -157,14 +162,8 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
         MEDIA_ERR_LOG("MediaLibraryDataAbility Insert: Input parameter is invalid");
         return DATA_ABILITY_FAIL;
     }
-    if (false) {
-        Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
-        int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller,
-            PERMISSION_NAME_WRITE_MEDIA);
-        if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
-            MEDIA_ERR_LOG("MediaLibraryDataAbility Insert: Have no write media permission");
-            return DATA_ABILITY_PERMISSION_DENIED;
-        }
+    if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+        return DATA_ABILITY_PERMISSION_DENIED;
     }
     string insertUri = uri.ToString();
     // If insert uri contains media opearation, follow media operation procedure
@@ -218,14 +217,8 @@ int32_t MediaLibraryDataAbility::Delete(const Uri &uri, const DataAbilityPredica
         return DATA_ABILITY_FAIL;
     }
 
-    if (false) {
-        Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
-        int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller,
-            PERMISSION_NAME_WRITE_MEDIA);
-        if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
-            MEDIA_ERR_LOG("MediaLibraryDataAbility Delete: Have no write media permission");
-            return DATA_ABILITY_PERMISSION_DENIED;
-        }
+    if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+        return DATA_ABILITY_PERMISSION_DENIED;
     }
     string uriString = uri.ToString();
     string strDeleteCondition = predicates.GetWhereClause();
@@ -451,18 +444,15 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
                                                               const vector<string> &columns,
                                                               const DataAbilityPredicates &predicates)
 {
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::Query");
     if ((!isRdbStoreInitialized) || (rdbStore == nullptr)) {
         return nullptr;
     }
-    if (false) {
-        Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
-        int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller,
-            PERMISSION_NAME_READ_MEDIA);
-        if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
-            MEDIA_ERR_LOG("MediaLibraryDataAbility Query: Have no read media permission");
-            return nullptr;
-        }
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::Query1");
+    if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
+        return nullptr;
     }
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::Query2");
     unique_ptr<AbsSharedResultSet> queryResultSet;
     TableType tabletype = TYPE_DATA;
     string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
@@ -520,14 +510,8 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
         MEDIA_ERR_LOG("MediaLibraryDataAbility Update:Input parameter is invalid ");
         return DATA_ABILITY_FAIL;
     }
-    if (false) {
-        Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
-        int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller,
-            PERMISSION_NAME_WRITE_MEDIA);
-        if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
-            MEDIA_ERR_LOG("MediaLibraryDataAbility Update: Have no read media permission");
-            return DATA_ABILITY_PERMISSION_DENIED;
-        }
+    if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+        return DATA_ABILITY_PERMISSION_DENIED;
     }
     MediaLibraryFileOperations fileOprn;
     int32_t changedRows = DATA_ABILITY_FAIL;
@@ -656,14 +640,69 @@ bool MediaLibraryDataAbility::CheckFileNameValid(const ValuesBucket &value)
     }
 
     if (displayName.at(0) == '.') {
+        std::string bundleName = GetClientBundleName();
+        if (IsSameTextStr(displayName, ".nofile") && IsSameTextStr(bundleName, "fms_service")) {
+            return true;
+        }
         return false;
+    }
+    return true;
+}
+
+sptr<AppExecFwk::IBundleMgr> MediaLibraryDataAbility::GetSysBundleManager()
+{
+    MEDIA_ERR_LOG("MediaLibraryDataAbility::GetBundleManager begin");
+    auto bundleObj =
+        OHOS::DelayedSingleton<SaMgrClient>::GetInstance()->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+    if (bundleObj == nullptr) {
+        MEDIA_ERR_LOG("failed to get bundle manager service");
+        return nullptr;
+    }
+    MEDIA_ERR_LOG("MediaLibraryDataAbility::GetBundleManager before iface_cast<bundleObj>");
+    sptr<AppExecFwk::IBundleMgr> bms = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
+    MEDIA_ERR_LOG("MediaLibraryDataAbility::GetBundleManager after iface_cast<bundleObj>");
+    MEDIA_ERR_LOG("MediaLibraryDataAbility::GetBundleManager end");
+    return bms;
+}
+
+std::string MediaLibraryDataAbility::GetClientBundleName()
+{
+    auto bms = GetSysBundleManager();
+    MEDIA_ERR_LOG("GetClientBundleName bms is %{public}d", (bms == nullptr));
+    int uid = IPCSkeleton::GetCallingUid();
+    MEDIA_ERR_LOG("GetClientBundleName: uid is %{public}d ", uid);
+    std::string bundleName = "";
+    if (bms == nullptr) {
+        return bundleName;
+    }
+    auto result = bms->GetBundleNameForUid(uid, bundleName);
+    MEDIA_ERR_LOG("GetClientBundleName: bundleName is %{public}s ", bundleName.c_str());
+    if (!result) {
+        MEDIA_ERR_LOG("GetBundleNameForUid fail");
+        return "";
+    }
+    return bundleName;
+}
+
+bool MediaLibraryDataAbility::CheckClientPermission(const std::string& permissionStr)
+{
+    if (!FileExists("/data/local/tmp/media_permission_ability")) {
+        return true;
+    }
+
+    std::string bundleName = GetClientBundleName();
+    if (IsSameTextStr(bundleName, "com.ohos.medialibrary.MediaScannerAbilityA") ||
+        IsSameTextStr(bundleName, "fms_service")) {
+        MEDIA_ERR_LOG("CheckClientPermission: Pass the white list");
+        return true;
     }
 
     Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
-    Security::AccessToken::NativeTokenInfo tokenInfo;
-    Security::AccessToken::AccessTokenKit::GetNativeTokenInfo(tokenCaller, tokenInfo);
-    if (false && IsSameTextStr(displayName, ".nofile") && IsSameTextStr(tokenInfo.processName, "fms_service")) {
-        return true;
+    int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller,
+        permissionStr);
+    if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+        MEDIA_ERR_LOG("MediaLibraryDataAbility Query: Have no media permission");
+        return false;
     }
     return true;
 }

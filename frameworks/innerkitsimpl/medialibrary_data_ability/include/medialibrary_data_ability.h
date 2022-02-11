@@ -80,6 +80,9 @@ namespace Media {
         std::string GetOperationType(const std::string &uri);
         void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
         bool CheckFileNameValid(const ValuesBucket &value);
+        sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
+        std::string GetClientBundleName();
+        bool CheckClientPermission(const std::string& permissionStr);
 
         static const std::string PERMISSION_NAME_READ_MEDIA;
         static const std::string PERMISSION_NAME_WRITE_MEDIA;
