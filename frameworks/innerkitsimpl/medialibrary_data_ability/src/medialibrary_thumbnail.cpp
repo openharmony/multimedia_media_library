@@ -340,14 +340,16 @@ bool MediaLibraryThumbnail::LoadImageFile(string &path,
                                                                          opts,
                                                                          errorCode);
     if (errorCode != Media::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to create image source %{public}d", errorCode);
+        MEDIA_ERR_LOG("Failed to create image source path %{public}s err %{public}d",
+                      path.c_str(), errorCode);
         return false;
     }
 
     DecodeOptions decodeOpts;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     if (errorCode != Media::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to create pixelmap %{public}d", errorCode);
+        MEDIA_ERR_LOG("Failed to create pixelmap path %{public}s err %{public}d",
+                      path.c_str(), errorCode);
         return false;
     }
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadImageFile OUT");

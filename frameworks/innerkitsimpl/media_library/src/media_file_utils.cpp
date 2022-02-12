@@ -199,7 +199,8 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 
     auto absFilePath = realpath(filePath.c_str(), actualPath);
     if (absFilePath == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path");
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path%{public}s %{public}d",
+                      filePath.c_str(), errno);
         return errCode;
     }
 
@@ -211,7 +212,7 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 
     int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
     if (dest == -1) {
-        MEDIA_ERR_LOG("Open failed for destination file");
+        MEDIA_ERR_LOG("Open failed for destination file %{public}d", errno);
         close(source);
         return errCode;
     }
@@ -254,7 +255,8 @@ bool MediaFileUtils::CopyFile(const string &filePath, const string &newPath)
             char actualPath[PATH_MAX];
             char* canonicalDirPath = realpath(newPath.c_str(), actualPath);
             if (canonicalDirPath == nullptr) {
-                MEDIA_ERR_LOG("Failed to obtain the canonical path for newpath");
+                MEDIA_ERR_LOG("Failed to obtain the canonical path for newpath %{public}s %{public}d",
+                              filePath.c_str(), errno);
                 return false;
             }
             newPathCorrected = std::string(canonicalDirPath) + "/" + GetFilename(filePath);
