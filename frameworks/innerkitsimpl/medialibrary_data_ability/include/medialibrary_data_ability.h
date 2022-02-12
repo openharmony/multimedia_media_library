@@ -44,7 +44,7 @@
 namespace OHOS {
 namespace Media {
 // kvstore constants
-    const DistributedKv::AppId KVSTORE_APPID { "soundmanager" };
+    const DistributedKv::AppId KVSTORE_APPID { "com.ohos.medialibrary.MediaLibraryDataA" };
     const DistributedKv::StoreId KVSTORE_STOREID { "ringtone" };
     enum TableType {
         TYPE_DATA,
