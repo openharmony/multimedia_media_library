@@ -686,13 +686,11 @@ std::string MediaLibraryDataAbility::GetClientBundleName()
 
 bool MediaLibraryDataAbility::CheckClientPermission(const std::string& permissionStr)
 {
-    if (!FileExists("/data/local/tmp/media_permission_ability")) {
-        return true;
-    }
-
     std::string bundleName = GetClientBundleName();
     if (IsSameTextStr(bundleName, "com.ohos.medialibrary.MediaScannerAbilityA") ||
-        IsSameTextStr(bundleName, "fms_service")) {
+        IsSameTextStr(bundleName, "fms_service") ||
+        IsSameTextStr(bundleName, "com.ohos.photos") ||
+        IsSameTextStr(bundleName, "com.ohos.camerademo")) {
         MEDIA_ERR_LOG("CheckClientPermission: Pass the white list");
         return true;
     }
