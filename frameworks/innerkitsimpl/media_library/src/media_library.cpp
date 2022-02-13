@@ -239,7 +239,7 @@ int32_t ScanDir(const string &scanDir)
     string scanUri = ROOT_MEDIA_DIR;
 
     if (!scanDir.empty()) {
-        scanUri = ROOT_MEDIA_DIR + SLASH_CHAR + scanDir;
+        scanUri = ROOT_MEDIA_DIR + scanDir;
     }
 
     // Clear all asset vectors before scanning
@@ -261,7 +261,7 @@ vector<string> GetSubDirectories(string rootDir)
     string scanDir = ROOT_MEDIA_DIR;
 
     if (!rootDir.empty()) {
-        scanDir = ROOT_MEDIA_DIR + SLASH_CHAR + rootDir;
+        scanDir = ROOT_MEDIA_DIR + rootDir;
     }
 
     if ((dirPath = opendir(scanDir.c_str())) != nullptr) {

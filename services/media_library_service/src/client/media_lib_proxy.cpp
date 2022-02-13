@@ -49,7 +49,7 @@ bool CopyUriToDstMediaAsset(const MediaAsset &assetData)
 
     // If albumname is empty, napi returns false
     if (!(dstAsset->albumName_.empty())) {
-        dstAsset->uri_ = ROOT_MEDIA_DIR + SLASH_CHAR + dstAsset->albumName_;
+        dstAsset->uri_ = ROOT_MEDIA_DIR + dstAsset->albumName_;
         errCode = true;
     }
 
@@ -572,7 +572,7 @@ bool MediaLibProxy::ModifyMediaAlbumAsset(AssetType assetType, const AlbumAsset&
                 MEDIA_ERR_LOG("ModifyMediaAlbumAsset SendRequest failed, error: %{public}d", error);
                 return false;
             }
-            dstAsset->SetAlbumName(ROOT_MEDIA_DIR + "/" + dstAsset->GetAlbumName());
+            dstAsset->SetAlbumName(ROOT_MEDIA_DIR + dstAsset->GetAlbumName());
         } else {
             MEDIA_ERR_LOG("ModifyMediaAlbumAsset: WriteAlbumdata failed");
         }
