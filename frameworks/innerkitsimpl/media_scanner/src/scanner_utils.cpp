@@ -119,7 +119,7 @@ bool ScannerUtils::IsFileHidden(const string &path)
 {
     if (!path.empty()) {
         string fileName = GetFileNameFromUri(path);
-        if (fileName.at(0) == '.') {
+        if (!fileName.empty() && fileName.at(0) == '.') {
             return true;
         }
     }
@@ -164,12 +164,10 @@ int32_t ScannerUtils::GetAbsolutePath(string &path)
     return errCode;
 }
 
-int32_t ScannerUtils::GetRootMediaDir(string &dir, int32_t &len)
+void ScannerUtils::GetRootMediaDir(string &dir, string::size_type &len)
 {
     dir = ROOT_MEDIA_DIR;
     len = dir.length();
-
-    return ERR_SUCCESS;
 }
 
 string ScannerUtils::GetFileTitle(const string& displayName)

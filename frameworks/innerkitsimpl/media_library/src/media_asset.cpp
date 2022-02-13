@@ -70,10 +70,10 @@ bool MediaAsset::CreateMediaAsset(AssetType assetType)
 {
     bool errCode = false;
     MediaType mediaType;
-    string dirPath = ROOT_MEDIA_DIR + SLASH_CHAR + albumName_
+    string dirPath = ROOT_MEDIA_DIR + albumName_
                     + SLASH_CHAR;
 
-    uri_ = ROOT_MEDIA_DIR + SLASH_CHAR + name_;
+    uri_ = ROOT_MEDIA_DIR + name_;
 
     if (!(name_.empty())) {
         mediaType = GetMediaType(name_);
