@@ -918,7 +918,7 @@ static void AlbumAssetsAsyncCallbackComplete(napi_env env, napi_status status,
         for (; i < len; i++) {
             string path = ROOT_MEDIA_DIR;
             if (!context->selection.empty()) {
-                path = "/" + context->selection;
+                path = context->selection;
             }
             albumAsset = AlbumAssetNapi::CreateAlbumAsset(env, context->albumType, path,
                 *(context->albumAssets[i]), *(context->objectInfo->GetMediaLibClientInstance()));
