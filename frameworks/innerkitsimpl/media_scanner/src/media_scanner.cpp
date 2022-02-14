@@ -354,23 +354,17 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
         fileMetadata->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
     }
 
-    size_t found = path.rfind('/');
-    if (found != string::npos) {
-        int32_t len = 0;
-        string rootDir;
-        int32_t errCode = ScannerUtils::GetRootMediaDir(rootDir, len);
-        if (errCode != ERR_SUCCESS) {
-            return fileMetadata;
-        }
+    string::size_type len = 0;
+    string rootDir;
+    ScannerUtils::GetRootMediaDir(rootDir, len);
 
-        if (path.find(rootDir) != std::string::npos) {
-            // if len and found is same, then no need to set rel path
-            if (len - 1 != found) {
-                fileMetadata->SetRelativePath(path.substr(len, found - len + 1));
-            }
-        } else {
-            fileMetadata->SetRelativePath(path.substr(0, found));
-        }
+    parentPath = parentPath + SLASH_CHAR; // GetParentPath whithout slash at end
+    if (parentPath.substr(0, len).compare(rootDir) == 0 && parentPath.compare(rootDir) > 0) {
+        parentPath.erase(0, len);
+        fileMetadata->SetRelativePath(parentPath);
+    } else {
+        MEDIA_ERR_LOG("%{public}s path: %{public}s is not correct, right is begin with %{public}s",
+                      __func__, path.c_str(), rootDir.c_str());
     }
 
     return fileMetadata;
@@ -562,7 +556,7 @@ bool MediaScanner::IsDirHidden(const string &path)
 
     if (!path.empty()) {
         string dirName = ScannerUtils::GetFileNameFromUri(path);
-        if (dirName.at(0) == '.') {
+        if (!dirName.empty() && dirName.at(0) == '.') {
             return true;
         }
 
