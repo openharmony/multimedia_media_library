@@ -26,16 +26,25 @@ void MediaScannerAbility::OnStart(const Want &want)
 {
     MEDIA_INFO_LOG("MediaScannerAbility::%{public}s ", __func__);
     OHOS::AppExecFwk::Ability::OnStart(want);
+
+    // Creating context of parent class and setting the context at scanner
+    auto abilityContext = std::make_unique<MediaScannerAbility>(*this);
+    MediaScanner::GetMediaScannerInstance()->SetAbilityContext(move(abilityContext));
+
+    string rootDir;
+
+    // Starting of scandir for default path
+    ScannerUtils::GetRootMediaDir(rootDir);
+    if (!rootDir.empty()) {
+        MEDIA_INFO_LOG("Scan of root directory started");
+        MediaScanner::GetMediaScannerInstance()->ScanDir(rootDir, nullptr);
+    }
 }
 
 sptr<IRemoteObject> MediaScannerAbility::OnConnect(const Want &want)
 {
     MEDIA_INFO_LOG("MediaScannerAbility::%{public}s ", __func__);
     OHOS::AppExecFwk::Ability::OnConnect(want);
-
-    // Creating context of parent class and setting the context at scanner
-    auto abilityContext = std::make_unique<MediaScannerAbility>(*this);
-    MediaScanner::GetMediaScannerInstance()->SetAbilityContext(move(abilityContext));
 
     // Creating remote object and returning to client
     auto scannerAbilityService = new(std::nothrow) MediaScannerAbilityService();

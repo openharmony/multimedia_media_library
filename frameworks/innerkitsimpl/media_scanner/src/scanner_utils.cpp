@@ -164,10 +164,9 @@ int32_t ScannerUtils::GetAbsolutePath(string &path)
     return errCode;
 }
 
-void ScannerUtils::GetRootMediaDir(string &dir, string::size_type &len)
+void ScannerUtils::GetRootMediaDir(string &dir)
 {
     dir = ROOT_MEDIA_DIR;
-    len = dir.length();
 }
 
 string ScannerUtils::GetFileTitle(const string& displayName)
