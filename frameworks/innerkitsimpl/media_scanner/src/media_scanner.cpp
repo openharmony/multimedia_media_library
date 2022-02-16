@@ -356,8 +356,14 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
 
     string::size_type len = 0;
     string rootDir;
-    ScannerUtils::GetRootMediaDir(rootDir, len);
 
+    ScannerUtils::GetRootMediaDir(rootDir);
+    if (rootDir.empty()) {
+        MEDIA_ERR_LOG("Root dir path is empty!");
+        return fileMetadata;
+    }
+
+    len = rootDir.length();
     parentPath = parentPath + SLASH_CHAR; // GetParentPath whithout slash at end
     if (parentPath.substr(0, len).compare(rootDir) == 0 && parentPath.compare(rootDir) > 0) {
         parentPath.erase(0, len);
@@ -645,9 +651,6 @@ void MediaScanner::StoreCallbackObjInMap(int32_t reqId, sptr<IMediaScannerOperat
 int32_t MediaScanner::GetAvailableRequestId()
 {
     static int32_t i = 0;
-    if (scanResultCbMap_.empty()) {
-        i = 0;
-    }
 
     return ++i;
 }
