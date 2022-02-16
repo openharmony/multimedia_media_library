@@ -22,7 +22,7 @@
 #include "string_ex.h"
 #include "sys_mgr_client.h"
 #include "system_ability_definition.h"
-
+#include <unordered_set>
 using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
@@ -32,6 +32,15 @@ namespace OHOS {
 namespace Media {
 const std::string MediaLibraryDataAbility::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
 const std::string MediaLibraryDataAbility::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
+const std::unordered_set<int32_t> UID_WHITE_LIST {
+    1006 //file_manager:x:1006:
+};
+const std::unordered_set<std::string> BUNDLE_WHITE_LIST {
+    "com.ohos.medialibrary.MediaScannerAbilityA",
+    "fms_service",
+    "com.ohos.photos",
+    "com.ohos.camerademo"
+};
 REGISTER_AA(MediaLibraryDataAbility);
 
 void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
@@ -648,8 +657,7 @@ bool MediaLibraryDataAbility::CheckFileNameValid(const ValuesBucket &value)
     }
     return true;
 }
-
-sptr<AppExecFwk::IBundleMgr> MediaLibraryDataAbility::GetSysBundleManager()
+sptr<AppExecFwk::IBundleMgr> GetSysBundleManager_()
 {
     MEDIA_ERR_LOG("MediaLibraryDataAbility::GetBundleManager begin");
     auto bundleObj =
@@ -665,12 +673,22 @@ sptr<AppExecFwk::IBundleMgr> MediaLibraryDataAbility::GetSysBundleManager()
     return bms;
 }
 
-std::string MediaLibraryDataAbility::GetClientBundleName()
+sptr<AppExecFwk::IBundleMgr> MediaLibraryDataAbility::GetSysBundleManager()
 {
-    auto bms = GetSysBundleManager();
-    MEDIA_ERR_LOG("GetClientBundleName bms is %{public}d", (bms == nullptr));
+    return GetSysBundleManager_();
+}
+
+static int GetClientUid()
+{
     int uid = IPCSkeleton::GetCallingUid();
-    MEDIA_ERR_LOG("GetClientBundleName: uid is %{public}d ", uid);
+    MEDIA_ERR_LOG("GetClientUid: uid is %{public}d ", uid);
+    return uid;
+}
+
+static std::string GetClientBundle(int uid)
+{
+    auto bms = GetSysBundleManager_();
+    MEDIA_ERR_LOG("GetClientBundleName bms is %{public}d", (bms == nullptr));
     std::string bundleName = "";
     if (bms == nullptr) {
         return bundleName;
@@ -684,14 +702,23 @@ std::string MediaLibraryDataAbility::GetClientBundleName()
     return bundleName;
 }
 
+std::string MediaLibraryDataAbility::GetClientBundleName()
+{
+    int uid = GetClientUid();
+    return GetClientBundle(uid);
+}
+
 bool MediaLibraryDataAbility::CheckClientPermission(const std::string& permissionStr)
 {
-    std::string bundleName = GetClientBundleName();
-    if (IsSameTextStr(bundleName, "com.ohos.medialibrary.MediaScannerAbilityA") ||
-        IsSameTextStr(bundleName, "fms_service") ||
-        IsSameTextStr(bundleName, "com.ohos.photos") ||
-        IsSameTextStr(bundleName, "com.ohos.camerademo")) {
-        MEDIA_ERR_LOG("CheckClientPermission: Pass the white list");
+    int uid = GetClientUid();
+    if (UID_WHITE_LIST.find(uid) != UID_WHITE_LIST.end()) {
+        MEDIA_ERR_LOG("CheckClientPermission: Pass the uid white list");
+        return true;
+    }
+
+    std::string bundleName = GetClientBundle(uid);
+    if (BUNDLE_WHITE_LIST.find(bundleName) != BUNDLE_WHITE_LIST.end()) {
+        MEDIA_ERR_LOG("CheckClientPermission: Pass the bundle name white list");
         return true;
     }
 
