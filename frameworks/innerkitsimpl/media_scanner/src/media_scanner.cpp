@@ -98,6 +98,7 @@ vector<string> MediaScanner::GetSupportedMimeTypes()
 
 int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCallback)
 {
+    MEDIA_INFO_LOG("%{public}s: %{public}s", __func__, path.c_str());
     int32_t errCode = ERR_MEM_ALLOC_FAIL;
     bool isDir = false;
 
@@ -359,7 +360,7 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
     ScannerUtils::GetRootMediaDir(rootDir, len);
 
     parentPath = parentPath + SLASH_CHAR; // GetParentPath whithout slash at end
-    if (parentPath.substr(0, len).compare(rootDir) == 0 && parentPath.compare(rootDir) > 0) {
+    if (parentPath.substr(0, len).compare(rootDir) == 0) {
         parentPath.erase(0, len);
         fileMetadata->SetRelativePath(parentPath);
     } else {
