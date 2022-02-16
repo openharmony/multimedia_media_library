@@ -70,7 +70,7 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
     }
 
     if (rowNum <= 0) {
-        MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed");
+        MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed, return %{public}d", rowNum);
         return "";
     }
 
@@ -340,7 +340,7 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
     }
 
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
-        MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path");
+        MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{public}s", path.c_str());
         return albumId;
     }
 
@@ -365,7 +365,7 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
     }
 
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path");
+        MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{public}s", path.c_str());
         return;
     }
 
