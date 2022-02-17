@@ -370,8 +370,8 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
         parentPath.erase(0, len);
         fileMetadata->SetRelativePath(parentPath);
     } else {
-        MEDIA_ERR_LOG("%{public}s path: %{public}s is not correct, right is begin with %{public}s",
-                      __func__, path.c_str(), rootDir.c_str());
+        MEDIA_ERR_LOG("path: %{public}s is not correct, right is begin with %{public}s",
+                      path.c_str(), rootDir.c_str());
     }
 
     return fileMetadata;
@@ -611,6 +611,7 @@ int32_t MediaScanner::ScanDirInternal(const string &path)
 
     // Check if it is hidden folder
     if (IsDirHiddenRecursive(path)) {
+        MEDIA_ERR_LOG("%{public}s is hidden", path.c_str());
         return ERR_NOT_ACCESSIBLE;
     }
 
