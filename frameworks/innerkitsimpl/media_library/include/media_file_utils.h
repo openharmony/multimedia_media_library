@@ -56,6 +56,7 @@ public:
     static bool RenameDir(const std::string& oldPath, const std::string& newPath);
     static bool CreateDirectory(const std::string& dirPath);
     static bool CheckDisplayName(std::string displayName);
+    static bool CheckTitle(std::string title);
     static int64_t GetAlbumDateModified(const std::string &albumPath);
     static int64_t UTCTimeSeconds();
 };

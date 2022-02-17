@@ -17,7 +17,6 @@
 #include "hilog/log.h"
 #include "smart_album_napi.h"
 #include "file_ex.h"
-#include "permission/permission_kit.h"
 #include "uv.h"
 #include "string_ex.h"
 
@@ -33,8 +32,6 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-const std::string MediaLibraryNapi::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
-const std::string MediaLibraryNapi::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 bool g_isNewApi = false;
 const int32_t NUM_2 = 2;
@@ -123,47 +120,6 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         }
     }
     return nullptr;
-}
-
-std::string GetPackageName(napi_env env, int& userId)
-{
-    napi_value global = nullptr;
-    NAPI_CALL(env, napi_get_global(env, &global));
-
-    napi_value abilityObj = nullptr;
-    NAPI_CALL(env, napi_get_named_property(env, global, "ability", &abilityObj));
-
-    AppExecFwk::Ability *ability = nullptr;
-    NAPI_CALL(env, napi_get_value_external(env, abilityObj, (void **)&ability));
-
-    if (ability != nullptr) {
-        userId = (ability->GetAbilityInfo())->applicationInfo.uid;
-        return ability->GetBundleName();
-    }
-    return "";
-}
-
-bool CheckUserGrantedPermission(napi_env env, const std::string& permissionName)
-{
-    if (!FileExists("/data/local/tmp/media_permission_napi")) {
-        return true;
-    }
-    int userId = -1;
-    std::string bundleName = GetPackageName(env, userId);
-    HiLog::Debug(LABEL, "CheckUserGrantedPermission --- bundleName is %{public}s, userId is %{public}d ",
-        bundleName.c_str(), userId);
-    std::vector<std::string> bundleNames = {
-        "com.ohos.camera", "com.ohos.photos",
-        "com.ohos.medialibrary.MediaScannerAbilityA",
-        "com.ohos.distributedmusicplayer", "fms_service"
-    };
-
-    for (size_t i = 0; i < bundleNames.size(); i++) {
-        if (IsSameTextStr(bundleName, bundleNames[i])) {
-            return true;
-        }
-    }
-    return false;
 }
 
 shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper(napi_env env, napi_callback_info info)
@@ -1309,10 +1265,6 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
             env, nullptr, resource,
             [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext*>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
                 unsigned int dirIndex = context->dirType;
                 if (dirIndex < directoryEnumValues.size()) {
                     context->directoryRelativePath = directoryEnumValues[dirIndex];
@@ -1382,7 +1334,10 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
         if (context->fetchFileResult != nullptr) {
             fileResult = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchFileResult),
                                                                     context->objectInfo->sAbilityHelper_);
-            if (fileResult == nullptr) {
+            if (context->fetchFileResult->GetCount() < 0) {
+                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
+                                                             "find no data by options");
+            } else if (fileResult == nullptr) {
                 MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                     "Failed to create js object for Fetch File Result");
             } else {
@@ -1430,11 +1385,6 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
             env, nullptr, resource,
             [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext*>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
                 GetFileAssetsExecute(context);
             },
             reinterpret_cast<CompleteCallback>(GetFileAssetsAsyncCallbackComplete),
@@ -1618,11 +1568,6 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext*>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
                 GetResultDataExecute(context);
             },
             reinterpret_cast<CompleteCallback>(AlbumsAsyncCallbackComplete),
@@ -1895,10 +1840,6 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext*>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
                 if (!CheckTitlePrams(context)) {
                     context->error = ERR_DISPLAY_NAME_INVALID;
                     return;
@@ -2036,14 +1977,7 @@ napi_value MediaLibraryNapi::JSModifyAsset(napi_env env, napi_callback_info info
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSModifyAsset");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
-                auto context = static_cast<MediaLibraryAsyncContext*>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
-            },
+            env, nullptr, resource, [](napi_env env, void* data) {},
             reinterpret_cast<CompleteCallback>(JSModifyAssetCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -2174,11 +2108,6 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext*>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
                 JSDeleteAssetExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSDeleteAssetCompleteCallback),
@@ -2296,14 +2225,7 @@ napi_value MediaLibraryNapi::JSOpenAsset(napi_env env, napi_callback_info info)
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSOpenAsset");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
-                auto context = static_cast<MediaLibraryAsyncContext *>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
-            },
+            env, nullptr, resource, [](napi_env env, void* data) {},
             reinterpret_cast<CompleteCallback>(JSOpenAssetCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -2418,14 +2340,7 @@ napi_value MediaLibraryNapi::JSCloseAsset(napi_env env, napi_callback_info info)
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCloseAsset");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
-                auto context = static_cast<MediaLibraryAsyncContext *>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
-            },
+            env, nullptr, resource, [](napi_env env, void* data) {},
             reinterpret_cast<CompleteCallback>(JSCloseAssetCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -2529,14 +2444,7 @@ napi_value MediaLibraryNapi::JSCreateAlbum(napi_env env, napi_callback_info info
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCreateAlbum");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
-                auto context = static_cast<MediaLibraryAsyncContext *>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
-            },
+            env, nullptr, resource, [](napi_env env, void* data) {},
             reinterpret_cast<CompleteCallback>(JSCreateAlbumCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -2643,14 +2551,7 @@ napi_value MediaLibraryNapi::JSModifyAlbum(napi_env env, napi_callback_info info
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSModifyAlbum");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
-                auto context = static_cast<MediaLibraryAsyncContext *>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
-            },
+            env, nullptr, resource, [](napi_env env, void* data) {},
             reinterpret_cast<CompleteCallback>(JSModifyAlbumCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -2753,14 +2654,7 @@ napi_value MediaLibraryNapi::JSDeleteAlbum(napi_env env, napi_callback_info info
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSDeleteAlbum");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
-                auto context = static_cast<MediaLibraryAsyncContext *>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
-            },
+            env, nullptr, resource, [](napi_env env, void* data) {},
             reinterpret_cast<CompleteCallback>(JSDeleteAlbumCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
@@ -3341,11 +3235,6 @@ napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info 
             env, nullptr, resource,
             [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_READ_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
                 GetAllSmartAlbumResultDataExecute(context);
             },
             reinterpret_cast<CompleteCallback>(GetPrivateAlbumCallbackComplete),
@@ -3435,11 +3324,6 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
                 if (context->objectInfo->sAbilityHelper_ != nullptr) {
                     string abilityUri = MEDIALIBRARY_DATA_URI;
                     Uri CreateSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" +
@@ -3558,11 +3442,6 @@ napi_value MediaLibraryNapi::JSDeleteSmartAlbum(napi_env env, napi_callback_info
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
-                if (!CheckUserGrantedPermission(env, PERMISSION_NAME_WRITE_MEDIA)) {
-                    HiLog::Error(LABEL, "Process do not have permission of read media!");
-                    context->error = ERR_PERMISSION_DENIED;
-                    return;
-                }
                 JSDeleteSmartAlbumExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSDeleteSmartAlbumCompleteCallback),
