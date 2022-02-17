@@ -879,7 +879,8 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
     NativeRdb::ValuesBucket valuesBucket;
     int32_t changedRows;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
-    if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetTitle())) {
+    if (MediaFileUtils::CheckTitle(context->objectInfo->GetTitle())
+        && MediaFileUtils::CheckDisplayName(context->objectInfo->GetFileDisplayName())) {
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
         valuesBucket.PutString(MEDIA_DATA_DB_NAME, context->objectInfo->GetFileDisplayName());
         if (context->objectInfo->GetOrientation() >= 0) {
@@ -1180,6 +1181,9 @@ napi_value GetJSArgsForClose(napi_env env,
 
         if (i == PARAM0 && valueType == napi_number) {
             napi_get_value_int32(env, argv[i], &fd);
+            if (fd <= 0) {
+                NAPI_ASSERT(env, false, "fd <= 0");
+            }
         } else if (i == PARAM1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;

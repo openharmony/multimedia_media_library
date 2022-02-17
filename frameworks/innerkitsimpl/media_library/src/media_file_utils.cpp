@@ -17,6 +17,7 @@
 
 #include "media_lib_service_const.h"
 #include "media_log.h"
+#include <regex>
 
 using namespace std;
 
@@ -284,14 +285,34 @@ bool MediaFileUtils::CheckDisplayName(std::string displayName)
     if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
+    std::regex express("[\\/:*?\"<>|]");
+    bool bValid = !std::regex_search(displayName, express);
     for (int i = 0; i < size; i++) {
-        if (displayName.at(0) == '.' || std::ispunct(displayName[i])) {
+        if (displayName.at(0) == '.' || !bValid) {
             MEDIA_ERR_LOG("CheckDisplayName displayName fail");
             isDisplayName = false;
             break;
         }
     }
     return isDisplayName;
+}
+bool MediaFileUtils::CheckTitle(std::string title)
+{
+    bool isTitle = true;
+    int size = title.length();
+    if (size <= 0 || size > DISPLAYNAME_MAX) {
+        return false;
+    }
+    std::regex express("[\\/:*?\"<>|]");
+    bool bValid = !std::regex_search(title, express);
+    for (int i = 0; i < size; i++) {
+        if (title[i] == '.' || !bValid) {
+            MEDIA_ERR_LOG("CheckDisplayName title fail");
+            isTitle = false;
+            break;
+        }
+    }
+    return isTitle;
 }
 int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)
 {
