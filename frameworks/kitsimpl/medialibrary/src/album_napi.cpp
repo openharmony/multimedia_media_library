@@ -724,10 +724,10 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Alb
         napi_get_undefined(env, &jsContext->data);
         if (context->changedRows == DATA_ABILITY_VIOLATION_PARAMETERS) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, DATA_ABILITY_VIOLATION_PARAMETERS,
-                                                     "Violation parameters");
+                                                         "Violation parameters");
         } else {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                                                     "Failed to obtain fetchFileResult from DB or violation parameters");
+            "Failed to obtain fetchFileResult from DB or violation parameters");
         }
     }
 

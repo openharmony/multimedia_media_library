@@ -15,9 +15,10 @@
 
 #include "media_file_utils.h"
 
+#include <regex>
+
 #include "media_lib_service_const.h"
 #include "media_log.h"
-#include <regex>
 
 using namespace std;
 
