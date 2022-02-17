@@ -1334,7 +1334,10 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
         if (context->fetchFileResult != nullptr) {
             fileResult = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchFileResult),
                                                                     context->objectInfo->sAbilityHelper_);
-            if (fileResult == nullptr) {
+            if (context->fetchFileResult->GetCount() < 0) {
+                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
+                                                                "find no data by options");
+            } else if (fileResult == nullptr) {
                 MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                     "Failed to create js object for Fetch File Result");
             } else {

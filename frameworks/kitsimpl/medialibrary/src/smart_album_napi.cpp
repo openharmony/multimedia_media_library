@@ -471,6 +471,7 @@ static void SetFileFav(bool isFavourite, SmartAlbumNapiAsyncContext *context)
     HiLog::Debug(LABEL, "SetFileFav IN");
     string abilityUri = MEDIALIBRARY_DATA_URI;
     NativeRdb::ValuesBucket values;
+    int32_t changedRows;
     values.PutBool(MEDIA_DATA_DB_IS_FAV, isFavourite);
     Uri uri(abilityUri);
     NativeRdb::ValueObject valueObject;
@@ -481,8 +482,9 @@ static void SetFileFav(bool isFavourite, SmartAlbumNapiAsyncContext *context)
     NativeRdb::DataAbilityPredicates predicates;
 
     predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(fileId));
-    context->objectInfo->GetDataAbilityHelper()->Update(uri, values, predicates);
-    HiLog::Debug(LABEL, "SetFileFav OUT");
+    changedRows = context->objectInfo->GetDataAbilityHelper()->Update(uri, values, predicates);
+    context->changedRows = changedRows;
+    HiLog::Debug(LABEL, "SetFileFav OUT  = %{public}d", changedRows);
 }
 
 static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
@@ -490,6 +492,7 @@ static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
     HiLog::Debug(LABEL, "SetFileTrash IN");
     string abilityUri = MEDIALIBRARY_DATA_URI;
     NativeRdb::ValuesBucket values;
+    int32_t changedRows;
     if (isTrash) {
         int64_t timeNow = MediaFileUtils::UTCTimeSeconds();
         values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, timeNow);
@@ -506,8 +509,9 @@ static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
     NativeRdb::DataAbilityPredicates predicates;
 
     predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(fileId));
-    context->objectInfo->GetDataAbilityHelper()->Update(uri, values, predicates);
-    HiLog::Debug(LABEL, "SetFileTrash OUT");
+    changedRows = context->objectInfo->GetDataAbilityHelper()->Update(uri, values, predicates);
+    context->changedRows = changedRows;
+    HiLog::Debug(LABEL, "SetFileTrash OUT  = %{public}d", changedRows);
 }
 
 static void AddAssetNative(SmartAlbumNapiAsyncContext *context)
@@ -579,7 +583,7 @@ static void JSAddAssetCompleteCallback(napi_env env, napi_status status, SmartAl
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    if (context->changedRows != -1) {
+    if (context->changedRows != -1 && context->changedRows != 0) {
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
@@ -601,7 +605,7 @@ static void JSRemoveAssetCompleteCallback(napi_env env, napi_status status, Smar
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->changedRows != -1) {
+    if (context->changedRows != -1 && context->changedRows != 0) {
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;

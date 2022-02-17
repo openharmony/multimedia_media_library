@@ -239,6 +239,7 @@ const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_ADDED + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_MODIFIED + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_THUMBNAIL + ", "
+                                      + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID
                                       + " FROM Files "+ FILE_TABLE + ", "
                                       + " Files " + ABLUM_TABLE
@@ -248,6 +249,7 @@ const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + " GROUP BY "
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID +", "
                                       + FILE_TABLE + "." +MEDIA_DATA_DB_BUCKET_NAME + ", "
+                                      + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
 
 const std::string SMARTALBUM_DB_ID = "album_id";

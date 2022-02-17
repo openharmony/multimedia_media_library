@@ -664,7 +664,11 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
         fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult),
                                                               context->objectInfo->GetDataAbilityHelper());
         HiLog::Error(LABEL, "JSGetFileAssetsCompleteCallback 1");
-        if (fetchRes == nullptr) {
+        if (context->fetchResult->GetCount() < 0) {
+            napi_get_undefined(env, &jsContext->data);
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
+                                                         "find no data by options");
+        } else if (fetchRes == nullptr) {
             HiLog::Error(LABEL, "Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
@@ -694,7 +698,7 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
     NativeRdb::ValuesBucket valuesBucket;
     int32_t changedRows;
     context->selection += " AND ";
-    if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetAlbumName())) {
+    if (MediaFileUtils::CheckTitle(context->objectInfo->GetAlbumName())) {
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetAlbumId()));
         valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
@@ -712,14 +716,19 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Alb
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    if (context->changedRows != -1) {
+    if (context->changedRows != -1 && context->changedRows != DATA_ABILITY_VIOLATION_PARAMETERS) {
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
         napi_get_undefined(env, &jsContext->data);
+        if (context->changedRows == DATA_ABILITY_VIOLATION_PARAMETERS) {
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, DATA_ABILITY_VIOLATION_PARAMETERS,
+                                                     "Violation parameters");
+        } else {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                                                     "Failed to obtain fetchFileResult from DB");
+                                                     "Failed to obtain fetchFileResult from DB or violation parameters");
+        }
     }
 
     if (context->work != nullptr) {
