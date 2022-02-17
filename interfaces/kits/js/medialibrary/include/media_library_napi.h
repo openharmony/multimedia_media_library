@@ -81,10 +81,6 @@ public:
     ~ChangeListenerNapi() = default;
 
     void OnChange(const MediaChangeListener &listener, const napi_ref cbRef);
-    void SetStageMode(bool isStageMode)
-    {
-        this->isStageMode_ = isStageMode;
-    }
 
     napi_ref cbOnRef_ = nullptr;
     napi_ref cbOffRef_ = nullptr;
@@ -97,7 +93,6 @@ public:
 
 private:
     napi_env env_ = nullptr;
-    bool isStageMode_;
 };
 
 class MediaObserver : public AAFwk::DataAbilityObserverStub {

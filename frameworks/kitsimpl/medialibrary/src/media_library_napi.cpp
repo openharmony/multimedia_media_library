@@ -195,7 +195,6 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
                 obj->sAbilityHelper_ = GetDataAbilityHelper(env, info);
                 CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sAbilityHelper_, result, "Helper creation failed");
             }
-            g_listObj->SetStageMode(isStageMode_);
         }
 
         status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
@@ -2670,18 +2669,6 @@ napi_value MediaLibraryNapi::JSDeleteAlbum(napi_env env, napi_callback_info info
 
 void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const napi_ref cbRef)
 {
-    if (!isStageMode_) {
-        napi_value result[ARGS_TWO] = {nullptr};
-        napi_value callback = nullptr;
-        napi_value retVal = nullptr;
-
-        napi_get_undefined(env_, &result[PARAM0]);
-        napi_get_undefined(env_, &result[PARAM1]);
-        napi_get_reference_value(env_, cbRef, &callback);
-        napi_call_function(env_, nullptr, callback, ARGS_TWO, result, &retVal);
-        return;
-    }
-
     uv_loop_s *loop = nullptr;
     napi_get_uv_event_loop(env_, &loop);
     if (loop == nullptr) {
