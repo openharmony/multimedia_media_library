@@ -29,7 +29,7 @@
 #ifndef OHOS_DEBUG
 #define DECORATOR_HILOG(op, fmt, args...) \
     do {                                  \
-        op(LOG_CORE, fmt, ##args);        \
+        op(LOG_CORE, "{%s()} " fmt, __FUNCTION__, ##args);        \
     } while (0)
 #else
 #define DECORATOR_HILOG(op, fmt, args...)                                                \
