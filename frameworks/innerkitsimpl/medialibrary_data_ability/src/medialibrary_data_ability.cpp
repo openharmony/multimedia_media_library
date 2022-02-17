@@ -14,6 +14,9 @@
  */
 
 #include "medialibrary_data_ability.h"
+
+#include <unordered_set>
+
 #include "accesstoken_kit.h"
 #include "ipc_singleton.h"
 #include "ipc_skeleton.h"
@@ -22,7 +25,6 @@
 #include "string_ex.h"
 #include "sys_mgr_client.h"
 #include "system_ability_definition.h"
-
 using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
@@ -32,6 +34,15 @@ namespace OHOS {
 namespace Media {
 const std::string MediaLibraryDataAbility::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
 const std::string MediaLibraryDataAbility::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
+const std::unordered_set<int32_t> UID_WHITE_LIST {
+    1006 // file_manager:x:1006:
+};
+const std::unordered_set<std::string> BUNDLE_WHITE_LIST {
+    "com.ohos.medialibrary.MediaScannerAbilityA",
+    "fms_service",
+    "com.ohos.photos",
+    "com.ohos.camerademo"
+};
 REGISTER_AA(MediaLibraryDataAbility);
 
 void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
@@ -648,35 +659,44 @@ bool MediaLibraryDataAbility::CheckFileNameValid(const ValuesBucket &value)
     }
     return true;
 }
-
-sptr<AppExecFwk::IBundleMgr> MediaLibraryDataAbility::GetSysBundleManager()
+sptr<AppExecFwk::IBundleMgr> GetSysBundleManager_()
 {
-    MEDIA_ERR_LOG("MediaLibraryDataAbility::GetBundleManager begin");
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::GetBundleManager begin");
     auto bundleObj =
         OHOS::DelayedSingleton<SaMgrClient>::GetInstance()->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
     if (bundleObj == nullptr) {
         MEDIA_ERR_LOG("failed to get bundle manager service");
         return nullptr;
     }
-    MEDIA_ERR_LOG("MediaLibraryDataAbility::GetBundleManager before iface_cast<bundleObj>");
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::GetBundleManager before iface_cast<bundleObj>");
     sptr<AppExecFwk::IBundleMgr> bms = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
-    MEDIA_ERR_LOG("MediaLibraryDataAbility::GetBundleManager after iface_cast<bundleObj>");
-    MEDIA_ERR_LOG("MediaLibraryDataAbility::GetBundleManager end");
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::GetBundleManager after iface_cast<bundleObj>");
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::GetBundleManager end");
     return bms;
 }
 
-std::string MediaLibraryDataAbility::GetClientBundleName()
+sptr<AppExecFwk::IBundleMgr> MediaLibraryDataAbility::GetSysBundleManager()
 {
-    auto bms = GetSysBundleManager();
-    MEDIA_ERR_LOG("GetClientBundleName bms is %{public}d", (bms == nullptr));
+    return GetSysBundleManager_();
+}
+
+static int GetClientUid()
+{
     int uid = IPCSkeleton::GetCallingUid();
-    MEDIA_ERR_LOG("GetClientBundleName: uid is %{public}d ", uid);
+    MEDIA_INFO_LOG("GetClientUid: uid is %{public}d ", uid);
+    return uid;
+}
+
+static std::string GetClientBundle(int uid)
+{
+    auto bms = GetSysBundleManager_();
+    MEDIA_INFO_LOG("GetClientBundleName bms is %{public}d", (bms == nullptr));
     std::string bundleName = "";
     if (bms == nullptr) {
         return bundleName;
     }
     auto result = bms->GetBundleNameForUid(uid, bundleName);
-    MEDIA_ERR_LOG("GetClientBundleName: bundleName is %{public}s ", bundleName.c_str());
+    MEDIA_INFO_LOG("GetClientBundleName: bundleName is %{public}s ", bundleName.c_str());
     if (!result) {
         MEDIA_ERR_LOG("GetBundleNameForUid fail");
         return "";
@@ -684,14 +704,23 @@ std::string MediaLibraryDataAbility::GetClientBundleName()
     return bundleName;
 }
 
+std::string MediaLibraryDataAbility::GetClientBundleName()
+{
+    int uid = GetClientUid();
+    return GetClientBundle(uid);
+}
+
 bool MediaLibraryDataAbility::CheckClientPermission(const std::string& permissionStr)
 {
-    std::string bundleName = GetClientBundleName();
-    if (IsSameTextStr(bundleName, "com.ohos.medialibrary.MediaScannerAbilityA") ||
-        IsSameTextStr(bundleName, "fms_service") ||
-        IsSameTextStr(bundleName, "com.ohos.photos") ||
-        IsSameTextStr(bundleName, "com.ohos.camerademo")) {
-        MEDIA_ERR_LOG("CheckClientPermission: Pass the white list");
+    int uid = GetClientUid();
+    if (UID_WHITE_LIST.find(uid) != UID_WHITE_LIST.end()) {
+        MEDIA_ERR_LOG("CheckClientPermission: Pass the uid white list");
+        return true;
+    }
+
+    std::string bundleName = GetClientBundle(uid);
+    if (BUNDLE_WHITE_LIST.find(bundleName) != BUNDLE_WHITE_LIST.end()) {
+        MEDIA_INFO_LOG("CheckClientPermission: Pass the bundle name white list");
         return true;
     }
 
