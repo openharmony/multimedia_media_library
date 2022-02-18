@@ -271,8 +271,8 @@ vector<string> GetSubDirectories(string rootDir)
                 string parentDir("..");
                 if ((currentDir.compare(ent->d_name) != 0)
                     && (parentDir.compare(ent->d_name) != 0)) {
-                    string dirPath = scanDir + SLASH_CHAR + ent->d_name;
-                    dirList.push_back(dirPath);
+                    string tmpDirPath = scanDir + SLASH_CHAR + ent->d_name;
+                    dirList.push_back(tmpDirPath);
                 }
             }
         }
