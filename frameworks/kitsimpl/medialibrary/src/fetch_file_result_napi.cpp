@@ -201,9 +201,8 @@ napi_value FetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info i
     return jsResult;
 }
 
-static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, void* data)
+static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, FetchFileResultAsyncContext* context)
 {
-    auto context = static_cast<FetchFileResultAsyncContext*>(data);
     napi_value jsFileAsset = nullptr;
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -266,7 +265,8 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 context->fileAsset = context->objectInfo->fetchFileResult_->GetFirstObject();
             },
-            GetPositionObjectCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(GetPositionObjectCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -306,7 +306,8 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 context->fileAsset = context->objectInfo->fetchFileResult_->GetNextObject();
             },
-            GetPositionObjectCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(GetPositionObjectCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -346,7 +347,8 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 context->fileAsset = context->objectInfo->fetchFileResult_->GetLastObject();
             },
-            GetPositionObjectCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(GetPositionObjectCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -396,7 +398,8 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 context->fileAsset = context->objectInfo->fetchFileResult_->GetObjectAtPosition(context->position);
             },
-            GetPositionObjectCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(GetPositionObjectCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -408,9 +411,8 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
     return result;
 }
 
-static void GetAllObjectCompleteCallback(napi_env env, napi_status status, void* data)
+static void GetAllObjectCompleteCallback(napi_env env, napi_status status, FetchFileResultAsyncContext* context)
 {
-    auto context = static_cast<FetchFileResultAsyncContext*>(data);
     napi_value jsFileAsset = nullptr;
     napi_value jsFileArray = nullptr;
 
@@ -499,7 +501,8 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 GetAllObjectFromFetchResult(*context);
             },
-            GetAllObjectCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(GetAllObjectCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {

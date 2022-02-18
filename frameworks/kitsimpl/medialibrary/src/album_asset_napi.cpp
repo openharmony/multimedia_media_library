@@ -413,9 +413,8 @@ Media::IMediaLibraryClient* AlbumAssetNapi::GetMediaLibClientInstance()
     return ins;
 }
 
-static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status, void* data)
+static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status, AlbumAsyncContext* context)
 {
-    auto context = static_cast<AlbumAsyncContext*>(data);
     napi_value videoArray = nullptr;
     napi_value vAsset = nullptr;
 
@@ -486,7 +485,8 @@ napi_value AlbumAssetNapi::GetVideoAssets(napi_env env, napi_callback_info info)
                     context->videoAssets.push_back(std::move(context->objectInfo->videoAssets_[i]));
                 }
             },
-            VideoAssetsAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(VideoAssetsAsyncCallbackComplete),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -498,9 +498,9 @@ napi_value AlbumAssetNapi::GetVideoAssets(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status, void* data)
+static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status,
+    AlbumAsyncContext* context)
 {
-    auto context = static_cast<AlbumAsyncContext*>(data);
     napi_value imageArray = nullptr;
     napi_value iAsset = nullptr;
 
@@ -571,7 +571,8 @@ napi_value AlbumAssetNapi::GetImageAssets(napi_env env, napi_callback_info info)
                     context->imageAssets.push_back(std::move(context->objectInfo->imageAssets_[i]));
                 }
             },
-            ImageAssetsAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(ImageAssetsAsyncCallbackComplete),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -589,10 +590,8 @@ void AlbumAssetNapi::UpdateAlbumAssetInfo()
     albumName_ = sAlbumAsset_->GetAlbumName();
 }
 
-static void CommonCompleteCallback(napi_env env, napi_status status, void* data)
+static void CommonCompleteCallback(napi_env env, napi_status status, AlbumAsyncContext* context)
 {
-    auto context = static_cast<AlbumAsyncContext*>(data);
-
     if (context == nullptr) {
         HiLog::Error(LABEL, "Async context is null");
         return;
@@ -651,7 +650,8 @@ napi_value AlbumAssetNapi::CommitCreate(napi_env env, napi_callback_info info)
                 }
                 context->objectInfo->newAlbumName_ = "";
             },
-            CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -699,7 +699,8 @@ napi_value AlbumAssetNapi::CommitDelete(napi_env env, napi_callback_info info)
                 context->status = context->objectInfo->mediaLibrary_->DeleteMediaAlbumAsset(
                     GetAlbumType(context->objectInfo->type_), asset, albumUri);
             },
-            CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -756,7 +757,9 @@ napi_value AlbumAssetNapi::CommitModify(napi_env env, napi_callback_info info)
             } else {
                 HiLog::Error(LABEL, "Incorrect or no modification values provided");
             }
-        }, CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        },
+        reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
