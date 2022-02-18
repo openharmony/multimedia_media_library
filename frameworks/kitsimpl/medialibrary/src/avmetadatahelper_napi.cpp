@@ -164,9 +164,9 @@ static napi_status CreateError(napi_env env, int32_t errCode, const std::string 
     return napi_ok;
 }
 
-static void GetPixelMapAsyncCallbackComplete(napi_env env, napi_status status, void *data)
+static void GetPixelMapAsyncCallbackComplete(napi_env env, napi_status status,
+    AVMetadataHelperAsyncContext *asyncContext)
 {
-    auto asyncContext = static_cast<AVMetadataHelperAsyncContext*>(data);
     napi_value valueParam = nullptr;
 
     if (asyncContext == nullptr) {
@@ -189,9 +189,9 @@ static void GetPixelMapAsyncCallbackComplete(napi_env env, napi_status status, v
     CommonCallbackRoutine(env, asyncContext, valueParam);
 }
 
-static void SetFunctionAsyncCallbackComplete(napi_env env, napi_status status, void *data)
+static void SetFunctionAsyncCallbackComplete(napi_env env, napi_status status,
+    AVMetadataHelperAsyncContext *asyncContext)
 {
-    auto asyncContext = static_cast<AVMetadataHelperAsyncContext*>(data);
     napi_value valueParam = nullptr;
     napi_get_undefined(env, &valueParam);
 
@@ -213,9 +213,9 @@ static void SetFunctionAsyncCallbackComplete(napi_env env, napi_status status, v
     CommonCallbackRoutine(env, asyncContext, valueParam);
 }
 
-static void GetStringValueAsyncCallbackComplete(napi_env env, napi_status status, void *data)
+static void GetStringValueAsyncCallbackComplete(napi_env env, napi_status status,
+    AVMetadataHelperAsyncContext *asyncContext)
 {
-    auto asyncContext = static_cast<AVMetadataHelperAsyncContext*>(data);
     napi_value valueParam = nullptr;
     napi_get_undefined(env, &valueParam);
 
@@ -443,7 +443,8 @@ napi_value AVMetadataHelperNapi::SetSource(napi_env env, napi_callback_info info
                 context->status = context->nativeAVMetadataHelper->SetSource(context->uriStr);
             }
         },
-        SetFunctionAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        reinterpret_cast<napi_async_complete_callback>(SetFunctionAsyncCallbackComplete),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
         HiLog::Error(LABEL, "SetSource async work error");
         napi_get_undefined(env, &undefinedResult);
@@ -503,7 +504,8 @@ napi_value AVMetadataHelperNapi::ResolveMetadata(napi_env env, napi_callback_inf
                 context->status = 0;
             }
         },
-        GetStringValueAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        reinterpret_cast<napi_async_complete_callback>(GetStringValueAsyncCallbackComplete),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
         HiLog::Error(LABEL, "ResolveMetadata async work error");
         napi_get_undefined(env, &undefinedResult);
@@ -564,7 +566,8 @@ napi_value AVMetadataHelperNapi::FetchVideoScaledPixelMapByTime(napi_env env, na
                     context->option, context->pixelMapParams);
             }
         },
-        GetPixelMapAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        reinterpret_cast<napi_async_complete_callback>(GetPixelMapAsyncCallbackComplete),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
         HiLog::Error(LABEL, "FetchVideoScaledPixelMapByTime async work error");
         napi_get_undefined(env, &undefinedResult);
@@ -624,7 +627,8 @@ napi_value AVMetadataHelperNapi::FetchVideoPixelMapByTime(napi_env env, napi_cal
                     context->option, context->pixelMapParams);
             }
         },
-        GetPixelMapAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        reinterpret_cast<napi_async_complete_callback>(GetPixelMapAsyncCallbackComplete),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
         HiLog::Error(LABEL, "FetchVideoPixelMapByTime async work error");
         napi_get_undefined(env, &undefinedResult);
@@ -683,7 +687,8 @@ napi_value AVMetadataHelperNapi::Release(napi_env env, napi_callback_info info)
                 context->status = 0;
             }
         },
-        SetFunctionAsyncCallbackComplete, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        reinterpret_cast<napi_async_complete_callback>(SetFunctionAsyncCallbackComplete),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
         HiLog::Error(LABEL, "Release async work error");
         napi_get_undefined(env, &undefinedResult);

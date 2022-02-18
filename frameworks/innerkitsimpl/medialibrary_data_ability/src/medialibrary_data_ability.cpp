@@ -34,12 +34,11 @@ namespace OHOS {
 namespace Media {
 const std::string MediaLibraryDataAbility::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
 const std::string MediaLibraryDataAbility::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
-const std::unordered_set<int32_t> UID_WHITE_LIST {
-    1006 // file_manager:x:1006:
+const std::unordered_set<int32_t> UID_FREE_CHECK {
+    1006        // file_manager:x:1006:
 };
-const std::unordered_set<std::string> BUNDLE_WHITE_LIST {
+const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
     "com.ohos.medialibrary.MediaScannerAbilityA",
-    "fms_service",
     "com.ohos.photos",
     "com.ohos.camerademo"
 };
@@ -713,13 +712,13 @@ std::string MediaLibraryDataAbility::GetClientBundleName()
 bool MediaLibraryDataAbility::CheckClientPermission(const std::string& permissionStr)
 {
     int uid = GetClientUid();
-    if (UID_WHITE_LIST.find(uid) != UID_WHITE_LIST.end()) {
+    if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
         MEDIA_ERR_LOG("CheckClientPermission: Pass the uid white list");
         return true;
     }
 
     std::string bundleName = GetClientBundle(uid);
-    if (BUNDLE_WHITE_LIST.find(bundleName) != BUNDLE_WHITE_LIST.end()) {
+    if (BUNDLE_FREE_CHECK.find(bundleName) != BUNDLE_FREE_CHECK.end()) {
         MEDIA_INFO_LOG("CheckClientPermission: Pass the bundle name white list");
         return true;
     }
