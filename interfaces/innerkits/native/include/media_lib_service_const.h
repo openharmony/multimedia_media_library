@@ -16,6 +16,8 @@
 #ifndef MEDIA_LIB_SERVICE_CONST_H
 #define MEDIA_LIB_SERVICE_CONST_H
 
+#include <unordered_set>
+
 namespace OHOS {
 namespace Media {
 enum {
