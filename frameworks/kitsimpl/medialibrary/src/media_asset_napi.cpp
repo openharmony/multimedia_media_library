@@ -556,10 +556,8 @@ void MediaAssetNapi::UpdateMediaAssetInfo(OHOS::Media::MediaAsset &mAsset)
     albumName_ = mediaAsset->albumName_;
 }
 
-static void CommonCompleteCallback(napi_env env, napi_status status, void* data)
+static void CommonCompleteCallback(napi_env env, napi_status status, MediaAssetAsyncContext* context)
 {
-    auto context = static_cast<MediaAssetAsyncContext*>(data);
-
     if (context == nullptr) {
         HiLog::Error(LABEL, "Async context is null");
         return;
@@ -607,7 +605,8 @@ napi_value MediaAssetNapi::StartCreate(napi_env env, napi_callback_info info)
                 context->objectInfo->startCreateFlag = true;
                 context->status = true;
             },
-            CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -679,7 +678,9 @@ napi_value MediaAssetNapi::CommitCreate(napi_env env, napi_callback_info info)
             context->objectInfo->newName_ = "";
             context->objectInfo->newAlbumName_ = "";
             context->objectInfo->startCreateFlag = false;
-        }, CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        },
+        reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -727,7 +728,8 @@ napi_value MediaAssetNapi::CancelCreate(napi_env env, napi_callback_info info)
                 context->objectInfo->startCreateFlag = false;
                 context->status = true;
             },
-            CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -769,7 +771,8 @@ napi_value MediaAssetNapi::StartModify(napi_env env, napi_callback_info info)
                 context->objectInfo->startModifyFlag = true;
                 context->status = true;
             },
-            CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -827,7 +830,9 @@ napi_value MediaAssetNapi::CommitModify(napi_env env, napi_callback_info info)
                 HiLog::Error(LABEL, "Incorrect or no modification values provided");
             }
             context->objectInfo->startModifyFlag = false;
-        }, CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        },
+        reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -872,7 +877,8 @@ napi_value MediaAssetNapi::CancelModify(napi_env env, napi_callback_info info)
                 context->objectInfo->startModifyFlag = false;
                 context->status = true;
             },
-            CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -916,7 +922,8 @@ napi_value MediaAssetNapi::CommitDelete(napi_env env, napi_callback_info info)
                 context->status = context->objectInfo->mediaLibrary_->DeleteMediaAsset(
                     MediaLibraryNapiUtils::GetAssetType(asset.mediaType_), asset);
             },
-            CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1000,7 +1007,9 @@ napi_value MediaAssetNapi::CommitCopy(napi_env env, napi_callback_info info)
                 }
                 context->targetCopyObject->newAlbumName_ = "";
                 context->targetCopyObject->startCreateFlag = false;
-            }, CommonCompleteCallback, static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            },
+            reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {

@@ -16,12 +16,9 @@
 #ifndef MEDIA_ASSET_H
 #define MEDIA_ASSET_H
 
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <stdint.h>
 #include <string>
-
 #include "media_lib_service_const.h"
 
 namespace OHOS {
