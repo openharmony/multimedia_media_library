@@ -213,20 +213,20 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     bucketName = MediaLibraryDataAbilityUtils::GetParentDisplayNameFromDb(bucketId, rdbStore);
     MEDIA_ERR_LOG("HandleModifyAsset bucketName = %{public}s", bucketName.c_str());
     if (srcPath.compare(dstFilePath) != 0) {
-    errCode = fileAsset.ModifyAsset(srcPath, dstFilePath);
-    if (errCode == DATA_ABILITY_MODIFY_DATA_FAIL) {
-        MEDIA_ERR_LOG("Failed to modify the file in the device");
-        return errCode;
-    }
-    errCode = ModifyDisName(dstFileName, destAlbumPath, srcPath, rdbStore);
-    if (errCode == DATA_ABILITY_FAIL) {
-        return errCode;
-    }
-    if (fileDbOprn.Modify(rowNum, dstFilePath, bucketId, bucketName, rdbStore) > 0) {
-        UpdateDateModifiedForAlbum(rdbStore, destAlbumPath);
-        string srcAlbumPath = MediaLibraryDataAbilityUtils::GetParentPath(srcPath);
-        UpdateDateModifiedForAlbum(rdbStore, srcAlbumPath);
-    }
+        errCode = fileAsset.ModifyAsset(srcPath, dstFilePath);
+        if (errCode == DATA_ABILITY_MODIFY_DATA_FAIL) {
+            MEDIA_ERR_LOG("Failed to modify the file in the device");
+            return errCode;
+        }
+        errCode = ModifyDisName(dstFileName, destAlbumPath, srcPath, rdbStore);
+        if (errCode == DATA_ABILITY_FAIL) {
+            return errCode;
+        }
+        if (fileDbOprn.Modify(rowNum, dstFilePath, bucketId, bucketName, rdbStore) > 0) {
+            UpdateDateModifiedForAlbum(rdbStore, destAlbumPath);
+            string srcAlbumPath = MediaLibraryDataAbilityUtils::GetParentPath(srcPath);
+            UpdateDateModifiedForAlbum(rdbStore, srcAlbumPath);
+        }
     } else {
         errCode = DATA_ABILITY_SUCCESS;
     }

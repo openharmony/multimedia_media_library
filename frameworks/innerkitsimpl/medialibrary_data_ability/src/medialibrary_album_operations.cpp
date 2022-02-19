@@ -48,13 +48,11 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
                             const MediaLibraryAlbumDb &albumDbOprn,
                             vector<int32_t> &outIds)
 {
-    NativeAlbumAsset albumAsset;
-    string albumName, parentPath, title, path;
-    int32_t parentId;
-    albumAsset = MediaLibraryDataAbilityUtils::GetLastAlbumExistInDb(albumPath, rdbStore);
-    parentPath = albumAsset.GetAlbumPath();
-    parentId = albumAsset.GetAlbumId();
-    path = albumPath;
+    string albumName, title;
+    NativeAlbumAsset albumAsset = MediaLibraryDataAbilityUtils::GetLastAlbumExistInDb(albumPath, rdbStore);
+    string parentPath = albumAsset.GetAlbumPath();
+    int32_t parentId = albumAsset.GetAlbumId();
+    string path = albumPath;
     while (parentPath.length() < path.length() - 1) {
         ValuesBucket values;
         string relativePath;
