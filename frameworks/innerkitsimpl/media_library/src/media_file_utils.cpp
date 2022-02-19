@@ -16,6 +16,7 @@
 #include "media_file_utils.h"
 
 #include <regex>
+#include <cerrno>
 
 #include "media_lib_service_const.h"
 #include "media_log.h"
@@ -92,13 +93,13 @@ bool MediaFileUtils::CreateDirectory(const string& dirPath)
         if (!IsDirectory(subStr)) {
             string folderPath = subStr;
             if (mkdir(folderPath.c_str(), CHOWN_RWX_USR_GRP) == -1) {
-                MEDIA_ERR_LOG("Failed to create directory");
+                MEDIA_ERR_LOG("Failed to create directory %{public}d", errno);
                 return false;
             }
 
             ChangeOwnerToMedia(folderPath);
             if (chmod(folderPath.c_str(), CHOWN_RWX_USR_GRP) == -1) {
-                MEDIA_ERR_LOG("chmod failed for the newly created directory");
+                MEDIA_ERR_LOG("chmod failed for the newly created directory %{public}d", errno);
             }
         }
     }
@@ -127,6 +128,17 @@ string MediaFileUtils::GetFilename(const string& filePath)
     }
 
     return fileName;
+}
+
+string MediaFileUtils::GetParentPath(const string &path)
+{
+    string name;
+    size_t slashIndex = path.rfind("/");
+    if (slashIndex != string::npos) {
+        name = path.substr(0, slashIndex);
+    }
+
+    return name;
 }
 
 bool MediaFileUtils::IsDirectory(const string& dirName)
@@ -279,42 +291,36 @@ bool MediaFileUtils::RenameDir(const string& oldPath, const string& newPath)
 
     return errRet;
 }
+
 bool MediaFileUtils::CheckDisplayName(std::string displayName)
 {
-    bool isDisplayName = true;
     int size = displayName.length();
     if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
-    std::regex express("[\\/:*?\"<>|]");
-    bool bValid = !std::regex_search(displayName, express);
-    for (int i = 0; i < size; i++) {
-        if (displayName.at(0) == '.' || !bValid) {
-            MEDIA_ERR_LOG("CheckDisplayName displayName fail");
-            isDisplayName = false;
-            break;
-        }
+    std::regex express("[[\\\\/:*?\"<>|{}\\[\\]]]");
+    bool bValid = std::regex_search(displayName, express);
+    if ((displayName.at(0) == '.') || bValid) {
+        MEDIA_ERR_LOG("CheckTitle title fail %{public}s", displayName.c_str());
+        return false;
     }
-    return isDisplayName;
+    return true;
 }
+
 bool MediaFileUtils::CheckTitle(std::string title)
 {
-    bool isTitle = true;
     int size = title.length();
     if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
-    std::regex express("[\\/:*?\"<>|]");
-    bool bValid = !std::regex_search(title, express);
-    for (int i = 0; i < size; i++) {
-        if (title[i] == '.' || !bValid) {
-            MEDIA_ERR_LOG("CheckDisplayName title fail");
-            isTitle = false;
-            break;
-        }
+    std::regex express("[\\.\\\\/:*?\"<>|{}\\[\\]]");
+    bool bValid = std::regex_search(title, express);
+    if (bValid) {
+        MEDIA_ERR_LOG("CheckTitle title fail %{public}s", title.c_str());
     }
-    return isTitle;
+    return !bValid;
 }
+
 int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)
 {
     struct stat statInfo {};

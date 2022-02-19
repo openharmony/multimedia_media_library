@@ -38,6 +38,11 @@
                 "srcLanguage": "c++",
                 "uri": "dataability://media"
             }
+        ],
+        "reqPermissions": [
+            {
+              "name": "ohos.permission.GET_BUNDLE_INFO_PRIVILEGED"
+            }
         ]
     }
 }

@@ -14,6 +14,7 @@
  */
 
 #include "medialibrary_data_ability_utils.h"
+#include <regex>
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -443,20 +444,16 @@ int64_t MediaLibraryDataAbilityUtils::UTCTimeSeconds()
 
 bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
 {
-    bool isDisplayName = true;
     int size = displayName.length();
     if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
-    for (int i = 0; i < size; i++) {
-        if (displayName.at(0) == '.' || std::ispunct(displayName[i])) {
-            OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName ispunct");
-            isDisplayName = false;
-            break;
-        }
+    std::regex express("[\\.\\\\/:*?\"<>|{}\\[\\]]");
+    bool bValid = std::regex_search(displayName, express);
+    if (bValid) {
+        MEDIA_ERR_LOG("CheckDisplayName fail %{public}s", displayName.c_str());
     }
-    OHOS::HiviewDFX::HiLog::Error(LABEL, "CheckDisplayName");
-    return isDisplayName;
+    return !bValid;
 }
 
 unique_ptr<AbsSharedResultSet> MediaLibraryDataAbilityUtils::QueryFiles(const string &strQueryCondition,

@@ -32,8 +32,8 @@
 
 namespace OHOS {
 namespace Media {
-const std::string CHOWN_OWNER_NAME = "media_rw";
-const std::string CHOWN_GROUP_NAME = "media_rw";
+const std::string CHOWN_OWNER_NAME = "user_data_rw";
+const std::string CHOWN_GROUP_NAME = "user_data_rw";
 const mode_t CHOWN_RWX_USR_GRP = 0770;
 const mode_t CHOWN_RW_USR_GRP = 0660;
 
@@ -50,6 +50,7 @@ public:
     static bool DeleteFile(const std::string& fileName);
     static bool DeleteDir(const std::string& dirName);
     static std::string GetFilename(const std::string& filePath);
+    static std::string GetParentPath(const std::string &path);
     static bool IsDirectory(const std::string& dirName);
     static bool MoveFile(const std::string& oldPath, const std::string& newPath);
     static bool CopyFile(const std::string& filePath, const std::string& newPath);
