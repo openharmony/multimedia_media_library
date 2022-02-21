@@ -871,16 +871,15 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
 {
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri updateAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET);
-    NativeRdb::ValueObject valueObject;
-    string notifyUri;
     Media::MediaType mediaType = context->objectInfo->GetMediaType();
-    notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+    string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
     NativeRdb::DataAbilityPredicates predicates;
     NativeRdb::ValuesBucket valuesBucket;
     int32_t changedRows;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
-    if (MediaFileUtils::CheckTitle(context->objectInfo->GetTitle())
-        && MediaFileUtils::CheckDisplayName(context->objectInfo->GetFileDisplayName())) {
+
+    if (MediaFileUtils::CheckTitle(context->objectInfo->GetTitle()) &&
+        MediaFileUtils::CheckDisplayName(context->objectInfo->GetFileDisplayName())) {
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
         valuesBucket.PutString(MEDIA_DATA_DB_NAME, context->objectInfo->GetFileDisplayName());
         if (context->objectInfo->GetOrientation() >= 0) {
@@ -888,8 +887,7 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
         }
         valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, context->objectInfo->GetRelativePath());
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
-        changedRows =
-            context->objectInfo->sAbilityHelper_->Update(updateAssetUri, valuesBucket, predicates);
+        changedRows = context->objectInfo->sAbilityHelper_->Update(updateAssetUri, valuesBucket, predicates);
         if (changedRows < 0) {
             context->error = changedRows;
             HiLog::Error(LABEL, "File asset modification failed");
@@ -922,7 +920,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->error);
         }
     } else {
-        HiLog::Error(LABEL, "JSCommitModify CheckDisplayName fail");
+        HiLog::Error(LABEL, "JSCommitModify fail %{public}d", context->error);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
                                                      "CheckDisplayName fail");
         napi_get_undefined(env, &jsContext->data);
@@ -1128,11 +1126,14 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
         }
 
         int32_t retVal = close(fd);
-        if ((retVal != DATA_ABILITY_SUCCESS) || (context->objectInfo->sAbilityHelper_->Insert(closeAssetUri,
-            context->valuesBucket) != DATA_ABILITY_SUCCESS)) {
-            context->error = retVal;
-            HiLog::Error(LABEL, "File close asset failed");
+        if (retVal == DATA_ABILITY_SUCCESS) {
+            retVal = context->objectInfo->sAbilityHelper_->Insert(closeAssetUri, context->valuesBucket);
+            if (retVal == DATA_ABILITY_SUCCESS) {
+                return;
+            }
         }
+        context->error = retVal;
+        HiLog::Error(LABEL, "File close asset failed %{public}d", retVal);
     } else {
         context->error = ERR_INVALID_OUTPUT;
         HiLog::Error(LABEL, "Ability helper is null");
@@ -1152,7 +1153,7 @@ static void JSCloseCompleteCallback(napi_env env, napi_status status,
         jsContext->status = true;
     } else {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-            "Ability helper is null");
+            "File close asset failed");
         napi_get_undefined(env, &jsContext->data);
     }
 

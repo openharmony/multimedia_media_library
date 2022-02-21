@@ -2256,15 +2256,18 @@ static void JSCloseAssetCompleteCallback(napi_env env, napi_status status,
         }
 
         int32_t retVal = close(fd);
-        if ((retVal == DATA_ABILITY_SUCCESS) && (context->objectInfo->sAbilityHelper_->Insert(closeAssetUri,
-            context->valuesBucket) == DATA_ABILITY_SUCCESS)) {
-            napi_create_int32(env, DATA_ABILITY_SUCCESS, &jsContext->data);
-            napi_get_undefined(env, &jsContext->error);
-            jsContext->status = true;
-        } else {
-            HiLog::Error(LABEL, "negative ret");
+        if (retVal == DATA_ABILITY_SUCCESS) {
+            retVal = context->objectInfo->sAbilityHelper_->Insert(closeAssetUri, context->valuesBucket);
+            if (retVal == DATA_ABILITY_SUCCESS) {
+                napi_create_int32(env, DATA_ABILITY_SUCCESS, &jsContext->data);
+                napi_get_undefined(env, &jsContext->error);
+                jsContext->status = true;
+            }
+        }
+        if (retVal != DATA_ABILITY_SUCCESS) {
+            HiLog::Error(LABEL, "negative ret %{public}d", retVal);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
-                "File close asset failed");
+                                                         "File close asset failed");
             napi_get_undefined(env, &jsContext->data);
         }
     } else {
