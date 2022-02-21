@@ -298,10 +298,10 @@ bool MediaFileUtils::CheckDisplayName(std::string displayName)
     if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
-    std::regex express("[[\\\\/:*?\"<>|{}\\[\\]]]");
+    std::regex express("[\\\\/:*?\"<>|{}\\[\\]]");
     bool bValid = std::regex_search(displayName, express);
     if ((displayName.at(0) == '.') || bValid) {
-        MEDIA_ERR_LOG("CheckTitle title fail %{public}s", displayName.c_str());
+        MEDIA_ERR_LOG("CheckDisplayName fail %{public}s", displayName.c_str());
         return false;
     }
     return true;

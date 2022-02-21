@@ -110,11 +110,6 @@ NativeAlbumAsset MediaLibraryDataAbilityUtils::CreateDirectorys(const string rel
     NativeAlbumAsset albumAsset;
     if (!relativePath.empty()) {
         string path = relativePath;
-        vector<string> columns;
-        AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
-        absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR + relativePath);
-        unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
-        OHOS::HiviewDFX::HiLog::Error(LABEL, "no");
         ValuesBucket values;
         values.PutString(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR + path);
         MediaLibraryAlbumOperations albumOprn;

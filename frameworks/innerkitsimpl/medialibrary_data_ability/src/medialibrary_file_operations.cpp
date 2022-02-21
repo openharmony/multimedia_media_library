@@ -192,7 +192,8 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
     string dstFilePath, dstReFilePath, dstFileName, destAlbumPath, bucketName;
-    int32_t errCode = DATA_ABILITY_FAIL, bucketId = 0;
+    int32_t errCode = DATA_ABILITY_SUCCESS;
+    int32_t bucketId = 0;
     ValueObject valueObject;
     FileAsset fileAsset;
     MediaLibraryFileDb fileDbOprn;
@@ -209,9 +210,19 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     }
     MEDIA_ERR_LOG("HandleModifyAsset destAlbumPath = %{public}s", destAlbumPath.c_str());
     bucketId = MediaLibraryDataAbilityUtils::GetParentIdFromDb(destAlbumPath, rdbStore);
-    MEDIA_ERR_LOG("HandleModifyAsset bucketId = %{public}d", bucketId);
+    if ((!dstReFilePath.empty()) && (bucketId == 0)) {
+        vector<int32_t> outIds;
+        NativeAlbumAsset nativeAlbumAsset = MediaLibraryDataAbilityUtils::CreateDirectorys(dstReFilePath,
+                                                                                           rdbStore, outIds);
+        if (nativeAlbumAsset.GetAlbumId() < 0) {
+            MEDIA_ERR_LOG("Failed to CreateDirectorys err:%{public}d", nativeAlbumAsset.GetAlbumId());
+            return nativeAlbumAsset.GetAlbumId();
+        }
+        bucketId = nativeAlbumAsset.GetAlbumId();
+    }
+
     bucketName = MediaLibraryDataAbilityUtils::GetParentDisplayNameFromDb(bucketId, rdbStore);
-    MEDIA_ERR_LOG("HandleModifyAsset bucketName = %{public}s", bucketName.c_str());
+    MEDIA_ERR_LOG("HandleModifyAsset bucketId = %{public}d bucketName = %{public}s", bucketId, bucketName.c_str());
     if (srcPath.compare(dstFilePath) != 0) {
         errCode = fileAsset.ModifyAsset(srcPath, dstFilePath);
         if (errCode == DATA_ABILITY_MODIFY_DATA_FAIL) {
@@ -227,8 +238,6 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
             string srcAlbumPath = MediaLibraryDataAbilityUtils::GetParentPath(srcPath);
             UpdateDateModifiedForAlbum(rdbStore, srcAlbumPath);
         }
-    } else {
-        errCode = DATA_ABILITY_SUCCESS;
     }
     return errCode;
 }
