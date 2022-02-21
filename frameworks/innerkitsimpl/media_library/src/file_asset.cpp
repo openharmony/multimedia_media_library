@@ -348,14 +348,14 @@ int32_t FileAsset::CreateAsset(const string &filePath)
 
 int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
 {
-    if (oldPath.empty() || newPath.empty() || !MediaFileUtils::IsFileExists(oldPath)
-        || MediaFileUtils::IsFileExists(newPath)) {
+    if (oldPath.empty() || newPath.empty() || !MediaFileUtils::IsFileExists(oldPath) ||
+        MediaFileUtils::IsFileExists(newPath)) {
         return DATA_ABILITY_MODIFY_DATA_FAIL;
     }
 
     string parentPath = MediaFileUtils::GetParentPath(newPath);
-    if (!MediaFileUtils::CreateDirectory(parentPath)) {
-        MEDIA_ERR_LOG("CreateDirectory fail path = %{public}s", parentPath.c_str());
+    if (!MediaFileUtils::IsDirectory(parentPath)) {
+        MEDIA_ERR_LOG("path = %{public}s none exist", parentPath.c_str());
         return DATA_ABILITY_MODIFY_DATA_FAIL;
     }
 
