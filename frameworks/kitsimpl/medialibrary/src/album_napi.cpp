@@ -575,6 +575,9 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
             if (err) {
                 NAPI_ASSERT(env, false, "type mismatch");
             }
+        } else if (i == PARAM0 && valueType == napi_function) {
+            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
+            break;
         } else if (i == PARAM1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
@@ -639,8 +642,8 @@ static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
     context->selectionArgs.insert(context->selectionArgs.begin(), "0");
-        predicates.SetWhereClause(context->selection);
-        predicates.SetWhereArgs(context->selectionArgs);
+    predicates.SetWhereClause(context->selection);
+    predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
     std::vector<std::string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
@@ -701,14 +704,13 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
     if (MediaFileUtils::CheckTitle(context->objectInfo->GetAlbumName())) {
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetAlbumId()));
-        valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
-                             MediaFileUtils::UTCTimeSeconds());
+        valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
         Uri uri(MEDIALIBRARY_DATA_URI);
-        changedRows =
-            context->objectInfo->GetDataAbilityHelper()->Update(uri, valuesBucket, predicates);
+        changedRows = context->objectInfo->GetDataAbilityHelper()->Update(uri, valuesBucket, predicates);
     } else {
         changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;
     }
+
     context->changedRows = changedRows;
 }
 static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, AlbumNapiAsyncContext *context)
@@ -748,7 +750,8 @@ napi_value AlbumNapi::JSGetAlbumFileAssets(napi_env env, napi_callback_info info
     napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
+    NAPI_ASSERT(env, ((argc == ARGS_ZERO) || (argc == ARGS_ONE) || (argc == ARGS_TWO)),
+                "requires 2 parameter maximum");
 
     napi_get_undefined(env, &result);
     std::unique_ptr<AlbumNapiAsyncContext> asyncContext = std::make_unique<AlbumNapiAsyncContext>();

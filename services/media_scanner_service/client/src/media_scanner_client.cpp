@@ -74,7 +74,7 @@ int32_t MediaScannerClient::ConnectAbility()
         SetConnectionState(ConnectionState::CONN_IN_PROGRESS);
         int32_t ret = abilityMgrProxy_->ConnectAbility(want, connection_, nullptr);
         if (ret != 0) {
-            MEDIA_ERR_LOG("MediaScannerClient:: Connect ability failed");
+            MEDIA_ERR_LOG("MediaScannerClient:: Connect ability failed %{public}d", ret);
             SetConnectionState(ConnectionState::CONN_ERROR);
             return CONN_ERROR;
         }
