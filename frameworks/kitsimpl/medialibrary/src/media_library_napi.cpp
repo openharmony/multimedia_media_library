@@ -1304,14 +1304,19 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     Uri uri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet;
 
-    if (context->objectInfo->sAbilityHelper_ == nullptr
-        || ((resultSet = context->objectInfo->sAbilityHelper_->Query(uri, columns, predicates)) == nullptr)) {
-        context->error = ERR_INVALID_OUTPUT;
-        HiLog::Error(LABEL, "Query for get fileAssets failed");
+    if (context->objectInfo->sAbilityHelper_ != nullptr) {
+        resultSet = context->objectInfo->sAbilityHelper_->Query(uri, columns, predicates);
+        if (resultSet != nullptr) {
+            // Create FetchResult object using the contents of resultSet
+            context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
+            return;
+        } else {
+                HiLog::Error(LABEL, "Query for get fileAssets failed");
+        }
     } else {
-        // Create FetchResult object using the contents of resultSet
-        context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
+        HiLog::Error(LABEL, "sAbilityHelper_ is nullptr");
     }
+    context->error = ERR_INVALID_OUTPUT;
 }
 
 static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
