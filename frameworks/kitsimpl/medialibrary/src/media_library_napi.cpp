@@ -2764,7 +2764,7 @@ void MediaLibraryNapi::RegisterChangeByType(string type, const ChangeListenerNap
         Uri onCbURI(MEDIALIBRARY_SMARTALBUM_CHANGE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->smartAlbumDataObserver_);
         HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
-    } else if (type.compare(FILE_LISTENER) == 0) {
+    } else if (type.compare(DEVICE_LISTENER) == 0) {
         listObj->deviceDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_DEVICE);
         Uri onCbURI(MEDIALIBRARY_DEVICE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->deviceDataObserver_);
