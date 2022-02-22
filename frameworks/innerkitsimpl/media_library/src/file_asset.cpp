@@ -321,7 +321,7 @@ int32_t FileAsset::CreateAsset(const string &filePath)
 
     if (MediaFileUtils::IsFileExists(filePath)) {
         MEDIA_ERR_LOG("the file exists path: %{private}s", filePath.c_str());
-        return DATA_ABILITY_CREATE_FAIL_EXIST;
+        return DATA_ABILITY_DUPLICATE_CREATE;
     }
 
     size_t slashIndex = filePath.rfind('/');
