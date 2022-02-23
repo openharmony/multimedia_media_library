@@ -1311,7 +1311,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
             context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
             return;
         } else {
-                HiLog::Error(LABEL, "Query for get fileAssets failed");
+            HiLog::Error(LABEL, "Query for get fileAssets failed");
         }
     } else {
         HiLog::Error(LABEL, "sAbilityHelper_ is nullptr");
@@ -1403,12 +1403,12 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
 
     return result;
 }
-static string getNetworkId(string selfId)
+static string getNetworkId(const string& selfId)
 {
     return "";
 }
 
-static string GetFileMediaTypeUri(MediaType mediaType, string networkId)
+static string GetFileMediaTypeUri(MediaType mediaType, const string& networkId)
 {
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     switch (mediaType) {
@@ -2836,6 +2836,7 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
         napi_create_reference(env, argv[PARAM1], refCount, &g_listObj->cbOnRef_);
 
         obj->RegisterChange(env, *g_listObj);
+        obj->subscribeList_.clear();
     }
 
     return undefinedResult;
@@ -2957,6 +2958,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
         }
 
         obj->UnregisterChange(env, *g_listObj);
+        obj->unsubscribeList_.clear();
     }
 
     return undefinedResult;

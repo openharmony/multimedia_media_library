@@ -185,12 +185,12 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
     return cellValue;
 }
 
-static string getNetworkId(string selfId)
+static string getNetworkId(const string& selfId)
 {
     return "";
 }
 
-static string GetFileMediaTypeUri(MediaType mediaType, string networkId)
+static string GetFileMediaTypeUri(MediaType mediaType, const string& networkId)
 {
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     switch (mediaType) {
