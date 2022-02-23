@@ -78,6 +78,21 @@ public:
 
     explicit ChangeListenerNapi(napi_env env) : env_(env) {}
 
+    ChangeListenerNapi(const ChangeListenerNapi& listener)
+    {
+        this->env_ = listener.env_;
+        this->cbOnRef_ = listener.cbOnRef_;
+        this->cbOffRef_ = listener.cbOffRef_;
+    }
+
+    ChangeListenerNapi& operator=(const ChangeListenerNapi& listener)
+    {
+        this->env_ = listener.env_;
+        this->cbOnRef_ = listener.cbOnRef_;
+        this->cbOffRef_ = listener.cbOffRef_;
+        return *this;
+    }
+
     ~ChangeListenerNapi() = default;
 
     void OnChange(const MediaChangeListener &listener, const napi_ref cbRef);
@@ -97,10 +112,8 @@ private:
 
 class MediaObserver : public AAFwk::DataAbilityObserverStub {
 public:
-    MediaObserver() {}
-    MediaObserver(const ChangeListenerNapi &listObj, MediaType mediaType)
+    MediaObserver(const ChangeListenerNapi &listObj, MediaType mediaType) : listObj_(listObj)
     {
-        listObj_ = const_cast<ChangeListenerNapi *>(&listObj);
         mediaType_ = mediaType;
         MEDIA_INFO_LOG("MediaObserver init mediaType_ = %{public}d", mediaType);
     }
@@ -112,10 +125,10 @@ public:
         MediaChangeListener listener;
         listener.mediaType = mediaType_;
         MEDIA_INFO_LOG("MediaObserver OnChange mediaType_ = %{public}d", mediaType_);
-        listObj_->OnChange(listener, listObj_->cbOnRef_);
+        listObj_.OnChange(listener, listObj_.cbOnRef_);
     }
 
-    ChangeListenerNapi *listObj_ = nullptr;
+    ChangeListenerNapi listObj_;
     MediaType mediaType_;
 };
 
