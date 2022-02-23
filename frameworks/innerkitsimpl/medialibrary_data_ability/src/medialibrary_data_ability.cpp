@@ -125,12 +125,22 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
+#ifdef RDB_UPGRADE_MOCK
+    const std::string ALTER_MOCK_COLUMN = "ALTER TABLE " + MEDIALIBRARY_TABLE +
+                                          " ADD COLUMN upgrade_test_column INT DEFAULT 0";
+    MEDIA_INFO_LOG("OnUpgrade |Rdb Verison %{public}d => %{public}d", oldVersion, newVersion);
+    int32_t error_code = NativeRdb::E_ERROR;
+    error_code = store.ExecuteSql(ALTER_MOCK_COLUMN);
+    if (error_code != NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("Upgrade rdb error %{public}d", error_code);
+    }
+#endif
     return E_OK;
 }
 
 int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
 {
-    MEDIA_INFO_LOG("InitMediaLibraryRdbStore IN");
+    MEDIA_INFO_LOG("InitMediaLibraryRdbStore IN |Rdb Verison %{public}d", MEDIA_RDB_VERSION);
     if (isRdbStoreInitialized) {
         return DATA_ABILITY_SUCCESS;
     }
@@ -455,7 +465,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
                                                               const vector<string> &columns,
                                                               const DataAbilityPredicates &predicates)
 {
-    MEDIA_INFO_LOG("MediaLibraryDataAbility::Query");
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::Query |Rdb Verison %{public}d", MEDIA_RDB_VERSION);
     if ((!isRdbStoreInitialized) || (rdbStore == nullptr)) {
         return nullptr;
     }
