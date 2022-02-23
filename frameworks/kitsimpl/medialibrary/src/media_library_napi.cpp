@@ -56,11 +56,6 @@ MediaLibraryNapi::~MediaLibraryNapi()
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
     }
-
-    if (sAbilityHelper_ != nullptr) {
-        sAbilityHelper_->Release();
-        sAbilityHelper_ = nullptr;
-    }
 }
 
 void MediaLibraryNapi::MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
