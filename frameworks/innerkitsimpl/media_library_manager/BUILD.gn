@@ -44,6 +44,7 @@ ohos_shared_library("media_library_manager") {
 
   external_deps = [
     "ability_runtime:ability_manager",
+    "bundle_framework:appexecfwk_base",
     "hiviewdfx_hilog_native:libhilog",
     "native_appdatamgr:native_appdatafwk",
     "native_appdatamgr:native_dataability",
