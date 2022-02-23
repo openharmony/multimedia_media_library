@@ -1304,14 +1304,19 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     Uri uri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet;
 
-    if (context->objectInfo->sAbilityHelper_ == nullptr
-        || ((resultSet = context->objectInfo->sAbilityHelper_->Query(uri, columns, predicates)) == nullptr)) {
-        context->error = ERR_INVALID_OUTPUT;
-        HiLog::Error(LABEL, "Query for get fileAssets failed");
+    if (context->objectInfo->sAbilityHelper_ != nullptr) {
+        resultSet = context->objectInfo->sAbilityHelper_->Query(uri, columns, predicates);
+        if (resultSet != nullptr) {
+            // Create FetchResult object using the contents of resultSet
+            context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
+            return;
+        } else {
+                HiLog::Error(LABEL, "Query for get fileAssets failed");
+        }
     } else {
-        // Create FetchResult object using the contents of resultSet
-        context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
+        HiLog::Error(LABEL, "sAbilityHelper_ is nullptr");
     }
+    context->error = ERR_INVALID_OUTPUT;
 }
 
 static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
@@ -2759,7 +2764,7 @@ void MediaLibraryNapi::RegisterChangeByType(string type, const ChangeListenerNap
         Uri onCbURI(MEDIALIBRARY_SMARTALBUM_CHANGE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->smartAlbumDataObserver_);
         HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
-    } else if (type.compare(FILE_LISTENER) == 0) {
+    } else if (type.compare(DEVICE_LISTENER) == 0) {
         listObj->deviceDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_DEVICE);
         Uri onCbURI(MEDIALIBRARY_DEVICE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->deviceDataObserver_);
