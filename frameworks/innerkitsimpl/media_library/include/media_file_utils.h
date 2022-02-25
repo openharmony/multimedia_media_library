@@ -58,6 +58,8 @@ public:
     static bool CheckTitle(std::string title);
     static int64_t GetAlbumDateModified(const std::string &albumPath);
     static int64_t UTCTimeSeconds();
+    static std::string GetNetworkIdFromUri(const std::string &uri);
+    static std::string UpdatePath(const std::string &path, const std::string &uri);
 };
 } // namespace Media
 } // namespace  OHOS

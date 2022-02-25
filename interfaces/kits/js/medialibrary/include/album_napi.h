@@ -48,7 +48,7 @@ public:
     std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper() const;
     std::string GetAlbumName() const;
     std::string GetAlbumPath() const;
-
+    std::string GetNetworkId() const;
     AlbumNapi();
     ~AlbumNapi();
 
@@ -105,6 +105,7 @@ struct AlbumNapiAsyncContext {
     std::vector<std::string> selectionArgs;
     std::string order;
     std::unique_ptr<FetchResult> fetchResult;
+    std::string networkId_ = "";
 };
 } // namespace Media
 } // namespace OHOS

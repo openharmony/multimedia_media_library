@@ -50,6 +50,18 @@ void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
     MEDIA_INFO_LOG("MediaLibraryDataAbility::OnStart");
     Ability::OnStart(want);
     InitMediaLibraryRdbStore();
+	MEDIA_INFO_LOG("bundleName = %{public}s", bundleName_.c_str());
+    auto abilityContext = std::make_unique<MediaLibraryDataAbility>(*this);
+    if (abilityContext != nullptr) {
+        MediaLibraryDevice::GetInstance()->SetAbilityContext(move(abilityContext));
+    }
+    SubscribeRdbStoreObserver();
+    InitDeviceData();
+
+    if (rdbStore_ != nullptr) {
+        MediaLibrarySyncTable syncTable;
+        syncTable.SyncPullAllTable(rdbStore_, bundleName_);
+    }
     InitialiseKvStore();
 }
 
@@ -57,7 +69,7 @@ void MediaLibraryDataAbility::OnStop()
 {
     MEDIA_INFO_LOG("MediaLibraryDataAbility::OnStop");
     Ability::OnStop();
-    rdbStore = nullptr;
+    rdbStore_ = nullptr;
     isRdbStoreInitialized = false;
 
     if (scannerClient_ != nullptr) {
@@ -69,13 +81,23 @@ void MediaLibraryDataAbility::OnStop()
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
         kvStorePtr_ = nullptr;
     }
+	if (deviceStateCallback_ != nullptr && deviceInitCallback_ != nullptr) {
+        auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
+        deviceManager.UnInitDeviceManager(bundleName_);
+        deviceInitCallback_ = nullptr;
+        deviceManager.UnRegisterDevStateCallback(bundleName_);
+        deviceStateCallback_ = nullptr;
+        MediaLibraryDevice::GetInstance()->ClearAllDevices();
+    }
+    UnSubscribeRdbStoreObserver();
 }
 
 MediaLibraryDataAbility::MediaLibraryDataAbility(void)
 {
     isRdbStoreInitialized = false;
-    rdbStore = nullptr;
+    rdbStore_ = nullptr;
     kvStorePtr_ = nullptr;
+	bundleName_ = DEVICE_BUNDLENAME;
 }
 
 MediaLibraryDataAbility::~MediaLibraryDataAbility(void)
@@ -120,6 +142,9 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     if (error_code == NativeRdb::E_OK) {
         error_code= store.ExecuteSql(CREATE_ASSETMAP_VIEW);
     }
+    if (error_code == NativeRdb::E_OK) {
+        isDistributedTables = true;
+    }
     return error_code;
 }
 
@@ -138,6 +163,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     return E_OK;
 }
 
+bool MediaLibraryDataCallBack::GetDistributedTables() {
+    return isDistributedTables;
+}
+
 int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
 {
     MEDIA_INFO_LOG("InitMediaLibraryRdbStore IN |Rdb Verison %{public}d", MEDIA_RDB_VERSION);
@@ -148,12 +177,20 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
     int32_t errCode(DATA_ABILITY_FAIL);
     string databaseDir = AbilityContext::GetDatabaseDir() + "/" + MEDIA_DATA_ABILITY_DB_NAME;
     RdbStoreConfig config(databaseDir);
+    config.SetBundleName(bundleName_);
+    config.SetName(MEDIA_DATA_ABILITY_DB_NAME);
     MediaLibraryDataCallBack rdbDataCallBack;
 
-    rdbStore = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryDataAbility::InitMediaRdbStore GetRdbStore is failed ");
+    rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("InitMediaRdbStore GetRdbStore is failed ");
         return errCode;
+    }
+
+    if (rdbDataCallBack.GetDistributedTables()) {
+        auto ret = rdbStore_->SetDistributedTables(
+            {MEDIALIBRARY_TABLE, SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE});
+        MEDIA_INFO_LOG("InitMediaLibraryRdbStore ret = %{public}d", ret);
     }
 
     isRdbStoreInitialized = true;
@@ -179,14 +216,17 @@ std::string MediaLibraryDataAbility::GetType(const Uri &uri)
 int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &value)
 {
     MEDIA_INFO_LOG("MediaLibraryDataAbility Insert: IN");
-    if ((!isRdbStoreInitialized) || (value.IsEmpty()) || (rdbStore == nullptr)) {
+    if ((!isRdbStoreInitialized) || (value.IsEmpty()) || (rdbStore_ == nullptr)) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility Insert: Input parameter is invalid");
         return DATA_ABILITY_FAIL;
     }
     if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         return DATA_ABILITY_PERMISSION_DENIED;
     }
+	
+    MediaLibrarySyncTable syncTable;
     string insertUri = uri.ToString();
+    std::vector<std::string> devices = std::vector<std::string>();
     // If insert uri contains media opearation, follow media operation procedure
     if (insertUri.find(MEDIA_OPERN_KEYWORD) != string::npos) {
         MediaLibraryFileOperations fileOprn;
@@ -204,18 +244,22 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
             return DATA_ABILITY_FILE_NAME_INVALID;
         }
         if (insertUri.find(MEDIA_FILEOPRN) != string::npos) {
-            result = fileOprn.HandleFileOperation(operationType, value, rdbStore, mediaThumbnail_);
+            result = fileOprn.HandleFileOperation(operationType, value, rdbStore_, mediaThumbnail_);
             MEDIA_INFO_LOG("HandleFileOperation result = %{public}d", result);
             // After successfull close asset operation, do a scan file
             if ((result >= 0) && (operationType == MEDIA_FILEOPRN_CLOSEASSET)) {
-                ScanFile(value, rdbStore);
+                ScanFile(value, rdbStore_);
             }
+            syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
         } else if (insertUri.find(MEDIA_ALBUMOPRN) != string::npos) {
-            result = albumOprn.HandleAlbumOperations(operationType, value, rdbStore);
+            result = albumOprn.HandleAlbumOperations(operationType, value, rdbStore_);
+            syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_TABLE, devices);
         } else if (insertUri.find(MEDIA_SMARTALBUMOPRN) != string::npos) {
-            result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore);
+            result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore_);
+            syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
         } else if (insertUri.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
-            result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, rdbStore);
+            result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, rdbStore_);
+			syncTable.SyncPushTable(rdbStore_, bundleName_, CATEGORY_SMARTALBUM_MAP_TABLE, devices);
         } else if (insertUri.find(MEDIA_KVSTOREOPRN) != string::npos) {
             result = kvStoreOprn.HandleKvStoreInsertOperations(operationType, value, kvStorePtr_);
         }
@@ -224,16 +268,17 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
     }
 
     // Normal URI scenario
-    MEDIA_INFO_LOG("MediaLibraryDataAbility Insert: Normal URI scenario");
     int64_t outRowId = DATA_ABILITY_FAIL;
-    (void)rdbStore->Insert(outRowId, MEDIALIBRARY_TABLE, value);
+    (void)rdbStore_->Insert(outRowId, MEDIALIBRARY_TABLE, value);
+    MEDIA_INFO_LOG("no outRowId = %{public}lld", outRowId);
+    syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
     MEDIA_INFO_LOG("MediaLibraryDataAbility Insert: END");
     return outRowId;
 }
 
 int32_t MediaLibraryDataAbility::Delete(const Uri &uri, const DataAbilityPredicates &predicates)
 {
-    if (!isRdbStoreInitialized || (rdbStore == nullptr)) {
+    if (!isRdbStoreInitialized || (rdbStore_ == nullptr)) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility Delete:Rdb Store is not initialized");
         return DATA_ABILITY_FAIL;
     }
@@ -260,7 +305,7 @@ int32_t MediaLibraryDataAbility::Delete(const Uri &uri, const DataAbilityPredica
 
     vector<string> whereArgs = predicates.GetWhereArgs();
     int32_t deletedRows = DATA_ABILITY_FAIL;
-    (void)rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, strDeleteCondition, whereArgs);
+    (void)rdbStore_->Delete(deletedRows, MEDIALIBRARY_TABLE, strDeleteCondition, whereArgs);
 
     return deletedRows;
 }
@@ -300,15 +345,72 @@ unique_ptr<AbsSharedResultSet> QueryBySmartTableType(TableType tabletype,
     }
     return queryResultSet;
 }
-unique_ptr<AbsSharedResultSet> QueryByFileTableType(TableType tabletype,
-    string strQueryCondition,
+
+unique_ptr<AbsSharedResultSet> QueryFile(string strQueryCondition,
     DataAbilityPredicates predicates,
     vector<string> columns,
-    std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+    std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    string networkId)
 {
     unique_ptr<AbsSharedResultSet> queryResultSet;
-    if (tabletype == TYPE_ALBUM_TABLE) {
-        AbsRdbPredicates mediaLibAbsPredAlbum(ABLUM_VIEW_NAME);
+    string tableName = MEDIALIBRARY_TABLE;
+    if (!networkId.empty()) {
+        tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
+        MEDIA_INFO_LOG("tableName in %{public}s", tableName.c_str());
+    }
+    AbsRdbPredicates mediaLibAbsPredFile(tableName);
+
+    if (!networkId.empty()) {
+        MEDIA_INFO_LOG("Not empty networkId %{public}s", networkId.c_str());
+        std::vector<string> devices = std::vector<string>();
+        devices.push_back(networkId);
+        mediaLibAbsPredFile.InDevices(devices);
+    }
+    if (predicates.IsDistinct()) {
+        mediaLibAbsPredFile.Distinct();
+    }
+    mediaLibAbsPredFile.SetWhereClause(strQueryCondition);
+    mediaLibAbsPredFile.SetWhereArgs(predicates.GetWhereArgs());
+    mediaLibAbsPredFile.Limit(predicates.GetLimit());
+    mediaLibAbsPredFile.SetOrder(predicates.GetOrder());
+    queryResultSet = rdbStore->Query(mediaLibAbsPredFile, columns);
+    return queryResultSet;
+}
+
+string obtionCondition(string strQueryCondition, vector<string> whereArgs) {
+    for(string args : whereArgs) {
+        size_t pos = strQueryCondition.rfind('?');
+        MEDIA_INFO_LOG("obtionCondition pos = %{public}d", pos);
+        if (pos != string::npos) {
+            MEDIA_INFO_LOG("obtionCondition before = %{public}s", strQueryCondition.c_str());
+            strQueryCondition.replace(pos, 1, args);
+            MEDIA_INFO_LOG("obtionCondition end = %{public}s", strQueryCondition.c_str());
+        }
+    }
+    return strQueryCondition;
+}
+
+unique_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
+    DataAbilityPredicates predicates,
+    vector<string> columns,
+    std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    string networkId)
+{
+    unique_ptr<AbsSharedResultSet> queryResultSet;
+    if (!networkId.empty()) {
+        string tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
+        MEDIA_INFO_LOG("tableName is %{public}s", tableName.c_str());
+        AbsRdbPredicates mediaLibAbsPredAlbum(tableName);
+        string isAlbumCondition = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + std::to_string(MEDIA_TYPE_ALBUM) + " AND " + std::to_string(MEDIA_TYPE_FILE);
+        if (!strQueryCondition.empty()) {
+           strQueryCondition = obtionCondition(strQueryCondition, predicates.GetWhereArgs());
+           isAlbumCondition = strQueryCondition + " AND " + isAlbumCondition;
+        }
+        MEDIA_INFO_LOG("QueryAlbum = %{public}s", isAlbumCondition.c_str());
+        queryResultSet = rdbStore->QuerySql("SELECT count( date_trashed = 0 OR NULL ) AS count, bucket_id,bucket_display_name,self_id FROM "
+            + tableName +" WHERE "+ isAlbumCondition +" GROUP BY bucket_id, media_type, bucket_display_name, self_id");
+    } else {
+            AbsRdbPredicates mediaLibAbsPredAlbum(ABLUM_VIEW_NAME);
         if (strQueryCondition.empty()) {
             queryResultSet = rdbStore->QuerySql("SELECT * FROM " + ABLUM_VIEW_NAME);
         } else {
@@ -321,19 +423,45 @@ unique_ptr<AbsSharedResultSet> QueryByFileTableType(TableType tabletype,
             mediaLibAbsPredAlbum.SetOrder(predicates.GetOrder());
             queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
         }
-    } else {
-        AbsRdbPredicates mediaLibAbsPredFile(MEDIALIBRARY_TABLE);
-        if (predicates.IsDistinct()) {
-            mediaLibAbsPredFile.Distinct();
-        }
-        mediaLibAbsPredFile.SetWhereClause(strQueryCondition);
-        mediaLibAbsPredFile.SetWhereArgs(predicates.GetWhereArgs());
-        mediaLibAbsPredFile.Limit(predicates.GetLimit());
-        mediaLibAbsPredFile.SetOrder(predicates.GetOrder());
-        queryResultSet = rdbStore->Query(mediaLibAbsPredFile, columns);
     }
     return queryResultSet;
 }
+
+unique_ptr<AbsSharedResultSet> QueryByFileTableType(TableType tabletype,
+    string strQueryCondition,
+    DataAbilityPredicates predicates,
+    vector<string> columns,
+    std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    string networkId)
+{
+    unique_ptr<AbsSharedResultSet> queryResultSet;
+    if (tabletype == TYPE_ALBUM_TABLE) {
+        queryResultSet = QueryAlbum(strQueryCondition, predicates, columns, rdbStore, networkId);
+    } else {
+        queryResultSet = QueryFile(strQueryCondition, predicates, columns, rdbStore, networkId);
+    }
+    return queryResultSet;
+}
+
+unique_ptr<AbsSharedResultSet> QueryDeviceInfo(string strQueryCondition,
+    DataAbilityPredicates predicates, vector<string> columns, std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+{
+    unique_ptr<AbsSharedResultSet> queryResultSet;
+    AbsRdbPredicates deviceAbsRdbPredicates(DEVICE_TABLE);
+    if (predicates.IsDistinct()) {
+        deviceAbsRdbPredicates.Distinct();
+    }
+
+    deviceAbsRdbPredicates.SetWhereClause(strQueryCondition);
+    deviceAbsRdbPredicates.SetWhereArgs(predicates.GetWhereArgs());
+    deviceAbsRdbPredicates.Limit(predicates.GetLimit());
+    deviceAbsRdbPredicates.SetOrder(predicates.GetOrder());
+
+    queryResultSet = rdbStore->Query(deviceAbsRdbPredicates, columns);
+    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query All Device failed");
+    return queryResultSet;
+}
+
 unique_ptr<AbsSharedResultSet> QueryByViewType(TableType tabletype,
     string strQueryCondition,
     DataAbilityPredicates predicates,
@@ -410,6 +538,7 @@ bool ParseThumbnailInfo(string &uriString, int &width, int &height)
     vector<string> vectorKeys;
     SplitKeys(queryKeys, vectorKeys);
     if (vectorKeys.size() != keyWords.size()) {
+        MEDIA_ERR_LOG("Parse error keys count %{public}d", vectorKeys.size());
         return false;
     }
     string action;
@@ -444,18 +573,24 @@ bool ParseThumbnailInfo(string &uriString, int &width, int &height)
 }
 void GenThumbnail(shared_ptr<RdbStore> rdb,
                   shared_ptr<MediaLibraryThumbnail> thumbnail,
-                  string &rowId, int width, int height)
+                  string &rowId, int width, int height, string &networkId)
 {
+    string filesTableName = MEDIALIBRARY_TABLE;
+    if (!networkId.empty()) {
+        filesTableName = rdb->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
+    }
+
+    MEDIA_INFO_LOG("Get filesTableName [ %{public}s ]", filesTableName.c_str());
     ThumbRdbOpt opts = {
         .store = rdb,
-        .table = MEDIALIBRARY_TABLE,
+        .table = filesTableName,
         .row = rowId
     };
     Size size = {
         .width = width,
         .height = height
     };
-    MEDIA_ERR_LOG("Get thumbnail [ %{public}s ]", opts.row.c_str());
+    MEDIA_INFO_LOG("Get thumbnail [ %{public}s ]", opts.row.c_str());
     string kvId = thumbnail->GetThumbnailKey(opts, size);
     if (kvId.empty()) {
         MEDIA_ERR_LOG("Get thumbnail error");
@@ -466,21 +601,24 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
                                                               const DataAbilityPredicates &predicates)
 {
     MEDIA_INFO_LOG("MediaLibraryDataAbility::Query |Rdb Verison %{public}d", MEDIA_RDB_VERSION);
-    if ((!isRdbStoreInitialized) || (rdbStore == nullptr)) {
+    if ((!isRdbStoreInitialized) || (rdbStore_ == nullptr)) {
+        MEDIA_ERR_LOG("MediaLibraryDataAbility Query:Rdb Store is not initialized");
         return nullptr;
     }
-    MEDIA_INFO_LOG("MediaLibraryDataAbility::Query1");
     if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
         return nullptr;
     }
-    MEDIA_INFO_LOG("MediaLibraryDataAbility::Query2");
     unique_ptr<AbsSharedResultSet> queryResultSet;
     TableType tabletype = TYPE_DATA;
     string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
+    MEDIA_INFO_LOG("MediaLibraryDataAbility uriString = %{public}s", uriString.c_str());
     int width = 0, height = 0;
     bool thumbnailQuery = ParseThumbnailInfo(uriString, width, height);
+    string networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(uriString);
     string::size_type pos = uriString.find_last_of('/');
-    if (uriString == MEDIALIBRARY_DATA_URI+"/"+MEDIA_ALBUMOPRN_QUERYALBUM) {
+    string type = uriString.substr(pos + 1);
+    MEDIA_INFO_LOG("MediaLibraryDataAbility uriString type = %{public}s", type.c_str());
+    if (type == MEDIA_ALBUMOPRN_QUERYALBUM) {
         tabletype = TYPE_ALBUM_TABLE;
         uriString = MEDIALIBRARY_DATA_URI;
     } else if (uriString == MEDIALIBRARY_DATA_URI + "/"
@@ -491,33 +629,51 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
                + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME) {
         tabletype = TYPE_ASSETSMAP_TABLE;
         uriString = MEDIALIBRARY_SMARTALBUM_URI;
+	} else if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE) {
+        tabletype = TYPE_ALL_DEVICE;
+        uriString = MEDIALIBRARY_DATA_URI;
+    } else if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE) {
+        tabletype = TYPE_ACTIVE_DEVICE;
+        uriString = MEDIALIBRARY_DATA_URI;
     } else if (strQueryCondition.empty() && pos != string::npos) {
-        strRow = uriString.substr(pos + 1);
+        strRow = type;
         uriString = uriString.substr(0, pos);
-        if (pos == MEDIALIBRARY_DATA_URI.length()) {
-            tabletype = TYPE_DATA;
-            strQueryCondition = MEDIA_DATA_DB_ID + " = " + strRow;
-        } else if (pos == MEDIALIBRARY_SMARTALBUM_URI.length()) {
+
+        string::size_type posTable = uriString.find_last_of('/');
+        string tableName = uriString.substr(posTable + 1);
+
+        MEDIA_INFO_LOG("MediaLibraryDataAbility tableName = %{public}s", tableName.c_str());
+        MEDIA_INFO_LOG("MediaLibraryDataAbility strRow = %{public}s", strRow.c_str());
+        if (SMARTALBUM_TABLE.compare(tableName) == 0) {
             tabletype = TYPE_SMARTALBUM;
             strQueryCondition = SMARTALBUM_DB_ID + " = " + strRow;
-        } else if (pos == MEDIALIBRARY_SMARTALBUM_MAP_URI.length()) {
+        } else if (SMARTALBUM_MAP_TABLE.compare(tableName) == 0) {
             tabletype = TYPE_SMARTALBUM_MAP;
             strQueryCondition = SMARTALBUMMAP_DB_ALBUM_ID + " = " + strRow;
+        } else {
+            tabletype = TYPE_DATA;
+            strQueryCondition = MEDIA_DATA_DB_ID + " = " + strRow;
         }
     }
-    CHECK_AND_RETURN_RET_LOG((uriString == MEDIALIBRARY_DATA_URI ||
-        uriString == MEDIALIBRARY_SMARTALBUM_URI || uriString == MEDIALIBRARY_SMARTALBUM_MAP_URI),
-        nullptr, "Not Data ability Uri");
+    // CHECK_AND_RETURN_RET_LOG((uriString == MEDIALIBRARY_DATA_URI ||
+    //     uriString == MEDIALIBRARY_SMARTALBUM_URI || uriString == MEDIALIBRARY_SMARTALBUM_MAP_URI),
+    //     nullptr, "Not Data ability Uri");
     if (thumbnailQuery) {
-        GenThumbnail(rdbStore, mediaThumbnail_, strRow, width, height);
+        GenThumbnail(rdbStore_, mediaThumbnail_, strRow, width, height, networkId);
+    }
+    if (tabletype != TYPE_ASSETSMAP_TABLE && tabletype != TYPE_SMARTALBUMASSETS_TABLE) {
+        auto ret = QuerySync();
+        MEDIA_INFO_LOG("MediaLibraryDataAbility QuerySync result = %{public}d", ret);
     }
     if (tabletype == TYPE_SMARTALBUM || tabletype == TYPE_SMARTALBUM_MAP) {
-        queryResultSet = QueryBySmartTableType(tabletype, strQueryCondition, predicates, columns, rdbStore);
+        queryResultSet = QueryBySmartTableType(tabletype, strQueryCondition, predicates, columns, rdbStore_);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     } else if (tabletype == TYPE_ASSETSMAP_TABLE || tabletype == TYPE_SMARTALBUMASSETS_TABLE) {
-        queryResultSet = QueryByViewType(tabletype, strQueryCondition, predicates, columns, rdbStore);
+        queryResultSet = QueryByViewType(tabletype, strQueryCondition, predicates, columns, rdbStore_);
+	} else if (tabletype == TYPE_ALL_DEVICE || tabletype == TYPE_ACTIVE_DEVICE) {
+        queryResultSet = QueryDeviceInfo(strQueryCondition, predicates, columns, rdbStore_);
     } else {
-        queryResultSet = QueryByFileTableType(tabletype, strQueryCondition, predicates, columns, rdbStore);
+        queryResultSet = QueryByFileTableType(tabletype, strQueryCondition, predicates, columns, rdbStore_, networkId);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     }
     return queryResultSet;
@@ -527,7 +683,7 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
     const DataAbilityPredicates &predicates)
 {
     MEDIA_INFO_LOG("Update");
-    if ((!isRdbStoreInitialized) || (rdbStore == nullptr) || (value.IsEmpty())) {
+    if ((!isRdbStoreInitialized) || (rdbStore_ == nullptr) || (value.IsEmpty())) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility Update:Input parameter is invalid ");
         return DATA_ABILITY_FAIL;
     }
@@ -554,18 +710,18 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
 
     vector<string> whereArgs = predicates.GetWhereArgs();
     if (uriString.find(MEDIA_SMARTALBUMOPRN) != string::npos) {
-        (void)rdbStore->Update(changedRows, SMARTALBUM_TABLE, value, strUpdateCondition, whereArgs);
+        (void)rdbStore_->Update(changedRows, SMARTALBUM_TABLE, value, strUpdateCondition, whereArgs);
     } else if (uriString.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
-        (void)rdbStore->Update(changedRows, SMARTALBUM_MAP_TABLE, value, strUpdateCondition, whereArgs);
+        (void)rdbStore_->Update(changedRows, SMARTALBUM_MAP_TABLE, value, strUpdateCondition, whereArgs);
     } else {
         if (uriString == MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN
                 + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET) {
-        int result = fileOprn.HandleFileOperation(MEDIA_FILEOPRN_MODIFYASSET, value, rdbStore, mediaThumbnail_);
+        int result = fileOprn.HandleFileOperation(MEDIA_FILEOPRN_MODIFYASSET, value, rdbStore_, mediaThumbnail_);
         if (result < 0) {
             return result;
             }
         }
-    (void)rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, value, strUpdateCondition, whereArgs);
+    (void)rdbStore_->Update(changedRows, MEDIALIBRARY_TABLE, value, strUpdateCondition, whereArgs);
     }
 
     return changedRows;
@@ -574,7 +730,7 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
 int32_t MediaLibraryDataAbility::BatchInsert(const Uri &uri, const vector<ValuesBucket> &values)
 {
     string uriString = uri.ToString();
-    if ((!isRdbStoreInitialized) || (rdbStore == nullptr) || (uriString != MEDIALIBRARY_DATA_URI)) {
+    if ((!isRdbStoreInitialized) || (rdbStore_ == nullptr) || (uriString != MEDIALIBRARY_DATA_URI)) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility BatchInsert: Input parameter is invalid");
         return DATA_ABILITY_FAIL;
     }
@@ -624,27 +780,164 @@ void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_
  */
 int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mode)
 {
-    string id = MediaLibraryDataAbilityUtils::GetIdFromUri(uri.ToString());
-
-    shared_ptr<FileAsset> fileAsset = MediaLibraryDataAbilityUtils::GetFileAssetFromDb(id, rdbStore);
+    string uriString = uri.ToString();
+    shared_ptr<FileAsset> fileAsset = MediaLibraryDataAbilityUtils::GetFileAssetFromDb(uriString, rdbStore_);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, DATA_ABILITY_FAIL, "Failed to obtain path from Database");
     bool isWriteMode = MediaLibraryDataAbilityUtils::checkOpenMode(mode);
-    if (isWriteMode && MediaLibraryDataAbilityUtils::checkFilePending(fileAsset)) {
-        return DATA_ABILITY_HAS_OPENED_FAIL;
+    if (isWriteMode) {
+        if (MediaLibraryDataAbilityUtils::checkFilePending(fileAsset)) {
+            MEDIA_ERR_LOG("MediaLibraryDataAbility OpenFile: File is pending");
+            return DATA_ABILITY_HAS_OPENED_FAIL;
+        }
     }
-    MEDIA_ERR_LOG("MediaLibraryDataAbility OpenAsset begin");
-    int32_t fd = fileAsset->OpenAsset(fileAsset->GetPath(), mode);
-    MEDIA_ERR_LOG("MediaLibraryDataAbility OpenAsset end");
+    string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
+    MEDIA_INFO_LOG("MediaLibraryDataAbility OpenFile: path is %{public}s", path.c_str());
+    int32_t fd = fileAsset->OpenAsset(path, mode);
     if (isWriteMode && fd > 0) {
-        int32_t errorCode = MediaLibraryDataAbilityUtils::setFilePending(id, true, rdbStore);
+        int32_t errorCode = MediaLibraryDataAbilityUtils::setFilePending(uriString, true, rdbStore_);
         if (errorCode == DATA_ABILITY_FAIL) {
             fileAsset->CloseAsset(fd);
             MEDIA_ERR_LOG("MediaLibraryDataAbility OpenFile: Set file to pending DB error");
             return DATA_ABILITY_HAS_DB_ERROR;
         }
     }
-    MEDIA_ERR_LOG("MediaLibraryDataAbility OpenFile: Success");
+    MEDIA_INFO_LOG("MediaLibraryDataAbility OpenFile: Success");
     return fd;
+}
+
+void MediaLibraryDataAbility::InitDeviceData()
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryDataAbility InitDeviceData rdbStore is null");
+        return;
+    }
+    std::string extra = "";
+    auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
+    deviceInitCallback_ = std::make_shared<MediaLibraryInitCallback>();
+    if (deviceInitCallback_ == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryDataAbility MediaLibraryInitCallback failed!");
+        return;
+    }
+    deviceManager.InitDeviceManager(bundleName_, deviceInitCallback_);
+
+    if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_, bundleName_)) {
+        MEDIA_ERR_LOG("MediaLibraryDataAbility InitDeviceData failed!");
+        return;
+    }
+
+    deviceStateCallback_ = std::make_shared<MediaLibraryDeviceStateCallback>(rdbStore_, bundleName_);
+    if (deviceStateCallback_ == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryDataAbility MediaLibraryDeviceStateCallback failed!");
+        return;
+    }
+
+    if (deviceManager.RegisterDevStateCallback(bundleName_, extra, deviceStateCallback_) != 0) {
+        deviceStateCallback_ = nullptr;
+        MEDIA_ERR_LOG("MediaLibraryDataAbility RegisterDevStateCallback failed!");
+        return;
+    }
+    MEDIA_INFO_LOG("MediaLibraryDataAbility InitDeviceData OUT");
+}
+
+bool MediaLibraryDataAbility::SubscribeRdbStoreObserver()
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryDataAbility SubscribeRdbStoreObserver rdbStore is null");
+        return false;
+    }
+    rdbStoreObs_ = std::make_shared<MediaLibraryRdbStoreObserver>(bundleName_);
+    if (rdbStoreObs_ == nullptr) {
+        return false;
+    }
+
+    DistributedRdb::SubscribeOption option;
+    option.mode = DistributedRdb::SubscribeMode::REMOTE;
+    bool ret = rdbStore_->Subscribe(option, rdbStoreObs_.get());
+    MEDIA_INFO_LOG("MediaLibraryDataAbility Subscribe ret = %d", ret);
+
+    return ret;
+}
+
+bool MediaLibraryDataAbility::UnSubscribeRdbStoreObserver()
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryDataAbility UnSubscribeRdbStoreObserver rdbStore is null");
+        return false;
+    }
+
+    DistributedRdb::SubscribeOption option;
+    option.mode = DistributedRdb::SubscribeMode::REMOTE;
+    bool ret = rdbStore_->UnSubscribe(option, rdbStoreObs_.get());
+    MEDIA_INFO_LOG("MediaLibraryDataAbility UnSubscribe ret = %d", ret);
+    if (ret) {
+        rdbStoreObs_ = nullptr;
+    }
+
+    return ret;
+}
+
+bool MediaLibraryDataAbility::QuerySync(const std::string &deviceId ,const std::string &tableName)
+{
+    if (deviceId.empty() || tableName.empty()) {
+        return false;
+    }
+
+    OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
+    auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
+    auto ret = deviceManager.GetLocalDeviceInfo(bundleName_, deviceInfo);
+    if (ret != ERR_OK) {
+        MEDIA_ERR_LOG("MediaLibraryDataAbility QuerySync Failed to get local device info.");
+        return false;
+    }
+
+    if (deviceId == std::string(deviceInfo.deviceId)) {
+        return true;
+    }
+
+    int32_t syncStatus = DEVICE_SYNCSTATUSING;
+    auto result = MediaLibraryDevice::GetInstance()->GetDevicieSyncStatus(deviceId, syncStatus, bundleName_);
+    if (result && syncStatus == DEVICE_SYNCSTATUS_COMPLETE) {
+        return true;
+    }
+
+    std::vector<std::string> devices = { deviceId };
+    MediaLibrarySyncTable syncTable;
+    return syncTable.SyncPullTable(rdbStore_, bundleName_, tableName, devices);
+}
+
+bool MediaLibraryDataAbility::QuerySync()
+{
+    std::string strQueryCondition = DEVICE_DB_SYNC_STATUS + "=" + std::to_string(DEVICE_SYNCSTATUSING) +
+        " AND " + DEVICE_DB_DATE_MODIFIED + "=0";
+
+    std::vector<std::string> columns;
+    std::vector<std::string> devices;
+    unique_ptr<AbsSharedResultSet> queryResultSet;
+    AbsRdbPredicates deviceAbsRdbPredicates(DEVICE_TABLE);
+    deviceAbsRdbPredicates.SetWhereClause(strQueryCondition);
+
+    queryResultSet = rdbStore_->Query(deviceAbsRdbPredicates, columns);
+    if (queryResultSet == nullptr) {
+        return false;
+    }
+
+    if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t columnIndexId;
+        std::string deviceId;
+        queryResultSet->GetColumnIndex(DEVICE_DB_DEVICEID, columnIndexId);
+        queryResultSet->GetString(columnIndexId, deviceId);
+
+        if (!deviceId.empty()) {
+            devices.push_back(deviceId);
+        }
+    }
+
+    if (devices.empty()) {
+        return true;
+    }
+
+    MediaLibrarySyncTable syncTable;
+    return syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
 }
 
 bool MediaLibraryDataAbility::CheckFileNameValid(const ValuesBucket &value)
@@ -678,10 +971,7 @@ sptr<AppExecFwk::IBundleMgr> GetSysBundleManager_()
         MEDIA_ERR_LOG("failed to get bundle manager service");
         return nullptr;
     }
-    MEDIA_INFO_LOG("MediaLibraryDataAbility::GetBundleManager before iface_cast<bundleObj>");
     sptr<AppExecFwk::IBundleMgr> bms = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
-    MEDIA_INFO_LOG("MediaLibraryDataAbility::GetBundleManager after iface_cast<bundleObj>");
-    MEDIA_INFO_LOG("MediaLibraryDataAbility::GetBundleManager end");
     return bms;
 }
 
@@ -760,10 +1050,83 @@ void MediaLibraryDataAbility::InitialiseKvStore()
 
     Status status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_STOREID, kvStorePtr_);
     if (status != Status::SUCCESS || kvStorePtr_ == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryDataAbility::InitialiseKvStore failed %{public}d", status);
+        MEDIA_INFO_LOG("MediaLibraryDataAbility::InitialiseKvStore failed %{public}d", status);
     }
 }
 
 void ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) {}
+
+void MediaLibraryDeviceStateCallback::OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
+{
+    MediaLibraryDevice::GetInstance()->OnDeviceOnline(deviceInfo, bundleName_);
+
+    MediaLibrarySyncTable syncTable;
+    std::string deviceId = deviceInfo.deviceId;
+    std::vector<std::string> devices = { deviceId };
+    syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
+}
+
+void MediaLibraryDeviceStateCallback::OnDeviceOffline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
+{
+    MediaLibraryDevice::GetInstance()->OnDeviceOffline(deviceInfo, bundleName_);
+}
+
+void MediaLibraryDeviceStateCallback::OnDeviceChanged(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
+{
+    MediaLibraryDevice::GetInstance()->OnDeviceChanged(deviceInfo);
+}
+
+void MediaLibraryDeviceStateCallback::OnDeviceReady(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
+{
+    MediaLibraryDevice::GetInstance()->OnDeviceReady(deviceInfo);
+}
+
+void MediaLibraryInitCallback::OnRemoteDied()
+{
+    MEDIA_INFO_LOG("MediaLibraryInitCallback OnRemoteDied call");
+}
+
+MediaLibraryRdbStoreObserver::MediaLibraryRdbStoreObserver(std::string &bundleName)
+{
+    bundleName_ = bundleName;
+    isNotifyDeviceChange_ = false;
+
+    if (timer_ == nullptr) {
+        timer_ = std::make_unique<OHOS::Utils::Timer>(bundleName_);
+        timerId_ = timer_->Register(std::bind(&MediaLibraryRdbStoreObserver::NotifyDeviceChange, this),
+                                    NOTIFY_TIME_INTERVAL);
+        timer_->Setup();
+    }
+}
+
+MediaLibraryRdbStoreObserver::~MediaLibraryRdbStoreObserver()
+{
+    if (timer_ != nullptr) {
+        timer_->Shutdown();
+        timer_->Unregister(timerId_);
+        timer_ = nullptr;
+    }
+}
+
+void MediaLibraryRdbStoreObserver::OnChange(const std::vector<std::string>& devices)
+{
+    MEDIA_INFO_LOG("MediaLibraryRdbStoreObserver OnChange call");
+    if (devices.empty() || bundleName_.empty()) {
+        return;
+    }
+
+    for (auto &deviceId : devices) {
+        MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(deviceId, DEVICE_SYNCSTATUS_COMPLETE, bundleName_);
+        isNotifyDeviceChange_ = true;
+    }
+}
+
+void MediaLibraryRdbStoreObserver::NotifyDeviceChange()
+{
+    if (isNotifyDeviceChange_) {
+        MediaLibraryDevice::GetInstance()->NotifyDeviceChange();
+        isNotifyDeviceChange_ = false;
+    }
+}
 }  // namespace Media
 }  // namespace OHOS

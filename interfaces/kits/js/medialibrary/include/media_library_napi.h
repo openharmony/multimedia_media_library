@@ -43,6 +43,7 @@
 #include "media_asset_napi.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_data_ability.h"
+#include "medialibrary_peer_info.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "uri.h"
@@ -184,6 +185,8 @@ private:
 
     static napi_value JSRelease(napi_env env, napi_callback_info info);
 
+    static napi_value JSGetActivePeers(napi_env env, napi_callback_info info);
+    static napi_value JSGetAllPeers(napi_env env, napi_callback_info info);
     static napi_value CreateMediaTypeEnum(napi_env env);
     static napi_value CreateFileKeyEnum(napi_env env);
     static napi_value CreateDirectoryTypeEnum(napi_env env);
@@ -224,6 +227,7 @@ struct MediaLibraryAsyncContext {
     std::string selection;
     std::vector<std::string> selectionArgs;
     std::string order;
+    std::string networkId;
     std::vector<std::unique_ptr<MediaAsset>> mediaAssets;
     std::vector<std::unique_ptr<AudioAsset>> audioAssets;
     std::vector<std::unique_ptr<VideoAsset>> videoAssets;

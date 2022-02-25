@@ -18,6 +18,7 @@
 #include <regex>
 #include <cerrno>
 
+#include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
 #include "media_log.h"
 
@@ -303,6 +304,64 @@ int64_t MediaFileUtils::UTCTimeSeconds()
     t.tv_nsec = 0;
     clock_gettime(CLOCK_REALTIME, &t);
     return (int64_t)(t.tv_sec);
+}
+string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
+{
+    string deviceId;
+    if (uri.empty()) {
+        return deviceId;
+    }
+    size_t pos = uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX);
+    if (pos == string::npos) {
+        return deviceId;
+    }
+    MEDIA_INFO_LOG("MediaFileUtils::GetNetworkIdFromUri pos = %{public}d", pos);
+    string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
+    if (tempUri.empty()) {
+        return deviceId;
+    }
+    MEDIA_INFO_LOG("MediaFileUtils::GetNetworkIdFromUri tempUri = %{public}s", tempUri.c_str());
+    pos = tempUri.find_first_of('/');
+    if (pos == 0 || pos == string::npos) {
+        return deviceId;
+    }
+    deviceId = tempUri.substr(0, pos);
+    MEDIA_INFO_LOG("MediaFileUtils::GetNetworkIdFromUri NetworkId = %{public}s", deviceId.c_str());
+    return deviceId;
+}
+
+string MediaFileUtils::UpdatePath(const string &path, const string &uri)
+{
+    string retStr = path;
+    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath path = %{public}s, uri = %{public}s", path.c_str(), uri.c_str());
+    if (path.empty() || uri.empty()) {
+        return retStr;
+    }
+
+    string networkId = GetNetworkIdFromUri(uri);
+    if (networkId.empty()) {
+        MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{public}s", retStr.c_str());
+        return retStr;
+    }
+    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath networkId = %{public}s", networkId.c_str());
+    size_t pos = path.find(MEDIA_DATA_DEVICE_PATH);
+    if (pos == string::npos) {
+        return retStr;
+    }
+    
+    string beginStr = path.substr(0, pos);
+    if (beginStr.empty()) {
+        return retStr;
+    }
+    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath beginStr = %{public}s", beginStr.c_str());
+    string endStr = path.substr(pos + MEDIA_DATA_DEVICE_PATH.length());
+    if (beginStr.empty()) {
+        return retStr;
+    }
+    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath endStr = %{public}s", endStr.c_str());
+    retStr = beginStr + networkId + endStr;
+    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{public}s", retStr.c_str());
+    return retStr;
 }
 } // namespace Media
 } // namespace OHOS

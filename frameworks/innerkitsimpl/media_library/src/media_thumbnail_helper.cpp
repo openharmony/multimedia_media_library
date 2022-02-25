@@ -14,7 +14,7 @@
  */
 
 #include "media_thumbnail_helper.h"
-
+#include "media_file_utils.h"
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
 #include "media_log.h"
@@ -77,11 +77,20 @@ bool MediaThumbnailHelper::isThumbnailFromLcd(Size &size)
             size.height <= DEFAULT_THUMBNAIL_SIZE.height);
 }
 
-std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Size &size)
+std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Size &size, const std::string &uri)
 {
     vector<uint8_t> image;
     if (!GetImage(key, image)) {
-        return nullptr;
+        if (uri.empty()) {
+            return nullptr;
+        }
+        auto syncStatus = SyncKvstore(key, uri);
+        if (syncStatus != DistributedKv::Status::SUCCESS) {
+            return nullptr;
+        }
+        if (!GetImage(key, image)) {
+            return nullptr;
+        }
     }
 
     unique_ptr<PixelMap> pixelMap;
@@ -89,6 +98,21 @@ std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Si
         return nullptr;
     }
     return pixelMap;
+}
+
+DistributedKv::Status MediaThumbnailHelper::SyncKvstore(std::string key, const std::string &uri)
+{
+    if (singleKvStorePtr_ == nullptr) {
+        return DistributedKv::Status::ERROR;
+    }
+    std::string deviceId = MediaFileUtils::GetNetworkIdFromUri(uri);
+    if (deviceId.empty()) {
+        return DistributedKv::Status::ERROR;
+    }
+    DistributedKv::DataQuery dataQuery;
+    dataQuery.KeyPrefix(key);
+    std::vector<std::string> deviceIds = { deviceId };
+    return singleKvStorePtr_->SyncWithCondition(deviceIds, OHOS::DistributedKv::SyncMode::PULL, dataQuery);
 }
 
 bool MediaThumbnailHelper::ResizeImage(vector<uint8_t> &data, Size &size, unique_ptr<PixelMap> &pixelMap)
