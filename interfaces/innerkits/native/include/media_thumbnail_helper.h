@@ -32,8 +32,9 @@ class MediaThumbnailHelper {
 public:
     MediaThumbnailHelper();
     ~MediaThumbnailHelper() = default;
-    std::unique_ptr<PixelMap> GetThumbnail(std::string key, Size &size);
+    std::unique_ptr<PixelMap> GetThumbnail(std::string key, Size &size, const std::string &uri = "");
     bool isThumbnailFromLcd(Size &size);
+    std::string GetDeviceIdByUri(const std::string &uri);
 protected:
     std::shared_ptr<DistributedKv::SingleKvStore> singleKvStorePtr_ = nullptr;
     void InitKvStore();
@@ -44,6 +45,7 @@ protected:
     // KV Store
     bool GetImage(std::string &key, std::vector<uint8_t> &image);
     bool IsImageExist(std::string &key);
+    DistributedKv::Status SyncKvstore(std::string key, const std::string &uri);
 };
 } // namespace Media
 } // namespace  OHOS

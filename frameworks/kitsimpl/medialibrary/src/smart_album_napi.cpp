@@ -922,6 +922,7 @@ static void GetTrashFileAssetsNative(SmartAlbumNapiAsyncContext *context)
         context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
 
     context->fetchResult = std::make_unique<FetchResult>(resultSet);
+    // context->fetchResult->networkId_ = context->network;
     HiLog::Error(LABEL, "GetTrashFileAssetsNative out");
 }
 
@@ -945,6 +946,7 @@ static void GetFavFileAssetsNative(SmartAlbumNapiAsyncContext *context)
         context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
 
     context->fetchResult = std::make_unique<FetchResult>(resultSet);
+    // context->fetchResult->networkId_ = context->network;
     HiLog::Error(LABEL, "GetFavFileAssetsNative out");
 }
 

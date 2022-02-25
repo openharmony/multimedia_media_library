@@ -35,6 +35,7 @@ FetchResult::FetchResult(const shared_ptr<OHOS::NativeRdb::AbsSharedResultSet>& 
     isContain_ = count_ > 0;
     isClosed_ = false;
     resultset_ = resultset;
+    networkId_ = "";
 }
 
 // empty constructor napi
@@ -185,11 +186,6 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
     return cellValue;
 }
 
-static string getNetworkId(const string& selfId)
-{
-    return "";
-}
-
 static string GetFileMediaTypeUri(MediaType mediaType, const string& networkId)
 {
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
@@ -265,7 +261,7 @@ unique_ptr<FileAsset> FetchResult::GetObject()
 
     fileAsset->SetSelfId(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_SELF_ID, TYPE_STRING)));
 
-    fileAsset->SetUri(GetFileMediaTypeUri(fileAsset->GetMediaType(), getNetworkId(fileAsset->GetSelfId()))
+    fileAsset->SetUri(GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_)
         + "/" + to_string(fileAsset->GetId()));
 
     return fileAsset;

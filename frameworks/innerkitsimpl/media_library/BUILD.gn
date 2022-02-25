@@ -98,6 +98,7 @@ ohos_static_library("media_thumbnail_helper") {
   sources = [ "src/media_thumbnail_helper.cpp" ]
   include_dirs = [
     "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
+    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library/include",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
     "//utils/native/base/include",

@@ -46,6 +46,7 @@ public:
     int32_t GetFileId() const;
     int32_t GetOrientation() const;
     Media::MediaType GetMediaType() const;
+    std::string GetNetworkId() const;
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
     static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
 private:
@@ -143,6 +144,7 @@ struct FileAssetAsyncContext {
     int32_t fd;
     bool isFavourite = false;
     bool isTrash = false;
+    std::string networkId;
 };
 } // namespace Media
 } // namespace OHOS
