@@ -44,36 +44,6 @@ int32_t RemoveDirectory(const string &path)
     return errCode;
 }
 
-void ChangeOwnerToMedia(const string &path)
-{
-    uid_t usrId;
-    gid_t grpId;
-    struct passwd *pw = nullptr;
-    struct group *grp = nullptr;
-
-    pw = getpwnam(CHOWN_OWNER_NAME.c_str());
-    if (pw == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain the user account information");
-        return;
-    }
-    usrId = pw->pw_uid;
-
-    grp = getgrnam(CHOWN_GROUP_NAME.c_str());
-    if (grp == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain the group information");
-        memset_s(pw, sizeof(struct passwd), 0, sizeof(struct passwd));
-        return;
-    }
-    grpId = grp->gr_gid;
-
-    if (chown(path.c_str(), usrId, grpId) == -1) {
-        MEDIA_ERR_LOG("chown failed for the given path");
-    }
-
-    memset_s(pw, sizeof(struct passwd), 0, sizeof(struct passwd));
-    memset_s(pw, sizeof(struct group), 0, sizeof(struct group));
-}
-
 bool MediaFileUtils::CreateDirectory(const string& dirPath)
 {
     string subStr;
@@ -92,15 +62,13 @@ bool MediaFileUtils::CreateDirectory(const string& dirPath)
         subStr = subStr + SLASH_CHAR + segment;
         if (!IsDirectory(subStr)) {
             string folderPath = subStr;
+            mode_t mask = umask(0);
             if (mkdir(folderPath.c_str(), CHOWN_RWX_USR_GRP) == -1) {
                 MEDIA_ERR_LOG("Failed to create directory %{public}d", errno);
+                umask(mask);
                 return false;
             }
-
-            ChangeOwnerToMedia(folderPath);
-            if (chmod(folderPath.c_str(), CHOWN_RWX_USR_GRP) == -1) {
-                MEDIA_ERR_LOG("chmod failed for the newly created directory %{public}d", errno);
-            }
+            umask(mask);
         }
     }
 
@@ -167,8 +135,6 @@ bool MediaFileUtils::CreateFile(const string& filePath)
         return errCode;
     }
 
-    // Change ownership to Media and mode to Read-write user and group
-    ChangeOwnerToMedia(filePath);
     if (chmod(filePath.c_str(), CHOWN_RW_USR_GRP) == SUCCESS) {
         errCode = true;
     }

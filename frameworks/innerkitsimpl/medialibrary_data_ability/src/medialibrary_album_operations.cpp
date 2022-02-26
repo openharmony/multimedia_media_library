@@ -22,26 +22,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-void MediaLibraryAlbumOperations::ChangeGroupToMedia(const string &path)
-{
-    uid_t usrId;
-    gid_t grpId;
-    struct group *grp = nullptr;
-
-    usrId = getuid();
-
-    grp = getgrnam("media_rw");
-    if (grp == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain the group information");
-        return;
-    }
-    grpId = grp->gr_gid;
-
-    if (chown(path.c_str(), usrId, grpId) == DATA_ABILITY_FAIL) {
-        MEDIA_ERR_LOG("chown failed for the given path");
-    }
-}
-
 int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
                             const string &albumPath,
                             shared_ptr<RdbStore> rdbStore,
