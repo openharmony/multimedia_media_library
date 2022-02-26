@@ -98,10 +98,10 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
     return errCode;
 }
 
-int32_t MediaLibraryFileOperations::HandleCloseAsset(string &rowNum, string &srcPath, const ValuesBucket &values,
+int32_t MediaLibraryFileOperations::HandleCloseAsset(string &uriStr, string &srcPath, const ValuesBucket &values,
     const shared_ptr<RdbStore> &rdbStore)
 {
-    int32_t errorCode = MediaLibraryDataAbilityUtils::setFilePending(rowNum, false, rdbStore);
+    int32_t errorCode = MediaLibraryDataAbilityUtils::setFilePending(uriStr, false, rdbStore);
     if (errorCode == DATA_ABILITY_FAIL) {
         MEDIA_ERR_LOG("HandleCloseAsset Set file to pending DB error");
         return DATA_ABILITY_FAIL;
@@ -338,7 +338,7 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
     } else if (oprn == MEDIA_FILEOPRN_DELETEASSET) {
         errCode = HandleDeleteAsset(id, srcPath, rdbStore);
     } else if (oprn == MEDIA_FILEOPRN_CLOSEASSET) {
-        errCode = HandleCloseAsset(id, srcPath, values, rdbStore);
+        errCode = HandleCloseAsset(actualUri, srcPath, values, rdbStore);
     }
     if (oprn == MEDIA_FILEOPRN_CLOSEASSET) {
         CreateThumbnail(rdbStore, mediaThumbnail, id);

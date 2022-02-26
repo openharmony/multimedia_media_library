@@ -1331,14 +1331,11 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
         if (resultSet != nullptr) {
             // Create FetchResult object using the contents of resultSet
             context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
+            context->fetchFileResult->networkId_ = context->networkId;
             return;
         } else {
             HiLog::Error(LABEL, "Query for get fileAssets failed");
         }
-    } else {
-        // Create FetchResult object using the contents of resultSet
-        context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
-        context->fetchFileResult->networkId_ = context->networkId;
     }
     context->error = ERR_INVALID_OUTPUT;
 }
