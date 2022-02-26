@@ -190,7 +190,7 @@ string MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &opts,
                                               Size &size)
 {
     string res;
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::GetThumbnail IN");
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::GetThumbnailKey IN");
     if (singleKvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("KvStore is not init");
         return res;
@@ -204,8 +204,14 @@ string MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &opts,
 
     bool isFromLcd = isThumbnailFromLcd(size);
     if (isFromLcd && thumbnailData.lcdKey.empty()) {
+        if (MEDIALIBRARY_TABLE.compare(opts.table) != 0) {
+            return res;
+        }
         CreateLcd(opts, thumbnailData.lcdKey);
     } else if (thumbnailData.thumbnailKey.empty()) {
+        if (MEDIALIBRARY_TABLE.compare(opts.table) != 0) {
+            return res;
+        }
         CreateThumbnail(opts, thumbnailData.thumbnailKey);
     }
 
@@ -217,13 +223,13 @@ string MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &opts,
 }
 
 unique_ptr<PixelMap> MediaLibraryThumbnail::GetThumbnailByRdb(ThumbRdbOpt &opts,
-                                                              Size &size)
+                                                              Size &size, const std::string &uri)
 {
     string key = GetThumbnailKey(opts, size);
     if (key.empty()) {
         return nullptr;
     }
-    return GetThumbnail(key, size);
+    return GetThumbnail(key, size, uri);
 }
 
 void MediaLibraryThumbnail::CreateThumbnails(ThumbRdbOpt &opts)

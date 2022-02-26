@@ -231,6 +231,10 @@ int32_t FileAssetNapi::GetOrientation() const
 {
     return orientation_;
 }
+std::string FileAssetNapi::GetNetworkId() const
+{
+    return MediaFileUtils::GetNetworkIdFromUri(fileUri_);
+}
 napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -350,7 +354,6 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
             HiLog::Error(LABEL, "Invalid arguments type!");
             return undefinedResult;
         }
-
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
         if (status == napi_ok) {
             obj->displayName_ = string(buffer);
@@ -1246,9 +1249,9 @@ static string GetStringInfo(shared_ptr<NativeRdb::AbsSharedResultSet> resultSet,
 static unique_ptr<PixelMap> QueryThumbnail(
     shared_ptr<DataAbilityHelper> &abilityHelper,
     shared_ptr<MediaThumbnailHelper> &thumbnailHelper,
-    int32_t &fileId, int32_t &width, int32_t &height)
+    int32_t &fileId, std::string &uri, int32_t &width, int32_t &height)
 {
-    Uri queryUri1(Media::MEDIALIBRARY_DATA_URI + "/" + to_string(fileId) + "?" +
+    Uri queryUri1(uri + "?" +
         MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
         MEDIA_DATA_DB_WIDTH + "=" + to_string(width) + "&" +
         MEDIA_DATA_DB_HEIGHT + "=" + to_string(height));
@@ -1289,7 +1292,7 @@ static unique_ptr<PixelMap> QueryThumbnail(
     HiLog::Info(LABEL, "Query thumbnail id %{public}s with key %{public}s",
         id.c_str(), thumbnailKey.c_str());
 
-    return thumbnailHelper->GetThumbnail(thumbnailKey, size);
+    return thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
 }
 
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
@@ -1303,8 +1306,9 @@ static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
     if (context->objectInfo->sAbilityHelper_ != nullptr &&
         context->objectInfo->sThumbnailHelper_ != nullptr) {
         int32_t fileId = context->objectInfo->GetFileId();
+        std::string uri = context->objectInfo->GetFileUri();
         shared_ptr<PixelMap> pixelmap = QueryThumbnail(context->objectInfo->sAbilityHelper_,
-            context->objectInfo->sThumbnailHelper_, fileId,
+            context->objectInfo->sThumbnailHelper_, fileId, uri,
             context->thumbWidth, context->thumbHeight);
 
         if (pixelmap != nullptr) {
@@ -1369,6 +1373,13 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
         if (i == PARAM0 && valueType == napi_object) {
             GetSizeInfo(env, argv[PARAM0], "width", context->thumbWidth);
             GetSizeInfo(env, argv[PARAM0], "height", context->thumbHeight);
+        } else if (i == PARAM0 && valueType == napi_string) {
+            size_t res = 0;
+            char buffer[PATH_MAX];
+            napi_status status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
+            if (status == napi_ok) {
+                context->networkId = string(buffer);
+            }
         } else if (i == PARAM0 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
@@ -1548,25 +1559,46 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
     return result;
 }
 
+static unique_ptr<FileAsset> GetFileAssetById(const int32_t id, const string& networkId,
+    shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper_)
+{
+    unique_ptr<FileAsset> fileAsset = nullptr;
+
+    if (abilityHelper_ != nullptr) {
+        DataAbilityPredicates predicates;
+        predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
+
+        vector<string> columns;
+        string queryUri = MEDIALIBRARY_DATA_URI;
+        if (!networkId.empty()) {
+            queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
+            HiLog::Debug(LABEL, "GetFileAssetById queryUri is = %{public}s", queryUri.c_str());
+        }
+        Uri uri(queryUri);
+        shared_ptr<AbsSharedResultSet> resultSet = abilityHelper_->Query(uri, columns, predicates);
+        if (resultSet == nullptr) {
+            MEDIA_ERR_LOG("Failed to obtain file asset");
+        }
+        unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+        fetchFileResult->networkId_ = networkId;
+        fileAsset = fetchFileResult->GetFirstObject();
+    }
+
+    return fileAsset;
+}
+
 static bool GetIsFavouriteNative(const FileAssetAsyncContext &fileContext)
 {
     FileAssetAsyncContext *context = const_cast<FileAssetAsyncContext *>(&fileContext);
-    NativeRdb::DataAbilityPredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
-    std::vector<std::string> columns;
-    columns.push_back(MEDIA_DATA_DB_IS_FAV);
-    Uri uri(MEDIALIBRARY_DATA_URI);
-    std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
-        context->objectInfo->sAbilityHelper_->Query(uri, columns, predicates);
-    int32_t columnIndex;
     bool isFavourite = false;
-    int favourite = 0;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        resultSet->GetColumnIndex(MEDIA_DATA_DB_IS_FAV, columnIndex);
-        resultSet->GetInt(columnIndex, favourite);
-    }
-    if (favourite == 1) {
+    unique_ptr<FileAsset> fileAsset = GetFileAssetById(context->objectInfo->GetFileId(),
+        context->objectInfo->GetNetworkId(), context->objectInfo->sAbilityHelper_);
+
+    if (fileAsset != nullptr && fileAsset->IsFavorite()) {
+        MEDIA_INFO_LOG("isFavourite = true");
         isFavourite = true;
+    } else {
+        MEDIA_INFO_LOG("isFavourite = false");
     }
     return isFavourite;
 }
@@ -1863,38 +1895,13 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
     return result;
 }
 
-static unique_ptr<FileAsset> GetFileAssetById(const int32_t id,
-    shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper_)
-{
-    unique_ptr<FileAsset> fileAsset = nullptr;
-
-    if (abilityHelper_ != nullptr) {
-        DataAbilityPredicates predicates;
-        predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
-
-        vector<string> columns;
-        Uri uri(MEDIALIBRARY_DATA_URI);
-
-        shared_ptr<AbsSharedResultSet> resultSet = abilityHelper_->Query(uri, columns, predicates);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Failed to obtain file asset");
-        }
-        unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
-
-        fileAsset = fetchFileResult->GetFirstObject();
-    }
-
-    return fileAsset;
-}
-
 static bool GetIsTrashNative(const FileAssetAsyncContext &fileContext)
 {
     FileAssetAsyncContext *context = const_cast<FileAssetAsyncContext *>(&fileContext);
 
     bool isTrashed = false;
-
     unique_ptr<FileAsset> fileAsset = GetFileAssetById(context->objectInfo->GetFileId(),
-        context->objectInfo->sAbilityHelper_);
+        context->objectInfo->GetNetworkId(), context->objectInfo->sAbilityHelper_);
 
     if (fileAsset != nullptr && fileAsset->GetDateTrashed() > 0) {
         MEDIA_INFO_LOG("isTrashed = true");

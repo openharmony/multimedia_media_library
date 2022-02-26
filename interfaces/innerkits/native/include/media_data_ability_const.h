@@ -39,7 +39,13 @@ const int32_t MEDIA_RDB_VERSION = 1;
 const int32_t MEDIA_RDB_VERSION_NEW = 5;
 const int32_t MEDIA_SMARTALBUM_RDB_VERSION = 1;
 const int32_t MEDIA_SMARTALBUMMAP_RDB_VERSION = 1;
+const int32_t DEVICE_OPERATION_ERR = -1;
 
+const int32_t DEVICE_SYNCSTATUSING = 0;
+const int32_t DEVICE_SYNCSTATUS_COMPLETE = 1;
+
+const std::string MEDIA_DATA_DB_Path = "/data/media/";
+const std::string MEDIA_DATA_DEVICE_PATH = "local";
 const std::string MEDIALIBRARY_TABLE = "Files";
 const std::string SMARTALBUM_TABLE = "SmartAlbum";
 const std::string SMARTALBUM_MAP_TABLE = "SmartAlbumMap";
@@ -300,7 +306,9 @@ const std::string CREATE_CATEGORY_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXI
                                             + CATEGORY_SMARTALBUMMAP_DB_ALBUM_ID + " INT, "
                                             + SMARTALBUMMAP_DB_SELF_ID + " TEXT) ";
 
-const std::string DEVICE_DB_ID = "device_id";
+const std::string DEVICE_DB_ID = "id";
+const std::string DEVICE_DB_DEVICEID = "device_id";
+const std::string DEVICE_DB_NETWORK_ID = "network_id";
 const std::string DEVICE_DB_NAME = "device_name";
 const std::string DEVICE_DB_IP = "device_ip";
 const std::string DEVICE_DB_SYNC_STATUS = "sync_status";
@@ -311,14 +319,16 @@ const std::string DEVICE_DB_DATE_ADDED = "date_added";
 const std::string DEVICE_DB_DATE_MODIFIED = "date_modified";
 const std::string CREATE_DEVICE_TABLE = "CREATE TABLE IF NOT EXISTS " + DEVICE_TABLE + " ("
                                             + DEVICE_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                            + DEVICE_DB_DEVICEID + " TEXT, "
+                                            + DEVICE_DB_NETWORK_ID + " TEXT, "
                                             + DEVICE_DB_NAME + " TEXT, "
-                                            + DEVICE_DB_IP + " TEXT, "
-                                            + DEVICE_DB_SYNC_STATUS + " TEXT, "
+                                            + DEVICE_DB_IP + " TEXT DEFAULT '', "
+                                            + DEVICE_DB_SYNC_STATUS + " INT DEFAULT 0, "
                                             + DEVICE_DB_SELF_ID + " TEXT, "
-                                            + DEVICE_DB_TYPE + " TEXT, "
+                                            + DEVICE_DB_TYPE + " INT, "
                                             + DEVICE_DB_PREPATH + " TEXT, "
-                                            + DEVICE_DB_DATE_ADDED + " BIGINT, "
-                                            + DEVICE_DB_DATE_MODIFIED + " BIGINT) ";
+                                            + DEVICE_DB_DATE_ADDED + " BIGINT DEFAULT 0, "
+                                            + DEVICE_DB_DATE_MODIFIED + " BIGINT DEFAULT 0) ";
 const std::string SMARTALBUM_TABLE_NAME = "smartalbum";
 const std::string SMARTALBUMMAP_TABLE_NAME = "smartAlbumMap";
 const std::string CATEGORY_SMARTALBUMMAP_TABLE_NAME = "categorySmartAlbumMap";
@@ -397,6 +407,9 @@ const std::string SMARTALBUM_DB_COND = SMARTALBUM_DB_ID + " = ?";
 const std::string SMARTALBUM_MAP_DE_SMARTALBUM_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ?";
 const std::string SMARTALBUM_MAP_DE_ASSETS_COND = SMARTALBUMMAP_DB_ASSET_ID + " = ?";
 const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ? AND " + SMARTALBUMMAP_DB_ASSET_ID + " = ?";
+const std::string DEVICE_DB_COND = DEVICE_DB_DEVICEID + " = ?";
+const std::string MEDIA_DEVICE_QUERYALLDEVICE = "query_all_device";
+const std::string MEDIA_DEVICE_QUERYACTIVEDEVICE = "query_active_device";
 } // namespace OHOS
 } // namespace Media
 #endif // MEDIA_DATA_ABILITY_CONST_H

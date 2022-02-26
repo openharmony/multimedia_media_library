@@ -64,7 +64,7 @@ public:
     EXPORT void CreateThumbnails(ThumbRdbOpt &opts);
 
     EXPORT std::string GetThumbnailKey(ThumbRdbOpt &opts, Size &size);
-    EXPORT std::unique_ptr<PixelMap> GetThumbnailByRdb(ThumbRdbOpt &opts, Size &size);
+    EXPORT std::unique_ptr<PixelMap> GetThumbnailByRdb(ThumbRdbOpt &opts, Size &size, const std::string &uri);
 
 private:
     // utils

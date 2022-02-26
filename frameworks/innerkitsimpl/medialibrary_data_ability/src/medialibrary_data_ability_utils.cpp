@@ -260,7 +260,7 @@ bool MediaLibraryDataAbilityUtils::isFileExistInDb(const string &path, const sha
     unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     if (queryResultSet != nullptr) {
         queryResultSet->GetRowCount(count);
-        MEDIA_ERR_LOG("count is %{public}d", count);
+        MEDIA_INFO_LOG("count is %{public}d", count);
         if (count > 0) {
             return true;
         }
@@ -304,9 +304,11 @@ string MediaLibraryDataAbilityUtils::GetPathFromDb(const string &id, const share
     return filePath;
 }
 
-shared_ptr<FileAsset> MediaLibraryDataAbilityUtils::GetFileAssetFromDb(const string &id,
+shared_ptr<FileAsset> MediaLibraryDataAbilityUtils::GetFileAssetFromDb(const string &uriStr,
     const shared_ptr<RdbStore> &rdbStore)
 {
+    string id = MediaLibraryDataAbilityUtils::GetIdFromUri(uriStr);
+    string networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(uriStr);
     vector<string> selectionArgs = {};
 
     if ((id.empty()) || (!IsNumber(id)) || (stoi(id) == -1) || (rdbStore == nullptr)) {
@@ -315,8 +317,17 @@ shared_ptr<FileAsset> MediaLibraryDataAbilityUtils::GetFileAssetFromDb(const str
     }
 
     string strQueryCondition = MEDIA_DATA_DB_ID + " = " + id;
+    string tableName = MEDIALIBRARY_TABLE;
+    if (!networkId.empty()) {
+        tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
+        MEDIA_INFO_LOG("tableName is %{public}s", tableName.c_str());
+    }
 
-    AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+    if (tableName.empty()) {
+        MEDIA_ERR_LOG("Get tableName fail, networkId is %{public}s", networkId.c_str());
+        return nullptr;
+    }
+    AbsRdbPredicates absPredicates(tableName);
     absPredicates.SetWhereClause(strQueryCondition);
     absPredicates.SetWhereArgs(selectionArgs);
 
@@ -328,7 +339,9 @@ shared_ptr<FileAsset> MediaLibraryDataAbilityUtils::GetFileAssetFromDb(const str
     shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>(resultSet);
     if (fetchFileResult == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain fetch file result");
+        return nullptr;
     }
+    fetchFileResult->networkId_ = networkId;
     return fetchFileResult->GetFirstObject();
 }
 
@@ -366,10 +379,14 @@ bool MediaLibraryDataAbilityUtils::checkOpenMode(const string &mode)
     return false;
 }
 
-int32_t MediaLibraryDataAbilityUtils::setFilePending(string &id, bool isPending, const shared_ptr<RdbStore> &rdbStore)
+int32_t MediaLibraryDataAbilityUtils::setFilePending(string &uriStr,
+    bool isPending, const shared_ptr<RdbStore> &rdbStore)
 {
     MEDIA_INFO_LOG("setFilePending in");
-    MEDIA_INFO_LOG("setFilePending id = %{public}s,isPending = %{public}d", id.c_str(), isPending);
+    string id = MediaLibraryDataAbilityUtils::GetIdFromUri(uriStr);
+    string networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(uriStr);
+    MEDIA_INFO_LOG("setFilePending id = %{public}s, networkId = %{public}s, isPending = %{public}d",
+        id.c_str(), networkId.c_str(), isPending);
     vector<string> selectionArgs = {};
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + id;
 
@@ -385,8 +402,17 @@ int32_t MediaLibraryDataAbilityUtils::setFilePending(string &id, bool isPending,
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, timeNow);
 
     int32_t changedRows = DATA_ABILITY_FAIL;
+    string tableName = MEDIALIBRARY_TABLE;
+    if (!networkId.empty()) {
+        tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
+        MEDIA_INFO_LOG("tableName is %{public}s", tableName.c_str());
+    }
 
-    (void)rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, selectionArgs);
+    if (tableName.empty()) {
+        MEDIA_ERR_LOG("Get tableName fail, networkId is %{public}s", networkId.c_str());
+        return DATA_ABILITY_FAIL;
+    }
+    (void)rdbStore->Update(changedRows, tableName, values, strUpdateCondition, selectionArgs);
     MEDIA_INFO_LOG("setFilePending out");
     return changedRows;
 }
@@ -482,6 +508,31 @@ unique_ptr<AbsSharedResultSet> MediaLibraryDataAbilityUtils::QueryTrashFiles(con
 {
     string strQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + " > 0 AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> 8";
     return QueryFiles(strQueryCondition, rdbStore);
+}
+
+string MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(const string &uri)
+{
+    string deviceId;
+    if (uri.empty()) {
+        return deviceId;
+    }
+    size_t pos = uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX);
+    if (pos == string::npos) {
+        return deviceId;
+    }
+    MEDIA_INFO_LOG("MediaLibraryDataAbilityUtils::GetNetworkIdFromUri pos = %{public}d", pos);
+    string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
+    if (tempUri.empty()) {
+        return deviceId;
+    }
+    MEDIA_INFO_LOG("MediaLibraryDataAbilityUtils::GetNetworkIdFromUri tempUri = %{public}s", tempUri.c_str());
+    pos = tempUri.find_first_of('/');
+    if (pos == 0 || pos == string::npos) {
+        return deviceId;
+    }
+    deviceId = tempUri.substr(0, pos);
+    MEDIA_INFO_LOG("MediaLibraryDataAbilityUtils::GetNetworkIdFromUri NetworkId = %{public}s", deviceId.c_str());
+    return deviceId;
 }
 } // namespace Media
 } // namespace OHOS
