@@ -593,18 +593,24 @@ void GenThumbnail(shared_ptr<RdbStore> rdb,
 static void DealWithUriString(string &uriString, TableType &tabletype,
     string &strQueryCondition, string::size_type &pos, string &strRow)
 {
+    string type = uriString.substr(pos + 1);
+    MEDIA_INFO_LOG("MediaLibraryDataAbility uriString type = %{public}s", type.c_str());
     if (strQueryCondition.empty() && pos != string::npos) {
-        strRow = uriString.substr(pos + 1);
+        strRow = type;
         uriString = uriString.substr(0, pos);
-        if (pos == MEDIALIBRARY_DATA_URI.length()) {
-            tabletype = TYPE_DATA;
-            strQueryCondition = MEDIA_DATA_DB_ID + " = " + strRow;
-        } else if (pos == MEDIALIBRARY_SMARTALBUM_URI.length()) {
+        string::size_type posTable = uriString.find_last_of('/');
+        string tableName = uriString.substr(posTable + 1);
+        MEDIA_INFO_LOG("MediaLibraryDataAbility tableName = %{public}s", tableName.c_str());
+        MEDIA_INFO_LOG("MediaLibraryDataAbility strRow = %{public}s", strRow.c_str());
+        if (SMARTALBUM_TABLE.compare(tableName) == 0) {
             tabletype = TYPE_SMARTALBUM;
             strQueryCondition = SMARTALBUM_DB_ID + " = " + strRow;
-        } else if (pos == MEDIALIBRARY_SMARTALBUM_MAP_URI.length()) {
+        } else if (SMARTALBUM_MAP_TABLE.compare(tableName) == 0) {
             tabletype = TYPE_SMARTALBUM_MAP;
             strQueryCondition = SMARTALBUMMAP_DB_ALBUM_ID + " = " + strRow;
+        } else {
+            tabletype = TYPE_DATA;
+            strQueryCondition = MEDIA_DATA_DB_ID + " = " + strRow;
         }
     } else {
         if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM) {

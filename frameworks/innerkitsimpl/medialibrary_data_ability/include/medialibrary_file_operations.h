@@ -35,7 +35,7 @@ class MediaLibraryFileOperations {
 public:
     int32_t HandleCreateAsset(const NativeRdb::ValuesBucket &values,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    int32_t HandleCloseAsset(std::string &rowNum, std::string &srcPath, const NativeRdb::ValuesBucket &values,
+    int32_t HandleCloseAsset(std::string &actualUri, std::string &srcPath, const NativeRdb::ValuesBucket &values,
                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleGetAlbumCapacity(const NativeRdb::ValuesBucket &values,
                                 const std::shared_ptr<RdbStore> &rdbStore);
