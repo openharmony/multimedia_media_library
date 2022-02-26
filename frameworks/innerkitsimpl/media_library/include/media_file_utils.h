@@ -32,9 +32,7 @@
 
 namespace OHOS {
 namespace Media {
-const std::string CHOWN_OWNER_NAME = "user_data_rw";
-const std::string CHOWN_GROUP_NAME = "user_data_rw";
-const mode_t CHOWN_RWX_USR_GRP = 0770;
+const mode_t CHOWN_RWX_USR_GRP = 02770;
 const mode_t CHOWN_RW_USR_GRP = 0660;
 
 /**
