@@ -102,6 +102,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 obj->fetchFileResult_->isContain_ = sFetchFileResult_->isContain_;
                 obj->fetchFileResult_->isClosed_ = sFetchFileResult_->isClosed_;
                 obj->fetchFileResult_->count_ = sFetchFileResult_->count_;
+                obj->fetchFileResult_->networkId_ = sFetchFileResult_->networkId_;
                 obj->abilityHelper_ = sAbilityHelper;
                 fetchRes.release();
             } else {

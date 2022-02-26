@@ -92,7 +92,9 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("release", JSRelease),
         DECLARE_NAPI_FUNCTION("getPrivateAlbum", JSGetPrivateAlbum),
         DECLARE_NAPI_FUNCTION("createSmartAlbum", JSCreateSmartAlbum),
-        DECLARE_NAPI_FUNCTION("deleteSmartAlbum", JSDeleteSmartAlbum)
+        DECLARE_NAPI_FUNCTION("deleteSmartAlbum", JSDeleteSmartAlbum),
+        DECLARE_NAPI_FUNCTION("getActivePeers", JSGetActivePeers),
+        DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers)
     };
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("getMediaLibrary", GetMediaLibraryNewInstance),
@@ -418,17 +420,13 @@ IMediaLibraryClient* MediaLibraryNapi::GetMediaLibClientInstance()
     IMediaLibraryClient *ins = this->mediaLibrary_;
     return ins;
 }
-
-static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibraryAsyncContext &context, bool &err)
+static void DealWithCommonParam(napi_env env, napi_value arg,
+    const MediaLibraryAsyncContext &context, bool &err, bool &present)
 {
     MediaLibraryAsyncContext *asyncContext = const_cast<MediaLibraryAsyncContext *>(&context);
     char buffer[PATH_MAX];
     size_t res = 0;
-    uint32_t len = 0;
     napi_value property = nullptr;
-    napi_value stringItem = nullptr;
-    bool present = false;
-
     napi_has_named_property(env, arg, "selections", &present);
     if (present) {
         if (napi_get_named_property(env, arg, "selections", &property) != napi_ok
@@ -457,6 +455,29 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibrar
         present = false;
     }
 
+    napi_has_named_property(env, arg, "networkId", &present);
+    if (present) {
+        if (napi_get_named_property(env, arg, "networkId", &property) != napi_ok
+            || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
+            HiLog::Error(LABEL, "Could not get the networkId string argument!");
+            err = true;
+            return;
+        } else {
+            asyncContext->networkId = buffer;
+            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+        }
+        present = false;
+    }
+}
+static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibraryAsyncContext &context, bool &err)
+{
+    MediaLibraryAsyncContext *asyncContext = const_cast<MediaLibraryAsyncContext *>(&context);
+    char buffer[PATH_MAX];
+    uint32_t len = 0;
+    size_t res = 0;
+    napi_value property = nullptr, stringItem = nullptr;
+    bool present = false;
+    DealWithCommonParam(env, arg, context, err, present);
     napi_has_named_property(env, arg, "selectionArgs", &present);
     if (present && napi_get_named_property(env, arg, "selectionArgs", &property) == napi_ok) {
         napi_get_array_length(env, property, &len);
@@ -1295,8 +1316,14 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
+    
+    string queryUri = MEDIALIBRARY_DATA_URI;
+    if (!context->networkId.empty()) {
+        queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
+        HiLog::Debug(LABEL, "queryUri is = %{public}s", queryUri.c_str());
+    }
 
-    Uri uri(MEDIALIBRARY_DATA_URI);
+    Uri uri(queryUri);
     shared_ptr<AbsSharedResultSet> resultSet;
 
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
@@ -1309,7 +1336,9 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
             HiLog::Error(LABEL, "Query for get fileAssets failed");
         }
     } else {
-        HiLog::Error(LABEL, "sAbilityHelper_ is nullptr");
+        // Create FetchResult object using the contents of resultSet
+        context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
+        context->fetchFileResult->networkId_ = context->networkId;
     }
     context->error = ERR_INVALID_OUTPUT;
 }
@@ -1474,32 +1503,43 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     }
 
     vector<string> columns;
-    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM);
+    string queryUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
+    if (!context->networkId.empty()) {
+        queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId +
+            MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
+        HiLog::Debug(LABEL, "queryAlbumUri is = %{public}s", queryUri.c_str());
+    }
+    Uri uri(queryUri);
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sAbilityHelper_->Query(
         uri, columns, predicates);
+
     HiLog::Error(LABEL, "GetResultData resultSet");
     if (resultSet != nullptr) {
-        HiLog::Error(LABEL, "GetResultData resultSet != nullptr");
-        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
-            if (albumData != nullptr) {
-                // Get album id index and value
-                albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet)));
-                HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_ID");
-                // Get album title index and value
+        HiLog::Error(LABEL, "GetResultData resultSet is nullptr");
+        return;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
+        if (albumData != nullptr) {
+            // Get album id index and value
+            albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet)));
+            HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_ID");
+            // Get album title index and value
+            if (context->networkId.empty()) {
                 albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet)));
-                HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_NAME");
-                // Get album asset count index and value
-                albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet)));
-                HiLog::Error(LABEL, "MEDIA_DATA_DB_ID");
-                albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM,
-                    getNetworkId(get<string>(GetValFromColumn(MEDIA_DATA_DB_SELF_ID, resultSet))))
-                    + "/" + to_string(albumData->GetAlbumId()));
+            } else {
+                albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_NAME, resultSet)));
             }
-            // Add to album array
-            context->albumNativeArray.push_back(move(albumData));
+            HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_NAME");
+            // Get album asset count index and value
+            albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet)));
+            HiLog::Error(LABEL, "MEDIA_DATA_DB_ID");
+            albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, context->networkId)
+                + "/" + to_string(albumData->GetAlbumId()));
         }
-        HiLog::Error(LABEL, "GetResultDataExecute OUT");
+        // Add to album array
+        context->albumNativeArray.push_back(move(albumData));
     }
 }
 
@@ -1582,7 +1622,7 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void getFileAssetById(int32_t id, const string& selfId, MediaLibraryAsyncContext *context)
+static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAsyncContext *context)
 {
     vector<string> columns;
     NativeRdb::DataAbilityPredicates predicates;
@@ -1596,6 +1636,7 @@ static void getFileAssetById(int32_t id, const string& selfId, MediaLibraryAsync
         && ((resultSet = context->objectInfo->sAbilityHelper_->Query(uri, columns, predicates)) != nullptr)) {
         // Create FetchResult object using the contents of resultSet
         context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
+        context->fetchFileResult->networkId_ = networkId;
         HiLog::Debug(LABEL, "getFileAssetById context->fetchFileResult");
         if (context->fetchFileResult != nullptr && context->fetchFileResult->GetCount() >= 1) {
             HiLog::Debug(LABEL, "getFileAssetById fetchFileResult->GetCount() >= 1");
@@ -2690,8 +2731,7 @@ void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const nap
     }
     work->data = reinterpret_cast<void *>(msg);
 
-    int ret = uv_queue_work(loop, work, [](uv_work_t *w) {},
-        [](uv_work_t *w, int s) {
+    int ret = uv_queue_work(loop, work, [](uv_work_t *w) {}, [](uv_work_t *w, int s) {
             // js thread
             if (w == nullptr) {
                 return;
@@ -2877,6 +2917,15 @@ void MediaLibraryNapi::UnregisterChangeByType(string type, const ChangeListenerN
 
         delete listObj->fileDataObserver_;
         listObj->fileDataObserver_ = nullptr;
+    } else if (type.compare(DEVICE_LISTENER) == 0) {
+        CHECK_NULL_PTR_RETURN_VOID(listObj->fileDataObserver_, "Failed to obtain device data observer");
+
+        mediaType = MEDIA_TYPE_DEVICE;
+        Uri offCbURI(MEDIALIBRARY_DEVICE_URI);
+        sAbilityHelper_->UnregisterObserver(offCbURI, listObj->deviceDataObserver_);
+
+        delete listObj->deviceDataObserver_;
+        listObj->deviceDataObserver_ = nullptr;
     } else {
         return;
     }
@@ -3445,6 +3494,277 @@ napi_value MediaLibraryNapi::JSDeleteSmartAlbum(napi_env env, napi_callback_info
             asyncContext.release();
         }
     }
+    return result;
+}
+
+static napi_status SetValueUtf8String(const napi_env& env, const char* fieldStr, const char* str, napi_value& result)
+{
+    napi_value value;
+    napi_status status = napi_create_string_utf8(env, str, NAPI_AUTO_LENGTH, &value);
+    if (status != napi_ok) {
+        HiLog::Error(LABEL, "Set value create utf8 string error! field: %{public}s", fieldStr);
+        return status;
+    }
+    status = napi_set_named_property(env, result, fieldStr, value);
+    if (status != napi_ok) {
+        HiLog::Error(LABEL, "Set utf8 string named property error! field: %{public}s", fieldStr);
+    }
+    return status;
+}
+
+static napi_status SetValueInt32(const napi_env& env, const char* fieldStr, const int intValue, napi_value& result)
+{
+    napi_value value;
+    napi_status status = napi_create_int32(env, intValue, &value);
+    if (status != napi_ok) {
+        HiLog::Error(LABEL, "Set value create int32 error! field: %{public}s", fieldStr);
+        return status;
+    }
+    status = napi_set_named_property(env, result, fieldStr, value);
+    if (status != napi_ok) {
+        HiLog::Error(LABEL, "Set int32 named property error! field: %{public}s", fieldStr);
+    }
+    return status;
+}
+
+static napi_status SetValueBool(const napi_env& env, const char* fieldStr, const bool boolvalue, napi_value& result)
+{
+    napi_value value = nullptr;
+    napi_status status = napi_get_boolean(env, boolvalue, &value);
+    if (status != napi_ok) {
+        HiLog::Error(LABEL, "Set value create boolean error! field: %{public}s", fieldStr);
+        return status;
+    }
+    status = napi_set_named_property(env, result, fieldStr, value);
+    if (status != napi_ok) {
+        HiLog::Error(LABEL, "Set boolean named property error! field: %{public}s", fieldStr);
+    }
+    return status;
+}
+
+static void PeerInfoToJsArray(const napi_env &env, const std::vector<unique_ptr<PeerInfo>> &vecPeerInfo,
+    const int32_t idx, napi_value &arrayResult)
+{
+    if (idx >= (int32_t) vecPeerInfo.size()) {
+        return;
+    }
+    auto info = vecPeerInfo[idx].get();
+    if (info == nullptr) {
+        return;
+    }
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    SetValueUtf8String(env, "deviceName", info->deviceName.c_str(), result);
+    SetValueUtf8String(env, "networkId", info->networkId.c_str(), result);
+    SetValueInt32(env, "deviceTypeId", (int) info->deviceTypeId, result);
+    SetValueBool(env, "isOnline", info->isOnline, result);
+
+    napi_status status = napi_set_element(env, arrayResult, idx, result);
+    if (status != napi_ok) {
+        HiLog::Error(LABEL, "PeerInfo To JsArray set element error: %d", status);
+    }
+}
+
+void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
+    MediaLibraryAsyncContext *context)
+{
+    napi_value jsPeerInfoArray = nullptr;
+
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+
+    vector<std::string> columns;
+    NativeRdb::DataAbilityPredicates predicates;
+    std::string strQueryCondition = DEVICE_DB_DATE_MODIFIED + " = 0";
+    predicates.SetWhereClause(strQueryCondition);
+    predicates.SetWhereArgs(context->selectionArgs);
+
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE);
+    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sAbilityHelper_->Query(
+        uri, columns, predicates);
+
+    if (resultSet == nullptr) {
+        HiLog::Error(LABEL, "JSGetActivePeers resultSet is null");
+        delete context;
+        return;
+    }
+
+    vector<unique_ptr<PeerInfo>> peerInfoArray;
+    HiLog::Error(LABEL, "JSGetActivePeers resultSet != nullptr");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        unique_ptr<PeerInfo> peerInfo = make_unique<PeerInfo>();
+        if (peerInfo != nullptr) {
+            peerInfo->deviceName = get<string>(GetValFromColumn(DEVICE_DB_NAME, resultSet));
+            peerInfo->networkId = get<string>(GetValFromColumn(DEVICE_DB_NETWORK_ID, resultSet));
+            peerInfo->deviceTypeId =
+                (DistributedHardware::DmDeviceType)(get<int32_t>(GetValFromColumn(DEVICE_DB_TYPE, resultSet)));
+            peerInfo->isOnline = true;
+            peerInfoArray.push_back(move(peerInfo));
+        }
+    }
+
+    if (!peerInfoArray.empty() && (napi_create_array(env, &jsPeerInfoArray) == napi_ok)) {
+        for (size_t i = 0; i < peerInfoArray.size(); ++i) {
+            PeerInfoToJsArray(env, peerInfoArray, i, jsPeerInfoArray);
+        }
+
+        jsContext->data = jsPeerInfoArray;
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->status = true;
+    } else {
+        HiLog::Debug(LABEL, "No peer info found!");
+        napi_get_undefined(env, &jsContext->data);
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to obtain peer info array from DB");
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
+    MediaLibraryAsyncContext *context)
+{
+    napi_value jsPeerInfoArray = nullptr;
+
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+
+    vector<string> columns;
+    NativeRdb::DataAbilityPredicates predicates;
+    predicates.SetWhereClause(context->selection);
+    predicates.SetWhereArgs(context->selectionArgs);
+
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE);
+    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sAbilityHelper_->Query(
+        uri, columns, predicates);
+
+    if (resultSet == nullptr) {
+        HiLog::Error(LABEL, "JSGetAllPeers resultSet is null");
+        delete context;
+        return;
+    }
+
+    vector<unique_ptr<PeerInfo>> peerInfoArray;
+    HiLog::Error(LABEL, "JSGetAllPeers resultSet != nullptr");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        unique_ptr<PeerInfo> peerInfo = make_unique<PeerInfo>();
+        if (peerInfo != nullptr) {
+            peerInfo->deviceName = get<string>(GetValFromColumn(DEVICE_DB_NAME, resultSet));
+            peerInfo->networkId = get<string>(GetValFromColumn(DEVICE_DB_NETWORK_ID, resultSet));
+            peerInfo->deviceTypeId =
+                (DistributedHardware::DmDeviceType)(get<int32_t>(GetValFromColumn(DEVICE_DB_TYPE, resultSet)));
+            peerInfo->isOnline = (get<int32_t>(GetValFromColumn(DEVICE_DB_DATE_MODIFIED, resultSet)) == 0);
+            peerInfoArray.push_back(move(peerInfo));
+        }
+    }
+
+    if (!peerInfoArray.empty() && (napi_create_array(env, &jsPeerInfoArray) == napi_ok)) {
+        for (size_t i = 0; i < peerInfoArray.size(); ++i) {
+            PeerInfoToJsArray(env, peerInfoArray, i, jsPeerInfoArray);
+        }
+
+        jsContext->data = jsPeerInfoArray;
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->status = true;
+    } else {
+        HiLog::Debug(LABEL, "No peer info found!");
+        napi_get_undefined(env, &jsContext->data);
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to obtain peer info array from DB");
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info info)
+{
+    HiLog::Error(LABEL, "JSGetActivePeers in");
+    napi_status status;
+    napi_value result = nullptr;
+    const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+
+    napi_get_undefined(env, &result);
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+        if (argc == ARGS_ONE) {
+            GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
+        }
+
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetActivePeers");
+        status = napi_create_async_work(
+            env, nullptr, resource, [](napi_env env, void* data) {},
+            reinterpret_cast<CompleteCallback>(JSGetActivePeersCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        if (status != napi_ok) {
+            napi_get_undefined(env, &result);
+        } else {
+            napi_queue_async_work(env, asyncContext->work);
+            asyncContext.release();
+        }
+    }
+    HiLog::Error(LABEL, "JSGetActivePeers end");
+    return result;
+}
+
+napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info)
+{
+    HiLog::Error(LABEL, "JSGetAllPeers in");
+    napi_status status;
+    napi_value result = nullptr;
+    const int32_t refCount = 1;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
+
+    napi_get_undefined(env, &result);
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+        if (argc == ARGS_ONE) {
+            GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
+        }
+
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAllPeers");
+        status = napi_create_async_work(
+            env, nullptr, resource, [](napi_env env, void* data) {},
+            reinterpret_cast<CompleteCallback>(JSGetAllPeersCompleteCallback),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        if (status != napi_ok) {
+            napi_get_undefined(env, &result);
+        } else {
+            napi_queue_async_work(env, asyncContext->work);
+            asyncContext.release();
+        }
+    }
+    HiLog::Error(LABEL, "JSGetAllPeers end");
     return result;
 }
 } // namespace Media

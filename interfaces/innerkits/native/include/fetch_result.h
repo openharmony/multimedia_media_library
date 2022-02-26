@@ -57,6 +57,7 @@ public:
     bool isContain_;
     bool isClosed_;
     int32_t count_;
+    std::string networkId_;
     std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultset_ = nullptr;
 
 private:

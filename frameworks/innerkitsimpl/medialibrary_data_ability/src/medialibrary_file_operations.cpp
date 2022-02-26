@@ -43,9 +43,7 @@ void UpdateDateModifiedForAlbum(const shared_ptr<RdbStore> &rdbStore, const stri
 int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values,
                                                       const shared_ptr<RdbStore> &rdbStore)
 {
-    string relativePath("");
-    string path("");
-    string displayName("");
+    string relativePath(""), path(""), displayName("");
     int32_t errCode = DATA_ABILITY_FAIL;
     int32_t mediaType = static_cast<int32_t>(MEDIA_TYPE_FILE);
     FileAsset fileAsset;
@@ -68,6 +66,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
         valueObject.GetInt(mediaType);
         fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
     }
+
     vector<int32_t> outIds;
     nativeAlbumAsset = MediaLibraryDataAbilityUtils::CreateDirectorys(relativePath, rdbStore, outIds);
     if (nativeAlbumAsset.GetAlbumId() < 0) {
@@ -357,13 +356,11 @@ ValuesBucket MediaLibraryFileOperations::UpdateBasicAssetDetails(int32_t mediaTy
     assetInfoBucket.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, relPath);
     assetInfoBucket.PutString(Media::MEDIA_DATA_DB_NAME, fileName);
     assetInfoBucket.PutString(Media::MEDIA_DATA_DB_TITLE, MediaLibraryDataAbilityUtils::GetFileTitle(fileName));
-
     struct stat statInfo {};
     if (stat(path.c_str(), &statInfo) == 0) {
         assetInfoBucket.PutLong(Media::MEDIA_DATA_DB_SIZE, statInfo.st_size);
         assetInfoBucket.PutLong(Media::MEDIA_DATA_DB_DATE_ADDED, statInfo.st_ctime);
     }
-
     assetInfoBucket.PutInt(Media::MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     assetInfoBucket.PutString(Media::MEDIA_DATA_DB_FILE_PATH, path);
     return assetInfoBucket;

@@ -187,7 +187,10 @@ int32_t AlbumNapi::GetAlbumId() const
 {
     return albumId_;
 }
-
+std::string AlbumNapi::GetNetworkId() const
+{
+    return MediaFileUtils::GetNetworkIdFromUri(albumUri_);
+}
 napi_value AlbumNapi::JSGetAlbumId(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -646,11 +649,15 @@ static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
     std::vector<std::string> columns;
-    Uri uri(MEDIALIBRARY_DATA_URI);
+    HiLog::Debug(LABEL, "GetNetworkId is = %{public}s", context->objectInfo->GetNetworkId().c_str());
+    string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
+        context->objectInfo->GetNetworkId() + MEDIALIBRARY_DATA_URI_IDENTIFIER;
+    HiLog::Debug(LABEL, "queryUri is = %{public}s", queryUri.c_str());
+    Uri uri(queryUri);
     std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
         context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
-
     context->fetchResult = std::make_unique<FetchResult>(move(resultSet));
+    context->fetchResult->networkId_ = context->objectInfo->GetNetworkId();
 }
 
 static void JSGetFileAssetsCompleteCallback(napi_env env,
@@ -706,7 +713,19 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetAlbumId()));
         valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
         Uri uri(MEDIALIBRARY_DATA_URI);
-        changedRows = context->objectInfo->GetDataAbilityHelper()->Update(uri, valuesBucket, predicates);
+        changedRows =
+            context->objectInfo->GetDataAbilityHelper()->Update(uri, valuesBucket, predicates);
+        if (changedRows > 0) {
+            NativeRdb::DataAbilityPredicates filePredicates;
+            NativeRdb::ValuesBucket fileValuesBucket;
+            fileValuesBucket.PutString(MEDIA_DATA_DB_BUCKET_NAME, context->objectInfo->GetAlbumName());
+            filePredicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(context->objectInfo->GetAlbumId()));
+            fileValuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
+                MediaFileUtils::UTCTimeSeconds());
+            Uri fileUuri(MEDIALIBRARY_DATA_URI);
+            changedRows =
+                context->objectInfo->GetDataAbilityHelper()->Update(fileUuri, fileValuesBucket, filePredicates);
+        }
     } else {
         changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;
     }

@@ -348,22 +348,12 @@ int32_t FileAsset::CreateAsset(const string &filePath)
 
 int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
 {
-    if (oldPath.empty() || newPath.empty() || !MediaFileUtils::IsFileExists(oldPath) ||
-        MediaFileUtils::IsFileExists(newPath)) {
-        return DATA_ABILITY_MODIFY_DATA_FAIL;
-    }
+    int32_t errRet = DATA_ABILITY_MODIFY_DATA_FAIL;
 
-    string parentPath = MediaFileUtils::GetParentPath(newPath);
-    if (!MediaFileUtils::IsDirectory(parentPath)) {
-        MEDIA_ERR_LOG("path = %{public}s none exist", parentPath.c_str());
-        return DATA_ABILITY_MODIFY_DATA_FAIL;
-    }
-
-    int32_t errRet = rename(oldPath.c_str(), newPath.c_str());
-    if (errRet != 0) {
-        MEDIA_ERR_LOG("CreateDirectory rename fail old path = %{public}s, new path = %{public}s",
-                      parentPath.c_str(), newPath.c_str());
-        return DATA_ABILITY_MODIFY_DATA_FAIL;
+    if (!oldPath.empty() && !newPath.empty() &&
+        MediaFileUtils::IsFileExists(oldPath) &&
+        !MediaFileUtils::IsFileExists(newPath)) {
+        errRet = rename(oldPath.c_str(), newPath.c_str());
     }
 
     return errRet;
@@ -401,10 +391,10 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
     }
 
     if (filePath.size() >= PATH_MAX) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path");
+        MEDIA_ERR_LOG("File path too long");
         return errCode;
     }
-
+    MEDIA_ERR_LOG("File path is %{public}s", filePath.c_str());
     char actualPath[PATH_MAX];
     memset_s(actualPath, PATH_MAX, '\0', PATH_MAX);
     auto absFilePath = realpath(filePath.c_str(), actualPath);
@@ -413,7 +403,8 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
                       filePath.c_str(), errno);
         return errCode;
     }
-
+    MEDIA_ERR_LOG("File actualPath is %{public}s", actualPath);
+    MEDIA_ERR_LOG("File absFilePath is %{public}s", absFilePath);
     return open(absFilePath, flags);
 }
 
