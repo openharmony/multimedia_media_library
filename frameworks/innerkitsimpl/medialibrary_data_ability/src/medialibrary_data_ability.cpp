@@ -18,9 +18,10 @@
 #include <unordered_set>
 
 #include "accesstoken_kit.h"
+#include "bundle_mgr_interface.h"
+#include "file_ex.h"
 #include "ipc_singleton.h"
 #include "ipc_skeleton.h"
-#include "file_ex.h"
 #include "sa_mgr_client.h"
 #include "string_ex.h"
 #include "sys_mgr_client.h"
@@ -42,6 +43,9 @@ const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
     "ohos.acts.multimedia.mediaLibrary",
     "com.ohos.photos",
     "com.ohos.camerademo"
+};
+const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {
+    "com.ohos.screenshot"
 };
 REGISTER_AA(MediaLibraryDataAbility);
 
@@ -723,14 +727,22 @@ std::string MediaLibraryDataAbility::GetClientBundleName()
 bool MediaLibraryDataAbility::CheckClientPermission(const std::string& permissionStr)
 {
     int uid = GetClientUid();
+    MEDIA_INFO_LOG("CheckClientPermission: uid: %{public}d", uid);
     if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
-        MEDIA_ERR_LOG("CheckClientPermission: Pass the uid white list");
+        MEDIA_INFO_LOG("CheckClientPermission: Pass the uid white list");
         return true;
     }
 
     std::string bundleName = GetClientBundle(uid);
+    MEDIA_INFO_LOG("CheckClientPermission: bundle name: %{public}s", bundleName.c_str());
     if (BUNDLE_FREE_CHECK.find(bundleName) != BUNDLE_FREE_CHECK.end()) {
         MEDIA_INFO_LOG("CheckClientPermission: Pass the bundle name white list");
+        return true;
+    }
+
+    if (GetSysBundleManager_()->CheckIsSystemAppByUid(uid) &&
+        (SYSTEM_BUNDLE_FREE_CHECK.find(bundleName) != SYSTEM_BUNDLE_FREE_CHECK.end())) {
+        MEDIA_INFO_LOG("CheckClientPermission: Pass the system bundle name white list");
         return true;
     }
 
