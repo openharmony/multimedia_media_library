@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,7 +25,6 @@
 #include "media_log.h"
 #include "medialibrary_device_info.h"
 #include "medialibrary_device_operations.h"
-#include "medialibrary_sync_table.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 
@@ -50,7 +49,7 @@ public:
     bool UpdateDevicieSyncStatus(const std::string &deviceId, int32_t syncStatus, const std::string &bundleName);
     bool GetDevicieSyncStatus(const std::string &deviceId, int32_t &syncStatus, const std::string &bundleName);
     string GetNetworkIdBySelfId(const std::string &selfId, const std::string &bundleName);
-    bool IsHasDevice(string deviceUdid);
+    bool IsHasDevice(std::string deviceUdid);
 
 private:
     MediaLibraryDevice();
@@ -59,7 +58,6 @@ private:
     std::string GetUdidByNetworkId(const std::string &deviceId, const std::string &bundleName);
     void GetMediaLibraryDeviceInfo(const OHOS::DistributedHardware::DmDeviceInfo &dmInfo,
                                    OHOS::Media::MediaLibraryDeviceInfo& mlInfo, const std::string &bundleName);
-    std::string GenerateSelfId(const std::string &deviceUdid);
     bool QueryDeviceTable();
 
 private:
@@ -71,7 +69,7 @@ private:
     std::shared_ptr<AppExecFwk::EventHandler> mediaLibraryDeviceHandler_;
     std::mutex deviceLock_;
     std::map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
-    std::map<std::string, std::set<int>> excludeMap_; //udid
+    std::map<std::string, std::set<int>> excludeMap_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 };
 } // namespace Media

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,8 +16,6 @@
 #ifndef OHOS_MEDIALIBRARY_DEVICE_INFO_H
 #define OHOS_MEDIALIBRARY_DEVICE_INFO_H
 
-#include <cstdint>
-
 namespace OHOS {
 namespace Media {
 typedef struct MediaLibraryDeviceInfo {
@@ -27,7 +25,6 @@ typedef struct MediaLibraryDeviceInfo {
     std::string selfId;
     uint16_t deviceTypeId;
 } MediaLibraryDeviceInfo;
-
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIALIBRARY_DEVICE_INFO_H

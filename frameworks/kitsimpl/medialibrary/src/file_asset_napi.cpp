@@ -354,7 +354,6 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
             HiLog::Error(LABEL, "Invalid arguments type!");
             return undefinedResult;
         }
-
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
         if (status == napi_ok) {
             obj->displayName_ = string(buffer);
@@ -1296,27 +1295,6 @@ static unique_ptr<PixelMap> QueryThumbnail(
     return thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
 }
 
-// static std::string setNetworkIdIntoUri(const std::string &uri, const std::string &networkId)
-// {
-//     std::string fileUri;
-//     if (uri.empty()) {
-//         return uri;
-//     }
-//     std::size_t pos = uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX);
-//     if (pos == string::npos) {
-//         return uri;
-//     }
-//     std::string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
-//     if (tempUri.empty()) {
-//         return uri;
-//     }
-
-//     fileUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + tempUri;
-//     MEDIA_INFO_LOG("MediaThumbnailHelper::setNetworkIdIntoUri fileUri = %{public}s", fileUri.c_str());
-//     return fileUri;
-// }
-
-
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
                                            FileAssetAsyncContext* context)
 {
@@ -1398,8 +1376,7 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
         } else if (i == PARAM0 && valueType == napi_string) {
             size_t res = 0;
             char buffer[PATH_MAX];
-            napi_status status;
-            status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
+            napi_status status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
             if (status == napi_ok) {
                 context->networkId = string(buffer);
             }
@@ -1614,8 +1591,8 @@ static bool GetIsFavouriteNative(const FileAssetAsyncContext &fileContext)
 {
     FileAssetAsyncContext *context = const_cast<FileAssetAsyncContext *>(&fileContext);
     bool isFavourite = false;
-    unique_ptr<FileAsset> fileAsset = GetFileAssetById(context->objectInfo->GetFileId(), context->objectInfo->GetNetworkId(),
-        context->objectInfo->sAbilityHelper_);
+    unique_ptr<FileAsset> fileAsset = GetFileAssetById(context->objectInfo->GetFileId(),
+        context->objectInfo->GetNetworkId(), context->objectInfo->sAbilityHelper_);
 
     if (fileAsset != nullptr && fileAsset->IsFavorite()) {
         MEDIA_INFO_LOG("isFavourite = true");
@@ -1923,9 +1900,8 @@ static bool GetIsTrashNative(const FileAssetAsyncContext &fileContext)
     FileAssetAsyncContext *context = const_cast<FileAssetAsyncContext *>(&fileContext);
 
     bool isTrashed = false;
-    // fileContext->networkId // context->fetchResult->networkId_ = context->network;
-    unique_ptr<FileAsset> fileAsset = GetFileAssetById(context->objectInfo->GetFileId(), context->objectInfo->GetNetworkId(),
-        context->objectInfo->sAbilityHelper_);
+    unique_ptr<FileAsset> fileAsset = GetFileAssetById(context->objectInfo->GetFileId(),
+        context->objectInfo->GetNetworkId(), context->objectInfo->sAbilityHelper_);
 
     if (fileAsset != nullptr && fileAsset->GetDateTrashed() > 0) {
         MEDIA_INFO_LOG("isTrashed = true");

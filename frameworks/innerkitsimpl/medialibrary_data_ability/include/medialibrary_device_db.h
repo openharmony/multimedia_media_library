@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,16 +26,15 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::NativeRdb;
-using namespace std;
 
 class MediaLibraryDeviceDb {
 public:
     MediaLibraryDeviceDb() = default;
     ~MediaLibraryDeviceDb() = default;
 
-    int64_t InsertDeviceInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
-    int32_t DeleteDeviceInfo(const std::string &deviceId, const shared_ptr<RdbStore> &rdbStore);
-    int32_t UpdateDeviceInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int64_t InsertDeviceInfo(const ValuesBucket &values, const std::shared_ptr<RdbStore> &rdbStore);
+    int32_t DeleteDeviceInfo(const std::string &deviceId, const std::shared_ptr<RdbStore> &rdbStore);
+    int32_t UpdateDeviceInfo(const ValuesBucket &values, const std::shared_ptr<RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS

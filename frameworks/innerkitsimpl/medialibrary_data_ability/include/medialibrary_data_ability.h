@@ -33,7 +33,6 @@
 #include "medialibrary_device_info.h"
 #include "medialibrary_file_operations.h"
 #include "medialibrary_kvstore_operations.h"
-#include "medialibrary_sync_table.h"
 #include "media_log.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
@@ -61,13 +60,13 @@ namespace Media {
         TYPE_SMARTALBUM_MAP,
         TYPE_ALBUM_TABLE,
         TYPE_SMARTALBUMASSETS_TABLE,
-		TYPE_ACTIVE_DEVICE,
-    	TYPE_ALL_DEVICE,
+        TYPE_ACTIVE_DEVICE,
+        TYPE_ALL_DEVICE,
         TYPE_ASSETSMAP_TABLE
     };
-	class MediaLibraryInitCallback;
-	class MediaLibraryDeviceStateCallback;
-	class MediaLibraryRdbStoreObserver;
+    class MediaLibraryInitCallback;
+    class MediaLibraryDeviceStateCallback;
+    class MediaLibraryRdbStoreObserver;
     class MediaLibraryDataAbility : public AppExecFwk::Ability {
     public:
         EXPORT MediaLibraryDataAbility();
@@ -91,13 +90,13 @@ namespace Media {
         void OnStop() override;
 
     private:
-		static constexpr const char DEVICE_BUNDLENAME[] = "com.ohos.medialibrary.MediaLibraryDataA";
+        static constexpr const char DEVICE_BUNDLENAME[] = "com.ohos.medialibrary.MediaLibraryDataA";
         std::string GetOperationType(const std::string &uri);
         void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
-		void InitDeviceData();
-	    bool SubscribeRdbStoreObserver();
-	    bool UnSubscribeRdbStoreObserver();
-	    bool QuerySync(const std::string &deviceId ,const std::string &tableName);
+        void InitDeviceData();
+        bool SubscribeRdbStoreObserver();
+        bool UnSubscribeRdbStoreObserver();
+        bool QuerySync(const std::string &deviceId, const std::string &tableName);
         bool QuerySync();
 		
         bool CheckFileNameValid(const ValuesBucket &value);
@@ -112,11 +111,11 @@ namespace Media {
         std::shared_ptr<IMediaScannerClient> scannerClient_;
         std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
         std::shared_ptr<MediaLibraryThumbnail> mediaThumbnail_;
-	    std::shared_ptr<MediaLibraryDeviceStateCallback> deviceStateCallback_;
-	    std::shared_ptr<MediaLibraryInitCallback> deviceInitCallback_;
-	    std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
+        std::shared_ptr<MediaLibraryDeviceStateCallback> deviceStateCallback_;
+        std::shared_ptr<MediaLibraryInitCallback> deviceInitCallback_;
+        std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
         bool isRdbStoreInitialized;
-		std::string bundleName_;
+        std::string bundleName_;
 };
 
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
@@ -135,15 +134,17 @@ public:
     ~ScanFileCallback() = default;
     void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
 };
+
 class MediaLibraryInitCallback : public OHOS::DistributedHardware::DmInitCallback {
 public:
     virtual ~MediaLibraryInitCallback() {}
     void OnRemoteDied() override;
 };
+
 class MediaLibraryDeviceStateCallback : public OHOS::DistributedHardware::DeviceStateCallback {
 public:
     explicit MediaLibraryDeviceStateCallback(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::string &bundleName)
-    : bundleName_(bundleName), rdbStore_(rdbStore) {}
+        : bundleName_(bundleName), rdbStore_(rdbStore) {}
     virtual ~MediaLibraryDeviceStateCallback() {};
     void OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
     void OnDeviceReady(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
@@ -153,6 +154,7 @@ private:
     std::string bundleName_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 };
+
 class MediaLibraryRdbStoreObserver : public NativeRdb::RdbStore::RdbStoreObserver {
 public:
     explicit MediaLibraryRdbStoreObserver(std::string &bundleName);

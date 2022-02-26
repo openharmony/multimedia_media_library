@@ -190,7 +190,7 @@ string MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &opts,
                                               Size &size)
 {
     string res;
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::GetThumbnail IN");
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::GetThumbnailKey IN");
     if (singleKvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("KvStore is not init");
         return res;
