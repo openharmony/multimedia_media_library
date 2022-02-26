@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,7 +34,6 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::NativeRdb;
-using namespace std;
 
 class MediaLibrarySyncTable {
 public:
@@ -42,8 +41,8 @@ public:
     ~MediaLibrarySyncTable();
 
     bool SyncPullAllTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName);
-    bool SyncPullAllTableByDeviceId(
-        const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName, std::vector<std::string> &devices);
+    bool SyncPullAllTableByDeviceId(const shared_ptr<RdbStore> &rdbStore,
+                                    const std::string &bundleName, std::vector<std::string> &devices);
     bool SyncPullTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
                        const std::string &tableName, std::vector<std::string> &devices, bool isLast = false);
     bool SyncPushTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,

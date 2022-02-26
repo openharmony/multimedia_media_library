@@ -650,7 +650,8 @@ static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
     predicates.SetOrder(context->order);
     std::vector<std::string> columns;
     HiLog::Debug(LABEL, "GetNetworkId is = %{public}s", context->objectInfo->GetNetworkId().c_str());
-    string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->objectInfo->GetNetworkId() + MEDIALIBRARY_DATA_URI_IDENTIFIER;
+    string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
+        context->objectInfo->GetNetworkId() + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     HiLog::Debug(LABEL, "queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
     std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
@@ -720,7 +721,7 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
             fileValuesBucket.PutString(MEDIA_DATA_DB_BUCKET_NAME, context->objectInfo->GetAlbumName());
             filePredicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(context->objectInfo->GetAlbumId()));
             fileValuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
-                                MediaFileUtils::UTCTimeSeconds());
+                MediaFileUtils::UTCTimeSeconds());
             Uri fileUuri(MEDIALIBRARY_DATA_URI);
             changedRows =
                 context->objectInfo->GetDataAbilityHelper()->Update(fileUuri, fileValuesBucket, filePredicates);

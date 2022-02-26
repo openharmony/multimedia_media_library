@@ -43,17 +43,18 @@ public:
     ~MediaLibraryDeviceOperations() {}
 
     bool InsertDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
+                          const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
     bool UpdateDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
+                          const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
     bool DeleteDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &deviceId);
-    bool UpdateSyncStatus(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,const std::string &deviceId,
+    bool UpdateSyncStatus(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &deviceId,
                           int32_t syncStatus, const std::string &bundleName);
     bool GetSyncStatusById(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &deviceId,
                            int32_t &syncStatus, const std::string &bundleName);
     bool QueryDeviceTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                           std::map<std::string, std::set<int>> &excludeMap);
-    bool GetAllDeviceDatas(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, vector<MediaLibraryDeviceInfo> &outDeviceList);
+    bool GetAllDeviceDatas(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                           vector<MediaLibraryDeviceInfo> &outDeviceList);
 };
 } // namespace Media
 } // namespace OHOS

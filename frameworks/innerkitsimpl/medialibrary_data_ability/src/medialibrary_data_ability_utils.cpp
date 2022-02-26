@@ -379,7 +379,8 @@ bool MediaLibraryDataAbilityUtils::checkOpenMode(const string &mode)
     return false;
 }
 
-int32_t MediaLibraryDataAbilityUtils::setFilePending(string &uriStr, bool isPending, const shared_ptr<RdbStore> &rdbStore)
+int32_t MediaLibraryDataAbilityUtils::setFilePending(string &uriStr,
+    bool isPending, const shared_ptr<RdbStore> &rdbStore)
 {
     MEDIA_INFO_LOG("setFilePending in");
     string id = MediaLibraryDataAbilityUtils::GetIdFromUri(uriStr);

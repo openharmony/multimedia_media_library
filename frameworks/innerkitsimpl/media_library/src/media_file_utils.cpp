@@ -76,14 +76,14 @@ bool MediaFileUtils::CreateDirectory(const string& dirPath)
     return true;
 }
 
-bool MediaFileUtils::IsFileExists(const string& fileName)
+bool MediaFileUtils::IsFileExists(const string &fileName)
 {
     struct stat statInfo {};
 
     return ((stat(fileName.c_str(), &statInfo)) == SUCCESS);
 }
 
-string MediaFileUtils::GetFilename(const string& filePath)
+string MediaFileUtils::GetFilename(const string &filePath)
 {
     string fileName = "";
 
@@ -99,18 +99,7 @@ string MediaFileUtils::GetFilename(const string& filePath)
     return fileName;
 }
 
-string MediaFileUtils::GetParentPath(const string &path)
-{
-    string name;
-    size_t slashIndex = path.rfind("/");
-    if (slashIndex != string::npos) {
-        name = path.substr(0, slashIndex);
-    }
-
-    return name;
-}
-
-bool MediaFileUtils::IsDirectory(const string& dirName)
+bool MediaFileUtils::IsDirectory(const string &dirName)
 {
     struct stat statInfo {};
     if (stat(dirName.c_str(), &statInfo) == SUCCESS) {
@@ -122,7 +111,7 @@ bool MediaFileUtils::IsDirectory(const string& dirName)
     return false;
 }
 
-bool MediaFileUtils::CreateFile(const string& filePath)
+bool MediaFileUtils::CreateFile(const string &filePath)
 {
     bool errCode = false;
 
@@ -145,12 +134,12 @@ bool MediaFileUtils::CreateFile(const string& filePath)
     return errCode;
 }
 
-bool MediaFileUtils::DeleteFile(const string& fileName)
+bool MediaFileUtils::DeleteFile(const string &fileName)
 {
     return (remove(fileName.c_str()) == SUCCESS);
 }
 
-bool MediaFileUtils::DeleteDir(const std::string& dirName)
+bool MediaFileUtils::DeleteDir(const std::string &dirName)
 {
     bool errRet = false;
 
@@ -161,7 +150,7 @@ bool MediaFileUtils::DeleteDir(const std::string& dirName)
     return errRet;
 }
 
-bool MediaFileUtils::MoveFile(const string& oldPath, const string& newPath)
+bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath)
 {
     bool errRet = false;
 
@@ -248,7 +237,7 @@ bool MediaFileUtils::CopyFile(const string &filePath, const string &newPath)
     return errCode;
 }
 
-bool MediaFileUtils::RenameDir(const string& oldPath, const string& newPath)
+bool MediaFileUtils::RenameDir(const string &oldPath, const string &newPath)
 {
     bool errRet = false;
 

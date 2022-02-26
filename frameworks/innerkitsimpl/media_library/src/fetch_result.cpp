@@ -132,10 +132,6 @@ variant<int32_t, int64_t, string> ReturnDefaultOnError(string errMsg, ResultSetD
 
 variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string columnName, ResultSetDataType dataType)
 {
-    MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn in");
-
-    MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn columnName is %{public}s", columnName.c_str());
-    
     int index;
     variant<int32_t, int64_t, string> cellValue;
     int integerVal = 0;
@@ -152,9 +148,9 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
         ReturnDefaultOnError("failed to obtain the index", dataType);
     }
 
+    MEDIA_ERR_LOG("columnName is %{public}s, dataType %{public}d", columnName.c_str(), dataType);
     switch (dataType) {
         case TYPE_STRING:
-            MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn TYPE_STRING");
             status = resultset_->GetString(index, stringVal);
             if (status != NativeRdb::E_OK) {
                 ReturnDefaultOnError("failed to obtain string value from resultset", dataType);
@@ -162,7 +158,6 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
             cellValue = stringVal;
             break;
         case TYPE_INT32:
-            MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn TYPE_INT32");
             status = resultset_->GetInt(index, integerVal);
             if (status != NativeRdb::E_OK) {
                 ReturnDefaultOnError("failed to obtain int value from resultset", dataType);
@@ -170,7 +165,6 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
             cellValue = integerVal;
             break;
         case TYPE_INT64:
-            MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn TYPE_INT64");
             status = resultset_->GetLong(index, longVal);
             if (status != NativeRdb::E_OK) {
                 ReturnDefaultOnError("failed to obtain long value from resultset", dataType);
@@ -179,7 +173,7 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
             cellValue = longVal;
             break;
         default:
-            MEDIA_ERR_LOG("FetchResult::GetRowValFromColumnn else!!!!!");
+            MEDIA_ERR_LOG("not match  dataType %{public}d!!!!!", dataType);
             break;
     }
 

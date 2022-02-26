@@ -93,8 +93,8 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getPrivateAlbum", JSGetPrivateAlbum),
         DECLARE_NAPI_FUNCTION("createSmartAlbum", JSCreateSmartAlbum),
         DECLARE_NAPI_FUNCTION("deleteSmartAlbum", JSDeleteSmartAlbum),
-		DECLARE_NAPI_FUNCTION("getActivePeers", JSGetActivePeers),
-		DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers)
+        DECLARE_NAPI_FUNCTION("getActivePeers", JSGetActivePeers),
+        DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers)
     };
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("getMediaLibrary", GetMediaLibraryNewInstance),
@@ -420,17 +420,13 @@ IMediaLibraryClient* MediaLibraryNapi::GetMediaLibClientInstance()
     IMediaLibraryClient *ins = this->mediaLibrary_;
     return ins;
 }
-
-static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibraryAsyncContext &context, bool &err)
+static void DealWithCommonParam(napi_env env, napi_value arg,
+    const MediaLibraryAsyncContext &context, bool &err, bool &present)
 {
     MediaLibraryAsyncContext *asyncContext = const_cast<MediaLibraryAsyncContext *>(&context);
     char buffer[PATH_MAX];
     size_t res = 0;
-    uint32_t len = 0;
     napi_value property = nullptr;
-    napi_value stringItem = nullptr;
-    bool present = false;
-
     napi_has_named_property(env, arg, "selections", &present);
     if (present) {
         if (napi_get_named_property(env, arg, "selections", &property) != napi_ok
@@ -472,7 +468,16 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibrar
         }
         present = false;
     }
-
+}
+static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibraryAsyncContext &context, bool &err)
+{
+    MediaLibraryAsyncContext *asyncContext = const_cast<MediaLibraryAsyncContext *>(&context);
+    char buffer[PATH_MAX];
+    uint32_t len = 0;
+    size_t res = 0;
+    napi_value property = nullptr, stringItem = nullptr;
+    bool present = false;
+    DealWithCommonParam(env, arg, context, err, present);
     napi_has_named_property(env, arg, "selectionArgs", &present);
     if (present && napi_get_named_property(env, arg, "selectionArgs", &property) == napi_ok) {
         napi_get_array_length(env, property, &len);
@@ -1500,7 +1505,8 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     vector<string> columns;
     string queryUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
     if (!context->networkId.empty()) {
-        queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
+        queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId +
+            MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
         HiLog::Debug(LABEL, "queryAlbumUri is = %{public}s", queryUri.c_str());
     }
     Uri uri(queryUri);
@@ -1509,30 +1515,31 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 
     HiLog::Error(LABEL, "GetResultData resultSet");
     if (resultSet != nullptr) {
-        HiLog::Error(LABEL, "GetResultData resultSet != nullptr");
-        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
-            if (albumData != nullptr) {
-                // Get album id index and value
-                albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet)));
-                HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_ID");
-                // Get album title index and value
-                if (context->networkId.empty()) {
-                     albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet)));
-                } else {
-                     albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_NAME, resultSet)));
-                }
-                HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_NAME");
-                // Get album asset count index and value
-                albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet)));
-                HiLog::Error(LABEL, "MEDIA_DATA_DB_ID");
-                albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, context->networkId)
-                    + "/" + to_string(albumData->GetAlbumId()));
+        HiLog::Error(LABEL, "GetResultData resultSet is nullptr");
+        return;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
+        if (albumData != nullptr) {
+            // Get album id index and value
+            albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet)));
+            HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_ID");
+            // Get album title index and value
+            if (context->networkId.empty()) {
+                albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet)));
+            } else {
+                albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_NAME, resultSet)));
             }
-            // Add to album array
-            context->albumNativeArray.push_back(move(albumData));
+            HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_NAME");
+            // Get album asset count index and value
+            albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet)));
+            HiLog::Error(LABEL, "MEDIA_DATA_DB_ID");
+            albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, context->networkId)
+                + "/" + to_string(albumData->GetAlbumId()));
         }
-        HiLog::Error(LABEL, "GetResultDataExecute OUT");
+        // Add to album array
+        context->albumNativeArray.push_back(move(albumData));
     }
 }
 
@@ -2724,8 +2731,7 @@ void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const nap
     }
     work->data = reinterpret_cast<void *>(msg);
 
-    int ret = uv_queue_work(loop, work, [](uv_work_t *w) {},
-        [](uv_work_t *w, int s) {
+    int ret = uv_queue_work(loop, work, [](uv_work_t *w) {}, [](uv_work_t *w, int s) {
             // js thread
             if (w == nullptr) {
                 return;
@@ -3617,7 +3623,7 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
 
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
-                                                context->work, *jsContext);
+                                                   context->work, *jsContext);
     }
     delete context;
 }
@@ -3679,7 +3685,7 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
 
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
-                                                context->work, *jsContext);
+                                                   context->work, *jsContext);
     }
     delete context;
 }

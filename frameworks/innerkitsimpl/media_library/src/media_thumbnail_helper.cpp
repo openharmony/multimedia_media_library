@@ -82,19 +82,23 @@ std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Si
     vector<uint8_t> image;
     if (!GetImage(key, image)) {
         if (uri.empty()) {
+            MEDIA_ERR_LOG("uri is empty");
             return nullptr;
         }
         auto syncStatus = SyncKvstore(key, uri);
         if (syncStatus != DistributedKv::Status::SUCCESS) {
+            MEDIA_ERR_LOG("sync KvStore failed! ret %{public}d", syncStatus);
             return nullptr;
         }
         if (!GetImage(key, image)) {
+            MEDIA_ERR_LOG("get image failed again!");
             return nullptr;
         }
     }
 
     unique_ptr<PixelMap> pixelMap;
     if (!ResizeImage(image, size, pixelMap)) {
+        MEDIA_ERR_LOG("resize image failed!");
         return nullptr;
     }
     return pixelMap;
@@ -103,10 +107,12 @@ std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Si
 DistributedKv::Status MediaThumbnailHelper::SyncKvstore(std::string key, const std::string &uri)
 {
     if (singleKvStorePtr_ == nullptr) {
+        MEDIA_INFO_LOG("MediaThumbnailHelper::DistributedKv::Status::ERROR");
         return DistributedKv::Status::ERROR;
     }
     std::string deviceId = MediaFileUtils::GetNetworkIdFromUri(uri);
     if (deviceId.empty()) {
+        MEDIA_INFO_LOG("MediaThumbnailHelper::DistributedKv::Status::ERROR");
         return DistributedKv::Status::ERROR;
     }
     DistributedKv::DataQuery dataQuery;

@@ -29,7 +29,7 @@ static int64_t CurrentTimeMillis()
 
 MediaLibraryDeviceOperations::MediaLibraryDeviceOperations()
 {
-    srand((unsigned)time(0));
+    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::MediaLibraryDeviceOperations create");
 }
 
 bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
@@ -56,7 +56,6 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
             valuesBucket.PutString(DEVICE_DB_DEVICEID, deviceInfo.deviceUdid);
             valuesBucket.PutString(DEVICE_DB_NETWORK_ID, deviceInfo.deviceId);
             valuesBucket.PutInt(DEVICE_DB_SYNC_STATUS, 0);
-            // valuesBucket.PutString(DEVICE_DB_SELF_ID, deviceInfo.selfId);
             valuesBucket.PutLong(DEVICE_DB_DATE_MODIFIED, 0);
             MEDIA_INFO_LOG("MediaLibraryDeviceOperations::InsertDeviceInfo UpdateDeviceInfo");
             return mediaLibraryDeviceDb.UpdateDeviceInfo(valuesBucket, rdbStore) == DATA_ABILITY_SUCCESS;

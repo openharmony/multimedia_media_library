@@ -130,7 +130,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
     };
 
     uint32_t count = 0;
-    while(count++ < RETRY_COUNT) {
+    while (count++ < RETRY_COUNT) {
         MEDIA_ERR_LOG("@@@@@SyncPullTable before Sync");
         auto ret = rdbStore->Sync(option, predicate, callback);
         MEDIA_ERR_LOG("@@@@@SyncPullTable after Sync");
