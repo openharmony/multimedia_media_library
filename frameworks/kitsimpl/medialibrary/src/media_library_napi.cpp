@@ -1720,7 +1720,7 @@ static bool CheckTitlePrams(MediaLibraryAsyncContext *context)
         valueObject.GetString(title);
     }
     if (title.empty()) {
-        HiLog::Debug(LABEL, "CheckRelativePathPrams title is empty");
+        HiLog::Debug(LABEL, "CheckTitlePrams title is empty");
         return false;
     }
     return true;
