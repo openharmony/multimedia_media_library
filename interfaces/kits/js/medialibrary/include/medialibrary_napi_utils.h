@@ -156,21 +156,16 @@ const std::vector<std::string> fileKeyEnum {
 };
 
 const std::vector<std::string> directoryEnum {
-    "DIR_CDSA", "DIR_VIDEO", "DIR_IMAGE", "DIR_AUDIO", "DIR_AUDIO_RINGS", "DIR_AUDIO_NOTICE", "DIR_AUDIO_CLOCK",
-    "DIR_DOCUMENTS", "DIR_DOWNLOAD", "DIR_DOWNLOAD_BLUETOOTH"
+    "DIR_CAMERA", "DIR_VIDEO", "DIR_IMAGE", "DIR_AUDIO", "DIR_DOCUMENTS", "DIR_DOWNLOAD"
 };
 
 const std::vector<std::string> directoryEnumValues {
-    "CDSA/",
-    "Movies/",
+    "Camera/",
+    "Videos/",
     "Pictures/",
-    "Music/",
-    "Rings/",
-    "Notices/",
-    "Clocks/",
+    "Audios/",
     "Documents/",
-    "Download/",
-    "Bluetooth/"
+    "Download/"
 };
 
 const std::vector<std::string> fileKeyEnumValues {
