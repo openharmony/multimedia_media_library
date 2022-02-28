@@ -1485,7 +1485,28 @@ variant<int, string> GetValFromColumn(string columnName,
 
     return cellValue;
 }
-
+static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
+{
+    NativeRdb::DataAbilityPredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(album->GetAlbumId()));
+    predicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    predicates.Limit(1);
+    vector<string> columns;
+    string queryUri = MEDIALIBRARY_DATA_URI;
+    if (!context->networkId.empty()) {
+        queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
+        HiLog::Debug(LABEL, "querycoverUri is = %{public}s", queryUri.c_str());
+    }
+    Uri uri(queryUri);
+    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sAbilityHelper_->Query(
+        uri, columns, predicates);
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    fetchFileResult->networkId_ = context->networkId;
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
+    string coverUri = fileAsset->GetUri();
+    album->SetCoverUri(coverUri);
+    HiLog::Debug(LABEL, "coverUri is = %{public}s", album->GetCoverUri().c_str());
+}
 static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 {
     HiLog::Error(LABEL, "GetResultDataExecute IN");
@@ -1511,7 +1532,7 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
         uri, columns, predicates);
 
     HiLog::Error(LABEL, "GetResultData resultSet");
-    if (resultSet != nullptr) {
+    if (resultSet == nullptr) {
         HiLog::Error(LABEL, "GetResultData resultSet is nullptr");
         return;
     }
@@ -1534,6 +1555,7 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
             HiLog::Error(LABEL, "MEDIA_DATA_DB_ID");
             albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, context->networkId)
                 + "/" + to_string(albumData->GetAlbumId()));
+            SetAlbumCoverUri(context, albumData);
         }
         // Add to album array
         context->albumNativeArray.push_back(move(albumData));
