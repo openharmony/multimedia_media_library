@@ -304,7 +304,7 @@ string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
     if (pos == string::npos) {
         return deviceId;
     }
-    MEDIA_INFO_LOG("MediaFileUtils::GetNetworkIdFromUri pos = %{public}d", pos);
+    MEDIA_INFO_LOG("MediaFileUtils::GetNetworkIdFromUri pos = %{public}d", (int)pos);
     string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
     if (tempUri.empty()) {
         return deviceId;
