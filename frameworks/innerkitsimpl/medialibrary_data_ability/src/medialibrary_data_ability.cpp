@@ -409,7 +409,7 @@ unique_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
         }
         MEDIA_INFO_LOG("QueryAlbum = %{public}s", isAlbumCondition.c_str());
         string countStr = "SELECT count( date_trashed = 0 OR NULL ) AS count";
-        queryResultSet = rdbStore->QuerySql(countStr + ",bucket_id,bucket_display_name,self_id FROM " + tableName +
+        queryResultSet = rdbStore->QuerySql(countStr + ",bucket_id,bucket_display_name,self_id,media_type FROM " + tableName +
             " WHERE " + isAlbumCondition +" GROUP BY bucket_id, media_type, bucket_display_name, self_id");
     } else {
             AbsRdbPredicates mediaLibAbsPredAlbum(ABLUM_VIEW_NAME);
@@ -590,8 +590,26 @@ static void DealWithUriString(string &uriString, TableType &tabletype,
     string &strQueryCondition, string::size_type &pos, string &strRow)
 {
     string type = uriString.substr(pos + 1);
+    MEDIA_INFO_LOG("MediaLibraryDataAbility DealWithUriString In");
     MEDIA_INFO_LOG("MediaLibraryDataAbility uriString type = %{public}s", type.c_str());
-    if (strQueryCondition.empty() && pos != string::npos) {
+    if (type == MEDIA_ALBUMOPRN_QUERYALBUM) {
+        tabletype = TYPE_ALBUM_TABLE;
+        uriString = MEDIALIBRARY_DATA_URI;
+    } else if (uriString == MEDIALIBRARY_DATA_URI + "/"
+               + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTABLUMASSETS_VIEW_NAME) {
+        tabletype = TYPE_SMARTALBUMASSETS_TABLE;
+        uriString = MEDIALIBRARY_SMARTALBUM_URI;
+    } else if (uriString == MEDIALIBRARY_DATA_URI + "/"
+               + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME) {
+        tabletype = TYPE_ASSETSMAP_TABLE;
+        uriString = MEDIALIBRARY_SMARTALBUM_URI;
+	} else if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE) {
+        tabletype = TYPE_ALL_DEVICE;
+        uriString = MEDIALIBRARY_DATA_URI;
+    } else if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE) {
+        tabletype = TYPE_ACTIVE_DEVICE;
+        uriString = MEDIALIBRARY_DATA_URI;
+    } else if (strQueryCondition.empty() && pos != string::npos) {
         strRow = type;
         uriString = uriString.substr(0, pos);
         string::size_type posTable = uriString.find_last_of('/');
@@ -607,27 +625,6 @@ static void DealWithUriString(string &uriString, TableType &tabletype,
         } else {
             tabletype = TYPE_DATA;
             strQueryCondition = MEDIA_DATA_DB_ID + " = " + strRow;
-        }
-    } else {
-        if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM) {
-            tabletype = TYPE_ALBUM_TABLE;
-            uriString = MEDIALIBRARY_DATA_URI;
-        } else if (uriString == MEDIALIBRARY_DATA_URI + "/" +
-            MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTABLUMASSETS_VIEW_NAME) {
-            tabletype = TYPE_SMARTALBUMASSETS_TABLE;
-            uriString = MEDIALIBRARY_SMARTALBUM_URI;
-        } else if (uriString == MEDIALIBRARY_DATA_URI + "/" +
-            MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME) {
-            tabletype = TYPE_ASSETSMAP_TABLE;
-            uriString = MEDIALIBRARY_SMARTALBUM_URI;
-        } else if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE) {
-            tabletype = TYPE_ALL_DEVICE;
-            uriString = MEDIALIBRARY_DATA_URI;
-        } else if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE) {
-            tabletype = TYPE_ACTIVE_DEVICE;
-            uriString = MEDIALIBRARY_DATA_URI;
-        } else {
-            MEDIA_ERR_LOG("DealWithUriString uriString is Incorrect");
         }
     }
 }
@@ -692,6 +689,7 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
     MediaLibraryFileOperations fileOprn;
     int32_t changedRows = DATA_ABILITY_FAIL;
     string uriString = uri.ToString();
+    vector<string> devices = vector<string>();
     MEDIA_INFO_LOG("Update uriString = %{public}s", uriString.c_str());
     string strUpdateCondition = predicates.GetWhereClause();
     if (strUpdateCondition.empty()) {
@@ -722,7 +720,10 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
         }
     (void)rdbStore_->Update(changedRows, MEDIALIBRARY_TABLE, value, strUpdateCondition, whereArgs);
     }
-
+    if (changedRows >= 0) {
+        MediaLibrarySyncTable syncTable;
+        syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
+    }
     return changedRows;
 }
 
