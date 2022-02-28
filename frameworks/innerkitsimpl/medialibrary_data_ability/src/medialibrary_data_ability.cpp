@@ -409,8 +409,8 @@ unique_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
         }
         MEDIA_INFO_LOG("QueryAlbum = %{public}s", isAlbumCondition.c_str());
         string countStr = "SELECT count( date_trashed = 0 OR NULL ) AS count";
-        queryResultSet = rdbStore->QuerySql(countStr + ",bucket_id,bucket_display_name,self_id,media_type FROM " + tableName +
-            " WHERE " + isAlbumCondition +" GROUP BY bucket_id, media_type, bucket_display_name, self_id");
+        queryResultSet = rdbStore->QuerySql(countStr + ",bucket_id,bucket_display_name,self_id,media_type FROM "
+        + tableName + " WHERE " + isAlbumCondition +" GROUP BY bucket_id, media_type, bucket_display_name, self_id");
     } else {
             AbsRdbPredicates mediaLibAbsPredAlbum(ABLUM_VIEW_NAME);
         if (strQueryCondition.empty()) {
@@ -590,7 +590,6 @@ static void DealWithUriString(string &uriString, TableType &tabletype,
     string &strQueryCondition, string::size_type &pos, string &strRow)
 {
     string type = uriString.substr(pos + 1);
-    MEDIA_INFO_LOG("MediaLibraryDataAbility DealWithUriString In");
     MEDIA_INFO_LOG("MediaLibraryDataAbility uriString type = %{public}s", type.c_str());
     if (type == MEDIA_ALBUMOPRN_QUERYALBUM) {
         tabletype = TYPE_ALBUM_TABLE;
@@ -603,7 +602,7 @@ static void DealWithUriString(string &uriString, TableType &tabletype,
                + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME) {
         tabletype = TYPE_ASSETSMAP_TABLE;
         uriString = MEDIALIBRARY_SMARTALBUM_URI;
-	} else if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE) {
+    } else if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE) {
         tabletype = TYPE_ALL_DEVICE;
         uriString = MEDIALIBRARY_DATA_URI;
     } else if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE) {
@@ -793,6 +792,10 @@ int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mod
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     MEDIA_INFO_LOG("MediaLibraryDataAbility OpenFile: path is %{public}s", path.c_str());
     int32_t fd = fileAsset->OpenAsset(path, mode);
+    if (fd < 0) {
+        MEDIA_ERR_LOG("MediaLibraryDataAbility OpenFile: open file fd < 0");
+        return DATA_ABILITY_HAS_FD_ERROR;
+    }
     if (isWriteMode && fd > 0) {
         int32_t errorCode = MediaLibraryDataAbilityUtils::setFilePending(uriString, true, rdbStore_);
         if (errorCode == DATA_ABILITY_FAIL) {
