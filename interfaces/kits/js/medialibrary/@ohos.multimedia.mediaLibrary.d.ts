@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,640 +13,1150 @@
  * limitations under the License.
  */
 
-import { AsyncCallback } from './basic';
+import { AsyncCallback, Callback } from './basic';
+import Context from './app/context';
+import image from './@ohos.multimedia.image';
 
+/**
+ * @name mediaLibrary
+ * @since 6
+ * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+ * @import import media from '@ohos.multimedia.mediaLibrary'
+ */
 declare namespace mediaLibrary {
+  /**
+   * Obtains a MediaLibrary instance.
+   * @since 6
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   * @import import mediaLibrary from '@ohos.multimedia.mediaLibrary'
+   * @FAModelOnly
+   * @return Returns a MediaLibrary instance if the operation is successful; returns null otherwise.
+   */
+  function getMediaLibrary(): MediaLibrary;
+  /**
+   * Returns an instance of MediaLibrary
+   * @since 8
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   * @StageModelOnly
+   * @param context hap context information
+   * @return Instance of MediaLibrary
+   */
+  function getMediaLibrary(context: Context): MediaLibrary;
+
+  /**
+   * Enumeration types for different kind of Media Files
+   * @since 8
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   */
+  enum MediaType {
+    /**
+     * File media type
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    FILE = 0,
+    /**
+     * Image media type
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    IMAGE,
+    /**
+     * Video media type
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    VIDEO,
+    /**
+     * Audio media type
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    AUDIO
+  }
+
+  /**
+   * Describes media resource options.
+   * @since 6
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   * @import import mediaLibrary from '@ohos.multimedia.mediaLibrary'
+   */
+  interface MediaAssetOption {
+    /**
+     * URI of the media source.
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    src: string;
+    /**
+     * Multipurpose Internet Mail Extensions (MIME) type of the media.
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    mimeType: string;
+    /**
+     * Relative path for storing media resources.
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    relativePath?: string;
+  }
+
+  /**
+   * Describes media selection options.
+   * @since 6
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   * @import import mediaLibrary from '@ohos.multimedia.mediaLibrary'
+   */
+  interface MediaSelectOption {
+    /**
+     * Media type, which can be image, video, or media (indicating both image and video).
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    type: 'image' | 'video' | 'media';
+    /**
+     * Maximum number of media items that can be selected
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    count: number;
+  }
+
+  /**
+   * Provides methods to encapsulate file attributes.
+   * @since 8
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   * @import import mediaLibrary from '@ohos.multimedia.mediaLibrary'
+   */
+  interface FileAsset {
+    /**
+     * File ID.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly id: number;
+    /**
+     * URI of the file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly uri: string;
+    /**
+     * MIME type, for example, video/mp4, audio/mp4, or audio/amr-wb.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly mimeType: string;
+    /**
+     * Media type, for example, IMAGE, VIDEO, FILE, AUDIO 
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly mediaType: MediaType;
+    /**
+     * Display name (with a file name extension) of the file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    displayName: string;
+    /**
+     * File name title (without the file name extension).
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    title: string;
+    /**
+     * Relative Path of the file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    relativePath: string;
+    /**
+     * Parent folder's file_id of the file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly parent: number;
+    /**
+     * Data size of the file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly size: number;
+    /**
+     * Date (timestamp) when the file was added.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly dateAdded: number;
+    /**
+     * Date (timestamp) when the file was modified.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly dateModified: number;
+    /**
+     * Date (timestamp) when the file was taken.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly dateTaken: number;
+    /**
+     * Artist of the audio file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly artist: string;
+    /**
+     * audioAlbum of the audio file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly audioAlbum: string;
+    /**
+     * Display width of the file. This is valid only for videos and images.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly width: number;
+    /**
+     * Display height of the file. This is valid only for videos and images.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly height: number;
+    /**
+     * Rotation angle of the file, in degrees.
+     * The rotation angle can be 0, 90, 180, or 270 degrees. This is valid only for videos.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    orientation: number;
+    /**
+     * duration of the audio and video file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly duration: number;
+    /**
+     * ID of the album where the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly albumId: number;
+    /**
+     * URI of the album where the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly albumUri: string;
+    /**
+     * Name of the album where the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly albumName: string;
 
     /**
-     * Returns an instance of MediaLibraryHelper
-     *
-     * @return Instance of MediaLibraryHelper
-     * @version1
+     * If it is a directory where the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback Callback return the result of isDerectory.
      */
-    function getMediaLibrary(): MediaLibrary;
+    isDirectory(callback: AsyncCallback<boolean>): void;
+    /**
+     * If it is a directory where the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    isDirectory():Promise<boolean>;
+    /**
+     * Modify meta data where the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback no value will be returned.
+     * @systemapi
+     */
+    commitModify(callback: AsyncCallback<void>): void;
+    /**
+     * Modify meta data where the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @systemapi
+     */
+    commitModify(): Promise<void>;
+    /**
+     * Open the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param mode mode for open, for example: rw, r, w.
+     * @param callback Callback return the fd of the file.
+     */
+    open(mode: string, callback: AsyncCallback<number>): void;
+    /**
+     * Open the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param mode mode for open, for example: rw, r, w.
+     */
+    open(mode: string): Promise<number>;
+    /**
+     * Close the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param fd fd of the file which had been opened
+     * @param callback no value will be returned.
+     */
+    close(fd: number, callback: AsyncCallback<void>): void;
+    /**
+     * Close the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param fd fd of the file which had been opened
+     */
+    close(fd: number): Promise<void>;
+    /**
+     * Get thumbnail of the file when the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback Callback used to return the thumbnail's pixelmap.
+     */
+    getThumbnail(callback: AsyncCallback<image.PixelMap>): void;
+    /**
+     * Get thumbnail of the file when the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param size thumbnail's size
+     * @param callback Callback used to return the thumbnail's pixelmap.
+     */
+    getThumbnail(size: Size, callback: AsyncCallback<image.PixelMap>): void;
+    /**
+     * Get thumbnail of the file when the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param size thumbnail's size
+     */
+    getThumbnail(size?: Size): Promise<image.PixelMap>;
+    /**
+     * Set favorite for the file when the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param isFavorite ture is favorite file, false is not favorite file
+     * @param callback Callback used to return, No value is returned.
+     * @systemapi
+     */
+    favorite(isFavorite: boolean, callback: AsyncCallback<void>): void;
+    /**
+     * Set favorite for the file when the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param isFavorite ture is favorite file, false is not favorite file
+     * @systemapi
+     */
+    favorite(isFavorite: boolean): Promise<void>;
+    /**
+     * If the file is favorite when the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback Callback used to return true or false.
+     * @systemapi
+     */
+    isFavorite(callback: AsyncCallback<boolean>): void;
+    /**
+     * If the file is favorite when the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @systemapi
+     */
+    isFavorite():Promise<boolean>;
+    /**
+     * Set trash for the file when the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param isTrash true is trashed file, false is not trashed file
+     * @param callback Callback used to return, No value is returned.
+     * @systemapi
+     */
+    trash(isTrash: boolean, callback: AsyncCallback<void>): void;
+    /**
+     * Set trash for the file when the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param isTrash true is trashed file, false is not trashed file
+     * @systemapi
+     */
+    trash(isTrash: boolean,): Promise<void>;
+    /**
+     * If the file is in trash when the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback Callback used to return true or false.
+     * @systemapi
+     */
+    isTrash(callback: AsyncCallback<boolean>): void;
+    /**
+     * If the file is in trash when the file is located.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @systemapi
+     */
+    isTrash():Promise<boolean>;
+  }
 
-    // OLD API for getting the Media Library instance. This will be deprecated
-    // once all applications have migrated to using new API
-    function getMediaLibraryHelper(): MediaLibrary;
+  /**
+   * Describes MediaFetchOptions's selection
+   * @since 8
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   */
+  enum FileKey {
+    /**
+     * File ID
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    ID = "file_id",
+    /**
+     * Relative Path
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    RELATIVE_PATH = "relative_path",
+    /**
+     * File name
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    DISPLAY_NAME = "display_name",
+    /**
+     * Parent folder file id
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    PARENT = "parent",
+    /**
+     * Mime type of the file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    MIME_TYPE = "mime_type",
+    /**
+     * Media type of the file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    MEDIA_TYPE = "media_type",
+    /**
+     * Size of the file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    SIZE = "size",
+    /**
+     * Date of the file creation
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    DATE_ADDED = "date_added",
+    /**
+     * Modify date of the file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    DATE_MODIFIED = "date_modified",
+    /**
+     * Date taken of the file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    DATE_TAKEN = "date_taken",
+    /**
+     * Title of the file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    TITLE = "title",
+    /**
+     * Artist of the audio file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    ARTIST = "artist",
+    /**
+     * Audio album of the audio file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    AUDIOALBUM = "audio_album",
+    /**
+     * Duration of the audio and video file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    DURATION = "duration",
+    /**
+     * Width of the image file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    WIDTH = "width",
+    /**
+     * Height of the image file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    HEIGHT = "height",
+    /**
+     * Orientation of the image file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    ORIENTATION = "orientation",
+    /**
+     * Album id of the file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    ALBUM_ID = "bucket_id",
+    /**
+     * Album name of the file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    ALBUM_NAME = "bucket_display_name",
+  }
+
+  /**
+   * Fetch parameters applicable on images, videos, audios, albums and other media
+   * @since 8
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   */
+  interface MediaFetchOptions {
+    /**
+     * Fields to retrieve, for example, selections: "media_type =? OR media_type =?".
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    selections: string;
+    /**
+     * Conditions for retrieval, for example, selectionArgs: [IMAGE, VIDEO].
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    selectionArgs: Array<string>;
+    /**
+     * Sorting criterion of the retrieval results, for example, order: "datetaken DESC,_display_name DESC, _id DESC".
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    order?: string;
+    /**
+     * uri for retrieval
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    uri?: string;
+    /**
+     * networkId for retrieval
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    networkId?: string;
+    /**
+     * extendArgs for retrieval
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    extendArgs?: string;
+  }
+
+  /**
+   * Implements file retrieval.
+   * @since 8
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   * @import import mediaLibrary from '@ohos.multimedia.mediaLibrary'
+   */
+  interface FetchFileResult {
+    /**
+     * Obtains the total number of files in the file retrieval result.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @return Total number of files.
+     */
+    getCount(): number;
+    /**
+     * Checks whether the result set points to the last row.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @return Whether the file is the last one.
+     * You need to check whether the file is the last one before calling getNextObject,
+     * which returns the next file only when True is returned for this method.
+     */
+    isAfterLast(): boolean;
+    /**
+     * Releases the FetchFileResult instance and invalidates it. Other methods cannot be called.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    close(): void;
+    /**
+     * Obtains the first FileAsset in the file retrieval result. This method uses a callback to return the file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback Callback used to return the file in the format of a FileAsset instance.
+     */
+    getFirstObject(callback: AsyncCallback<FileAsset>): void;
+    /**
+     * Obtains the first FileAsset in the file retrieval result. This method uses a promise to return the file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @return A Promise instance used to return the file in the format of a FileAsset instance.
+     */
+    getFirstObject(): Promise<FileAsset>;
+    /**
+     * Obtains the next FileAsset in the file retrieval result.
+     * This method uses a callback to return the file.
+     * Before calling this method, you must use isAfterLast() to check whether the result set points to the last row.
+     * This method returns the next file only when True is returned for isAfterLast().
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback Callback used to return the file in the format of a FileAsset instance.
+     */
+    getNextObject(callback: AsyncCallback<FileAsset>): void;
+    /**
+     * Obtains the next FileAsset in the file retrieval result.
+     * This method uses a promise to return the file.
+     * Before calling this method, you must use isAfterLast() to check whether the result set points to the last row.
+     * This method returns the next file only when True is returned for isAfterLast().
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @return A Promise instance used to return the file in the format of a FileAsset instance.
+     */
+    getNextObject(): Promise<FileAsset>;
+    /**
+     * Obtains the last FileAsset in the file retrieval result. This method uses a callback to return the file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback Callback used to return the file in the format of a FileAsset instance.
+     */
+    getLastObject(callback: AsyncCallback<FileAsset>): void;
+    /**
+     * Obtains the last FileAsset in the file retrieval result. This method uses a promise to return the file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @return A Promise instance used to return the file in the format of a FileAsset instance.
+     */
+    getLastObject(): Promise<FileAsset>;
+    /**
+     * Obtains the FileAsset with the specified index in the file retrieval result.
+     * This method uses a callback to return the file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param index Index of the file to obtain.
+     * @param callback Callback used to return the file in the format of a FileAsset instance.
+     */
+    getPositionObject(index: number, callback: AsyncCallback<FileAsset>): void;
+    /**
+     * Obtains the FileAsset with the specified index in the file retrieval result.
+     * This method uses a promise to return the file.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param index Index of the file to obtain.
+     * @return A Promise instance used to return the file in the format of a FileAsset instance.
+     */
+    getPositionObject(index: number): Promise<FileAsset>;
+     /**
+     * Obtains all FileAssets in the file retrieval result.
+     * This method uses a callback to return the result. After this method is called, 
+     * close() is automatically called to release the FetchFileResult instance and invalidate it.
+     * In this case, other methods cannot be called.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback Callback used to return a FileAsset array.
+     */
+    getAllObject(callback: AsyncCallback<Array<FileAsset>>): void;
+    /**
+     * Obtains all FileAssets in the file retrieval result.
+     * This method uses a promise to return the result. that store the selected media resources.
+     * close() is automatically called to release the FetchFileResult instance and invalidate it.
+     * In this case, other methods cannot be called.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @return A Promise instance used to return a FileAsset array.
+     */
+    getAllObject(): Promise<Array<FileAsset>>;
+  }
+
+  /**
+   * Defines the album.
+   *
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   * @since 8
+   */
+  interface Album {
+    /**
+     * Album ID.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly albumId: number;
+    /**
+     * Album name.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    albumName: string;
+    /**
+     * Album uri.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly albumUri: string;
+    /**
+     * Date (timestamp) when the album was last modified.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly dateModified: number;
+    /**
+     * File count for the album
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly count: number;
+    /**
+     * Relative path for the album
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly relativePath: string;
+    /**
+     * coverUri for the album
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    readonly coverUri: string;
 
     /**
-     * Enumeration types for different kind of Media Files
-     *
-     * @version1
+     * Modify the meta data for the album
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback, no value will be returned.
+     * @systemapi
      */
-    enum MediaType {
-        DEFAULT = 0,            // OLD API
-        FILE,
-        MEDIA,                  // OLD API
-        IMAGE,
-        VIDEO,
-        AUDIO,
-        ALBUM_LIST,             // OLD API
-        ALBUM_LIST_INFO         // OLD API
-    }
-
-    enum ErrorCode {
-        ERR_FAIL = -1,
-        ERR_SUCCESS = 0
-    }
-
+    commitModify(callback: AsyncCallback<void>): void;
     /**
-     * OLD API
-     * Defines the media asset.
-     *
-     * @SysCap SystemCapability.Multimedia.MediaLibrary
-     * @devices common
-     * @version 1
+     * Modify the meta data for the album
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @systemapi
      */
-    export interface MediaAsset {
-        id: number;
-        URI: string;
-        mediaType: MediaType;
-        name: string;
-        size: number;
-        dateAdded: number;
-        dateModified: number;
-        albumId: number;
-        albumName: string;
-
-        /**
-         * Start setting the properties for a newly created media asset
-         *
-         * @return Returns whether property setting can be started for a created media asset
-         * @version 1
-         */
-        startCreate(callback: AsyncCallback<boolean>): void;
-        startCreate(): Promise<boolean>;
-
-        /**
-         * Start modifying the properties for an existing media asset
-         *
-         * @return Returns whether property modification can be started for a media asset
-         * @version 1
-         */
-        startModify(callback: AsyncCallback<boolean>): void;
-        startModify(): Promise<boolean>;
-
-        /**
-         * Cancel the creation of a media asset
-         *
-         * @return Returns whether creation of a media asset was cancelled or not
-         * @version 1
-         */
-        cancelCreate(callback: AsyncCallback<boolean>): void;
-        cancelCreate(): Promise<boolean>;
-
-        /**
-         * Cancel the modification of a media asset
-         *
-         * @return Returns whether modification of a media asset was cancelled or not
-         * @version 1
-         */
-        cancelModify(callback: AsyncCallback<boolean>): void;
-        cancelModify(): Promise<boolean>;
-
-        /**
-         * Commit the creation of a media asset
-         *
-         * @return Returns whether creation of a media asset was committed or not
-         * @version 1
-         */
-        commitCreate(callback: AsyncCallback<boolean>): void;
-        commitCreate(): Promise<boolean>;
-
-        /**
-         * Delete a media asset
-         *
-         * @return Returns whether deletion of a media asset was successful or not
-         * @version 1
-         */
-        commitDelete(callback: AsyncCallback<boolean>): void;
-        commitDelete(): Promise<boolean>;
-
-        /**
-         * Commit the modification of a media asset
-         *
-         * @return Returns whether modification of a media asset was committed or not
-         * @version 1
-         */
-        commitModify(callback: AsyncCallback<boolean>): void;
-        commitModify(): Promise<boolean>;
-
-        /**
-         * Copy a media asset properties to the target media asset
-         *
-         * @param target The target media asset on which the source properties are to be copied
-         * @return Returns whether copying of a media asset to the target was successful or not
-         * @version 1
-         */
-        commitCopy(target: MediaAsset, callback: AsyncCallback<boolean>): void;
-        commitCopy(target: MediaAsset): Promise<boolean>;
-    }
-
+    commitModify(): Promise<void>;
     /**
-     * OLD API
-     * Defines the audio asset.
-     *
-     * @SysCap SystemCapability.Multimedia.MediaLibrary
-     * @devices common
-     * @version 1
+     * SObtains files in an album. This method uses an asynchronous callback to return the files.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback Callback used to return the files in the format of a FetchFileResult instance.
      */
-    export interface AudioAsset extends MediaAsset {
-        mimeType: string;
-        title: string;
-        artist: string;
-        duration: number;
-    }
-
+    getFileAssets(callback: AsyncCallback<FetchFileResult>): void;
     /**
-     * OLD API
-     * Defines the video asset.
-     *
-     * @SysCap SystemCapability.Multimedia.MediaLibrary
-     * @devices common
-     * @version 1
+     * SObtains files in an album. This method uses an asynchronous callback to return the files.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param option Media retrieval options.
+     * @param callback Callback used to return the files in the format of a FetchFileResult instance.
      */
-    export interface VideoAsset extends MediaAsset {
-        mimeType: string;
-        width: number;
-        height: number;
-        duration: number;
-    }
-
+    getFileAssets(options: MediaFetchOptions, callback: AsyncCallback<FetchFileResult>): void;
     /**
-     * OLD API
-     * Defines the image asset.
-     *
-     * @SysCap SystemCapability.Multimedia.MediaLibrary
-     * @devices common
-     * @version 1
+     * Obtains files in an album. This method uses a promise to return the files.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param option Media retrieval options.
+     * @return A Promise instance used to return the files in the format of a FetchFileResult instance.
      */
-    export interface ImageAsset extends MediaAsset {
-        mimeType: string;
-        width: number;
-        height: number;
-    }
+    getFileAssets(options?: MediaFetchOptions): Promise<FetchFileResult>;
+  }
 
+  /**
+   * Enumeration public directory that predefined
+   * @since 8
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   */
+  enum DirectoryType {
     /**
-     * Defines the album.
-     *
-     * @SysCap SystemCapability.Multimedia.MediaLibrary
-     * @devices common
-     * @version 1
+     * predefined public directory for files token by Camera.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
      */
-    export interface Album {
-        albumId?: number;
-        albumName: string;
-
-        virtual: boolean;
-
-        path?: string;
-        relativePath: string;
-
-        dateModified?: number;
-
-        // get all FileAssets in each album
-        getFileAssets(options: MediaFetchOptions, callback: AsyncCallback<FetchFileResult>): void;
-        getFileAssets(options: MediaFetchOptions): Promise<FetchFileResult>;
-
-        /**
-         * OLD API
-         * Gets all video assets in album.
-         *
-         * @return Returns video assets list as asynchronous response
-         * @version 1
-         */
-        getVideoAssets(): Promise<VideoAssets>;
-        getVideoAssets(callback: AsyncCallback<VideoAssets>): void;
-
-        /**
-         * OLD API
-         * Gets all image assets in album.
-         *
-         * @return Returns image assets list as asynchronous response
-         * @version 1
-         */
-        getImageAssets(): Promise<ImageAssets>;
-        getImageAssets(callback: AsyncCallback<ImageAssets>): void;
-
-        /**
-         * OLD API
-         * Commit the creation of an album
-         *
-         * @return Returns whether creation of an album was committed or not
-         * @version 1
-         */
-        commitCreate(callback: AsyncCallback<boolean>): void;
-        commitCreate(): Promise<boolean>;
-
-        /**
-         * OLD API
-         * Delete an album
-         *
-         * @return Returns whether deletion of an album was successful or not
-         * @version 1
-         */
-        commitDelete(callback: AsyncCallback<boolean>): void;
-        commitDelete(): Promise<boolean>;
-
-        /**
-         * OLD API
-         * Commit the modification of an album
-         *
-         * @return Returns whether modification of an album was committed or not
-         * @version 1
-         */
-        commitModify(callback: AsyncCallback<boolean>): void;
-        commitModify(): Promise<boolean>;
-    }
-
-    interface FileAsset {
-        id?: number;
-        uri?: string;
-        thumbnailUri?: string;
-
-        path?: string;
-        relativePath: string;
-
-        mimeType?: string;
-        mediaType: MediaType;
-
-        displayName: string;
-        size?: number;
-
-        dateAdded?: number;
-        dateModified?: number;
-
-        // audio
-        title?: string;
-        artist?: string;
-        album?: string;
-
-        // image & video
-        width?: number;
-        height?: number;
-        duration?: number;
-        orientation?: number;
-
-        // album
-        albumId?: number;
-        albumName?: string;
-    }
-
-    enum FileKey {
-        ID = "id",
-        PATH = "path",
-        RELATIVE_PATH = "relative_path",
-        MIME_TYPE = "mime_type",
-        MEDIA_TYPE = "media_type",
-        DISPLAY_NAME = "display_name",
-        SIZE = "size",
-        DATE_ADDED = "date_added",
-        DATE_MODIFIED = "date_modified",
-        TITLE = "title",
-        ARTIST = "artist",
-        ALBUM = "album",
-        ALBUM_ID = "album_id",
-        ALBUM_NAME = "album_name",
-    }
-
+    DIR_CAMERA = 0,
     /**
-     * Fetch parameters applicable on images, videos, audios, albums and other media
-     *
-     * @version 1
+     * predefined public directory for VIDEO files.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
      */
-    export interface MediaFetchOptions {
-        selections: string;
-        selectionArgs: Array<string>;
-        order: string;
-    }
-
-    interface FetchFileResult {
-        // get count
-        getCount(): number;
-
-        // is after the last
-        isAfterLast(): boolean;
-
-        // get the first FileAsset from the results
-        getFirstObject(callback: AsyncCallback<FileAsset>): void;
-        getFirstObject(): Promise<FileAsset>;
-
-        // get the next FileAsset from the results
-        getNextObject(callback: AsyncCallback<FileAsset>): void;
-        getNextObject(): Promise<FileAsset>;
-
-        // get the last FileAsset from the results
-        getLastObject(callback: AsyncCallback<FileAsset>): void;
-        getLastObject(): Promise<FileAsset>;
-
-        // get the FileAsset at the posion from the results
-        getPositionObject(index: number, callback: AsyncCallback<FileAsset>): void;
-        getPositionObject(index: number): Promise<FileAsset>;
-
-        // query for all asset at a time and return an array
-        getAllObject(callback: AsyncCallback<Array<FileAsset>>): void;
-        getAllObject(): Promise<Array<FileAsset>>;
-    }
-
-    interface MediaChangeListener {
-        mediaType: MediaType;
-    }
-
-    type MediaAssets = Array<Readonly<MediaAsset>>;    // OLD API
-
-    type AudioAssets = Array<Readonly<AudioAsset>>;    // OLD API
-
-    type VideoAssets = Array<Readonly<VideoAsset>>;    // OLD API
-
-    type ImageAssets = Array<Readonly<ImageAsset>>;    // OLD API
-
-    type Albums = Array<Readonly<Album>>;
-
+    DIR_VIDEO,
     /**
-     * Defines the MediaLibraryHelper class and provides functions to access the data in media storage.
-     *
-     * @SysCap SystemCapability.Multimedia.MediaLibrary
-     * @devices common
-     * @version 1
+     * predefined public directory for IMAGE files.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
      */
-    export class MediaLibrary {
-
-        // query all assets just for count & first cover
-        // if need all data, getAllObject from FetchFileResult
-        getFileAssets(options: MediaFetchOptions, callback: AsyncCallback<FetchFileResult>): void;
-        getFileAssets(options: MediaFetchOptions): Promise<FetchFileResult>;
-
-        // query an entity album
-        getAlbums(options: MediaFetchOptions, callback: AsyncCallback<Array<Album>>): void;
-        getAlbums(options: MediaFetchOptions): Promise<Array<Album>>;
-
-        // subscribe a media change, can be a combination of each MediaType
-        on(type: 'image' | 'video' | 'audio' | 'file', callback: AsyncCallback<MediaChangeListener>): void;
-
-        // unsubscribe a media change
-        off(type: 'image' | 'video' | 'audio' | 'file', callback?: AsyncCallback<MediaChangeListener>): void;
-
-        // file operation
-        createAsset(targetAsset: FileAsset, callback: AsyncCallback<string>): void;
-        createAsset(targetAsset: FileAsset): Promise<string>;
-
-        modifyAsset(uri: string, targetAsset: FileAsset, callback: AsyncCallback<ErrorCode>): void;
-        modifyAsset(uri: string, targetAsset: FileAsset): Promise<ErrorCode>;
-
-        deleteAsset(uri: string, callback: AsyncCallback<ErrorCode>): void;
-        deleteAsset(uri: string): Promise<ErrorCode>;
-
-        openAsset(uri: string, mode: string, callback: AsyncCallback<number>): void;
-        openAsset(uri: string, mode: string): Promise<number>;
-
-        closeAsset(uri: string, fd: number, callback: AsyncCallback<ErrorCode>): void;
-        closeAsset(uri: string, fd: number): Promise<ErrorCode>;
-
-        // album operation
-        createNewAlbum(targetAlbum: Album, callback: AsyncCallback<number>): void;
-        createNewAlbum(targetAlbum: Album): Promise<number>;
-
-        modifyAlbum(albumId: number, targetAlbum: Album, callback: AsyncCallback<ErrorCode>): void;
-        modifyAlbum(albumId: number, targetAlbum: Album): Promise<ErrorCode>;
-
-        deleteAlbum(albumId: number, callback: AsyncCallback<ErrorCode>): void;
-        deleteAlbum(albumId: number): Promise<ErrorCode>;
-
-        /**
-         * OLD API
-         * Gets all media assets from system.
-         *
-         * @param options Fetch options with selection strings based on which to select the media assets
-         * @return Returns media assets list as asynchronous response
-         * @version 1
-         */
-        getMediaAssets(callback: AsyncCallback<MediaAssets>): void;
-        getMediaAssets(options: MediaFetchOptions, callback: AsyncCallback<MediaAssets>): void;
-        getMediaAssets(options?: MediaFetchOptions): Promise<MediaAssets>;
-
-        /**
-         * OLD API
-         * Gets all audio assets from system.
-         *
-         * @param options Fetch options with selection strings based on which to select the audio assets
-         * @return Returns audio assets list as asynchronous response
-         * @version 1
-         */
-        getAudioAssets(callback: AsyncCallback<AudioAssets>): void;
-        getAudioAssets(options: MediaFetchOptions, callback: AsyncCallback<AudioAssets>): void;
-        getAudioAssets(options?: MediaFetchOptions): Promise<AudioAssets>;
-
-        /**
-         * OLD API
-         * Gets all video assets from system.
-         *
-         * @param options Fetch options with selection strings based on which to select the video assets
-         * @return Returns video assets list as asynchronous response
-         * @version 1
-         */
-        getVideoAssets(callback: AsyncCallback<VideoAssets>): void;
-        getVideoAssets(options: MediaFetchOptions, callback: AsyncCallback<VideoAssets>): void;
-        getVideoAssets(options?: MediaFetchOptions): Promise<VideoAssets>;
-
-        /**
-         * OLD API
-         * Gets all image assets from system.
-         *
-         * @param options Fetch options with selection strings based on which to select the image assets
-         * @return Returns image assets list as asynchronous response
-         * @version 1
-         */
-        getImageAssets(callback: AsyncCallback<ImageAssets>): void;
-        getImageAssets(options: MediaFetchOptions, callback: AsyncCallback<ImageAssets>): void;
-        getImageAssets(options?: MediaFetchOptions): Promise<ImageAssets>;
-
-        /**
-         * OLD API
-         * Gets video album from system
-         *
-         * @param options Fetch options with selection strings based on which to select the albums
-         * @return Returns video album as asynchronous response
-         * @version 1
-         */
-        getVideoAlbums(options: MediaFetchOptions, callback: AsyncCallback<Albums>): void;
-        getVideoAlbums(options: MediaFetchOptions): Promise<Albums>;
-
-        /**
-         * OLD API
-         * Gets image album from system
-         *
-         * @param options Fetch options with selection strings based on which to select the albums
-         * @return Returns image album as asynchronous response
-         * @version 1
-         */
-        getImageAlbums(options: MediaFetchOptions, callback: AsyncCallback<Albums>): void;
-        getImageAlbums(options: MediaFetchOptions): Promise<Albums>;
-
-        /**
-         * OLD API
-         * Create a video asset with empty properties
-         *
-         * @return Returns a video asset as asynchronous response
-         * @version 1
-         */
-        createVideoAsset(callback: AsyncCallback<VideoAsset>): void;
-        createVideoAsset(): Promise<VideoAsset>;
-
-        /**
-         * OLD API
-         * Create an image asset with empty properties
-         *
-         * @return Returns an image asset as asynchronous response
-         * @version 1
-         */
-        createImageAsset(callback: AsyncCallback<ImageAsset>): void;
-        createImageAsset(): Promise<ImageAsset>;
-
-        /**
-         * OLD API
-         * Create an audio asset with empty properties
-         *
-         * @return Returns an audio asset as asynchronous response
-         * @version 1
-         */
-        createAudioAsset(callback: AsyncCallback<AudioAsset>): void;
-        createAudioAsset(): Promise<AudioAsset>;
-
-        /**
-         * OLD API
-         * Create an album with empty properties
-         *
-         * @return Returns an album as asynchronous response
-         * @version 1
-         */
-        createAlbum(callback: AsyncCallback<Album>): void;
-        createAlbum(): Promise<Album>;
-    }
-
-    enum MetadataCode {
-        AV_KEY_CD_TRACK_NUMBER = 0,
-        AV_KEY_ALBUM = 1,
-        AV_KEY_ARTIST = 2,
-        AV_KEY_AUTHOR = 3,
-        AV_KEY_COMPOSER = 4,
-        AV_KEY_DATE = 5,
-        AV_KEY_GENRE = 6,
-        AV_KEY_TITLE = 7,
-        AV_KEY_YEAR = 8,
-        AV_KEY_DURATION = 9,
-        AV_KEY_NUM_TRACKS = 10,
-        AV_KEY_WRITER = 11,
-        AV_KEY_MIME_TYPE = 12,
-        AV_KEY_ALBUM_ARTIST = 13,
-        AV_KEY_DISC_NUMBER = 14,
-        AV_KEY_COMPILATION = 15,
-        AV_KEY_HAS_AUDIO = 16,
-        AV_KEY_HAS_VIDEO = 17,
-        AV_KEY_VIDEO_WIDTH = 18,
-        AV_KEY_VIDEO_HEIGHT = 19,
-        AV_KEY_BITRATE = 20,
-        AV_KEY_TIMED_TEXT_LANGUAGES = 21,
-        AV_KEY_IS_DRM = 22,
-        AV_KEY_LOCATION = 23,
-        AV_KEY_VIDEO_ROTATION = 24,
-        AV_KEY_CAPTURE_FRAMERATE = 25,
-        AV_KEY_HAS_IMAGE = 26,
-        AV_KEY_IMAGE_COUNT = 27,
-        AV_KEY_IMAGE_PRIMARY = 28,
-        AV_KEY_IMAGE_WIDTH = 29,
-        AV_KEY_IMAGE_HEIGHT = 30,
-        AV_KEY_IMAGE_ROTATION = 31,
-        AV_KEY_VIDEO_FRAME_COUNT = 32,
-        AV_KEY_EXIF_OFFSET = 33,
-        AV_KEY_EXIF_LENGTH = 34,
-        AV_KEY_COLOR_STANDARD = 35,
-        AV_KEY_COLOR_TRANSFER = 36,
-        AV_KEY_COLOR_RANGE = 37,
-        AV_KEY_SAMPLE_RATE = 38,
-        AV_KEY_BITS_PER_SAMPLE = 39,
-    }
-
-    function getAVMetadataHelper(): AVMetadataHelper;
-
-    interface AVMetadataHelper {
-        // set source by string, string like dataability:///external/media
-        setSource(uri: string, callback: AsyncCallback<void>): void;
-        setSource(uri: string): Promise<void>;
-
-        // fetch video frame pixelmap by time
-        fetchVideoPixelMapByTime(timeMs: number, callback: AsyncCallback<image.PixelMap>): void;
-        fetchVideoPixelMapByTime(timeMs: number): Promise<image.PixelMap>;
-
-        // fetch metadata
-        resolveMetadata(key: MetadataCode, callback: AsyncCallback<string>): void;
-        resolveMetadata(key: MetadataCode): Promise<string>;
-
-        // release
-        release(callback: AsyncCallback<void>): void;
-        release(): Promise<void>;
-    }
-
-    enum ScanState {
-        SCAN_ERROR = -1,
-        SCAN_SUCCESS = 0,
-        SCAN_EMPTY_ARGS = 1,
-        SCAN_NOT_ACCESSIBLE = 2,
-        SCAN_INCORRECT_PATH = 3,
-        SCAN_MEM_ALLOC_FAIL = 4,
-        SCAN_MIMETYPE_NOTSUPPORT = 5,
-        SCAN_SCAN_NOT_INIT = 6,
-        SCAN_SERVICE_NOT_READY = 7,
-        SCAN_INV_CB_ERR = 8
-    }
-
+    DIR_IMAGE,
     /**
-     * Defines the scan result.
-     *
-     * @SysCap SystemCapability.Multimedia.MediaLibrary
-     * @devices common
-     * @version 1
+     * predefined public directory for AUDIO files.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
      */
-     interface ScanResult {
-        status : ScanState;
-        // fileUri will be an URI when we call scanFile API & in scanDir API call it will be blank
-        fileUri : string;
-    }
-
+    DIR_AUDIO,
     /**
-     * Returns an instance of MediaScannerHelper
-     *
-     * @return Instance of MediaScannerHelper
-     * @version1
+     * predefined public directory for DOCUMENTS files.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
      */
-    function getScannerInstance(): MediaScannerHelper;
-
+    DIR_DOCUMENTS,
     /**
-     * Defines the MediaScannerHelper class and provides functions to scan the specified dir/file of media storage.
-     *
-     * @SysCap SystemCapability.Multimedia.MediaLibrary
-     * @devices common
-     * @version 1
+     * predefined public directory for DOWNLOAD files.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
      */
-     class MediaScannerHelper {
-        /**
-         * This API will help to scan the specified directory and updates the metadata to database
-         *
-         * @param scanDirPath Valid path to a directory {/storage/media/local/files}
-         * @param callback Callback object to be passed along with request
-         * @return int32_t Returns the scan state of scanDir
-         * @version 1
-         */
-        scanDir(scanDirPath: string, callback: AsyncCallback<ScanResult>): void;
+    DIR_DOWNLOAD
+  }
 
-        /**
-         * This API will help to scan the specified file and updates the metadata to database
-         *
-         * @param scanFilePath Valid path to a file along with filename{/storage/media/local/files/sample.mp3}
-         * @param callback Callback object to be passed along with request
-         * @return int32_t Returns the scan state of scanFile
-         * @version 1
-         */
-        scanFile(scanFilePath: string, callback: AsyncCallback<ScanResult>): void;
-     }
+  /**
+   * Defines the MediaLibrary class and provides functions to access the data in media storage.
+   *
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   * @since 6
+   */
+  interface MediaLibrary {
+    /**
+     * get system predefined root dir, use to create file asset by relative path
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param type, public directory predefined in DirectoryType.
+     * @param callback Callback return the FetchFileResult.
+     */
+    getPublicDirectory(type: DirectoryType, callback: AsyncCallback<string>): void;
+    /**
+     * get system predefined root dir, use to create file asset by relative path
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param type public directory predefined in DirectoryType.
+     * @return A promise instance used to return the public directory in the format of string
+     */
+    getPublicDirectory(type: DirectoryType): Promise<string>;
+    /**
+     * query all assets just for count & first cover
+     * if need all data, getAllObject from FetchFileResult
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param options, Media retrieval options.
+     * @param callback, Callback return the FetchFileResult.
+     */
+    getFileAssets(options: MediaFetchOptions, callback: AsyncCallback<FetchFileResult>): void;
+    /**
+     * query all assets just for count & first cover
+     * if need all data, getAllObject from FetchFileResult
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param options Media retrieval options.
+     * @return A promise instance used to return the files in the format of a FetchFileResult instance
+     */
+    getFileAssets(options: MediaFetchOptions): Promise<FetchFileResult>;
+    /**
+     * Turn on mornitor the data changes by media type
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param type one of 'deviceChange','albumChange','imageChange','audioChange','videoChange','fileChange','remoteFileChange'
+     * @param callback no value returned
+     */
+    on(type: 'deviceChange'|'albumChange'|'imageChange'|'audioChange'|'videoChange'|'fileChange'|'remoteFileChange', callback: Callback<void>): void;
+    /**
+     * Turn off mornitor the data changes by media type
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param type one of 'deviceChange','albumChange','imageChange','audioChange','videoChange','fileChange','remoteFileChange'
+     * @param callback no value returned
+     */
+     off(type: 'deviceChange'|'albumChange'|'imageChange'|'audioChange'|'videoChange'|'fileChange'|'remoteFileChange', callback?: Callback<void>): void;
+    /**
+     * Create File Asset
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param mediaType mediaType for example:IMAGE, VIDEO, AUDIO, FILE
+     * @param displayName file name
+     * @param relativePath relative path
+     * @param callback Callback used to return the FileAsset
+     */
+    createAsset(mediaType: MediaType, displayName: string, relativePath: string, callback: AsyncCallback<FileAsset>): void;
+    /**
+     * Create File Asset
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param mediaType mediaType for example:IMAGE, VIDEO, AUDIO, FILE
+     * @param displayName file name
+     * @param relativePath relative path
+     * @return A Promise instance used to return the FileAsset
+     */
+    createAsset(mediaType: MediaType, displayName: string, relativePath: string): Promise<FileAsset>;
+    /**
+     * Delete File Asset
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param uri FileAsset's URI
+     * @param callback no value returned
+     * @systemapi
+     */
+    deleteAsset(uri: string, callback: AsyncCallback<void>): void;
+    /**
+     * Delete File Asset
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param uri, FileAsset's URI
+     * @return A Promise instance, no value returned
+     * @systemapi
+     */
+    deleteAsset(uri: string): Promise<void>;
+    /**
+     * Obtains albums based on the media retrieval options. This method uses an asynchronous callback to return.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param option Media retrieval options.
+     * @param callback Callback used to return an album array.
+     */
+    getAlbums(options: MediaFetchOptions, callback: AsyncCallback<Array<Album>>): void;
+    /**
+     * Obtains albums based on the media retrieval options. This method uses a promise to return the albums.
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param option Media retrieval options.
+     * @return A Promise instance used to return an album array.
+     */
+    getAlbums(options: MediaFetchOptions): Promise<Array<Album>>;
+    /**
+     * Stores media resources. This method uses an asynchronous callback to return the URI that stores
+     * the media resources.
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param option Media resource option.
+     * @param callback Callback used to return the URI that stores the media resources.
+     */
+    storeMediaAsset(option: MediaAssetOption, callback: AsyncCallback<string>): void;
+    /**
+     * Stores media resources. This method uses a promise to return the URI that stores the media resources.
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param option Media resource option.
+     * @return Promise used to return the URI that stores the media resources.
+     */
+    storeMediaAsset(option: MediaAssetOption): Promise<string>;
+    /**
+     * Starts image preview, with the first image to preview specified. This method uses an asynchronous callback
+     * to receive the execution result.
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param images List of images to preview.
+     * @param index Sequence number of the first image to preview.
+     * @param callback Callback used for image preview. No value is returned.
+     */
+    startImagePreview(images: Array<string>, index: number, callback: AsyncCallback<void>): void;
+    /**
+     * Starts image preview. This method uses an asynchronous callback to receive the execution result.
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param images List of images to preview.
+     * @param callback Callback used for image preview. No value is returned.
+     */
+    startImagePreview(images: Array<string>, callback: AsyncCallback<void>): void;
+    /**
+     * Starts image preview, with the first image to preview specified.
+     * This method uses a promise to return the execution result.
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param images List of images to preview.
+     * @param index Sequence number of the first image to preview.
+     * @return Promise used to return whether the operation is successful.
+     */
+    startImagePreview(images: Array<string>, index?: number): Promise<void>;
+    /**
+     * Starts media selection. This method uses an asynchronous callback to
+     * return the list of URIs that store the selected media resources.
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param option Media selection option.
+     * @param callback Callback used to return the list of URIs that store the selected media resources.
+     */
+    startMediaSelect(option: MediaSelectOption, callback: AsyncCallback<Array<string>>): void;
+    /**
+     * Starts media selection. This method uses a promise to return the list of URIs
+     * that store the selected media resources.
+     * @since 6
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param option Media selection option.
+     * @return Promise used to return the list of URIs that store the selected media resources.
+     */
+    startMediaSelect(option: MediaSelectOption): Promise<Array<string>>;
+    /**
+     * Get Active Peer device information
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     * @param callback, Callback return the list of the active peer devices' information
+     */
+    getActivePeers(callback: AsyncCallback<Array<PeerInfo>>): void;
+    /**
+     * Get Active Peer device information
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     * @return Promise used to return the list of the active peer devices' information
+     */
+    getActivePeers(): Promise<Array<PeerInfo>>;
+    /**
+     * Get all the peer devices' information
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     * @param callback Callback return the list of the all the peer devices' information
+     */
+    getAllPeers(callback: AsyncCallback<Array<PeerInfo>>): void;
+    /**
+     * Get all the peer devices' information
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     * @return Promise used to return the list of the all the peer devices' information
+     */
+    getAllPeers(): Promise<Array<PeerInfo>>;
+    /**
+     * Release MediaLibrary instance
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     * @param callback no value returned
+     */
+    release(callback: AsyncCallback<void>): void;
+    /**
+     * Release MediaLibrary instance
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    release(): Promise<void>;
+  }
+
+  /**
+   * thumbnail's size which have width and heigh
+   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+   * @since 8
+   */
+  interface Size {
+    /**
+     * Width of image file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    width: number;
+    /**
+     * Height of image file
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
+     */
+    height: number;
+  }
+  
+  /**
+   * peer devices' information
+   * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+   * @systemapi
+   * @since 8
+   */
+  interface PeerInfo {
+    /**
+     * Peer device name
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     */
+    readonly deviceName: string;
+    /**
+     * Peer device network id
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     */
+    readonly networkId: string;
+    /**
+     * Peer device type
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     */
+    readonly deviceType: DeviceType;
+    /**
+     * Peer device online status
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     */
+    readonly isOnline: boolean;
+  }
+
+  /**
+   * peer device type
+   * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+   * @systemapi
+   * @since 8
+   */
+  enum DeviceType {
+    /**
+     * Unknow device type
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     */
+    TYPE_UNKNOWN = 0,
+    /**
+     * Laptop device
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     */
+    TYPE_LAPTOP,
+    /**
+     * Phone device
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     */
+    TYPE_PHONE,
+    /**
+     * Tablet device
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     */
+    TYPE_TABLET,
+    /**
+     * Watch device
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     */
+    TYPE_WATCH,
+    /**
+     * Car device
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     */
+    TYPE_CAR,
+    /**
+     * TV device
+     * @since 8
+     * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
+     * @systemapi
+     */
+    TYPE_TV
+  }
 }
+
+export default mediaLibrary;
+
