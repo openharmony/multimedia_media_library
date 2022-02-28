@@ -30,69 +30,69 @@ MediaLibrarySyncTable::~MediaLibrarySyncTable()
 
 bool MediaLibrarySyncTable::SyncPullAllTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName)
 {
-    MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable IN");
+    MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable IN");
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable rdbStore is null");
+        MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable rdbStore is null");
         return false;
     }
 
     std::vector<std::string> devices;
     auto ret = SyncPullTable(rdbStore, bundleName, MEDIALIBRARY_TABLE, devices);
     if (!ret) {
-        MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable SyncFilesTable error!");
+        MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable SyncFilesTable error!");
         return false;
     }
     ret = SyncPullTable(rdbStore, bundleName, SMARTALBUM_TABLE, devices);
     if (!ret) {
-        MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumTable error!");
+        MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumTable error!");
         return false;
     }
     ret = SyncPullTable(rdbStore, bundleName, SMARTALBUM_MAP_TABLE, devices);
     if (!ret) {
-        MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumMapTable error!");
+        MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumMapTable error!");
         return false;
     }
     ret = SyncPullTable(rdbStore, bundleName, CATEGORY_SMARTALBUM_MAP_TABLE, devices, true);
     if (!ret) {
-        MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumMapTable error!");
+        MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumMapTable error!");
         return false;
     }
 
-    MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable OUT");
+    MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable OUT");
     return true;
 }
 
 bool MediaLibrarySyncTable::SyncPullAllTableByDeviceId(
     const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName, std::vector<std::string> &devices)
 {
-    MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable IN");
+    MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable IN");
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable rdbStore is null");
+        MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable rdbStore is null");
         return false;
     }
 
     auto ret = SyncPullTable(rdbStore, bundleName, MEDIALIBRARY_TABLE, devices);
     if (!ret) {
-        MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable SyncFilesTable error!");
+        MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable SyncFilesTable error!");
         return false;
     }
     ret = SyncPullTable(rdbStore, bundleName, SMARTALBUM_TABLE, devices);
     if (!ret) {
-        MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumTable error!");
+        MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumTable error!");
         return false;
     }
     ret = SyncPullTable(rdbStore, bundleName, SMARTALBUM_MAP_TABLE, devices);
     if (!ret) {
-        MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumMapTable error!");
+        MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumMapTable error!");
         return false;
     }
     ret = SyncPullTable(rdbStore, bundleName, CATEGORY_SMARTALBUM_MAP_TABLE, devices, true);
     if (!ret) {
-        MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumMapTable error!");
+        MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable SyncSmartAlbumMapTable error!");
         return false;
     }
 
-    MEDIA_ERR_LOG("@@@@@MediaLibrarySyncTable SyncPullAllTable OUT");
+    MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable OUT");
     return true;
 }
 
@@ -100,7 +100,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
     const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName, const std::string &tableName,
     std::vector<std::string> &devices, bool isLast)
 {
-    MEDIA_ERR_LOG("@@@@@SyncPullTable table = %{public}s, isLast = %{public}d", tableName.c_str(), isLast);
+    MEDIA_ERR_LOG("SyncPullTable table = %{public}s, isLast = %{public}d", tableName.c_str(), isLast);
     // start sync
     DistributedRdb::SyncOption option;
     option.mode = DistributedRdb::SyncMode::PULL;
@@ -113,11 +113,11 @@ bool MediaLibrarySyncTable::SyncPullTable(
         // update device db
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
             if (iter->first.empty()) {
-                MEDIA_ERR_LOG("@@@@@SyncPullTable deviceId is empty");
+                MEDIA_ERR_LOG("SyncPullTable deviceId is empty");
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("@@@@@SyncPullTable device = %{public}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPullTable device = %{public}s syncResult = %{public}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
@@ -125,15 +125,15 @@ bool MediaLibrarySyncTable::SyncPullTable(
                 MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(iter->first, DEVICE_SYNCSTATUS_COMPLETE,
                                                                            bundleName);
             }
-            MEDIA_ERR_LOG("@@@@@SyncPullTable device = %{public}s success", iter->first.c_str());
+            MEDIA_ERR_LOG("SyncPullTable device = %{public}s success", iter->first.c_str());
         }
     };
 
     uint32_t count = 0;
     while (count++ < RETRY_COUNT) {
-        MEDIA_ERR_LOG("@@@@@SyncPullTable before Sync");
+        MEDIA_ERR_LOG("SyncPullTable before Sync");
         auto ret = rdbStore->Sync(option, predicate, callback);
-        MEDIA_ERR_LOG("@@@@@SyncPullTable after Sync");
+        MEDIA_ERR_LOG("SyncPullTable after Sync");
         if (ret) {
             return ret;
         }
@@ -144,7 +144,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
 bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
                                           const std::string &tableName, std::vector<std::string> &devices, bool isBlock)
 {
-    MEDIA_ERR_LOG("@@@@@SyncPushTable table = %{public}s", tableName.c_str());
+    MEDIA_ERR_LOG("SyncPushTable table = %{public}s", tableName.c_str());
     // start sync
     DistributedRdb::SyncOption option;
     option.mode = DistributedRdb::SyncMode::PUSH;
@@ -157,15 +157,15 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
         // update device db
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
             if (iter->first.empty()) {
-                MEDIA_ERR_LOG("@@@@@SyncPushTable deviceId is empty");
+                MEDIA_ERR_LOG("SyncPushTable deviceId is empty");
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("@@@@@SyncPushTable device = %{public}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPushTable device = %{public}s syncResult = %{public}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
-            MEDIA_ERR_LOG("@@@@@SyncPushTable device = %{public}s success", iter->first.c_str());
+            MEDIA_ERR_LOG("SyncPushTable device = %{public}s success", iter->first.c_str());
         }
     };
     return rdbStore->Sync(option, predicate, callback);
