@@ -1485,7 +1485,8 @@ variant<int, string> GetValFromColumn(string columnName,
 
     return cellValue;
 }
-static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album) {
+static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
+{
     NativeRdb::DataAbilityPredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(album->GetAlbumId()));
     predicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
