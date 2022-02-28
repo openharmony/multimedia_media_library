@@ -26,6 +26,11 @@ int32_t MediaScannerAbilityProxy::ScanDirService(std::string &scanDirPath, const
     MessageParcel reply;
     MessageOption option;
 
+    if (!data.WriteInterfaceToken(MediaScannerAbilityProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaScannerAbilityProxy interface token write error");
+        return SCAN_PROXY_IF_TOKEN_WR_ERR;
+    }
+
     if (!data.WriteString(scanDirPath)) {
         MEDIA_ERR_LOG("MediaScannerAbilityProxy writing scanDir data failed");
         return SCAN_PROXY_WR_ERR;
@@ -57,6 +62,11 @@ int32_t MediaScannerAbilityProxy::ScanFileService(std::string &scanFilePath, con
     MessageParcel reply;
     MessageOption option;
 
+    if (!data.WriteInterfaceToken(MediaScannerAbilityProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaScannerAbilityProxy interface token write error");
+        return SCAN_PROXY_IF_TOKEN_WR_ERR;
+    }
+
     if (!data.WriteString(scanFilePath)) {
         MEDIA_ERR_LOG("MediaScannerAbilityProxy writing ScanFile data failed");
         return SCAN_PROXY_WR_ERR;
@@ -87,6 +97,11 @@ bool MediaScannerAbilityProxy::IsScannerRunning()
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
+
+    if (!data.WriteInterfaceToken(MediaScannerAbilityProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaScannerAbilityProxy interface token write error");
+        return SCAN_PROXY_IF_TOKEN_WR_ERR;
+    }
 
     int32_t error = Remote()->SendRequest(MEDIA_GET_SCAN_STATUS, data, reply, option);
     if (error != ERR_NONE) {

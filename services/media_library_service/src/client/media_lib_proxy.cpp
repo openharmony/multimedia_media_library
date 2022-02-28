@@ -282,6 +282,11 @@ vector<unique_ptr<ImageAsset>> MediaLibProxy::GetImageAssets(string selection,
     MessageOption option;
     vector<unique_ptr<ImageAsset>> imageAssetList;
 
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return imageAssetList;
+    }
+
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_IMAGE_ASSETS, data, reply, option);
         if (error != ERR_NONE) {
@@ -304,6 +309,11 @@ vector<unique_ptr<AudioAsset>> MediaLibProxy::GetAudioAssets(string selection,
     MessageOption option;
     vector<unique_ptr<AudioAsset>> audioAssetList;
 
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return audioAssetList;
+    }
+
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_AUDIO_ASSETS, data, reply, option);
         if (error != ERR_NONE) {
@@ -324,6 +334,11 @@ vector<unique_ptr<VideoAsset>> MediaLibProxy::GetVideoAssets(string selection, v
     MessageParcel reply;
     MessageOption option;
     vector<unique_ptr<VideoAsset>> videoAssetList;
+
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return videoAssetList;
+    }
 
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_VIDEO_ASSETS, data, reply, option);
@@ -346,6 +361,11 @@ vector<unique_ptr<MediaAsset>> MediaLibProxy::GetMediaAssets(string selection, v
     MessageOption option;
     vector<unique_ptr<MediaAsset>> mediaAssetList;
 
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return mediaAssetList;
+    }
+
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_MEDIA_ASSETS, data, reply, option);
         if (error != ERR_NONE) {
@@ -366,6 +386,11 @@ vector<unique_ptr<AlbumAsset>> MediaLibProxy::GetImageAlbumAssets(string selecti
     MessageParcel reply;
     MessageOption option;
     vector<unique_ptr<AlbumAsset>> albumAssetList;
+
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return albumAssetList;
+    }
 
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_IMAGEALBUM_ASSETS, data, reply, option);
@@ -388,6 +413,11 @@ vector<unique_ptr<AlbumAsset>> MediaLibProxy::GetVideoAlbumAssets(string selecti
     MessageOption option;
     vector<unique_ptr<AlbumAsset>> albumAssetList;
 
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return albumAssetList;
+    }
+
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_VIDEOALBUM_ASSETS, data, reply, option);
         if (error != ERR_NONE) {
@@ -408,6 +438,11 @@ bool MediaLibProxy::CreateMediaAsset(AssetType assetType, const MediaAsset& medi
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
+
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return false;
+    }
 
     if ((data.WriteInt32(assetType) && (WriteCommonData(mediaAsset, data) == SUCCESS))) {
         int32_t error = Remote()->SendRequest(MEDIA_CREATE_MEDIA_ASSET, data, reply, option);
@@ -430,6 +465,11 @@ bool MediaLibProxy::DeleteMediaAsset(AssetType assetType, const MediaAsset& medi
     MessageParcel reply;
     MessageOption option;
 
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return false;
+    }
+
     if ((data.WriteInt32(assetType) && (WriteCommonData(mediaAsset, data) == SUCCESS))) {
         int32_t error = Remote()->SendRequest(MEDIA_DELETE_MEDIA_ASSET, data, reply, option);
         if (error != ERR_NONE) {
@@ -450,6 +490,11 @@ bool MediaLibProxy::ModifyMediaAsset(AssetType assetType, const MediaAsset &srcM
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
+
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return false;
+    }
 
     ModifyDstMediaAssetUri(dstMediaAsset);
 
@@ -476,6 +521,11 @@ bool MediaLibProxy::CopyMediaAsset(AssetType assetType, const MediaAsset &srcMed
     MessageParcel reply;
     MessageOption option;
 
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return false;
+    }
+
     if ((CopyUriToDstMediaAsset(dstMediaAsset) == true) && (data.WriteInt32(assetType)) &&
         (WriteCommonData(srcMediaAsset, data) == SUCCESS) &&
         (WriteCommonData(dstMediaAsset, data) == SUCCESS)) {
@@ -499,6 +549,11 @@ bool MediaLibProxy::CreateMediaAlbumAsset(AssetType assetType, const AlbumAsset&
     MessageParcel reply;
     MessageOption option;
 
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return false;
+    }
+
     if ((data.WriteInt32(assetType)) && (WriteAlbumdata(albumAsset, data) == SUCCESS)) {
         int32_t error = Remote()->SendRequest(MEDIA_CREATE_MEDIA_ALBUM_ASSET, data, reply, option);
         if (error != ERR_NONE) {
@@ -520,6 +575,11 @@ bool MediaLibProxy::DeleteMediaAlbumAsset(AssetType assetType,  const AlbumAsset
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
+
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return false;
+    }
 
     if ((assetType == ASSET_IMAGEALBUM) && (data.WriteInt32(assetType)) &&
         (WriteAlbumdata(albumAsset, data) == SUCCESS) && data.WriteString(albumUri)) {
@@ -552,6 +612,11 @@ bool MediaLibProxy::ModifyMediaAlbumAsset(AssetType assetType, const AlbumAsset&
     MessageParcel reply;
     MessageOption option;
     AlbumAsset *dstAsset = (AlbumAsset *)&dstAlbumAsset;
+
+    if (!data.WriteInterfaceToken(MediaLibProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaLibProxy interface token write error");
+        return false;
+    }
 
     if (data.WriteInt32(assetType)) {
         if ((assetType == ASSET_IMAGEALBUM) &&
