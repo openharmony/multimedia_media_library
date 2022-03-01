@@ -361,7 +361,6 @@ bool MediaLibraryDataAbilityUtils::checkFilePending(const shared_ptr<FileAsset> 
 
 bool MediaLibraryDataAbilityUtils::checkOpenMode(const string &mode)
 {
-    MEDIA_INFO_LOG("checkOpenMode in");
     MEDIA_INFO_LOG("checkOpenMode in mode %{public}s", mode.c_str());
 
     std::string lowModeStr = mode;
@@ -369,20 +368,16 @@ bool MediaLibraryDataAbilityUtils::checkOpenMode(const string &mode)
         return std::tolower(c);
     });
 
-    MEDIA_INFO_LOG("checkOpenMode in lowModeStr %{public}s", lowModeStr.c_str());
     size_t wIndex = lowModeStr.rfind('w');
     if (wIndex != string::npos) {
-        MEDIA_INFO_LOG("checkOpenMode out true");
         return true;
     }
-    MEDIA_INFO_LOG("checkOpenMode out false");
     return false;
 }
 
 int32_t MediaLibraryDataAbilityUtils::setFilePending(string &uriStr,
     bool isPending, const shared_ptr<RdbStore> &rdbStore)
 {
-    MEDIA_INFO_LOG("setFilePending in");
     string id = MediaLibraryDataAbilityUtils::GetIdFromUri(uriStr);
     string networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(uriStr);
     MEDIA_INFO_LOG("setFilePending id = %{public}s, networkId = %{public}s, isPending = %{public}d",
@@ -520,7 +515,7 @@ string MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(const string &uri)
     if (pos == string::npos) {
         return deviceId;
     }
-    MEDIA_INFO_LOG("MediaLibraryDataAbilityUtils::GetNetworkIdFromUri pos = %{public}d", pos);
+
     string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
     if (tempUri.empty()) {
         return deviceId;
@@ -531,7 +526,7 @@ string MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(const string &uri)
         return deviceId;
     }
     deviceId = tempUri.substr(0, pos);
-    MEDIA_INFO_LOG("MediaLibraryDataAbilityUtils::GetNetworkIdFromUri NetworkId = %{public}s", deviceId.c_str());
+
     return deviceId;
 }
 } // namespace Media
