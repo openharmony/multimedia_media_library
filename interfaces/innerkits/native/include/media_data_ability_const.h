@@ -243,7 +243,7 @@ const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AS "
                                       + MEDIA_DATA_DB_BUCKET_ID + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_FILE_PATH + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_NAME +  + " AS "
+                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + " AS "
                                       + MEDIA_DATA_DB_BUCKET_NAME + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_DESCRIPTION + ", "

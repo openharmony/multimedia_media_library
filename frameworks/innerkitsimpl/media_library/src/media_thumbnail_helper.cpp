@@ -123,7 +123,6 @@ DistributedKv::Status MediaThumbnailHelper::SyncKvstore(std::string key, const s
 
 bool MediaThumbnailHelper::ResizeImage(vector<uint8_t> &data, Size &size, unique_ptr<PixelMap> &pixelMap)
 {
-    MEDIA_INFO_LOG("MediaThumbnailHelper::ResizeImage IN");
     if (data.size() == 0) {
         MEDIA_ERR_LOG("Data is empty");
         return false;
@@ -152,7 +151,6 @@ bool MediaThumbnailHelper::ResizeImage(vector<uint8_t> &data, Size &size, unique
 
 bool MediaThumbnailHelper::GetImage(string &key, vector<uint8_t> &image)
 {
-    MEDIA_INFO_LOG("MediaThumbnailHelper::GetImage1 IN");
     Value res;
     if (key.empty()) {
         MEDIA_ERR_LOG("GetImage key empty");
@@ -171,15 +169,13 @@ bool MediaThumbnailHelper::GetImage(string &key, vector<uint8_t> &image)
     }
 
     image = vector<uint8_t>(res.Data());
-    MEDIA_INFO_LOG("MediaThumbnailHelper::GetImage OUT");
+    MEDIA_INFO_LOG("MediaThumbnailHelper::GetImage success!");
     return true;
 }
 
 bool MediaThumbnailHelper::IsImageExist(string &key)
 {
     vector<uint8_t> image;
-    MEDIA_INFO_LOG("MediaThumbnailHelper::IsImageExist IN");
-
     bool res = GetImage(key, image);
 
     MEDIA_INFO_LOG("MediaThumbnailHelper::IsImageExist OUT");

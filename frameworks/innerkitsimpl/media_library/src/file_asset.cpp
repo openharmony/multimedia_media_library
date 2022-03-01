@@ -391,10 +391,10 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
     }
 
     if (filePath.size() >= PATH_MAX) {
-        MEDIA_ERR_LOG("File path too long");
+        MEDIA_ERR_LOG("File path too long %{public}d", (int)filePath.size());
         return errCode;
     }
-    MEDIA_ERR_LOG("File path is %{public}s", filePath.c_str());
+    MEDIA_INFO_LOG("File path is %{public}s", filePath.c_str());
     char actualPath[PATH_MAX];
     memset_s(actualPath, PATH_MAX, '\0', PATH_MAX);
     auto absFilePath = realpath(filePath.c_str(), actualPath);
@@ -403,8 +403,8 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
                       filePath.c_str(), errno);
         return errCode;
     }
-    MEDIA_ERR_LOG("File actualPath is %{public}s", actualPath);
-    MEDIA_ERR_LOG("File absFilePath is %{public}s", absFilePath);
+
+    MEDIA_INFO_LOG("File absFilePath is %{public}s", absFilePath);
     return open(absFilePath, flags);
 }
 

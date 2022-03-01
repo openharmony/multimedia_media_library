@@ -1507,6 +1507,13 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     album->SetCoverUri(coverUri);
     HiLog::Debug(LABEL, "coverUri is = %{public}s", album->GetCoverUri().c_str());
 }
+static void SolveNoAlbums(MediaLibraryAsyncContext *context)
+{
+    if (context->albumNativeArray.empty()) {
+        unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
+        context->albumNativeArray.push_back(move(albumData));
+    }
+}
 static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 {
     HiLog::Error(LABEL, "GetResultDataExecute IN");
@@ -1536,7 +1543,6 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
         HiLog::Error(LABEL, "GetResultData resultSet is nullptr");
         return;
     }
-
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
         if (albumData != nullptr) {
@@ -1557,9 +1563,9 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
                 + "/" + to_string(albumData->GetAlbumId()));
             SetAlbumCoverUri(context, albumData);
         }
-        // Add to album array
         context->albumNativeArray.push_back(move(albumData));
     }
+    SolveNoAlbums(context);
 }
 
 static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
