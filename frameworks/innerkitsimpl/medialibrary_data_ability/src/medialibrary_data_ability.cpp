@@ -270,7 +270,7 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
     // Normal URI scenario
     int64_t outRowId = DATA_ABILITY_FAIL;
     (void)rdbStore_->Insert(outRowId, MEDIALIBRARY_TABLE, value);
-    MEDIA_INFO_LOG("no outRowId = %{public}lld", outRowId);
+
     syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
     return outRowId;
 }
@@ -380,7 +380,7 @@ string obtionCondition(string &strQueryCondition, const vector<string> &whereArg
 {
     for (string args : whereArgs) {
         size_t pos = strQueryCondition.rfind('?');
-        MEDIA_INFO_LOG("obtionCondition pos = %{public}d", pos);
+        MEDIA_INFO_LOG("obtionCondition pos = %{public}d", (int)pos);
         if (pos != string::npos) {
             MEDIA_INFO_LOG("obtionCondition before = %{public}s", strQueryCondition.c_str());
             strQueryCondition.replace(pos, 1, args);
@@ -524,7 +524,7 @@ bool ParseThumbnailInfo(string &uriString, vector<int> &space)
     vector<string> vectorKeys;
     SplitKeys(queryKeys, vectorKeys);
     if (vectorKeys.size() != keyWords.size()) {
-        MEDIA_ERR_LOG("Parse error keys count %{public}d", vectorKeys.size());
+        MEDIA_ERR_LOG("Parse error keys count %{public}d", (int)vectorKeys.size());
         return false;
     }
     string action;
@@ -790,10 +790,9 @@ int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mod
         }
     }
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
-    MEDIA_INFO_LOG("MediaLibraryDataAbility OpenFile: path is %{public}s", path.c_str());
     int32_t fd = fileAsset->OpenAsset(path, mode);
     if (fd < 0) {
-        MEDIA_ERR_LOG("MediaLibraryDataAbility OpenFile: open file fd < 0");
+        MEDIA_ERR_LOG("open file fd %{public}d, errno %{public}d", fd, errno);
         return DATA_ABILITY_HAS_FD_ERROR;
     }
     if (isWriteMode && fd > 0) {
@@ -967,7 +966,6 @@ bool MediaLibraryDataAbility::CheckFileNameValid(const ValuesBucket &value)
 }
 sptr<AppExecFwk::IBundleMgr> GetSysBundleManager_()
 {
-    MEDIA_INFO_LOG("MediaLibraryDataAbility::GetBundleManager begin");
     auto bundleObj =
         OHOS::DelayedSingleton<SaMgrClient>::GetInstance()->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
     if (bundleObj == nullptr) {
@@ -993,9 +991,9 @@ static int GetClientUid()
 static std::string GetClientBundle(int uid)
 {
     auto bms = GetSysBundleManager_();
-    MEDIA_INFO_LOG("GetClientBundleName bms is %{public}d", (bms == nullptr));
     std::string bundleName = "";
     if (bms == nullptr) {
+        MEDIA_INFO_LOG("GetClientBundleName bms failed");
         return bundleName;
     }
     auto result = bms->GetBundleNameForUid(uid, bundleName);

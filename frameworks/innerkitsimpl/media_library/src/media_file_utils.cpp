@@ -304,7 +304,7 @@ string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
     if (pos == string::npos) {
         return deviceId;
     }
-    MEDIA_INFO_LOG("MediaFileUtils::GetNetworkIdFromUri pos = %{public}d", (int)pos);
+
     string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
     if (tempUri.empty()) {
         return deviceId;
@@ -315,7 +315,6 @@ string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
         return deviceId;
     }
     deviceId = tempUri.substr(0, pos);
-    MEDIA_INFO_LOG("MediaFileUtils::GetNetworkIdFromUri NetworkId = %{public}s", deviceId.c_str());
     return deviceId;
 }
 
@@ -332,7 +331,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
         MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{public}s", retStr.c_str());
         return retStr;
     }
-    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath networkId = %{public}s", networkId.c_str());
+
     size_t pos = path.find(MEDIA_DATA_DEVICE_PATH);
     if (pos == string::npos) {
         return retStr;
@@ -342,12 +341,12 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     if (beginStr.empty()) {
         return retStr;
     }
-    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath beginStr = %{public}s", beginStr.c_str());
+
     string endStr = path.substr(pos + MEDIA_DATA_DEVICE_PATH.length());
     if (beginStr.empty()) {
         return retStr;
     }
-    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath endStr = %{public}s", endStr.c_str());
+
     retStr = beginStr + networkId + endStr;
     MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{public}s", retStr.c_str());
     return retStr;
