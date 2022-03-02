@@ -39,7 +39,6 @@ enum ErrorCodes {
     ERR_SCAN_NOT_INIT
 };
 
-const std::string ROOT_PATH = "";
 const int32_t MAX_BATCH_SIZE = 5;
 
 // Const for File Metadata defaults
