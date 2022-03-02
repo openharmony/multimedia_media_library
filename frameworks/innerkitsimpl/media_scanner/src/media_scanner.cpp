@@ -350,11 +350,6 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
         fileMetadata->SetParentId(parentId);
     }
 
-    string parentPath = ScannerUtils::GetParentPath(path);
-    if (parentPath != ROOT_PATH) {
-        fileMetadata->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
-    }
-
     string::size_type len = 0;
     string rootDir;
 
@@ -365,10 +360,14 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
     }
 
     len = rootDir.length();
-    parentPath = parentPath + SLASH_CHAR; // GetParentPath whithout slash at end
+    string parentPath = ScannerUtils::GetParentPath(path) + SLASH_CHAR; // GetParentPath whithout slash at end
     if (parentPath.substr(0, len).compare(rootDir) == 0) {
         parentPath.erase(0, len);
-        fileMetadata->SetRelativePath(parentPath);
+        if (!parentPath.empty()) {
+            fileMetadata->SetRelativePath(parentPath);
+            parentPath = string(SLASH_CHAR) + parentPath.substr(0, parentPath.length() - 1);
+            fileMetadata->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
+        }
     } else {
         MEDIA_ERR_LOG("path: %{public}s is not correct, right is begin with %{public}s",
                       path.c_str(), rootDir.c_str());
@@ -596,7 +595,7 @@ bool MediaScanner::IsDirHiddenRecursive(const string &path)
         }
 
         curPath = ScannerUtils::GetParentPath(curPath);
-        if (ROOT_PATH == curPath) {
+        if (curPath.empty()) {
             break;
         }
     } while (true);
