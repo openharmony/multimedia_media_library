@@ -402,7 +402,7 @@ unique_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
         MEDIA_INFO_LOG("tableName is %{public}s", tableName.c_str());
         AbsRdbPredicates mediaLibAbsPredAlbum(tableName);
         string isAlbumCondition = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + std::to_string(MEDIA_TYPE_ALBUM) +
-            " AND " + std::to_string(MEDIA_TYPE_FILE);
+            " AND " + std::to_string(MEDIA_TYPE_FILE) + " AND " + MEDIA_DATA_DB_BUCKET_ID + " <> 0";
         if (!strQueryCondition.empty()) {
             strQueryCondition = obtionCondition(strQueryCondition, predicates.GetWhereArgs());
             isAlbumCondition = strQueryCondition + " AND " + isAlbumCondition;
@@ -789,6 +789,21 @@ int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mod
             return DATA_ABILITY_HAS_OPENED_FAIL;
         }
     }
+    if (mode == MEDIA_FILEMODE_READONLY) {
+        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
+            return DATA_ABILITY_PERMISSION_DENIED;
+        }
+    } else if (mode == MEDIA_FILEMODE_WRITEONLY || mode == MEDIA_FILEMODE_WRITETRUNCATE ||
+        mode == MEDIA_FILEMODE_WRITEAPPEND) {
+        if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+            return DATA_ABILITY_PERMISSION_DENIED;
+        }
+    } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE || mode == MEDIA_FILEMODE_READWRITE) {
+        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA) ||
+            !CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+            return DATA_ABILITY_PERMISSION_DENIED;
+        }
+    }
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     int32_t fd = fileAsset->OpenAsset(path, mode);
     if (fd < 0) {
@@ -878,7 +893,7 @@ bool MediaLibraryDataAbility::UnSubscribeRdbStoreObserver()
     return ret;
 }
 
-bool MediaLibraryDataAbility::QuerySync(const std::string &deviceId ,const std::string &tableName)
+bool MediaLibraryDataAbility::QuerySync(const std::string &deviceId, const std::string &tableName)
 {
     if (deviceId.empty() || tableName.empty()) {
         return false;
@@ -1115,7 +1130,7 @@ void MediaLibraryRdbStoreObserver::OnChange(const std::vector<std::string>& devi
     if (devices.empty() || bundleName_.empty()) {
         return;
     }
-
+    MediaLibraryDevice::GetInstance()->NotifyRemoteFileChange();
     for (auto &deviceId : devices) {
         MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(deviceId, DEVICE_SYNCSTATUS_COMPLETE, bundleName_);
         isNotifyDeviceChange_ = true;
