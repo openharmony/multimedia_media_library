@@ -1507,13 +1507,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     album->SetCoverUri(coverUri);
     HiLog::Debug(LABEL, "coverUri is = %{public}s", album->GetCoverUri().c_str());
 }
-static void SolveNoAlbums(MediaLibraryAsyncContext *context)
-{
-    if (context->albumNativeArray.empty()) {
-        unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
-        context->albumNativeArray.push_back(move(albumData));
-    }
-}
+
 static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 {
     HiLog::Error(LABEL, "GetResultDataExecute IN");
@@ -1565,7 +1559,6 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
         }
         context->albumNativeArray.push_back(move(albumData));
     }
-    SolveNoAlbums(context);
 }
 
 static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
@@ -1582,10 +1575,12 @@ static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
             "Query for get fileAssets failed");
     } else {
         if (context->albumNativeArray.empty()) {
-        HiLog::Error(LABEL, "AlbumsAsyncCallbackComplete 1");
-        napi_get_undefined(env, &jsContext->data);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "No albums found");
+            HiLog::Error(LABEL, "AlbumsAsyncCallbackComplete 1");
+            napi_value albumNoArray = nullptr;
+            napi_create_array(env, &albumNoArray);
+            jsContext->status = true;
+            napi_get_undefined(env, &jsContext->error);
+            jsContext->data = albumNoArray;
         } else {
             napi_value albumArray = nullptr;
             napi_create_array(env, &albumArray);
@@ -2829,6 +2824,11 @@ void MediaLibraryNapi::RegisterChangeByType(string type, const ChangeListenerNap
         Uri onCbURI(MEDIALIBRARY_DEVICE_URI);
         sAbilityHelper_->RegisterObserver(onCbURI, listObj->deviceDataObserver_);
         HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
+    } else if (type.compare(REMOTEFILE_LISTENER) == 0) {
+        listObj->remoteFileDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_REMOTEFILE);
+        Uri onCbURI(MEDIALIBRARY_REMOTEFILE_URI);
+        sAbilityHelper_->RegisterObserver(onCbURI, listObj->remoteFileDataObserver_);
+        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
     } else {
         HiLog::Error(LABEL, "Media Type mismatch!");
         return;
@@ -2942,8 +2942,17 @@ void MediaLibraryNapi::UnregisterChangeByType(string type, const ChangeListenerN
 
         delete listObj->fileDataObserver_;
         listObj->fileDataObserver_ = nullptr;
+    } else if (type.compare(SMARTALBUM_LISTENER) == 0) {
+        CHECK_NULL_PTR_RETURN_VOID(listObj->smartAlbumDataObserver_, "Failed to obtain device data observer");
+
+        mediaType = MEDIA_TYPE_SMARTALBUM;
+        Uri offCbURI(MEDIALIBRARY_SMART_URI);
+        sAbilityHelper_->UnregisterObserver(offCbURI, listObj->smartAlbumDataObserver_);
+
+        delete listObj->smartAlbumDataObserver_;
+        listObj->smartAlbumDataObserver_ = nullptr;
     } else if (type.compare(DEVICE_LISTENER) == 0) {
-        CHECK_NULL_PTR_RETURN_VOID(listObj->fileDataObserver_, "Failed to obtain device data observer");
+        CHECK_NULL_PTR_RETURN_VOID(listObj->deviceDataObserver_, "Failed to obtain device data observer");
 
         mediaType = MEDIA_TYPE_DEVICE;
         Uri offCbURI(MEDIALIBRARY_DEVICE_URI);
@@ -2951,6 +2960,14 @@ void MediaLibraryNapi::UnregisterChangeByType(string type, const ChangeListenerN
 
         delete listObj->deviceDataObserver_;
         listObj->deviceDataObserver_ = nullptr;
+    } else if (type.compare(REMOTEFILE_LISTENER) == 0) {
+        CHECK_NULL_PTR_RETURN_VOID(listObj->remoteFileDataObserver_, "Failed to obtain remote file data observer");
+
+        mediaType = MEDIA_TYPE_REMOTEFILE;
+        Uri offCbURI(MEDIALIBRARY_REMOTEFILE_URI);
+        sAbilityHelper_->UnregisterObserver(offCbURI, listObj->remoteFileDataObserver_);
+        delete listObj->remoteFileDataObserver_;
+        listObj->remoteFileDataObserver_ = nullptr;
     } else {
         return;
     }
