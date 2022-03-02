@@ -80,6 +80,7 @@ const std::string MEDIALIBRARY_ALBUM_URI  =  MEDIALIBRARY_DATA_URI + '/' + "albu
 const std::string MEDIALIBRARY_SMARTALBUM_CHANGE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "smartalbum";
 const std::string MEDIALIBRARY_DEVICE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "device";
 const std::string MEDIALIBRARY_SMART_URI = MEDIALIBRARY_DATA_URI + '/' + "smart";
+const std::string MEDIALIBRARY_REMOTEFILE_URI = MEDIALIBRARY_DATA_URI + '/' + "remotfile";
 
 const std::string MEDIA_DATA_DB_ID = "file_id";
 const std::string MEDIA_DATA_DB_URI = "uri";
@@ -243,7 +244,7 @@ const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AS "
                                       + MEDIA_DATA_DB_BUCKET_ID + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_FILE_PATH + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_NAME +  + " AS "
+                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + " AS "
                                       + MEDIA_DATA_DB_BUCKET_NAME + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_DESCRIPTION + ", "
