@@ -149,6 +149,15 @@ void MediaLibraryDevice::NotifyDeviceChange()
     }
 }
 
+void MediaLibraryDevice::NotifyRemoteFileChange()
+{
+    auto contextUri = make_unique<Uri>(MEDIALIBRARY_REMOTEFILE_URI);
+    if (dataAbilityhelper_ != nullptr) {
+        dataAbilityhelper_->NotifyChange(*contextUri);
+        MEDIA_INFO_LOG("MediaLibraryDevice NotifyRemoteFileChange complete");
+    }
+}
+
 bool MediaLibraryDevice::IsHasDevice(string deviceUdid)
 {
     map<string, MediaLibraryDeviceInfo>::iterator iter =  deviceInfoMap_.begin();

@@ -62,6 +62,7 @@ const std::string IMAGE_LISTENER = "image";
 const std::string FILE_LISTENER = "file";
 const std::string SMARTALBUM_LISTENER = "smartalbum";
 const std::string DEVICE_LISTENER = "device";
+const std::string REMOTEFILE_LISTENER = "remote file";
 
 struct MediaChangeListener {
     MediaType mediaType;
@@ -106,6 +107,7 @@ public:
     sptr<AAFwk::IDataAbilityObserver> fileDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> smartAlbumDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> deviceDataObserver_ = nullptr;
+    sptr<AAFwk::IDataAbilityObserver> remoteFileDataObserver_ = nullptr;
 
 private:
     napi_env env_ = nullptr;

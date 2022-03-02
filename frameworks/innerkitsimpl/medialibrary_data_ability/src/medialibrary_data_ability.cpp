@@ -274,7 +274,7 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
     // Normal URI scenario
     int64_t outRowId = DATA_ABILITY_FAIL;
     (void)rdbStore_->Insert(outRowId, MEDIALIBRARY_TABLE, value);
-    MEDIA_INFO_LOG("no outRowId = %{public}lld", outRowId);
+
     syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
     return outRowId;
 }
@@ -384,7 +384,7 @@ string obtionCondition(string &strQueryCondition, const vector<string> &whereArg
 {
     for (string args : whereArgs) {
         size_t pos = strQueryCondition.rfind('?');
-        MEDIA_INFO_LOG("obtionCondition pos = %{public}d", pos);
+        MEDIA_INFO_LOG("obtionCondition pos = %{public}d", (int)pos);
         if (pos != string::npos) {
             MEDIA_INFO_LOG("obtionCondition before = %{public}s", strQueryCondition.c_str());
             strQueryCondition.replace(pos, 1, args);
@@ -406,7 +406,7 @@ unique_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
         MEDIA_INFO_LOG("tableName is %{public}s", tableName.c_str());
         AbsRdbPredicates mediaLibAbsPredAlbum(tableName);
         string isAlbumCondition = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + std::to_string(MEDIA_TYPE_ALBUM) +
-            " AND " + std::to_string(MEDIA_TYPE_FILE);
+            " AND " + std::to_string(MEDIA_TYPE_FILE) + " AND " + MEDIA_DATA_DB_BUCKET_ID + " <> 0";
         if (!strQueryCondition.empty()) {
             strQueryCondition = obtionCondition(strQueryCondition, predicates.GetWhereArgs());
             isAlbumCondition = strQueryCondition + " AND " + isAlbumCondition;
@@ -528,7 +528,7 @@ bool ParseThumbnailInfo(string &uriString, vector<int> &space)
     vector<string> vectorKeys;
     SplitKeys(queryKeys, vectorKeys);
     if (vectorKeys.size() != keyWords.size()) {
-        MEDIA_ERR_LOG("Parse error keys count %{public}d", vectorKeys.size());
+        MEDIA_ERR_LOG("Parse error keys count %{public}d", (int)vectorKeys.size());
         return false;
     }
     string action;
@@ -793,11 +793,25 @@ int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mod
             return DATA_ABILITY_HAS_OPENED_FAIL;
         }
     }
+    if (mode == MEDIA_FILEMODE_READONLY) {
+        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
+            return DATA_ABILITY_PERMISSION_DENIED;
+        }
+    } else if (mode == MEDIA_FILEMODE_WRITEONLY || mode == MEDIA_FILEMODE_WRITETRUNCATE ||
+        mode == MEDIA_FILEMODE_WRITEAPPEND) {
+        if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+            return DATA_ABILITY_PERMISSION_DENIED;
+        }
+    } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE || mode == MEDIA_FILEMODE_READWRITE) {
+        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA) ||
+            !CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+            return DATA_ABILITY_PERMISSION_DENIED;
+        }
+    }
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
-    MEDIA_INFO_LOG("MediaLibraryDataAbility OpenFile: path is %{public}s", path.c_str());
     int32_t fd = fileAsset->OpenAsset(path, mode);
     if (fd < 0) {
-        MEDIA_ERR_LOG("MediaLibraryDataAbility OpenFile: open file fd < 0");
+        MEDIA_ERR_LOG("open file fd %{public}d, errno %{public}d", fd, errno);
         return DATA_ABILITY_HAS_FD_ERROR;
     }
     if (isWriteMode && fd > 0) {
@@ -883,7 +897,7 @@ bool MediaLibraryDataAbility::UnSubscribeRdbStoreObserver()
     return ret;
 }
 
-bool MediaLibraryDataAbility::QuerySync(const std::string &deviceId ,const std::string &tableName)
+bool MediaLibraryDataAbility::QuerySync(const std::string &deviceId, const std::string &tableName)
 {
     if (deviceId.empty() || tableName.empty()) {
         return false;
@@ -971,7 +985,6 @@ bool MediaLibraryDataAbility::CheckFileNameValid(const ValuesBucket &value)
 }
 sptr<AppExecFwk::IBundleMgr> GetSysBundleManager_()
 {
-    MEDIA_INFO_LOG("MediaLibraryDataAbility::GetBundleManager begin");
     auto bundleObj =
         OHOS::DelayedSingleton<SaMgrClient>::GetInstance()->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
     if (bundleObj == nullptr) {
@@ -997,9 +1010,9 @@ static int GetClientUid()
 static std::string GetClientBundle(int uid)
 {
     auto bms = GetSysBundleManager_();
-    MEDIA_INFO_LOG("GetClientBundleName bms is %{public}d", (bms == nullptr));
     std::string bundleName = "";
     if (bms == nullptr) {
+        MEDIA_INFO_LOG("GetClientBundleName bms failed");
         return bundleName;
     }
     auto result = bms->GetBundleNameForUid(uid, bundleName);
@@ -1129,7 +1142,7 @@ void MediaLibraryRdbStoreObserver::OnChange(const std::vector<std::string>& devi
     if (devices.empty() || bundleName_.empty()) {
         return;
     }
-
+    MediaLibraryDevice::GetInstance()->NotifyRemoteFileChange();
     for (auto &deviceId : devices) {
         MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(deviceId, DEVICE_SYNCSTATUS_COMPLETE, bundleName_);
         isNotifyDeviceChange_ = true;
