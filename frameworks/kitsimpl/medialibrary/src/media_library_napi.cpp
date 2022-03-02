@@ -1538,7 +1538,6 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sAbilityHelper_->Query(
         uri, columns, predicates);
 
-    HiLog::Error(LABEL, "GetResultData resultSet");
     if (resultSet == nullptr) {
         HiLog::Error(LABEL, "GetResultData resultSet is nullptr");
         return;
@@ -1548,17 +1547,14 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
         if (albumData != nullptr) {
             // Get album id index and value
             albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet)));
-            HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_ID");
             // Get album title index and value
             if (context->networkId.empty()) {
                 albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet)));
             } else {
                 albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_NAME, resultSet)));
             }
-            HiLog::Error(LABEL, "MEDIA_DATA_DB_BUCKET_NAME");
             // Get album asset count index and value
             albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet)));
-            HiLog::Error(LABEL, "MEDIA_DATA_DB_ID");
             albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, context->networkId)
                 + "/" + to_string(albumData->GetAlbumId()));
             SetAlbumCoverUri(context, albumData);

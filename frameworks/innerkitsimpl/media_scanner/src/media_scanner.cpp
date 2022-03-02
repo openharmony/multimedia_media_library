@@ -18,7 +18,6 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
-using namespace OHOS::AppExecFwk;
 
 MediaScanner::MediaScanner()
 {
@@ -71,7 +70,7 @@ void MediaScanner::ScanQueueCB(ScanRequest scanReq)
     }
 }
 
-bool MediaScanner::InitScanner(const std::shared_ptr<Context> &context)
+bool MediaScanner::InitScanner(const std::shared_ptr<OHOS::AppExecFwk::Context> &context)
 {
     auto contextUri = make_unique<Uri>(MEDIALIBRARY_DATA_URI);
     if ((context != nullptr) && (contextUri != nullptr)) {
@@ -365,7 +364,7 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
         parentPath.erase(0, len);
         if (!parentPath.empty()) {
             fileMetadata->SetRelativePath(parentPath);
-            parentPath = string(SLASH_CHAR) + parentPath.substr(0, parentPath.length() - 1);
+            parentPath = string("/") + parentPath.substr(0, parentPath.length() - 1);
             fileMetadata->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
         }
     } else {
@@ -656,7 +655,7 @@ int32_t MediaScanner::GetAvailableRequestId()
     return ++i;
 }
 
-void MediaScanner::SetAbilityContext(const std::shared_ptr<Context> &context)
+void MediaScanner::SetAbilityContext(const std::shared_ptr<OHOS::AppExecFwk::Context> &context)
 {
     abilityContext_ = context;
 }
