@@ -3059,6 +3059,7 @@ static void JSReleaseCompleteCallback(napi_env env, napi_status status,
     if (context->objectInfo != nullptr) {
         HiLog::Error(LABEL, "JSReleaseCompleteCallback context->objectInfo != nullptr");
         context->objectInfo->~MediaLibraryNapi();
+        napi_create_int32(env, SUCCESS, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
