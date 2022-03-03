@@ -380,15 +380,15 @@ unique_ptr<AbsSharedResultSet> QueryFile(string strQueryCondition,
     return queryResultSet;
 }
 
-string obtionCondition(string &strQueryCondition, const vector<string> &whereArgs)
+string ObtionCondition(string &strQueryCondition, const vector<string> &whereArgs)
 {
     for (string args : whereArgs) {
         size_t pos = strQueryCondition.rfind('?');
         MEDIA_INFO_LOG("obtionCondition pos = %{public}d", (int)pos);
         if (pos != string::npos) {
-            MEDIA_INFO_LOG("obtionCondition before = %{public}s", strQueryCondition.c_str());
-            strQueryCondition.replace(pos, 1, args);
-            MEDIA_INFO_LOG("obtionCondition end = %{public}s", strQueryCondition.c_str());
+            MEDIA_INFO_LOG("ObtionCondition before = %{public}s", strQueryCondition.c_str());
+            strQueryCondition.replace(pos, 1, "'" + args + "'");
+            MEDIA_INFO_LOG("ObtionCondition end = %{public}s", strQueryCondition.c_str());
         }
     }
     return strQueryCondition;
@@ -408,7 +408,7 @@ unique_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
         string isAlbumCondition = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + std::to_string(MEDIA_TYPE_ALBUM) +
             " AND " + std::to_string(MEDIA_TYPE_FILE) + " AND " + MEDIA_DATA_DB_BUCKET_ID + " <> 0";
         if (!strQueryCondition.empty()) {
-            strQueryCondition = obtionCondition(strQueryCondition, predicates.GetWhereArgs());
+            strQueryCondition = ObtionCondition(strQueryCondition, predicates.GetWhereArgs());
             isAlbumCondition = strQueryCondition + " AND " + isAlbumCondition;
         }
         MEDIA_INFO_LOG("QueryAlbum = %{public}s", isAlbumCondition.c_str());
