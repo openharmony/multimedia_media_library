@@ -200,6 +200,7 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
         return true;
     }
 
+    MEDIA_ERR_LOG("Failed to delete metadata");
     return false;
 }
 
@@ -319,6 +320,8 @@ int32_t MediaScannerDb::GetIdFromUri(const string &uri) const
     if (uri.length() != 0) {
         index =  uri.find_last_of("/");
         mediaFileId = stoi(uri.substr(index + 1));
+    } else {
+        MEDIA_ERR_LOG("Uri is empty");
     }
 
     return mediaFileId;
