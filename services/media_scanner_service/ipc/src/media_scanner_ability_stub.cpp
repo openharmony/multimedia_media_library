@@ -52,7 +52,7 @@ int32_t MediaScannerAbilityStub::OnRemoteRequest(
 int32_t MediaScannerAbilityStub::HandleScanDir(MessageParcel& data, MessageParcel &reply)
 {
     std::string dirPath = data.ReadString();
-    auto remoteObject = data.ReadRemoteObject();
+    sptr<IRemoteObject> remoteObject = data.ReadRemoteObject();
     if (remoteObject == nullptr) {
         MEDIA_ERR_LOG("MediaScannerServiceStub unable to read remote object");
         return SCAN_STUB_RD_ERR;
@@ -67,7 +67,7 @@ int32_t MediaScannerAbilityStub::HandleScanDir(MessageParcel& data, MessageParce
 int32_t MediaScannerAbilityStub::HandleScanFile(MessageParcel& data, MessageParcel &reply)
 {
     std::string filePath = data.ReadString();
-    auto remoteObject = data.ReadRemoteObject();
+    sptr<IRemoteObject> remoteObject = data.ReadRemoteObject();
     if (remoteObject == nullptr) {
         MEDIA_ERR_LOG("MediaScannerServiceStub unable to read remote object");
         return SCAN_STUB_RD_ERR;
