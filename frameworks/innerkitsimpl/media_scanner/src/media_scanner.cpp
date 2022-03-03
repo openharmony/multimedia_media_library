@@ -135,7 +135,7 @@ int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCa
         scanExector_.ExecuteScan(move(scanReq));
 
         // After path validation and queue_ addition is success, add the callback object to callback map
-        auto callback = iface_cast<IMediaScannerOperationCallback>(remoteCallback);
+        sptr<IMediaScannerOperationCallback> callback = iface_cast<IMediaScannerOperationCallback>(remoteCallback);
         if (callback != nullptr) {
             StoreCallbackObjInMap(reqId, callback);
             errCode = ERR_SUCCESS;
@@ -178,7 +178,7 @@ int32_t MediaScanner::ScanDir(string &path, const sptr<IRemoteObject> &remoteCal
         scanExector_.ExecuteScan(move(scanReq));
 
         // After path validation and queue_ addition is success, add the callback object to callback map
-        auto callback = iface_cast<IMediaScannerOperationCallback>(remoteCallback);
+        sptr<IMediaScannerOperationCallback> callback = iface_cast<IMediaScannerOperationCallback>(remoteCallback);
         if (callback != nullptr) {
             StoreCallbackObjInMap(reqId, callback);
             errCode = ERR_SUCCESS;
