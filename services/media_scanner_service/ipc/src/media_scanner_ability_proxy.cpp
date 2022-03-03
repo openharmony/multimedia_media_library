@@ -100,13 +100,13 @@ bool MediaScannerAbilityProxy::IsScannerRunning()
 
     if (!data.WriteInterfaceToken(MediaScannerAbilityProxy::GetDescriptor())) {
         MEDIA_ERR_LOG("MediaScannerAbilityProxy interface token write error");
-        return SCAN_PROXY_IF_TOKEN_WR_ERR;
+        return false;
     }
 
     int32_t error = Remote()->SendRequest(MEDIA_GET_SCAN_STATUS, data, reply, option);
     if (error != ERR_NONE) {
         MEDIA_ERR_LOG("%{public}s:: IsScannerRunning IPC failed, error: %{public}d", __func__, error);
-        return SCAN_IPC_ERR;
+        return false;
     }
 
     auto result(false);
