@@ -25,6 +25,7 @@ bool ScannerUtils::IsExists(const string &path)
     struct stat statInfo {};
 
     if (path.empty()) {
+        MEDIA_ERR_LOG("Given path name is empty");
         return false;
     }
 
@@ -43,6 +44,7 @@ string ScannerUtils::GetFileNameFromUri(const string &path)
         }
     }
 
+    MEDIA_ERR_LOG("Failed to obtain file name because given pathname is empty");
     return "";
 }
 
@@ -56,6 +58,7 @@ string ScannerUtils::GetFileExtensionFromFileUri(const string &path)
         }
     }
 
+    MEDIA_ERR_LOG("Failed to obtain file extension because given pathname is empty");
     return "";
 }
 
@@ -83,6 +86,7 @@ string ScannerUtils::GetMimeTypeFromExtension(const string &extension)
     string extn = extension;
 
     if (extn.empty()) {
+        MEDIA_ERR_LOG("Given file extension is empty");
         return mimeType;
     }
 
@@ -111,6 +115,7 @@ bool ScannerUtils::IsDirectory(const string &path)
         }
     }
 
+    MEDIA_ERR_LOG("Either path is empty or it is not a directory");
     return false;
 }
 
@@ -124,6 +129,7 @@ bool ScannerUtils::IsFileHidden(const string &path)
         }
     }
 
+    MEDIA_ERR_LOG("Either filepath is empty or it is not hidden");
     return false;
 }
 
@@ -137,6 +143,7 @@ string ScannerUtils::GetParentPath(const string &path)
         }
     }
 
+    MEDIA_ERR_LOG("Failed to obtain the parent path");
     return "";
 }
 
