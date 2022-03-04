@@ -36,9 +36,16 @@ unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 bool g_isNewApi = false;
 const int32_t NUM_2 = 2;
 const int32_t NUM_3 = 3;
-const int32_t NUM_4 = 4;
-const int32_t NUM_5 = 5;
-const int32_t NUM_6 = 6;
+
+static map<string, ListenerType> ListenerTypeMaps = {
+    {"audioChange", AUDIO_LISTENER},
+    {"videoChange", VIDEO_LISTENER},
+    {"imageChange", IMAGE_LISTENER},
+    {"fileChange", FILE_LISTENER},
+    {"albumChange", SMARTALBUM_LISTENER},
+    {"deviceChange", DEVICE_LISTENER},
+    {"remoteFileChange", REMOTEFILE_LISTENER}
+};
 
 napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::sAbilityHelper_ = nullptr;
@@ -1716,7 +1723,7 @@ static bool CheckTitlePrams(MediaLibraryAsyncContext *context)
         valueObject.GetString(title);
     }
     if (title.empty()) {
-        HiLog::Debug(LABEL, "CheckRelativePathPrams title is empty");
+        HiLog::Debug(LABEL, "CheckTitlePrams title is empty");
         return false;
     }
     return true;
@@ -1778,10 +1785,7 @@ static bool CheckTypeOfType(const std::string& firstDirName, int32_t fileMediaTy
                 return false;
         }
     }
-    if (!strcmp(firstDirName.c_str(), directoryEnumValues[NUM_3].c_str()) ||
-        !strcmp(firstDirName.c_str(), directoryEnumValues[NUM_4].c_str()) ||
-        !strcmp(firstDirName.c_str(), directoryEnumValues[NUM_5].c_str()) ||
-        !strcmp(firstDirName.c_str(), directoryEnumValues[NUM_6].c_str())) {
+    if (!strcmp(firstDirName.c_str(), directoryEnumValues[NUM_3].c_str())) {
         if (fileMediaType == MEDIA_TYPE_AUDIO) {
             return true;
         } else {
@@ -2787,81 +2791,74 @@ void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const nap
     }
 }
 
-void MediaLibraryNapi::RegisterChangeByType(string type, const ChangeListenerNapi &listenerObj)
+int32_t MediaLibraryNapi::GetListenerType(const std::string &str) const
 {
-    ChangeListenerNapi *listObj = const_cast<ChangeListenerNapi *>(&listenerObj);
-    if (type.compare(AUDIO_LISTENER) == 0) {
-        listObj->audioDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_AUDIO);
-        Uri onCbURI(MEDIALIBRARY_AUDIO_URI);
-        sAbilityHelper_->RegisterObserver(onCbURI, listObj->audioDataObserver_);
-        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
-    } else if (type.compare(VIDEO_LISTENER) == 0) {
-        listObj->videoDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_VIDEO);
-        Uri onCbURI(MEDIALIBRARY_VIDEO_URI);
-        sAbilityHelper_->RegisterObserver(onCbURI, listObj->videoDataObserver_);
-        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
-    } else if (type.compare(IMAGE_LISTENER) == 0) {
-        listObj->imageDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_IMAGE);
-        Uri onCbURI(MEDIALIBRARY_IMAGE_URI);
-        sAbilityHelper_->RegisterObserver(onCbURI, listObj->imageDataObserver_);
-        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
-    } else if (type.compare(FILE_LISTENER) == 0) {
-        listObj->fileDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_FILE);
-        Uri onCbURI(MEDIALIBRARY_FILE_URI);
-        sAbilityHelper_->RegisterObserver(onCbURI, listObj->fileDataObserver_);
-        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
-    } else if (type.compare(SMARTALBUM_LISTENER) == 0) {
-        listObj->smartAlbumDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_SMARTALBUM);
-        Uri onCbURI(MEDIALIBRARY_SMARTALBUM_CHANGE_URI);
-        sAbilityHelper_->RegisterObserver(onCbURI, listObj->smartAlbumDataObserver_);
-        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
-    } else if (type.compare(DEVICE_LISTENER) == 0) {
-        listObj->deviceDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_DEVICE);
-        Uri onCbURI(MEDIALIBRARY_DEVICE_URI);
-        sAbilityHelper_->RegisterObserver(onCbURI, listObj->deviceDataObserver_);
-        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
-    } else if (type.compare(REMOTEFILE_LISTENER) == 0) {
-        listObj->remoteFileDataObserver_ = new(nothrow) MediaObserver(*listObj, MEDIA_TYPE_REMOTEFILE);
-        Uri onCbURI(MEDIALIBRARY_REMOTEFILE_URI);
-        sAbilityHelper_->RegisterObserver(onCbURI, listObj->remoteFileDataObserver_);
-        HiLog::Error(LABEL, "subscribeList_ = %{public}s", type.c_str());
-    } else {
-        HiLog::Error(LABEL, "Media Type mismatch!");
-        return;
+    auto iter = ListenerTypeMaps.find(str);
+    if (iter == ListenerTypeMaps.end()) {
+        HiLog::Error(LABEL, "Invalid Listener Type %{public}s", str.c_str());
+        return INVALID_LISTENER;
     }
+
+    return iter->second;
 }
 
-void MediaLibraryNapi::RegisterChange(napi_env env, const ChangeListenerNapi &listObj)
+void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj)
 {
-    if (subscribeList_.empty()) {
-        HiLog::Error(LABEL, "No types are received for subscribe");
-        return;
-    }
+    HiLog::Info(LABEL, "Register change type = %{public}s", type.c_str());
 
-    for (string type : subscribeList_) {
-        RegisterChangeByType(type, listObj);
+    int32_t typeEnum = GetListenerType(type);
+    switch (typeEnum) {
+        case AUDIO_LISTENER:
+            listObj.audioDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_AUDIO);
+            sAbilityHelper_->RegisterObserver(Uri(MEDIALIBRARY_AUDIO_URI), listObj.audioDataObserver_);
+            break;
+        case VIDEO_LISTENER:
+            listObj.videoDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_VIDEO);
+            sAbilityHelper_->RegisterObserver(Uri(MEDIALIBRARY_VIDEO_URI), listObj.videoDataObserver_);
+            break;
+        case IMAGE_LISTENER:
+            listObj.imageDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_IMAGE);
+            sAbilityHelper_->RegisterObserver(Uri(MEDIALIBRARY_IMAGE_URI), listObj.imageDataObserver_);
+            break;
+        case FILE_LISTENER:
+            listObj.fileDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_FILE);
+            sAbilityHelper_->RegisterObserver(Uri(MEDIALIBRARY_FILE_URI), listObj.fileDataObserver_);
+            break;
+        case SMARTALBUM_LISTENER:
+            listObj.smartAlbumDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_SMARTALBUM);
+            sAbilityHelper_->RegisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
+                                              listObj.smartAlbumDataObserver_);
+            break;
+        case DEVICE_LISTENER:
+            listObj.deviceDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_DEVICE);
+            sAbilityHelper_->RegisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
+            break;
+        case REMOTEFILE_LISTENER:
+            listObj.remoteFileDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_REMOTEFILE);
+            sAbilityHelper_->RegisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
+            break;
+        default:
+            HiLog::Error(LABEL, "Invalid Media Type!");
     }
 }
 
 napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
 {
     napi_value undefinedResult = nullptr;
-    size_t argCount = ARGS_TWO;
+    size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = {nullptr};
     napi_value thisVar = nullptr;
     size_t res = 0;
-    uint32_t len = 0;
     char buffer[SIZE];
-    string strItem;
+    string type;
     const int32_t refCount = 1;
-    napi_value stringItem = nullptr;
     MediaLibraryNapi *obj = nullptr;
     napi_status status;
 
     napi_get_undefined(env, &undefinedResult);
 
-    GET_JS_ARGS(env, info, argCount, argv, thisVar);
-    NAPI_ASSERT(env, argCount == ARGS_TWO, "requires 2 parameters");
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameters");
 
     if (thisVar == nullptr || argv[PARAM0] == nullptr || argv[PARAM1] == nullptr) {
         HiLog::Error(LABEL, "Failed to retrieve details about the callback");
@@ -2871,140 +2868,126 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
-        bool boolResult = false;
-        if (napi_is_array(env, argv[PARAM0], &boolResult) != napi_ok || boolResult == false
-            || napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
+        if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string ||
+            napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
             return undefinedResult;
         }
 
-        napi_get_array_length(env, argv[PARAM0], &len);
-        for (size_t i = 0; i < len; i++) {
-            napi_get_element(env, argv[PARAM0], i, &stringItem);
-            napi_get_value_string_utf8(env, stringItem, buffer, SIZE, &res);
-            strItem = string(buffer);
-            obj->subscribeList_.push_back(strItem);
-            if (memset_s(buffer, SIZE, 0, sizeof(buffer)) != 0) {
-                HiLog::Error(LABEL, "Memset for buffer failed");
-                return undefinedResult;
-            }
+        if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res) != napi_ok) {
+            HiLog::Error(LABEL, "Failed to get value string utf8 for type");
+            return undefinedResult;
         }
+        type = string(buffer);
 
         napi_create_reference(env, argv[PARAM1], refCount, &g_listObj->cbOnRef_);
 
-        obj->RegisterChange(env, *g_listObj);
-        obj->subscribeList_.clear();
+        obj->RegisterChange(env, type, *g_listObj);
     }
 
     return undefinedResult;
 }
 
-void MediaLibraryNapi::UnregisterChangeByType(string type, const ChangeListenerNapi &listenerObj)
+void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, ChangeListenerNapi &listObj)
 {
-    ChangeListenerNapi *listObj = const_cast<ChangeListenerNapi *>(&listenerObj);
+    HiLog::Info(LABEL, "Unregister change type = %{public}s", type.c_str());
+
     MediaType mediaType;
-    if (type.compare(AUDIO_LISTENER) == 0) {
-        CHECK_NULL_PTR_RETURN_VOID(listObj->audioDataObserver_, "Failed to obtain audio data observer");
+    int32_t typeEnum = GetListenerType(type);
 
-        mediaType = MEDIA_TYPE_AUDIO;
-        Uri offCbURI(MEDIALIBRARY_AUDIO_URI);
-        sAbilityHelper_->UnregisterObserver(offCbURI, listObj->audioDataObserver_);
+    switch (typeEnum) {
+        case AUDIO_LISTENER:
+            CHECK_NULL_PTR_RETURN_VOID(listObj.audioDataObserver_, "Failed to obtain audio data observer");
 
-        delete listObj->audioDataObserver_;
-        listObj->audioDataObserver_ = nullptr;
-    } else if (type.compare(VIDEO_LISTENER) == 0) {
-        CHECK_NULL_PTR_RETURN_VOID(listObj->videoDataObserver_, "Failed to obtain video data observer");
+            mediaType = MEDIA_TYPE_AUDIO;
+            sAbilityHelper_->UnregisterObserver(Uri(MEDIALIBRARY_AUDIO_URI), listObj.audioDataObserver_);
 
-        mediaType = MEDIA_TYPE_VIDEO;
-        Uri offCbURI(MEDIALIBRARY_VIDEO_URI);
-        sAbilityHelper_->UnregisterObserver(offCbURI, listObj->videoDataObserver_);
+            delete listObj.audioDataObserver_;
+            listObj.audioDataObserver_ = nullptr;
+            break;
+        case VIDEO_LISTENER:
+            CHECK_NULL_PTR_RETURN_VOID(listObj.videoDataObserver_, "Failed to obtain video data observer");
 
-        delete listObj->videoDataObserver_;
-        listObj->videoDataObserver_ = nullptr;
-    } else if (type.compare(IMAGE_LISTENER) == 0) {
-        CHECK_NULL_PTR_RETURN_VOID(listObj->imageDataObserver_, "Failed to obtain image data observer");
+            mediaType = MEDIA_TYPE_VIDEO;
+            sAbilityHelper_->UnregisterObserver(Uri(MEDIALIBRARY_VIDEO_URI), listObj.videoDataObserver_);
 
-        mediaType = MEDIA_TYPE_IMAGE;
-        Uri offCbURI(MEDIALIBRARY_IMAGE_URI);
-        sAbilityHelper_->UnregisterObserver(offCbURI, listObj->imageDataObserver_);
+            delete listObj.videoDataObserver_;
+            listObj.videoDataObserver_ = nullptr;
+            break;
+        case IMAGE_LISTENER:
+            CHECK_NULL_PTR_RETURN_VOID(listObj.imageDataObserver_, "Failed to obtain image data observer");
 
-        delete listObj->imageDataObserver_;
-        listObj->imageDataObserver_ = nullptr;
-    } else if (type.compare(FILE_LISTENER) == 0) {
-        CHECK_NULL_PTR_RETURN_VOID(listObj->fileDataObserver_, "Failed to obtain file data observer");
+            mediaType = MEDIA_TYPE_IMAGE;
+            sAbilityHelper_->UnregisterObserver(Uri(MEDIALIBRARY_IMAGE_URI), listObj.imageDataObserver_);
 
-        mediaType = MEDIA_TYPE_FILE;
-        Uri offCbURI(MEDIALIBRARY_FILE_URI);
-        sAbilityHelper_->UnregisterObserver(offCbURI, listObj->fileDataObserver_);
+            delete listObj.imageDataObserver_;
+            listObj.imageDataObserver_ = nullptr;
+            break;
+        case FILE_LISTENER:
+            CHECK_NULL_PTR_RETURN_VOID(listObj.fileDataObserver_, "Failed to obtain file data observer");
 
-        delete listObj->fileDataObserver_;
-        listObj->fileDataObserver_ = nullptr;
-    } else if (type.compare(SMARTALBUM_LISTENER) == 0) {
-        CHECK_NULL_PTR_RETURN_VOID(listObj->smartAlbumDataObserver_, "Failed to obtain device data observer");
+            mediaType = MEDIA_TYPE_FILE;
+            sAbilityHelper_->UnregisterObserver(Uri(MEDIALIBRARY_FILE_URI), listObj.fileDataObserver_);
 
-        mediaType = MEDIA_TYPE_SMARTALBUM;
-        Uri offCbURI(MEDIALIBRARY_SMART_URI);
-        sAbilityHelper_->UnregisterObserver(offCbURI, listObj->smartAlbumDataObserver_);
+            delete listObj.fileDataObserver_;
+            listObj.fileDataObserver_ = nullptr;
+            break;
+        case SMARTALBUM_LISTENER:
+            CHECK_NULL_PTR_RETURN_VOID(listObj.smartAlbumDataObserver_, "Failed to obtain smart album data observer");
 
-        delete listObj->smartAlbumDataObserver_;
-        listObj->smartAlbumDataObserver_ = nullptr;
-    } else if (type.compare(DEVICE_LISTENER) == 0) {
-        CHECK_NULL_PTR_RETURN_VOID(listObj->deviceDataObserver_, "Failed to obtain device data observer");
+            mediaType = MEDIA_TYPE_SMARTALBUM;
+            sAbilityHelper_->UnregisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
+                                                listObj.smartAlbumDataObserver_);
 
-        mediaType = MEDIA_TYPE_DEVICE;
-        Uri offCbURI(MEDIALIBRARY_DEVICE_URI);
-        sAbilityHelper_->UnregisterObserver(offCbURI, listObj->deviceDataObserver_);
+            delete listObj.smartAlbumDataObserver_;
+            listObj.smartAlbumDataObserver_ = nullptr;
+            break;
+        case DEVICE_LISTENER:
+            CHECK_NULL_PTR_RETURN_VOID(listObj.deviceDataObserver_, "Failed to obtain device data observer");
 
-        delete listObj->deviceDataObserver_;
-        listObj->deviceDataObserver_ = nullptr;
-    } else if (type.compare(REMOTEFILE_LISTENER) == 0) {
-        CHECK_NULL_PTR_RETURN_VOID(listObj->remoteFileDataObserver_, "Failed to obtain remote file data observer");
+            mediaType = MEDIA_TYPE_DEVICE;
+            sAbilityHelper_->UnregisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
 
-        mediaType = MEDIA_TYPE_REMOTEFILE;
-        Uri offCbURI(MEDIALIBRARY_REMOTEFILE_URI);
-        sAbilityHelper_->UnregisterObserver(offCbURI, listObj->remoteFileDataObserver_);
-        delete listObj->remoteFileDataObserver_;
-        listObj->remoteFileDataObserver_ = nullptr;
-    } else {
-        return;
+            delete listObj.deviceDataObserver_;
+            listObj.deviceDataObserver_ = nullptr;
+            break;
+        case REMOTEFILE_LISTENER:
+            CHECK_NULL_PTR_RETURN_VOID(listObj.remoteFileDataObserver_, "Failed to obtain remote file data observer");
+
+            mediaType = MEDIA_TYPE_REMOTEFILE;
+            sAbilityHelper_->UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
+
+            delete listObj.remoteFileDataObserver_;
+            listObj.remoteFileDataObserver_ = nullptr;
+            break;
+        default:
+            HiLog::Error(LABEL, "Invalid Media Type");
+            return;
     }
 
-    if (listObj->cbOffRef_ != nullptr) {
+    if (listObj.cbOffRef_ != nullptr) {
         MediaChangeListener listener;
         listener.mediaType = mediaType;
-        listObj->OnChange(listener, listObj->cbOffRef_);
-    }
-}
-
-void MediaLibraryNapi::UnregisterChange(napi_env env, const ChangeListenerNapi &listenerObj)
-{
-    if (unsubscribeList_.empty()) {
-        HiLog::Error(LABEL, "No types are received for unsubscribe");
-        return;
-    }
-
-    for (string type : unsubscribeList_) {
-        UnregisterChangeByType(type, listenerObj);
+        listObj.OnChange(listener, listObj.cbOffRef_);
     }
 }
 
 napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info)
 {
     napi_value undefinedResult = nullptr;
-    size_t argCount = ARGS_TWO;
+    size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = {nullptr};
     napi_value thisVar = nullptr;
     size_t res = 0;
-    uint32_t len = 0;
     char buffer[SIZE];
     const int32_t refCount = 1;
-    napi_value stringItem = nullptr;
+    string type;
     MediaLibraryNapi *obj = nullptr;
     napi_status status;
 
     napi_get_undefined(env, &undefinedResult);
 
-    GET_JS_ARGS(env, info, argCount, argv, thisVar);
-    NAPI_ASSERT(env, argCount <= ARGS_TWO, "requires 2 parameters maximum");
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, ARGS_ONE <= argc && argc<= ARGS_TWO, "requires one or two parameters");
 
     if (thisVar == nullptr || argv[PARAM0] == nullptr) {
         HiLog::Error(LABEL, "Failed to retrieve details about the callback");
@@ -3014,33 +2997,26 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
-        bool boolResult = false;
-        if (napi_is_array(env, argv[PARAM0], &boolResult) != napi_ok || boolResult == false) {
+        if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
             return undefinedResult;
         }
 
-        napi_get_array_length(env, argv[PARAM0], &len);
-        for (size_t i = 0; i < len; i++) {
-            napi_get_element(env, argv[PARAM0], i, &stringItem);
-            napi_get_value_string_utf8(env, stringItem, buffer, SIZE, &res);
-            obj->unsubscribeList_.push_back(string(buffer));
-            if (memset_s(buffer, SIZE, 0, sizeof(buffer)) != 0) {
-                HiLog::Error(LABEL, "Memset for buffer failed");
-                return undefinedResult;
-            }
+        if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res) != napi_ok) {
+            HiLog::Error(LABEL, "Failed to get value string utf8 for type");
+            return undefinedResult;
         }
+        type = string(buffer);
 
-        if (argCount == ARGS_TWO) {
-            if (napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function
-                || g_listObj == nullptr) {
+        if (argc == ARGS_TWO) {
+            if (napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function ||
+                g_listObj == nullptr) {
                 return undefinedResult;
             }
 
             napi_create_reference(env, argv[PARAM1], refCount, &g_listObj->cbOffRef_);
         }
 
-        obj->UnregisterChange(env, *g_listObj);
-        obj->unsubscribeList_.clear();
+        obj->UnregisterChange(env, type, *g_listObj);
     }
 
     return undefinedResult;

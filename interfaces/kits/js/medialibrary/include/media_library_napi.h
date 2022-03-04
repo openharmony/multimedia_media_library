@@ -56,13 +56,18 @@
 namespace OHOS {
 namespace Media {
 static const std::string MEDIA_LIB_NAPI_CLASS_NAME = "MediaLibrary";
-const std::string AUDIO_LISTENER = "audio";
-const std::string VIDEO_LISTENER = "video";
-const std::string IMAGE_LISTENER = "image";
-const std::string FILE_LISTENER = "file";
-const std::string SMARTALBUM_LISTENER = "smartalbum";
-const std::string DEVICE_LISTENER = "device";
-const std::string REMOTEFILE_LISTENER = "remote file";
+
+enum ListenerType {
+    INVALID_LISTENER = -1,
+
+    AUDIO_LISTENER,
+    VIDEO_LISTENER,
+    IMAGE_LISTENER,
+    FILE_LISTENER,
+    SMARTALBUM_LISTENER,
+    DEVICE_LISTENER,
+    REMOTEFILE_LISTENER
+};
 
 struct MediaChangeListener {
     MediaType mediaType;
@@ -197,15 +202,12 @@ private:
     static napi_value JSGetPrivateAlbum(napi_env env, napi_callback_info info);
     static napi_value JSCreateSmartAlbum(napi_env env, napi_callback_info info);
     static napi_value JSDeleteSmartAlbum(napi_env env, napi_callback_info info);
-    void RegisterChange(napi_env env, const ChangeListenerNapi &listObj);
-    void RegisterChangeByType(std::string type, const ChangeListenerNapi &listObj);
-    void UnregisterChange(napi_env env, const ChangeListenerNapi &listObj);
-    void UnregisterChangeByType(std::string type, const ChangeListenerNapi &listObj);
+
+    int32_t GetListenerType(const std::string &str) const;
+    void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
+    void UnregisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
 
     IMediaLibraryClient *mediaLibrary_;
-
-    std::vector<std::string> subscribeList_;
-    std::vector<std::string> unsubscribeList_;
 
     napi_env env_;
     napi_ref wrapper_;
