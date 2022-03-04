@@ -17,6 +17,7 @@
 
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
+#include "medialibrary_sync_table.h"
 #include "media_log.h"
 #include "openssl/sha.h"
 #include "distributed_kv_data_manager.h"
@@ -645,6 +646,10 @@ bool MediaLibraryThumbnail::UpdateThumbnailInfo(ThumbRdbOpt &opts,
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", errorCode);
         return false;
     }
+
+    std::vector<std::string> devices = std::vector<std::string>();
+    MediaLibrarySyncTable syncTable;
+    syncTable.SyncPushTable(opts.store, BUNDLE_NAME, MEDIALIBRARY_TABLE, devices);
     MEDIA_INFO_LOG("MediaLibraryThumbnail::UpdateThumbnailInfo OUT");
     return true;
 }
