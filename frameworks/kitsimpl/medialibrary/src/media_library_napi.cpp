@@ -1264,7 +1264,7 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
             napi_typeof(env, argv[i], &valueType);
 
             if (i == PARAM0 && valueType == napi_number) {
-                napi_get_value_int32(env, argv[i], &asyncContext->dirType);
+                napi_get_value_uint32(env, argv[i], &asyncContext->dirType);
             } else if (i == PARAM1 && valueType == napi_function) {
                 napi_create_reference(env, argv[i], refCount, &asyncContext->callbackRef);
                 break;
