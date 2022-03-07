@@ -21,6 +21,7 @@
 #include "media_file_utils.h"
 #include "pixel_map_napi.h"
 #include "rdb_errno.h"
+#include "bytrace.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -1292,8 +1293,11 @@ static unique_ptr<PixelMap> QueryThumbnail(
 
     HiLog::Info(LABEL, "Query thumbnail id %{public}s with key %{public}s",
         id.c_str(), thumbnailKey.c_str());
+    StartTrace(BYTRACE_TAG_OHOS, "QueryThumbnail");
+    auto ret = thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
+    FinishTrace(BYTRACE_TAG_OHOS);
 
-    return thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
+    return ret;
 }
 
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
@@ -1308,10 +1312,13 @@ static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
         context->objectInfo->sThumbnailHelper_ != nullptr) {
         int32_t fileId = context->objectInfo->GetFileId();
         std::string uri = context->objectInfo->GetFileUri();
+        HiLog::Debug(LABEL, "2 Distribute StartTrace:GetThumbnail");
+        StartTrace(BYTRACE_TAG_OHOS, "GetThumbnailCompleteCB QueryThumbnail");
         shared_ptr<PixelMap> pixelmap = QueryThumbnail(context->objectInfo->sAbilityHelper_,
             context->objectInfo->sThumbnailHelper_, fileId, uri,
             context->thumbWidth, context->thumbHeight);
-
+        HiLog::Debug(LABEL, "Distribute FinishTrace:GetThumbnail");
+        FinishTrace(BYTRACE_TAG_OHOS);
         if (pixelmap != nullptr) {
             jsContext->data = Media::PixelMapNapi::CreatePixelMap(env, pixelmap);
             napi_get_undefined(env, &jsContext->error);
@@ -1333,6 +1340,7 @@ static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
                                                    context->work, *jsContext);
     }
     delete context;
+    HiLog::Debug(LABEL, "JSGetThumbnailCompleteCallback end");
 }
 
 static void GetSizeInfo(napi_env env, napi_value configObj, std::string type, int32_t &result)
@@ -1399,6 +1407,7 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
 
 napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
 {
+    HiLog::Debug(LABEL, "1 JSGetThumbnail start:");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
