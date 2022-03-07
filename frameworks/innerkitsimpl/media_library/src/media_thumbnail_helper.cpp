@@ -18,6 +18,7 @@
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
 #include "media_log.h"
+#include "bytrace.h"
 #include "distributed_kv_data_manager.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
@@ -79,13 +80,19 @@ bool MediaThumbnailHelper::isThumbnailFromLcd(Size &size)
 
 std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Size &size, const std::string &uri)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "GetThumbnail");
+
     vector<uint8_t> image;
     if (!GetImage(key, image)) {
         if (uri.empty()) {
             MEDIA_ERR_LOG("uri is empty");
             return nullptr;
         }
+
+        StartTrace(BYTRACE_TAG_OHOS, "GetThumbnail SyncKvstore", -1);
         auto syncStatus = SyncKvstore(key, uri);
+        FinishTrace(BYTRACE_TAG_OHOS);
+
         if (syncStatus != DistributedKv::Status::SUCCESS) {
             MEDIA_ERR_LOG("sync KvStore failed! ret %{public}d", syncStatus);
             return nullptr;
@@ -101,6 +108,9 @@ std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Si
         MEDIA_ERR_LOG("resize image failed!");
         return nullptr;
     }
+
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     return pixelMap;
 }
 
@@ -118,16 +128,26 @@ DistributedKv::Status MediaThumbnailHelper::SyncKvstore(std::string key, const s
     DistributedKv::DataQuery dataQuery;
     dataQuery.KeyPrefix(key);
     std::vector<std::string> deviceIds = { deviceId };
-    return singleKvStorePtr_->SyncWithCondition(deviceIds, OHOS::DistributedKv::SyncMode::PULL, dataQuery);
+    MEDIA_DEBUG_LOG("Distribute StartTrace:SyncWithCondition");
+    StartTrace(BYTRACE_TAG_OHOS, "SyncKvstore singleKvStorePtr_->SyncWithCondition");
+    DistributedKv::Status status = singleKvStorePtr_->SyncWithCondition(deviceIds, OHOS::DistributedKv::SyncMode::PULL,
+                                                                        dataQuery);
+    MEDIA_DEBUG_LOG("Distribute FinishTrace:SyncWithCondition");
+    FinishTrace(BYTRACE_TAG_OHOS);
+
+    return status;
 }
 
 bool MediaThumbnailHelper::ResizeImage(vector<uint8_t> &data, Size &size, unique_ptr<PixelMap> &pixelMap)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "ResizeImage");
+
     if (data.size() == 0) {
         MEDIA_ERR_LOG("Data is empty");
         return false;
     }
 
+    StartTrace(BYTRACE_TAG_OHOS, "ImageSource::CreateImageSource");
     uint32_t errorCode = Media::SUCCESS;
     SourceOptions opts;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data.data(),
@@ -136,7 +156,9 @@ bool MediaThumbnailHelper::ResizeImage(vector<uint8_t> &data, Size &size, unique
         MEDIA_ERR_LOG("Failed to create image source %{public}d", errorCode);
         return false;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 
+    StartTrace(BYTRACE_TAG_OHOS, "imageSource->CreatePixelMap");
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize.width = size.width;
     decodeOpts.desiredSize.height = size.height;
@@ -145,7 +167,9 @@ bool MediaThumbnailHelper::ResizeImage(vector<uint8_t> &data, Size &size, unique
         MEDIA_ERR_LOG("Failed to create pixelmap %{public}d", errorCode);
         return false;
     }
-    MEDIA_INFO_LOG("MediaThumbnailHelper::ResizeImage OUT");
+    FinishTrace(BYTRACE_TAG_OHOS);
+
+    FinishTrace(BYTRACE_TAG_OHOS);
     return true;
 }
 
@@ -162,14 +186,16 @@ bool MediaThumbnailHelper::GetImage(string &key, vector<uint8_t> &image)
         return false;
     }
 
+    StartTrace(BYTRACE_TAG_OHOS, "GetImage singleKvStorePtr_->Get");
     auto status = singleKvStorePtr_->Get(key, res);
     if (status != Status::SUCCESS) {
         MEDIA_ERR_LOG("Failed to get key [%{public}s]", key.c_str());
         return false;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 
     image = vector<uint8_t>(res.Data());
-    MEDIA_INFO_LOG("MediaThumbnailHelper::GetImage success!");
+
     return true;
 }
 
