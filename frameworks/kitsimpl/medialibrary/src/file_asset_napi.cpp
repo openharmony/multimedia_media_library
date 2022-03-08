@@ -1438,6 +1438,10 @@ static void JSFavouriteCallbackComplete(napi_env env, napi_status status,
     napi_get_undefined(env, &jsContext->data);
     if (context->status) {
         jsContext->status = true;
+        Media::MediaType mediaType = context->objectInfo->GetMediaType();
+        string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+        Uri modifyNotify(notifyUri);
+        context->objectInfo->sAbilityHelper_->NotifyChange(modifyNotify);
     } else {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Ability helper is null");
@@ -1809,6 +1813,10 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status,
     napi_get_undefined(env, &jsContext->data);
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
+        Media::MediaType mediaType = context->objectInfo->GetMediaType();
+        string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+        Uri modifyNotify(notifyUri);
+        context->objectInfo->sAbilityHelper_->NotifyChange(modifyNotify);
         HiLog::Debug(LABEL, "JSTrashCallbackComplete success");
     } else {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,

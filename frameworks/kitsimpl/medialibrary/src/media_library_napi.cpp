@@ -1664,6 +1664,11 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
         if (context->fetchFileResult != nullptr && context->fetchFileResult->GetCount() >= 1) {
             HiLog::Debug(LABEL, "getFileAssetById fetchFileResult->GetCount() >= 1");
             context->fileAsset = context->fetchFileResult->GetFirstObject();
+
+            Media::MediaType mediaType = context->fileAsset->GetMediaType();
+            string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+            Uri modifyNotify(notifyUri);
+            context->objectInfo->sAbilityHelper_->NotifyChange(modifyNotify);
         }
     }
 }
