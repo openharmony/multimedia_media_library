@@ -55,6 +55,8 @@ const std::string DEVICE_TABLE = "Device";
 
 const std::string MEDIA_DATA_ABILITY_DB_NAME = "media_library.db";
 
+const std::string BUNDLE_NAME = "com.ohos.medialibrary.MediaLibraryDataA";
+
 const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "dataability://";
 const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
 const std::string MEDIALIBRARY_TYPE_AUDIO_URI = "/audio";
