@@ -18,6 +18,7 @@
 #include <unordered_set>
 
 #include "accesstoken_kit.h"
+#include "bytrace.h"
 #include "bundle_mgr_interface.h"
 #include "file_ex.h"
 #include "ipc_singleton.h"
@@ -65,8 +66,12 @@ void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
     InitDeviceData();
 
     if (rdbStore_ != nullptr) {
+        MEDIA_DEBUG_LOG("Distribute StartTrace:SyncPullAllTableTrace");
+        StartTrace(BYTRACE_TAG_OHOS, "SyncPullAllTableTrace");
         MediaLibrarySyncTable syncTable;
         syncTable.SyncPullAllTable(rdbStore_, bundleName_);
+        FinishTrace(BYTRACE_TAG_OHOS);
+        MEDIA_DEBUG_LOG("Distribute FinishTrace:SyncPullAllTableTrace");
     }
     InitialiseKvStore();
 }
@@ -358,8 +363,11 @@ unique_ptr<AbsSharedResultSet> QueryFile(string strQueryCondition,
     unique_ptr<AbsSharedResultSet> queryResultSet;
     string tableName = MEDIALIBRARY_TABLE;
     if (!networkId.empty()) {
+        MEDIA_DEBUG_LOG("ObtainDistributedTableName start");
+        StartTrace(BYTRACE_TAG_OHOS, "QueryFile ObtainDistributedTableName");
         tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
-        MEDIA_INFO_LOG("tableName in %{public}s", tableName.c_str());
+        MEDIA_DEBUG_LOG("tableName in %{public}s", tableName.c_str());
+        FinishTrace(BYTRACE_TAG_OHOS);
     }
     AbsRdbPredicates mediaLibAbsPredFile(tableName);
 
@@ -376,7 +384,11 @@ unique_ptr<AbsSharedResultSet> QueryFile(string strQueryCondition,
     mediaLibAbsPredFile.SetWhereArgs(predicates.GetWhereArgs());
     mediaLibAbsPredFile.Limit(predicates.GetLimit());
     mediaLibAbsPredFile.SetOrder(predicates.GetOrder());
+    MEDIA_DEBUG_LOG("call rdb query start");
+    StartTrace(BYTRACE_TAG_OHOS, "QueryFile RdbStore Query");
     queryResultSet = rdbStore->Query(mediaLibAbsPredFile, columns);
+    MEDIA_INFO_LOG("call rdb query end");
+    FinishTrace(BYTRACE_TAG_OHOS);
     return queryResultSet;
 }
 
@@ -651,8 +663,9 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
     string networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(uriString);
     string::size_type pos = uriString.find_last_of('/');
     string type = uriString.substr(pos + 1);
-    MEDIA_INFO_LOG("uriString = %{public}s, type = %{public}s, thumbnailQuery %{public}d, Rdb Verison %{public}d",
+    MEDIA_DEBUG_LOG("uriString = %{public}s, type = %{public}s, thumbnailQuery %{public}d, Rdb Verison %{public}d",
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
+    StartTrace(BYTRACE_TAG_OHOS, "Query");
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
     if (thumbnailQuery) {
         GenThumbnail(rdbStore_, mediaThumbnail_, strRow, space, networkId);
@@ -675,6 +688,8 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
         queryResultSet = QueryFile(strQueryCondition, predicates, columns, rdbStore_, networkId);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     }
+    MEDIA_DEBUG_LOG("query end");
+    FinishTrace(BYTRACE_TAG_OHOS);
     return queryResultSet;
 }
 
@@ -841,10 +856,14 @@ void MediaLibraryDataAbility::InitDeviceData()
     }
     deviceManager.InitDeviceManager(bundleName_, deviceInitCallback_);
 
+    MEDIA_DEBUG_LOG("Distribute StartTrace:InitDeviceRdbStoreTrace");
+    StartTrace(BYTRACE_TAG_OHOS, "InitDeviceRdbStoreTrace", -1);
     if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_, bundleName_)) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility InitDeviceData failed!");
         return;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
+    MEDIA_DEBUG_LOG("Distribute FinishTrace:InitDeviceRdbStoreTrace");
 
     deviceStateCallback_ = std::make_shared<MediaLibraryDeviceStateCallback>(rdbStore_, bundleName_);
     if (deviceStateCallback_ == nullptr) {
@@ -1091,6 +1110,8 @@ void MediaLibraryDeviceStateCallback::OnDeviceOnline(const OHOS::DistributedHard
     MediaLibrarySyncTable syncTable;
     std::string deviceId = deviceInfo.deviceId;
     std::vector<std::string> devices = { deviceId };
+    MEDIA_DEBUG_LOG("Distribute StartAsyncTrace:SyncPullAllTableByDeviceId");
+    StartAsyncTrace(BYTRACE_TAG_OHOS, "SyncPullAllTableByDeviceId", 1234);
     syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
 }
 
@@ -1142,6 +1163,8 @@ void MediaLibraryRdbStoreObserver::OnChange(const std::vector<std::string>& devi
     if (devices.empty() || bundleName_.empty()) {
         return;
     }
+    FinishAsyncTrace(BYTRACE_TAG_OHOS, "SyncPullAllTableByDeviceId", 1234);
+    MEDIA_DEBUG_LOG("Distribute FinishAsyncTrace:SyncPullAllTableByDeviceId");
     MediaLibraryDevice::GetInstance()->NotifyRemoteFileChange();
     for (auto &deviceId : devices) {
         MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(deviceId, DEVICE_SYNCSTATUS_COMPLETE, bundleName_);
