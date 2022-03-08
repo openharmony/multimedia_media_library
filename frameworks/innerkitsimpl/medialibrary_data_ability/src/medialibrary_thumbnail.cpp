@@ -24,6 +24,8 @@
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
 #include "image_packer.h"
+#include "bytrace.h"
+#include "medialibrary_sync_table.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -70,7 +72,8 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnail3 IN");
     int errorCode;
-
+    MEDIA_DEBUG_LOG("Distribute StartTrace:CreateThumbnail");
+    StartTrace(BYTRACE_TAG_OHOS, "CreateThumbnail");
     if (!data.thumbnailKey.empty() &&
         IsImageExist(data.thumbnailKey)) {
         MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnail image has exist in kvStore");
@@ -107,7 +110,8 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
     if (!UpdateThumbnailInfo(opts, data, errorCode)) {
         return false;
     }
-
+    FinishTrace(BYTRACE_TAG_OHOS);
+    MEDIA_DEBUG_LOG("Distribute FinishTrace:CreateThumbnail");
     key = data.thumbnailKey;
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnail3 OUT");
@@ -624,7 +628,7 @@ bool MediaLibraryThumbnail::UpdateThumbnailInfo(ThumbRdbOpt &opts,
                                                 ThumbnailData &data,
                                                 int &errorCode)
 {
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::UpdateThumbnailInfo IN");
+    MEDIA_DEBUG_LOG("MediaLibraryThumbnail::UpdateThumbnailInfo IN");
     ValuesBucket values;
     int changedRows;
     if (data.thumbnailKey.empty() && data.lcdKey.empty()) {
@@ -647,10 +651,13 @@ bool MediaLibraryThumbnail::UpdateThumbnailInfo(ThumbRdbOpt &opts,
         return false;
     }
 
+    MEDIA_DEBUG_LOG("Distribute StartTrace:SyncThumbnailInfo");
+    StartTrace(BYTRACE_TAG_OHOS, "UpdateThumbnailInfo SyncPushTable", -1);
     std::vector<std::string> devices = std::vector<std::string>();
     MediaLibrarySyncTable syncTable;
     syncTable.SyncPushTable(opts.store, BUNDLE_NAME, MEDIALIBRARY_TABLE, devices);
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::UpdateThumbnailInfo OUT");
+    MEDIA_DEBUG_LOG("istribute FinishTrace:SyncThumbnailInfo");
+    FinishTrace(BYTRACE_TAG_OHOS);
     return true;
 }
 

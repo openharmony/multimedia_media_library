@@ -18,6 +18,7 @@
 
 namespace OHOS {
 namespace Media {
+const uint64_t BYTRACE_TAG_MEDIALIBRARY = 10000;
 const int32_t DATA_ABILITY_SUCCESS = 0;
 const int32_t DATA_ABILITY_FAIL = -1;
 const int32_t DATA_ABILITY_HAS_OPENED_FAIL = -10;
