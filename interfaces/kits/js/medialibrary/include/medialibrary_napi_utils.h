@@ -151,8 +151,9 @@ const std::vector<std::string> mediaTypesEnum {
 };
 
 const std::vector<std::string> fileKeyEnum {
-    "ID", "PATH", "RELATIVE_PATH", "MIME_TYPE", "MEDIA_TYPE", "DISPLAY_NAME", "SIZE",
-    "DATE_ADDED", "DATE_MODIFIED", "TITLE", "ARTIST", "ALBUM", "ALBUM_ID", "ALBUM_NAME"
+    "ID", "RELATIVE_PATH", "DISPLAY_NAME", "PARENT", "MIME_TYPE", "MEDIA_TYPE", "SIZE",
+    "DATE_ADDED", "DATE_MODIFIED", "DATE_TAKEN", "TITLE", "ARTIST", "AUDIOALBUM", "DURATION",
+    "WIDTH", "HEIGHT", "ORIENTATION", "ALBUM_ID", "ALBUM_NAME"
 };
 
 const std::vector<std::string> directoryEnum {

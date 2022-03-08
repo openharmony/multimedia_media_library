@@ -42,7 +42,7 @@ static map<string, ListenerType> ListenerTypeMaps = {
     {"videoChange", VIDEO_LISTENER},
     {"imageChange", IMAGE_LISTENER},
     {"fileChange", FILE_LISTENER},
-    {"albumChange", SMARTALBUM_LISTENER},
+    {"albumChange", ALBUM_LISTENER},
     {"deviceChange", DEVICE_LISTENER},
     {"remoteFileChange", REMOTEFILE_LISTENER}
 };
@@ -1664,6 +1664,11 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
         if (context->fetchFileResult != nullptr && context->fetchFileResult->GetCount() >= 1) {
             HiLog::Debug(LABEL, "getFileAssetById fetchFileResult->GetCount() >= 1");
             context->fileAsset = context->fetchFileResult->GetFirstObject();
+
+            Media::MediaType mediaType = context->fileAsset->GetMediaType();
+            string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+            Uri modifyNotify(notifyUri);
+            context->objectInfo->sAbilityHelper_->NotifyChange(modifyNotify);
         }
     }
 }
@@ -2837,6 +2842,10 @@ void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, Cha
             listObj.remoteFileDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_REMOTEFILE);
             sAbilityHelper_->RegisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
             break;
+        case ALBUM_LISTENER:
+            listObj.albumDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_ALBUM);
+            sAbilityHelper_->RegisterObserver(Uri(MEDIALIBRARY_ALBUM_URI), listObj.albumDataObserver_);
+            break;
         default:
             HiLog::Error(LABEL, "Invalid Media Type!");
     }
@@ -2958,6 +2967,15 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
 
             delete listObj.remoteFileDataObserver_;
             listObj.remoteFileDataObserver_ = nullptr;
+            break;
+        case ALBUM_LISTENER:
+            CHECK_NULL_PTR_RETURN_VOID(listObj.albumDataObserver_, "Failed to obtain album data observer");
+
+            mediaType = MEDIA_TYPE_ALBUM;
+            sAbilityHelper_->UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.albumDataObserver_);
+
+            delete listObj.albumDataObserver_;
+            listObj.albumDataObserver_ = nullptr;
             break;
         default:
             HiLog::Error(LABEL, "Invalid Media Type");
