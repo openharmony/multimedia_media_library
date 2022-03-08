@@ -61,7 +61,8 @@ napi_value FetchFileResultNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getNextObject", JSGetNextObject),
         DECLARE_NAPI_FUNCTION("getLastObject", JSGetLastObject),
         DECLARE_NAPI_FUNCTION("getPositionObject", JSGetPositionObject),
-        DECLARE_NAPI_FUNCTION("getAllObject", JSGetAllObject)
+        DECLARE_NAPI_FUNCTION("getAllObject", JSGetAllObject),
+        DECLARE_NAPI_FUNCTION("close", JSClose)
     };
 
     status = napi_define_class(env, FETCH_FILE_RESULT_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
@@ -513,6 +514,32 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
     }
 
     return result;
+}
+
+napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
+{
+    HiLog::Info(LABEL, "JSClose IN!");
+    napi_status status;
+    napi_value jsResult = nullptr;
+    FetchFileResultNapi* obj = nullptr;
+    napi_value thisVar = nullptr;
+
+    napi_get_undefined(env, &jsResult);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    if (status != napi_ok || thisVar == nullptr) {
+        HiLog::Error(LABEL, "Invalid arguments!");
+        return jsResult;
+    }
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if (status == napi_ok && obj != nullptr) {
+        HiLog::Info(LABEL, "JSClose fetchFileResult Close!");
+        obj->fetchFileResult_->Close();
+        obj->~FetchFileResultNapi();
+        napi_create_int32(env, SUCCESS, &jsResult);
+    }
+    HiLog::Info(LABEL, "JSClose OUT!");
+    return jsResult;
 }
 } // namespace Media
 } // namespace OHOS
