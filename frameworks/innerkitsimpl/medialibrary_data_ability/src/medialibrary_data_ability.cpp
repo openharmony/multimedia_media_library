@@ -45,6 +45,7 @@ const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
     "com.ohos.medialibrary.MediaScannerAbilityA",
     "ohos.acts.multimedia.mediaLibrary",
     "com.ohos.photos",
+    "com.ohos.note",
     "com.ohos.camerademo"
 };
 const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {
