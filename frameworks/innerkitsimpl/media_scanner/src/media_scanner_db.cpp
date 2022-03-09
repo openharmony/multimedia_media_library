@@ -453,6 +453,7 @@ unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<AbsSharedResu
 {
     unique_ptr<Metadata> metadata = make_unique<Metadata>();
     CHECK_AND_RETURN_RET_LOG(metadata != nullptr, nullptr, "Metadata object creation failed");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Result set for metadata is empty");
 
     std::vector<std::string> columnNames;
     resultSet->GetAllColumnNames(columnNames);
