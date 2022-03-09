@@ -61,6 +61,7 @@ int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
     auto isSupported = std::find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(), mimeType) !=
         EXTRACTOR_SUPPORTED_MIME.end();
     if (!isSupported) {
+        MEDIA_ERR_LOG("Mime type is not supported by the extractor");
         return ERR_SUCCESS;
     }
 
@@ -70,6 +71,7 @@ int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
 
     avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     if (avMetadataHelper == nullptr) {
+        MEDIA_ERR_LOG("AV metadata helper is null");
         return errCode;
     }
 

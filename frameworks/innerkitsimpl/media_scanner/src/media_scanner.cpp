@@ -82,6 +82,7 @@ bool MediaScanner::InitScanner(const std::shared_ptr<Context> &context)
         }
     }
 
+    MEDIA_ERR_LOG("Failed to initialize scanner");
     return false;
 }
 
@@ -284,6 +285,7 @@ bool MediaScanner::IsFileScanned(Metadata &fileMetadata)
         fileMetadata.SetFileId(fileId);
     }
 
+    MEDIA_INFO_LOG("File is not scanned already");
     return false;
 }
 
@@ -325,6 +327,7 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
 {
     unique_ptr<Metadata> fileMetadata = make_unique<Metadata>();
     if (fileMetadata == nullptr) {
+        MEDIA_ERR_LOG("File metadata is null");
         return nullptr;
     }
 
@@ -388,6 +391,7 @@ int32_t MediaScanner::ScanFileContent(const string &path, const int32_t parentId
     if (fileMetadata != nullptr) {
         errCode = VisitFile(*fileMetadata);
     } else {
+        MEDIA_ERR_LOG("Failed to allocate memory for file metadata");
         return ERR_MEM_ALLOC_FAIL;
     }
 
@@ -464,10 +468,12 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
     struct stat statInfo;
 
     if (len >= FILENAME_MAX - 1) {
+        MEDIA_ERR_LOG("File name length cannot be more than max limit");
         return ERR_INCORRECT_PATH;
     }
 
     if ((dirPath = opendir(path.c_str())) == nullptr) {
+        MEDIA_ERR_LOG("Failed to open the given dir path");
         return ERR_NOT_ACCESSIBLE;
     }
 
@@ -491,7 +497,6 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
 
         strncpy_s(fName + len, FILENAME_MAX, ent->d_name, FILENAME_MAX - len);
         if (lstat(fName, &statInfo) == -1) {
-            MEDIA_ERR_LOG("Obtaining Stat info failed");
             continue;
         }
 
@@ -553,6 +558,7 @@ bool MediaScanner::CheckSkipScanList(const string &path)
         return true;
     }
 
+    MEDIA_INFO_LOG("The skip list does not contain the given path");
     return false;
 }
 
@@ -564,6 +570,7 @@ bool MediaScanner::IsDirHidden(const string &path)
     if (!path.empty()) {
         string dirName = ScannerUtils::GetFileNameFromUri(path);
         if (!dirName.empty() && dirName.at(0) == '.') {
+            MEDIA_ERR_LOG("Directory is of hidden type");
             return true;
         }
 
