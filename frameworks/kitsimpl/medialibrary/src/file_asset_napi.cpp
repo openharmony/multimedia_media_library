@@ -63,6 +63,7 @@ FileAssetNapi::FileAssetNapi()
     filePath_ = DEFAULT_MEDIA_PATH;
     displayName_ = DEFAULT_MEDIA_NAME;
     duration_ = DEFAULT_MEDIA_DURATION;
+    parent_ = DEFAULT_PARENT_ID;
 }
 
 FileAssetNapi::~FileAssetNapi()
@@ -814,7 +815,7 @@ napi_value FileAssetNapi::JSParent(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value jsResult = nullptr;
     FileAssetNapi* obj = nullptr;
-    string parent = "";
+    int32_t  parent;
     napi_value thisVar = nullptr;
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
@@ -825,7 +826,7 @@ napi_value FileAssetNapi::JSParent(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         parent = obj->parent_;
-        napi_create_string_utf8(env, parent.c_str(), NAPI_AUTO_LENGTH, &jsResult);
+        napi_create_int32(env, parent, &jsResult);
     }
     return jsResult;
 }

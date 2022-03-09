@@ -98,7 +98,7 @@ private:
     std::string displayName_;
     std::string relativePath_;
     std::string filePath_;
-    std::string parent_;
+    int32_t parent_;
 
     int64_t size_;
     int64_t dateAdded_;

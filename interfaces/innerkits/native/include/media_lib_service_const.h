@@ -95,6 +95,7 @@ const int32_t COMMON_DATA_READ_FAIL = 15;
 const int32_t IPC_INTERFACE_TOKEN_FAIL = 16;
 
 const int32_t DEFAULT_MEDIA_ID = 0;
+const int32_t DEFAULT_PARENT_ID = 0;
 const uint64_t DEFAULT_MEDIA_SIZE = 0;
 const uint64_t DEFAULT_MEDIA_DATE_ADDED = 0;
 const uint64_t DEFAULT_MEDIA_DATE_MODIFIED = 0;
