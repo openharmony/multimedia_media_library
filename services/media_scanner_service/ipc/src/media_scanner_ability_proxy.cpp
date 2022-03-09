@@ -91,7 +91,7 @@ bool MediaScannerAbilityProxy::IsScannerRunning()
     int32_t error = Remote()->SendRequest(MEDIA_GET_SCAN_STATUS, data, reply, option);
     if (error != ERR_NONE) {
         MEDIA_ERR_LOG("%{public}s:: IsScannerRunning IPC failed, error: %{public}d", __func__, error);
-        return SCAN_IPC_ERR;
+        return false;
     }
 
     auto result(false);
