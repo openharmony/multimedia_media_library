@@ -104,6 +104,7 @@ void MediaScannerClient::Release()
     // If already disconnected, return from here
     std::lock_guard<std::mutex> lock(mutex_);
     if (!IsScannerServiceConnected()) {
+        MEDIA_ERR_LOG("Scanner Service is not connected");
         return;
     }
 
