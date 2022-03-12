@@ -47,8 +47,8 @@ public:
     int32_t GetOrientation() const;
     Media::MediaType GetMediaType() const;
     std::string GetNetworkId() const;
-    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
-    static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
+    static thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
+    static thread_local std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
 private:
     static void FileAssetNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value FileAssetNapiConstructor(napi_env env, napi_callback_info info);
@@ -125,8 +125,8 @@ private:
     napi_env env_;
     napi_ref wrapper_;
 
-    static napi_ref sConstructor_;
-    static FileAsset *sFileAsset_;
+    static thread_local napi_ref sConstructor_;
+    static thread_local FileAsset *sFileAsset_;
 };
 struct FileAssetAsyncContext {
     napi_env env;

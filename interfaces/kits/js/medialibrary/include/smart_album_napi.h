@@ -15,7 +15,6 @@
 
 #ifndef SMART_ALBUM_NAPI_H
 #define SMART_ALBUM_NAPI_H
-
 #include <vector>
 #include <algorithm>
 
@@ -52,7 +51,7 @@ public:
     SmartAlbumNapi();
     ~SmartAlbumNapi();
 
-    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
+    static thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
 
 private:
     static void SmartAlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -84,11 +83,11 @@ private:
     std::string albumCoverUri_;
 
     std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper_;
-    static SmartAlbumAsset *sAlbumData_;
+    static thread_local SmartAlbumAsset *sAlbumData_;
     napi_env env_;
     napi_ref wrapper_;
 
-    static napi_ref sConstructor_;
+    static thread_local napi_ref sConstructor_;
 };
 
 struct SmartAlbumNapiAsyncContext {

@@ -26,9 +26,9 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-napi_ref FetchFileResultNapi::sConstructor_ = nullptr;
-FetchResult *FetchFileResultNapi::sFetchFileResult_ = nullptr;
-std::shared_ptr<AppExecFwk::DataAbilityHelper> FetchFileResultNapi::sAbilityHelper = nullptr;
+thread_local napi_ref FetchFileResultNapi::sConstructor_ = nullptr;
+thread_local FetchResult *FetchFileResultNapi::sFetchFileResult_ = nullptr;
+thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> FetchFileResultNapi::sAbilityHelper = nullptr;
 
 FetchFileResultNapi::FetchFileResultNapi()
     : env_(nullptr), wrapper_(nullptr) {}
