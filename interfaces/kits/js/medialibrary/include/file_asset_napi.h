@@ -129,7 +129,6 @@ private:
     static thread_local FileAsset *sFileAsset_;
 };
 struct FileAssetAsyncContext {
-    napi_env env;
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;

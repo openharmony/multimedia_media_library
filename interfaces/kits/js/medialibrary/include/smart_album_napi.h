@@ -91,7 +91,6 @@ private:
 };
 
 struct SmartAlbumNapiAsyncContext {
-    napi_env env;
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;

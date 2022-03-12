@@ -63,7 +63,6 @@ private:
 
 class FetchFileResultAsyncContext {
 public:
-    napi_env env;
     napi_async_work work;
     napi_ref callbackRef;
     napi_deferred deferred;

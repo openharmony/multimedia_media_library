@@ -221,7 +221,6 @@ private:
 };
 
 struct MediaLibraryAsyncContext {
-    napi_env env;
     int32_t error = ERR_DEFAULT;
     napi_async_work work;
     napi_deferred deferred;
