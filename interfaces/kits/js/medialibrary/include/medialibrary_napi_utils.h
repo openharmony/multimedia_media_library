@@ -228,7 +228,7 @@ public:
     {
         if (!prefix.empty()) {
             if (!selection.empty()) {
-                selection = prefix + "AND " + selection;
+                selection = prefix + "AND (" + selection + ")";
             } else {
                 selection = prefix;
             }
