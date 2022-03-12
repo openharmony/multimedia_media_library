@@ -97,9 +97,9 @@ private:
     bool startCreateFlag = false;
     bool startModifyFlag = false;
 
-    static napi_ref sConstructor_;
-    static Media::MediaAsset *sMediaAsset_;
-    static Media::IMediaLibraryClient *sMediaLibrary_;
+    static thread_local napi_ref sConstructor_;
+    static thread_local Media::MediaAsset *sMediaAsset_;
+    static thread_local Media::IMediaLibraryClient *sMediaLibrary_;
 };
 
 struct MediaAssetAsyncContext {

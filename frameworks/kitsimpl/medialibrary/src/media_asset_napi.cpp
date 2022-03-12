@@ -25,9 +25,9 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-napi_ref MediaAssetNapi::sConstructor_ = nullptr;
-Media::MediaAsset *MediaAssetNapi::sMediaAsset_ = nullptr;
-Media::IMediaLibraryClient *MediaAssetNapi::sMediaLibrary_ = nullptr;
+thread_local napi_ref MediaAssetNapi::sConstructor_ = nullptr;
+thread_local Media::MediaAsset *MediaAssetNapi::sMediaAsset_ = nullptr;
+thread_local Media::IMediaLibraryClient *MediaAssetNapi::sMediaLibrary_ = nullptr;
 
 MediaAssetNapi::MediaAssetNapi()
     : env_(nullptr), wrapper_(nullptr)
