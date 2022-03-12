@@ -38,6 +38,7 @@ namespace {
     std::mutex g_mutex;
     std::condition_variable g_condVar;
     string g_prefixPath = "/storage/media/local/files";
+    const mode_t CHOWN_RW_UG = 0660;
 } // namespace
 
 ApplicationCallback::ApplicationCallback(const std::string &testCaseName) : testCaseName_(testCaseName) {}
@@ -73,16 +74,11 @@ void MediaScannerUnitTest::TearDownTestCase(void)
     HiLog::Info(LABEL, "TearDownTestCase invoked");
     g_msInstance = nullptr;
 
-    if (remove("/storage/media/100/local/files/gtest_scanDir/gtest_Audio1.aac") != 0
-        || remove("/storage/media/100/local/files/gtest_scanDir/gtest_Image1.jpg") != 0
-        || remove("/storage/media/100/local/files/gtest_scanDir/gtest_Video1.mp4") != 0
-        || remove("/storage/media/100/local/files/gtest_scanDir/gtest_Text1.txt") != 0
-        || remove("/storage/media/100/local/files/gtest_scanDir/.HiddenFile") != 0
-        || remove("/storage/media/100/local/files/gtest_scanDir/FolderWithNomedia/.nomedia") != 0
-        || remove("/storage/media/100/local/files/gtest_scanDir/FolderWithNomedia") != 0
-        || remove("/storage/media/100/local/files/gtest_scanDir/.HiddenFolder/sample_textFile.txt") != 0
-        || remove("/storage/media/100/local/files/gtest_scanDir/.HiddenFolder") != 0
-        || remove("/storage/media/100/local/files/gtest_scanDir") != 0) {
+    if (remove("/storage/media/100/local/files/gtest_Audio1.aac") != 0
+        || remove("/storage/media/100/local/files/gtest_Image1.jpg") != 0
+        || remove("/storage/media/100/local/files/gtest_Video1.mp4") != 0
+        || remove("/storage/media/100/local/files/gtest_Text1.txt") != 0
+        || remove("/storage/media/100/local/files/.HiddenFile") != 0) {
         HiLog::Error(LABEL, "Test files deletion failed");
     }
 }
@@ -92,9 +88,33 @@ void MediaScannerUnitTest::SetUp() {}
 
 void MediaScannerUnitTest::TearDown(void) {}
 
+bool CreateFile(const string &filePath)
+{
+    HiLog::Info(LABEL, "Creating new file: %{public}s", filePath.c_str());
+    bool errCode = false;
+
+    if (filePath.empty()) {
+        return errCode;
+    }
+
+    ofstream file(filePath);
+    if (!file) {
+        MEDIA_ERR_LOG("Output file path could not be created");
+        return errCode;
+    }
+
+    if (chmod(filePath.c_str(), CHOWN_RW_UG) == 0) {
+        errCode = true;
+    }
+
+    file.close();
+
+    return errCode;
+}
+
 /*
  * Feature: MediaScanner
- * Function: Scan a directory with empty content
+ * Function: Scan a directory with media files
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
@@ -102,7 +122,8 @@ void MediaScannerUnitTest::TearDown(void) {}
  */
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_scanDir";
+    string path = g_prefixPath;
+    HiLog::Info(LABEL, "ScanDir test case for: %{public}s", path.c_str());
 
     EXPECT_EQ((g_msInstance != nullptr), true);
     int result;
@@ -124,7 +145,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
 
 /*
  * Feature : MediaScannerUnitTest
- * Function : Scan a image file with 0 size
+ * Function : Scan an image file
  * SubFunction : NA
  * FunctionPoints : NA
  * EnvContions : NA
@@ -132,7 +153,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
  */
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_scanDir/gtest_Image1.jpg";
+    string path = g_prefixPath + "/gtest_Image1.jpg";
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
+
+    bool createRes = CreateFile("/storage/media/100/local/files/gtest_Image1.jpg");
+    EXPECT_EQ(createRes, true);
 
     // scan the file
     int result;
@@ -163,7 +188,11 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
  */
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanVideo_Test_001, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_scanDir/gtest_Video1.mp4";
+    string path = g_prefixPath + "/gtest_Video1.mp4";
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
+
+    bool createRes = CreateFile("/storage/media/100/local/files/gtest_Video1.mp4");
+    EXPECT_EQ(createRes, true);
 
     int result;
     std::string testcaseName("mediascanner_ScanVideo_Test_001");
@@ -185,7 +214,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanVideo_Test_001, TestSize.Level0)
 
 /*
  * Feature : MediaScannerUnitTest
- * Function : Scan a audio file
+ * Function : Scan an audio file
  * SubFunction : NA
  * FunctionPoints : NA
  * EnvContions : NA
@@ -193,7 +222,11 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanVideo_Test_001, TestSize.Level0)
  */
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanAudio_Test_001, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_scanDir/gtest_Audio1.aac";
+    string path = g_prefixPath + "/gtest_Audio1.aac";
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
+
+    bool createRes = CreateFile("/storage/media/100/local/files/gtest_Audio1.aac");
+    EXPECT_EQ(createRes, true);
 
     int result;
     std::string testcaseName("mediascanner_ScanAudio_Test_001");
@@ -223,7 +256,11 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanAudio_Test_001, TestSize.Level0)
  */
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanTextFile_Test_001, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_scanDir/gtest_Text1.txt";
+    string path = g_prefixPath + "/gtest_Text1.txt";
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
+
+    bool createRes = CreateFile("/storage/media/100/local/files/gtest_Text1.txt");
+    EXPECT_EQ(createRes, true);
 
     int result;
     std::string testcaseName("mediascanner_ScanTextFile_Test_001");
@@ -253,7 +290,11 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanTextFile_Test_001, TestSize.Leve
  */
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanHiddenFile_Test_001, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_scanDir/.HiddenFile";
+    string path = g_prefixPath + "/.HiddenFile";
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
+
+    bool createRes = CreateFile("/storage/media/100/local/files/.HiddenFile");
+    EXPECT_EQ(createRes, true);
 
     int result;
     std::string testcaseName("mediascanner_ScanHiddenFile_Test_001");
@@ -283,7 +324,9 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanHiddenFile_Test_001, TestSize.Le
  */
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_002, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_scanDir";
+    string path = g_prefixPath;
+    HiLog::Info(LABEL, "ScanDir test case for: %{public}s", path.c_str());
+
     int result;
     std::string testcaseName("mediascanner_ScanDir_test_002");
     g_isCallbackReceived = false;
@@ -305,38 +348,6 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_002, TestSize.Level0)
 
 /*
  * Feature: MediaScanner
- * Function: Scan a directory with .nomedia file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
-HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_Nomedia_test_001, TestSize.Level0)
-{
-    string path = g_prefixPath + "/gtest_scanDir/FolderWithNomedia";
-
-    // Scan the hidden folder now
-    int result;
-    std::string testcaseName("mediascanner_ScanDir_Nomedia_test_001");
-    g_isCallbackReceived = false;
-    g_callbackStatus = -1;
-    g_callbackName = "";
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanDir(path, appCallback);
-    EXPECT_EQ(result, g_filescanstatus);
-
-    if (result == 0) {
-        // Wait here for callback. If not callback for 2 mintues, will skip this step
-        WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, ERR_NOT_ACCESSIBLE);
-        EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
-    }
-}
-
-/*
- * Feature: MediaScanner
  * Function: Scan a directory with path provided as relative, must convert to canonical form
  * SubFunction: NA
  * FunctionPoints: NA
@@ -345,7 +356,9 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_Nomedia_test_001, TestSize.
  */
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_CononicalPathtest_001, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_scanDir/FolderWithNomedia/..";
+    string path = g_prefixPath + "/../files";
+    HiLog::Info(LABEL, "ScanDir test case for: %{public}s", path.c_str());
+
     int result;
     std::string testcaseName("mediascanner_ScanDir_CononicalPathtest_001");
     g_isCallbackReceived = false;
@@ -367,55 +380,58 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_CononicalPathtest_001, Test
 
 /*
  * Feature: MediaScanner
- * Function: Scan a directory which is hidden (starts with a .)
+ * Function: Scan an image file with path provided as relative, must convert to canonical form
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
  * CaseDescription:
  */
-HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_HiddenDirtest_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_001, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_scanDir/.HiddenFolder";
+    string path = g_prefixPath + "/../files/gtest_Image1.jpg";
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
 
     int result;
-    std::string testcaseName("mediascanner_ScanDir_HiddenDirtest_001");
+    std::string testcaseName("mediascanner_ScanFile_CononicalPathtest_001");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
     EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanDir(path, appCallback);
+    result = g_msInstance->ScanFile(path, appCallback);
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
         WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, ERR_NOT_ACCESSIBLE);
+        EXPECT_EQ(g_callbackStatus, g_filescanstatus);
         EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
     }
 }
 
 /*
  * Feature: MediaScanner
- * Function: Scan a directory with various file types (including hidden file), hidden and normal folders
+ * Function: Scan a text file with path provided as relative, must convert to canonical form
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
  * CaseDescription:
  */
-HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_RecursiveScan_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_002, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_scanDir";
+    string path = g_prefixPath + "/../files/gtest_Text1.txt";
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
+
     int result;
-    std::string testcaseName("mediascanner_ScanDir_RecursiveScan_001");
+    std::string testcaseName("mediascanner_ScanFile_CononicalPathtest_002");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
     EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanDir(path, appCallback);
+    result = g_msInstance->ScanFile(path, appCallback);
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
