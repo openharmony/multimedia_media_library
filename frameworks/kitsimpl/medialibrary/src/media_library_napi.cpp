@@ -1327,9 +1327,8 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!context->networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-        HiLog::Debug(LABEL, "queryUri is = %{public}s", queryUri.c_str());
     }
-
+    HiLog::Debug(LABEL, "queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
     shared_ptr<AbsSharedResultSet> resultSet;
 
