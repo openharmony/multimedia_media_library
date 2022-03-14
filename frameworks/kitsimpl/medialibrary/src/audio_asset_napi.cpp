@@ -32,9 +32,9 @@ namespace AudioAssetConstants {
 
 namespace OHOS {
 namespace Media {
-napi_ref AudioAssetNapi::sConstructor_ = nullptr;
-Media::AudioAsset *AudioAssetNapi::sAudioAsset_ = nullptr;
-Media::IMediaLibraryClient *AudioAssetNapi::sMediaLibrary_ = nullptr;
+thread_local napi_ref AudioAssetNapi::sConstructor_ = nullptr;
+thread_local Media::AudioAsset *AudioAssetNapi::sAudioAsset_ = nullptr;
+thread_local Media::IMediaLibraryClient *AudioAssetNapi::sMediaLibrary_ = nullptr;
 
 AudioAssetNapi::AudioAssetNapi()
     : env_(nullptr), wrapper_(nullptr)

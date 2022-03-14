@@ -37,7 +37,7 @@ public:
 
     std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper() const;
 
-    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
+    static thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
 
 private:
     static void FetchFileResultNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -56,14 +56,13 @@ private:
     napi_ref wrapper_;
     FetchResult *fetchFileResult_ = nullptr;
 
-    static napi_ref sConstructor_;
-    static FetchResult *sFetchFileResult_;
+    static thread_local napi_ref sConstructor_;
+    static thread_local FetchResult *sFetchFileResult_;
     std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper_;
 };
 
 class FetchFileResultAsyncContext {
 public:
-    napi_env env;
     napi_async_work work;
     napi_ref callbackRef;
     napi_deferred deferred;
