@@ -64,6 +64,36 @@ MediaLibraryThumbnail::MediaLibraryThumbnail()
     }
 }
 
+void ParseStringResult(shared_ptr<ResultSet> resultSet,
+                       int index, string &data, int &errorCode)
+{
+    bool isNull = true;
+    errorCode = resultSet->IsColumnNull(index, isNull);
+    if (errorCode != E_OK) {
+        MEDIA_ERR_LOG("Failed to check column %{public}d null %{public}d", index, errorCode);
+    }
+
+    if (!isNull) {
+        errorCode = resultSet->GetString(index, data);
+        if (errorCode != E_OK) {
+            MEDIA_ERR_LOG("Failed to get column %{public}d string %{public}d", index, errorCode);
+        }
+    } else {
+        MEDIA_INFO_LOG("Get column %{public}d null", index);
+    }
+}
+
+void ParseQueryResult(shared_ptr<ResultSet> resultSet,
+                      ThumbnailRdbData &data, int &errorCode)
+{
+    ParseStringResult(resultSet, NUM_0, data.id, errorCode);
+    ParseStringResult(resultSet, NUM_1, data.path, errorCode);
+    ParseStringResult(resultSet, NUM_2, data.thumbnailKey, errorCode);
+    ParseStringResult(resultSet, NUM_3, data.lcdKey, errorCode);
+    data.mediaType = MediaType::MEDIA_TYPE_DEFAULT;
+    errorCode = resultSet->GetInt(NUM_4, data.mediaType);
+}
+
 bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
                                             ThumbnailData &data,
                                             std::string &key)
@@ -187,46 +217,63 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
     return true;
 }
 
-string MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &opts,
-                                              Size &size)
+shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &opts, Size &size)
 {
-    string res;
+    shared_ptr<AbsSharedResultSet> queryResultSet;
     MEDIA_INFO_LOG("MediaLibraryThumbnail::GetThumbnailKey IN");
     if (singleKvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("KvStore is not init");
-        return res;
+        return nullptr;
     }
 
     ThumbnailData thumbnailData;
     int errorCode;
-    if (!QueryThumbnailInfo(opts, thumbnailData, errorCode)) {
-        return res;
+    queryResultSet = QueryThumbnailInfo(opts, thumbnailData, errorCode);
+    if (queryResultSet == nullptr) {
+        return queryResultSet;
+    }
+
+    // Distribute data
+    if (MEDIALIBRARY_TABLE.compare(opts.table) != 0) {
+        return queryResultSet;
     }
 
     bool isFromLcd = isThumbnailFromLcd(size);
-    if (isFromLcd && thumbnailData.lcdKey.empty()) {
-        if (MEDIALIBRARY_TABLE.compare(opts.table) != 0) {
-            return res;
-        }
-        CreateLcd(opts, thumbnailData.lcdKey);
-    } else if (thumbnailData.thumbnailKey.empty()) {
-        if (MEDIALIBRARY_TABLE.compare(opts.table) != 0) {
-            return res;
-        }
-        CreateThumbnail(opts, thumbnailData.thumbnailKey);
-    }
-
     if (isFromLcd) {
-        return thumbnailData.lcdKey;
+        if (thumbnailData.lcdKey.empty()) {
+            CreateLcd(opts, thumbnailData.lcdKey);
+        } else {
+            return queryResultSet;
+        }
+    } else {
+        if (thumbnailData.thumbnailKey.empty()) {
+            CreateThumbnail(opts, thumbnailData.thumbnailKey);
+        } else {
+            return queryResultSet;
+        }
     }
 
-    return thumbnailData.thumbnailKey;
+    queryResultSet = QueryThumbnailSet(opts);
+    return queryResultSet;
 }
 
 unique_ptr<PixelMap> MediaLibraryThumbnail::GetThumbnailByRdb(ThumbRdbOpt &opts,
                                                               Size &size, const std::string &uri)
 {
-    string key = GetThumbnailKey(opts, size);
+    int errorCode;
+    shared_ptr<AbsSharedResultSet> resultSet = GetThumbnailKey(opts, size);
+    ThumbnailRdbData rdbData;
+    ParseQueryResult(resultSet, rdbData, errorCode);
+
+    if (errorCode != E_OK) {
+        MEDIA_ERR_LOG("Failed GetThumbnailKey errorCode : %{public}d", errorCode);
+        return nullptr;
+    }
+
+    string key = rdbData.thumbnailKey;
+    if (isThumbnailFromLcd(size)) {
+        key = rdbData.lcdKey;
+    }
     if (key.empty()) {
         return nullptr;
     }
@@ -463,39 +510,32 @@ bool MediaLibraryThumbnail::SaveImage(string &key, vector<uint8_t> &image)
     return true;
 }
 
-void ParseStringResult(shared_ptr<ResultSet> resultSet,
-                       int index, string &data, int &errorCode)
+shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailSet(ThumbRdbOpt &opts)
 {
-    bool isNull = true;
-    errorCode = resultSet->IsColumnNull(index, isNull);
-    if (errorCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to check column %{public}d null %{public}d", index, errorCode);
-    }
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailSet IN row [%{public}s]",
+                   opts.row.c_str());
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_THUMBNAIL,
+        MEDIA_DATA_DB_LCD,
+        MEDIA_DATA_DB_MEDIA_TYPE
+    };
 
-    if (!isNull) {
-        errorCode = resultSet->GetString(index, data);
-        if (errorCode != E_OK) {
-            MEDIA_ERR_LOG("Failed to get column %{public}d string %{public}d", index, errorCode);
-        }
-    } else {
-        MEDIA_INFO_LOG("Get column %{public}d null", index);
-    }
+    vector<string> selectionArgs;
+    string strQueryCondition = MEDIA_DATA_DB_ID + "=" + opts.row;
+
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.SetWhereClause(strQueryCondition);
+    rdbPredicates.SetWhereArgs(selectionArgs);
+
+    shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailSet OUT");
+    return resultSet;
 }
 
-void ParseQueryResult(shared_ptr<ResultSet> resultSet,
-                      ThumbnailRdbData &data, int &errorCode)
-{
-    ParseStringResult(resultSet, NUM_0, data.id, errorCode);
-    ParseStringResult(resultSet, NUM_1, data.path, errorCode);
-    ParseStringResult(resultSet, NUM_2, data.thumbnailKey, errorCode);
-    ParseStringResult(resultSet, NUM_3, data.lcdKey, errorCode);
-    data.mediaType = MediaType::MEDIA_TYPE_DEFAULT;
-    errorCode = resultSet->GetInt(NUM_4, data.mediaType);
-}
-
-bool MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
-                                               ThumbnailData &data,
-                                               int &errorCode)
+shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
+                                                                         ThumbnailData &data, int &errorCode)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailInfo IN row [%{public}s]",
                    opts.row.c_str());
@@ -514,37 +554,37 @@ bool MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
 
-    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
+    shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     int rowCount = 0;
     errorCode = resultSet->GetRowCount(rowCount);
     if (errorCode != E_OK) {
         MEDIA_ERR_LOG("Failed to get row count %{public}d", errorCode);
-        return false;
+        return nullptr;
     }
 
     if (rowCount <= 0) {
         MEDIA_ERR_LOG("No match! %{public}s", rdbPredicates.ToString().c_str());
         errorCode = E_EMPTY_VALUES_BUCKET;
-        return false;
+        return nullptr;
     }
 
     errorCode = resultSet->GoToFirstRow();
     if (errorCode != E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", errorCode);
-        return false;
+        return nullptr;
     }
 
     int columnCount = 0;
     errorCode = resultSet->GetColumnCount(columnCount);
     if (errorCode != E_OK) {
         MEDIA_ERR_LOG("Failed to get column count %{public}d", errorCode);
-        return false;
+        return nullptr;
     }
 
     if (columnCount <= 0) {
         MEDIA_ERR_LOG("No column!");
         errorCode = E_EMPTY_VALUES_BUCKET;
-        return false;
+        return nullptr;
     }
 
     ThumbnailRdbData rdbData;
@@ -554,7 +594,7 @@ bool MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
     ThumbnailDataCopy(data, rdbData);
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailInfo OUT");
-    return true;
+    return resultSet;
 }
 
 bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
