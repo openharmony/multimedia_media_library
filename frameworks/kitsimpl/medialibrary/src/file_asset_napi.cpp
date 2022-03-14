@@ -815,7 +815,7 @@ napi_value FileAssetNapi::JSParent(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value jsResult = nullptr;
     FileAssetNapi* obj = nullptr;
-    int32_t  parent;
+    int32_t parent;
     napi_value thisVar = nullptr;
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
@@ -1279,7 +1279,12 @@ static unique_ptr<PixelMap> QueryThumbnail(
     resultSet->GoToFirstRow();
 
     string id = GetStringInfo(resultSet, PARAM0);
-    string thumbnailKey = GetStringInfo(resultSet, PARAM1);
+    string thumbnailKey;
+    if (!thumbnailHelper->isThumbnailFromLcd(size)) {
+        thumbnailKey = GetStringInfo(resultSet, PARAM2);
+    } else {
+        thumbnailKey = GetStringInfo(resultSet, PARAM3);
+    }
 
     if (to_string(fileId) != id) {
         HiLog::Error(LABEL, "Query thumbnail id error as %{public}s", id.c_str());
@@ -1297,6 +1302,21 @@ static unique_ptr<PixelMap> QueryThumbnail(
     return thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
 }
 
+static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
+{
+    if (context->objectInfo->sAbilityHelper_ != nullptr &&
+        context->objectInfo->sThumbnailHelper_ != nullptr) {
+        int32_t fileId = context->objectInfo->GetFileId();
+        std::string uri = context->objectInfo->GetFileUri();
+        context->pixelmap = QueryThumbnail(context->objectInfo->sAbilityHelper_,
+            context->objectInfo->sThumbnailHelper_, fileId, uri,
+            context->thumbWidth, context->thumbHeight);
+    } else {
+        context->error = ERR_INVALID_OUTPUT;
+        MEDIA_INFO_LOG("Ability helper is null");
+    }
+}
+
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
                                            FileAssetAsyncContext* context)
 {
@@ -1305,16 +1325,9 @@ static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->objectInfo->sAbilityHelper_ != nullptr &&
-        context->objectInfo->sThumbnailHelper_ != nullptr) {
-        int32_t fileId = context->objectInfo->GetFileId();
-        std::string uri = context->objectInfo->GetFileUri();
-        shared_ptr<PixelMap> pixelmap = QueryThumbnail(context->objectInfo->sAbilityHelper_,
-            context->objectInfo->sThumbnailHelper_, fileId, uri,
-            context->thumbWidth, context->thumbHeight);
-
-        if (pixelmap != nullptr) {
-            jsContext->data = Media::PixelMapNapi::CreatePixelMap(env, pixelmap);
+    if (context->error == ERR_DEFAULT) {
+        if (context->pixelmap != nullptr) {
+            jsContext->data = Media::PixelMapNapi::CreatePixelMap(env, context->pixelmap);
             napi_get_undefined(env, &jsContext->error);
             jsContext->status = true;
         } else {
@@ -1418,7 +1431,10 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetThumbnail");
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void* data) {
+                auto context = static_cast<FileAssetAsyncContext*>(data);
+                JSGetThumbnailExecute(context);
+            },
             reinterpret_cast<CompleteCallback>(JSGetThumbnailCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
