@@ -144,6 +144,7 @@ struct FileAssetAsyncContext {
     bool isFavourite = false;
     bool isTrash = false;
     std::string networkId;
+    std::shared_ptr<PixelMap> pixelmap;
 };
 } // namespace Media
 } // namespace OHOS
