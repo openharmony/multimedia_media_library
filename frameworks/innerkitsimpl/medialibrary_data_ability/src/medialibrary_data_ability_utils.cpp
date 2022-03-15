@@ -529,5 +529,21 @@ string MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(const string &uri)
 
     return deviceId;
 }
+string MediaLibraryDataAbilityUtils::GetDistributedAlbumSql(const string &strQueryCondition, const string &tableName)
+{
+    string distributedAlbumSql;
+    if (!strQueryCondition.empty()) {
+        distributedAlbumSql = "SELECT * FROM ( " + DISTRIBUTED_ABLUM_COLUMNS + " FROM " +
+        tableName + " " + FILE_TABLE + ", " + tableName + " " + ABLUM_TABLE +
+        DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY + " )" +
+        " WHERE " + strQueryCondition;
+    } else {
+        distributedAlbumSql = "SELECT * FROM ( " + DISTRIBUTED_ABLUM_COLUMNS + " FROM " +
+        tableName + " " + FILE_TABLE + ", " + tableName + " " + ABLUM_TABLE +
+        DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY + " )";
+    }
+    MEDIA_INFO_LOG("GetDistributedAlbumSql distributedAlbumSql = %{public}s", distributedAlbumSql.c_str());
+    return distributedAlbumSql;
+}
 } // namespace Media
 } // namespace OHOS

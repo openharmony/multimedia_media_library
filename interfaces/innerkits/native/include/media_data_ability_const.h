@@ -15,7 +15,7 @@
 
 #ifndef MEDIA_DATA_ABILITY_CONST_H
 #define MEDIA_DATA_ABILITY_CONST_H
-
+#include "media_lib_service_const.h"
 namespace OHOS {
 namespace Media {
 const int32_t DATA_ABILITY_SUCCESS = 0;
@@ -255,17 +255,48 @@ const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_THUMBNAIL + ", "
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID
-                                      + " FROM Files "+ FILE_TABLE + ", "
+                                      + " FROM Files " + FILE_TABLE + ", "
                                       + " Files " + ABLUM_TABLE
                                       + " WHERE "
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID + " = "
-                                      + ABLUM_TABLE + "."+ MEDIA_DATA_DB_ID
+                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AND "
+                                      + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + " <> "
+                                      + std::to_string(MEDIA_TYPE_ALBUM) + " AND "
+                                      + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + " <> "
+                                      + std::to_string(MEDIA_TYPE_FILE)
                                       + " GROUP BY "
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID +", "
-                                      + FILE_TABLE + "." +MEDIA_DATA_DB_BUCKET_NAME + ", "
+                                      + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_NAME + ", "
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
-
+const std::string DISTRIBUTED_ABLUM_COLUMNS = "SELECT count( " + FILE_TABLE + "."
+                                               + MEDIA_DATA_DB_DATE_TRASHED + "= 0 OR NULL) AS "
+                                               + MEDIA_DATA_DB_COUNT + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_RELATIVE_PATH + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AS "
+                                               + MEDIA_DATA_DB_BUCKET_ID + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_FILE_PATH + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + " AS "
+                                               + MEDIA_DATA_DB_BUCKET_NAME + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_DESCRIPTION + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_ADDED + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_MODIFIED + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_THUMBNAIL + ", "
+                                               + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
+const std::string DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY = " WHERE "
+                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID + " = "
+                                                        + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AND "
+                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + " <> "
+                                                        + std::to_string(MEDIA_TYPE_ALBUM) + " AND "
+                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + " <> "
+                                                        + std::to_string(MEDIA_TYPE_FILE)
+                                                        + " GROUP BY "
+                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID +", "
+                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_NAME + ", "
+                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
+                                                        + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
 const std::string SMARTALBUM_DB_ID = "album_id";
 const std::string SMARTALBUM_DB_NAME = "name";
 const std::string SMARTALBUM_DB_DESCRIPTION = "description";

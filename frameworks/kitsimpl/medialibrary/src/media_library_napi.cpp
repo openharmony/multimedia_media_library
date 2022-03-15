@@ -1523,17 +1523,15 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<NativeRdb::AbsSharedResultSe
 {
     // Get album id index and value
     albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet, TYPE_INT32)));
+
     // Get album title index and value
-    if (networkId.empty()) {
-        albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet, TYPE_STRING)));
-    } else {
-        albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_NAME,
-                                                             resultSet, TYPE_STRING)));
-    }
+    albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet, TYPE_STRING)));
+
     // Get album asset count index and value
     albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet, TYPE_INT32)));
     albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) +
         "/" + to_string(albumData->GetAlbumId()));
+    // Get album relativePath index and value
     albumData->SetAlbumRelativePath(get<string>(GetValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
                                                                  resultSet, TYPE_STRING)));
     albumData->SetAlbumDateModified(get<int64_t>(GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED,

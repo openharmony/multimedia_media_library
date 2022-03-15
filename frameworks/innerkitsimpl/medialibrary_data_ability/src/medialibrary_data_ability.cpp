@@ -382,7 +382,7 @@ shared_ptr<AbsSharedResultSet> QueryFile(string strQueryCondition,
 string ObtionCondition(string &strQueryCondition, const vector<string> &whereArgs)
 {
     for (string args : whereArgs) {
-        size_t pos = strQueryCondition.rfind('?');
+        size_t pos = strQueryCondition.find('?');
         MEDIA_INFO_LOG("obtionCondition pos = %{public}d", (int)pos);
         if (pos != string::npos) {
             MEDIA_INFO_LOG("ObtionCondition before = %{public}s", strQueryCondition.c_str());
@@ -404,16 +404,11 @@ shared_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
         string tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
         MEDIA_INFO_LOG("tableName is %{public}s", tableName.c_str());
         AbsRdbPredicates mediaLibAbsPredAlbum(tableName);
-        string isAlbumCondition = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + std::to_string(MEDIA_TYPE_ALBUM) +
-            " AND " + std::to_string(MEDIA_TYPE_FILE) + " AND " + MEDIA_DATA_DB_BUCKET_ID + " <> 0";
         if (!strQueryCondition.empty()) {
             strQueryCondition = ObtionCondition(strQueryCondition, predicates.GetWhereArgs());
-            isAlbumCondition = strQueryCondition + " AND " + isAlbumCondition;
         }
-        MEDIA_INFO_LOG("QueryAlbum = %{public}s", isAlbumCondition.c_str());
-        string countStr = "SELECT count( date_trashed = 0 OR NULL ) AS count";
-        queryResultSet = rdbStore->QuerySql(countStr + ",bucket_id,bucket_display_name,self_id,media_type FROM "
-        + tableName + " WHERE " + isAlbumCondition +" GROUP BY bucket_id, media_type, bucket_display_name, self_id");
+        string distributedAlbumSql = MediaLibraryDataAbilityUtils::GetDistributedAlbumSql(strQueryCondition, tableName);
+        queryResultSet = rdbStore->QuerySql(distributedAlbumSql);
     } else {
             AbsRdbPredicates mediaLibAbsPredAlbum(ABLUM_VIEW_NAME);
         if (strQueryCondition.empty()) {
