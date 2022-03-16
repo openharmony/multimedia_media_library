@@ -35,8 +35,7 @@ using namespace OHOS::DistributedKv;
 
 namespace OHOS {
 namespace Media {
-const std::string MediaLibraryDataAbility::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
-const std::string MediaLibraryDataAbility::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
+namespace {
 const std::unordered_set<int32_t> UID_FREE_CHECK {
     1006        // file_manager:x:1006:
 };
@@ -47,6 +46,10 @@ const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
 const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {
     "com.ohos.screenshot"
 };
+std::mutex bundleMgrMutex;
+}
+const std::string MediaLibraryDataAbility::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
+const std::string MediaLibraryDataAbility::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 REGISTER_AA(MediaLibraryDataAbility);
 
 void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
@@ -979,40 +982,43 @@ bool MediaLibraryDataAbility::CheckFileNameValid(const ValuesBucket &value)
     }
     return true;
 }
-sptr<AppExecFwk::IBundleMgr> GetSysBundleManager_()
-{
-    auto bundleObj =
-        OHOS::DelayedSingleton<SaMgrClient>::GetInstance()->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
-    if (bundleObj == nullptr) {
-        MEDIA_ERR_LOG("failed to get bundle manager service");
-        return nullptr;
-    }
-    sptr<AppExecFwk::IBundleMgr> bms = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
-    return bms;
-}
 
 sptr<AppExecFwk::IBundleMgr> MediaLibraryDataAbility::GetSysBundleManager()
 {
-    return GetSysBundleManager_();
+    if (bundleMgr_ == nullptr) {
+        std::lock_guard<std::mutex> lock(bundleMgrMutex);
+        if (bundleMgr_ == nullptr) {
+            auto saMgr = OHOS::DelayedSingleton<SaMgrClient>::GetInstance();
+            if (saMgr == nullptr) {
+                MEDIA_ERR_LOG("failed to get SaMgrClient::GetInstance");
+                return nullptr;
+            }
+            auto bundleObj = saMgr->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+            if (bundleObj == nullptr) {
+                MEDIA_ERR_LOG("failed to get GetSystemAbility");
+                return nullptr;
+            }
+            auto bundleMgr = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
+            if (bundleMgr == nullptr) {
+                MEDIA_ERR_LOG("failed to iface_cast");
+                return nullptr;
+            }
+            bundleMgr_ = bundleMgr;
+        }
+    }
+    return bundleMgr_;
 }
 
-static int GetClientUid()
+std::string MediaLibraryDataAbility::GetClientBundle(int uid)
 {
-    int uid = IPCSkeleton::GetCallingUid();
-    MEDIA_INFO_LOG("GetClientUid: uid is %{public}d ", uid);
-    return uid;
-}
-
-static std::string GetClientBundle(int uid)
-{
-    auto bms = GetSysBundleManager_();
+    auto bms = GetSysBundleManager();
     std::string bundleName = "";
     if (bms == nullptr) {
         MEDIA_INFO_LOG("GetClientBundleName bms failed");
         return bundleName;
     }
     auto result = bms->GetBundleNameForUid(uid, bundleName);
-    MEDIA_INFO_LOG("GetClientBundleName: bundleName is %{public}s ", bundleName.c_str());
+    MEDIA_INFO_LOG("uid %{public}d bundleName is %{public}s ", uid, bundleName.c_str());
     if (!result) {
         MEDIA_ERR_LOG("GetBundleNameForUid fail");
         return "";
@@ -1022,14 +1028,13 @@ static std::string GetClientBundle(int uid)
 
 std::string MediaLibraryDataAbility::GetClientBundleName()
 {
-    int uid = GetClientUid();
+    int uid = IPCSkeleton::GetCallingUid();
     return GetClientBundle(uid);
 }
 
 bool MediaLibraryDataAbility::CheckClientPermission(const std::string& permissionStr)
 {
-    int uid = GetClientUid();
-    MEDIA_INFO_LOG("CheckClientPermission: uid: %{public}d", uid);
+    int uid = IPCSkeleton::GetCallingUid();
     if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
         MEDIA_INFO_LOG("CheckClientPermission: Pass the uid white list");
         return true;
@@ -1042,7 +1047,8 @@ bool MediaLibraryDataAbility::CheckClientPermission(const std::string& permissio
         return true;
     }
 
-    if (GetSysBundleManager_()->CheckIsSystemAppByUid(uid) &&
+    auto bundleMgr = GetSysBundleManager();
+    if ((bundleMgr != nullptr) && bundleMgr->CheckIsSystemAppByUid(uid) &&
         (SYSTEM_BUNDLE_FREE_CHECK.find(bundleName) != SYSTEM_BUNDLE_FREE_CHECK.end())) {
         MEDIA_INFO_LOG("CheckClientPermission: Pass the system bundle name white list");
         return true;
