@@ -70,6 +70,7 @@ public:
     static std::unique_ptr<AbsSharedResultSet> QueryTrashFiles(const std::shared_ptr<RdbStore> &rdbStore);
     static string GetParentDisplayNameFromDb(const int &id, const shared_ptr<RdbStore> &rdbStore);
     static std::string GetNetworkIdFromUri(const std::string &uri);
+    static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);
 };
 } // namespace Media
 } // namespace OHOS
