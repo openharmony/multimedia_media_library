@@ -27,6 +27,11 @@ int32_t MediaScannerOperationCallbackProxy::OnScanFinishedCallback(const int32_t
     MessageParcel reply;
     MessageOption option;
 
+    if (!data.WriteInterfaceToken(MediaScannerOperationCallbackProxy::GetDescriptor())) {
+        MEDIA_ERR_LOG("MediaScannerOperationCallbackProxy interface token write error");
+        return SCAN_PROXY_IF_TOKEN_WR_ERR;
+    }
+
     if (!data.WriteInt32(status) || !data.WriteString(uri) || !data.WriteString(path)) {
         MEDIA_ERR_LOG("MediaScannerOperationCallbackProxy writing parcel data failed");
         return IPC_PROXY_ERR;
