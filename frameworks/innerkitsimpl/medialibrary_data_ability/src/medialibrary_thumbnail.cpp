@@ -24,6 +24,8 @@
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
 #include "image_packer.h"
+#include "bytrace.h"
+#include "medialibrary_sync_table.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -137,7 +139,6 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
     if (!UpdateThumbnailInfo(opts, data, errorCode)) {
         return false;
     }
-
     key = data.thumbnailKey;
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnail3 OUT");
@@ -146,6 +147,7 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
 
 bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts, string &key)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "CreateThumbnail");
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnail IN");
 
     ThumbnailData thumbnailData;
@@ -157,11 +159,14 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts, string &key)
     bool ret = CreateThumbnail(opts, thumbnailData, key);
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnail OUT");
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     return ret;
 }
 
 bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "CreateLcd");
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcd IN");
 
     ThumbnailData thumbnailData;
@@ -180,9 +185,11 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
         return false;
     }
 
+    StartTrace(BYTRACE_TAG_OHOS, "CreateLcd GenLcdKey");
     if (!GenLcdKey(thumbnailData)) {
         return false;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 
     if (thumbnailData.lcdKey.empty()) {
         MEDIA_ERR_LOG("MediaLibraryThumbnail::Gen lcd Key is empty");
@@ -207,13 +214,17 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
 
     thumbnailData.thumbnail.clear();
 
+    StartTrace(BYTRACE_TAG_OHOS, "CreateLcd UpdateThumbnailInfo");
     if (!UpdateThumbnailInfo(opts, thumbnailData, errorCode)) {
         return false;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 
     key = thumbnailData.lcdKey;
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcd OUT");
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     return true;
 }
 
@@ -390,6 +401,8 @@ bool MediaLibraryThumbnail::LoadImageFile(string &path,
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadImageFile IN");
     uint32_t errorCode = 0;
     SourceOptions opts;
+
+    StartTrace(BYTRACE_TAG_OHOS, "ImageSource::CreateImageSource");
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path,
                                                                          opts,
                                                                          errorCode);
@@ -398,7 +411,9 @@ bool MediaLibraryThumbnail::LoadImageFile(string &path,
                       path.c_str(), errorCode);
         return false;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 
+    StartTrace(BYTRACE_TAG_OHOS, "imageSource->CreatePixelMap");
     DecodeOptions decodeOpts;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     if (errorCode != Media::SUCCESS) {
@@ -406,6 +421,8 @@ bool MediaLibraryThumbnail::LoadImageFile(string &path,
                       path.c_str(), errorCode);
         return false;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadImageFile OUT");
     return true;
 }
@@ -450,6 +467,8 @@ bool MediaLibraryThumbnail::CompressImage(std::shared_ptr<PixelMap> &pixelMap,
                                           Size &size,
                                           std::vector<uint8_t> &data)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "CompressImage");
+
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CompressImage IN");
     InitializationOptions opts = {
         .size = size,
@@ -457,7 +476,9 @@ bool MediaLibraryThumbnail::CompressImage(std::shared_ptr<PixelMap> &pixelMap,
         .alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL
     };
 
+    StartTrace(BYTRACE_TAG_OHOS, "PixelMap::Create");
     unique_ptr<PixelMap> compressImage = PixelMap::Create(*pixelMap, opts);
+    FinishTrace(BYTRACE_TAG_OHOS);
 
     PackOption option = {
         .format = THUMBNAIL_FORMAT,
@@ -467,30 +488,38 @@ bool MediaLibraryThumbnail::CompressImage(std::shared_ptr<PixelMap> &pixelMap,
 
     data.resize(compressImage->GetByteCount());
 
+    StartTrace(BYTRACE_TAG_OHOS, "imagePacker.StartPacking");
     ImagePacker imagePacker;
     int errorCode = imagePacker.StartPacking(data.data(), data.size(), option);
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to StartPacking %{public}d", errorCode);
         return false;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 
+    StartTrace(BYTRACE_TAG_OHOS, "imagePacker.AddImage");
     errorCode = imagePacker.AddImage(*compressImage);
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to StartPacking %{public}d", errorCode);
         return false;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 
+    StartTrace(BYTRACE_TAG_OHOS, "imagePacker.FinalizePacking");
     int64_t packedSize = 0;
     errorCode = imagePacker.FinalizePacking(packedSize);
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to StartPacking %{public}d", errorCode);
         return false;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 
     MEDIA_INFO_LOG("packedSize=%{public}lld.", static_cast<long long>(packedSize));
-
     data.resize(packedSize);
+
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CompressImage OUT");
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     return true;
 }
 
@@ -503,8 +532,10 @@ bool MediaLibraryThumbnail::SaveImage(string &key, vector<uint8_t> &image)
         return false;
     }
 
+    StartTrace(BYTRACE_TAG_OHOS, "SaveImage singleKvStorePtr_->Put");
     Value val(image);
     singleKvStorePtr_->Put(key, val);
+    FinishTrace(BYTRACE_TAG_OHOS);
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveImage OUT");
     return true;
@@ -537,6 +568,8 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailSet(ThumbRdb
 shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
                                                                          ThumbnailData &data, int &errorCode)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "QueryThumbnailInfo");
+
     MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailInfo IN row [%{public}s]",
                    opts.row.c_str());
     vector<string> column = {
@@ -554,6 +587,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
 
+    StartTrace(BYTRACE_TAG_OHOS, "opts.store->Query");
     shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     int rowCount = 0;
     errorCode = resultSet->GetRowCount(rowCount);
@@ -561,6 +595,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
         MEDIA_ERR_LOG("Failed to get row count %{public}d", errorCode);
         return nullptr;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 
     if (rowCount <= 0) {
         MEDIA_ERR_LOG("No match! %{public}s", rdbPredicates.ToString().c_str());
@@ -588,12 +623,12 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
     }
 
     ThumbnailRdbData rdbData;
-
     ParseQueryResult(resultSet, rdbData, errorCode);
-
     ThumbnailDataCopy(data, rdbData);
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailInfo OUT");
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     return resultSet;
 }
 
@@ -664,7 +699,7 @@ bool MediaLibraryThumbnail::UpdateThumbnailInfo(ThumbRdbOpt &opts,
                                                 ThumbnailData &data,
                                                 int &errorCode)
 {
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::UpdateThumbnailInfo IN");
+    MEDIA_DEBUG_LOG("MediaLibraryThumbnail::UpdateThumbnailInfo IN");
     ValuesBucket values;
     int changedRows;
     if (data.thumbnailKey.empty() && data.lcdKey.empty()) {
@@ -680,22 +715,25 @@ bool MediaLibraryThumbnail::UpdateThumbnailInfo(ThumbRdbOpt &opts,
         values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
     }
 
+    StartTrace(BYTRACE_TAG_OHOS, "UpdateThumbnailInfo opts.store->Update");
     errorCode = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID+" = ?",
         vector<string> { opts.row });
     if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", errorCode);
         return false;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 
     std::vector<std::string> devices = std::vector<std::string>();
     MediaLibrarySyncTable syncTable;
     syncTable.SyncPushTable(opts.store, BUNDLE_NAME, MEDIALIBRARY_TABLE, devices);
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::UpdateThumbnailInfo OUT");
+
     return true;
 }
 
 bool MediaLibraryThumbnail::LoadSourceImage(ThumbnailData &data)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "LoadSourceImage");
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadSourceImage IN");
 
     bool ret = false;
@@ -708,10 +746,13 @@ bool MediaLibraryThumbnail::LoadSourceImage(ThumbnailData &data)
     }
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadSourceImage OUT");
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     return ret;
 }
 bool MediaLibraryThumbnail::GenThumbnailKey(ThumbnailData &data)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "GenThumbnailKey");
     MEDIA_INFO_LOG("MediaLibraryThumbnail::GenThumbnailKey IN");
     vector<uint8_t> source(data.source->GetPixels(),
         data.source->GetPixels() + data.source->GetByteCount());
@@ -723,6 +764,8 @@ bool MediaLibraryThumbnail::GenThumbnailKey(ThumbnailData &data)
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::GenThumbnailKey OUT [%{public}s]",
                    data.thumbnailKey.c_str());
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     return ret;
 }
 bool MediaLibraryThumbnail::GenLcdKey(ThumbnailData &data)
