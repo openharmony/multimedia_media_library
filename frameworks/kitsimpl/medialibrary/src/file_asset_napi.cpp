@@ -21,6 +21,7 @@
 #include "media_file_utils.h"
 #include "pixel_map_napi.h"
 #include "rdb_errno.h"
+#include "bytrace.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -1253,6 +1254,8 @@ static unique_ptr<PixelMap> QueryThumbnail(
     shared_ptr<MediaThumbnailHelper> &thumbnailHelper,
     int32_t &fileId, std::string &uri, int32_t &width, int32_t &height)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "QueryThumbnail");
+
     Uri queryUri1(uri + "?" +
         MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
         MEDIA_DATA_DB_WIDTH + "=" + to_string(width) + "&" +
@@ -1269,15 +1272,16 @@ static unique_ptr<PixelMap> QueryThumbnail(
         columns.push_back(MEDIA_DATA_DB_THUMBNAIL);
     }
 
+    StartTrace(BYTRACE_TAG_OHOS, "abilityHelper->Query");
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet =
         abilityHelper->Query(queryUri1, columns, predicates);
     if (resultSet == nullptr) {
         HiLog::Error(LABEL, "Query thumbnail error");
         return nullptr;
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 
     resultSet->GoToFirstRow();
-
     string id = GetStringInfo(resultSet, PARAM0);
     string thumbnailKey;
     if (!thumbnailHelper->isThumbnailFromLcd(size)) {
@@ -1298,8 +1302,12 @@ static unique_ptr<PixelMap> QueryThumbnail(
 
     HiLog::Info(LABEL, "Query thumbnail id %{public}s with key %{public}s",
         id.c_str(), thumbnailKey.c_str());
+    StartTrace(BYTRACE_TAG_OHOS, "thumbnailHelper->GetThumbnail");
+    auto ret = thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
+    FinishTrace(BYTRACE_TAG_OHOS);
 
-    return thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
+    FinishTrace(BYTRACE_TAG_OHOS);
+    return ret;
 }
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
@@ -1320,6 +1328,7 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
                                            FileAssetAsyncContext* context)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "JSGetThumbnailCompleteCallback");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
@@ -1343,10 +1352,14 @@ static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
     }
 
     if (context->work != nullptr) {
+        StartTrace(BYTRACE_TAG_OHOS, "InvokeJSAsyncMethod");
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
+        FinishTrace(BYTRACE_TAG_OHOS);
     }
     delete context;
+
+    FinishTrace(BYTRACE_TAG_OHOS);
 }
 
 static void GetSizeInfo(napi_env env, napi_value configObj, std::string type, int32_t &result)
@@ -1413,6 +1426,8 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
 
 napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "JSGetThumbnail");
+
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
@@ -1444,6 +1459,9 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
             asyncContext.release();
         }
     }
+
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     return result;
 }
 static void JSFavouriteCallbackComplete(napi_env env, napi_status status,

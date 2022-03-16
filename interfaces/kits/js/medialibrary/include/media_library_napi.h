@@ -242,7 +242,7 @@ struct MediaLibraryAsyncContext {
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<SmartAlbumAsset> smartAlbumData;
     OHOS::NativeRdb::ValuesBucket valuesBucket;
-    int32_t dirType = 0;
+    unsigned int dirType = 0;
     int32_t privateAlbumType = DEFAULT_PRIVATEALBUMTYPE;
     int32_t retVal;
     std::string directoryRelativePath;
