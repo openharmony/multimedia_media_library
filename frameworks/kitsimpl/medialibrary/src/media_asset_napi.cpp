@@ -969,7 +969,6 @@ napi_value MediaAssetNapi::CommitCopy(napi_env env, napi_callback_info info)
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc >= ARGS_ONE, "requires 1 parameter minimum");
 
-    status = napi_get_undefined(env, &result);
     std::unique_ptr<MediaAssetAsyncContext> asyncContext = std::make_unique<MediaAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {

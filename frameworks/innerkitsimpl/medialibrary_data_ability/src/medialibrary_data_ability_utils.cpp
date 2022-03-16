@@ -89,7 +89,7 @@ string MediaLibraryDataAbilityUtils::GetParentDisplayNameFromDb(const int &id, c
 
 bool MediaLibraryDataAbilityUtils::IsNumber(const string &str)
 {
-    if (str.length() == 0) {
+    if (str.empty()) {
         MEDIA_ERR_LOG("IsNumber input is empty ");
         return false;
     }
@@ -428,23 +428,17 @@ string MediaLibraryDataAbilityUtils::GetMediaTypeUri(MediaType mediaType)
     switch (mediaType) {
         case MEDIA_TYPE_AUDIO:
             return MEDIALIBRARY_AUDIO_URI;
-            break;
         case MEDIA_TYPE_VIDEO:
             return MEDIALIBRARY_VIDEO_URI;
-            break;
         case MEDIA_TYPE_IMAGE:
             return MEDIALIBRARY_IMAGE_URI;
-            break;
         case MEDIA_TYPE_SMARTALBUM:
             return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
-            break;
         case MEDIA_TYPE_DEVICE:
             return MEDIALIBRARY_DEVICE_URI;
-            break;
         case MEDIA_TYPE_FILE:
         default:
             return MEDIALIBRARY_FILE_URI;
-            break;
     }
 }
 

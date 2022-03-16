@@ -494,15 +494,16 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
             continue;
         }
 
-        strncpy_s(fName + len, FILENAME_MAX, ent->d_name, FILENAME_MAX - len);
+        if (strncpy_s(fName + len, FILENAME_MAX, ent->d_name, FILENAME_MAX - len)) {
+            continue;
+        }
+
         if (lstat(fName, &statInfo) == -1) {
             continue;
         }
 
         string currentPath = fName;
-
         if (S_ISDIR(statInfo.st_mode)) {
-            // Insert folder info to database
             string albumName = ent->d_name;
             int32_t albumId = InsertAlbumInfo(currentPath, parentId, albumName);
             if (albumId == ERR_FAIL) {
