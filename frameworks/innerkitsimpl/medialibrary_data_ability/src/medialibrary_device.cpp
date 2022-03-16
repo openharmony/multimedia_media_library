@@ -162,7 +162,6 @@ bool MediaLibraryDevice::IsHasDevice(string deviceUdid)
 {
     map<string, MediaLibraryDeviceInfo>::iterator iter =  deviceInfoMap_.begin();
     while (iter != deviceInfoMap_.end()) {
-        MEDIA_INFO_LOG("GetNetworkIdBySelfId iter->second.selfId:%{public}s", iter->second.deviceUdid.c_str());
         if (deviceUdid.compare(iter->second.deviceUdid) == 0) {
             return true;
         }
