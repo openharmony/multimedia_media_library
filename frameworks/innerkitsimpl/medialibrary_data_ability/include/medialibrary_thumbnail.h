@@ -99,7 +99,7 @@ private:
     bool ResizeLcdToTarget(ThumbnailData &data, Size &size, std::unique_ptr<PixelMap> &pixelMap);
 
     bool CreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, std::string &key);
-    std::shared_ptr<AVMetadataHelper> avMetadataHelper_ = nullptr;
+    int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
 };
 } // namespace Media
 } // namespace  OHOS

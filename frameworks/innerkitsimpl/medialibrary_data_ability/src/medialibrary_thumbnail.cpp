@@ -15,18 +15,20 @@
 
 #include "medialibrary_thumbnail.h"
 
+#include <fcntl.h>
+
+#include "bytrace.h"
+#include "distributed_kv_data_manager.h"
+#include "image_packer.h"
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
-#include "medialibrary_sync_table.h"
 #include "media_log.h"
+#include "medialibrary_sync_table.h"
+#include "medialibrary_sync_table.h"
 #include "openssl/sha.h"
-#include "distributed_kv_data_manager.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
-#include "image_packer.h"
-#include "bytrace.h"
-#include "medialibrary_sync_table.h"
-
+#include "uri_helper.h"
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
@@ -60,10 +62,6 @@ void ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData)
 MediaLibraryThumbnail::MediaLibraryThumbnail()
 {
     InitKvStore();
-    avMetadataHelper_ = OHOS::Media::AVMetadataHelperFactory::CreateAVMetadataHelper();
-    if (avMetadataHelper_ == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryThumbnail CreateAVMetadataHelper failed");
-    }
 }
 
 void ParseStringResult(shared_ptr<ResultSet> resultSet,
@@ -325,18 +323,14 @@ bool MediaLibraryThumbnail::LoadAudioFile(string &path,
     MEDIA_ERR_LOG("Audio FetchArtPicture API is not ready!");
     return false;
 #else
-    if (avMetadataHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Av meta data helper is not init");
-        return false;
-    }
-    string uri = FILE_URI_PREX + path;
-    int32_t errorCode = avMetadataHelper_->SetSource(uri);
+    std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    int32_t errorCode = SetSource(avMetadataHelper, path);
     if (errorCode != 0) {
         MEDIA_ERR_LOG("Av meta data helper set source failed %{public}d", errorCode);
         return false;
     }
 
-    auto audioPicMemory = avMetadataHelper_->FetchArtPicture();
+    auto audioPicMemory = avMetadataHelper->FetchArtPicture();
     if (audioPicMemory == nullptr) {
         MEDIA_ERR_LOG("FetchArtPicture failed!");
         return false;
@@ -370,21 +364,17 @@ bool MediaLibraryThumbnail::LoadVideoFile(string &path,
                                           shared_ptr<PixelMap> &pixelMap)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadVideoFile IN");
-    if (avMetadataHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Av meta data helper is not init");
-        return false;
-    }
-    string uri = FILE_URI_PREX + path;
-    int32_t errorCode = avMetadataHelper_->SetSource(uri);
+    std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    int32_t errorCode = SetSource(avMetadataHelper, path);
     if (errorCode != 0) {
         MEDIA_ERR_LOG("Av meta data helper set source failed %{public}d", errorCode);
         return false;
     }
     PixelMapParams param;
     param.colorFormat = PixelFormat::RGBA_8888;
-    pixelMap = avMetadataHelper_->FetchFrameAtTime(AV_FRAME_TIME,
-                                                   AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
-                                                   param);
+    pixelMap = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME,
+                                                  AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
+                                                  param);
     if (pixelMap == nullptr) {
         MEDIA_ERR_LOG("Av meta data helper fetch frame at time failed");
         return false;
@@ -870,6 +860,46 @@ bool MediaLibraryThumbnail::ResizeLcdToTarget(ThumbnailData &data,
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::ResizeLcdToTarget OUT");
     return ret;
+}
+int32_t MediaLibraryThumbnail::SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path)
+{
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource IN");
+    if (avMetadataHelper == nullptr) {
+        MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource avMetadataHelper == nullptr");
+    }
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource path = %{public}s", path.c_str());
+    UriHelper uriHelper(path);
+    if (uriHelper.UriType() != UriHelper::URI_TYPE_FILE && !uriHelper.AccessCheck(UriHelper::URI_READ)) {
+        std::cout << "Invalid file Path" << std::endl;
+        return -1;
+    }
+    std::string rawFile = uriHelper.FormattedUri();
+    rawFile = rawFile.substr(strlen("file://"));
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource rawFile = %{public}s", rawFile.c_str());
+    int32_t fd = open(rawFile.c_str(), O_RDONLY);
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource fd = %{public}d", fd);
+    if (fd <= 0) {
+        MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource Open file failed");
+        return -1;
+    }
+
+    struct stat64 st;
+    if (fstat64(fd, &st) != 0) {
+        MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource Get file state failed");
+        (void)close(fd);
+        return -1;
+    }
+    int64_t length = static_cast<int64_t>(st.st_size);
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource length = %{public}lld", length);
+    int32_t ret = avMetadataHelper->SetSource(fd, 0, length, 1);
+    if (ret != 0) {
+        MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource fail");
+        (void)close(fd);
+        return -1;
+    }
+    (void)close(fd);
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource OUT");
+    return 0;
 }
 } // namespace Media
 } // namespace OHOS
