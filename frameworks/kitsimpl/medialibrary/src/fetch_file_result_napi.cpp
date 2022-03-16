@@ -45,7 +45,6 @@ void FetchFileResultNapi::FetchFileResultNapiDestructor(napi_env env, void *nati
     FetchFileResultNapi *fetchFileResultObj = reinterpret_cast<FetchFileResultNapi*>(nativeObject);
     if (fetchFileResultObj != nullptr) {
         fetchFileResultObj->~FetchFileResultNapi();
-        delete fetchFileResultObj;
     }
 }
 
