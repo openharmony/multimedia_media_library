@@ -1699,7 +1699,6 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
     napi_value jsFileAsset = nullptr;
 
     if (context->error == ERR_DEFAULT) {
-        HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback context->error == ERR_DEFAULT");
         if (context->fileAsset == nullptr) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                 "Obtain file asset failed");
@@ -1720,7 +1719,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
             }
         }
     } else {
-        HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback context->error != ERR_DEFAULT");
+        HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback context->error %{public}d", context->error);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "File asset creation failed");
         napi_get_undefined(env, &jsContext->data);
