@@ -139,7 +139,7 @@ shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper
             NAPI_ERR_LOG("Failed to get native context instance");
             return nullptr;
         }
-        NAPI_INFO_LOG("FA Model: ability = %{public}p strUir = %{public}s", ability, strUri.c_str());
+        NAPI_INFO_LOG("Get FA model DataAbilityHelper");
         dataAbilityHelper = DataAbilityHelper::Creator(ability->GetContext(), std::make_shared<Uri>(strUri));
     } else {
         NAPI_INFO_LOG("argv[0] is a context");
@@ -149,7 +149,7 @@ shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper
                 NAPI_ERR_LOG("Failed to get native context instance");
                 return nullptr;
             }
-            NAPI_INFO_LOG("Stage Model: context = %{public}p strUri = %{public}s", context.get(), strUri.c_str());
+            NAPI_INFO_LOG("Get Stage model DataAbilityHelper");
             dataAbilityHelper = DataAbilityHelper::Creator(context, std::make_shared<Uri>(strUri));
         } else {
             auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
@@ -157,7 +157,7 @@ shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper
                 NAPI_ERR_LOG("Failed to get native context instance");
                 return nullptr;
             }
-            NAPI_INFO_LOG("FA Model: ability = %{public}p strUri = %{public}s", ability, strUri.c_str());
+            NAPI_INFO_LOG("Get FA model DataAbilityHelper");
             dataAbilityHelper = DataAbilityHelper::Creator(ability->GetContext(), std::make_shared<Uri>(strUri));
         }
     }
@@ -1313,7 +1313,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
-    
+
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!context->networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
@@ -1559,8 +1559,8 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
         if (albumData != nullptr) {
             SetAlbumData(albumData.get(), resultSet, context->networkId);
             SetAlbumCoverUri(context, albumData);
+            context->albumNativeArray.push_back(move(albumData));
         }
-        context->albumNativeArray.push_back(move(albumData));
     }
 }
 
@@ -1808,13 +1808,13 @@ static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
         NAPI_DEBUG_LOG("CheckRelativePathPrams relativePath exist return true");
         return true;
     }
-    
+
     string firstDirName = GetFirstDirName(relativePath);
     if (!firstDirName.empty() && IsDirectory(firstDirName)) {
         NAPI_DEBUG_LOG("CheckRelativePathPrams firstDirName exist return true");
         return true;
     }
-    
+
     if (!firstDirName.empty()) {
         NAPI_DEBUG_LOG("firstDirName = %{public}s", firstDirName.c_str());
         for (unsigned int i = 0; i < directoryEnumValues.size(); i++) {
@@ -3159,11 +3159,13 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
                 albumData->SetAlbumName(get<string>(GetValFromColumn(SMARTALBUM_DB_NAME, resultSet, TYPE_STRING)));
                 albumData->SetAlbumCapacity(get<int32_t>(GetValFromColumn(SMARTABLUMASSETS_ALBUMCAPACITY,
                                                                           resultSet, TYPE_INT32)));
+
+                context->privateSmartAlbumNativeArray.push_back(move(albumData));
             }
-            context->privateSmartAlbumNativeArray.push_back(move(albumData));
         }
     }
 }
+
 static void GetSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
 {
     NativeRdb::DataAbilityPredicates predicates;
@@ -3190,11 +3192,13 @@ static void GetSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
                 albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_SMARTALBUM,
                     getNetworkId(get<string>(GetValFromColumn(SMARTALBUM_DB_SELF_ID, resultSet, TYPE_STRING))))
                     + "/" + to_string(albumData->GetAlbumId()));
+
+                context->smartAlbumNativeArray.push_back(move(albumData));
             }
-            context->smartAlbumNativeArray.push_back(move(albumData));
         }
     }
 }
+
 static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status,
                                             MediaLibraryAsyncContext *context)
 {
@@ -3241,6 +3245,7 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status,
     }
     delete context;
 }
+
 napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -3288,6 +3293,7 @@ napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info 
     }
     return result;
 }
+
 napi_value GetJSArgsForCreateSmartAlbum(napi_env env, size_t argc, const napi_value argv[],
                                         MediaLibraryAsyncContext &asyncContext)
 {
@@ -3313,6 +3319,7 @@ napi_value GetJSArgsForCreateSmartAlbum(napi_env env, size_t argc, const napi_va
     napi_get_boolean(env, true, &result);
     return result;
 }
+
 static void JSCreateSmartAlbumCompleteCallback(napi_env env, napi_status status,
                                                MediaLibraryAsyncContext *context)
 {
@@ -3343,6 +3350,7 @@ static void JSCreateSmartAlbumCompleteCallback(napi_env env, napi_status status,
     }
     delete context;
 }
+
 napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -3392,6 +3400,7 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
     }
     return result;
 }
+
 napi_value GetJSArgsForDeleteSmartAlbum(napi_env env, size_t argc, const napi_value argv[],
                                         MediaLibraryAsyncContext &asyncContext)
 {
@@ -3421,6 +3430,7 @@ napi_value GetJSArgsForDeleteSmartAlbum(napi_env env, size_t argc, const napi_va
     napi_get_boolean(env, true, &result);
     return result;
 }
+
 static void JSDeleteSmartAlbumCompleteCallback(napi_env env, napi_status status,
                                                MediaLibraryAsyncContext *context)
 {
@@ -3442,6 +3452,7 @@ static void JSDeleteSmartAlbumCompleteCallback(napi_env env, napi_status status,
     }
     delete context;
 }
+
 static void JSDeleteSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
@@ -3459,6 +3470,7 @@ static void JSDeleteSmartAlbumExecute(MediaLibraryAsyncContext *context)
         context->error = ERR_INVALID_OUTPUT;
     }
 }
+
 napi_value MediaLibraryNapi::JSDeleteSmartAlbum(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -3720,6 +3732,7 @@ napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info i
             asyncContext.release();
         }
     }
+
     return result;
 }
 

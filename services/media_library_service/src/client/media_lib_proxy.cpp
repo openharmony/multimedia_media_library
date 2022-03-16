@@ -452,7 +452,7 @@ bool MediaLibProxy::CreateMediaAsset(AssetType assetType, const MediaAsset& medi
         }
     } else {
         errRet = false;
-        MEDIA_ERR_LOG("CreateMediaAsset wrtie data failed !!");
+        MEDIA_ERR_LOG("CreateMediaAsset write data failed !!");
     }
 
     return errRet;

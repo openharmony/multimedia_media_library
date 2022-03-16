@@ -276,7 +276,7 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
         }
         if (insertUri.find(MEDIA_FILEOPRN) != string::npos) {
             result = fileOprn.HandleFileOperation(operationType, value, rdbStore_, mediaThumbnail_);
-            // After successfull close asset operation, do a scan file
+            // After successful close asset operation, do a scan file
             if ((result >= 0) && (operationType == MEDIA_FILEOPRN_CLOSEASSET)) {
                 ScanFile(value, rdbStore_);
             }
@@ -337,6 +337,7 @@ int32_t MediaLibraryDataAbility::Delete(const Uri &uri, const DataAbilityPredica
 
     return deletedRows;
 }
+
 shared_ptr<AbsSharedResultSet> QueryBySmartTableType(TableType tabletype,
     string strQueryCondition,
     DataAbilityPredicates predicates,
@@ -517,6 +518,7 @@ shared_ptr<AbsSharedResultSet> QueryByViewType(TableType tabletype,
     }
     return queryResultSet;
 }
+
 void SplitKeyValue(const string& keyValue, string &key, string &value)
 {
     string::size_type pos = keyValue.find('=');
@@ -525,6 +527,7 @@ void SplitKeyValue(const string& keyValue, string &key, string &value)
         value = keyValue.substr(pos + 1);
     }
 }
+
 void SplitKeys(const string& query, vector<string>& keys)
 {
     string::size_type pos1 = 0;
@@ -538,6 +541,7 @@ void SplitKeys(const string& query, vector<string>& keys)
         keys.push_back(query.substr(pos1));
     }
 }
+
 bool ParseThumbnailInfo(string &uriString, vector<int> &space)
 {
     string::size_type pos = uriString.find_last_of('?');
@@ -590,6 +594,7 @@ bool ParseThumbnailInfo(string &uriString, vector<int> &space)
     space.push_back(height);
     return true;
 }
+
 shared_ptr<AbsSharedResultSet> GenThumbnail(shared_ptr<RdbStore> rdb,
     shared_ptr<MediaLibraryThumbnail> thumbnail,
     string &rowId, vector<int> space, string &networkId)
@@ -623,6 +628,7 @@ shared_ptr<AbsSharedResultSet> GenThumbnail(shared_ptr<RdbStore> rdb,
 
     return queryResultSet;
 }
+
 static void DealWithUriString(string &uriString, TableType &tabletype,
     string &strQueryCondition, string::size_type &pos, string &strRow)
 {
@@ -664,6 +670,7 @@ static void DealWithUriString(string &uriString, TableType &tabletype,
         }
     }
 }
+
 shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
                                                               const vector<string> &columns,
                                                               const DataAbilityPredicates &predicates)
@@ -820,6 +827,7 @@ void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_
         }
     }
 }
+
 /**
  * @brief
  * @param uri
@@ -1090,27 +1098,26 @@ bool MediaLibraryDataAbility::CheckClientPermission(const std::string& permissio
 {
     int uid = IPCSkeleton::GetCallingUid();
     if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
-        MEDIA_INFO_LOG("CheckClientPermission: Pass the uid white list");
+        MEDIA_INFO_LOG("CheckClientPermission: Pass the uid check list");
         return true;
     }
 
     std::string bundleName = GetClientBundle(uid);
     MEDIA_INFO_LOG("CheckClientPermission: bundle name: %{public}s", bundleName.c_str());
     if (BUNDLE_FREE_CHECK.find(bundleName) != BUNDLE_FREE_CHECK.end()) {
-        MEDIA_INFO_LOG("CheckClientPermission: Pass the bundle name white list");
+        MEDIA_INFO_LOG("CheckClientPermission: Pass the bundle name check list");
         return true;
     }
 
     auto bundleMgr = GetSysBundleManager();
     if ((bundleMgr != nullptr) && bundleMgr->CheckIsSystemAppByUid(uid) &&
         (SYSTEM_BUNDLE_FREE_CHECK.find(bundleName) != SYSTEM_BUNDLE_FREE_CHECK.end())) {
-        MEDIA_INFO_LOG("CheckClientPermission: Pass the system bundle name white list");
+        MEDIA_INFO_LOG("CheckClientPermission: Pass the system bundle name check list");
         return true;
     }
 
     Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
-    int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller,
-        permissionStr);
+    int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller, permissionStr);
     if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility Query: Have no media permission");
         return false;

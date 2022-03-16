@@ -399,8 +399,13 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
         return errCode;
     }
     MEDIA_INFO_LOG("File path is %{public}s", filePath.c_str());
+
     char actualPath[PATH_MAX];
-    memset_s(actualPath, PATH_MAX, '\0', PATH_MAX);
+    if (memset_s(actualPath, PATH_MAX, '\0', PATH_MAX)) {
+        MEDIA_ERR_LOG("Failed to memset_s actualPath");
+        return errCode;
+    }
+
     auto absFilePath = realpath(filePath.c_str(), actualPath);
     if (absFilePath == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{public}s %{public}d",
