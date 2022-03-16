@@ -133,7 +133,9 @@ bool MediaLibrarySyncTable::SyncPullTable(
     uint32_t count = 0;
     while (count++ < RETRY_COUNT) {
         MEDIA_ERR_LOG("SyncPullTable before Sync");
+        StartTrace(BYTRACE_TAG_OHOS, "abilityHelper->Query");
         auto ret = rdbStore->Sync(option, predicate, callback);
+        FinishTrace(BYTRACE_TAG_OHOS);
         MEDIA_ERR_LOG("SyncPullTable after Sync");
         if (ret) {
             return ret;
@@ -173,7 +175,12 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
         FinishAsyncTrace(BYTRACE_TAG_OHOS, "SyncPushTable", 10000);
         MEDIA_DEBUG_LOG("Distribute FinishAsyncTrace:SyncPushTable");
     };
-    return rdbStore->Sync(option, predicate, callback);
+
+    StartTrace(BYTRACE_TAG_OHOS, "SyncPushTable rdbStore->Sync");
+    bool ret = rdbStore->Sync(option, predicate, callback);
+    FinishTrace(BYTRACE_TAG_OHOS);
+
+    return ret;
 }
 } // namespace Media
 } // namespace OHOS

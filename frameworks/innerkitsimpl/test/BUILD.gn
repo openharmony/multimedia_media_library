@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Huawei Device Co., Ltd.
+# Copyright (C) 2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,6 +17,7 @@ group("test") {
   deps = [
     "unittest/mediadataability_test:unittest",
     "unittest/medialibrary_test:unittest",
+    "unittest/mediascanner_test:unittest",
     "unittest/mediathumbnail_test:unittest",
   ]
 }

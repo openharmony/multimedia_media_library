@@ -15,7 +15,6 @@
 
 #ifndef MEDIA_SCANNER_NAPI_H
 #define MEDIA_SCANNER_NAPI_H
-
 #include <unordered_map>
 
 #include "imedia_scanner_client.h"
@@ -62,7 +61,7 @@ private:
     napi_env env_;
     napi_ref wrapper_;
 
-    static napi_ref sConstructor_;
+    static thread_local napi_ref sConstructor_;
 };
 } // namespace Media
 } // namespace OHOS
