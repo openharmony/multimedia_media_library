@@ -41,8 +41,7 @@ const std::unordered_set<int32_t> UID_FREE_CHECK {
     1006        // file_manager:x:1006:
 };
 const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
-    "com.ohos.medialibrary.MediaScannerAbilityA",
-    "com.ohos.note"
+    "com.ohos.medialibrary.MediaScannerAbilityA"
 };
 const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {
     "com.ohos.screenshot"
