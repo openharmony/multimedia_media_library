@@ -27,7 +27,7 @@ public:
     virtual int32_t ScanDirService(std::string &scanDirPath, const sptr<IRemoteObject> &callback) = 0;
     virtual int32_t ScanFileService(std::string &scanFilePath, const sptr<IRemoteObject> &callback) = 0;
     virtual bool IsScannerRunning() = 0;
-    DECLARE_INTERFACE_DESCRIPTOR(u"multimedia.IMediaScannerAbility");
+    DECLARE_INTERFACE_DESCRIPTOR(u"IMediaScannerAbility");
 };
 } // namespace Media
 } // namespace OHOS

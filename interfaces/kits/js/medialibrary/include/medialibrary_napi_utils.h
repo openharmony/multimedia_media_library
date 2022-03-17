@@ -151,9 +151,8 @@ const std::vector<std::string> mediaTypesEnum {
 };
 
 const std::vector<std::string> fileKeyEnum {
-    "ID", "RELATIVE_PATH", "DISPLAY_NAME", "PARENT", "MIME_TYPE", "MEDIA_TYPE", "SIZE",
-    "DATE_ADDED", "DATE_MODIFIED", "DATE_TAKEN", "TITLE", "ARTIST", "AUDIOALBUM", "DURATION",
-    "WIDTH", "HEIGHT", "ORIENTATION", "ALBUM_ID", "ALBUM_NAME"
+    "ID", "PATH", "RELATIVE_PATH", "MIME_TYPE", "MEDIA_TYPE", "DISPLAY_NAME", "SIZE",
+    "DATE_ADDED", "DATE_MODIFIED", "TITLE", "ARTIST", "ALBUM", "ALBUM_ID", "ALBUM_NAME"
 };
 
 const std::vector<std::string> directoryEnum {
@@ -171,22 +170,17 @@ const std::vector<std::string> directoryEnumValues {
 
 const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_ID,
+    MEDIA_DATA_DB_FILE_PATH,
     MEDIA_DATA_DB_RELATIVE_PATH,
-    MEDIA_DATA_DB_NAME,
-    MEDIA_DATA_DB_PARENT_ID,
     MEDIA_DATA_DB_MIME_TYPE,
     MEDIA_DATA_DB_MEDIA_TYPE,
+    MEDIA_DATA_DB_NAME,
     MEDIA_DATA_DB_SIZE,
     MEDIA_DATA_DB_DATE_ADDED,
     MEDIA_DATA_DB_DATE_MODIFIED,
-    MEDIA_DATA_DB_DATE_TAKEN,
     MEDIA_DATA_DB_TITLE,
     MEDIA_DATA_DB_ARTIST,
-    MEDIA_DATA_DB_AUDIO_ALBUM,
-    MEDIA_DATA_DB_DURATION,
-    MEDIA_DATA_DB_WIDTH,
-    MEDIA_DATA_DB_HEIGHT,
-    MEDIA_DATA_DB_ORIENTATION,
+    MEDIA_DATA_DB_ALBUM,
     MEDIA_DATA_DB_BUCKET_ID,
     MEDIA_DATA_DB_BUCKET_NAME
 };
@@ -228,7 +222,7 @@ public:
     {
         if (!prefix.empty()) {
             if (!selection.empty()) {
-                selection = prefix + "AND (" + selection + ")";
+                selection = prefix + "AND " + selection;
             } else {
                 selection = prefix;
             }
