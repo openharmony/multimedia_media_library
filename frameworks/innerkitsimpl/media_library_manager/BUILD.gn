@@ -37,7 +37,7 @@ ohos_shared_library("media_library_manager") {
     "//foundation/aafwk/standard/frameworks/kits/appkit:appkit_native",
     "//foundation/aafwk/standard/interfaces/innerkits/base:base",
     "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager:dataobs_manager",
-    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
+    "//foundation/aafwk/standard/interfaces/innerkits/uri:zuri",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library",
     "//utils/native/base:utils",
   ]

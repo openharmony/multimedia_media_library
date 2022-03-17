@@ -32,9 +32,9 @@ namespace VideoAssetConstants {
 
 namespace OHOS {
 namespace Media {
-napi_ref VideoAssetNapi::sConstructor_ = nullptr;
-Media::VideoAsset *VideoAssetNapi::sVideoAsset_ = nullptr;
-Media::IMediaLibraryClient *VideoAssetNapi::sMediaLibrary_ = nullptr;
+thread_local napi_ref VideoAssetNapi::sConstructor_ = nullptr;
+thread_local Media::VideoAsset *VideoAssetNapi::sVideoAsset_ = nullptr;
+thread_local Media::IMediaLibraryClient *VideoAssetNapi::sMediaLibrary_ = nullptr;
 
 VideoAssetNapi::VideoAssetNapi()
     : env_(nullptr), wrapper_(nullptr)
