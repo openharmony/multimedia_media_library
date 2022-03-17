@@ -53,9 +53,9 @@ private:
     napi_env env_;
     napi_ref wrapper_;
 
-    static napi_ref sConstructor_;
-    static Media::VideoAsset *sVideoAsset_;
-    static Media::IMediaLibraryClient *sMediaLibrary_;
+    static thread_local napi_ref sConstructor_;
+    static thread_local Media::VideoAsset *sVideoAsset_;
+    static thread_local Media::IMediaLibraryClient *sMediaLibrary_;
 };
 } // namespace OHOS
 } // namespace OHOS
