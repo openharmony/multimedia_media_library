@@ -52,7 +52,7 @@ public:
     AlbumNapi();
     ~AlbumNapi();
 
-    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
+    static thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
 
 private:
     static void AlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -89,12 +89,11 @@ private:
     napi_env env_;
     napi_ref wrapper_;
 
-    static napi_ref sConstructor_;
-    static AlbumAsset *sAlbumData_;
+    static thread_local napi_ref sConstructor_;
+    static thread_local AlbumAsset *sAlbumData_;
 };
 
 struct AlbumNapiAsyncContext {
-    napi_env env;
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;

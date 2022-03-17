@@ -23,6 +23,12 @@ int32_t MediaScannerAbilityStub::OnRemoteRequest(
 {
     int32_t errCode = SCAN_IPC_SUCCESS;
 
+    auto remoteDescriptor = data.ReadInterfaceToken();
+    if (GetDescriptor() != remoteDescriptor) {
+        MEDIA_ERR_LOG("MediaScannerAbilityStub invalid interface token");
+        return SCAN_STUB_IF_TOKEN_INVALID;
+    }
+
     switch (code) {
         case MEDIA_SCAN_DIR_ABILITY:
             errCode = MediaScannerAbilityStub::HandleScanDir(data, reply);

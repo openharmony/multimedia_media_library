@@ -40,7 +40,7 @@ private:
     AVMetadataHelperNapi();
     ~AVMetadataHelperNapi();
 
-    static napi_ref constructor_;
+    static thread_local napi_ref constructor_;
     napi_env env_ = nullptr;
     napi_ref wrapper_ = nullptr;
 
