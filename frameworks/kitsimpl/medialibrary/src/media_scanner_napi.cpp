@@ -27,7 +27,7 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-thread_local napi_ref MediaScannerNapi::sConstructor_ = nullptr;
+napi_ref MediaScannerNapi::sConstructor_ = nullptr;
 
 MediaScannerNapi::MediaScannerNapi()
     : mediaScanner_(nullptr), env_(nullptr), wrapper_(nullptr) {}
