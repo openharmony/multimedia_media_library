@@ -31,9 +31,9 @@ namespace ImageAssetConstants {
 
 namespace OHOS {
 namespace Media {
-thread_local napi_ref ImageAssetNapi::sConstructor_ = nullptr;
-thread_local Media::ImageAsset *ImageAssetNapi::sImageAsset_ = nullptr;
-thread_local Media::IMediaLibraryClient *ImageAssetNapi::sMediaLibrary_ = nullptr;
+napi_ref ImageAssetNapi::sConstructor_ = nullptr;
+Media::ImageAsset *ImageAssetNapi::sImageAsset_ = nullptr;
+Media::IMediaLibraryClient *ImageAssetNapi::sMediaLibrary_ = nullptr;
 
 ImageAssetNapi::ImageAssetNapi()
     : env_(nullptr), wrapper_(nullptr)

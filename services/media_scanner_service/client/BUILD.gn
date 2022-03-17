@@ -26,6 +26,7 @@ config("media_data_ability_public_config") {
     "//foundation/aafwk/standard/services/abilitymgr/include",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
+    "//foundation/distributedschedule/dmsfwk/services/dtbschedmgr/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
     "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client/include",
     "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/ipc/include",
@@ -53,6 +54,7 @@ ohos_shared_library("media_scanner_client") {
     "//foundation/aafwk/standard/services/abilitymgr:abilityms",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base:appexecfwk_base",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core:appexecfwk_core",
+    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
     "//foundation/distributedschedule/safwk/interfaces/innerkits/safwk:system_ability_fwk",
     "//utils/native/base:utils",
   ]

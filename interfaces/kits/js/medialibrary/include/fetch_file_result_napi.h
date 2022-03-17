@@ -37,7 +37,7 @@ public:
 
     std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper() const;
 
-    static thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
 
 private:
     static void FetchFileResultNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -50,19 +50,19 @@ private:
     static napi_value JSGetLastObject(napi_env env, napi_callback_info info);
     static napi_value JSGetPositionObject(napi_env env, napi_callback_info info);
     static napi_value JSGetAllObject(napi_env env, napi_callback_info info);
-    static napi_value JSClose(napi_env env, napi_callback_info info);
 
     napi_env env_;
     napi_ref wrapper_;
     FetchResult *fetchFileResult_ = nullptr;
 
-    static thread_local napi_ref sConstructor_;
-    static thread_local FetchResult *sFetchFileResult_;
+    static napi_ref sConstructor_;
+    static FetchResult *sFetchFileResult_;
     std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper_;
 };
 
 class FetchFileResultAsyncContext {
 public:
+    napi_env env;
     napi_async_work work;
     napi_ref callbackRef;
     napi_deferred deferred;
