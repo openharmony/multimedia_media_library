@@ -672,7 +672,6 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
     string type = uriString.substr(pos + 1);
     MEDIA_DEBUG_LOG("uriString = %{public}s, type = %{public}s, thumbnailQuery %{public}d, Rdb Verison %{public}d",
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
-    StartTrace(BYTRACE_TAG_OHOS, "Query");
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
 
     if (!networkId.empty() && (tabletype != TYPE_ASSETSMAP_TABLE) && (tabletype != TYPE_SMARTALBUMASSETS_TABLE)) {
@@ -1128,8 +1127,6 @@ void MediaLibraryDeviceStateCallback::OnDeviceOnline(const OHOS::DistributedHard
     MediaLibrarySyncTable syncTable;
     std::string deviceId = deviceInfo.deviceId;
     std::vector<std::string> devices = { deviceId };
-    MEDIA_DEBUG_LOG("Distribute StartAsyncTrace:SyncPullAllTableByDeviceId");
-    StartAsyncTrace(BYTRACE_TAG_OHOS, "SyncPullAllTableByDeviceId", 1234);
     syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
 }
 
@@ -1181,8 +1178,6 @@ void MediaLibraryRdbStoreObserver::OnChange(const std::vector<std::string>& devi
     if (devices.empty() || bundleName_.empty()) {
         return;
     }
-    FinishAsyncTrace(BYTRACE_TAG_OHOS, "SyncPullAllTableByDeviceId", 1234);
-    MEDIA_DEBUG_LOG("Distribute FinishAsyncTrace:SyncPullAllTableByDeviceId");
     MediaLibraryDevice::GetInstance()->NotifyRemoteFileChange();
     for (auto &deviceId : devices) {
         MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(deviceId, DEVICE_SYNCSTATUS_COMPLETE, bundleName_);

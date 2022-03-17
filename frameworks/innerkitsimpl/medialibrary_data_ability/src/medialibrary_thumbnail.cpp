@@ -102,8 +102,7 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnail3 IN");
     int errorCode;
-    MEDIA_DEBUG_LOG("Distribute StartTrace:CreateThumbnail");
-    StartTrace(BYTRACE_TAG_OHOS, "CreateThumbnail");
+
     if (!data.thumbnailKey.empty() &&
         IsImageExist(data.thumbnailKey)) {
         MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnail image has exist in kvStore");
@@ -140,8 +139,6 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
     if (!UpdateThumbnailInfo(opts, data, errorCode)) {
         return false;
     }
-    FinishTrace(BYTRACE_TAG_OHOS);
-    MEDIA_DEBUG_LOG("Distribute FinishTrace:CreateThumbnail");
     key = data.thumbnailKey;
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnail3 OUT");
@@ -573,8 +570,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
 {
     StartTrace(BYTRACE_TAG_OHOS, "QueryThumbnailInfo");
 
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailInfo IN row [%{public}s]",
-                   opts.row.c_str());
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailInfo IN row [%{public}s]", opts.row.c_str());
     vector<string> column = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
