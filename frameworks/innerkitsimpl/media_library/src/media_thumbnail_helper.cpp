@@ -40,7 +40,7 @@ void MediaThumbnailHelper::InitKvStore()
     Options options = {
         .createIfMissing = true,
         .encrypt = true,
-        .persistent = false,
+        .persistant = false,
         .backup = true,
         .autoSync = true,
         .securityLevel = SecurityLevel::NO_LABEL,
