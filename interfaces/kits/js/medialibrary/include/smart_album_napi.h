@@ -51,7 +51,7 @@ public:
     SmartAlbumNapi();
     ~SmartAlbumNapi();
 
-    static thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
 
 private:
     static void SmartAlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
