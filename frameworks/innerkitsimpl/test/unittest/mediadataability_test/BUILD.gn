@@ -28,13 +28,13 @@ ohos_unittest("mediadataability_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./include",
-    "//foundation/aafwk/standard/interfaces/innerkits/uri/include",
     "//foundation/aafwk/standard/interfaces/innerkits/want/include",
     "//foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk/content",
     "//foundation/aafwk/standard/interfaces/innerkits/ability_manager/include",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
     "//foundation/aafwk/standard/interfaces/innerkits/app_manager/include/appmgr",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
+    "//foundation/distributedschedule/dmsfwk/services/dtbschedmgr/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/innerkits/native_rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/innerkitsimpl/native_rdb\include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
@@ -57,9 +57,9 @@ ohos_unittest("mediadataability_test") {
     "$MEDIA_LIB_INNERKITS_DIR/media_library:media_library",
     "$MEDIA_LIB_INNERKITS_DIR/medialibrary_data_ability:medialibrary_data_ability",
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
-    "//foundation/aafwk/standard/interfaces/innerkits/uri:zuri",
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
+    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
     "//utils/native/base:utils",
   ]
 

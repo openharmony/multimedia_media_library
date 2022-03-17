@@ -66,8 +66,7 @@ enum ListenerType {
     FILE_LISTENER,
     SMARTALBUM_LISTENER,
     DEVICE_LISTENER,
-    REMOTEFILE_LISTENER,
-    ALBUM_LISTENER
+    REMOTEFILE_LISTENER
 };
 
 struct MediaChangeListener {
@@ -114,7 +113,6 @@ public:
     sptr<AAFwk::IDataAbilityObserver> smartAlbumDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> deviceDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> remoteFileDataObserver_ = nullptr;
-    sptr<AAFwk::IDataAbilityObserver> albumDataObserver_ = nullptr;
 
 private:
     napi_env env_ = nullptr;
@@ -151,7 +149,7 @@ public:
     ~MediaLibraryNapi();
 
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env, napi_callback_info info);
-    static thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
 
 public:
     static const std::string PERMISSION_NAME_READ_MEDIA;
@@ -215,12 +213,13 @@ private:
     napi_ref wrapper_;
     static bool isStageMode_;
 
-    static thread_local napi_ref sConstructor_;
-    static thread_local napi_ref sMediaTypeEnumRef_;
-    static thread_local napi_ref sFileKeyEnumRef_;
+    static napi_ref sConstructor_;
+    static napi_ref sMediaTypeEnumRef_;
+    static napi_ref sFileKeyEnumRef_;
 };
 
 struct MediaLibraryAsyncContext {
+    napi_env env;
     int32_t error = ERR_DEFAULT;
     napi_async_work work;
     napi_deferred deferred;

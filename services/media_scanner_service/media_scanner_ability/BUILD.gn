@@ -22,6 +22,7 @@ config("media_scanner_ability_public_config") {
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
     "//foundation/aafwk/standard/interfaces/innerkits/app_manager/include/appmgr",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
+    "//foundation/distributedschedule/dmsfwk/services/dtbschedmgr/include",
     "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
@@ -77,13 +78,13 @@ ohos_shared_library("media_scanner_service") {
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
+    "//foundation/distributedschedule/dmsfwk/interfaces/innerkits/uri:zuri",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//foundation/multimedia/media_standard/interfaces/innerkits/native/media:media_client",
     "//utils/native/base:utils",
   ]
 
   external_deps = [
-    "ability_base:zuri",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
 

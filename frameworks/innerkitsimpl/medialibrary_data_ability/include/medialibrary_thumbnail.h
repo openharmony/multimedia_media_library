@@ -63,7 +63,7 @@ public:
 
     EXPORT void CreateThumbnails(ThumbRdbOpt &opts);
 
-    EXPORT std::shared_ptr<NativeRdb::AbsSharedResultSet> GetThumbnailKey(ThumbRdbOpt &opts, Size &size);
+    EXPORT std::string GetThumbnailKey(ThumbRdbOpt &opts, Size &size);
     EXPORT std::unique_ptr<PixelMap> GetThumbnailByRdb(ThumbRdbOpt &opts, Size &size, const std::string &uri);
 
 private:
@@ -78,9 +78,7 @@ private:
     bool SaveImage(std::string &key, std::vector<uint8_t> &image);
 
     // RDB Store
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryThumbnailInfo(ThumbRdbOpt &opts,
-        ThumbnailData &data, int &errorCode);
+    bool QueryThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &errorCode);
     bool QueryThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailRdbData> &infos, int &errorCode);
     bool UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &errorCode);
 

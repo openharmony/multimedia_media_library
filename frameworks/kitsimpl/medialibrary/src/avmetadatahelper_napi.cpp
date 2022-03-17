@@ -27,7 +27,7 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-thread_local napi_ref AVMetadataHelperNapi::constructor_ = nullptr;
+napi_ref AVMetadataHelperNapi::constructor_ = nullptr;
 const std::string CLASS_NAME = "AVMetadataHelper";
 
 struct AVMetadataHelperAsyncContext {

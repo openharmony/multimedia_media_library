@@ -463,11 +463,9 @@ unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<AbsSharedResu
         resultSet->GetColumnIndex(col, columnIndex);
 
         auto dataType = DataType::TYPE_NULL;
-        Metadata::MetadataFnPtr requestFunc = nullptr;
         auto itr = metadata->memberFuncMap_.find(col);
         if (itr != metadata->memberFuncMap_.end()) {
             dataType = itr->second.first;
-            requestFunc = itr->second.second;
         }
 
         int32_t ret(0);
@@ -499,7 +497,8 @@ unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<AbsSharedResu
                 break;
         }
 
-        // Use the function pointer from map and pass data to fn ptr
+        // Find the function pointer from map and pass data to fn ptr
+        auto requestFunc = itr->second.second;
         if (requestFunc != nullptr) {
             (metadata.get()->*requestFunc)(data);
         }

@@ -133,9 +133,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
     uint32_t count = 0;
     while (count++ < RETRY_COUNT) {
         MEDIA_ERR_LOG("SyncPullTable before Sync");
-        StartTrace(BYTRACE_TAG_OHOS, "abilityHelper->Query");
         auto ret = rdbStore->Sync(option, predicate, callback);
-        FinishTrace(BYTRACE_TAG_OHOS);
         MEDIA_ERR_LOG("SyncPullTable after Sync");
         if (ret) {
             return ret;
@@ -147,6 +145,8 @@ bool MediaLibrarySyncTable::SyncPullTable(
 bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
                                           const std::string &tableName, std::vector<std::string> &devices, bool isBlock)
 {
+    MEDIA_DEBUG_LOG("Distribute StartAsyncTrace:SyncPushTable");
+    StartAsyncTrace(BYTRACE_TAG_OHOS, "SyncPushTable", 10000);
     MEDIA_ERR_LOG("SyncPushTable table = %{public}s", tableName.c_str());
     // start sync
     DistributedRdb::SyncOption option;
@@ -170,13 +170,10 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
             }
             MEDIA_ERR_LOG("SyncPushTable device = %{public}s success", iter->first.c_str());
         }
+        FinishAsyncTrace(BYTRACE_TAG_OHOS, "SyncPushTable", 10000);
+        MEDIA_DEBUG_LOG("Distribute FinishAsyncTrace:SyncPushTable");
     };
-
-    StartTrace(BYTRACE_TAG_OHOS, "SyncPushTable rdbStore->Sync");
-    bool ret = rdbStore->Sync(option, predicate, callback);
-    FinishTrace(BYTRACE_TAG_OHOS);
-
-    return ret;
+    return rdbStore->Sync(option, predicate, callback);
 }
 } // namespace Media
 } // namespace OHOS
