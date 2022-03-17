@@ -103,7 +103,6 @@ namespace Media {
         sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
         std::string GetClientBundleName();
         bool CheckClientPermission(const std::string& permissionStr);
-        std::string GetClientBundle(int uid);
 
         static const std::string PERMISSION_NAME_READ_MEDIA;
         static const std::string PERMISSION_NAME_WRITE_MEDIA;
@@ -117,7 +116,6 @@ namespace Media {
         std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
         bool isRdbStoreInitialized;
         std::string bundleName_;
-        OHOS::sptr<AppExecFwk::IBundleMgr> bundleMgr_;
 };
 
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {

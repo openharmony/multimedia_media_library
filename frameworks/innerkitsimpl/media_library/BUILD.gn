@@ -54,9 +54,6 @@ ohos_source_set("media_library_source") {
   ]
 
   configs = [ ":media_library_config" ]
-
-  part_name = "multimedia_media_library_standard"
-  subsystem_name = "multimedia"
 }
 
 ohos_shared_library("media_library") {
@@ -83,9 +80,6 @@ ohos_source_set("media_library_test_source") {
   sources = [ "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/test/media_library_test.cpp" ]
 
   configs = [ ":media_library_config" ]
-
-  part_name = "multimedia_media_library_standard"
-  subsystem_name = "multimedia"
 }
 
 ohos_executable("media_library_test") {

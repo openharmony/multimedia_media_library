@@ -37,10 +37,8 @@ enum ScannerIpcErrorTypes : int32_t {
     SCAN_IPC_SUCCESS,
     SCAN_PROXY_WR_ERR,
     SCAN_PROXY_RD_ERR,
-    SCAN_PROXY_IF_TOKEN_WR_ERR,
     SCAN_STUB_WR_ERR,
-    SCAN_STUB_RD_ERR,
-    SCAN_STUB_IF_TOKEN_INVALID
+    SCAN_STUB_RD_ERR
 };
 
 enum ConnectionState : int32_t {

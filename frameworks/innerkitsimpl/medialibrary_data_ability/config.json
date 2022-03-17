@@ -1,10 +1,6 @@
 {
     "app": {
         "bundleName": "com.ohos.medialibrary.MediaLibraryDataA",
-        "removable": false,
-        "userDataClearable": false,
-        "singleton": false,
-        "keepAlive": true,
         "vendor": "ohos",
         "version": {
             "code": 1,
@@ -16,12 +12,7 @@
         }
     },
     "deviceConfig": {
-        "default": {
-            "removable": false,
-            "userDataClearable": false,
-            "singleton": false,
-            "keepAlive": true
-        }
+        "default": {}
     },
     "module": {
         "package": "com.ohos.MediaLibraryDataAbility.src",

@@ -148,6 +148,7 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
         ReturnDefaultOnError("failed to obtain the index", dataType);
     }
 
+    MEDIA_ERR_LOG("columnName is %{public}s, dataType %{public}d", columnName.c_str(), dataType);
     switch (dataType) {
         case TYPE_STRING:
             status = resultset_->GetString(index, stringVal);

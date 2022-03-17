@@ -27,9 +27,9 @@ namespace {
 namespace OHOS {
 namespace Media {
 using namespace std;
-thread_local napi_ref AlbumNapi::sConstructor_ = nullptr;
-thread_local AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
-thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> AlbumNapi::sAbilityHelper = nullptr;
+napi_ref AlbumNapi::sConstructor_ = nullptr;
+AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
+std::shared_ptr<AppExecFwk::DataAbilityHelper> AlbumNapi::sAbilityHelper = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
 AlbumNapi::AlbumNapi()
@@ -741,8 +741,6 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Alb
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
-        auto contextUri = make_unique<Uri>(MEDIALIBRARY_ALBUM_URI);
-        context->objectInfo->GetDataAbilityHelper()->NotifyChange(*contextUri);
     } else {
         napi_get_undefined(env, &jsContext->data);
         if (context->changedRows == DATA_ABILITY_VIOLATION_PARAMETERS) {

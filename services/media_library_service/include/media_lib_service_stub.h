@@ -62,7 +62,7 @@ public:
     virtual bool ModifyMediaAlbumAsset(AssetType assetType, const AlbumAsset &srcAlbumAsset,
                                        const AlbumAsset &dstAlbumAsset, const std::string &albumUri) = 0;
 
-    DECLARE_INTERFACE_DESCRIPTOR(u"multimedia.IMediaLibService");
+    DECLARE_INTERFACE_DESCRIPTOR(u"IMediaLibService");
 };
 
 class MediaLibServiceStub : public IRemoteStub<IMediaLibService> {

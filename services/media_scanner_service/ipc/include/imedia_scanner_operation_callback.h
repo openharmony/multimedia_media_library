@@ -32,7 +32,7 @@ public:
      */
     virtual int32_t OnScanFinishedCallback(const int32_t status, const std::string &uri, const std::string &path) = 0;
 
-    DECLARE_INTERFACE_DESCRIPTOR(u"multimedia.IMediaScannerOperationCallback");
+    DECLARE_INTERFACE_DESCRIPTOR(u"IMediaScannerOperationCallback");
 };
 } // namespace Media
 } // namespace OHOS
