@@ -52,7 +52,7 @@ public:
     AlbumNapi();
     ~AlbumNapi();
 
-    static thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper;
 
 private:
     static void AlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
