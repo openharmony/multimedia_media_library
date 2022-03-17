@@ -151,7 +151,7 @@ public:
     ~MediaLibraryNapi();
 
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env, napi_callback_info info);
-    static thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
 
 public:
     static const std::string PERMISSION_NAME_READ_MEDIA;

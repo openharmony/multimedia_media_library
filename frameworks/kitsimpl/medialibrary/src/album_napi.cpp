@@ -29,7 +29,7 @@ namespace Media {
 using namespace std;
 thread_local napi_ref AlbumNapi::sConstructor_ = nullptr;
 thread_local AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
-thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> AlbumNapi::sAbilityHelper = nullptr;
+std::shared_ptr<AppExecFwk::DataAbilityHelper> AlbumNapi::sAbilityHelper = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
 AlbumNapi::AlbumNapi()

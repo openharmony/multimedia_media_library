@@ -49,8 +49,8 @@ public:
     int32_t GetOrientation() const;
     Media::MediaType GetMediaType() const;
     std::string GetNetworkId() const;
-    static thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
-    static thread_local std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
+    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
+    static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
         const std::shared_ptr<AppExecFwk::Context> &context);
 private:
