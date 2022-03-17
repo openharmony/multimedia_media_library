@@ -26,9 +26,9 @@ namespace {
 namespace OHOS {
 namespace Media {
 using namespace std;
-thread_local napi_ref SmartAlbumNapi::sConstructor_ = nullptr;
-thread_local SmartAlbumAsset *SmartAlbumNapi::sAlbumData_ = nullptr;
-thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> SmartAlbumNapi::sAbilityHelper = nullptr;
+napi_ref SmartAlbumNapi::sConstructor_ = nullptr;
+SmartAlbumAsset *SmartAlbumNapi::sAlbumData_ = nullptr;
+std::shared_ptr<AppExecFwk::DataAbilityHelper> SmartAlbumNapi::sAbilityHelper = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
 SmartAlbumNapi::SmartAlbumNapi()

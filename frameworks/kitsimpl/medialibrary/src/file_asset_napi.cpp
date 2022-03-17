@@ -36,10 +36,10 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-thread_local napi_ref FileAssetNapi::sConstructor_ = nullptr;
-thread_local FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
-thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> FileAssetNapi::sAbilityHelper_ = nullptr;
-thread_local std::shared_ptr<MediaThumbnailHelper> FileAssetNapi::sThumbnailHelper_ = nullptr;
+napi_ref FileAssetNapi::sConstructor_ = nullptr;
+FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
+std::shared_ptr<AppExecFwk::DataAbilityHelper> FileAssetNapi::sAbilityHelper_ = nullptr;
+std::shared_ptr<MediaThumbnailHelper> FileAssetNapi::sThumbnailHelper_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
 FileAssetNapi::FileAssetNapi()

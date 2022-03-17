@@ -25,11 +25,11 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-thread_local napi_ref AlbumAssetNapi::sConstructor_ = nullptr;
-thread_local Media::AlbumAsset *AlbumAssetNapi::sAlbumAsset_ = nullptr;
-thread_local AlbumType AlbumAssetNapi::sAlbumType_ = TYPE_NONE;
-thread_local std::string AlbumAssetNapi::sAlbumPath_ = "";
-thread_local Media::IMediaLibraryClient *AlbumAssetNapi::sMediaLibrary_ = nullptr;
+napi_ref AlbumAssetNapi::sConstructor_ = nullptr;
+Media::AlbumAsset *AlbumAssetNapi::sAlbumAsset_ = nullptr;
+AlbumType AlbumAssetNapi::sAlbumType_ = TYPE_NONE;
+std::string AlbumAssetNapi::sAlbumPath_ = "";
+Media::IMediaLibraryClient *AlbumAssetNapi::sMediaLibrary_ = nullptr;
 
 Media::AssetType GetAlbumType(AlbumType type)
 {

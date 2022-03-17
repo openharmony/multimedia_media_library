@@ -47,10 +47,10 @@ static map<string, ListenerType> ListenerTypeMaps = {
     {"remoteFileChange", REMOTEFILE_LISTENER}
 };
 
-thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
-thread_local std::shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::sAbilityHelper_ = nullptr;
-thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
-thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
+napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
+std::shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::sAbilityHelper_ = nullptr;
+napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
+napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 using Context = MediaLibraryAsyncContext* ;
 bool MediaLibraryNapi::isStageMode_ = false;
