@@ -16,17 +16,16 @@
 #ifndef FILE_ASSET_NAPI_H
 #define FILE_ASSET_NAPI_H
 
-#include "ability.h"
 #include "ability_loader.h"
-#include "file_asset.h"
+#include "ability_context.h"
 #include "data_ability_helper.h"
-#include "medialibrary_napi_utils.h"
+#include "file_asset.h"
+#include "media_lib_service_const.h"
+#include "media_thumbnail_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "values_bucket.h"
-#include "media_thumbnail_helper.h"
 #include "pixel_map_napi.h"
-#include "ability_context.h"
+#include "values_bucket.h"
 
 namespace OHOS {
 namespace Media {
@@ -47,7 +46,7 @@ public:
     std::string GetFileUri() const;
     int32_t GetFileId() const;
     int32_t GetOrientation() const;
-    Media::MediaType GetMediaType() const;
+    MediaType GetMediaType() const;
     std::string GetNetworkId() const;
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
     static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
@@ -98,7 +97,7 @@ private:
 
     int32_t fileId_;
     std::string fileUri_;
-    Media::MediaType mediaType_;
+    MediaType mediaType_;
     std::string displayName_;
     std::string relativePath_;
     std::string filePath_;
@@ -142,7 +141,7 @@ struct FileAssetAsyncContext {
     int32_t thumbWidth;
     int32_t thumbHeight;
     bool isDirectory;
-    int32_t error = ERR_DEFAULT;
+    int32_t error = 0;
     int32_t changedRows;
     int32_t fd;
     bool isFavourite = false;
