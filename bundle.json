@@ -52,7 +52,7 @@
         "inner_kits": [
             {
                 "header": {
-                  "header_base": "////foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include/",
+                  "header_base": "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
                   "header_files": [
                     "album_asset.h",
                     "fetch_result.h",
@@ -75,7 +75,23 @@
                   ]
                 },
                 "name": "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library"
-            }
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary/include",
+                "header_files": [
+                  "album_asset_napi.h",
+                  "fetch_file_result_napi.h",
+                  "media_library_napi.h",
+                  "album_napi.h",
+                  "file_asset_napi.h",
+                  "smart_album_napi.h",
+                  "medialibrary_napi_utils.h",
+                  "medialibrary_peer_info.h"
+                ]
+              },
+              "name": "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary"
+          }
         ],
         "test": [
           "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/test:test"

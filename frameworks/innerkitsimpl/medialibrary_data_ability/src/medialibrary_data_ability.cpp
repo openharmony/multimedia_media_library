@@ -187,7 +187,11 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
     }
 
     int32_t errCode(DATA_ABILITY_FAIL);
-    string databaseDir = AbilityContext::GetDatabaseDir() + "/" + MEDIA_DATA_ABILITY_DB_NAME;
+    auto context = GetAbilityContext();
+    if (context == nullptr) {
+        return errCode;
+    }
+    string databaseDir = context->GetDatabaseDir() + "/" + MEDIA_DATA_ABILITY_DB_NAME;
     RdbStoreConfig config(databaseDir);
     config.SetBundleName(bundleName_);
     config.SetName(MEDIA_DATA_ABILITY_DB_NAME);
