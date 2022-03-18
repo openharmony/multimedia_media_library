@@ -75,9 +75,6 @@ void MediaLibraryNapi::MediaLibraryNapiDestructor(napi_env env, void *nativeObje
 
 napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
 {
-    napi_status status;
-    napi_value ctorObj;
-    int32_t refCount = 1;
     napi_property_descriptor media_library_properties[] = {
         DECLARE_NAPI_FUNCTION("getMediaAssets", GetMediaAssets),
         DECLARE_NAPI_FUNCTION("getAudioAssets", GetAudioAssets),
@@ -111,10 +108,13 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("DirectoryType", CreateDirectoryTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PrivateAlbumType", CreatePrivateAlbumTypeEnum(env))
     };
-    status = napi_define_class(env, MEDIA_LIB_NAPI_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH, MediaLibraryNapiConstructor,
-                               nullptr, sizeof(media_library_properties) / sizeof(media_library_properties[PARAM0]),
-                               media_library_properties, &ctorObj);
+    napi_value ctorObj;
+    napi_status status = napi_define_class(env, MEDIA_LIB_NAPI_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
+        MediaLibraryNapiConstructor, nullptr,
+        sizeof(media_library_properties) / sizeof(media_library_properties[PARAM0]),
+        media_library_properties, &ctorObj);
     if (status == napi_ok) {
+        int32_t refCount = 1;
         if (napi_create_reference(env, ctorObj, refCount, &sConstructor_) == napi_ok) {
             status = napi_set_named_property(env, exports, MEDIA_LIB_NAPI_CLASS_NAME.c_str(), ctorObj);
             if (status == napi_ok && napi_define_properties(env, exports,
@@ -131,11 +131,10 @@ shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
 
     string strUri = MEDIALIBRARY_DATA_URI;
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     std::shared_ptr<AppExecFwk::DataAbilityHelper> dataAbilityHelper = nullptr;
-
     napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode_);
     if (status != napi_ok) {
         HiLog::Info(LABEL, "argv[0] is not a context");
@@ -175,7 +174,6 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     napi_status status;
     napi_value result = nullptr;
     napi_value thisVar = nullptr;
-
     napi_get_undefined(env, &result);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
@@ -210,32 +208,29 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
             HiLog::Error(LABEL, "Failed to wrap the native media lib client object with JS");
         }
     }
-
     return result;
 }
 
 napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callback_info info)
 {
-    napi_status status;
+    HiLog::Debug(LABEL, "GetMediaLibraryNewInstance IN");
     napi_value result = nullptr;
     napi_value ctor;
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
-
-    HiLog::Debug(LABEL, "GetMediaLibraryNewInstance IN");
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-    status = napi_get_reference_value(env, sConstructor_, &ctor);
+    napi_status status = napi_get_reference_value(env, sConstructor_, &ctor);
     if (status == napi_ok) {
         g_isNewApi = true;
         status = napi_new_instance(env, ctor, argc, argv, &result);
         if (status == napi_ok) {
             return result;
         } else {
-            HiLog::Error(LABEL, "New instance could not be obtained");
+            HiLog::Error(LABEL, "New instance could not be obtained ret = %{public}d", status);
         }
     } else {
-            HiLog::Error(LABEL, "status != napi_ok");
+            HiLog::Error(LABEL, "ret = %{public}d", status);
     }
 
     napi_get_undefined(env, &result);
@@ -245,11 +240,10 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
 
 napi_value MediaLibraryNapi::GetMediaLibraryOldInstance(napi_env env, napi_callback_info info)
 {
-    napi_status status;
     napi_value result = nullptr;
     napi_value ctor;
 
-    status = napi_get_reference_value(env, sConstructor_, &ctor);
+    napi_status status = napi_get_reference_value(env, sConstructor_, &ctor);
     if (status == napi_ok) {
         g_isNewApi = false;
         status = napi_new_instance(env, ctor, 0, nullptr, &result);
@@ -267,31 +261,25 @@ napi_value MediaLibraryNapi::GetMediaLibraryOldInstance(napi_env env, napi_callb
 static napi_status AddIntegerNamedProperty(napi_env env, napi_value object,
     const string &name, int32_t enumValue)
 {
-    napi_status status;
     napi_value enumNapiValue;
-
-    status = napi_create_int32(env, enumValue, &enumNapiValue);
+    napi_status status = napi_create_int32(env, enumValue, &enumNapiValue);
     if (status == napi_ok) {
         status = napi_set_named_property(env, object, name.c_str(), enumNapiValue);
     }
-
     return status;
 }
 
 napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
 {
     napi_value result = nullptr;
-    napi_status status;
-    string propName;
-    int refCount = 1;
-
-    status = napi_create_object(env, &result);
+    napi_status status = napi_create_object(env, &result);
     if (status == napi_ok) {
+        string propName;
         for (unsigned int i = MEDIA_TYPE_DEFAULT; i < mediaTypesEnum.size(); i++) {
             propName = mediaTypesEnum[i];
             status = AddIntegerNamedProperty(env, result, propName, i);
             if (status != napi_ok) {
-                HiLog::Error(LABEL, "Failed to add named prop!");
+                HiLog::Error(LABEL, "Failed to add named prop! ret = %{public}d", status);
                 break;
             }
             propName.clear();
@@ -299,13 +287,14 @@ napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
     }
     if (status == napi_ok) {
         // The reference count is for creating Media Type Enum Reference
+        int refCount = 1;
         status = napi_create_reference(env, result, refCount, &sMediaTypeEnumRef_);
         if (status == napi_ok) {
             return result;
         }
     }
-    HiLog::Error(LABEL, "Failed to created object for media type enum!");
 
+    HiLog::Error(LABEL, "Failed to created object for media type enum!");
     napi_get_undefined(env, &result);
     return result;
 }
@@ -313,31 +302,28 @@ napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateDirectoryTypeEnum(napi_env env)
 {
     napi_value result = nullptr;
-    napi_status status;
-    string propName;
-    int refCount = 1;
-
-    status = napi_create_object(env, &result);
+    napi_status status = napi_create_object(env, &result);
     if (status == napi_ok) {
+        string propName;
         for (unsigned int i = 0; i < directoryEnum.size(); i++) {
             propName = directoryEnum[i];
             status = AddIntegerNamedProperty(env, result, propName, i);
             if (status != napi_ok) {
-                HiLog::Error(LABEL, "Failed to add named prop!");
+                HiLog::Error(LABEL, "Failed to add named prop! ret = %{public}d", status);
                 break;
             }
-            propName.clear();
         }
     }
     if (status == napi_ok) {
+        int refCount = 1;
         // The reference count is for creating Media Type Enum Reference
         status = napi_create_reference(env, result, refCount, &sMediaTypeEnumRef_);
         if (status == napi_ok) {
             return result;
         }
     }
-    HiLog::Error(LABEL, "Failed to created object for directory enum!");
 
+    HiLog::Error(LABEL, "Failed to created object for directory enum! ret = %{public}d", status);
     napi_get_undefined(env, &result);
     return result;
 }
@@ -345,46 +331,40 @@ napi_value MediaLibraryNapi::CreateDirectoryTypeEnum(napi_env env)
 static napi_status AddStringNamedProperty(napi_env env, napi_value object,
     const string &name, string enumValue)
 {
-    napi_status status;
     napi_value enumNapiValue;
-
-    status = napi_create_string_utf8(env, enumValue.c_str(), NAPI_AUTO_LENGTH, &enumNapiValue);
+    napi_status status = napi_create_string_utf8(env, enumValue.c_str(), NAPI_AUTO_LENGTH, &enumNapiValue);
     if (status == napi_ok) {
         status = napi_set_named_property(env, object, name.c_str(), enumNapiValue);
     }
-
     return status;
 }
 
 napi_value MediaLibraryNapi::CreateFileKeyEnum(napi_env env)
 {
     napi_value result = nullptr;
-    napi_status status;
-    string propName;
-    int refCount = 1;
-
-    status = napi_create_object(env, &result);
+    napi_status status = napi_create_object(env, &result);
     if (status == napi_ok) {
+        string propName;
         for (unsigned int i = 0; i < fileKeyEnum.size(); i++) {
             propName = fileKeyEnum[i];
             status = AddStringNamedProperty(env, result, propName, fileKeyEnumValues[i]);
             if (status != napi_ok) {
-                HiLog::Error(LABEL, "Failed to add named prop!");
+                HiLog::Error(LABEL, "Failed to add named prop! ret = %{public}d", status);
                 break;
             }
-            propName.clear();
         }
     }
 
     if (status == napi_ok) {
+        int refCount = 1;
         // The reference count is for creating File Key Enum Reference
         status = napi_create_reference(env, result, refCount, &sFileKeyEnumRef_);
         if (status == napi_ok) {
             return result;
         }
     }
-    HiLog::Error(LABEL, "Failed to created object for file key enum!");
 
+    HiLog::Error(LABEL, "Failed to created object for file key enum! ret = %{public}d", status);
     napi_get_undefined(env, &result);
     return result;
 }
@@ -392,41 +372,38 @@ napi_value MediaLibraryNapi::CreateFileKeyEnum(napi_env env)
 napi_value MediaLibraryNapi::CreatePrivateAlbumTypeEnum(napi_env env)
 {
     napi_value result = nullptr;
-    napi_status status;
-    string propName;
-    int refCount = 1;
-
-    status = napi_create_object(env, &result);
+    napi_status status = napi_create_object(env, &result);
     if (status == napi_ok) {
+        string propName;
         for (unsigned int i = 0; i < privateAlbumTypeNameEnum.size(); i++) {
             propName = privateAlbumTypeNameEnum[i];
             status = AddIntegerNamedProperty(env, result, propName, i);
             if (status != napi_ok) {
-                HiLog::Error(LABEL, "Failed to add named prop!");
+                HiLog::Error(LABEL, "Failed to add named prop! ret = %{public}d", status);
                 break;
             }
-            propName.clear();
         }
     }
 
     if (status == napi_ok) {
+        int refCount = 1;
         // The reference count is for creating File Key Enum Reference
         status = napi_create_reference(env, result, refCount, &sFileKeyEnumRef_);
         if (status == napi_ok) {
             return result;
         }
     }
-    HiLog::Error(LABEL, "Failed to created object for file key enum!");
 
+    HiLog::Error(LABEL, "Failed to created object for file key enum! ret = %{public}d", status);
     napi_get_undefined(env, &result);
     return result;
 }
 
 IMediaLibraryClient* MediaLibraryNapi::GetMediaLibClientInstance()
 {
-    IMediaLibraryClient *ins = this->mediaLibrary_;
-    return ins;
+    return this->mediaLibrary_;
 }
+
 static void DealWithCommonParam(napi_env env, napi_value arg,
     const MediaLibraryAsyncContext &context, bool &err, bool &present)
 {
@@ -436,8 +413,8 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
     napi_value property = nullptr;
     napi_has_named_property(env, arg, "selections", &present);
     if (present) {
-        if (napi_get_named_property(env, arg, "selections", &property) != napi_ok
-            || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
+        if ((napi_get_named_property(env, arg, "selections", &property) != napi_ok) ||
+            (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
             HiLog::Error(LABEL, "Could not get the string argument!");
             err = true;
             return;
@@ -450,8 +427,8 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
 
     napi_has_named_property(env, arg, "order", &present);
     if (present) {
-        if (napi_get_named_property(env, arg, "order", &property) != napi_ok
-            || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
+        if ((napi_get_named_property(env, arg, "order", &property) != napi_ok) ||
+            (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
             HiLog::Error(LABEL, "Could not get the string argument!");
             err = true;
             return;
@@ -464,8 +441,8 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
 
     napi_has_named_property(env, arg, "networkId", &present);
     if (present) {
-        if (napi_get_named_property(env, arg, "networkId", &property) != napi_ok
-            || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
+        if ((napi_get_named_property(env, arg, "networkId", &property) != napi_ok) ||
+            (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
             HiLog::Error(LABEL, "Could not get the networkId string argument!");
             err = true;
             return;
@@ -476,20 +453,21 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
         present = false;
     }
 }
+
 static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibraryAsyncContext &context, bool &err)
 {
     MediaLibraryAsyncContext *asyncContext = const_cast<MediaLibraryAsyncContext *>(&context);
-    char buffer[PATH_MAX];
-    uint32_t len = 0;
-    size_t res = 0;
     napi_value property = nullptr, stringItem = nullptr;
     bool present = false;
     DealWithCommonParam(env, arg, context, err, present);
     napi_has_named_property(env, arg, "selectionArgs", &present);
     if (present && napi_get_named_property(env, arg, "selectionArgs", &property) == napi_ok) {
+        uint32_t len = 0;
         napi_get_array_length(env, property, &len);
+        char buffer[PATH_MAX];
         for (size_t i = 0; i < len; i++) {
             napi_get_element(env, property, i, &stringItem);
+            size_t res = 0;
             napi_get_value_string_utf8(env, stringItem, buffer, PATH_MAX, &res);
             asyncContext->selectionArgs.push_back(string(buffer));
             CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
@@ -503,16 +481,11 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibrar
 static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_value argv[],
     MediaLibraryAsyncContext &asyncContext)
 {
-    string str = "";
-    vector<string> strArr;
-    string order = "";
     bool err = false;
     const int32_t refCount = 1;
-    napi_value result;
     auto context = &asyncContext;
 
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
-
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
@@ -535,25 +508,26 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
     }
 
     // Return true napi_value if params are successfully obtained
+    napi_value result;
     napi_get_boolean(env, true, &result);
     return result;
 }
 
 static void MediaAssetsAsyncCallbackComplete(napi_env env, napi_status status,
-                                             MediaLibraryAsyncContext *context)
+    MediaLibraryAsyncContext *context)
 {
-    napi_value mediaArray = nullptr;
-    napi_value mAsset = nullptr;
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    CHECK_NULL_PTR_RETURN_VOID(jsContext, "jsContext is null");
     jsContext->status = true;
     napi_get_undefined(env, &jsContext->error);
     if (!context->mediaAssets.empty()) {
         size_t len = context->mediaAssets.size();
+        napi_value mediaArray = nullptr;
         if (napi_create_array(env, &mediaArray) == napi_ok) {
             size_t i = 0;
+            napi_value mAsset = nullptr;
             for (; i < len; i++) {
                 mAsset = MediaAssetNapi::CreateMediaAsset(env, *(context->mediaAssets[i]),
                     *(context->objectInfo->GetMediaLibClientInstance()));
@@ -576,16 +550,13 @@ static void MediaAssetsAsyncCallbackComplete(napi_env env, napi_status status,
 
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
-                                                   context->work, *jsContext);
+            context->work, *jsContext);
     }
     delete context;
 }
 
 napi_value MediaLibraryNapi::GetMediaAssets(napi_env env, napi_callback_info info)
 {
-    napi_status status;
-    napi_value result = nullptr;
-    napi_value resource = nullptr;
     size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
@@ -593,33 +564,38 @@ napi_value MediaLibraryNapi::GetMediaAssets(napi_env env, napi_callback_info inf
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
+    napi_value result = nullptr;
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (asyncContext == nullptr) {
+        return result;
+    }
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (!(status == napi_ok && asyncContext->objectInfo != nullptr)) {
         return result;
     }
-        result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
-        CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
-        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "GetMediaAssets");
+    result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
-        status = napi_create_async_work(
-            env, nullptr, resource,
-            [](napi_env env, void* data) {
-                MediaLibraryAsyncContext* context = static_cast<MediaLibraryAsyncContext*>(data);
-                context->mediaAssets = context->objectInfo->mediaLibrary_->GetMediaAssets(context->selection,
-                                                                                          context->selectionArgs);
-                context->status = 0;
-            },
+    NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+    napi_value resource = nullptr;
+    NAPI_CREATE_RESOURCE_NAME(env, resource, "GetMediaAssets");
+
+    status = napi_create_async_work(env, nullptr, resource,
+        [](napi_env env, void* data) {
+            MediaLibraryAsyncContext* context = static_cast<MediaLibraryAsyncContext*>(data);
+            context->mediaAssets = context->objectInfo->mediaLibrary_->GetMediaAssets(context->selection,
+                                                                                      context->selectionArgs);
+            context->status = 0;
+        },
         reinterpret_cast<CompleteCallback>(MediaAssetsAsyncCallbackComplete),
         static_cast<void*>(asyncContext.get()), &asyncContext->work);
-        if (status != napi_ok) {
-            napi_get_undefined(env, &result);
-        } else {
-            napi_queue_async_work(env, asyncContext->work);
-            asyncContext.release();
+    if (status != napi_ok) {
+        napi_get_undefined(env, &result);
+    } else {
+        napi_queue_async_work(env, asyncContext->work);
+        asyncContext.release();
     }
     return result;
 }
@@ -627,18 +603,18 @@ napi_value MediaLibraryNapi::GetMediaAssets(napi_env env, napi_callback_info inf
 static void AudioAssetsAsyncCallbackComplete(napi_env env, napi_status status,
                                              MediaLibraryAsyncContext *context)
 {
-    napi_value audioArray = nullptr;
-    napi_value aAsset = nullptr;
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    CHECK_NULL_PTR_RETURN_VOID(jsContext, "jsContext is null");
+
     jsContext->status = true;
     napi_get_undefined(env, &jsContext->error);
     if (!context->audioAssets.empty()) {
         size_t len = context->audioAssets.size();
+        napi_value audioArray = nullptr;
         if (napi_create_array(env, &audioArray) == napi_ok) {
             size_t i = 0;
+            napi_value aAsset = nullptr;
             for (; i < len; i++) {
                 aAsset = AudioAssetNapi::CreateAudioAsset(env, *(context->audioAssets[i]),
                                                           *(context->objectInfo->GetMediaLibClientInstance()));
@@ -668,43 +644,43 @@ static void AudioAssetsAsyncCallbackComplete(napi_env env, napi_status status,
 
 napi_value MediaLibraryNapi::GetAudioAssets(napi_env env, napi_callback_info info)
 {
-    napi_status status;
-    napi_value result = nullptr;
-    napi_value resource = nullptr;
     size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
-
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
+    napi_value result = nullptr;
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (asyncContext == nullptr) {
+        return result;
+    }
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (!(status == napi_ok && asyncContext->objectInfo != nullptr)) {
         return result;
     }
-        result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
-        CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
+    result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
-        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "GetAudioAssets");
+    NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+    napi_value resource = nullptr;
+    NAPI_CREATE_RESOURCE_NAME(env, resource, "GetAudioAssets");
 
-        status = napi_create_async_work(
-            env, nullptr, resource,
-            [](napi_env env, void* data) {
-                MediaLibraryAsyncContext* context = static_cast<MediaLibraryAsyncContext*>(data);
-                context->audioAssets = context->objectInfo->mediaLibrary_->GetAudioAssets(context->selection,
-                                                                                          context->selectionArgs);
-                context->status = 0;
-            },
+    status = napi_create_async_work(env, nullptr, resource,
+        [](napi_env env, void* data) {
+            MediaLibraryAsyncContext* context = static_cast<MediaLibraryAsyncContext*>(data);
+            context->audioAssets = context->objectInfo->mediaLibrary_->GetAudioAssets(context->selection,
+                                                                                      context->selectionArgs);
+            context->status = 0;
+        },
         reinterpret_cast<CompleteCallback>(AudioAssetsAsyncCallbackComplete),
         static_cast<void*>(asyncContext.get()), &asyncContext->work);
-        if (status != napi_ok) {
-            napi_get_undefined(env, &result);
-        } else {
-            napi_queue_async_work(env, asyncContext->work);
-            asyncContext.release();
+    if (status != napi_ok) {
+        napi_get_undefined(env, &result);
+    } else {
+        napi_queue_async_work(env, asyncContext->work);
+        asyncContext.release();
     }
     return result;
 }
@@ -712,18 +688,18 @@ napi_value MediaLibraryNapi::GetAudioAssets(napi_env env, napi_callback_info inf
 static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status,
                                              MediaLibraryAsyncContext *context)
 {
-    napi_value videoArray = nullptr;
-    napi_value vAsset = nullptr;
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    CHECK_NULL_PTR_RETURN_VOID(jsContext, "jsContext is null");
+
     jsContext->status = true;
     napi_get_undefined(env, &jsContext->error);
     if (!context->videoAssets.empty()) {
         size_t len = context->videoAssets.size();
+        napi_value videoArray = nullptr;
         if (napi_create_array(env, &videoArray) == napi_ok) {
             size_t i = 0;
+            napi_value vAsset = nullptr;
             for (; i < len; i++) {
                 vAsset = VideoAssetNapi::CreateVideoAsset(env, *(context->videoAssets[i]),
                                                           *(context->objectInfo->GetMediaLibClientInstance()));
@@ -753,43 +729,42 @@ static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status,
 
 napi_value MediaLibraryNapi::GetVideoAssets(napi_env env, napi_callback_info info)
 {
-    napi_status status;
-    napi_value result = nullptr;
-    napi_value resource = nullptr;
     size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
-
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
+    napi_value result = nullptr;
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (asyncContext == nullptr) {
+        return result;
+    }
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (!(status == napi_ok && asyncContext->objectInfo != nullptr)) {
         return result;
     }
-        result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
-        CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
+    result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
+    napi_value resource = nullptr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
-        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "GetVideoAssets");
-
-        status = napi_create_async_work(
-            env, nullptr, resource,
-            [](napi_env env, void* data) {
-                MediaLibraryAsyncContext* context = static_cast<MediaLibraryAsyncContext*>(data);
-                context->videoAssets = context->objectInfo->mediaLibrary_->GetVideoAssets(context->selection,
-                                                                                          context->selectionArgs);
-                context->status = 0;
-            },
+    NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+    NAPI_CREATE_RESOURCE_NAME(env, resource, "GetVideoAssets");
+    status = napi_create_async_work(env, nullptr, resource,
+        [](napi_env env, void* data) {
+            MediaLibraryAsyncContext* context = static_cast<MediaLibraryAsyncContext*>(data);
+            context->videoAssets = context->objectInfo->mediaLibrary_->GetVideoAssets(context->selection,
+                                                                                      context->selectionArgs);
+            context->status = 0;
+        },
         reinterpret_cast<CompleteCallback>(VideoAssetsAsyncCallbackComplete),
         static_cast<void*>(asyncContext.get()), &asyncContext->work);
-        if (status != napi_ok) {
-            napi_get_undefined(env, &result);
-        } else {
-            napi_queue_async_work(env, asyncContext->work);
-            asyncContext.release();
+    if (status != napi_ok) {
+        napi_get_undefined(env, &result);
+    } else {
+        napi_queue_async_work(env, asyncContext->work);
+        asyncContext.release();
     }
     return result;
 }
@@ -797,18 +772,18 @@ napi_value MediaLibraryNapi::GetVideoAssets(napi_env env, napi_callback_info inf
 static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status,
                                              MediaLibraryAsyncContext *context)
 {
-    napi_value imageArray = nullptr;
-    napi_value iAsset = nullptr;
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    CHECK_NULL_PTR_RETURN_VOID(jsContext, "jsContext is null");
+
     jsContext->status = true;
     napi_get_undefined(env, &jsContext->error);
     if (!context->imageAssets.empty()) {
         size_t len = context->imageAssets.size();
+        napi_value imageArray = nullptr;
         if (napi_create_array(env, &imageArray) == napi_ok) {
             size_t i = 0;
+            napi_value iAsset = nullptr;
             for (; i < len; i++) {
                 iAsset = ImageAssetNapi::CreateImageAsset(env, *(context->imageAssets[i]),
                                                           *(context->objectInfo->GetMediaLibClientInstance()));
@@ -838,28 +813,28 @@ static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status,
 
 napi_value MediaLibraryNapi::GetImageAssets(napi_env env, napi_callback_info info)
 {
-    napi_status status;
-    napi_value result = nullptr;
-    napi_value resource = nullptr;
     size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
-
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_TWO, "requires 2 parameters maximum");
 
+    napi_value result = nullptr;
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (asyncContext == nullptr) {
+        return result;
+    }
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        napi_value resource = nullptr;
         NAPI_CREATE_RESOURCE_NAME(env, resource, "GetImageAssets");
 
-        status = napi_create_async_work(
-            env, nullptr, resource,
+        status = napi_create_async_work(env, nullptr, resource,
             [](napi_env env, void* data) {
                 MediaLibraryAsyncContext* context = static_cast<MediaLibraryAsyncContext*>(data);
                 context->imageAssets = context->objectInfo->mediaLibrary_->GetImageAssets(context->selection,
@@ -875,24 +850,23 @@ napi_value MediaLibraryNapi::GetImageAssets(napi_env env, napi_callback_info inf
             asyncContext.release();
         }
     }
-
     return result;
 }
 
 static void AlbumAssetsAsyncCallbackComplete(napi_env env, napi_status status,
-                                             MediaLibraryAsyncContext *context)
+    MediaLibraryAsyncContext *context)
 {
-    napi_value albumArray = nullptr;
-    napi_value albumAsset = nullptr;
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    CHECK_NULL_PTR_RETURN_VOID(jsContext, "jsContext is null");
+
     jsContext->status = true;
     napi_get_undefined(env, &jsContext->error);
+    napi_value albumArray = nullptr;
     if (!context->albumAssets.empty() && (napi_create_array(env, &albumArray) == napi_ok)) {
         size_t len = context->albumAssets.size();
         size_t i = 0;
+        napi_value albumAsset = nullptr;
         for (; i < len; i++) {
             string path = ROOT_MEDIA_DIR;
             if (!context->selection.empty()) {
