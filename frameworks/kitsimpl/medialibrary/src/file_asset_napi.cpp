@@ -1469,7 +1469,7 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
 }
 
 std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
-    const std::shared_ptr<AppExecFwk::Context> &context)
+    const std::shared_ptr<AbilityRuntime::Context> &context)
 {
     // uri is dataability:///media/image/<id>/thumbnail/<width>/<height>
     auto index = uri.find("//");
@@ -1504,7 +1504,13 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
 
     string meidaUri = MEDIALIBRARY_DATA_URI;
     auto dataAbilityHelper = DataAbilityHelper::Creator(context, std::make_shared<Uri>(meidaUri));
+    if (dataAbilityHelper == nullptr) {
+        return nullptr;
+    }
     auto thumbnailHelper = std::make_shared<MediaThumbnailHelper>();
+    if (thumbnailHelper == nullptr) {
+        return nullptr;
+    }
     return QueryThumbnail(dataAbilityHelper, thumbnailHelper, fileId, fileUri, width, height);
 }
 

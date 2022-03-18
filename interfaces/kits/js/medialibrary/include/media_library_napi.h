@@ -86,14 +86,14 @@ public:
 
     explicit ChangeListenerNapi(napi_env env) : env_(env) {}
 
-    ChangeListenerNapi(const ChangeListenerNapi& listener)
+    ChangeListenerNapi(const ChangeListenerNapi &listener)
     {
         this->env_ = listener.env_;
         this->cbOnRef_ = listener.cbOnRef_;
         this->cbOffRef_ = listener.cbOffRef_;
     }
 
-    ChangeListenerNapi& operator=(const ChangeListenerNapi& listener)
+    ChangeListenerNapi& operator=(const ChangeListenerNapi &listener)
     {
         this->env_ = listener.env_;
         this->cbOnRef_ = listener.cbOnRef_;
@@ -158,7 +158,7 @@ public:
     static const std::string PERMISSION_NAME_WRITE_MEDIA;
 
 private:
-    static void MediaLibraryNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
+    static void MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
     static napi_value MediaLibraryNapiConstructor(napi_env env, napi_callback_info info);
 
     static napi_value GetMediaLibraryNewInstance(napi_env env, napi_callback_info info);
