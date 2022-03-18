@@ -18,12 +18,13 @@
 #include <cstring>
 
 #include "abs_shared_result_set.h"
+#include "bytrace.h"
 #include "data_ability_predicates.h"
 #include "fetch_result.h"
 #include "hilog/log.h"
 #include "media_file_utils.h"
+#include "medialibrary_napi_utils.h"
 #include "rdb_errno.h"
-#include "bytrace.h"
 #include "string_ex.h"
 
 using OHOS::HiviewDFX::HiLog;
