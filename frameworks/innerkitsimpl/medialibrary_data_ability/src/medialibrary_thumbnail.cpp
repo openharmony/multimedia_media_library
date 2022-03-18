@@ -866,6 +866,7 @@ int32_t MediaLibraryThumbnail::SetSource(std::shared_ptr<AVMetadataHelper> avMet
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource IN");
     if (avMetadataHelper == nullptr) {
         MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource avMetadataHelper == nullptr");
+        return -1;
     }
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource path = %{public}s", path.c_str());
     UriHelper uriHelper(path);
