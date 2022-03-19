@@ -1487,7 +1487,7 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     }
     auto fileUri = uri.substr(0, index - 1);
     tmpIdx = fileUri.rfind("/");
-    int32_t fileId;
+    int32_t fileId = 0;
     StrToInt(fileUri.substr(tmpIdx + 1), fileId);
     index += strlen("thumbnail");
     index = uri.find("/", index);
@@ -1499,8 +1499,9 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     if (index == string::npos) {
         return nullptr;
     }
-    int32_t width, height;
+    int32_t width = 0;
     StrToInt(uri.substr(index, tmpIdx - index), width);
+    int32_t height = 0;
     StrToInt(uri.substr(tmpIdx + 1), height);
 
     string meidaUri = MEDIALIBRARY_DATA_URI;
