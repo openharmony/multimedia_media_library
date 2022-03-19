@@ -22,12 +22,13 @@
 #include "bundle_mgr_interface.h"
 #include "file_ex.h"
 #include "ipc_singleton.h"
+#include "media_file_utils.h"
+#include "medialibrary_sync_table.h"
 #include "ipc_skeleton.h"
 #include "sa_mgr_client.h"
 #include "string_ex.h"
 #include "sys_mgr_client.h"
 #include "system_ability_definition.h"
-#include "medialibrary_sync_table.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;

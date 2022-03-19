@@ -15,6 +15,7 @@
 
 #include "smart_album_napi.h"
 #include "hilog/log.h"
+#include "media_file_utils.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
