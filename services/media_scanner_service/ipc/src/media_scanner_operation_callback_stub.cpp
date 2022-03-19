@@ -29,6 +29,12 @@ int32_t MediaScannerOperationCallbackStub::OnRemoteRequest(
 {
     int32_t errCode = ERR_NONE;
 
+    auto remoteDescriptor = data.ReadInterfaceToken();
+    if (GetDescriptor() != remoteDescriptor) {
+        MEDIA_ERR_LOG("MediaScannerOperationCallbackStub invalid interface token");
+        return SCAN_STUB_IF_TOKEN_INVALID;
+    }
+
     switch (code) {
         case MEDIA_SCAN_ON_CALLBACK:
             errCode = MediaScannerOperationCallbackStub::HandleOnCallback(data);

@@ -404,6 +404,12 @@ int32_t MediaLibServiceStub::OnRemoteRequest(
 {
     int32_t errCode = SUCCESS;
 
+    auto remoteDescriptor = data.ReadInterfaceToken();
+    if (GetDescriptor() != remoteDescriptor) {
+        MEDIA_ERR_LOG("MediaLibServiceStub interface token error");
+        return IPC_INTERFACE_TOKEN_FAIL;
+    }
+
     MEDIA_INFO_LOG(" MediaLibServiceStub::OnRemoteRequest called.code: %{public}d", code);
     if (code > MEDIA_GET_VIDEOALBUM_ASSETS) {
         errCode = ProcessMediaOperationRequests(code, data, reply, option);

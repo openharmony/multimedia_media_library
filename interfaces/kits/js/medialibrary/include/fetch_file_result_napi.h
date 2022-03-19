@@ -50,6 +50,7 @@ private:
     static napi_value JSGetLastObject(napi_env env, napi_callback_info info);
     static napi_value JSGetPositionObject(napi_env env, napi_callback_info info);
     static napi_value JSGetAllObject(napi_env env, napi_callback_info info);
+    static napi_value JSClose(napi_env env, napi_callback_info info);
 
     napi_env env_;
     napi_ref wrapper_;
@@ -62,7 +63,6 @@ private:
 
 class FetchFileResultAsyncContext {
 public:
-    napi_env env;
     napi_async_work work;
     napi_ref callbackRef;
     napi_deferred deferred;
