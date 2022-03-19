@@ -23,6 +23,7 @@
 #include "fetch_result.h"
 #include "hilog/log.h"
 #include "media_file_utils.h"
+#include "media_log.h"
 #include "medialibrary_napi_utils.h"
 #include "rdb_errno.h"
 #include "string_ex.h"
