@@ -1509,11 +1509,10 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     if (dataAbilityHelper == nullptr) {
         return nullptr;
     }
-    auto thumbnailHelper = std::make_shared<MediaThumbnailHelper>();
-    if (thumbnailHelper == nullptr) {
-        return nullptr;
+    if (sThumbnailHelper_ == nullptr) {
+        sThumbnailHelper_ = std::make_shared<MediaThumbnailHelper>();
     }
-    return QueryThumbnail(dataAbilityHelper, thumbnailHelper, fileId, fileUri, width, height);
+    return QueryThumbnail(dataAbilityHelper, sThumbnailHelper_, fileId, fileUri, width, height);
 }
 
 static void JSFavouriteCallbackComplete(napi_env env, napi_status status,
