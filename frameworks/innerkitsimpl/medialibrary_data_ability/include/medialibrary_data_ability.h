@@ -105,6 +105,8 @@ namespace Media {
         bool CheckClientPermission(const std::string& permissionStr);
         std::string GetClientBundle(int uid);
 
+        int32_t PreCheckInsert(const std::string &uri, const NativeRdb::ValuesBucket &value);
+
         static const std::string PERMISSION_NAME_READ_MEDIA;
         static const std::string PERMISSION_NAME_WRITE_MEDIA;
         std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
