@@ -66,7 +66,8 @@ enum ListenerType {
     FILE_LISTENER,
     SMARTALBUM_LISTENER,
     DEVICE_LISTENER,
-    REMOTEFILE_LISTENER
+    REMOTEFILE_LISTENER,
+    ALBUM_LISTENER
 };
 
 struct MediaChangeListener {
@@ -113,6 +114,7 @@ public:
     sptr<AAFwk::IDataAbilityObserver> smartAlbumDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> deviceDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> remoteFileDataObserver_ = nullptr;
+    sptr<AAFwk::IDataAbilityObserver> albumDataObserver_ = nullptr;
 
 private:
     napi_env env_ = nullptr;
@@ -219,7 +221,6 @@ private:
 };
 
 struct MediaLibraryAsyncContext {
-    napi_env env;
     int32_t error = ERR_DEFAULT;
     napi_async_work work;
     napi_deferred deferred;

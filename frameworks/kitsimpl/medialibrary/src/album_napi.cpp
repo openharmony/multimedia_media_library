@@ -741,6 +741,8 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Alb
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
+        auto contextUri = make_unique<Uri>(MEDIALIBRARY_ALBUM_URI);
+        context->objectInfo->GetDataAbilityHelper()->NotifyChange(*contextUri);
     } else {
         napi_get_undefined(env, &jsContext->data);
         if (context->changedRows == DATA_ABILITY_VIOLATION_PARAMETERS) {

@@ -98,7 +98,7 @@ private:
     std::string displayName_;
     std::string relativePath_;
     std::string filePath_;
-    std::string parent_;
+    int32_t parent_;
 
     int64_t size_;
     int64_t dateAdded_;
@@ -129,7 +129,6 @@ private:
     static FileAsset *sFileAsset_;
 };
 struct FileAssetAsyncContext {
-    napi_env env;
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
@@ -145,6 +144,7 @@ struct FileAssetAsyncContext {
     bool isFavourite = false;
     bool isTrash = false;
     std::string networkId;
+    std::shared_ptr<PixelMap> pixelmap;
 };
 } // namespace Media
 } // namespace OHOS
