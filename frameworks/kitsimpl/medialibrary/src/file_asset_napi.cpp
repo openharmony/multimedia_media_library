@@ -23,6 +23,7 @@
 #include "fetch_result.h"
 #include "hilog/log.h"
 #include "media_file_utils.h"
+#include "media_log.h"
 #include "medialibrary_napi_utils.h"
 #include "rdb_errno.h"
 #include "string_ex.h"
@@ -1487,7 +1488,7 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     }
     auto fileUri = uri.substr(0, index - 1);
     tmpIdx = fileUri.rfind("/");
-    int32_t fileId;
+    int32_t fileId = 0;
     StrToInt(fileUri.substr(tmpIdx + 1), fileId);
     index += strlen("thumbnail");
     index = uri.find("/", index);
@@ -1499,8 +1500,9 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     if (index == string::npos) {
         return nullptr;
     }
-    int32_t width, height;
+    int32_t width = 0;
     StrToInt(uri.substr(index, tmpIdx - index), width);
+    int32_t height = 0;
     StrToInt(uri.substr(tmpIdx + 1), height);
 
     string meidaUri = MEDIALIBRARY_DATA_URI;
@@ -1508,11 +1510,10 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     if (dataAbilityHelper == nullptr) {
         return nullptr;
     }
-    auto thumbnailHelper = std::make_shared<MediaThumbnailHelper>();
-    if (thumbnailHelper == nullptr) {
-        return nullptr;
+    if (sThumbnailHelper_ == nullptr) {
+        sThumbnailHelper_ = std::make_shared<MediaThumbnailHelper>();
     }
-    return QueryThumbnail(dataAbilityHelper, thumbnailHelper, fileId, fileUri, width, height);
+    return QueryThumbnail(dataAbilityHelper, sThumbnailHelper_, fileId, fileUri, width, height);
 }
 
 static void JSFavouriteCallbackComplete(napi_env env, napi_status status,
