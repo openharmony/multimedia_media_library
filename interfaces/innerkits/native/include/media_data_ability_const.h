@@ -60,6 +60,7 @@ const std::string BUNDLE_NAME = "com.ohos.medialibrary.MediaLibraryDataA";
 
 const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "dataability://";
 const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
+const std::string MEDIALIBRARY_MEDIA_PREFIX = MEDIALIBRARY_DATA_ABILITY_PREFIX + MEDIALIBRARY_DATA_URI_IDENTIFIER;
 const std::string MEDIALIBRARY_TYPE_AUDIO_URI = "/audio";
 const std::string MEDIALIBRARY_TYPE_VIDEO_URI = "/video";
 const std::string MEDIALIBRARY_TYPE_IMAGE_URI = "/image";
