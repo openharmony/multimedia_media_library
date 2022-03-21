@@ -462,6 +462,23 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
         present = false;
     }
 
+    napi_has_named_property(env, arg, "uri", &present);
+    if (present) {
+        if (napi_get_named_property(env, arg, "uri", &property) != napi_ok) {
+            HiLog::Error(LABEL, "Could not get the uri property!");
+            err = true;
+            return;
+        }
+        if (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
+            HiLog::Error(LABEL, "Could not get the string argument!");
+            err = true;
+            return;
+        }
+        asyncContext->uri = buffer;
+        CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+        present = false;
+    }
+
     napi_has_named_property(env, arg, "networkId", &present);
     if (present) {
         if (napi_get_named_property(env, arg, "networkId", &property) != napi_ok
@@ -1311,7 +1328,16 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
 {
     vector<string> columns;
     NativeRdb::DataAbilityPredicates predicates;
-
+    if (!context->uri.empty()) {
+        HiLog::Info(LABEL, "context->uri is = %{private}s", context->uri.c_str());
+        context->networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(context->uri);
+        string fileId = MediaLibraryDataAbilityUtils::GetIdFromUri(context->uri);
+        if (!fileId.empty()) {
+            string idPrefix = MEDIA_DATA_DB_ID + " = ? ";
+            MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, idPrefix);
+            context->selectionArgs.insert(context->selectionArgs.begin(), fileId);
+        }
+    }
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, prefix);
     context->selectionArgs.insert(context->selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
