@@ -225,18 +225,33 @@ std::string MediaLibraryDataAbility::GetType(const Uri &uri)
     return "";
 }
 
-int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &value)
+int32_t MediaLibraryDataAbility::PreCheckInsert(const string &uri, const ValuesBucket &value)
 {
     if ((!isRdbStoreInitialized) || (value.IsEmpty()) || (rdbStore_ == nullptr)) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility Insert: Input parameter is invalid");
         return DATA_ABILITY_FAIL;
     }
-    if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+
+    string tmpUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
+    if (uri == tmpUri) {
+        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
+            return DATA_ABILITY_PERMISSION_DENIED;
+        }
+    } else if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         return DATA_ABILITY_PERMISSION_DENIED;
     }
-	
-    MediaLibrarySyncTable syncTable;
+    return DATA_ABILITY_SUCCESS;
+}
+
+int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &value)
+{
     string insertUri = uri.ToString();
+    auto result = PreCheckInsert(insertUri, value);
+    if (result) {
+        return result;
+    }
+
+    MediaLibrarySyncTable syncTable;
     std::vector<std::string> devices = std::vector<std::string>();
     // If insert uri contains media opearation, follow media operation procedure
     if (insertUri.find(MEDIA_OPERN_KEYWORD) != string::npos) {
@@ -246,8 +261,7 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
         MediaLibrarySmartAlbumMapOperations smartalbumMapOprn;
         MediaLibraryKvStoreOperations kvStoreOprn;
 
-        string scanPath("");
-        int32_t result(DATA_ABILITY_FAIL);
+        result = DATA_ABILITY_FAIL;
         string operationType = MediaLibraryDataAbilityUtils::GetOperationType(insertUri);
         MEDIA_INFO_LOG("operationType = %{public}s", operationType.c_str());
         if ((operationType == MEDIA_FILEOPRN_CREATEASSET ||
