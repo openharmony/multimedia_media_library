@@ -14,16 +14,11 @@
  */
 
 #include "media_scanner_napi.h"
-
-#include "hilog/log.h"
+#include "medialibrary_napi_log.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
 using namespace std;
-
-namespace {
-    constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaScannerNapi"};
-}
 
 namespace OHOS {
 namespace Media {
@@ -89,13 +84,13 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
             obj->env_ = env;
             obj->mediaScanner_ = MediaScannerHelperFactory::CreateScannerHelper();
             if (obj->mediaScanner_ == nullptr) {
-                HiLog::Error(LABEL, "MediaScanner client instance creation failed!");
+                NAPI_ERR_LOG("MediaScanner client instance creation failed!");
                 return result;
             }
 
             obj->mediaScannerNapiCallbackObj_ = std::make_shared<MediaScannerNapiCallback>(env);
             if (obj->mediaScannerNapiCallbackObj_ == nullptr) {
-                HiLog::Error(LABEL, "MediaScanner callback instance creation failed!");
+                NAPI_ERR_LOG("MediaScanner callback instance creation failed!");
                 return result;
             }
 
@@ -105,7 +100,7 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
                 obj.release();
                 return thisVar;
             } else {
-                HiLog::Error(LABEL, "Failed to wrap the native media scanner client object with JS");
+                NAPI_ERR_LOG("Failed to wrap the native media scanner client, status: %{public}d", status);
             }
         }
     }
@@ -133,7 +128,7 @@ napi_value MediaScannerNapi::GetMediaScannerInstance(napi_env env, napi_callback
         if (status == napi_ok) {
             return result;
         } else {
-            HiLog::Error(LABEL, "New instance could not be obtained");
+            NAPI_ERR_LOG("New instance could not be obtained, status: %{public}d", status);
         }
     }
 
@@ -189,14 +184,14 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
                 napi_get_value_string_utf8(env, argv[PARAM0], buffer, PATH_MAX, &res);
                 path = string(buffer);
             } else {
-                HiLog::Error(LABEL, "Invalid arg");
+                NAPI_ERR_LOG("Invalid arg, valueType: %{public}d", valueType);
                 return result;
             }
             napi_typeof(env, argv[PARAM1], &valueType);
             if (valueType == napi_function) {
                 napi_create_reference(env, argv[PARAM1], refCount, &callbackRef);
             } else {
-                HiLog::Error(LABEL, "Invalid arg");
+                NAPI_ERR_LOG("Invalid arg, valueType: %{public}d", valueType);
                 return result;
             }
         }
@@ -235,7 +230,7 @@ void MediaScannerNapiCallback::OnScanFinished(const int32_t status, const std::s
         // Invoke JS callback functions based on results
         InvokeJSCallback(env_, status, uri, itr->second);
         scannerMap_.erase(path);
-        HiLog::Debug(LABEL, "OnScanFinished exit");
+        NAPI_DEBUG_LOG("OnScanFinished exit");
     }
 }
 

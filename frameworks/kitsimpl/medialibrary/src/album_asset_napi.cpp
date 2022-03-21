@@ -14,14 +14,10 @@
  */
 
 #include "album_asset_napi.h"
-#include "hilog/log.h"
+#include "medialibrary_napi_log.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
-
-namespace {
-    constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AlbumAssetNapi"};
-}
 
 namespace OHOS {
 namespace Media {
@@ -140,7 +136,7 @@ napi_value AlbumAssetNapi::AlbumAssetNapiConstructor(napi_env env, napi_callback
                 obj->imageAssets_.push_back(std::move(sAlbumAsset_->imageAssetList_[i]));
             }
         } else {
-            HiLog::Error(LABEL, "No native instance assigned yet");
+            NAPI_ERR_LOG("No native instance assigned yet");
             return result;
         }
 
@@ -150,7 +146,7 @@ napi_value AlbumAssetNapi::AlbumAssetNapiConstructor(napi_env env, napi_callback
             obj.release();
             return thisVar;
         } else {
-            HiLog::Error(LABEL, "Failure wrapping js to native napi");
+            NAPI_ERR_LOG("Failure wrapping js to native napi ret = %{public}d", status);
         }
     }
 
@@ -177,7 +173,7 @@ napi_value AlbumAssetNapi::CreateAlbumAsset(napi_env env, AlbumType type,
         if (status == napi_ok && result != nullptr) {
             return result;
         } else {
-            HiLog::Error(LABEL, "Failed to create album asset instance");
+            NAPI_ERR_LOG("Failed to create album asset instance. ret = %{public}d", status);
         }
     }
 
@@ -197,7 +193,7 @@ napi_value AlbumAssetNapi::GetAlbumId(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! ret: %{public}d", status);
         return undefinedResult;
     }
 
@@ -233,7 +229,7 @@ napi_value AlbumAssetNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            HiLog::Error(LABEL, "Invalid arguments type!");
+            NAPI_ERR_LOG("Invalid arguments type! type: %{public}d", valueType);
             return undefinedResult;
         }
 
@@ -258,7 +254,7 @@ napi_value AlbumAssetNapi::GetAlbumName(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments!, ret: %{public}d", status);
         return undefinedResult;
     }
 
@@ -285,7 +281,7 @@ napi_value AlbumAssetNapi::GetAlbumUri(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments!, ret: %{public}d", status);
         return undefinedResult;
     }
 
@@ -312,7 +308,7 @@ napi_value AlbumAssetNapi::GetAlbumDateModified(napi_env env, napi_callback_info
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments!, ret: %{public}d", status);
         return undefinedResult;
     }
 
@@ -339,7 +335,7 @@ napi_value AlbumAssetNapi::GetAlbumCount(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments!, ret: %{public}d", status);
         return undefinedResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -365,7 +361,7 @@ napi_value AlbumAssetNapi::GetAlbumRelativePath(napi_env env, napi_callback_info
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments!, ret: %{public}d", status);
         return undefinedResult;
     }
 
@@ -392,7 +388,7 @@ napi_value AlbumAssetNapi::GetAlbumCoverUri(napi_env env, napi_callback_info inf
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments!, ret: %{public}d", status);
         return undefinedResult;
     }
 
@@ -419,7 +415,7 @@ static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status, A
     napi_value vAsset = nullptr;
 
     if (context == nullptr) {
-        HiLog::Error(LABEL, "Async context is null");
+        NAPI_ERR_LOG("Async context is null");
         return;
     }
 
@@ -433,7 +429,7 @@ static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status, A
             vAsset = VideoAssetNapi::CreateVideoAsset(env, *(context->videoAssets[i]),
                 *(context->objectInfo->GetMediaLibClientInstance()));
             if (vAsset == nullptr || napi_set_element(env, videoArray, i, vAsset) != napi_ok) {
-                HiLog::Error(LABEL, "Failed to get video asset napi object");
+                NAPI_ERR_LOG("Failed to get video asset napi object");
                 napi_get_undefined(env, &jsContext->data);
                 break;
             }
@@ -442,7 +438,7 @@ static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status, A
             jsContext->data = videoArray;
         }
     } else {
-        HiLog::Error(LABEL, "No video assets found!");
+        NAPI_ERR_LOG("No video assets found!");
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -505,7 +501,7 @@ static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status,
     napi_value iAsset = nullptr;
 
     if (context == nullptr) {
-        HiLog::Error(LABEL, "Async context is null");
+        NAPI_ERR_LOG("Async context is null");
         return;
     }
 
@@ -519,7 +515,7 @@ static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status,
             iAsset = ImageAssetNapi::CreateImageAsset(env, *(context->imageAssets[i]),
                 *(context->objectInfo->GetMediaLibClientInstance()));
             if (iAsset == nullptr || napi_set_element(env, imageArray, i, iAsset) != napi_ok) {
-                HiLog::Error(LABEL, "Failed to get image asset napi object");
+                NAPI_ERR_LOG("Failed to get image asset napi object");
                 napi_get_undefined(env, &jsContext->data);
                 break;
             }
@@ -528,7 +524,7 @@ static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status,
             jsContext->data = imageArray;
         }
     } else {
-        HiLog::Error(LABEL, "No image assets found!");
+        NAPI_ERR_LOG("No image assets found!");
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -593,7 +589,7 @@ void AlbumAssetNapi::UpdateAlbumAssetInfo()
 static void CommonCompleteCallback(napi_env env, napi_status status, AlbumAsyncContext* context)
 {
     if (context == nullptr) {
-        HiLog::Error(LABEL, "Async context is null");
+        NAPI_ERR_LOG("Async context is null");
         return;
     }
 
@@ -755,7 +751,7 @@ napi_value AlbumAssetNapi::CommitModify(napi_env env, napi_callback_info info)
                 }
                 context->objectInfo->newAlbumName_ = "";
             } else {
-                HiLog::Error(LABEL, "Incorrect or no modification values provided");
+                NAPI_ERR_LOG("Incorrect or no modification values provided");
             }
         },
         reinterpret_cast<napi_async_complete_callback>(CommonCompleteCallback),

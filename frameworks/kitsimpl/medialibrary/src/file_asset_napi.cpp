@@ -23,7 +23,7 @@
 #include "fetch_result.h"
 #include "hilog/log.h"
 #include "media_file_utils.h"
-#include "media_log.h"
+#include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
 #include "rdb_errno.h"
 #include "string_ex.h"
@@ -34,10 +34,6 @@ using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
 using std::string;
-
-namespace {
-    constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FileAssetNapi"};
-}
 
 namespace OHOS {
 namespace Media {
@@ -139,7 +135,7 @@ napi_value FileAssetNapi::Init(napi_env env, napi_value exports)
             }
         }
     }
-    HiLog::Debug(LABEL, "Init success");
+    NAPI_DEBUG_LOG("Init success");
     return nullptr;
 }
 
@@ -174,7 +170,7 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
                 obj.release();
                 return thisVar;
             } else {
-                HiLog::Error(LABEL, "Failure wrapping js to native napi");
+                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
             }
         }
     }
@@ -198,7 +194,7 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
         if (status == napi_ok && result != nullptr) {
             return result;
         } else {
-            HiLog::Error(LABEL, "Failed to create file asset instance");
+            NAPI_ERR_LOG("Failed to create file asset instance, status: %{public}d", status);
         }
     }
 
@@ -253,7 +249,7 @@ napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -277,7 +273,7 @@ napi_value FileAssetNapi::JSGetFileUri(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -301,7 +297,7 @@ napi_value FileAssetNapi::JSGetFilePath(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -325,7 +321,7 @@ napi_value FileAssetNapi::JSGetFileDisplayName(napi_env env, napi_callback_info 
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -358,7 +354,7 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            HiLog::Error(LABEL, "Invalid arguments type!");
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
@@ -381,7 +377,7 @@ napi_value FileAssetNapi::JSGetMimeType(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -405,7 +401,7 @@ napi_value FileAssetNapi::JSGetMediaType(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -429,7 +425,7 @@ napi_value FileAssetNapi::JSGetTitle(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -458,7 +454,7 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            HiLog::Error(LABEL, "Invalid arguments type!");
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res);
@@ -480,7 +476,7 @@ napi_value FileAssetNapi::JSGetSize(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -504,7 +500,7 @@ napi_value FileAssetNapi::JSGetAlbumId(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -528,7 +524,7 @@ napi_value FileAssetNapi::JSGetAlbumName(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -552,7 +548,7 @@ napi_value FileAssetNapi::JSGetDateAdded(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -576,7 +572,7 @@ napi_value FileAssetNapi::JSGetDateModified(napi_env env, napi_callback_info inf
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -600,7 +596,7 @@ napi_value FileAssetNapi::JSGetOrientation(napi_env env, napi_callback_info info
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -622,7 +618,6 @@ napi_value FileAssetNapi::JSSetOrientation(napi_env env, napi_callback_info info
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
-    HiLog::Error(LABEL, "JSSetOrientation");
     napi_get_undefined(env, &undefinedResult);
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
@@ -631,12 +626,11 @@ napi_value FileAssetNapi::JSSetOrientation(napi_env env, napi_callback_info info
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_number) {
-            HiLog::Error(LABEL, "Invalid arguments type!");
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
 
         status = napi_get_value_int32(env, argv[PARAM0], &orientation);
-        HiLog::Error(LABEL, "JSSetOrientation orientation = %{public}d", orientation);
         if (status == napi_ok) {
             obj->orientation_ = orientation;
         }
@@ -656,7 +650,7 @@ napi_value FileAssetNapi::JSGetWidth(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -680,7 +674,7 @@ napi_value FileAssetNapi::JSGetHeight(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -704,7 +698,7 @@ napi_value FileAssetNapi::JSGetRelativePath(napi_env env, napi_callback_info inf
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -734,7 +728,7 @@ napi_value FileAssetNapi::JSSetRelativePath(napi_env env, napi_callback_info inf
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            HiLog::Error(LABEL, "Invalid arguments type!");
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res);
@@ -755,7 +749,7 @@ napi_value FileAssetNapi::JSGetAlbum(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -779,7 +773,7 @@ napi_value FileAssetNapi::JSGetArtist(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -803,7 +797,7 @@ napi_value FileAssetNapi::JSGetDuration(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -826,7 +820,7 @@ napi_value FileAssetNapi::JSParent(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -846,7 +840,7 @@ napi_value FileAssetNapi::JSGetAlbumUri(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -866,7 +860,7 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -901,14 +895,14 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
         changedRows = context->objectInfo->sAbilityHelper_->Update(updateAssetUri, valuesBucket, predicates);
         if (changedRows < 0) {
             context->error = changedRows;
-            HiLog::Error(LABEL, "File asset modification failed");
+            NAPI_ERR_LOG("File asset modification failed, err: %{public}d", changedRows);
         } else {
             context->changedRows = changedRows;
             Uri modifyNotify(notifyUri);
             context->objectInfo->sAbilityHelper_->NotifyChange(modifyNotify);
         }
     } else {
-        HiLog::Error(LABEL, "JSCommitModify CheckDisplayName fail");
+        NAPI_ERR_LOG("JSCommitModify CheckDisplayName fail");
         context->error = DATA_ABILITY_VIOLATION_PARAMETERS;
     }
 }
@@ -931,7 +925,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->error);
         }
     } else {
-        HiLog::Error(LABEL, "JSCommitModify fail %{public}d", context->error);
+        NAPI_ERR_LOG("JSCommitModify fail %{public}d", context->error);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
                                                      "CheckDisplayName fail");
         napi_get_undefined(env, &jsContext->data);
@@ -1011,31 +1005,28 @@ static void JSOpenExecute(FileAssetAsyncContext *context)
         }
 
         Uri openFileUri(fileUri);
-        HiLog::Debug(LABEL, "openFileUri = %{public}s", openFileUri.ToString().c_str());
         int32_t retVal = context->objectInfo->sAbilityHelper_->OpenFile(openFileUri, mode);
         if (retVal <= 0) {
             context->error = retVal;
-            HiLog::Debug(LABEL, "File open asset failed");
+            NAPI_ERR_LOG("File open asset failed, ret: %{public}d", retVal);
         } else {
-            HiLog::Error(LABEL, "return fd = %{public}d", retVal);
             context->fd = retVal;
         }
     } else {
         context->error = ERR_INVALID_OUTPUT;
-        HiLog::Error(LABEL, "Ability helper is null");
+        NAPI_ERR_LOG("Ability helper is null");
     }
 }
 
 static void JSOpenCompleteCallback(napi_env env, napi_status status,
                                    FileAssetAsyncContext *context)
 {
-    HiLog::Debug(LABEL, "JSOpenCompleteCallback IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
     if (context->error == ERR_DEFAULT) {
-        HiLog::Debug(LABEL, "return fd = %{public}d", context->fd);
+        NAPI_DEBUG_LOG("return fd = %{public}d", context->fd);
         napi_create_int32(env, context->fd, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
@@ -1049,7 +1040,6 @@ static void JSOpenCompleteCallback(napi_env env, napi_status status,
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
-    HiLog::Debug(LABEL, "JSOpenCompleteCallback OUT");
     delete context;
 }
 
@@ -1058,7 +1048,7 @@ napi_value GetJSArgsForOpen(napi_env env,
                             const napi_value argv[],
                             FileAssetAsyncContext &asyncContext)
 {
-    HiLog::Debug(LABEL, "GetJSArgsForOpen IN");
+    NAPI_DEBUG_LOG("GetJSArgsForOpen IN");
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
@@ -1083,13 +1073,13 @@ napi_value GetJSArgsForOpen(napi_env env,
     context->valuesBucket.PutString(MEDIA_FILEMODE, string(buffer));
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
-    HiLog::Debug(LABEL, "GetJSArgsForOpen OUT");
+    NAPI_DEBUG_LOG("GetJSArgsForOpen OUT");
     return result;
 }
 
 napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
 {
-    HiLog::Debug(LABEL, "JSOpen IN");
+    NAPI_DEBUG_LOG("JSOpen IN");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
@@ -1120,7 +1110,7 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
             asyncContext.release();
         }
     }
-    HiLog::Debug(LABEL, "JSOpen OUT");
+    NAPI_DEBUG_LOG("JSOpen OUT");
     return result;
 }
 
@@ -1144,10 +1134,10 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
             }
         }
         context->error = retVal;
-        HiLog::Error(LABEL, "File close asset failed %{public}d", retVal);
+        NAPI_ERR_LOG("File close asset failed %{public}d", retVal);
     } else {
         context->error = ERR_INVALID_OUTPUT;
-        HiLog::Error(LABEL, "Ability helper is null");
+        NAPI_ERR_LOG("Ability helper is null");
     }
 }
 
@@ -1249,7 +1239,7 @@ static string GetStringInfo(shared_ptr<NativeRdb::AbsSharedResultSet> resultSet,
     string res;
     int errorCode = resultSet->GetString(pos, res);
     if (errorCode != 0) {
-        MEDIA_ERR_LOG("Failed to get string column %{public}d %{public}d", pos, errorCode);
+        NAPI_ERR_LOG("Failed to get string column %{public}d %{public}d", pos, errorCode);
     }
     return res;
 }
@@ -1279,7 +1269,7 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataAbilityHelper> &abilit
     NativeRdb::DataAbilityPredicates predicates;
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = abilityHelper->Query(queryUri1, columns, predicates);
     if (resultSet == nullptr) {
-        HiLog::Error(LABEL, "Query thumbnail error");
+        NAPI_ERR_LOG("Query thumbnail error");
         return nullptr;
     }
     FinishTrace(BYTRACE_TAG_OHOS);
@@ -1294,16 +1284,16 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataAbilityHelper> &abilit
     }
 
     if (to_string(fileId) != id) {
-        HiLog::Error(LABEL, "Query thumbnail id error as %{public}s", id.c_str());
+        NAPI_ERR_LOG("Query thumbnail id error as %{public}s", id.c_str());
         return nullptr;
     }
 
     if (thumbnailKey.empty()) {
-        HiLog::Error(LABEL, "thumbnailKey is empty");
+        NAPI_ERR_LOG("thumbnailKey is empty");
         return nullptr;
     }
 
-    HiLog::Debug(LABEL, "Query thumbnail id %{public}s with key %{public}s", id.c_str(), thumbnailKey.c_str());
+    NAPI_DEBUG_LOG("Query thumbnail id %{public}s with key %{public}s", id.c_str(), thumbnailKey.c_str());
     StartTrace(BYTRACE_TAG_OHOS, "thumbnailHelper->GetThumbnail");
     auto ret = thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
     FinishTrace(BYTRACE_TAG_OHOS);
@@ -1323,7 +1313,7 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
             context->thumbWidth, context->thumbHeight);
     } else {
         context->error = ERR_INVALID_OUTPUT;
-        MEDIA_INFO_LOG("Ability helper is null");
+        NAPI_INFO_LOG("Ability helper is null");
     }
 }
 
@@ -1342,7 +1332,7 @@ static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->error);
             jsContext->status = true;
         } else {
-            HiLog::Error(LABEL, "negative ret");
+            NAPI_ERR_LOG("negative ret");
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                 "Get thumbnail failed");
             napi_get_undefined(env, &jsContext->data);
@@ -1370,17 +1360,17 @@ static void GetSizeInfo(napi_env env, napi_value configObj, std::string type, in
     bool exist = false;
     napi_status status = napi_has_named_property(env, configObj, type.c_str(), &exist);
     if (status != napi_ok || !exist) {
-        HiLog::Error(LABEL, "can not find named property");
+        NAPI_ERR_LOG("can not find named property, status: %{public}d", status);
         return;
     }
 
     if (napi_get_named_property(env, configObj, type.c_str(), &item) != napi_ok) {
-        HiLog::Error(LABEL, "get named property fail");
+        NAPI_ERR_LOG("get named property fail");
         return;
     }
 
     if (napi_get_value_int32(env, item, &result) != napi_ok) {
-        HiLog::Error(LABEL, "get property value fail");
+        NAPI_ERR_LOG("get property value fail");
     }
 }
 
@@ -1546,7 +1536,7 @@ static bool GetIsDirectoryiteNative(napi_env env, const FileAssetAsyncContext &f
     Uri isDirectoryAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_ISDIRECTORY);
     context->valuesBucket.PutInt(Media::MEDIA_DATA_DB_ID, context->objectInfo->GetFileId());
     int retVal = context->objectInfo->sAbilityHelper_->Insert(isDirectoryAssetUri, context->valuesBucket);
-    HiLog::Error(LABEL, "GetIsDirectoryiteNative retVal = %{public}d", retVal);
+    NAPI_DEBUG_LOG("GetIsDirectoryiteNative retVal = %{public}d", retVal);
     if (retVal == SUCCESS) {
         IsDirectory = true;
     }
@@ -1580,7 +1570,6 @@ static napi_value GetJSArgsForIsDirectory(napi_env env,
                                           const napi_value argv[],
                                           FileAssetAsyncContext &asyncContext)
 {
-    HiLog::Error(LABEL, "ConvertCommitJSArgsToNative");
     string str = "";
     vector<string> strArr;
     string order = "";
@@ -1615,9 +1604,7 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    HiLog::Error(LABEL, "JSIsDirectory = %{public}zu", argc);
     NAPI_ASSERT(env, (argc == ARGS_ZERO || argc == ARGS_ONE), "requires 2 parameters maximum");
-    HiLog::Error(LABEL, "JSIsDirectory 1");
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1661,12 +1648,12 @@ static unique_ptr<FileAsset> GetFileAssetById(const int32_t id, const string& ne
         string queryUri = MEDIALIBRARY_DATA_URI;
         if (!networkId.empty()) {
             queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-            HiLog::Debug(LABEL, "GetFileAssetById queryUri is = %{public}s", queryUri.c_str());
+            NAPI_DEBUG_LOG("GetFileAssetById queryUri is = %{public}s", queryUri.c_str());
         }
         Uri uri(queryUri);
         shared_ptr<AbsSharedResultSet> resultSet = abilityHelper_->Query(uri, columns, predicates);
         if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Failed to obtain file asset");
+            NAPI_ERR_LOG("Failed to obtain file asset");
         }
         unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
         fetchFileResult->networkId_ = networkId;
@@ -1684,10 +1671,7 @@ static bool GetIsFavouriteNative(const FileAssetAsyncContext &fileContext)
         context->objectInfo->GetNetworkId(), context->objectInfo->sAbilityHelper_);
 
     if (fileAsset != nullptr && fileAsset->IsFavorite()) {
-        MEDIA_INFO_LOG("isFavourite = true");
         isFavourite = true;
-    } else {
-        MEDIA_INFO_LOG("isFavourite = false");
     }
     return isFavourite;
 }
@@ -1698,7 +1682,7 @@ static void JSIsFavoriteExecute(FileAssetAsyncContext* context)
         context->isFavourite = GetIsFavouriteNative(*context);
     } else {
         context->error = ERR_INVALID_OUTPUT;
-        HiLog::Error(LABEL, "Ability helper is null");
+        NAPI_ERR_LOG("Ability helper is null");
     }
 }
 
@@ -1713,7 +1697,7 @@ static void JSIsFavouriteCallbackComplete(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
-        HiLog::Error(LABEL, "Get IsFavourite failed");
+        NAPI_ERR_LOG("Get IsFavourite failed, ret: %{public}d", context->error);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "Ability helper is null");
         napi_get_undefined(env, &jsContext->data);
@@ -1808,7 +1792,6 @@ static napi_value GetJSArgsForIsFavourite(napi_env env,
                                           const napi_value argv[],
                                           FileAssetAsyncContext &asyncContext)
 {
-    HiLog::Error(LABEL, "ConvertCommitJSArgsToNative");
     string str = "";
     vector<string> strArr;
     string order = "";
@@ -1873,7 +1856,6 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
 static void JSTrashExecute(FileAssetAsyncContext* context)
 {
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        HiLog::Error(LABEL, "JSTrashCallbackComplete sAbilityHelper_ != nullptr");
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri uri(abilityUri);
         ValueObject valueObject;
@@ -1883,14 +1865,13 @@ static void JSTrashExecute(FileAssetAsyncContext* context)
         context->objectInfo->sAbilityHelper_->Update(uri, context->valuesBucket, predicates);
     } else {
         context->error = ERR_INVALID_OUTPUT;
-        HiLog::Error(LABEL, "Ability helper is null");
+        NAPI_ERR_LOG("Ability helper is null");
     }
 }
 
 static void JSTrashCallbackComplete(napi_env env, napi_status status,
                                     FileAssetAsyncContext* context)
 {
-    HiLog::Error(LABEL, "JSTrashCallbackComplete in");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -1901,17 +1882,16 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status,
         string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         context->objectInfo->sAbilityHelper_->NotifyChange(modifyNotify);
-        HiLog::Debug(LABEL, "JSTrashCallbackComplete success");
+        NAPI_DEBUG_LOG("JSTrashCallbackComplete success");
     } else {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "Ability helper is null");
     }
     if (context->work != nullptr) {
-        HiLog::Error(LABEL, "JSTrashCallbackComplete context->work != nullptr");
+        NAPI_ERR_LOG("JSTrashCallbackComplete context->work != nullptr");
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
-    HiLog::Error(LABEL, "JSTrashCallbackComplete out");
     delete context;
 }
 
@@ -1931,7 +1911,6 @@ napi_value GetJSArgsForTrash(napi_env env,
         if (i == PARAM0 && valueType == napi_boolean) {
             napi_get_value_bool(env, argv[i], &isTrash);
         } else if (i == PARAM1 && valueType == napi_function) {
-            HiLog::Error(LABEL, "JSTrash GET_JS_ARGS context->callbackRef");
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
@@ -1951,7 +1930,6 @@ napi_value GetJSArgsForTrash(napi_env env,
 
 napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
 {
-    HiLog::Error(LABEL, "JSTrash in");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
@@ -1961,7 +1939,6 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
 
-    HiLog::Error(LABEL, "JSTrash GET_JS_ARGS argc = %{public}zu", argc);
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -1984,7 +1961,6 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
             asyncContext.release();
         }
     }
-    HiLog::Error(LABEL, "JSTrash out");
     return result;
 }
 
@@ -1997,10 +1973,8 @@ static bool GetIsTrashNative(const FileAssetAsyncContext &fileContext)
         context->objectInfo->GetNetworkId(), context->objectInfo->sAbilityHelper_);
 
     if (fileAsset != nullptr && fileAsset->GetDateTrashed() > 0) {
-        MEDIA_INFO_LOG("isTrashed = true");
         isTrashed = true;
     } else {
-        MEDIA_INFO_LOG("isTrashed = false");
     }
     return isTrashed;
 }
@@ -2011,7 +1985,7 @@ static void JSIsTrashExecute(FileAssetAsyncContext* context)
         context->isTrash = GetIsTrashNative(*context);
     } else {
         context->error = ERR_INVALID_OUTPUT;
-        MEDIA_INFO_LOG("Ability helper is null");
+        NAPI_INFO_LOG("Ability helper is null");
     }
 }
 
@@ -2042,7 +2016,6 @@ static napi_value GetJSArgsForIsTrash(napi_env env,
                                       const napi_value argv[],
                                       FileAssetAsyncContext &asyncContext)
 {
-    HiLog::Error(LABEL, "GetJSArgsForIsTrash");
     string str = "";
     vector<string> strArr;
     string order = "";
