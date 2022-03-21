@@ -14,6 +14,7 @@
  */
 
 #include "media_scanner_client.h"
+#include "media_log.h"
 
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::AAFwk;

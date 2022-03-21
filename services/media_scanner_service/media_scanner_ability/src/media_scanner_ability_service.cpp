@@ -14,6 +14,7 @@
  */
 
 #include "media_scanner_ability_service.h"
+#include "media_log.h"
 
 using namespace std;
 namespace OHOS {

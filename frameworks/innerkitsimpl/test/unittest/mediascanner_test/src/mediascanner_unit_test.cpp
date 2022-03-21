@@ -15,6 +15,7 @@
 
 #include "mediascanner_unit_test.h"
 #include "hilog/log.h"
+#include "media_log.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;

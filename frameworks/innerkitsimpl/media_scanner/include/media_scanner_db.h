@@ -23,7 +23,6 @@
 
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
-#include "media_log.h"
 #include "metadata.h"
 #include "abs_shared_result_set.h"
 #include "context.h"

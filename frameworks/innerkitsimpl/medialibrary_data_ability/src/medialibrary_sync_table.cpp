@@ -15,6 +15,7 @@
 
 #include "medialibrary_sync_table.h"
 #include "bytrace.h"
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {

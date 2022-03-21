@@ -14,6 +14,7 @@
  */
 
 #include "medialibrary_device.h"
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {

@@ -14,6 +14,7 @@
  */
 
 #include "media_scan_executor.h"
+#include <thread>
 
 namespace OHOS {
 namespace Media {

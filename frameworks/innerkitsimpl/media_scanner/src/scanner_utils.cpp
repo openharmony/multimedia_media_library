@@ -15,6 +15,7 @@
 
 #include "scanner_utils.h"
 #include <cerrno>
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {

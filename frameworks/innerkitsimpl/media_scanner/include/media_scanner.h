@@ -35,7 +35,6 @@
 #include <vector>
 
 #include "media_lib_service_const.h"
-#include "media_log.h"
 #include "media_scan_executor.h"
 #include "media_scanner_const.h"
 #include "media_scanner_db.h"

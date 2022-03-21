@@ -18,9 +18,7 @@
 
 #include <string>
 #include <iostream>
-#include <thread>
 #include <queue>
-#include "media_log.h"
 
 namespace OHOS {
 namespace Media {

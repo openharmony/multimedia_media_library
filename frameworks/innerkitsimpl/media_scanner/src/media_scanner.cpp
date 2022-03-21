@@ -14,6 +14,7 @@
  */
 
 #include "media_scanner.h"
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {
