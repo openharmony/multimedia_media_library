@@ -17,8 +17,8 @@
 
 #include "iservice_registry.h"
 #include "media_library.h"
-#include "media_log.h"
 #include "system_ability_definition.h"
+#include "media_log.h"
 
 using namespace std;
 

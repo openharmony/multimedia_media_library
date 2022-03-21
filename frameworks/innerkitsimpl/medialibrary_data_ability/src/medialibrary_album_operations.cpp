@@ -15,6 +15,7 @@
 
 #include "medialibrary_album_operations.h"
 #include "media_file_utils.h"
+#include "media_log.h"
 #include "medialibrary_data_ability_utils.h"
 
 using namespace std;

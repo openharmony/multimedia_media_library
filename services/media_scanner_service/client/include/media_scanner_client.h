@@ -29,7 +29,6 @@
 
 #include "want.h"
 #include "string_ex.h"
-#include "media_log.h"
 #include "sys_mgr_client.h"
 #include "ability_manager_interface.h"
 #include "system_ability_definition.h"

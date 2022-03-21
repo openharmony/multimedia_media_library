@@ -18,7 +18,6 @@
 
 #include "iremote_broker.h"
 #include "iremote_stub.h"
-#include "media_log.h"
 
 namespace OHOS {
 namespace Media {

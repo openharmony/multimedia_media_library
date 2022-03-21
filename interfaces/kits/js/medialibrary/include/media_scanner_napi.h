@@ -18,7 +18,6 @@
 #include <unordered_map>
 
 #include "imedia_scanner_client.h"
-#include "media_log.h"
 #include "medialibrary_napi_utils.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"

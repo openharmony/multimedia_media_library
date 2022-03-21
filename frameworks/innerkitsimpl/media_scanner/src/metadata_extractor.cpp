@@ -14,6 +14,7 @@
  */
 
 #include "metadata_extractor.h"
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {

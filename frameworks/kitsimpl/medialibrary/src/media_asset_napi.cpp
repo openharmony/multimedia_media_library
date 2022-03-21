@@ -14,14 +14,10 @@
  */
 
 #include "media_asset_napi.h"
-#include "hilog/log.h"
+#include "medialibrary_napi_log.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
-
-namespace {
-    constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaAssetNapi"};
-}
 
 namespace OHOS {
 namespace Media {
@@ -119,7 +115,7 @@ napi_value MediaAssetNapi::MediaAssetNapiConstructor(napi_env env, napi_callback
             if (sMediaAsset_ != nullptr) {
                 obj->UpdateMediaAssetInfo(*sMediaAsset_);
             } else {
-                HiLog::Error(LABEL, "No native instance assigned yet");
+                NAPI_ERR_LOG("No native instance assigned yet");
                 return result;
             }
 
@@ -129,7 +125,7 @@ napi_value MediaAssetNapi::MediaAssetNapiConstructor(napi_env env, napi_callback
                 obj.release();
                 return thisVar;
             } else {
-                HiLog::Error(LABEL, "Failure wrapping js to native napi");
+                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
             }
         }
     }
@@ -153,7 +149,7 @@ napi_value MediaAssetNapi::CreateMediaAsset(napi_env env, Media::MediaAsset &mAs
         if (status == napi_ok && result != nullptr) {
             return result;
         } else {
-            HiLog::Error(LABEL, "Failed to create media asset instance");
+            NAPI_ERR_LOG("Failed to create media asset instance, status: %{public}d", status);
         }
     }
 
@@ -223,7 +219,7 @@ napi_value MediaAssetNapi::GetId(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -251,7 +247,7 @@ napi_value MediaAssetNapi::GetUri(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -279,7 +275,7 @@ napi_value MediaAssetNapi::GetMediaType(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -315,12 +311,12 @@ napi_value MediaAssetNapi::JSSetName(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (obj->startCreateFlag == false && obj->startModifyFlag == false) {
-            HiLog::Error(LABEL, "No Permission to set the values");
+            NAPI_ERR_LOG("No Permission to set the values");
             return undefinedResult;
         }
 
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            HiLog::Error(LABEL, "Invalid arguments type!");
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
 
@@ -346,7 +342,7 @@ napi_value MediaAssetNapi::GetName(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -374,7 +370,7 @@ napi_value MediaAssetNapi::GetSize(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -402,7 +398,7 @@ napi_value MediaAssetNapi::GetDateAdded(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -430,7 +426,7 @@ napi_value MediaAssetNapi::GetDateModified(napi_env env, napi_callback_info info
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -458,7 +454,7 @@ napi_value MediaAssetNapi::GetAlbumId(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -494,12 +490,12 @@ napi_value MediaAssetNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (obj->startCreateFlag == false) {
-            HiLog::Error(LABEL, "No Permission to set the values");
+            NAPI_ERR_LOG("No Permission to set the values");
             return undefinedResult;
         }
 
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            HiLog::Error(LABEL, "Invalid arguments type!");
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
 
@@ -525,7 +521,7 @@ napi_value MediaAssetNapi::GetAlbumName(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -559,7 +555,7 @@ void MediaAssetNapi::UpdateMediaAssetInfo(OHOS::Media::MediaAsset &mAsset)
 static void CommonCompleteCallback(napi_env env, napi_status status, MediaAssetAsyncContext* context)
 {
     if (context == nullptr) {
-        HiLog::Error(LABEL, "Async context is null");
+        NAPI_ERR_LOG("Async context is null");
         return;
     }
 
@@ -827,7 +823,7 @@ napi_value MediaAssetNapi::CommitModify(napi_env env, napi_callback_info info)
                 }
                 context->objectInfo->newName_ = "";
             } else {
-                HiLog::Error(LABEL, "Incorrect or no modification values provided");
+                NAPI_ERR_LOG("Incorrect or no modification values provided");
             }
             context->objectInfo->startModifyFlag = false;
         },

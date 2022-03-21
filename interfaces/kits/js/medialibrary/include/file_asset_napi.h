@@ -19,7 +19,6 @@
 #include "data_ability_helper.h"
 #include "file_asset.h"
 #include "media_lib_service_const.h"
-#include "media_log.h"
 #include "media_thumbnail_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"

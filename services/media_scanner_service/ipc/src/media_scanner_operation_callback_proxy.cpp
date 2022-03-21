@@ -14,6 +14,7 @@
  */
 
 #include "media_scanner_operation_callback_proxy.h"
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {

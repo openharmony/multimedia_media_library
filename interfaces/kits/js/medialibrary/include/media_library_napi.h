@@ -16,42 +16,24 @@
 #ifndef MEDIA_LIBRARY_NAPI_H
 #define MEDIA_LIBRARY_NAPI_H
 
-#include <cerrno>
-#include <dirent.h>
-#include <fcntl.h>
-#include <ftw.h>
-#include <securec.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <variant>
-
-#include "ability.h"
-#include "ability_loader.h"
 #include "abs_shared_result_set.h"
 #include "album_asset_napi.h"
 #include "album_napi.h"
 #include "audio_asset_napi.h"
 #include "data_ability_helper.h"
-#include "napi_base_context.h"
+#include "data_ability_observer_stub.h"
 #include "data_ability_predicates.h"
 #include "fetch_file_result_napi.h"
 #include "file_asset_napi.h"
 #include "image_asset_napi.h"
 #include "imedia_library_client.h"
 #include "media_asset_napi.h"
-#include "media_data_ability_const.h"
-#include "medialibrary_data_ability.h"
-#include "medialibrary_peer_info.h"
+#include "napi_base_context.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "uri.h"
+#include "smart_album_asset.h"
 #include "values_bucket.h"
 #include "video_asset_napi.h"
-#include "data_ability_observer_stub.h"
-#include "media_log.h"
-#include "smart_album_asset.h"
 
 namespace OHOS {
 namespace Media {
@@ -125,7 +107,6 @@ public:
     MediaObserver(const ChangeListenerNapi &listObj, MediaType mediaType) : listObj_(listObj)
     {
         mediaType_ = mediaType;
-        MEDIA_INFO_LOG("MediaObserver init mediaType_ = %{public}d", mediaType);
     }
 
     ~MediaObserver() = default;
@@ -134,7 +115,6 @@ public:
     {
         MediaChangeListener listener;
         listener.mediaType = mediaType_;
-        MEDIA_INFO_LOG("MediaObserver OnChange mediaType_ = %{public}d", mediaType_);
         listObj_.OnChange(listener, listObj_.cbOnRef_);
     }
 

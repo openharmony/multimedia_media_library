@@ -24,6 +24,7 @@
 #include "ipc_singleton.h"
 #include "media_file_utils.h"
 #include "medialibrary_sync_table.h"
+#include "media_log.h"
 #include "ipc_skeleton.h"
 #include "sa_mgr_client.h"
 #include "string_ex.h"

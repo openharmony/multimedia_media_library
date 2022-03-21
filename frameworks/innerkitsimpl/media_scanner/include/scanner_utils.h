@@ -23,7 +23,6 @@
 #include <sys/stat.h>
 
 #include "media_lib_service_const.h"
-#include "media_log.h"
 #include "media_scanner_const.h"
 
 namespace OHOS {
