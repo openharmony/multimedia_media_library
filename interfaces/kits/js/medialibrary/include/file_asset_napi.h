@@ -48,6 +48,8 @@ public:
     std::string GetNetworkId() const;
     bool IsFavorite() const;
     void SetFavorite(bool isFavorite);
+    bool IsTrash() const;
+    void SetTrash(bool isTrash);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
     static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
@@ -109,6 +111,7 @@ private:
     int64_t dateTaken_;
     std::string mimeType_;
     bool isFavorite_;
+    bool isTrash_;
 
     // audio
     std::string title_;
