@@ -1254,22 +1254,20 @@ static string GetStringInfo(shared_ptr<NativeRdb::AbsSharedResultSet> resultSet,
     return res;
 }
 
-static unique_ptr<PixelMap> QueryThumbnail(
-    shared_ptr<DataAbilityHelper> &abilityHelper,
-    shared_ptr<MediaThumbnailHelper> &thumbnailHelper,
-    int32_t &fileId, std::string &uri, int32_t &width, int32_t &height)
+static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataAbilityHelper> &abilityHelper,
+    shared_ptr<MediaThumbnailHelper> &thumbnailHelper, int32_t &fileId,
+    std::string &uri, int32_t &width, int32_t &height)
 {
     StartTrace(BYTRACE_TAG_OHOS, "QueryThumbnail");
+    if ((abilityHelper == nullptr) ||(thumbnailHelper == nullptr)) {
+        return nullptr;
+    }
 
-    Uri queryUri1(uri + "?" +
-        MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
-        MEDIA_DATA_DB_WIDTH + "=" + to_string(width) + "&" +
-        MEDIA_DATA_DB_HEIGHT + "=" + to_string(height));
+    Uri queryUri1(uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH + "=" +
+        to_string(width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(height));
 
-    NativeRdb::DataAbilityPredicates predicates;
     vector<string> columns;
     Size size = { .width = width, .height = height };
-
     columns.push_back(MEDIA_DATA_DB_ID);
     if (thumbnailHelper->isThumbnailFromLcd(size)) {
         columns.push_back(MEDIA_DATA_DB_LCD);
@@ -1278,8 +1276,8 @@ static unique_ptr<PixelMap> QueryThumbnail(
     }
 
     StartTrace(BYTRACE_TAG_OHOS, "abilityHelper->Query");
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet =
-        abilityHelper->Query(queryUri1, columns, predicates);
+    NativeRdb::DataAbilityPredicates predicates;
+    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = abilityHelper->Query(queryUri1, columns, predicates);
     if (resultSet == nullptr) {
         HiLog::Error(LABEL, "Query thumbnail error");
         return nullptr;
@@ -1305,8 +1303,7 @@ static unique_ptr<PixelMap> QueryThumbnail(
         return nullptr;
     }
 
-    HiLog::Info(LABEL, "Query thumbnail id %{public}s with key %{public}s",
-        id.c_str(), thumbnailKey.c_str());
+    HiLog::Debug(LABEL, "Query thumbnail id %{public}s with key %{public}s", id.c_str(), thumbnailKey.c_str());
     StartTrace(BYTRACE_TAG_OHOS, "thumbnailHelper->GetThumbnail");
     auto ret = thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
     FinishTrace(BYTRACE_TAG_OHOS);
