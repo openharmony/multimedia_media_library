@@ -75,7 +75,7 @@ int32_t MediaScannerClient::ConnectAbility()
         SetConnectionState(ConnectionState::CONN_IN_PROGRESS);
         int32_t ret = abilityMgrProxy_->ConnectAbility(want, connection_, nullptr);
         if (ret != 0) {
-            MEDIA_ERR_LOG("MediaScannerClient:: Connect ability failed %{public}d", ret);
+            MEDIA_ERR_LOG("MediaScannerClient:: Connect ability failed %{private}d", ret);
             SetConnectionState(ConnectionState::CONN_ERROR);
             return CONN_ERROR;
         }
@@ -90,7 +90,7 @@ void MediaScannerClient::DisconnectAbility()
 
     int32_t ret = abilityMgrProxy_->DisconnectAbility(connection_);
     if (ret != 0) {
-        MEDIA_ERR_LOG("MediaScannerClient:: Disconnect ability failed %{public}d", ret);
+        MEDIA_ERR_LOG("MediaScannerClient:: Disconnect ability failed %{private}d", ret);
         return;
     }
 
@@ -134,7 +134,7 @@ ScanState MediaScannerClient::ScanInternal(string &path, const shared_ptr<IMedia
     ScanType scanType)
 {
     auto connectResult = ConnectAbility();
-    CHECK_AND_RETURN_RET_LOG(connectResult == CONN_SUCCESS, SCAN_ERROR, "Service error %{public}d", connectResult);
+    CHECK_AND_RETURN_RET_LOG(connectResult == CONN_SUCCESS, SCAN_ERROR, "Service error %{private}d", connectResult);
 
     auto callbackStub = new(std::nothrow) MediaScannerOperationCallbackStub();
     CHECK_AND_RETURN_RET_LOG(callbackStub != nullptr, SCAN_MEM_ALLOC_FAIL, "ScannerOperCallback creation failed");
@@ -162,10 +162,10 @@ ScanState MediaScannerClient::ScanInternal(string &path, const shared_ptr<IMedia
 
     if (scanType == ScanType::SCAN_FILE) {
         int32_t ret = abilityProxy_->ScanFileService(path, callbackRemoteObj);
-        CHECK_AND_RETURN_RET_LOG(ret == 0, static_cast<ScanState>(ret), "Scan file failed [%{public}d]", ret);
+        CHECK_AND_RETURN_RET_LOG(ret == 0, static_cast<ScanState>(ret), "Scan file failed [%{private}d]", ret);
     } else if (scanType == ScanType::SCAN_DIR) {
         int32_t ret = abilityProxy_->ScanDirService(path, callbackRemoteObj);
-        CHECK_AND_RETURN_RET_LOG(ret == 0, static_cast<ScanState>(ret), "Scan dir failed [%{public}d]", ret);
+        CHECK_AND_RETURN_RET_LOG(ret == 0, static_cast<ScanState>(ret), "Scan dir failed [%{private}d]", ret);
     }
 
     return SCAN_SUCCESS;
@@ -207,14 +207,14 @@ void MediaScannerClient::EmptyScanRequestQueue(bool isConnected)
             case SCAN_FILE:
                 ret = abilityProxy_->ScanFileService(scanRequest.path, scanRequest.serviceCb);
                 if (ret != SCAN_SUCCESS) {
-                    MEDIA_ERR_LOG("Scan file operation failed %{public}d", ret);
+                    MEDIA_ERR_LOG("Scan file operation failed %{private}d", ret);
                     scanRequest.appCallback->OnScanFinished(ret, "", scanRequest.path);
                 }
                 break;
             case SCAN_DIR:
                 ret = abilityProxy_->ScanDirService(scanRequest.path, scanRequest.serviceCb);
                 if (ret != SCAN_SUCCESS) {
-                    MEDIA_ERR_LOG("Scan dir operation failed %{public}d", ret);
+                    MEDIA_ERR_LOG("Scan dir operation failed %{private}d", ret);
                     scanRequest.appCallback->OnScanFinished(ret, "", scanRequest.path);
                 }
                 break;

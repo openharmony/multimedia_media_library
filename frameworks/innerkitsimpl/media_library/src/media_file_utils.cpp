@@ -65,7 +65,7 @@ bool MediaFileUtils::CreateDirectory(const string& dirPath)
             string folderPath = subStr;
             mode_t mask = umask(0);
             if (mkdir(folderPath.c_str(), CHOWN_RWX_USR_GRP) == -1) {
-                MEDIA_ERR_LOG("Failed to create directory %{public}d", errno);
+                MEDIA_ERR_LOG("Failed to create directory %{private}d", errno);
                 umask(mask);
                 return false;
             }
@@ -169,7 +169,7 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 
     auto absFilePath = realpath(filePath.c_str(), actualPath);
     if (absFilePath == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path%{public}s %{public}d",
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path%{private}s %{private}d",
                       filePath.c_str(), errno);
         return errCode;
     }
@@ -182,7 +182,7 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 
     int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
     if (dest == -1) {
-        MEDIA_ERR_LOG("Open failed for destination file %{public}d", errno);
+        MEDIA_ERR_LOG("Open failed for destination file %{private}d", errno);
         close(source);
         return errCode;
     }
@@ -225,7 +225,7 @@ bool MediaFileUtils::CopyFile(const string &filePath, const string &newPath)
             char actualPath[PATH_MAX];
             char* canonicalDirPath = realpath(newPath.c_str(), actualPath);
             if (canonicalDirPath == nullptr) {
-                MEDIA_ERR_LOG("Failed to obtain the canonical path for newpath %{public}s %{public}d",
+                MEDIA_ERR_LOG("Failed to obtain the canonical path for newpath %{private}s %{private}d",
                               filePath.c_str(), errno);
                 return false;
             }
@@ -257,7 +257,7 @@ bool MediaFileUtils::CheckDisplayName(std::string displayName)
     std::regex express("[\\\\/:*?\"<>|{}\\[\\]]");
     bool bValid = std::regex_search(displayName, express);
     if ((displayName.at(0) == '.') || bValid) {
-        MEDIA_ERR_LOG("CheckDisplayName fail %{public}s", displayName.c_str());
+        MEDIA_ERR_LOG("CheckDisplayName fail %{private}s", displayName.c_str());
         return false;
     }
     return true;
@@ -272,7 +272,7 @@ bool MediaFileUtils::CheckTitle(std::string title)
     std::regex express("[\\.\\\\/:*?\"<>|{}\\[\\]]");
     bool bValid = std::regex_search(title, express);
     if (bValid) {
-        MEDIA_ERR_LOG("CheckTitle title fail %{public}s", title.c_str());
+        MEDIA_ERR_LOG("CheckTitle title fail %{private}s", title.c_str());
     }
     return !bValid;
 }
@@ -309,7 +309,7 @@ string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
     if (tempUri.empty()) {
         return deviceId;
     }
-    MEDIA_INFO_LOG("MediaFileUtils::GetNetworkIdFromUri tempUri = %{public}s", tempUri.c_str());
+    MEDIA_INFO_LOG("MediaFileUtils::GetNetworkIdFromUri tempUri = %{private}s", tempUri.c_str());
     pos = tempUri.find_first_of('/');
     if (pos == 0 || pos == string::npos) {
         return deviceId;
@@ -321,14 +321,14 @@ string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
 string MediaFileUtils::UpdatePath(const string &path, const string &uri)
 {
     string retStr = path;
-    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath path = %{public}s, uri = %{public}s", path.c_str(), uri.c_str());
+    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath path = %{private}s, uri = %{private}s", path.c_str(), uri.c_str());
     if (path.empty() || uri.empty()) {
         return retStr;
     }
 
     string networkId = GetNetworkIdFromUri(uri);
     if (networkId.empty()) {
-        MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{public}s", retStr.c_str());
+        MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
         return retStr;
     }
 
@@ -336,7 +336,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     if (pos == string::npos) {
         return retStr;
     }
-    
+
     string beginStr = path.substr(0, pos);
     if (beginStr.empty()) {
         return retStr;
@@ -348,7 +348,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     }
 
     retStr = beginStr + networkId + endStr;
-    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{public}s", retStr.c_str());
+    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
     return retStr;
 }
 } // namespace Media

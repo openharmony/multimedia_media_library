@@ -290,7 +290,7 @@ vector<unique_ptr<ImageAsset>> MediaLibProxy::GetImageAssets(string selection,
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_IMAGE_ASSETS, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("GetImageAssets failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("GetImageAssets failed, error: %{private}d", error);
             return imageAssetList;
         }
         (void)ReadImageList(imageAssetList, reply);
@@ -317,7 +317,7 @@ vector<unique_ptr<AudioAsset>> MediaLibProxy::GetAudioAssets(string selection,
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_AUDIO_ASSETS, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("GetAudioAssets failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("GetAudioAssets failed, error: %{private}d", error);
             return audioAssetList;
         }
         (void)ReadAudioList(audioAssetList, reply);
@@ -343,7 +343,7 @@ vector<unique_ptr<VideoAsset>> MediaLibProxy::GetVideoAssets(string selection, v
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_VIDEO_ASSETS, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("GetVideoAssets failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("GetVideoAssets failed, error: %{private}d", error);
             return videoAssetList;
         }
         (void)ReadVideoList(videoAssetList, reply);
@@ -369,7 +369,7 @@ vector<unique_ptr<MediaAsset>> MediaLibProxy::GetMediaAssets(string selection, v
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_MEDIA_ASSETS, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("GetMediaAssets failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("GetMediaAssets failed, error: %{private}d", error);
             return mediaAssetList;
         }
         (void)ReadMediaList(mediaAssetList, reply);
@@ -395,7 +395,7 @@ vector<unique_ptr<AlbumAsset>> MediaLibProxy::GetImageAlbumAssets(string selecti
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_IMAGEALBUM_ASSETS, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("GetImageAlbumAssets failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("GetImageAlbumAssets failed, error: %{private}d", error);
             return albumAssetList;
         }
         (void)ReadImageAlbumList(albumAssetList, reply);
@@ -421,7 +421,7 @@ vector<unique_ptr<AlbumAsset>> MediaLibProxy::GetVideoAlbumAssets(string selecti
     if ((data.WriteString(selection)) && (data.WriteStringVector(selArgs))) {
         int32_t error = Remote()->SendRequest(MEDIA_GET_VIDEOALBUM_ASSETS, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("GetVideoAlbumAssets failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("GetVideoAlbumAssets failed, error: %{private}d", error);
             return albumAssetList;
         }
         (void)ReadVideoAlbumList(albumAssetList, reply);
@@ -447,7 +447,7 @@ bool MediaLibProxy::CreateMediaAsset(AssetType assetType, const MediaAsset& medi
     if ((data.WriteInt32(assetType) && (WriteCommonData(mediaAsset, data) == SUCCESS))) {
         int32_t error = Remote()->SendRequest(MEDIA_CREATE_MEDIA_ASSET, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("CreateMedia failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("CreateMedia failed, error: %{private}d", error);
             errRet = false;
         }
     } else {
@@ -473,7 +473,7 @@ bool MediaLibProxy::DeleteMediaAsset(AssetType assetType, const MediaAsset& medi
     if ((data.WriteInt32(assetType) && (WriteCommonData(mediaAsset, data) == SUCCESS))) {
         int32_t error = Remote()->SendRequest(MEDIA_DELETE_MEDIA_ASSET, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("DeleteMediaAsset SendRequest failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("DeleteMediaAsset SendRequest failed, error: %{private}d", error);
             errRet = false;
         }
     } else {
@@ -502,7 +502,7 @@ bool MediaLibProxy::ModifyMediaAsset(AssetType assetType, const MediaAsset &srcM
         (WriteCommonData(dstMediaAsset, data) == SUCCESS)) {
         int32_t error = Remote()->SendRequest(MEDIA_MODIFY_MEDIA_ASSET, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("ModifyMediaAsset SendRequest failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("ModifyMediaAsset SendRequest failed, error: %{private}d", error);
             errRet = false;
         }
     } else {
@@ -531,7 +531,7 @@ bool MediaLibProxy::CopyMediaAsset(AssetType assetType, const MediaAsset &srcMed
         (WriteCommonData(dstMediaAsset, data) == SUCCESS)) {
         int32_t error = Remote()->SendRequest(MEDIA_COPY_MEDIA_ASSET, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("CopyMediaAsset SendRequest failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("CopyMediaAsset SendRequest failed, error: %{private}d", error);
             errRet = false;
         }
     } else {
@@ -557,7 +557,7 @@ bool MediaLibProxy::CreateMediaAlbumAsset(AssetType assetType, const AlbumAsset&
     if ((data.WriteInt32(assetType)) && (WriteAlbumdata(albumAsset, data) == SUCCESS)) {
         int32_t error = Remote()->SendRequest(MEDIA_CREATE_MEDIA_ALBUM_ASSET, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("CreateMediaAlbumAsset SendRequest failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("CreateMediaAlbumAsset SendRequest failed, error: %{private}d", error);
             errRet = false;
         }
     } else {
@@ -594,7 +594,7 @@ bool MediaLibProxy::DeleteMediaAlbumAsset(AssetType assetType,  const AlbumAsset
     if (errRet == true) {
         int32_t error = Remote()->SendRequest(MEDIA_DELETE_MEDIA_ALBUM_ASSET, data, reply, option);
         if (error != ERR_NONE) {
-            MEDIA_ERR_LOG("DeleteMediaAlbumAsset SendRequest failed, error: %{public}d", error);
+            MEDIA_ERR_LOG("DeleteMediaAlbumAsset SendRequest failed, error: %{private}d", error);
             errRet = false;
         }
     } else {
@@ -634,7 +634,7 @@ bool MediaLibProxy::ModifyMediaAlbumAsset(AssetType assetType, const AlbumAsset&
         if (errRet == true) {
             int32_t error = Remote()->SendRequest(MEDIA_MODIFY_MEDIA_ALBUM_ASSET, data, reply, option);
             if (error != ERR_NONE) {
-                MEDIA_ERR_LOG("ModifyMediaAlbumAsset SendRequest failed, error: %{public}d", error);
+                MEDIA_ERR_LOG("ModifyMediaAlbumAsset SendRequest failed, error: %{private}d", error);
                 return false;
             }
             dstAsset->SetAlbumName(ROOT_MEDIA_DIR + dstAsset->GetAlbumName());

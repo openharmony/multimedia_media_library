@@ -41,7 +41,7 @@ int32_t MediaScannerAbilityStub::OnRemoteRequest(
             errCode = MediaScannerAbilityStub::HandleGetScanStatus(data, reply);
             break;
         default:
-            MEDIA_ERR_LOG("MediaScannerAbilityStub request code %{public}u not handled", code);
+            MEDIA_ERR_LOG("MediaScannerAbilityStub request code %{private}d not handled", code);
             errCode = IPCObjectStub::OnRemoteRequest(code, data, reply, option);
             break;
     }

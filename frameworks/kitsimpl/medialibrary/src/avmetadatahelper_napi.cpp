@@ -106,53 +106,53 @@ static napi_status CreateError(napi_env env, int32_t errCode, const std::string 
     napi_value msgValStr = nullptr;
     napi_status status = napi_create_string_utf8(env, errMsg.c_str(), NAPI_AUTO_LENGTH, &msgValStr);
     if (status != napi_ok || msgValStr == nullptr) {
-        NAPI_ERR_LOG("create error message str fail, status: %{public}d", status);
+        NAPI_ERR_LOG("create error message str fail, status: %{private}d", status);
         return napi_invalid_arg;
     }
 
     status = napi_create_error(env, nullptr, msgValStr, &errVal);
     if (status != napi_ok || errVal == nullptr) {
-        NAPI_ERR_LOG("create error fail, status: %{public}d", status);
+        NAPI_ERR_LOG("create error fail, status: %{private}d", status);
         return napi_invalid_arg;
     }
 
     napi_value codeStr = nullptr;
     status = napi_create_string_utf8(env, "code", NAPI_AUTO_LENGTH, &codeStr);
     if (status != napi_ok || codeStr == nullptr) {
-        NAPI_ERR_LOG("create code str fail, status: %{public}d", status);
+        NAPI_ERR_LOG("create code str fail, status: %{private}d", status);
         return napi_invalid_arg;
     }
 
     napi_value errCodeVal = nullptr;
     status = napi_create_int32(env, errCode, &errCodeVal);
     if (status != napi_ok || errCodeVal == nullptr) {
-        NAPI_ERR_LOG("create error code number val fail, status: %{public}d", status);
+        NAPI_ERR_LOG("create error code number val fail, status: %{private}d", status);
         return napi_invalid_arg;
     }
 
     status = napi_set_property(env, errVal, codeStr, errCodeVal);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("set error code property fail, status: %{public}d", status);
+        NAPI_ERR_LOG("set error code property fail, status: %{private}d", status);
         return napi_invalid_arg;
     }
 
     napi_value nameStr = nullptr;
     status = napi_create_string_utf8(env, "name", NAPI_AUTO_LENGTH, &nameStr);
     if (status != napi_ok || nameStr == nullptr) {
-        NAPI_ERR_LOG("create name str fail, status: %{public}d", status);
+        NAPI_ERR_LOG("create name str fail, status: %{private}d", status);
         return napi_invalid_arg;
     }
 
     napi_value errNameVal = nullptr;
     status = napi_create_string_utf8(env, "BusinessError", NAPI_AUTO_LENGTH, &errNameVal);
     if (status != napi_ok || errNameVal == nullptr) {
-        NAPI_ERR_LOG("create BusinessError str fail, status: %{public}d", status);
+        NAPI_ERR_LOG("create BusinessError str fail, status: %{private}d", status);
         return napi_invalid_arg;
     }
 
     status = napi_set_property(env, errVal, nameStr, errNameVal);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("set error name property fail, status: %{public}d", status);
+        NAPI_ERR_LOG("set error name property fail, status: %{private}d", status);
         return napi_invalid_arg;
     }
 
@@ -195,7 +195,7 @@ static void SetFunctionAsyncCallbackComplete(napi_env env, napi_status status,
         return;
     }
 
-    NAPI_INFO_LOG("async context status : %{public}d, status : %{public}d", asyncContext->status, status);
+    NAPI_INFO_LOG("async context status : %{private}d, status : %{private}d", asyncContext->status, status);
     if (status == napi_ok) {
         if (asyncContext->status != 0) {
             (void)CreateError(env, -1, asyncContext->debugInfo, valueParam);
@@ -219,7 +219,7 @@ static void GetStringValueAsyncCallbackComplete(napi_env env, napi_status status
         return;
     }
 
-    NAPI_INFO_LOG("async context status : %{public}d, status : %{public}d", asyncContext->status, status);
+    NAPI_INFO_LOG("async context status : %{private}d, status : %{private}d", asyncContext->status, status);
 
     if (status == napi_ok) {
         status = napi_create_string_utf8(
@@ -243,7 +243,7 @@ static void GetPixelMapInfo(napi_env env, napi_value configObj, std::string type
     bool exist = false;
     napi_status status = napi_has_named_property(env, configObj, type.c_str(), &exist);
     if (status != napi_ok || !exist) {
-        NAPI_ERR_LOG("can not find named property, status: %{public}d", status);
+        NAPI_ERR_LOG("can not find named property, status: %{private}d", status);
         return;
     }
 
@@ -293,25 +293,25 @@ napi_value AVMetadataHelperNapi::Init(napi_env env, napi_value exports)
     napi_status status = napi_define_class(env, CLASS_NAME.c_str(), NAPI_AUTO_LENGTH, Constructor, nullptr,
         sizeof(properties) / sizeof(properties[0]), properties, &constructor);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("define class fail, status: %{public}d", status);
+        NAPI_ERR_LOG("define class fail, status: %{private}d", status);
         return nullptr;
     }
 
     status = napi_create_reference(env, constructor, 1, &constructor_);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("create reference fail, status: %{public}d", status);
+        NAPI_ERR_LOG("create reference fail, status: %{private}d", status);
         return nullptr;
     }
 
     status = napi_set_named_property(env, exports, CLASS_NAME.c_str(), constructor);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("set named property fail, status: %{public}d", status);
+        NAPI_ERR_LOG("set named property fail, status: %{private}d", status);
         return nullptr;
     }
 
     status = napi_define_properties(env, exports, sizeof(static_prop) / sizeof(static_prop[0]), static_prop);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("define properties fail, status: %{public}d", status);
+        NAPI_ERR_LOG("define properties fail, status: %{private}d", status);
         return nullptr;
     }
 
@@ -328,7 +328,7 @@ napi_value AVMetadataHelperNapi::Constructor(napi_env env, napi_callback_info in
     size_t argCount = 0;
     napi_status status = napi_get_cb_info(env, info, &argCount, nullptr, &jsThis, nullptr);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("get callback info fail, status: %{public}d", status);
+        NAPI_ERR_LOG("get callback info fail, status: %{private}d", status);
         return result;
     }
 
@@ -350,7 +350,7 @@ napi_value AVMetadataHelperNapi::Constructor(napi_env env, napi_callback_info in
         AVMetadataHelperNapi::Destructor, nullptr, &(avMetadataHelperNapi->wrapper_));
     if (status != napi_ok) {
         delete avMetadataHelperNapi;
-        NAPI_ERR_LOG("native wrap fail, status: %{public}d", status);
+        NAPI_ERR_LOG("native wrap fail, status: %{private}d", status);
         return result;
     }
 
@@ -373,14 +373,14 @@ napi_value AVMetadataHelperNapi::CreateAVMetadataHelper(napi_env env, napi_callb
     napi_value constructor = nullptr;
     napi_status status = napi_get_reference_value(env, constructor_, &constructor);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("get reference value fail, status: %{public}d", status);
+        NAPI_ERR_LOG("get reference value fail, status: %{private}d", status);
         napi_get_undefined(env, &result);
         return result;
     }
 
     status = napi_new_instance(env, constructor, 0, nullptr, &result);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("new instance fail, status: %{public}d", status);
+        NAPI_ERR_LOG("new instance fail, status: %{private}d", status);
         napi_get_undefined(env, &result);
         return result;
     }
@@ -404,7 +404,7 @@ napi_value AVMetadataHelperNapi::SetSource(napi_env env, napi_callback_info info
 
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status != napi_ok || asyncContext->objectInfo == nullptr) {
-        NAPI_ERR_LOG("SetSource get napi error, status: %{public}d", status);
+        NAPI_ERR_LOG("SetSource get napi error, status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -418,7 +418,7 @@ napi_value AVMetadataHelperNapi::SetSource(napi_env env, napi_callback_info info
         } else if (i == 1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &asyncContext->callbackRef);
         } else {
-            NAPI_ERR_LOG("SetSource type mismatch, valueType: %{public}d", valueType);
+            NAPI_ERR_LOG("SetSource type mismatch, valueType: %{private}d", valueType);
         }
     }
 
@@ -440,7 +440,7 @@ napi_value AVMetadataHelperNapi::SetSource(napi_env env, napi_callback_info info
         reinterpret_cast<napi_async_complete_callback>(SetFunctionAsyncCallbackComplete),
         static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("SetSource async work error, status: %{public}d", status);
+        NAPI_ERR_LOG("SetSource async work error, status: %{private}d", status);
         napi_get_undefined(env, &undefinedResult);
     } else {
         napi_queue_async_work(env, asyncContext->work);
@@ -465,7 +465,7 @@ napi_value AVMetadataHelperNapi::ResolveMetadata(napi_env env, napi_callback_inf
 
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status != napi_ok || asyncContext->objectInfo == nullptr) {
-        NAPI_ERR_LOG("ResolveMetadata get napi error, status: %{public}d", status);
+        NAPI_ERR_LOG("ResolveMetadata get napi error, status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -479,7 +479,7 @@ napi_value AVMetadataHelperNapi::ResolveMetadata(napi_env env, napi_callback_inf
         } else if (i == 1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &asyncContext->callbackRef);
         } else {
-            NAPI_ERR_LOG("ResolveMetadata type mismatch, valueType: %{public}d", valueType);
+            NAPI_ERR_LOG("ResolveMetadata type mismatch, valueType: %{private}d", valueType);
         }
     }
 
@@ -501,7 +501,7 @@ napi_value AVMetadataHelperNapi::ResolveMetadata(napi_env env, napi_callback_inf
         reinterpret_cast<napi_async_complete_callback>(GetStringValueAsyncCallbackComplete),
         static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("ResolveMetadata async work error, status: %{public}d", status);
+        NAPI_ERR_LOG("ResolveMetadata async work error, status: %{private}d", status);
         napi_get_undefined(env, &undefinedResult);
     } else {
         napi_queue_async_work(env, asyncContext->work);
@@ -526,7 +526,7 @@ napi_value AVMetadataHelperNapi::FetchVideoScaledPixelMapByTime(napi_env env, na
 
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status != napi_ok || asyncContext->objectInfo == nullptr) {
-        NAPI_ERR_LOG("FetchVideoScaledPixelMapByTime get napi error, status: %{public}d", status);
+        NAPI_ERR_LOG("FetchVideoScaledPixelMapByTime get napi error, status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -563,7 +563,7 @@ napi_value AVMetadataHelperNapi::FetchVideoScaledPixelMapByTime(napi_env env, na
         reinterpret_cast<napi_async_complete_callback>(GetPixelMapAsyncCallbackComplete),
         static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("FetchVideoScaledPixelMapByTime async work error, status: %{public}d", status);
+        NAPI_ERR_LOG("FetchVideoScaledPixelMapByTime async work error, status: %{private}d", status);
         napi_get_undefined(env, &undefinedResult);
     } else {
         napi_queue_async_work(env, asyncContext->work);
@@ -588,7 +588,7 @@ napi_value AVMetadataHelperNapi::FetchVideoPixelMapByTime(napi_env env, napi_cal
 
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status != napi_ok || asyncContext->objectInfo == nullptr) {
-        NAPI_ERR_LOG("FetchVideoPixelMapByTime get napi error, status: %{public}d", status);
+        NAPI_ERR_LOG("FetchVideoPixelMapByTime get napi error, status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -602,7 +602,7 @@ napi_value AVMetadataHelperNapi::FetchVideoPixelMapByTime(napi_env env, napi_cal
         } else if (i == 1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &asyncContext->callbackRef);
         } else {
-            NAPI_ERR_LOG("FetchVideoPixelMapByTime type mismatch, valueType: %{public}d", valueType);
+            NAPI_ERR_LOG("FetchVideoPixelMapByTime type mismatch, valueType: %{private}d", valueType);
         }
     }
 
@@ -624,7 +624,7 @@ napi_value AVMetadataHelperNapi::FetchVideoPixelMapByTime(napi_env env, napi_cal
         reinterpret_cast<napi_async_complete_callback>(GetPixelMapAsyncCallbackComplete),
         static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("FetchVideoPixelMapByTime async work error, status: %{public}d", status);
+        NAPI_ERR_LOG("FetchVideoPixelMapByTime async work error, status: %{private}d", status);
         napi_get_undefined(env, &undefinedResult);
     } else {
         napi_queue_async_work(env, asyncContext->work);
@@ -649,7 +649,7 @@ napi_value AVMetadataHelperNapi::Release(napi_env env, napi_callback_info info)
 
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status != napi_ok || asyncContext->objectInfo == nullptr) {
-        NAPI_ERR_LOG("Release get napi error, status: %{public}d", status);
+        NAPI_ERR_LOG("Release get napi error, status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -661,7 +661,7 @@ napi_value AVMetadataHelperNapi::Release(napi_env env, napi_callback_info info)
         if (valueType == napi_function) {
             napi_create_reference(env, argv[0], refCount, &asyncContext->callbackRef);
         } else {
-            NAPI_ERR_LOG("Release type mismatch, valueType: %{public}d", valueType);
+            NAPI_ERR_LOG("Release type mismatch, valueType: %{private}d", valueType);
         }
     }
 
@@ -684,7 +684,7 @@ napi_value AVMetadataHelperNapi::Release(napi_env env, napi_callback_info info)
         reinterpret_cast<napi_async_complete_callback>(SetFunctionAsyncCallbackComplete),
         static_cast<void*>(asyncContext.get()), &asyncContext->work);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("Release async work error, status: %{public}d", status);
+        NAPI_ERR_LOG("Release async work error, status: %{private}d", status);
         napi_get_undefined(env, &undefinedResult);
     } else {
         napi_queue_async_work(env, asyncContext->work);

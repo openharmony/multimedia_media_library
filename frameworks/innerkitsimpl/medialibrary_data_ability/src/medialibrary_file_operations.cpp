@@ -145,7 +145,7 @@ int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(const ValuesBucket &v
 
     if (resultSet != nullptr) {
         resultSet->GetRowCount(errorCode);
-        MEDIA_INFO_LOG("HandleGetAlbumCapacity GetRowCount %{public}d", errorCode);
+        MEDIA_INFO_LOG("HandleGetAlbumCapacity GetRowCount %{private}d", errorCode);
     }
 
     MEDIA_INFO_LOG("HandleGetAlbumCapacity OUT");
@@ -207,21 +207,21 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     if (destAlbumPath.back() == '/') {
         destAlbumPath = destAlbumPath.substr(0, destAlbumPath.length() - 1);
     }
-    MEDIA_ERR_LOG("HandleModifyAsset destAlbumPath = %{public}s", destAlbumPath.c_str());
+    MEDIA_ERR_LOG("HandleModifyAsset destAlbumPath = %{private}s", destAlbumPath.c_str());
     bucketId = MediaLibraryDataAbilityUtils::GetParentIdFromDb(destAlbumPath, rdbStore);
     if ((!dstReFilePath.empty()) && (bucketId == 0)) {
         vector<int32_t> outIds;
         NativeAlbumAsset nativeAlbumAsset = MediaLibraryDataAbilityUtils::CreateDirectorys(dstReFilePath,
                                                                                            rdbStore, outIds);
         if (nativeAlbumAsset.GetAlbumId() < 0) {
-            MEDIA_ERR_LOG("Failed to CreateDirectorys err:%{public}d", nativeAlbumAsset.GetAlbumId());
+            MEDIA_ERR_LOG("Failed to CreateDirectorys err:%{private}d", nativeAlbumAsset.GetAlbumId());
             return nativeAlbumAsset.GetAlbumId();
         }
         bucketId = nativeAlbumAsset.GetAlbumId();
     }
 
     bucketName = MediaLibraryDataAbilityUtils::GetParentDisplayNameFromDb(bucketId, rdbStore);
-    MEDIA_ERR_LOG("HandleModifyAsset bucketId = %{public}d bucketName = %{public}s", bucketId, bucketName.c_str());
+    MEDIA_ERR_LOG("HandleModifyAsset bucketId = %{private}d bucketName = %{private}s", bucketId, bucketName.c_str());
     if (srcPath.compare(dstFilePath) != 0) {
         errCode = fileAsset.ModifyAsset(srcPath, dstFilePath);
         if (errCode == DATA_ABILITY_MODIFY_DATA_FAIL) {
@@ -293,7 +293,7 @@ int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &v
     if (values.GetObject(MEDIA_DATA_DB_ID, valueObject)) {
         valueObject.GetInt(id);
     }
-    MEDIA_ERR_LOG("HandleIsDirectoryAsset id = %{public}d", id);
+    MEDIA_ERR_LOG("HandleIsDirectoryAsset id = %{private}d", id);
     if (id != 0) {
         AbsRdbPredicates mediaLibAbsPredFile(MEDIALIBRARY_TABLE);
         mediaLibAbsPredFile.EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
@@ -301,7 +301,7 @@ int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &v
         while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
             queryResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, columnIndex);
             queryResultSet->GetString(columnIndex, path);
-            MEDIA_ERR_LOG("HandleIsDirectoryAsset path = %{public}s", path.c_str());
+            MEDIA_ERR_LOG("HandleIsDirectoryAsset path = %{private}s", path.c_str());
         }
         if (MediaFileUtils::IsDirectory(path)) {
             errCode = SUCCESS;

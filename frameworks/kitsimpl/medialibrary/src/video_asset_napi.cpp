@@ -130,7 +130,7 @@ napi_value VideoAssetNapi::VideoAssetNapiConstructor(napi_env env, napi_callback
                 obj.release();
                 return thisVar;
             } else {
-                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
+                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{private}d", status);
             }
         }
     }
@@ -154,7 +154,7 @@ napi_value VideoAssetNapi::CreateVideoAsset(napi_env env, Media::VideoAsset &vAs
         if (status == napi_ok && result != nullptr) {
             return result;
         } else {
-            NAPI_ERR_LOG("Failed to create video asset instance, status: %{public}d", status);
+            NAPI_ERR_LOG("Failed to create video asset instance, status: %{private}d", status);
         }
     }
 
@@ -174,7 +174,7 @@ napi_value VideoAssetNapi::GetMimeType(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments!, status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments!, status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -202,7 +202,7 @@ napi_value VideoAssetNapi::GetWidth(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -230,7 +230,7 @@ napi_value VideoAssetNapi::GetHeight(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -258,7 +258,7 @@ napi_value VideoAssetNapi::GetDuration(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments!, status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments!, status: %{private}d", status);
         return undefinedResult;
     }
 
