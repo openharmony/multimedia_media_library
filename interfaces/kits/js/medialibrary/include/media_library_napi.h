@@ -212,6 +212,7 @@ struct MediaLibraryAsyncContext {
     std::string selection;
     std::vector<std::string> selectionArgs;
     std::string order;
+    std::string uri;
     std::string networkId;
     std::vector<std::unique_ptr<MediaAsset>> mediaAssets;
     std::vector<std::unique_ptr<AudioAsset>> audioAssets;
