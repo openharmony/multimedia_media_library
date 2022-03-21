@@ -22,8 +22,6 @@
 #include "uv.h"
 #include "string_ex.h"
 
-using OHOS::HiviewDFX::HiLog;
-using OHOS::HiviewDFX::HiLogLabel;
 using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
@@ -1712,7 +1710,6 @@ static string GetFirstDirName(const string& relativePath)
     if (!relativePath.empty()) {
         string::size_type pos = relativePath.find_first_of('/');
         if (pos == relativePath.length()) {
-            MEDIA_ERR_LOG("relativePath is first dir");
             return relativePath;
         }
         firstDirName = relativePath.substr(0, pos + 1);

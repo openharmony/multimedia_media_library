@@ -14,6 +14,7 @@
  */
 
 #include "media_scanner_ability.h"
+#include "media_log.h"
 
 using namespace OHOS::AppExecFwk;
 using namespace std;

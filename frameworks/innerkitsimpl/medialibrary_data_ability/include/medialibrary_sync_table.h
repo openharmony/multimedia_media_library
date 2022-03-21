@@ -24,7 +24,6 @@
 #include "distributed_kv_data_manager.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_device.h"
-#include "media_log.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 #include "rdb_store.h"

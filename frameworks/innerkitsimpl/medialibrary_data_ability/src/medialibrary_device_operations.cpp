@@ -14,6 +14,7 @@
  */
 
 #include "medialibrary_device_operations.h"
+#include "media_log.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

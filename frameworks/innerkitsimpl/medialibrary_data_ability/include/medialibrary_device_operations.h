@@ -28,7 +28,6 @@
 #include "device_manager.h"
 #include "dm_device_info.h"
 #include "media_data_ability_const.h"
-#include "media_log.h"
 #include "medialibrary_data_ability_utils.h"
 #include "medialibrary_device_db.h"
 #include "medialibrary_device_info.h"
