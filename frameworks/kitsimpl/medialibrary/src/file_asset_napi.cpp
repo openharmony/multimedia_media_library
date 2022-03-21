@@ -231,18 +231,32 @@ int32_t FileAssetNapi::GetFileId() const
 {
     return fileId_;
 }
+
 Media::MediaType FileAssetNapi::GetMediaType() const
 {
     return mediaType_;
 }
+
 int32_t FileAssetNapi::GetOrientation() const
 {
     return orientation_;
 }
+
 std::string FileAssetNapi::GetNetworkId() const
 {
     return MediaFileUtils::GetNetworkIdFromUri(fileUri_);
 }
+
+bool FileAssetNapi::IsFavorite() const
+{
+    return isFavorite_;
+}
+
+void FileAssetNapi::SetFavorite(bool isFavorite)
+{
+    isFavorite_ = isFavorite;
+}
+
 napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -1262,6 +1276,10 @@ static unique_ptr<PixelMap> QueryThumbnail(
 {
     StartTrace(BYTRACE_TAG_OHOS, "QueryThumbnail");
 
+    if (abilityHelper == nullptr || thumbnailHelper == nullptr) {
+        return nullptr;
+    }
+
     Uri queryUri1(uri + "?" +
         MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
         MEDIA_DATA_DB_WIDTH + "=" + to_string(width) + "&" +
@@ -1517,8 +1535,8 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     return QueryThumbnail(dataAbilityHelper, sThumbnailHelper_, fileId, fileUri, width, height);
 }
 
-static void JSFavouriteCallbackComplete(napi_env env, napi_status status,
-                                        FileAssetAsyncContext* context)
+static void JSFavoriteCallbackComplete(napi_env env, napi_status status,
+                                       FileAssetAsyncContext* context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
@@ -1699,21 +1717,21 @@ static bool GetIsFavouriteNative(const FileAssetAsyncContext &fileContext)
 static void JSIsFavoriteExecute(FileAssetAsyncContext* context)
 {
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
-        context->isFavourite = GetIsFavouriteNative(*context);
+        context->isFavorite = GetIsFavouriteNative(*context);
     } else {
         context->error = ERR_INVALID_OUTPUT;
         HiLog::Error(LABEL, "Ability helper is null");
     }
 }
 
-static void JSIsFavouriteCallbackComplete(napi_env env, napi_status status,
-                                          FileAssetAsyncContext* context)
+static void JSIsFavoriteCallbackComplete(napi_env env, napi_status status,
+                                         FileAssetAsyncContext* context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     if (context->error == ERR_DEFAULT) {
-        napi_get_boolean(env, context->isFavourite, &jsContext->data);
+        napi_get_boolean(env, context->isFavorite, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
@@ -1729,21 +1747,21 @@ static void JSIsFavouriteCallbackComplete(napi_env env, napi_status status,
     delete context;
 }
 
-napi_value GetJSArgsForFavourite(napi_env env,
-                                 size_t argc,
-                                 const napi_value argv[],
-                                 FileAssetAsyncContext &asyncContext)
+napi_value GetJSArgsForFavorite(napi_env env,
+                                size_t argc,
+                                const napi_value argv[],
+                                FileAssetAsyncContext &asyncContext)
 {
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
-    bool isFavourite = false;
+    bool isFavorite = false;
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
         if (i == PARAM0 && valueType == napi_boolean) {
-            napi_get_value_bool(env, argv[i], &isFavourite);
+            napi_get_value_bool(env, argv[i], &isFavorite);
         } else if (i == PARAM1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
@@ -1751,7 +1769,7 @@ napi_value GetJSArgsForFavourite(napi_env env,
             NAPI_ASSERT(env, false, "type mismatch");
         }
     }
-    context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavourite);
+    context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavorite);
     napi_get_boolean(env, true, &result);
     return result;
 }
@@ -1770,7 +1788,7 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
-        result = GetJSArgsForFavourite(env, argc, argv, *asyncContext);
+        result = GetJSArgsForFavorite(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
@@ -1783,19 +1801,20 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
                     ValueObject valueObject;
                     NativeRdb::DataAbilityPredicates predicates;
                     NativeRdb::ValuesBucket valuesBucket;
-                    bool isFavourite = false;
+                    bool isFavorite = false;
                     if (context->valuesBucket.GetObject(MEDIA_DATA_DB_IS_FAV, valueObject)) {
-                        valueObject.GetBool(isFavourite);
+                        valueObject.GetBool(isFavorite);
                     }
-                    valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavourite);
+                    valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavorite);
                     predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
                     context->objectInfo->sAbilityHelper_->Update(uri, valuesBucket, predicates);
                     context->status = true;
+                    context->objectInfo->SetFavorite(isFavorite);
                 } else {
                     context->status = false;
                 }
             },
-            reinterpret_cast<CompleteCallback>(JSFavouriteCallbackComplete),
+            reinterpret_cast<CompleteCallback>(JSFavoriteCallbackComplete),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
@@ -1807,10 +1826,10 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
     return result;
 }
 
-static napi_value GetJSArgsForIsFavourite(napi_env env,
-                                          size_t argc,
-                                          const napi_value argv[],
-                                          FileAssetAsyncContext &asyncContext)
+static napi_value GetJSArgsForIsFavorite(napi_env env,
+                                         size_t argc,
+                                         const napi_value argv[],
+                                         FileAssetAsyncContext &asyncContext)
 {
     HiLog::Error(LABEL, "ConvertCommitJSArgsToNative");
     string str = "";
@@ -1853,7 +1872,7 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
-        result = GetJSArgsForIsFavourite(env, argc, argv, *asyncContext);
+        result = GetJSArgsForIsFavorite(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsFavorite");
@@ -1862,7 +1881,7 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
                 auto context = static_cast<FileAssetAsyncContext*>(data);
                 JSIsFavoriteExecute(context);
             },
-            reinterpret_cast<CompleteCallback>(JSIsFavouriteCallbackComplete),
+            reinterpret_cast<CompleteCallback>(JSIsFavoriteCallbackComplete),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
@@ -2129,6 +2148,7 @@ void FileAssetNapi::UpdateFileAssetInfo()
     parent_ = sFileAsset_->GetParent();
     albumUri_ = sFileAsset_->GetAlbumUri();
     dateTaken_ = sFileAsset_->GetDateTaken();
+    isFavorite_ = sFileAsset_->IsFavorite();
 }
 } // namespace Media
 } // namespace OHOS
