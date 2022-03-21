@@ -14,15 +14,11 @@
  */
 
 #include "smart_album_napi.h"
-#include "hilog/log.h"
+#include "medialibrary_napi_log.h"
 #include "media_file_utils.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
-
-namespace {
-    constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "SmartAlbumNapi"};
-}
 
 namespace OHOS {
 namespace Media {
@@ -62,7 +58,7 @@ void SmartAlbumNapi::SmartAlbumNapiDestructor(napi_env env, void *nativeObject, 
 
 napi_value SmartAlbumNapi::Init(napi_env env, napi_value exports)
 {
-    HiLog::Error(LABEL, "SmartAlbumNapi::Init");
+    NAPI_DEBUG_LOG("SmartAlbumNapi::Init");
     napi_status status;
     napi_value ctorObj;
     int32_t refCount = 1;
@@ -87,24 +83,21 @@ napi_value SmartAlbumNapi::Init(napi_env env, napi_value exports)
                                sizeof(album_props) / sizeof(album_props[PARAM0]),
                                album_props, &ctorObj);
     if (status == napi_ok) {
-        HiLog::Error(LABEL, "SmartAlbumNapi::Init status == napi_ok 1");
         status = napi_create_reference(env, ctorObj, refCount, &sConstructor_);
         if (status == napi_ok) {
-            HiLog::Error(LABEL, "SmartAlbumNapi::Init status == napi_ok 2");
             status = napi_set_named_property(env, exports, SMART_ALBUM_NAPI_CLASS_NAME.c_str(), ctorObj);
             if (status == napi_ok) {
-                HiLog::Error(LABEL, "SmartAlbumNapi::Init status == napi_ok 3");
                 return exports;
             }
         }
     }
-    HiLog::Error(LABEL, "SmartAlbumNapi::Init nullptr");
+    NAPI_DEBUG_LOG("SmartAlbumNapi::Init nullptr, status: %{public}d", status);
     return nullptr;
 }
 
 void SmartAlbumNapi::SetSmartAlbumNapiProperties(const SmartAlbumAsset &albumData)
 {
-    HiLog::Error(LABEL, "SetSmartAlbumNapiProperties name = %{public}s", albumData.GetAlbumName().c_str());
+    NAPI_ERR_LOG("SetSmartAlbumNapiProperties name = %{public}s", albumData.GetAlbumName().c_str());
     this->albumId_ = albumData.GetAlbumId();
     this->albumName_ = albumData.GetAlbumName();
     this->albumUri_ = albumData.GetAlbumUri();
@@ -122,12 +115,10 @@ napi_value SmartAlbumNapi::SmartAlbumNapiConstructor(napi_env env, napi_callback
     napi_status status;
     napi_value result = nullptr;
     napi_value thisVar = nullptr;
-    HiLog::Error(LABEL, "SmartAlbumNapiConstructor");
     napi_get_undefined(env, &result);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status == napi_ok && thisVar != nullptr) {
         std::unique_ptr<SmartAlbumNapi> obj = std::make_unique<SmartAlbumNapi>();
-        HiLog::Error(LABEL, "SmartAlbumNapiConstructor SmartAlbumNapi");
         if (obj != nullptr) {
             obj->env_ = env;
             obj->abilityHelper_ = sAbilityHelper;
@@ -140,7 +131,7 @@ napi_value SmartAlbumNapi::SmartAlbumNapiConstructor(napi_env env, napi_callback
                 obj.release();
                 return thisVar;
             } else {
-                HiLog::Error(LABEL, "Failure wrapping js to native napi");
+                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
             }
         }
     }
@@ -154,19 +145,16 @@ napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, SmartAlbumAsset &a
     napi_status status;
     napi_value result = nullptr;
     napi_value constructor;
-    HiLog::Error(LABEL, "CreateSmartAlbumNapi");
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (status == napi_ok) {
-        HiLog::Error(LABEL, "CreateSmartAlbumNapi status == napi_ok");
         sAlbumData_ = &albumData;
         sAbilityHelper = abilityHelper;
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         sAlbumData_ = nullptr;
         if (status == napi_ok && result != nullptr) {
-            HiLog::Error(LABEL, "CreateSmartAlbumNapi status == napi_ok && result != nullptr");
             return result;
         } else {
-            HiLog::Error(LABEL, "Failed to create snart album asset instance");
+            NAPI_ERR_LOG("Failed to create snart album asset instance, status: %{public}d", status);
         }
     }
 
@@ -210,7 +198,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumId(napi_env env, napi_callback_info in
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -234,18 +222,16 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumName(napi_env env, napi_callback_info 
     SmartAlbumNapi* obj = nullptr;
     std::string name = "";
     napi_value thisVar = nullptr;
-    HiLog::Error(LABEL, "JSGetSmartAlbumName");
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
-    HiLog::Error(LABEL, "JSGetSmartAlbumName status == napi_ok && thisVar != nullptr");
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         name = obj->albumName_;
-        HiLog::Error(LABEL, "JSGetSmartAlbumName name = %{public}s", name.c_str());
+        NAPI_DEBUG_LOG("JSGetSmartAlbumName name = %{public}s", name.c_str());
         status = napi_create_string_utf8(env, name.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -273,7 +259,7 @@ napi_value SmartAlbumNapi::JSSmartAlbumNameSetter(napi_env env, napi_callback_in
 
     if (thisVar == nullptr || napi_typeof(env, argv[PARAM0], &valueType) != napi_ok
         || valueType != napi_string) {
-        HiLog::Error(LABEL, "Invalid arguments type!");
+        NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
         return jsResult;
     }
 
@@ -299,7 +285,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumTag(napi_env env, napi_callback_info i
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -326,7 +312,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCapacity(napi_env env, napi_callback_i
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -353,7 +339,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCategoryId(napi_env env, napi_callback
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -380,7 +366,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCategoryName(napi_env env, napi_callba
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -407,7 +393,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCoverUri(napi_env env, napi_callback_i
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -434,7 +420,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumUri(napi_env env, napi_callback_info i
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -449,12 +435,11 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumUri(napi_env env, napi_callback_info i
 }
 static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
 {
-    HiLog::Error(LABEL, "CommitModifyNative");
     SmartAlbumNapiAsyncContext *context = const_cast<SmartAlbumNapiAsyncContext *>(&albumContext);
     NativeRdb::DataAbilityPredicates predicates;
     NativeRdb::ValuesBucket valuesBucket;
     int32_t changedRows;
-    HiLog::Error(LABEL, "CommitModifyNative = %{public}s", context->objectInfo->GetSmartAlbumName().c_str());
+    NAPI_DEBUG_LOG("CommitModifyNative = %{public}s", context->objectInfo->GetSmartAlbumName().c_str());
     if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName())) {
         valuesBucket.PutString(SMARTALBUM_DB_NAME, context->objectInfo->GetSmartAlbumName());
         predicates.EqualTo(SMARTALBUM_DB_ID, std::to_string(context->objectInfo->GetSmartAlbumId()));
@@ -468,7 +453,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
 }
 static void SetFileFav(bool isFavourite, SmartAlbumNapiAsyncContext *context)
 {
-    HiLog::Debug(LABEL, "SetFileFav IN");
+    NAPI_DEBUG_LOG("SetFileFav IN");
     string abilityUri = MEDIALIBRARY_DATA_URI;
     NativeRdb::ValuesBucket values;
     int32_t changedRows;
@@ -484,12 +469,12 @@ static void SetFileFav(bool isFavourite, SmartAlbumNapiAsyncContext *context)
     predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(fileId));
     changedRows = context->objectInfo->GetDataAbilityHelper()->Update(uri, values, predicates);
     context->changedRows = changedRows;
-    HiLog::Debug(LABEL, "SetFileFav OUT  = %{public}d", changedRows);
+    NAPI_DEBUG_LOG("SetFileFav OUT  = %{public}d", changedRows);
 }
 
 static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
 {
-    HiLog::Debug(LABEL, "SetFileTrash IN");
+    NAPI_DEBUG_LOG("SetFileTrash IN");
     string abilityUri = MEDIALIBRARY_DATA_URI;
     NativeRdb::ValuesBucket values;
     int32_t changedRows;
@@ -511,7 +496,7 @@ static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
     predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(fileId));
     changedRows = context->objectInfo->GetDataAbilityHelper()->Update(uri, values, predicates);
     context->changedRows = changedRows;
-    HiLog::Debug(LABEL, "SetFileTrash OUT  = %{public}d", changedRows);
+    NAPI_DEBUG_LOG("SetFileTrash OUT  = %{public}d", changedRows);
 }
 
 static void AddAssetNative(SmartAlbumNapiAsyncContext *context)
@@ -537,7 +522,6 @@ static void RemoveAssetNative(SmartAlbumNapiAsyncContext *context)
 }
 static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, SmartAlbumNapiAsyncContext *context)
 {
-    HiLog::Error(LABEL, "JSCommitModifyCompleteCallback");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -559,7 +543,6 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Sma
 }
 static void UpdateAlbumCapacity(SmartAlbumNapiAsyncContext *context)
 {
-    HiLog::Error(LABEL, "UpdateAlbumCapacity");
     vector<string> columns;
     NativeRdb::DataAbilityPredicates predicates;
     Uri uri(MEDIALIBRARY_DATA_URI + "/"
@@ -568,12 +551,10 @@ static void UpdateAlbumCapacity(SmartAlbumNapiAsyncContext *context)
     predicates.EqualTo(SMARTALBUM_DB_ID, std::to_string(context->objectInfo->GetSmartAlbumId()));
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->GetDataAbilityHelper()->Query(uri,
         columns, predicates);
-    HiLog::Error(LABEL, "UpdateAlbumCapacity resultSet");
     int32_t albumCapacityIndex = 0, albumCapacity = 1;
     resultSet->GetColumnIndex(SMARTABLUMASSETS_ALBUMCAPACITY, albumCapacityIndex);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         resultSet->GetInt(albumCapacityIndex, albumCapacity);
-        HiLog::Error(LABEL, "UpdateAlbumCapacity albumCapacity = %{public}d", albumCapacity);
         break;
     }
     context->objectInfo->SetAlbumCapacity(albumCapacity);
@@ -624,7 +605,6 @@ static void JSRemoveAssetCompleteCallback(napi_env env, napi_status status, Smar
 static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const napi_value argv[],
     SmartAlbumNapiAsyncContext &asyncContext)
 {
-    HiLog::Error(LABEL, "ConvertCommitJSArgsToNative");
     const int32_t refCount = 1;
     napi_value result;
     auto context = &asyncContext;
@@ -674,7 +654,6 @@ napi_value GetJSArgsForAsset(napi_env env, size_t argc,
     std::string strRow;
     string::size_type pos = coverUri.find_last_of('/');
     strRow = coverUri.substr(pos + 1);
-    HiLog::Error(LABEL, "GetJSArgsForAsset = %{public}d", std::stoi(strRow));
     context->valuesBucket.PutInt(SMARTALBUMMAP_DB_ASSET_ID, std::stoi(strRow));
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -682,7 +661,6 @@ napi_value GetJSArgsForAsset(napi_env env, size_t argc,
 }
 napi_value SmartAlbumNapi::JSAddAsset(napi_env env, napi_callback_info info)
 {
-    HiLog::Error(LABEL, "JSAddAsset");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
@@ -728,7 +706,6 @@ napi_value SmartAlbumNapi::JSAddAsset(napi_env env, napi_callback_info info)
 }
 napi_value SmartAlbumNapi::JSRemoveAsset(napi_env env, napi_callback_info info)
 {
-    HiLog::Error(LABEL, "JSRemoveAsset");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
@@ -743,7 +720,6 @@ napi_value SmartAlbumNapi::JSRemoveAsset(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForAsset(env, argc, argv, *asyncContext);
-        HiLog::Error(LABEL, "JSRemoveAsset null");
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSRemoveAsset fail ");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
@@ -775,7 +751,6 @@ napi_value SmartAlbumNapi::JSRemoveAsset(napi_env env, napi_callback_info info)
 }
 napi_value SmartAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
 {
-    HiLog::Error(LABEL, "JSCommitModify");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_ONE;
@@ -827,7 +802,7 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const SmartAlbumN
     if (present) {
         if (napi_get_named_property(env, arg, "selections", &property) != napi_ok
             || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
-            HiLog::Error(LABEL, "Could not get the string argument!");
+            NAPI_ERR_LOG("Could not get the string argument!");
             err = true;
             return;
         } else {
@@ -841,7 +816,7 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const SmartAlbumN
     if (present) {
         if (napi_get_named_property(env, arg, "order", &property) != napi_ok
             || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
-            HiLog::Error(LABEL, "Could not get the string argument!");
+            NAPI_ERR_LOG("Could not get the string argument!");
             err = true;
             return;
         } else {
@@ -862,7 +837,7 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const SmartAlbumN
             CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         }
     } else {
-        HiLog::Error(LABEL, "Could not get the string argument!");
+        NAPI_ERR_LOG("Could not get the string argument!");
         err = true;
     }
 }
@@ -907,7 +882,6 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
 
 static void GetTrashFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
-    HiLog::Error(LABEL, "GetTrashFileAssetsNative in");
     NativeRdb::DataAbilityPredicates predicates;
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " <> ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
@@ -923,12 +897,10 @@ static void GetTrashFileAssetsNative(SmartAlbumNapiAsyncContext *context)
         context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
 
     context->fetchResult = std::make_unique<FetchResult>(resultSet);
-    HiLog::Error(LABEL, "GetTrashFileAssetsNative out");
 }
 
 static void GetFavFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
-    HiLog::Error(LABEL, "GetFavFileAssetsNative in");
     NativeRdb::DataAbilityPredicates predicates;
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? AND " + MEDIA_DATA_DB_IS_FAV + " = ? AND "
         + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
@@ -946,7 +918,6 @@ static void GetFavFileAssetsNative(SmartAlbumNapiAsyncContext *context)
         context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
 
     context->fetchResult = std::make_unique<FetchResult>(resultSet);
-    HiLog::Error(LABEL, "GetFavFileAssetsNative out");
 }
 
 static void GetFileAssetsNative(SmartAlbumNapiAsyncContext *context)
@@ -985,7 +956,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status,
         fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult),
                                                               context->objectInfo->sAbilityHelper);
         if (fetchRes == nullptr) {
-            HiLog::Error(LABEL, "Failed to get file asset napi object");
+            NAPI_ERR_LOG("Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
                 "Failed to create js object for FetchFileResult");
@@ -995,7 +966,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status,
             jsContext->status = true;
         }
     } else {
-        HiLog::Error(LABEL, "No fetch file result found!");
+        NAPI_ERR_LOG("No fetch file result found!");
         napi_get_undefined(env, &jsContext->data);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                                                      "Failed to obtain fetchFileResult from DB");

@@ -22,7 +22,6 @@
 #include "device_manager_callback.h"
 #include "event_handler.h"
 #include "media_data_ability_const.h"
-#include "media_log.h"
 #include "medialibrary_device_info.h"
 #include "medialibrary_device_operations.h"
 #include "rdb_errno.h"

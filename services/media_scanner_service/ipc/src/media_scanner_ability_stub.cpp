@@ -15,6 +15,7 @@
 
 #include "media_scanner_ability_stub.h"
 #include "media_scanner_const.h"
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {

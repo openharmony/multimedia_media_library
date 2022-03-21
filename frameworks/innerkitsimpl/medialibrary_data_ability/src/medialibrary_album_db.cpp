@@ -14,6 +14,7 @@
  */
 
 #include "medialibrary_album_db.h"
+#include "media_log.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

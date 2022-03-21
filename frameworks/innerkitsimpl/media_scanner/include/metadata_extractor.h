@@ -23,7 +23,6 @@
 #include "image_source.h"
 #include "image_type.h"
 #include "metadata.h"
-#include "media_log.h"
 
 namespace OHOS {
 namespace Media {

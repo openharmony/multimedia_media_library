@@ -19,12 +19,9 @@
 #include <vector>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "medialibrary_napi_log.h"
 #include "media_lib_service_const.h"
 #include "media_data_ability_const.h"
-#include "hilog/log.h"
-
-using OHOS::HiviewDFX::HiLog;
-using OHOS::HiviewDFX::HiLogLabel;
 
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \
     do {                                                                    \
@@ -44,7 +41,7 @@ using OHOS::HiviewDFX::HiLogLabel;
         if ((napi_typeof(env, arg, &valueType) == napi_ok) && (valueType == napi_function)) {   \
             napi_create_reference(env, arg, count, &(cbRef));                                   \
         } else {                                                                                \
-            HiLog::Error(LABEL, "invalid arguments");                                           \
+            NAPI_ERR_LOG("invalid arguments");                                           \
             NAPI_ASSERT(env, false, "type mismatch");                                           \
         }                                                                                       \
     } while (0)
@@ -72,7 +69,7 @@ using OHOS::HiviewDFX::HiLogLabel;
 #define CHECK_NULL_PTR_RETURN_UNDEFINED(env, ptr, ret, message)     \
     do {                                                            \
         if ((ptr) == nullptr) {                                     \
-            HiLog::Error(LABEL, message);                           \
+            NAPI_ERR_LOG(message);                           \
             napi_get_undefined(env, &(ret));                        \
             return ret;                                             \
         }                                                           \
@@ -81,7 +78,7 @@ using OHOS::HiviewDFX::HiLogLabel;
 #define CHECK_NULL_PTR_RETURN_VOID(ptr, message)   \
     do {                                           \
         if ((ptr) == nullptr) {                    \
-            HiLog::Error(LABEL, message);          \
+            NAPI_ERR_LOG(message);          \
             return;                                \
         }                                          \
     } while (0)
@@ -89,7 +86,7 @@ using OHOS::HiviewDFX::HiLogLabel;
 #define CHECK_IF_EQUAL(condition, errMsg)   \
     do {                                    \
         if (!(condition)) {                 \
-            HiLog::Error(LABEL, errMsg);    \
+            NAPI_ERR_LOG(errMsg);    \
             return;                         \
         }                                   \
     } while (0)
@@ -261,7 +258,6 @@ public:
     static void CreateNapiErrorObject(napi_env env, napi_value &errorObj,
         const int32_t errCode, const std::string errMsg)
     {
-        HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaLibraryNapiUtils"};
         napi_status statusError;
         napi_value napiErrorCode = nullptr;
         napi_value napiErrorMsg = nullptr;
@@ -271,7 +267,7 @@ public:
             if (statusError == napi_ok) {
                 statusError = napi_create_error(env, napiErrorCode, napiErrorMsg, &errorObj);
                 if (statusError == napi_ok) {
-                    HiLog::Debug(LABEL, "napi_create_error success");
+                    NAPI_DEBUG_LOG("napi_create_error success");
                 }
             }
         }
@@ -280,21 +276,20 @@ public:
     static void InvokeJSAsyncMethod(napi_env env, napi_deferred deferred,
         napi_ref callbackRef, napi_async_work work, const JSAsyncContextOutput &asyncContext)
     {
-        HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaLibraryNapiUtils"};
-        HiLog::Debug(LABEL, "InvokeJSAsyncMethod IN");
+        NAPI_DEBUG_LOG("InvokeJSAsyncMethod IN");
         napi_value retVal;
         napi_value callback = nullptr;
 
         /* Deferred is used when JS Callback method expects a promise value */
         if (deferred) {
-            HiLog::Debug(LABEL, "InvokeJSAsyncMethod promise");
+            NAPI_DEBUG_LOG("InvokeJSAsyncMethod promise");
             if (asyncContext.status) {
                 napi_resolve_deferred(env, deferred, asyncContext.data);
             } else {
                 napi_reject_deferred(env, deferred, asyncContext.error);
             }
         } else {
-            HiLog::Debug(LABEL, "InvokeJSAsyncMethod callback");
+            NAPI_DEBUG_LOG("InvokeJSAsyncMethod callback");
             napi_value result[ARGS_TWO];
             result[PARAM0] = asyncContext.error;
             result[PARAM1] = asyncContext.data;
@@ -303,7 +298,7 @@ public:
             napi_delete_reference(env, callbackRef);
         }
         napi_delete_async_work(env, work);
-        HiLog::Debug(LABEL, "InvokeJSAsyncMethod OUT");
+        NAPI_DEBUG_LOG("InvokeJSAsyncMethod OUT");
     }
 };
 } // namespace Media

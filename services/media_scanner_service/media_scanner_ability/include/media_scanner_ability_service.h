@@ -20,7 +20,6 @@
 #include "media_scanner.h"
 #include "media_scanner_ability_stub.h"
 #include "context.h"
-#include "media_log.h"
 
 #define FILE_MODE 0777
 

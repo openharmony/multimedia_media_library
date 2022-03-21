@@ -20,7 +20,6 @@
 #include <sys/stat.h>
 
 #include "media_data_ability_const.h"
-#include "media_log.h"
 #include "rdb_store.h"
 #include "rdb_errno.h"
 #include "values_bucket.h"

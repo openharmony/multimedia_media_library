@@ -21,7 +21,6 @@
 
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
-#include "media_log.h"
 #include "rdb_store.h"
 #include "medialibrary_album_operations.h"
 #include "fetch_result.h"

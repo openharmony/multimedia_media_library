@@ -15,13 +15,13 @@
 
 #include "medialibrary_data_ability_utils.h"
 #include <regex>
+#include "media_log.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaLibraryDataAbilityUtils"};
 string MediaLibraryDataAbilityUtils::GetFileName(const string &path)
 {
     string name;
@@ -165,9 +165,8 @@ std::string MediaLibraryDataAbilityUtils::GetFileTitle(const std::string& displa
             return displayName;
         }
         title = displayName.substr(0, pos);
-        HiviewDFX::HiLog::Debug(LABEL, "title substr = %{public}s", title.c_str());
+        MEDIA_DEBUG_LOG("title substr = %{public}s", title.c_str());
     }
-    HiviewDFX::HiLog::Debug(LABEL, "title = %{public}s", title.c_str());
     return title;
 }
 NativeAlbumAsset MediaLibraryDataAbilityUtils::GetLastAlbumExistInDb(const std::string &relativePath,
@@ -215,7 +214,7 @@ bool MediaLibraryDataAbilityUtils::isAlbumExistInDb(const std::string &relativeP
             int32_t idVal;
             queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
             queryResultSet->GetInt(columnIndexId, idVal);
-            OHOS::HiviewDFX::HiLog::Error(LABEL, "id = %{public}d", idVal);
+            MEDIA_INFO_LOG("id = %{public}d", idVal);
             outRow = idVal;
             return true;
         }

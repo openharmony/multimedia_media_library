@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include "media_log.h"
 #include "media_scanner_operation_callback_stub.h"
+#include "media_log.h"
 
 using namespace std;
 
