@@ -40,7 +40,7 @@ int32_t MediaScannerOperationCallbackProxy::OnScanFinishedCallback(const int32_t
 
     int32_t error = Remote()->SendRequest(MEDIA_SCAN_ON_CALLBACK, data, reply, option);
     if (error != ERR_NONE) {
-        MEDIA_ERR_LOG("MediaScannerOperationCallbackProxy OnScanFinishedCallback failed, error: %{public}d", error);
+        MEDIA_ERR_LOG("MediaScannerOperationCallbackProxy OnScanFinishedCallback failed, error: %{private}d", error);
     }
 
     return error;

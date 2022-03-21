@@ -125,7 +125,7 @@ napi_value MediaAssetNapi::MediaAssetNapiConstructor(napi_env env, napi_callback
                 obj.release();
                 return thisVar;
             } else {
-                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
+                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{private}d", status);
             }
         }
     }
@@ -149,7 +149,7 @@ napi_value MediaAssetNapi::CreateMediaAsset(napi_env env, Media::MediaAsset &mAs
         if (status == napi_ok && result != nullptr) {
             return result;
         } else {
-            NAPI_ERR_LOG("Failed to create media asset instance, status: %{public}d", status);
+            NAPI_ERR_LOG("Failed to create media asset instance, status: %{private}d", status);
         }
     }
 
@@ -219,7 +219,7 @@ napi_value MediaAssetNapi::GetId(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -247,7 +247,7 @@ napi_value MediaAssetNapi::GetUri(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -275,7 +275,7 @@ napi_value MediaAssetNapi::GetMediaType(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -316,7 +316,7 @@ napi_value MediaAssetNapi::JSSetName(napi_env env, napi_callback_info info)
         }
 
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{private}d", valueType);
             return undefinedResult;
         }
 
@@ -342,7 +342,7 @@ napi_value MediaAssetNapi::GetName(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -370,7 +370,7 @@ napi_value MediaAssetNapi::GetSize(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -398,7 +398,7 @@ napi_value MediaAssetNapi::GetDateAdded(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -426,7 +426,7 @@ napi_value MediaAssetNapi::GetDateModified(napi_env env, napi_callback_info info
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -454,7 +454,7 @@ napi_value MediaAssetNapi::GetAlbumId(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -495,7 +495,7 @@ napi_value MediaAssetNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
         }
 
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{private}d", valueType);
             return undefinedResult;
         }
 
@@ -521,7 +521,7 @@ napi_value MediaAssetNapi::GetAlbumName(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 

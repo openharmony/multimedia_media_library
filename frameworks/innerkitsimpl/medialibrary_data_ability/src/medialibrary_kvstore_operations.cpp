@@ -53,7 +53,7 @@ string MediaLibraryKvStoreOperations::GetKey(const string &uri)
 int32_t MediaLibraryKvStoreOperations::HandleKvStoreInsertOperations(const string &oprn,
     const ValuesBucket &valuesBucket, const shared_ptr<SingleKvStore> &kvStorePtr)
 {
-    MEDIA_INFO_LOG("MediaLibraryKvStoreOperations::%{public}s", __func__);
+    MEDIA_INFO_LOG("MediaLibraryKvStoreOperations::%{private}s", __func__);
     CHECK_AND_RETURN_RET_LOG(kvStorePtr != nullptr, DATA_ABILITY_FAIL, "kv store not available");
 
     ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
@@ -120,7 +120,7 @@ int32_t MediaLibraryKvStoreOperations::HandleKvStoreInsertOperations(const strin
 string MediaLibraryKvStoreOperations::HandleKvStoreGetOperations(const string &uri,
     const shared_ptr<SingleKvStore> &kvStorePtr)
 {
-    MEDIA_INFO_LOG("MediaLibraryKvStoreOperations::%{public}s", __func__);
+    MEDIA_INFO_LOG("MediaLibraryKvStoreOperations::%{private}s", __func__);
     CHECK_AND_RETURN_RET_LOG(kvStorePtr != nullptr, "", "kv store not available");
 
     std::string valueUri("");
@@ -131,17 +131,17 @@ string MediaLibraryKvStoreOperations::HandleKvStoreGetOperations(const string &u
         string key = GetRingtoneUriKey(stoi(keyString));
         auto status = kvStorePtr->Get(key, value);
         if (status != Status::SUCCESS) {
-            MEDIA_ERR_LOG("%{public}s Get key error: %{public}d", __func__, status);
+            MEDIA_ERR_LOG("%{private}s Get key error: %{private}d", __func__, status);
         }
     } else if (uri.find(MEDIA_KVSTOREOPRN_GET_NOTIFICATION_URI) != string::npos) {
         auto status = kvStorePtr->Get(RINGTONE_NOTIFICATION_KEY, value);
         if (status != Status::SUCCESS) {
-            MEDIA_ERR_LOG("%{public}s Get notification key error: %{public}d", __func__, status);
+            MEDIA_ERR_LOG("%{private}s Get notification key error: %{private}d", __func__, status);
         }
     } else if (uri.find(MEDIA_KVSTOREOPRN_GET_ALARM_URI) != string::npos) {
         auto status = kvStorePtr->Get(RINGTONE_ALARM_KEY, value);
         if (status != Status::SUCCESS) {
-            MEDIA_ERR_LOG("%{public}s Get alarm key error: %{public}d", __func__, status);
+            MEDIA_ERR_LOG("%{private}s Get alarm key error: %{private}d", __func__, status);
         }
     }
 

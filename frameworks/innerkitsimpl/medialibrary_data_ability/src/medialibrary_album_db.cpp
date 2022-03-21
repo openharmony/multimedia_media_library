@@ -44,7 +44,7 @@ int32_t MediaLibraryAlbumDb::UpdateAlbumInfo(const ValuesBucket &values, const s
     if (contains) {
         obj.GetInt(albumId);
     }
-    CHECK_AND_RETURN_RET_LOG(albumId > 0, ALBUM_OPERATION_ERR, "Invalid album ID %{public}d", albumId);
+    CHECK_AND_RETURN_RET_LOG(albumId > 0, ALBUM_OPERATION_ERR, "Invalid album ID %{private}d", albumId);
 
     int32_t updatedRows(0);
     vector<string> whereArgs = { std::to_string(albumId) };

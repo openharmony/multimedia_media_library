@@ -43,7 +43,7 @@ int32_t MediaLibraryFileDb::Delete(const string &strRow, const shared_ptr<RdbSto
         if (rdbStore != nullptr) {
             int32_t result = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, strDeleteCondition, whereArgs);
             if (result != E_OK) {
-                MEDIA_ERR_LOG("Delete operation failed. Result %{public}d. Deleted %{public}d", result, deletedRows);
+                MEDIA_ERR_LOG("Delete operation failed. Result %{private}d. Deleted %{private}d", result, deletedRows);
             }
         }
     }
@@ -78,7 +78,7 @@ int32_t MediaLibraryFileDb::Modify(const string &rowNum, const string &dstPath,
 
             int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
             if ((result != E_OK) || (changedRows <= 0)) {
-                MEDIA_ERR_LOG("Update DB failed. Error is %{public}d. Updated count %{public}d", result, changedRows);
+                MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
                 return DATA_ABILITY_FAIL;
             }
         }

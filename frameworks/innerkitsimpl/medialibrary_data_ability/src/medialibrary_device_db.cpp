@@ -57,7 +57,7 @@ int32_t MediaLibraryDeviceDb::UpdateDeviceInfo(const ValuesBucket &values, const
         obj.GetString(deviceId);
     }
 
-    CHECK_AND_RETURN_RET_LOG(!deviceId.empty(), DEVICE_OPERATION_ERR, "Invalid deviceId = %{public}s",
+    CHECK_AND_RETURN_RET_LOG(!deviceId.empty(), DEVICE_OPERATION_ERR, "Invalid deviceId = %{private}s",
         deviceId.c_str());
 
     int32_t updatedRows(0);

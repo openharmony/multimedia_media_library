@@ -59,7 +59,7 @@ void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
     MEDIA_INFO_LOG("MediaLibraryDataAbility::OnStart");
     Ability::OnStart(want);
     InitMediaLibraryRdbStore();
-    MEDIA_INFO_LOG("bundleName = %{public}s", bundleName_.c_str());
+    MEDIA_INFO_LOG("bundleName = %{private}s", bundleName_.c_str());
     auto abilityContext = std::make_unique<MediaLibraryDataAbility>(*this);
     if (abilityContext != nullptr) {
         MediaLibraryDevice::GetInstance()->SetAbilityContext(move(abilityContext));
@@ -166,11 +166,11 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 #ifdef RDB_UPGRADE_MOCK
     const std::string ALTER_MOCK_COLUMN = "ALTER TABLE " + MEDIALIBRARY_TABLE +
                                           " ADD COLUMN upgrade_test_column INT DEFAULT 0";
-    MEDIA_INFO_LOG("OnUpgrade |Rdb Verison %{public}d => %{public}d", oldVersion, newVersion);
+    MEDIA_INFO_LOG("OnUpgrade |Rdb Verison %{private}d => %{private}d", oldVersion, newVersion);
     int32_t error_code = NativeRdb::E_ERROR;
     error_code = store.ExecuteSql(ALTER_MOCK_COLUMN);
     if (error_code != NativeRdb::E_OK) {
-        MEDIA_INFO_LOG("Upgrade rdb error %{public}d", error_code);
+        MEDIA_INFO_LOG("Upgrade rdb error %{private}d", error_code);
     }
 #endif
     return E_OK;
@@ -183,7 +183,7 @@ bool MediaLibraryDataCallBack::GetDistributedTables()
 
 int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
 {
-    MEDIA_INFO_LOG("InitMediaLibraryRdbStore IN |Rdb Verison %{public}d", MEDIA_RDB_VERSION);
+    MEDIA_INFO_LOG("InitMediaLibraryRdbStore IN |Rdb Verison %{private}d", MEDIA_RDB_VERSION);
     if (isRdbStoreInitialized) {
         return DATA_ABILITY_SUCCESS;
     }
@@ -208,7 +208,7 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
     if (rdbDataCallBack.GetDistributedTables()) {
         auto ret = rdbStore_->SetDistributedTables(
             {MEDIALIBRARY_TABLE, SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE});
-        MEDIA_INFO_LOG("InitMediaLibraryRdbStore ret = %{public}d", ret);
+        MEDIA_INFO_LOG("InitMediaLibraryRdbStore ret = %{private}d", ret);
     }
 
     isRdbStoreInitialized = true;
@@ -269,7 +269,7 @@ int32_t MediaLibraryDataAbility::Insert(const Uri &uri, const ValuesBucket &valu
 
         result = DATA_ABILITY_FAIL;
         string operationType = MediaLibraryDataAbilityUtils::GetOperationType(insertUri);
-        MEDIA_INFO_LOG("operationType = %{public}s", operationType.c_str());
+        MEDIA_INFO_LOG("operationType = %{private}s", operationType.c_str());
         if ((operationType == MEDIA_FILEOPRN_CREATEASSET ||
             operationType == MEDIA_ALBUMOPRN_CREATEALBUM) && !CheckFileNameValid(value)) {
             return DATA_ABILITY_FILE_NAME_INVALID;
@@ -387,13 +387,13 @@ shared_ptr<AbsSharedResultSet> QueryFile(string strQueryCondition,
         MEDIA_DEBUG_LOG("ObtainDistributedTableName start");
         StartTrace(BYTRACE_TAG_OHOS, "QueryFile rdbStore->ObtainDistributedTableName");
         tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
-        MEDIA_DEBUG_LOG("tableName in %{public}s", tableName.c_str());
+        MEDIA_DEBUG_LOG("tableName in %{private}s", tableName.c_str());
         FinishTrace(BYTRACE_TAG_OHOS);
     }
     AbsRdbPredicates mediaLibAbsPredFile(tableName);
 
     if (!networkId.empty()) {
-        MEDIA_INFO_LOG("Not empty networkId %{public}s", networkId.c_str());
+        MEDIA_INFO_LOG("Not empty networkId %{private}s", networkId.c_str());
         std::vector<string> devices = std::vector<string>();
         devices.push_back(networkId);
         mediaLibAbsPredFile.InDevices(devices);
@@ -417,11 +417,11 @@ string ObtionCondition(string &strQueryCondition, const vector<string> &whereArg
 {
     for (string args : whereArgs) {
         size_t pos = strQueryCondition.find('?');
-        MEDIA_INFO_LOG("obtionCondition pos = %{public}d", (int)pos);
+        MEDIA_INFO_LOG("obtionCondition pos = %{private}d", (int)pos);
         if (pos != string::npos) {
-            MEDIA_INFO_LOG("ObtionCondition before = %{public}s", strQueryCondition.c_str());
+            MEDIA_INFO_LOG("ObtionCondition before = %{private}s", strQueryCondition.c_str());
             strQueryCondition.replace(pos, 1, "'" + args + "'");
-            MEDIA_INFO_LOG("ObtionCondition end = %{public}s", strQueryCondition.c_str());
+            MEDIA_INFO_LOG("ObtionCondition end = %{private}s", strQueryCondition.c_str());
         }
     }
     return strQueryCondition;
@@ -436,7 +436,7 @@ shared_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
     shared_ptr<AbsSharedResultSet> queryResultSet;
     if (!networkId.empty()) {
         string tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
-        MEDIA_INFO_LOG("tableName is %{public}s", tableName.c_str());
+        MEDIA_INFO_LOG("tableName is %{private}s", tableName.c_str());
         AbsRdbPredicates mediaLibAbsPredAlbum(tableName);
         if (!strQueryCondition.empty()) {
             strQueryCondition = ObtionCondition(strQueryCondition, predicates.GetWhereArgs());
@@ -559,7 +559,7 @@ bool ParseThumbnailInfo(string &uriString, vector<int> &space)
     vector<string> vectorKeys;
     SplitKeys(queryKeys, vectorKeys);
     if (vectorKeys.size() != keyWords.size()) {
-        MEDIA_ERR_LOG("Parse error keys count %{public}d", (int)vectorKeys.size());
+        MEDIA_ERR_LOG("Parse error keys count %{private}d", (int)vectorKeys.size());
         return false;
     }
     string action;
@@ -569,7 +569,7 @@ bool ParseThumbnailInfo(string &uriString, vector<int> &space)
         string subKey, subVal;
         SplitKeyValue(vectorKeys[i], subKey, subVal);
         if (subKey.empty()) {
-            MEDIA_ERR_LOG("Parse key error [ %{public}s ]", vectorKeys[i].c_str());
+            MEDIA_ERR_LOG("Parse key error [ %{private}s ]", vectorKeys[i].c_str());
             return false;
         }
         if (subKey == MEDIA_OPERN_KEYWORD) {
@@ -584,7 +584,7 @@ bool ParseThumbnailInfo(string &uriString, vector<int> &space)
             }
         }
     }
-    MEDIA_INFO_LOG("ParseThumbnailInfo| action [%{public}s] width %{public}d height %{public}d",
+    MEDIA_INFO_LOG("ParseThumbnailInfo| action [%{private}s] width %{private}d height %{private}d",
         action.c_str(), width, height);
     if (action != MEDIA_DATA_DB_THUMBNAIL || width <= 0 || height <= 0) {
         MEDIA_ERR_LOG("ParseThumbnailInfo | Error args");
@@ -610,7 +610,7 @@ shared_ptr<AbsSharedResultSet> GenThumbnail(shared_ptr<RdbStore> rdb,
         FinishTrace(BYTRACE_TAG_OHOS);
     }
 
-    MEDIA_INFO_LOG("Get filesTableName [ %{public}s ]", filesTableName.c_str());
+    MEDIA_INFO_LOG("Get filesTableName [ %{private}s ]", filesTableName.c_str());
     ThumbRdbOpt opts = {
         .store = rdb,
         .table = filesTableName,
@@ -621,7 +621,7 @@ shared_ptr<AbsSharedResultSet> GenThumbnail(shared_ptr<RdbStore> rdb,
         .height = height
     };
 
-    MEDIA_INFO_LOG("Get thumbnail [ %{public}s ]", opts.row.c_str());
+    MEDIA_INFO_LOG("Get thumbnail [ %{private}s ]", opts.row.c_str());
     StartTrace(BYTRACE_TAG_OHOS, "thumbnail->GetThumbnailKey");
     queryResultSet = thumbnail->GetThumbnailKey(opts, size);
     FinishTrace(BYTRACE_TAG_OHOS);
@@ -633,7 +633,7 @@ static void DealWithUriString(string &uriString, TableType &tabletype,
     string &strQueryCondition, string::size_type &pos, string &strRow)
 {
     string type = uriString.substr(pos + 1);
-    MEDIA_INFO_LOG("MediaLibraryDataAbility uriString type = %{public}s", type.c_str());
+    MEDIA_INFO_LOG("MediaLibraryDataAbility uriString type = %{private}s", type.c_str());
     if (type == MEDIA_ALBUMOPRN_QUERYALBUM) {
         tabletype = TYPE_ALBUM_TABLE;
         uriString = MEDIALIBRARY_DATA_URI;
@@ -656,8 +656,8 @@ static void DealWithUriString(string &uriString, TableType &tabletype,
         uriString = uriString.substr(0, pos);
         string::size_type posTable = uriString.find_last_of('/');
         string tableName = uriString.substr(posTable + 1);
-        MEDIA_INFO_LOG("MediaLibraryDataAbility tableName = %{public}s", tableName.c_str());
-        MEDIA_INFO_LOG("MediaLibraryDataAbility strRow = %{public}s", strRow.c_str());
+        MEDIA_INFO_LOG("MediaLibraryDataAbility tableName = %{private}s", tableName.c_str());
+        MEDIA_INFO_LOG("MediaLibraryDataAbility strRow = %{private}s", strRow.c_str());
         if (SMARTALBUM_TABLE.compare(tableName) == 0) {
             tabletype = TYPE_SMARTALBUM;
             strQueryCondition = SMARTALBUM_DB_ID + " = " + strRow;
@@ -697,7 +697,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
     string networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(uriString);
     string::size_type pos = uriString.find_last_of('/');
     string type = uriString.substr(pos + 1);
-    MEDIA_DEBUG_LOG("uriString = %{public}s, type = %{public}s, thumbnailQuery %{public}d, Rdb Verison %{public}d",
+    MEDIA_DEBUG_LOG("uriString = %{private}s, type = %{private}s, thumbnailQuery %{private}d, Rdb Verison %{private}d",
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
 
@@ -705,7 +705,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
         StartTrace(BYTRACE_TAG_OHOS, "QuerySync");
         auto ret = QuerySync();
         FinishTrace(BYTRACE_TAG_OHOS);
-        MEDIA_INFO_LOG("MediaLibraryDataAbility QuerySync result = %{public}d", ret);
+        MEDIA_INFO_LOG("MediaLibraryDataAbility QuerySync result = %{private}d", ret);
     }
 
     if (thumbnailQuery) {
@@ -749,7 +749,7 @@ int32_t MediaLibraryDataAbility::Update(const Uri &uri, const ValuesBucket &valu
     int32_t changedRows = DATA_ABILITY_FAIL;
     string uriString = uri.ToString();
     vector<string> devices = vector<string>();
-    MEDIA_INFO_LOG("Update uriString = %{public}s", uriString.c_str());
+    MEDIA_INFO_LOG("Update uriString = %{private}s", uriString.c_str());
     string strUpdateCondition = predicates.GetWhereClause();
     if (strUpdateCondition.empty()) {
         string::size_type pos = uriString.find_last_of('/');
@@ -868,7 +868,7 @@ int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mod
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     int32_t fd = fileAsset->OpenAsset(path, mode);
     if (fd < 0) {
-        MEDIA_ERR_LOG("open file fd %{public}d, errno %{public}d", fd, errno);
+        MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
         return DATA_ABILITY_HAS_FD_ERROR;
     }
     if (isWriteMode && fd > 0) {
@@ -1080,7 +1080,7 @@ std::string MediaLibraryDataAbility::GetClientBundle(int uid)
         return bundleName;
     }
     auto result = bms->GetBundleNameForUid(uid, bundleName);
-    MEDIA_INFO_LOG("uid %{public}d bundleName is %{public}s ", uid, bundleName.c_str());
+    MEDIA_INFO_LOG("uid %{private}d bundleName is %{private}s ", uid, bundleName.c_str());
     if (!result) {
         MEDIA_ERR_LOG("GetBundleNameForUid fail");
         return "";
@@ -1103,7 +1103,7 @@ bool MediaLibraryDataAbility::CheckClientPermission(const std::string& permissio
     }
 
     std::string bundleName = GetClientBundle(uid);
-    MEDIA_INFO_LOG("CheckClientPermission: bundle name: %{public}s", bundleName.c_str());
+    MEDIA_INFO_LOG("CheckClientPermission: bundle name: %{private}s", bundleName.c_str());
     if (BUNDLE_FREE_CHECK.find(bundleName) != BUNDLE_FREE_CHECK.end()) {
         MEDIA_INFO_LOG("CheckClientPermission: Pass the bundle name check list");
         return true;
@@ -1141,7 +1141,7 @@ void MediaLibraryDataAbility::InitialiseKvStore()
 
     Status status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_STOREID, kvStorePtr_);
     if (status != Status::SUCCESS || kvStorePtr_ == nullptr) {
-        MEDIA_INFO_LOG("MediaLibraryDataAbility::InitialiseKvStore failed %{public}d", status);
+        MEDIA_INFO_LOG("MediaLibraryDataAbility::InitialiseKvStore failed %{private}d", status);
     }
 }
 
