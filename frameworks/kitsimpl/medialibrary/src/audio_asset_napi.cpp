@@ -14,14 +14,10 @@
  */
 
 #include "audio_asset_napi.h"
-#include "hilog/log.h"
+#include "medialibrary_napi_log.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
-
-namespace {
-    constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AudioAssetNapi"};
-}
 
 namespace AudioAssetConstants {
     const int32_t DEFAULT_AUDIO_DURATION = 0;
@@ -124,7 +120,7 @@ napi_value AudioAssetNapi::AudioAssetNapiConstructor(napi_env env, napi_callback
             if (sAudioAsset_ != nullptr) {
                 obj->UpdateAudioAssetInfo();
             } else {
-                HiLog::Error(LABEL, "No native instance assigned yet");
+                NAPI_ERR_LOG("No native instance assigned yet");
                 return result;
             }
 
@@ -134,7 +130,7 @@ napi_value AudioAssetNapi::AudioAssetNapiConstructor(napi_env env, napi_callback
                 obj.release();
                 return thisVar;
             } else {
-                HiLog::Error(LABEL, "Failure wrapping js to native napi");
+                NAPI_ERR_LOG("Failure wrapping js to native napi");
             }
         }
     }
@@ -158,7 +154,7 @@ napi_value AudioAssetNapi::CreateAudioAsset(napi_env env, Media::AudioAsset &aAs
         if (status == napi_ok && result != nullptr) {
             return result;
         } else {
-            HiLog::Error(LABEL, "Failed to create audio asset instance");
+            NAPI_ERR_LOG("Failed to create audio asset instance. ret = %{public}d", status);
         }
     }
 
@@ -178,7 +174,7 @@ napi_value AudioAssetNapi::GetMimeType(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -206,7 +202,7 @@ napi_value AudioAssetNapi::GetTitle(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -234,7 +230,7 @@ napi_value AudioAssetNapi::GetArtist(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 
@@ -262,7 +258,7 @@ napi_value AudioAssetNapi::GetDuration(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
 

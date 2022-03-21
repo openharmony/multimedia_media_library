@@ -14,15 +14,11 @@
  */
 
 #include "fetch_file_result_napi.h"
-#include "hilog/log.h"
+#include "medialibrary_napi_log.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
 using namespace std;
-
-namespace {
-    constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FetchFileResultNapi"};
-}
 
 namespace OHOS {
 namespace Media {
@@ -78,7 +74,7 @@ napi_value FetchFileResultNapi::Init(napi_env env, napi_value exports)
             }
         }
     }
-    HiLog::Debug(LABEL, "Init success");
+    NAPI_DEBUG_LOG("Init success");
     return nullptr;
 }
 
@@ -107,7 +103,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 obj->abilityHelper_ = sAbilityHelper;
                 fetchRes.release();
             } else {
-                HiLog::Error(LABEL, "No native instance assigned yet");
+                NAPI_ERR_LOG("No native instance assigned yet");
                 return result;
             }
 
@@ -118,7 +114,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 return thisVar;
             } else {
                 delete obj->fetchFileResult_;
-                HiLog::Error(LABEL, "Failure wrapping js to native napi");
+                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
             }
         }
     }
@@ -142,7 +138,7 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult 
         if (status == napi_ok && result != nullptr) {
             return result;
         } else {
-            HiLog::Error(LABEL, "Failed to create fetch file result instance");
+            NAPI_ERR_LOG("Failed to create fetch file result instance, status: %{public}d", status);
         }
     }
 
@@ -166,7 +162,7 @@ napi_value FetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "JSGetCount Invalid arguments!");
+        NAPI_ERR_LOG("JSGetCount Invalid arguments!, status: %{public}d", status);
         NAPI_ASSERT(env, false, "JSGetCount thisVar == nullptr");
     }
 
@@ -175,7 +171,7 @@ napi_value FetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info
         count = obj->fetchFileResult_->GetCount();
         napi_create_int32(env, count, &jsResult);
     } else {
-        HiLog::Error(LABEL, "JSGetCount obj == nullptr");
+        NAPI_ERR_LOG("JSGetCount obj == nullptr, status: %{public}d", status);
         NAPI_ASSERT(env, false, "JSGetCount obj == nullptr");
     }
 
@@ -193,7 +189,7 @@ napi_value FetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info i
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "JSIsAfterLast Invalid arguments!");
+        NAPI_ERR_LOG("JSIsAfterLast Invalid arguments!, status: %{public}d", status);
         NAPI_ASSERT(env, false, "JSIsAfterLast thisVar == nullptr");
     }
 
@@ -202,7 +198,7 @@ napi_value FetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info i
         isAfterLast = obj->fetchFileResult_->IsAtLastRow();
         napi_get_boolean(env, isAfterLast, &jsResult);
     } else {
-        HiLog::Error(LABEL, "JSIsAfterLast obj == nullptr");
+        NAPI_ERR_LOG("JSIsAfterLast obj == nullptr, status: %{public}d", status);
         NAPI_ASSERT(env, false, "JSIsAfterLast obj == nullptr");
     }
 
@@ -222,7 +218,7 @@ static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, 
         jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
                                                      context->objectInfo->GetDataAbilityHelper());
         if (jsFileAsset == nullptr) {
-            HiLog::Error(LABEL, "Failed to get file asset napi object");
+            NAPI_ERR_LOG("Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
                 "Failed to create js object for FileAsset");
@@ -232,7 +228,7 @@ static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, 
             jsContext->status = true;
         }
     } else {
-        HiLog::Error(LABEL, "No file asset found!");
+        NAPI_ERR_LOG("No file asset found!");
         napi_get_undefined(env, &jsContext->data);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to obtain fileAsset from DB");
@@ -282,7 +278,7 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
             asyncContext.release();
         }
     } else {
-        HiLog::Error(LABEL, "JSGetFirstObject obj == nullptr");
+        NAPI_ERR_LOG("JSGetFirstObject obj == nullptr, status: %{public}d", status);
         NAPI_ASSERT(env, false, "JSGetFirstObject obj == nullptr");
     }
 
@@ -326,7 +322,7 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
             asyncContext.release();
         }
     } else {
-        HiLog::Error(LABEL, "JSGetNextObject obj == nullptr");
+        NAPI_ERR_LOG("JSGetNextObject obj == nullptr, status: %{public}d", status);
         NAPI_ASSERT(env, false, "JSGetNextObject obj == nullptr");
     }
 
@@ -370,7 +366,7 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
             asyncContext.release();
         }
     } else {
-        HiLog::Error(LABEL, "JSGetLastObject obj == nullptr");
+        NAPI_ERR_LOG("JSGetLastObject obj == nullptr, status: %{public}d", status);
         NAPI_ASSERT(env, false, "JSGetLastObject obj == nullptr");
     }
 
@@ -400,7 +396,7 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
         if (type == napi_number) {
             napi_get_value_int32(env, argv[PARAM0], &(asyncContext->position));
         } else {
-            HiLog::Error(LABEL, "Argument mismatch");
+            NAPI_ERR_LOG("Argument mismatch, type: %{public}d", type);
             return result;
         }
 
@@ -424,7 +420,7 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
             asyncContext.release();
         }
     } else {
-        HiLog::Error(LABEL, "JSGetPositionObject obj == nullptr");
+        NAPI_ERR_LOG("JSGetPositionObject obj == nullptr, status: %{public}d", status);
         NAPI_ASSERT(env, false, "JSGetPositionObject obj == nullptr");
     }
 
@@ -448,7 +444,7 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
             jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAssetArray[i]),
                                                          context->objectInfo->GetDataAbilityHelper());
             if (jsFileAsset == nullptr || napi_set_element(env, jsFileArray, i, jsFileAsset) != napi_ok) {
-                HiLog::Error(LABEL, "Failed to get file asset napi object");
+                NAPI_ERR_LOG("Failed to get file asset napi object");
                 napi_get_undefined(env, &jsContext->data);
                 MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
                     "Failed to create js object for FileAsset");
@@ -462,7 +458,7 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
             jsContext->status = true;
         }
     } else {
-        HiLog::Error(LABEL, "No file asset found!");
+        NAPI_ERR_LOG("No file asset found!");
         napi_get_undefined(env, &jsContext->data);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to obtain fileAsset array from DB");
@@ -530,7 +526,7 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
             asyncContext.release();
         }
     } else {
-        HiLog::Error(LABEL, "JSGetAllObject obj == nullptr");
+        NAPI_ERR_LOG("JSGetAllObject obj == nullptr, status: %{public}d", status);
         NAPI_ASSERT(env, false, "JSGetAllObject obj == nullptr");
     }
 
@@ -539,7 +535,6 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
 
 napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
 {
-    HiLog::Info(LABEL, "JSClose IN!");
     napi_status status;
     napi_value jsResult = nullptr;
     FetchFileResultNapi* obj = nullptr;
@@ -548,21 +543,21 @@ napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Invalid arguments!");
+        NAPI_ERR_LOG("Invalid arguments!, status: %{public}d", status);
         return jsResult;
     }
 
     status = napi_remove_wrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        HiLog::Info(LABEL, "JSClose fetchFileResult delete obj!");
+        NAPI_INFO_LOG("JSClose fetchFileResult delete obj!, status: %{public}d", status);
         delete obj;
         napi_create_int32(env, SUCCESS, &jsResult);
     } else {
-        HiLog::Error(LABEL, "JSClose obj == nullptr");
+        NAPI_ERR_LOG("JSClose obj == nullptr");
         NAPI_ASSERT(env, false, "JSClose obj == nullptr");
     }
 
-    HiLog::Info(LABEL, "JSClose OUT!");
+    NAPI_DEBUG_LOG("JSClose OUT!");
     return jsResult;
 }
 } // namespace Media

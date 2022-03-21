@@ -12,9 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "media_library_napi.h"
-#include "hilog/log.h"
+#include "medialibrary_peer_info.h"
+#include "medialibrary_data_ability.h"
+#include "media_data_ability_const.h"
+#include "medialibrary_napi_log.h"
 #include "smart_album_napi.h"
 #include "file_ex.h"
 #include "uv.h"
@@ -25,10 +27,6 @@ using OHOS::HiviewDFX::HiLogLabel;
 using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
-
-namespace {
-    constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaLibraryNapi"};
-}
 
 namespace OHOS {
 namespace Media {
@@ -137,31 +135,31 @@ shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper
     std::shared_ptr<AppExecFwk::DataAbilityHelper> dataAbilityHelper = nullptr;
     napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode_);
     if (status != napi_ok) {
-        HiLog::Info(LABEL, "argv[0] is not a context");
+        NAPI_INFO_LOG("argv[0] is not a context");
         auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
         if (ability == nullptr) {
-            HiLog::Error(LABEL, "Failed to get native context instance");
+            NAPI_ERR_LOG("Failed to get native context instance");
             return nullptr;
         }
-        HiLog::Info(LABEL, "FA Model: ability = %{public}p strUir = %{public}s", ability, strUri.c_str());
+        NAPI_INFO_LOG("FA Model: ability = %{public}p strUir = %{public}s", ability, strUri.c_str());
         dataAbilityHelper = DataAbilityHelper::Creator(ability->GetContext(), std::make_shared<Uri>(strUri));
     } else {
-        HiLog::Info(LABEL, "argv[0] is a context");
+        NAPI_INFO_LOG("argv[0] is a context");
         if (isStageMode_) {
             auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
             if (context == nullptr) {
-                HiLog::Error(LABEL, "Failed to get native context instance");
+                NAPI_ERR_LOG("Failed to get native context instance");
                 return nullptr;
             }
-            HiLog::Info(LABEL, "Stage Model: context = %{public}p strUri = %{public}s", context.get(), strUri.c_str());
+            NAPI_INFO_LOG("Stage Model: context = %{public}p strUri = %{public}s", context.get(), strUri.c_str());
             dataAbilityHelper = DataAbilityHelper::Creator(context, std::make_shared<Uri>(strUri));
         } else {
             auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
             if (ability == nullptr) {
-                HiLog::Error(LABEL, "Failed to get native context instance");
+                NAPI_ERR_LOG("Failed to get native context instance");
                 return nullptr;
             }
-            HiLog::Info(LABEL, "FA Model: ability = %{public}p strUri = %{public}s", ability, strUri.c_str());
+            NAPI_INFO_LOG("FA Model: ability = %{public}p strUri = %{public}s", ability, strUri.c_str());
             dataAbilityHelper = DataAbilityHelper::Creator(ability->GetContext(), std::make_shared<Uri>(strUri));
         }
     }
@@ -177,7 +175,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     napi_get_undefined(env, &result);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        HiLog::Error(LABEL, "Error while obtaining js environment information");
+        NAPI_ERR_LOG("Error while obtaining js environment information, status: %{public}d", status);
         return result;
     }
 
@@ -205,7 +203,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
             obj.release();
             return thisVar;
         } else {
-            HiLog::Error(LABEL, "Failed to wrap the native media lib client object with JS");
+            NAPI_ERR_LOG("Failed to wrap the native media lib client object with JS, status: %{public}d", status);
         }
     }
     return result;
@@ -213,7 +211,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
 
 napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callback_info info)
 {
-    HiLog::Debug(LABEL, "GetMediaLibraryNewInstance IN");
+    NAPI_DEBUG_LOG("GetMediaLibraryNewInstance IN");
     napi_value result = nullptr;
     napi_value ctor;
     size_t argc = ARGS_ONE;
@@ -227,14 +225,14 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
         if (status == napi_ok) {
             return result;
         } else {
-            HiLog::Error(LABEL, "New instance could not be obtained ret = %{public}d", status);
+            NAPI_ERR_LOG("New instance could not be obtained status: %{public}d", status);
         }
     } else {
-            HiLog::Error(LABEL, "ret = %{public}d", status);
+            NAPI_ERR_LOG("status = %{public}d", status);
     }
 
     napi_get_undefined(env, &result);
-    HiLog::Debug(LABEL, "GetMediaLibraryNewInstance OUT");
+    NAPI_DEBUG_LOG("GetMediaLibraryNewInstance OUT");
     return result;
 }
 
@@ -250,7 +248,7 @@ napi_value MediaLibraryNapi::GetMediaLibraryOldInstance(napi_env env, napi_callb
         if (status == napi_ok) {
             return result;
         } else {
-            HiLog::Error(LABEL, "New instance could not be obtained");
+            NAPI_ERR_LOG("New instance could not be obtained, status: %{public}d", status);
         }
     }
 
@@ -279,7 +277,7 @@ napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
             propName = mediaTypesEnum[i];
             status = AddIntegerNamedProperty(env, result, propName, i);
             if (status != napi_ok) {
-                HiLog::Error(LABEL, "Failed to add named prop! ret = %{public}d", status);
+                NAPI_ERR_LOG("Failed to add named prop! ret = %{public}d", status);
                 break;
             }
             propName.clear();
@@ -294,7 +292,7 @@ napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
         }
     }
 
-    HiLog::Error(LABEL, "Failed to created object for media type enum!");
+    NAPI_ERR_LOG("Failed to created object for media type enum! status: %{public}d", status);
     napi_get_undefined(env, &result);
     return result;
 }
@@ -309,7 +307,7 @@ napi_value MediaLibraryNapi::CreateDirectoryTypeEnum(napi_env env)
             propName = directoryEnum[i];
             status = AddIntegerNamedProperty(env, result, propName, i);
             if (status != napi_ok) {
-                HiLog::Error(LABEL, "Failed to add named prop! ret = %{public}d", status);
+                NAPI_ERR_LOG("Failed to add named prop! status: %{public}d", status);
                 break;
             }
         }
@@ -323,7 +321,7 @@ napi_value MediaLibraryNapi::CreateDirectoryTypeEnum(napi_env env)
         }
     }
 
-    HiLog::Error(LABEL, "Failed to created object for directory enum! ret = %{public}d", status);
+    NAPI_ERR_LOG("Failed to created object for directory enum! status: %{public}d", status);
     napi_get_undefined(env, &result);
     return result;
 }
@@ -349,7 +347,7 @@ napi_value MediaLibraryNapi::CreateFileKeyEnum(napi_env env)
             propName = fileKeyEnum[i];
             status = AddStringNamedProperty(env, result, propName, fileKeyEnumValues[i]);
             if (status != napi_ok) {
-                HiLog::Error(LABEL, "Failed to add named prop! ret = %{public}d", status);
+                NAPI_ERR_LOG("Failed to add named prop! status: %{public}d", status);
                 break;
             }
         }
@@ -364,7 +362,7 @@ napi_value MediaLibraryNapi::CreateFileKeyEnum(napi_env env)
         }
     }
 
-    HiLog::Error(LABEL, "Failed to created object for file key enum! ret = %{public}d", status);
+    NAPI_ERR_LOG("Failed to created object for file key enum! status: %{public}d", status);
     napi_get_undefined(env, &result);
     return result;
 }
@@ -379,7 +377,7 @@ napi_value MediaLibraryNapi::CreatePrivateAlbumTypeEnum(napi_env env)
             propName = privateAlbumTypeNameEnum[i];
             status = AddIntegerNamedProperty(env, result, propName, i);
             if (status != napi_ok) {
-                HiLog::Error(LABEL, "Failed to add named prop! ret = %{public}d", status);
+                NAPI_ERR_LOG("Failed to add named prop! status: %{public}d", status);
                 break;
             }
         }
@@ -394,7 +392,7 @@ napi_value MediaLibraryNapi::CreatePrivateAlbumTypeEnum(napi_env env)
         }
     }
 
-    HiLog::Error(LABEL, "Failed to created object for file key enum! ret = %{public}d", status);
+    NAPI_ERR_LOG("Failed to created object for file key enum! status: %{public}d", status);
     napi_get_undefined(env, &result);
     return result;
 }
@@ -415,7 +413,7 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
     if (present) {
         if ((napi_get_named_property(env, arg, "selections", &property) != napi_ok) ||
             (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
-            HiLog::Error(LABEL, "Could not get the string argument!");
+            NAPI_ERR_LOG("Could not get the string argument!");
             err = true;
             return;
         } else {
@@ -429,7 +427,7 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
     if (present) {
         if ((napi_get_named_property(env, arg, "order", &property) != napi_ok) ||
             (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
-            HiLog::Error(LABEL, "Could not get the string argument!");
+            NAPI_ERR_LOG("Could not get the string argument!");
             err = true;
             return;
         } else {
@@ -443,7 +441,7 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
     if (present) {
         if ((napi_get_named_property(env, arg, "networkId", &property) != napi_ok) ||
             (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
-            HiLog::Error(LABEL, "Could not get the networkId string argument!");
+            NAPI_ERR_LOG("Could not get the networkId string argument!");
             err = true;
             return;
         } else {
@@ -473,7 +471,7 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibrar
             CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         }
     } else {
-        HiLog::Error(LABEL, "Could not get the string argument!");
+        NAPI_ERR_LOG("Could not get the string argument!");
         err = true;
     }
 }
@@ -502,7 +500,7 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
             NAPI_ASSERT(env, false, "type mismatch");
         }
         if (err) {
-            HiLog::Error(LABEL, "fetch options retrieval failed");
+            NAPI_ERR_LOG("fetch options retrieval failed, err: %{public}d", err);
             NAPI_ASSERT(env, false, "type mismatch");
         }
     }
@@ -532,7 +530,7 @@ static void MediaAssetsAsyncCallbackComplete(napi_env env, napi_status status,
                 mAsset = MediaAssetNapi::CreateMediaAsset(env, *(context->mediaAssets[i]),
                     *(context->objectInfo->GetMediaLibClientInstance()));
                 if (mAsset == nullptr || napi_set_element(env, mediaArray, i, mAsset) != napi_ok) {
-                    HiLog::Error(LABEL, "Failed to get media asset napi object");
+                    NAPI_ERR_LOG("Failed to get media asset napi object");
                     napi_get_undefined(env, &jsContext->data);
                     break;
                 }
@@ -544,7 +542,7 @@ static void MediaAssetsAsyncCallbackComplete(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->data);
         }
     } else {
-        HiLog::Error(LABEL, "No media assets found!");
+        NAPI_ERR_LOG("No media assets found!");
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -619,7 +617,7 @@ static void AudioAssetsAsyncCallbackComplete(napi_env env, napi_status status,
                 aAsset = AudioAssetNapi::CreateAudioAsset(env, *(context->audioAssets[i]),
                                                           *(context->objectInfo->GetMediaLibClientInstance()));
                 if (aAsset == nullptr || napi_set_element(env, audioArray, i, aAsset) != napi_ok) {
-                    HiLog::Error(LABEL, "Failed to get audio asset napi object");
+                    NAPI_ERR_LOG("Failed to get audio asset napi object");
                     napi_get_undefined(env, &jsContext->data);
                     break;
                 }
@@ -631,7 +629,7 @@ static void AudioAssetsAsyncCallbackComplete(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->data);
         }
     } else {
-        HiLog::Error(LABEL, "No audio assets found!");
+        NAPI_ERR_LOG("No audio assets found!");
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -704,7 +702,7 @@ static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status,
                 vAsset = VideoAssetNapi::CreateVideoAsset(env, *(context->videoAssets[i]),
                                                           *(context->objectInfo->GetMediaLibClientInstance()));
                 if (vAsset == nullptr || napi_set_element(env, videoArray, i, vAsset) != napi_ok) {
-                    HiLog::Error(LABEL, "Failed to get video asset napi object");
+                    NAPI_ERR_LOG("Failed to get video asset napi object");
                     napi_get_undefined(env, &jsContext->data);
                     break;
                 }
@@ -716,7 +714,7 @@ static void VideoAssetsAsyncCallbackComplete(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->data);
         }
     } else {
-        HiLog::Error(LABEL, "No video assets found!");
+        NAPI_ERR_LOG("No video assets found!");
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -788,7 +786,7 @@ static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status,
                 iAsset = ImageAssetNapi::CreateImageAsset(env, *(context->imageAssets[i]),
                                                           *(context->objectInfo->GetMediaLibClientInstance()));
                 if (iAsset == nullptr || napi_set_element(env, imageArray, i, iAsset) != napi_ok) {
-                    HiLog::Error(LABEL, "Failed to get image asset napi object");
+                    NAPI_ERR_LOG("Failed to get image asset napi object");
                     napi_get_undefined(env, &jsContext->data);
                     break;
                 }
@@ -800,7 +798,7 @@ static void ImageAssetsAsyncCallbackComplete(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->data);
         }
     } else {
-        HiLog::Error(LABEL, "No image assets found!");
+        NAPI_ERR_LOG("No image assets found!");
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -875,7 +873,7 @@ static void AlbumAssetsAsyncCallbackComplete(napi_env env, napi_status status,
             albumAsset = AlbumAssetNapi::CreateAlbumAsset(env, context->albumType, path,
                 *(context->albumAssets[i]), *(context->objectInfo->GetMediaLibClientInstance()));
             if (albumAsset == nullptr || napi_set_element(env, albumArray, i, albumAsset) != napi_ok) {
-                HiLog::Error(LABEL, "Failed to get album asset napi object");
+                NAPI_ERR_LOG("Failed to get album asset napi object");
                 napi_get_undefined(env, &jsContext->data);
                 break;
             }
@@ -884,7 +882,7 @@ static void AlbumAssetsAsyncCallbackComplete(napi_env env, napi_status status,
             jsContext->data = albumArray;
         }
     } else {
-        HiLog::Error(LABEL, "No album assets found!");
+        NAPI_ERR_LOG("No album assets found!");
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -1011,12 +1009,12 @@ napi_value GetAssetJSObject(napi_env env, NapiAssetType type, IMediaLibraryClien
             break;
         }
         default:
-            HiLog::Error(LABEL, "Wrong media type");
+            NAPI_ERR_LOG("Wrong media type: %{public}d", type);
             break;
     }
 
     if (assetObj == nullptr) {
-        HiLog::Error(LABEL, "No assets obtained");
+        NAPI_ERR_LOG("No assets obtained");
         napi_get_undefined(env, &assetObj);
     }
 
@@ -1039,7 +1037,7 @@ void CreateAssetAsyncCbComplete(napi_env env, napi_status status,
         }
         delete context;
     } else {
-        HiLog::Error(LABEL, "Async context is null");
+        NAPI_ERR_LOG("Async context is null");
     }
 }
 
@@ -1201,19 +1199,17 @@ napi_value MediaLibraryNapi::CreateAlbum(napi_env env, napi_callback_info info)
 static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status,
                                                MediaLibraryAsyncContext *context)
 {
-    HiLog::Debug(LABEL, "GetPublicDirectoryCompleteCallback IN");
+    NAPI_DEBUG_LOG("GetPublicDirectoryCompleteCallback IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     unsigned int dirIndex = context->dirType;
     if (context->error == ERR_DEFAULT) {
-        HiLog::Debug(LABEL, "GetPublicDirectoryCompleteCallback dirIndex < directoryEnumValues.size()");
-        
         napi_create_string_utf8(env, directoryEnumValues[dirIndex].c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
-        HiLog::Debug(LABEL, "dirIndex is illegal");
+        NAPI_DEBUG_LOG("dirIndex is illegal");
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error, "dirIndex is illegal");
         napi_get_undefined(env, &jsContext->data);
     }
@@ -1222,7 +1218,7 @@ static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status,
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
-    HiLog::Debug(LABEL, "GetPublicDirectoryCompleteCallback OUT");
+    NAPI_DEBUG_LOG("GetPublicDirectoryCompleteCallback OUT");
     delete context;
 }
 
@@ -1302,7 +1298,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     if (!context->networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     }
-    HiLog::Debug(LABEL, "queryUri is = %{public}s", queryUri.c_str());
+    NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
     shared_ptr<AbsSharedResultSet> resultSet;
 
@@ -1314,7 +1310,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
             context->fetchFileResult->networkId_ = context->networkId;
             return;
         } else {
-            HiLog::Error(LABEL, "Query for get fileAssets failed");
+            NAPI_ERR_LOG("Query for get fileAssets failed");
         }
     }
     context->error = ERR_INVALID_OUTPUT;
@@ -1351,7 +1347,7 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
                 napi_get_undefined(env, &jsContext->error);
             }
         } else {
-            HiLog::Error(LABEL, "No fetch file result found!");
+            NAPI_ERR_LOG("No fetch file result found!");
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                 "Failed to obtain Fetch File Result");
         }
@@ -1439,7 +1435,6 @@ using ValVariant = variant<int, int64_t, string>;
 ValVariant GetValFromColumn(string columnName, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
     ResultSetDataType type)
 {
-    HiLog::Error(LABEL, "columnName = %{public}s", columnName.c_str());
     int index;
     ValVariant cellValue;
     int integerVal;
@@ -1461,7 +1456,7 @@ ValVariant GetValFromColumn(string columnName, shared_ptr<NativeRdb::AbsSharedRe
             cellValue = longVaL;
             break;
         default:
-            HiLog::Error(LABEL, "No type");
+            NAPI_ERR_LOG("No type: type %{public}d", type);
             cellValue = "Notype";
             break;
     }
@@ -1478,7 +1473,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!context->networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-        HiLog::Debug(LABEL, "querycoverUri is = %{public}s", queryUri.c_str());
+        NAPI_DEBUG_LOG("querycoverUri is = %{public}s", queryUri.c_str());
     }
     Uri uri(queryUri);
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sAbilityHelper_->Query(
@@ -1488,7 +1483,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     string coverUri = fileAsset->GetUri();
     album->SetCoverUri(coverUri);
-    HiLog::Debug(LABEL, "coverUri is = %{public}s", album->GetCoverUri().c_str());
+    NAPI_DEBUG_LOG("coverUri is = %{public}s", album->GetCoverUri().c_str());
 }
 
 void SetAlbumData(AlbumAsset* albumData, shared_ptr<NativeRdb::AbsSharedResultSet> resultSet,
@@ -1513,7 +1508,7 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<NativeRdb::AbsSharedResultSe
 
 static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 {
-    HiLog::Error(LABEL, "GetResultDataExecute IN");
+    NAPI_ERR_LOG("GetResultDataExecute IN");
     NativeRdb::DataAbilityPredicates predicates;
     if (context->objectInfo->sAbilityHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
@@ -1529,14 +1524,14 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     if (!context->networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId +
             MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
-        HiLog::Debug(LABEL, "queryAlbumUri is = %{public}s", queryUri.c_str());
+        NAPI_DEBUG_LOG("queryAlbumUri is = %{public}s", queryUri.c_str());
     }
     Uri uri(queryUri);
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sAbilityHelper_->Query(
         uri, columns, predicates);
 
     if (resultSet == nullptr) {
-        HiLog::Error(LABEL, "GetResultData resultSet is nullptr");
+        NAPI_ERR_LOG("GetResultData resultSet is nullptr");
         return;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -1556,14 +1551,12 @@ static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     napi_get_undefined(env, &jsContext->error);
-    HiLog::Error(LABEL, "AlbumsAsyncCallbackComplete");
     if (context->error != ERR_DEFAULT) {
         napi_get_undefined(env, &jsContext->data);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "Query for get fileAssets failed");
     } else {
         if (context->albumNativeArray.empty()) {
-            HiLog::Error(LABEL, "AlbumsAsyncCallbackComplete 1");
             napi_value albumNoArray = nullptr;
             napi_create_array(env, &albumNoArray);
             jsContext->status = true;
@@ -1578,7 +1571,6 @@ static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
                 napi_set_element(env, albumArray, i, albumNapiObj);
             }
             jsContext->status = true;
-            HiLog::Error(LABEL, "AlbumsAsyncCallbackComplete 2");
             napi_get_undefined(env, &jsContext->error);
             jsContext->data = albumArray;
         }
@@ -1599,7 +1591,6 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value resource = nullptr;
 
-    HiLog::Error(LABEL, "JSGetAlbums");
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
@@ -1645,9 +1636,7 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
         // Create FetchResult object using the contents of resultSet
         context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
         context->fetchFileResult->networkId_ = networkId;
-        HiLog::Debug(LABEL, "getFileAssetById context->fetchFileResult");
         if (context->fetchFileResult != nullptr && context->fetchFileResult->GetCount() >= 1) {
-            HiLog::Debug(LABEL, "getFileAssetById fetchFileResult->GetCount() >= 1");
             context->fileAsset = context->fetchFileResult->GetFirstObject();
 
             Media::MediaType mediaType = context->fileAsset->GetMediaType();
@@ -1661,7 +1650,7 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
 static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
                                           MediaLibraryAsyncContext *context)
 {
-    HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback IN");
+    NAPI_DEBUG_LOG("JSCreateAssetCompleteCallback IN");
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -1678,19 +1667,19 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
             jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
                                                          context->objectInfo->sAbilityHelper_);
             if (jsFileAsset == nullptr) {
-                HiLog::Error(LABEL, "Failed to get file asset napi object");
+                NAPI_ERR_LOG("Failed to get file asset napi object");
                 napi_get_undefined(env, &jsContext->data);
                 MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
                     "Failed to create js object for FileAsset");
             } else {
-                HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback jsFileAsset != nullptr");
+                NAPI_DEBUG_LOG("JSCreateAssetCompleteCallback jsFileAsset != nullptr");
                 jsContext->data = jsFileAsset;
                 napi_get_undefined(env, &jsContext->error);
                 jsContext->status = true;
             }
         }
     } else {
-        HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback context->error %{public}d", context->error);
+        NAPI_ERR_LOG("JSCreateAssetCompleteCallback context->error %{public}d", context->error);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "File asset creation failed");
         napi_get_undefined(env, &jsContext->data);
@@ -1700,7 +1689,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
-    HiLog::Debug(LABEL, "JSCreateAssetCompleteCallback OUT");
+    NAPI_DEBUG_LOG("JSCreateAssetCompleteCallback OUT");
     delete context;
 }
 
@@ -1712,7 +1701,6 @@ static bool CheckTitlePrams(MediaLibraryAsyncContext *context)
         valueObject.GetString(title);
     }
     if (title.empty()) {
-        HiLog::Debug(LABEL, "CheckTitlePrams title is empty");
         return false;
     }
     return true;
@@ -1728,9 +1716,8 @@ static string GetFirstDirName(const string& relativePath)
             return relativePath;
         }
         firstDirName = relativePath.substr(0, pos + 1);
-        HiLog::Debug(LABEL, "firstDirName substr = %{public}s", firstDirName.c_str());
+        NAPI_DEBUG_LOG("firstDirName substr = %{public}s", firstDirName.c_str());
     }
-    HiLog::Debug(LABEL, "firstDirName = %{public}s", firstDirName.c_str());
     return firstDirName;
 }
 
@@ -1748,7 +1735,7 @@ static bool IsDirectory(const string& dirName)
 
 static bool CheckTypeOfType(const std::string& firstDirName, int32_t fileMediaType)
 {
-    HiLog::Debug(LABEL, "CheckTypeOfType IN");
+    NAPI_DEBUG_LOG("CheckTypeOfType IN");
     // "CDSA/"
     if (!strcmp(firstDirName.c_str(), directoryEnumValues[0].c_str())) {
         if (fileMediaType == MEDIA_TYPE_IMAGE || fileMediaType == MEDIA_TYPE_VIDEO) {
@@ -1767,11 +1754,10 @@ static bool CheckTypeOfType(const std::string& firstDirName, int32_t fileMediaTy
     }
     if (!strcmp(firstDirName.c_str(), directoryEnumValues[NUM_2].c_str())) {
         if (fileMediaType == MEDIA_TYPE_IMAGE || fileMediaType == MEDIA_TYPE_VIDEO) {
-            HiLog::Debug(LABEL, "CheckTypeOfType RETURN TRUE");
             return true;
         } else {
-            HiLog::Debug(LABEL, "CheckTypeOfType RETURN FALSE");
-                return false;
+            NAPI_INFO_LOG("CheckTypeOfType RETURN FALSE");
+            return false;
         }
     }
     if (!strcmp(firstDirName.c_str(), directoryEnumValues[NUM_3].c_str())) {
@@ -1781,7 +1767,7 @@ static bool CheckTypeOfType(const std::string& firstDirName, int32_t fileMediaTy
             return false;
         }
     }
-    HiLog::Debug(LABEL, "CheckTypeOfType END");
+    NAPI_DEBUG_LOG("CheckTypeOfType END");
     return true;
 }
 static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
@@ -1795,32 +1781,32 @@ static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
     context->valuesBucket.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject);
     valueObject.GetInt(fileMediaType);
     if (relativePath.empty()) {
-        HiLog::Debug(LABEL, "CheckRelativePathPrams relativePath is empty");
+        NAPI_DEBUG_LOG("CheckRelativePathPrams relativePath is empty");
         return false;
     }
 
     if (IsDirectory(relativePath)) {
-        HiLog::Debug(LABEL, "CheckRelativePathPrams relativePath exist return true");
+        NAPI_DEBUG_LOG("CheckRelativePathPrams relativePath exist return true");
         return true;
     }
     
     string firstDirName = GetFirstDirName(relativePath);
     if (!firstDirName.empty() && IsDirectory(firstDirName)) {
-        HiLog::Debug(LABEL, "CheckRelativePathPrams firstDirName exist return true");
+        NAPI_DEBUG_LOG("CheckRelativePathPrams firstDirName exist return true");
         return true;
     }
     
     if (!firstDirName.empty()) {
-        HiLog::Debug(LABEL, "firstDirName = %{public}s", firstDirName.c_str());
+        NAPI_DEBUG_LOG("firstDirName = %{public}s", firstDirName.c_str());
         for (unsigned int i = 0; i < directoryEnumValues.size(); i++) {
-            HiLog::Debug(LABEL, "directoryEnumValues%{public}d = %{public}s", i, directoryEnumValues[i].c_str());
+            NAPI_DEBUG_LOG("directoryEnumValues%{public}d = %{public}s", i, directoryEnumValues[i].c_str());
             if (!strcmp(firstDirName.c_str(), directoryEnumValues[i].c_str())) {
                 return CheckTypeOfType(firstDirName, fileMediaType);
             }
         }
-        HiLog::Debug(LABEL, "firstDirName = %{public}s", firstDirName.c_str());
+        NAPI_DEBUG_LOG("firstDirName = %{public}s", firstDirName.c_str());
     }
-    HiLog::Debug(LABEL, "CheckRelativePathPrams return false");
+    NAPI_DEBUG_LOG("CheckRelativePathPrams return false");
     return false;
 }
 
@@ -1834,7 +1820,6 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
     size_t res = 0;
     char relativePathBuffer[PATH_MAX];
     char titleBuffer[PATH_MAX];
-    HiLog::Debug(LABEL, "GetJSArgsForCreateAsset IN %{public}zu", argc);
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
@@ -1844,14 +1829,14 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
             napi_get_value_int32(env, argv[i], &fileMediaType);
         } else if (i == PARAM1 && valueType == napi_string) {
             napi_get_value_string_utf8(env, argv[i], titleBuffer, PATH_MAX, &res);
-            HiLog::Debug(LABEL, "displayName = %{public}s", string(titleBuffer).c_str());
+            NAPI_DEBUG_LOG("displayName = %{public}s", string(titleBuffer).c_str());
         } else if (i == PARAM2 && valueType == napi_string) {
             napi_get_value_string_utf8(env, argv[i], relativePathBuffer, PATH_MAX, &res);
-            HiLog::Debug(LABEL, "relativePath = %{public}s", string(relativePathBuffer).c_str());
+            NAPI_DEBUG_LOG("relativePath = %{public}s", string(relativePathBuffer).c_str());
         } else if (i == PARAM3 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
         } else {
-            HiLog::Debug(LABEL, "type mismatch");
+            NAPI_DEBUG_LOG("type mismatch, valueType: %{public}d", valueType);
             return result;
     }
     }
@@ -1859,7 +1844,7 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
     context->valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileMediaType);
     context->valuesBucket.PutString(MEDIA_DATA_DB_NAME, string(titleBuffer));
     context->valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, string(relativePathBuffer));
-    HiLog::Debug(LABEL, "GetJSArgsForCreateAsset END");
+    NAPI_DEBUG_LOG("GetJSArgsForCreateAsset END");
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
     return result;
@@ -2060,7 +2045,7 @@ static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
             }
         }
         notifyUri = MEDIALIBRARY_DATA_URI + "/" + mediaType;
-        HiLog::Error(LABEL, "JSDeleteAssetExcute notifyUri = %{public}s", notifyUri.c_str());
+        NAPI_DEBUG_LOG("JSDeleteAssetExcute notifyUri = %{public}s", notifyUri.c_str());
         int retVal = context->objectInfo->sAbilityHelper_->Insert(deleteAssetUri,
             context->valuesBucket);
         if (retVal < 0) {
@@ -2083,7 +2068,7 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status,
     jsContext->status = false;
 
     if (context->error == ERR_DEFAULT) {
-        HiLog::Debug(LABEL, "Delete result = %{public}d", context->retVal);
+        NAPI_DEBUG_LOG("Delete result = %{public}d", context->retVal);
         napi_create_int32(env, context->retVal, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
@@ -2315,7 +2300,7 @@ static void JSCloseAssetCompleteCallback(napi_env env, napi_status status,
             }
         }
         if (retVal != DATA_ABILITY_SUCCESS) {
-            HiLog::Error(LABEL, "negative ret %{public}d", retVal);
+            NAPI_ERR_LOG("negative ret %{public}d", retVal);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
                                                          "File close asset failed");
             napi_get_undefined(env, &jsContext->data);
@@ -2749,7 +2734,7 @@ void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const nap
             UvChangeMsg *msg = reinterpret_cast<UvChangeMsg *>(w->data);
             do {
                 if (msg == nullptr) {
-                    HiLog::Error(LABEL, "UvChangeMsg is null");
+                    NAPI_ERR_LOG("UvChangeMsg is null");
                     break;
                 }
                 napi_env env = msg->env_;
@@ -2759,13 +2744,13 @@ void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const nap
                 napi_value jsCallback = nullptr;
                 napi_status status = napi_get_reference_value(env, msg->ref_, &jsCallback);
                 if (status != napi_ok) {
-                    HiLog::Error(LABEL, "Create reference fail");
+                    NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
                     break;
                 }
                 napi_value retVal = nullptr;
                 napi_call_function(env, nullptr, jsCallback, ARGS_TWO, result, &retVal);
                 if (status != napi_ok) {
-                    HiLog::Error(LABEL, "CallJs napi_call_function fail");
+                    NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
                     break;
                 }
             } while (0);
@@ -2774,7 +2759,7 @@ void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const nap
         }
     );
     if (ret != 0) {
-        HiLog::Error(LABEL, "Failed to execute libuv work queue");
+        NAPI_ERR_LOG("Failed to execute libuv work queue, ret: %{public}d", ret);
         delete msg;
         delete work;
     }
@@ -2784,7 +2769,7 @@ int32_t MediaLibraryNapi::GetListenerType(const std::string &str) const
 {
     auto iter = ListenerTypeMaps.find(str);
     if (iter == ListenerTypeMaps.end()) {
-        HiLog::Error(LABEL, "Invalid Listener Type %{public}s", str.c_str());
+        NAPI_ERR_LOG("Invalid Listener Type %{public}s", str.c_str());
         return INVALID_LISTENER;
     }
 
@@ -2793,7 +2778,7 @@ int32_t MediaLibraryNapi::GetListenerType(const std::string &str) const
 
 void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj)
 {
-    HiLog::Info(LABEL, "Register change type = %{public}s", type.c_str());
+    NAPI_DEBUG_LOG("Register change type = %{public}s", type.c_str());
 
     int32_t typeEnum = GetListenerType(type);
     switch (typeEnum) {
@@ -2831,7 +2816,7 @@ void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, Cha
             sAbilityHelper_->RegisterObserver(Uri(MEDIALIBRARY_ALBUM_URI), listObj.albumDataObserver_);
             break;
         default:
-            HiLog::Error(LABEL, "Invalid Media Type!");
+            NAPI_ERR_LOG("Invalid Media Type!");
     }
 }
 
@@ -2854,7 +2839,7 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
     NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameters");
 
     if (thisVar == nullptr || argv[PARAM0] == nullptr || argv[PARAM1] == nullptr) {
-        HiLog::Error(LABEL, "Failed to retrieve details about the callback");
+        NAPI_ERR_LOG("Failed to retrieve details about the callback");
         return undefinedResult;
     }
 
@@ -2867,7 +2852,7 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
         }
 
         if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res) != napi_ok) {
-            HiLog::Error(LABEL, "Failed to get value string utf8 for type");
+            NAPI_ERR_LOG("Failed to get value string utf8 for type");
             return undefinedResult;
         }
         type = string(buffer);
@@ -2882,7 +2867,7 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
 
 void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, ChangeListenerNapi &listObj)
 {
-    HiLog::Info(LABEL, "Unregister change type = %{public}s", type.c_str());
+    NAPI_DEBUG_LOG("Unregister change type = %{public}s", type.c_str());
 
     MediaType mediaType;
     int32_t typeEnum = GetListenerType(type);
@@ -2962,7 +2947,7 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
             listObj.albumDataObserver_ = nullptr;
             break;
         default:
-            HiLog::Error(LABEL, "Invalid Media Type");
+            NAPI_ERR_LOG("Invalid Media Type");
             return;
     }
 
@@ -2992,7 +2977,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
     NAPI_ASSERT(env, ARGS_ONE <= argc && argc<= ARGS_TWO, "requires one or two parameters");
 
     if (thisVar == nullptr || argv[PARAM0] == nullptr) {
-        HiLog::Error(LABEL, "Failed to retrieve details about the callback");
+        NAPI_ERR_LOG("Failed to retrieve details about the callback");
         return undefinedResult;
     }
 
@@ -3004,7 +2989,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
         }
 
         if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res) != napi_ok) {
-            HiLog::Error(LABEL, "Failed to get value string utf8 for type");
+            NAPI_ERR_LOG("Failed to get value string utf8 for type");
             return undefinedResult;
         }
         type = string(buffer);
@@ -3027,21 +3012,17 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
 static void JSReleaseCompleteCallback(napi_env env, napi_status status,
                                       MediaLibraryAsyncContext *context)
 {
-    HiLog::Error(LABEL, "JSReleaseCompleteCallback in");
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    HiLog::Error(LABEL, "JSReleaseCompleteCallback end");
     if (context->objectInfo != nullptr) {
-        HiLog::Error(LABEL, "JSReleaseCompleteCallback context->objectInfo != nullptr");
         context->objectInfo->~MediaLibraryNapi();
         napi_create_int32(env, SUCCESS, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
-        HiLog::Error(LABEL, "JSReleaseCompleteCallback context->objectInfo == nullptr");
+        NAPI_ERR_LOG("JSReleaseCompleteCallback context->objectInfo == nullptr");
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Ability helper is null");
         napi_get_undefined(env, &jsContext->data);
@@ -3051,13 +3032,11 @@ static void JSReleaseCompleteCallback(napi_env env, napi_status status,
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
-    HiLog::Error(LABEL, "JSReleaseCompleteCallback end");
     delete context;
 }
 
 napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
 {
-    HiLog::Error(LABEL, "JSRelease in");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_ONE;
@@ -3067,9 +3046,9 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     int32_t refCount = 1;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    HiLog::Error(LABEL, "NAPI_ASSERT begin %{public}zu", argc);
+    NAPI_ERR_LOG("NAPI_ASSERT begin %{public}zu", argc);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_ZERO), "requires 1 parameters maximum");
-    HiLog::Error(LABEL, "NAPI_ASSERT end");
+    NAPI_ERR_LOG("NAPI_ASSERT end");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
@@ -3097,7 +3076,6 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
             asyncContext.release();
         }
     }
-    HiLog::Error(LABEL, "JSRelease end");
     return result;
 }
 
@@ -3105,48 +3083,36 @@ static int32_t GetAlbumCapacity(MediaLibraryAsyncContext *context)
 {
     string abilityUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_GETALBUMCAPACITY;
     Uri getAlbumCapacityUri(abilityUri);
-    HiLog::Error(LABEL, "GetAlbumCapacity getAlbumCapacityUri = %{public}s", abilityUri.c_str());
 
     return context->objectInfo->sAbilityHelper_->Insert(getAlbumCapacityUri, context->valuesBucket);
 }
 
 static void GetFavSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
-    HiLog::Error(LABEL, "GetFavSmartAlbum IN");
     context->smartAlbumData = make_unique<SmartAlbumAsset>();
 
     context->smartAlbumData->SetAlbumId(FAVORIT_SMART_ALBUM_ID);
-    HiLog::Error(LABEL, "SMARTALBUM_DB_ID = %{public}d", context->smartAlbumData->GetAlbumId());
     context->smartAlbumData->SetAlbumName(FAVORIT_SMART_ALBUM_NAME);
-    HiLog::Error(LABEL, "SMARTALBUM_DB_NAME = %{public}s", (context->smartAlbumData->GetAlbumName()).c_str());
     context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, true);
     context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_TRASH, false);
     context->smartAlbumData->SetAlbumCapacity(GetAlbumCapacity(context));
-    HiLog::Error(LABEL, "AlbumCapacity = %{public}d", context->smartAlbumData->GetAlbumCapacity());
     context->smartAlbumData->SetAlbumPrivateType(TYPE_FAVORITE);
-    HiLog::Error(LABEL, "GetFavSmartAlbum OUT");
 }
 
 static void GetTrashSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
-    HiLog::Error(LABEL, "GetTrashSmartAlbumExecute IN");
     context->smartAlbumData = make_unique<SmartAlbumAsset>();
 
     context->smartAlbumData->SetAlbumId(TRASH_SMART_ALBUM_ID);
-    HiLog::Error(LABEL, "SMARTALBUM_DB_ID = %{public}d", context->smartAlbumData->GetAlbumId());
     context->smartAlbumData->SetAlbumName(TRASH_SMART_ALBUM_NAME);
-    HiLog::Error(LABEL, "SMARTALBUM_DB_NAME = %{public}s", (context->smartAlbumData->GetAlbumName()).c_str());
     context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, false);
     context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_TRASH, true);
     context->smartAlbumData->SetAlbumCapacity(GetAlbumCapacity(context));
-    HiLog::Error(LABEL, "AlbumCapacity = %{public}d", context->smartAlbumData->GetAlbumCapacity());
     context->smartAlbumData->SetAlbumPrivateType(TYPE_TRASH);
-    HiLog::Error(LABEL, "GetTrashSmartAlbumExecute OUT");
 }
 
 static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
 {
-    HiLog::Error(LABEL, "GetSmartAlbumResultData");
     NativeRdb::DataAbilityPredicates predicates;
     if (context->objectInfo->sAbilityHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
@@ -3166,18 +3132,14 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
             + SMARTABLUMASSETS_VIEW_NAME);
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sAbilityHelper_->Query(
         uri, columns, predicates);
-    HiLog::Error(LABEL, "AllSmartAlbum resultSet");
     if (resultSet != nullptr) {
-        HiLog::Error(LABEL, "AllSmartAlbum resultSet != nullptr");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             unique_ptr<SmartAlbumAsset> albumData = make_unique<SmartAlbumAsset>();
             if (albumData != nullptr) {
                 albumData->SetAlbumId(get<int32_t>(GetValFromColumn(SMARTALBUM_DB_ID, resultSet, TYPE_INT32)));
-                HiLog::Error(LABEL, "AllSmartAlbum SMARTALBUM_DB_ID = %{public}d", albumData->GetAlbumId());
                 albumData->SetAlbumName(get<string>(GetValFromColumn(SMARTALBUM_DB_NAME, resultSet, TYPE_STRING)));
                 albumData->SetAlbumCapacity(get<int32_t>(GetValFromColumn(SMARTABLUMASSETS_ALBUMCAPACITY,
                                                                           resultSet, TYPE_INT32)));
-                HiLog::Error(LABEL, "AllSmartAlbum SMARTABLUMASSETS_ALBUMCAPACITY");
             }
             context->privateSmartAlbumNativeArray.push_back(move(albumData));
         }
@@ -3248,13 +3210,12 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->error);
             jsContext->data = albumArray;
         } else {
-            HiLog::Error(LABEL, "No fetch file result found!");
+            NAPI_ERR_LOG("No fetch file result found!");
             napi_get_undefined(env, &jsContext->data);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                 "Failed to obtain Fetch File Result");
         }
     }
-    HiLog::Error(LABEL, "GetPrivateAlbumCallbackComplete");
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -3341,7 +3302,7 @@ static void JSCreateSmartAlbumCompleteCallback(napi_env env, napi_status status,
     jsContext->status = false;
     if (context->error == ERR_DEFAULT) {
         if (context->smartAlbumNativeArray.empty()) {
-            HiLog::Error(LABEL, "JSCreateSmartAlbumCompleteCallback 1");
+            NAPI_ERR_LOG("No albums found");
             napi_get_undefined(env, &jsContext->data);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                 "No albums found");
@@ -3350,7 +3311,6 @@ static void JSCreateSmartAlbumCompleteCallback(napi_env env, napi_status status,
             napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumNativeArray[0]),
                                                                            context->objectInfo->sAbilityHelper_);
             jsContext->data = albumNapiObj;
-            HiLog::Error(LABEL, "JSCreateSmartAlbumCompleteCallback 2 ");
             napi_get_undefined(env, &jsContext->error);
         }
     } else {
@@ -3470,7 +3430,7 @@ static void JSDeleteSmartAlbumExecute(MediaLibraryAsyncContext *context)
         Uri DeleteSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" + MEDIA_SMARTALBUMOPRN_DELETEALBUM);
         int retVal = context->objectInfo->sAbilityHelper_->Insert(DeleteSmartAlbumUri,
             context->valuesBucket);
-        HiLog::Error(LABEL, "JSDeleteSmartAlbumCompleteCallback retVal = %{public}d", retVal);
+        NAPI_DEBUG_LOG("JSDeleteSmartAlbumCompleteCallback retVal = %{public}d", retVal);
         if (retVal < 0) {
             context->error = retVal;
         } else {
@@ -3521,12 +3481,12 @@ static napi_status SetValueUtf8String(const napi_env& env, const char* fieldStr,
     napi_value value;
     napi_status status = napi_create_string_utf8(env, str, NAPI_AUTO_LENGTH, &value);
     if (status != napi_ok) {
-        HiLog::Error(LABEL, "Set value create utf8 string error! field: %{public}s", fieldStr);
+        NAPI_ERR_LOG("Set value create utf8 string error! field: %{public}s", fieldStr);
         return status;
     }
     status = napi_set_named_property(env, result, fieldStr, value);
     if (status != napi_ok) {
-        HiLog::Error(LABEL, "Set utf8 string named property error! field: %{public}s", fieldStr);
+        NAPI_ERR_LOG("Set utf8 string named property error! field: %{public}s", fieldStr);
     }
     return status;
 }
@@ -3536,12 +3496,12 @@ static napi_status SetValueInt32(const napi_env& env, const char* fieldStr, cons
     napi_value value;
     napi_status status = napi_create_int32(env, intValue, &value);
     if (status != napi_ok) {
-        HiLog::Error(LABEL, "Set value create int32 error! field: %{public}s", fieldStr);
+        NAPI_ERR_LOG("Set value create int32 error! field: %{public}s", fieldStr);
         return status;
     }
     status = napi_set_named_property(env, result, fieldStr, value);
     if (status != napi_ok) {
-        HiLog::Error(LABEL, "Set int32 named property error! field: %{public}s", fieldStr);
+        NAPI_ERR_LOG("Set int32 named property error! field: %{public}s", fieldStr);
     }
     return status;
 }
@@ -3551,12 +3511,12 @@ static napi_status SetValueBool(const napi_env& env, const char* fieldStr, const
     napi_value value = nullptr;
     napi_status status = napi_get_boolean(env, boolvalue, &value);
     if (status != napi_ok) {
-        HiLog::Error(LABEL, "Set value create boolean error! field: %{public}s", fieldStr);
+        NAPI_ERR_LOG("Set value create boolean error! field: %{public}s", fieldStr);
         return status;
     }
     status = napi_set_named_property(env, result, fieldStr, value);
     if (status != napi_ok) {
-        HiLog::Error(LABEL, "Set boolean named property error! field: %{public}s", fieldStr);
+        NAPI_ERR_LOG("Set boolean named property error! field: %{public}s", fieldStr);
     }
     return status;
 }
@@ -3580,7 +3540,7 @@ static void PeerInfoToJsArray(const napi_env &env, const std::vector<unique_ptr<
 
     napi_status status = napi_set_element(env, arrayResult, idx, result);
     if (status != napi_ok) {
-        HiLog::Error(LABEL, "PeerInfo To JsArray set element error: %d", status);
+        NAPI_ERR_LOG("PeerInfo To JsArray set element error: %d", status);
     }
 }
 
@@ -3606,13 +3566,12 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
         uri, columns, predicates);
 
     if (resultSet == nullptr) {
-        HiLog::Error(LABEL, "JSGetActivePeers resultSet is null");
+        NAPI_ERR_LOG("JSGetActivePeers resultSet is null");
         delete context;
         return;
     }
 
     vector<unique_ptr<PeerInfo>> peerInfoArray;
-    HiLog::Error(LABEL, "JSGetActivePeers resultSet != nullptr");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         unique_ptr<PeerInfo> peerInfo = make_unique<PeerInfo>();
         if (peerInfo != nullptr) {
@@ -3634,7 +3593,7 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
-        HiLog::Debug(LABEL, "No peer info found!");
+        NAPI_DEBUG_LOG("No peer info found!");
         napi_get_undefined(env, &jsContext->data);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to obtain peer info array from DB");
@@ -3668,13 +3627,12 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
         uri, columns, predicates);
 
     if (resultSet == nullptr) {
-        HiLog::Error(LABEL, "JSGetAllPeers resultSet is null");
+        NAPI_ERR_LOG("JSGetAllPeers resultSet is null");
         delete context;
         return;
     }
 
     vector<unique_ptr<PeerInfo>> peerInfoArray;
-    HiLog::Error(LABEL, "JSGetAllPeers resultSet != nullptr");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         unique_ptr<PeerInfo> peerInfo = make_unique<PeerInfo>();
         if (peerInfo != nullptr) {
@@ -3696,7 +3654,7 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
-        HiLog::Debug(LABEL, "No peer info found!");
+        NAPI_DEBUG_LOG("No peer info found!");
         napi_get_undefined(env, &jsContext->data);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to obtain peer info array from DB");
@@ -3711,7 +3669,6 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
 
 napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info info)
 {
-    HiLog::Error(LABEL, "JSGetActivePeers in");
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
@@ -3744,13 +3701,11 @@ napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info i
             asyncContext.release();
         }
     }
-    HiLog::Error(LABEL, "JSGetActivePeers end");
     return result;
 }
 
 napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info)
 {
-    HiLog::Error(LABEL, "JSGetAllPeers in");
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
@@ -3783,7 +3738,6 @@ napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info
             asyncContext.release();
         }
     }
-    HiLog::Error(LABEL, "JSGetAllPeers end");
     return result;
 }
 } // namespace Media
