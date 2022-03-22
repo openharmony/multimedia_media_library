@@ -16,8 +16,10 @@
 #ifndef METADATA_EXTRACTOR_H
 #define METADATA_EXTRACTOR_H
 
+#include <fcntl.h>
 #include <sstream>
 #include <string.h>
+#include <unistd.h>
 
 #include "avmetadatahelper.h"
 #include "image_source.h"
@@ -34,6 +36,8 @@ public:
     int32_t Extract(Metadata &fileMetadata, const std::string &uri);
     int32_t ExtractImageMetadata(Metadata &fileMetadata);
     int32_t ConvertStringToInteger(const std::string &str);
+    void FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &metadataMap,
+                               Metadata &fileMetadata);
 };
 } // namespace Media
 } // namespace OHOS
