@@ -49,6 +49,35 @@ int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
 
     return ERR_SUCCESS;
 }
+
+void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &metadataMap,
+                                              Metadata &fileMetadata)
+{
+    string strTemp;
+    int32_t intTempMeta;
+
+    strTemp = metadataMap.at(AV_KEY_ALBUM);
+    fileMetadata.SetAlbum(strTemp);
+
+    strTemp = metadataMap.at(AV_KEY_ARTIST);
+    fileMetadata.SetFileArtist(strTemp);
+
+    strTemp = metadataMap.at(AV_KEY_DURATION);
+    intTempMeta = ConvertStringToInteger(strTemp);
+    fileMetadata.SetFileDuration(intTempMeta);
+
+    strTemp = metadataMap.at(AV_KEY_VIDEO_HEIGHT);
+    intTempMeta = ConvertStringToInteger(strTemp);
+    fileMetadata.SetFileHeight(intTempMeta);
+
+    strTemp = metadataMap.at(AV_KEY_VIDEO_WIDTH);
+    intTempMeta = ConvertStringToInteger(strTemp);
+    fileMetadata.SetFileWidth(intTempMeta);
+
+    strTemp = metadataMap.at(AV_KEY_MIME_TYPE);
+    fileMetadata.SetFileMimeType(strTemp);
+}
+
 int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
 {
     int32_t errCode = ERR_FAIL;
@@ -76,38 +105,33 @@ int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
         return errCode;
     }
 
-    string prefix = "file://";
-    fileuri = prefix.append(uri);
-    errCode = avMetadataHelper->SetSource(fileuri, AV_META_USAGE_META_ONLY);
-    if (errCode == ERR_SUCCESS) {
+    int32_t fd = open(uri.c_str(), O_RDONLY);
+    if (fd <= 0) {
+        MEDIA_ERR_LOG("Open file descriptor failed");
+        return errCode;
+    }
+
+    struct stat64 st;
+    if (fstat64(fd, &st) != 0) {
+        MEDIA_ERR_LOG("Get file state failed for the given fd");
+        (void)close(fd);
+        return errCode;
+    }
+
+    int64_t length = static_cast<int64_t>(st.st_size);
+    errCode = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_META_ONLY);
+    if (errCode != ERR_SUCCESS) {
+        MEDIA_ERR_LOG("SetSource failed for the given file descriptor");
+        (void)close(fd);
+        return errCode;
+    } else {
         metadataMap = avMetadataHelper->ResolveMetadata();
         if (!metadataMap.empty()) {
-            string strTemp;
-            int32_t intTempMeta;
-
-            strTemp = metadataMap.at(AV_KEY_ALBUM);
-            fileMetadata.SetAlbum(strTemp);
-
-            strTemp = metadataMap.at(AV_KEY_ARTIST);
-            fileMetadata.SetFileArtist(strTemp);
-
-            strTemp = metadataMap.at(AV_KEY_DURATION);
-            intTempMeta = ConvertStringToInteger(strTemp);
-            fileMetadata.SetFileDuration(intTempMeta);
-
-            strTemp = metadataMap.at(AV_KEY_VIDEO_HEIGHT);
-            intTempMeta = ConvertStringToInteger(strTemp);
-            fileMetadata.SetFileHeight(intTempMeta);
-
-            strTemp = metadataMap.at(AV_KEY_VIDEO_WIDTH);
-            intTempMeta = ConvertStringToInteger(strTemp);
-            fileMetadata.SetFileWidth(intTempMeta);
-
-            strTemp = metadataMap.at(AV_KEY_MIME_TYPE);
-            fileMetadata.SetFileMimeType(strTemp);
+            FillExtractedMetadata(metadataMap, fileMetadata);
         }
     }
 
+    (void)close(fd);
     avMetadataHelper->Release();
     return ERR_SUCCESS;
 }
