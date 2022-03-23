@@ -17,19 +17,21 @@
 #define FILE_ASSET_NAPI_H
 
 #include "ability.h"
+#include "ability_context.h"
 #include "ability_loader.h"
-#include "file_asset.h"
 #include "data_ability_helper.h"
-#include "medialibrary_napi_utils.h"
+#include "media_lib_service_const.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "pixel_map_napi.h"
 #include "values_bucket.h"
-#include "media_thumbnail_helper.h"
 
 namespace OHOS {
 namespace Media {
 static const std::string FILE_ASSET_NAPI_CLASS_NAME = "FileAsset";
 
+class FileAsset;
+class MediaThumbnailHelper;
 class FileAssetNapi {
 public:
     FileAssetNapi();
@@ -45,10 +47,12 @@ public:
     std::string GetFileUri() const;
     int32_t GetFileId() const;
     int32_t GetOrientation() const;
-    Media::MediaType GetMediaType() const;
+    MediaType GetMediaType() const;
     std::string GetNetworkId() const;
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
     static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
+    static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
+        const std::shared_ptr<OHOS::AbilityRuntime::Context> &runtimeContext);
 private:
     static void FileAssetNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value FileAssetNapiConstructor(napi_env env, napi_callback_info info);
@@ -94,7 +98,7 @@ private:
 
     int32_t fileId_;
     std::string fileUri_;
-    Media::MediaType mediaType_;
+    MediaType mediaType_;
     std::string displayName_;
     std::string relativePath_;
     std::string filePath_;
@@ -138,7 +142,7 @@ struct FileAssetAsyncContext {
     int32_t thumbWidth;
     int32_t thumbHeight;
     bool isDirectory;
-    int32_t error = ERR_DEFAULT;
+    int32_t error = 0;
     int32_t changedRows;
     int32_t fd;
     bool isFavourite = false;
