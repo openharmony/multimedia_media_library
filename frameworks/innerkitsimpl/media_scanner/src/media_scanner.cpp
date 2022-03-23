@@ -99,7 +99,7 @@ vector<string> MediaScanner::GetSupportedMimeTypes()
 
 int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCallback)
 {
-    MEDIA_INFO_LOG("%{public}s: %{public}s", __func__, path.c_str());
+    MEDIA_INFO_LOG("%{public}s: %{private}s", __func__, path.c_str());
     int32_t errCode = ERR_MEM_ALLOC_FAIL;
     bool isDir = false;
 
@@ -109,7 +109,7 @@ int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCa
     }
 
     if (ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS) {
-        MEDIA_ERR_LOG("Scanfile: Incorrect path or insufficient permission %{public}s", path.c_str());
+        MEDIA_ERR_LOG("Scanfile: Incorrect path or insufficient permission %{private}s", path.c_str());
         unique_ptr<Metadata> metaData = mediaScannerDb_->ReadMetadata(path);
         if (metaData != nullptr && !metaData->GetFilePath().empty()) {
             vector<string> idList = {to_string(metaData->GetFileId())};
@@ -121,7 +121,7 @@ int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCa
     }
 
     if (ScannerUtils::IsDirectory(path)) {
-        MEDIA_ERR_LOG("ScanFile: Incorrect path %{public}s", path.c_str());
+        MEDIA_ERR_LOG("ScanFile: Incorrect path %{private}s", path.c_str());
         return ERR_INCORRECT_PATH;
     }
 
@@ -157,14 +157,14 @@ int32_t MediaScanner::ScanDir(string &path, const sptr<IRemoteObject> &remoteCal
 
     // Get Absolute path
     if (ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS) {
-        MEDIA_ERR_LOG("ScanDir: Incorrect path or insufficient permission %{public}s", path.c_str());
+        MEDIA_ERR_LOG("ScanDir: Incorrect path or insufficient permission %{private}s", path.c_str());
         // If the path is not available, clear the same from database too if present
         CleanupDirectory(path);
         return ERR_INCORRECT_PATH;
     }
 
     if (!ScannerUtils::IsDirectory(path)) {
-        MEDIA_ERR_LOG("ScanDir: Path provided is not a directory %{public}s", path.c_str());
+        MEDIA_ERR_LOG("ScanDir: Path provided is not a directory %{private}s", path.c_str());
         return ERR_INCORRECT_PATH;
     }
 
@@ -372,7 +372,7 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
             fileMetadata->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
         }
     } else {
-        MEDIA_ERR_LOG("path: %{public}s is not correct, right is begin with %{public}s",
+        MEDIA_ERR_LOG("path: %{private}s is not correct, right is begin with %{private}s",
                       path.c_str(), rootDir.c_str());
     }
 
@@ -483,7 +483,7 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
     }
 
     if (strcpy_s(fName, FILENAME_MAX, path.c_str()) != ERR_SUCCESS) {
-        free(fName);
+        FREE_MEMORY_AND_SET_NULL(fName);
         closedir(dirPath);
         return ERR_MEM_ALLOC_FAIL;
     }
@@ -518,7 +518,7 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
     }
 
     closedir(dirPath);
-    free(fName);
+    FREE_MEMORY_AND_SET_NULL(fName);
 
     return errCode;
 }
@@ -617,7 +617,7 @@ int32_t MediaScanner::ScanDirInternal(const string &path)
 
     // Check if it is hidden folder
     if (IsDirHiddenRecursive(path)) {
-        MEDIA_ERR_LOG("%{public}s is hidden", path.c_str());
+        MEDIA_ERR_LOG("%{private}s is hidden", path.c_str());
         return ERR_NOT_ACCESSIBLE;
     }
 

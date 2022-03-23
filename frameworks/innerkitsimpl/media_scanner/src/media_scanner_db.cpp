@@ -100,7 +100,7 @@ unique_ptr<Metadata> MediaScannerDb::ReadMetadata(const string &path)
         resultSet = rdbhelper_->Query(uri, columns, predicates);
     }
 
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{public}s", path.c_str());
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{private}s", path.c_str());
 
     unique_ptr<Metadata> metadata = FillMetadata(resultSet);
 
@@ -108,10 +108,10 @@ unique_ptr<Metadata> MediaScannerDb::ReadMetadata(const string &path)
 }
 
 /**
- * @brief Update single metadata
+ * @brief Update single metadata in the media database
  *
- * @param metadata
- * @return string
+ * @param metadata The metadata object which has the information about the file
+ * @return string The mediatypeUri corresponding to the given metadata
  */
 string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
 {
@@ -164,8 +164,8 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
 /**
  * @brief Do a batch update of Metadata list
  *
- * @param metadataList
- * @return int32_t
+ * @param metadataList The list of metadata to update in the media db
+ * @return int32_t Status of the update operation
  */
 int32_t MediaScannerDb::UpdateMetadata(const vector<Metadata> &metadataList)
 {
@@ -181,9 +181,8 @@ int32_t MediaScannerDb::UpdateMetadata(const vector<Metadata> &metadataList)
 /**
  * @brief Deletes particular entry in database based on row id
  *
- * @param id
- * @return true
- * @return false
+ * @param idList The list of IDs to be deleted from the media db
+ * @return bool Status of the delete operation
  */
 bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 {
@@ -206,10 +205,10 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 }
 
 /**
- * @brief Get date modified info of a file
+ * @brief Get date modified, id, size and name info for a file
  *
- * @param path
- * @return unique_ptr<Metadata>
+ * @param path The file path for which to obtain the latest modification info from the db
+ * @return unique_ptr<Metadata> The metadata object representing the latest info for the given filepath
  */
 unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
 {
@@ -229,7 +228,7 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
         resultSet = rdbhelper_->Query(abilityUri, columns, predicates);
     }
 
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{public}s", path.c_str());
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{private}s", path.c_str());
 
     int ret = resultSet->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, nullptr, "Failed to fetch first record");
@@ -242,8 +241,8 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
 /**
  * @brief Get the list of all IDs corresponding to given path
  *
- * @param path
- * @return vector<int32_t>
+ * @param path The path from which to obtain the list of child IDs
+ * @return unordered_map<int32_t, MediaType> The list of IDS along with mediaType information
  */
 unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const string &path)
 {
@@ -318,9 +317,13 @@ int32_t MediaScannerDb::GetIdFromUri(const string &uri) const
     int32_t mediaFileId = 0;
     size_t index = 0;
 
-    if (uri.length() != 0) {
+    if (!uri.empty()) {
         index =  uri.find_last_of("/");
-        mediaFileId = stoi(uri.substr(index + 1));
+        if (index != string::npos) {
+            mediaFileId = stoi(uri.substr(index + 1));
+        } else {
+            MEDIA_ERR_LOG("Id could not be obtained from the given uri");
+        }
     } else {
         MEDIA_ERR_LOG("Uri is empty");
     }
@@ -344,7 +347,7 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
     }
 
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
-        MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{public}s", path.c_str());
+        MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{private}s", path.c_str());
         return albumId;
     }
 
@@ -369,7 +372,7 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
     }
 
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{public}s", path.c_str());
+        MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{private}s", path.c_str());
         return;
     }
 
@@ -437,7 +440,6 @@ string MediaScannerDb::GetMediaTypeUri(MediaType mediaType)
         case MEDIA_TYPE_FILE:
         default:
             return MEDIALIBRARY_FILE_URI;
-            break;
     }
 }
 

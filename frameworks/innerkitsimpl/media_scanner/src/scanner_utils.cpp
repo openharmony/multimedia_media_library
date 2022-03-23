@@ -164,7 +164,7 @@ int32_t ScannerUtils::GetAbsolutePath(string &path)
         path = ptr;
         errCode = ERR_SUCCESS;
     } else {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{public}s %{public}d",
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{private}s %{public}d",
                       path.c_str(), errno);
         errCode = ERR_INCORRECT_PATH;
     }
