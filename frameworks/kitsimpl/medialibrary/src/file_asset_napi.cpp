@@ -14,14 +14,20 @@
  */
 
 #include "file_asset_napi.h"
+
+#include <cstring>
+
 #include "abs_shared_result_set.h"
 #include "data_ability_predicates.h"
 #include "fetch_result.h"
+#include "file_asset.h"
 #include "hilog/log.h"
 #include "media_file_utils.h"
-#include "pixel_map_napi.h"
+#include "media_thumbnail_helper.h"
+#include "medialibrary_napi_utils.h"
 #include "rdb_errno.h"
 #include "bytrace.h"
+#include "string_ex.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -1464,6 +1470,53 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
 
     return result;
 }
+
+std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
+    const std::shared_ptr<OHOS::AbilityRuntime::Context> &runtimeContext)
+{
+    // uri is dataability:///media/image/<id>/thumbnail/<width>/<height>
+    auto index = uri.find("//");
+    if (index == string::npos) {
+        return nullptr;
+    }
+    auto tmpIdx = index + 2; // "//" len
+    if (uri.substr(0, tmpIdx) != MEDIALIBRARY_DATA_ABILITY_PREFIX) {
+        return nullptr;
+    }
+    index = uri.find("thumbnail");
+    if (index == string::npos) {
+        return nullptr;
+    }
+    auto fileUri = uri.substr(0, index - 1);
+    tmpIdx = fileUri.rfind("/");
+    int32_t fileId;
+    StrToInt(fileUri.substr(tmpIdx + 1), fileId);
+    index += strlen("thumbnail");
+    index = uri.find("/", index);
+    if (index == string::npos) {
+        return nullptr;
+    }
+    index += 1;
+    tmpIdx = uri.find("/", index);
+    if (index == string::npos) {
+        return nullptr;
+    }
+    int32_t width = 0;
+    StrToInt(uri.substr(index, tmpIdx - index), width);
+    int32_t height = 0;
+    StrToInt(uri.substr(tmpIdx + 1), height);
+
+    string meidaUri = MEDIALIBRARY_DATA_URI;
+    auto dataAbilityHelper = DataAbilityHelper::Creator(runtimeContext, std::make_shared<Uri>(meidaUri));
+    if (dataAbilityHelper == nullptr) {
+        return nullptr;
+    }
+    if (sThumbnailHelper_ == nullptr) {
+        sThumbnailHelper_ = std::make_shared<MediaThumbnailHelper>();
+    }
+    return QueryThumbnail(dataAbilityHelper, sThumbnailHelper_, fileId, fileUri, width, height);
+}
+
 static void JSFavouriteCallbackComplete(napi_env env, napi_status status,
                                         FileAssetAsyncContext* context)
 {
