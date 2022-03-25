@@ -33,14 +33,18 @@ FetchFileResultNapi::~FetchFileResultNapi()
 {
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
+    fetchFileResult_ = nullptr;
+    abilityHelper_ = nullptr;
 }
 
 void FetchFileResultNapi::FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
 {
     FetchFileResultNapi *fetchFileResultObj = reinterpret_cast<FetchFileResultNapi*>(nativeObject);
     if (fetchFileResultObj != nullptr) {
-        fetchFileResultObj->~FetchFileResultNapi();
+        delete fetchFileResultObj;
+        fetchFileResultObj = nullptr;
     }
 }
 
@@ -95,7 +99,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
             if (sFetchFileResult_ != nullptr) {
                 unique_ptr<FetchResult> fetchRes = make_unique<FetchResult>(
                     move(sFetchFileResult_->resultset_));
-                obj->fetchFileResult_ = fetchRes.get();
+                obj->fetchFileResult_ = std::move(fetchRes);
                 obj->fetchFileResult_->isContain_ = sFetchFileResult_->isContain_;
                 obj->fetchFileResult_->isClosed_ = sFetchFileResult_->isClosed_;
                 obj->fetchFileResult_->count_ = sFetchFileResult_->count_;
@@ -113,8 +117,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 obj.release();
                 return thisVar;
             } else {
-                delete obj->fetchFileResult_;
-                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{private}d", status);
+                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
             }
         }
     }
@@ -471,10 +474,9 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
     delete context;
 }
 
-FetchResult *FetchFileResultNapi::GetFetchResultObject()
+std::shared_ptr<FetchResult> FetchFileResultNapi::GetFetchResultObject()
 {
-    FetchResult *fetchResult = fetchFileResult_;
-    return fetchResult;
+    return fetchFileResult_;
 }
 
 void GetAllObjectFromFetchResult(const FetchFileResultAsyncContext &asyncContext)
@@ -553,8 +555,7 @@ napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
         delete obj;
         napi_create_int32(env, SUCCESS, &jsResult);
     } else {
-        NAPI_ERR_LOG("JSClose obj == nullptr");
-        NAPI_ASSERT(env, false, "JSClose obj == nullptr");
+        NAPI_INFO_LOG("JSClose obj == nullptr");
     }
 
     NAPI_DEBUG_LOG("JSClose OUT!");
