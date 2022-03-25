@@ -168,7 +168,11 @@ void GetFetchOptionsParam(napi_env env, napi_value arg, const std::string& str,
         return;
     } else {
         *selectionStr = buffer;
-        memset_s(buffer, SIZE, 0, sizeof(buffer));
+        if (memset_s(buffer, SIZE, 0, sizeof(buffer))) {
+            HiLog::Error(LABEL, "memset_s error");
+            err = true;
+            return;
+        }
     }
 
     napi_has_named_property(env, arg, "selectionArgs", &present);
@@ -179,7 +183,11 @@ void GetFetchOptionsParam(napi_env env, napi_value arg, const std::string& str,
             napi_get_value_string_utf8(env, stringItem, buffer, SIZE, &res);
             strItem = buffer;
             selectionStrArray->push_back(strItem);
-            memset_s(buffer, SIZE, 0, sizeof(buffer));
+            if (memset_s(buffer, SIZE, 0, sizeof(buffer))) {
+                HiLog::Error(LABEL, "memset_s error");
+                err = true;
+                return;
+            }
         }
     } else {
         HiLog::Error(LABEL, "Could not get the string argument!");
