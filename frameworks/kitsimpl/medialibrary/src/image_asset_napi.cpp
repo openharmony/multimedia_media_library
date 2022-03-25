@@ -43,6 +43,7 @@ ImageAssetNapi::~ImageAssetNapi()
 {
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
 }
 
@@ -50,7 +51,8 @@ void ImageAssetNapi::ImageAssetNapiDestructor(napi_env env, void *nativeObject, 
 {
     ImageAssetNapi *image = reinterpret_cast<ImageAssetNapi*>(nativeObject);
     if (image != nullptr) {
-        image->~ImageAssetNapi();
+        delete image;
+        image = nullptr;
     }
 }
 

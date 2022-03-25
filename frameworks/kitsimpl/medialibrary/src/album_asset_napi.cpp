@@ -58,6 +58,7 @@ AlbumAssetNapi::~AlbumAssetNapi()
 {
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
 }
 
@@ -65,7 +66,8 @@ void AlbumAssetNapi::AlbumAssetNapiDestructor(napi_env env, void *nativeObject, 
 {
     AlbumAssetNapi *album = reinterpret_cast<AlbumAssetNapi*>(nativeObject);
     if (album != nullptr) {
-        album->~AlbumAssetNapi();
+        delete album;
+        album = nullptr;
     }
 }
 

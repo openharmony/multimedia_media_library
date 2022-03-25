@@ -36,6 +36,7 @@ MediaScannerNapi::~MediaScannerNapi()
 
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
 }
 
@@ -112,7 +113,7 @@ void MediaScannerNapi::MediaScannerNapiDestructor(napi_env env, void *nativeObje
 {
     MediaScannerNapi *scannerHelper = reinterpret_cast<MediaScannerNapi*>(nativeObject);
     if (scannerHelper != nullptr) {
-        scannerHelper->~MediaScannerNapi();
+        delete scannerHelper;
     }
 }
 

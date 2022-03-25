@@ -58,6 +58,7 @@ MediaLibraryNapi::~MediaLibraryNapi()
 {
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
 }
 
@@ -65,7 +66,8 @@ void MediaLibraryNapi::MediaLibraryNapiDestructor(napi_env env, void *nativeObje
 {
     MediaLibraryNapi *mediaLibrary = reinterpret_cast<MediaLibraryNapi*>(nativeObject);
     if (mediaLibrary != nullptr) {
-        mediaLibrary->~MediaLibraryNapi();
+        delete mediaLibrary;
+        mediaLibrary = nullptr;
     }
 }
 
