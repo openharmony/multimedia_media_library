@@ -41,7 +41,7 @@ public:
     virtual ~IMediaScannerAppCallback() = default;
 
     /**
-     * @brief OnScanFinished will be executed when client recieves callback from service after scan is finished/error
+     * @brief OnScanFinished will be executed when client receives callback from service after scan is finished/error
      *
      * @param status scan result
      * @param uri file uri generated after database updation. For scanDir(), uri will be empty

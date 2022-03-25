@@ -45,6 +45,12 @@
 #include "imedia_scanner_operation_callback.h"
 #include "iremote_object.h"
 
+#define FREE_MEMORY_AND_SET_NULL(fName)      \
+    do {                                     \
+        free(fName);                         \
+        fName = nullptr;                     \
+    } while (0)
+
 namespace OHOS {
 namespace Media {
 /**
