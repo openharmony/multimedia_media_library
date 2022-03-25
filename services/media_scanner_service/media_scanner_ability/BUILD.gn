@@ -10,6 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import("//build/ohos.gni")
 MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
 MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
@@ -86,8 +87,6 @@ ohos_shared_library("media_scanner_service") {
     "ability_base:zuri",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
-
-    # "multimedia_image_standard:image_native",
     "native_appdatamgr:native_appdatafwk",
     "native_appdatamgr:native_dataability",
     "native_appdatamgr:native_rdb",
