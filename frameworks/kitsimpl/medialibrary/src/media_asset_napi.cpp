@@ -44,6 +44,7 @@ MediaAssetNapi::~MediaAssetNapi()
 {
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
 }
 
@@ -51,7 +52,8 @@ void MediaAssetNapi::MediaAssetNapiDestructor(napi_env env, void *nativeObject, 
 {
     MediaAssetNapi *media = reinterpret_cast<MediaAssetNapi*>(nativeObject);
     if (media != nullptr) {
-        media->~MediaAssetNapi();
+        delete media;
+        media = nullptr;
     }
 }
 

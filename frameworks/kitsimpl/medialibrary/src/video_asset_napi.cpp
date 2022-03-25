@@ -45,6 +45,7 @@ VideoAssetNapi::~VideoAssetNapi()
 {
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
 }
 
@@ -52,7 +53,8 @@ void VideoAssetNapi::VideoAssetNapiDestructor(napi_env env, void *nativeObject, 
 {
     VideoAssetNapi *video = reinterpret_cast<VideoAssetNapi*>(nativeObject);
     if (video != nullptr) {
-        video->~VideoAssetNapi();
+        delete video;
+        video = nullptr;
     }
 }
 
