@@ -72,6 +72,7 @@ FileAssetNapi::~FileAssetNapi()
 {
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
 }
 
@@ -79,7 +80,8 @@ void FileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, vo
 {
     FileAssetNapi *fileAssetObj = reinterpret_cast<FileAssetNapi*>(nativeObject);
     if (fileAssetObj != nullptr) {
-        fileAssetObj->~FileAssetNapi();
+        delete fileAssetObj;
+        fileAssetObj = nullptr;
     }
 }
 
