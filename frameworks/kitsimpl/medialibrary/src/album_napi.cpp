@@ -132,7 +132,7 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
                 obj.release();
                 return thisVar;
             } else {
-                NAPI_ERR_LOG("Failure wrapping js to native napi. status: %{public}d", status);
+                NAPI_ERR_LOG("Failure wrapping js to native napi. status: %{private}d", status);
             }
         }
     }
@@ -156,7 +156,7 @@ napi_value AlbumNapi::CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
         if (status == napi_ok && result != nullptr) {
             return result;
         } else {
-            NAPI_ERR_LOG("Failed to create album asset instance. status %{public}d", status);
+            NAPI_ERR_LOG("Failed to create album asset instance. status %{private}d", status);
         }
     }
 
@@ -199,7 +199,7 @@ napi_value AlbumNapi::JSGetAlbumId(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -226,7 +226,7 @@ napi_value AlbumNapi::JSGetAlbumName(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -259,7 +259,7 @@ napi_value AlbumNapi::JSAlbumNameSetter(napi_env env, napi_callback_info info)
     NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
     if (thisVar == nullptr || napi_typeof(env, argv[PARAM0], &valueType) != napi_ok
         || valueType != napi_string) {
-        NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
+        NAPI_ERR_LOG("Invalid arguments type! valueType: %{private}d", valueType);
         return jsResult;
     }
 
@@ -269,7 +269,7 @@ napi_value AlbumNapi::JSAlbumNameSetter(napi_env env, napi_callback_info info)
     if (status == napi_ok && obj != nullptr) {
         obj->albumName_ = std::string(buffer);
     } else {
-        NAPI_ERR_LOG("status = %{public}d", status);
+        NAPI_ERR_LOG("status = %{private}d", status);
     }
     return jsResult;
 }
@@ -285,7 +285,7 @@ napi_value AlbumNapi::JSGetAlbumUri(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -312,7 +312,7 @@ napi_value AlbumNapi::JSGetAlbumDateModified(napi_env env, napi_callback_info in
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -339,7 +339,7 @@ napi_value AlbumNapi::JSGetCount(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -364,7 +364,7 @@ napi_value AlbumNapi::JSGetAlbumRelativePath(napi_env env, napi_callback_info in
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -391,7 +391,7 @@ napi_value AlbumNapi::JSGetCoverUri(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -425,7 +425,7 @@ napi_value AlbumNapi::JSSetAlbumPath(napi_env env, napi_callback_info info)
 
     if (thisVar == nullptr || napi_typeof(env, argv[PARAM0], &valueType) != napi_ok
         || valueType != napi_string) {
-        NAPI_ERR_LOG("Invalid arguments type! type: %{public}d", valueType);
+        NAPI_ERR_LOG("Invalid arguments type! type: %{private}d", valueType);
         return jsResult;
     }
 
@@ -451,7 +451,7 @@ napi_value AlbumNapi::JSGetAlbumPath(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -479,7 +479,7 @@ napi_value AlbumNapi::JSGetAlbumVirtual(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -603,11 +603,11 @@ static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const n
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
-        
+
         if (i == PARAM0 && valueType == napi_object) {
             GetFetchOptionsParam(env, argv[PARAM0], asyncContext, err);
             if (err) {
-                NAPI_ERR_LOG("fetch options retrieval failed. err %{public}d", err);
+                NAPI_ERR_LOG("fetch options retrieval failed. err %{private}d", err);
                 NAPI_ASSERT(env, false, "type mismatch");
             }
         } else if (i == PARAM0 && valueType == napi_function) {
@@ -641,10 +641,10 @@ static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
     std::vector<std::string> columns;
-    NAPI_DEBUG_LOG("GetNetworkId is = %{public}s", context->objectInfo->GetNetworkId().c_str());
+    NAPI_DEBUG_LOG("GetNetworkId is = %{private}s", context->objectInfo->GetNetworkId().c_str());
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         context->objectInfo->GetNetworkId() + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-    NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
+    NAPI_DEBUG_LOG("queryUri is = %{private}s", queryUri.c_str());
     Uri uri(queryUri);
     std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
         context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);

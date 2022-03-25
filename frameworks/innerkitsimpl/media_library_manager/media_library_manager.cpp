@@ -156,10 +156,10 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
                 resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_MODIFIED, index);
                 resultSet->GetLong(index, albumDateModified);
                 albumData->SetAlbumDateModified(albumDateModified);
-            }
 
-            // Add to album array
-            albums.push_back(move(albumData));
+                // Add to album array
+                albums.push_back(move(albumData));
+            }
         }
     }
 

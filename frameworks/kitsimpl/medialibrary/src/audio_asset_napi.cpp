@@ -154,7 +154,7 @@ napi_value AudioAssetNapi::CreateAudioAsset(napi_env env, Media::AudioAsset &aAs
         if (status == napi_ok && result != nullptr) {
             return result;
         } else {
-            NAPI_ERR_LOG("Failed to create audio asset instance. ret = %{public}d", status);
+            NAPI_ERR_LOG("Failed to create audio asset instance. ret = %{private}d", status);
         }
     }
 
@@ -174,7 +174,7 @@ napi_value AudioAssetNapi::GetMimeType(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -202,7 +202,7 @@ napi_value AudioAssetNapi::GetTitle(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -230,7 +230,7 @@ napi_value AudioAssetNapi::GetArtist(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -258,7 +258,7 @@ napi_value AudioAssetNapi::GetDuration(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 

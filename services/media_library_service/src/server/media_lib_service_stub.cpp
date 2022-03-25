@@ -410,7 +410,7 @@ int32_t MediaLibServiceStub::OnRemoteRequest(
         return IPC_INTERFACE_TOKEN_FAIL;
     }
 
-    MEDIA_INFO_LOG(" MediaLibServiceStub::OnRemoteRequest called.code: %{public}d", code);
+    MEDIA_INFO_LOG(" MediaLibServiceStub::OnRemoteRequest called.code: %{private}d", code);
     if (code > MEDIA_GET_VIDEOALBUM_ASSETS) {
         errCode = ProcessMediaOperationRequests(code, data, reply, option);
     } else {
@@ -439,7 +439,7 @@ int32_t MediaLibServiceStub::OnRemoteRequest(
         }
     }
 
-    MEDIA_INFO_LOG(" MediaLibServiceStub: errCode: %{public}d", errCode);
+    MEDIA_INFO_LOG(" MediaLibServiceStub: errCode: %{private}d", errCode);
     return errCode;
 }
 

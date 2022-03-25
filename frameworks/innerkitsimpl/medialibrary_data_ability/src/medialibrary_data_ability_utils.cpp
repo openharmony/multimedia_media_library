@@ -89,7 +89,7 @@ string MediaLibraryDataAbilityUtils::GetParentDisplayNameFromDb(const int &id, c
 
 bool MediaLibraryDataAbilityUtils::IsNumber(const string &str)
 {
-    if (str.length() == 0) {
+    if (str.empty()) {
         MEDIA_ERR_LOG("IsNumber input is empty ");
         return false;
     }
@@ -165,7 +165,7 @@ std::string MediaLibraryDataAbilityUtils::GetFileTitle(const std::string& displa
             return displayName;
         }
         title = displayName.substr(0, pos);
-        MEDIA_DEBUG_LOG("title substr = %{public}s", title.c_str());
+        MEDIA_DEBUG_LOG("title substr = %{private}s", title.c_str());
     }
     return title;
 }
@@ -214,7 +214,7 @@ bool MediaLibraryDataAbilityUtils::isAlbumExistInDb(const std::string &relativeP
             int32_t idVal;
             queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
             queryResultSet->GetInt(columnIndexId, idVal);
-            MEDIA_INFO_LOG("id = %{public}d", idVal);
+            MEDIA_INFO_LOG("id = %{private}d", idVal);
             outRow = idVal;
             return true;
         }
@@ -259,7 +259,7 @@ bool MediaLibraryDataAbilityUtils::isFileExistInDb(const string &path, const sha
     unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     if (queryResultSet != nullptr) {
         queryResultSet->GetRowCount(count);
-        MEDIA_INFO_LOG("count is %{public}d", count);
+        MEDIA_INFO_LOG("count is %{private}d", count);
         if (count > 0) {
             return true;
         }
@@ -319,11 +319,11 @@ shared_ptr<FileAsset> MediaLibraryDataAbilityUtils::GetFileAssetFromDb(const str
     string tableName = MEDIALIBRARY_TABLE;
     if (!networkId.empty()) {
         tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
-        MEDIA_INFO_LOG("tableName is %{public}s", tableName.c_str());
+        MEDIA_INFO_LOG("tableName is %{private}s", tableName.c_str());
     }
 
     if (tableName.empty()) {
-        MEDIA_ERR_LOG("Get tableName fail, networkId is %{public}s", networkId.c_str());
+        MEDIA_ERR_LOG("Get tableName fail, networkId is %{private}s", networkId.c_str());
         return nullptr;
     }
     AbsRdbPredicates absPredicates(tableName);
@@ -360,7 +360,7 @@ bool MediaLibraryDataAbilityUtils::checkFilePending(const shared_ptr<FileAsset> 
 
 bool MediaLibraryDataAbilityUtils::checkOpenMode(const string &mode)
 {
-    MEDIA_INFO_LOG("checkOpenMode in mode %{public}s", mode.c_str());
+    MEDIA_INFO_LOG("checkOpenMode in mode %{private}s", mode.c_str());
 
     std::string lowModeStr = mode;
     std::transform(lowModeStr.begin(), lowModeStr.end(), lowModeStr.begin(), [](unsigned char c) {
@@ -379,7 +379,7 @@ int32_t MediaLibraryDataAbilityUtils::setFilePending(string &uriStr,
 {
     string id = MediaLibraryDataAbilityUtils::GetIdFromUri(uriStr);
     string networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(uriStr);
-    MEDIA_INFO_LOG("setFilePending id = %{public}s, networkId = %{public}s, isPending = %{public}d",
+    MEDIA_INFO_LOG("setFilePending id = %{private}s, networkId = %{private}s, isPending = %{private}d",
         id.c_str(), networkId.c_str(), isPending);
     vector<string> selectionArgs = {};
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + id;
@@ -399,11 +399,11 @@ int32_t MediaLibraryDataAbilityUtils::setFilePending(string &uriStr,
     string tableName = MEDIALIBRARY_TABLE;
     if (!networkId.empty()) {
         tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
-        MEDIA_INFO_LOG("tableName is %{public}s", tableName.c_str());
+        MEDIA_INFO_LOG("tableName is %{private}s", tableName.c_str());
     }
 
     if (tableName.empty()) {
-        MEDIA_ERR_LOG("Get tableName fail, networkId is %{public}s", networkId.c_str());
+        MEDIA_ERR_LOG("Get tableName fail, networkId is %{private}s", networkId.c_str());
         return DATA_ABILITY_FAIL;
     }
     (void)rdbStore->Update(changedRows, tableName, values, strUpdateCondition, selectionArgs);
@@ -428,23 +428,17 @@ string MediaLibraryDataAbilityUtils::GetMediaTypeUri(MediaType mediaType)
     switch (mediaType) {
         case MEDIA_TYPE_AUDIO:
             return MEDIALIBRARY_AUDIO_URI;
-            break;
         case MEDIA_TYPE_VIDEO:
             return MEDIALIBRARY_VIDEO_URI;
-            break;
         case MEDIA_TYPE_IMAGE:
             return MEDIALIBRARY_IMAGE_URI;
-            break;
         case MEDIA_TYPE_SMARTALBUM:
             return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
-            break;
         case MEDIA_TYPE_DEVICE:
             return MEDIALIBRARY_DEVICE_URI;
-            break;
         case MEDIA_TYPE_FILE:
         default:
             return MEDIALIBRARY_FILE_URI;
-            break;
     }
 }
 
@@ -466,7 +460,7 @@ bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
     std::regex express("[\\.\\\\/:*?\"<>|{}\\[\\]]");
     bool bValid = std::regex_search(displayName, express);
     if (bValid) {
-        MEDIA_ERR_LOG("CheckDisplayName fail %{public}s", displayName.c_str());
+        MEDIA_ERR_LOG("CheckDisplayName fail %{private}s", displayName.c_str());
     }
     return !bValid;
 }
@@ -519,7 +513,7 @@ string MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(const string &uri)
     if (tempUri.empty()) {
         return deviceId;
     }
-    MEDIA_INFO_LOG("MediaLibraryDataAbilityUtils::GetNetworkIdFromUri tempUri = %{public}s", tempUri.c_str());
+    MEDIA_INFO_LOG("MediaLibraryDataAbilityUtils::GetNetworkIdFromUri tempUri = %{private}s", tempUri.c_str());
     pos = tempUri.find_first_of('/');
     if (pos == 0 || pos == string::npos) {
         return deviceId;
@@ -541,7 +535,7 @@ string MediaLibraryDataAbilityUtils::GetDistributedAlbumSql(const string &strQue
         tableName + " " + FILE_TABLE + ", " + tableName + " " + ABLUM_TABLE +
         DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY + " )";
     }
-    MEDIA_INFO_LOG("GetDistributedAlbumSql distributedAlbumSql = %{public}s", distributedAlbumSql.c_str());
+    MEDIA_INFO_LOG("GetDistributedAlbumSql distributedAlbumSql = %{private}s", distributedAlbumSql.c_str());
     return distributedAlbumSql;
 }
 } // namespace Media

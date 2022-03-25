@@ -99,7 +99,7 @@ vector<string> MediaScanner::GetSupportedMimeTypes()
 
 int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCallback)
 {
-    MEDIA_INFO_LOG("%{public}s: %{private}s", __func__, path.c_str());
+    MEDIA_INFO_LOG("%{private}s: %{private}s", __func__, path.c_str());
     int32_t errCode = ERR_MEM_ALLOC_FAIL;
     bool isDir = false;
 
@@ -467,42 +467,41 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
     struct stat statInfo;
 
     if (len >= FILENAME_MAX - 1) {
-        MEDIA_ERR_LOG("File name length cannot be more than max limit");
         return ERR_INCORRECT_PATH;
-    }
-
-    if ((dirPath = opendir(path.c_str())) == nullptr) {
-        MEDIA_ERR_LOG("Failed to open the given dir path");
-        return ERR_NOT_ACCESSIBLE;
     }
 
     auto fName = (char *)calloc(FILENAME_MAX, sizeof(char));
     if (fName == nullptr) {
-        closedir(dirPath);
         return ERR_MEM_ALLOC_FAIL;
     }
 
     if (strcpy_s(fName, FILENAME_MAX, path.c_str()) != ERR_SUCCESS) {
         FREE_MEMORY_AND_SET_NULL(fName);
-        closedir(dirPath);
         return ERR_MEM_ALLOC_FAIL;
     }
     fName[len++] = '/';
+
+    if ((dirPath = opendir(path.c_str())) == nullptr) {
+        MEDIA_ERR_LOG("Failed to opendir %{private}s, errno %{private}d", path.c_str(), errno);
+        free(fName);
+        return ERR_NOT_ACCESSIBLE;
+    }
 
     while ((ent = readdir(dirPath)) != nullptr && errCode != ERR_MEM_ALLOC_FAIL) {
         if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
             continue;
         }
 
-        strncpy_s(fName + len, FILENAME_MAX, ent->d_name, FILENAME_MAX - len);
+        if (strncpy_s(fName + len, FILENAME_MAX, ent->d_name, FILENAME_MAX - len)) {
+            continue;
+        }
+
         if (lstat(fName, &statInfo) == -1) {
             continue;
         }
 
         string currentPath = fName;
-
         if (S_ISDIR(statInfo.st_mode)) {
-            // Insert folder info to database
             string albumName = ent->d_name;
             int32_t albumId = InsertAlbumInfo(currentPath, parentId, albumName);
             if (albumId == ERR_FAIL) {

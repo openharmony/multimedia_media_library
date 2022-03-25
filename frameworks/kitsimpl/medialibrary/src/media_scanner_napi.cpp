@@ -100,7 +100,7 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
                 obj.release();
                 return thisVar;
             } else {
-                NAPI_ERR_LOG("Failed to wrap the native media scanner client, status: %{public}d", status);
+                NAPI_ERR_LOG("Failed to wrap the native media scanner client, status: %{private}d", status);
             }
         }
     }
@@ -128,7 +128,7 @@ napi_value MediaScannerNapi::GetMediaScannerInstance(napi_env env, napi_callback
         if (status == napi_ok) {
             return result;
         } else {
-            NAPI_ERR_LOG("New instance could not be obtained, status: %{public}d", status);
+            NAPI_ERR_LOG("New instance could not be obtained, status: %{private}d", status);
         }
     }
 
@@ -184,14 +184,14 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
                 napi_get_value_string_utf8(env, argv[PARAM0], buffer, PATH_MAX, &res);
                 path = string(buffer);
             } else {
-                NAPI_ERR_LOG("Invalid arg, valueType: %{public}d", valueType);
+                NAPI_ERR_LOG("Invalid arg, valueType: %{private}d", valueType);
                 return result;
             }
             napi_typeof(env, argv[PARAM1], &valueType);
             if (valueType == napi_function) {
                 napi_create_reference(env, argv[PARAM1], refCount, &callbackRef);
             } else {
-                NAPI_ERR_LOG("Invalid arg, valueType: %{public}d", valueType);
+                NAPI_ERR_LOG("Invalid arg, valueType: %{private}d", valueType);
                 return result;
             }
         }

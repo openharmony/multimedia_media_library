@@ -49,7 +49,7 @@ int32_t DeleteAlbumInfoUtil(const ValuesBucket &valuesBucket,
     if (values.GetObject(SMARTALBUM_DB_ID, valueObject)) {
         valueObject.GetInt(albumId);
     }
-    MEDIA_ERR_LOG("mediasmart albumId = %{public}d", albumId);
+    MEDIA_ERR_LOG("mediasmart albumId = %{private}d", albumId);
 
     int32_t deleteErrorCode = const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn)
     .DeleteSmartAlbumInfo(albumId, rdbStore);

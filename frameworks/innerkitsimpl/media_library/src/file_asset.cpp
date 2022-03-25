@@ -341,7 +341,7 @@ int32_t FileAsset::CreateAsset(const string &filePath)
 
     ofstream file(filePath);
     if (!file) {
-        MEDIA_ERR_LOG("Output file path could not be created errno %{public}d", errno);
+        MEDIA_ERR_LOG("Output file path could not be created errno %{private}d", errno);
         return errCode;
     }
 
@@ -395,20 +395,25 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
     }
 
     if (filePath.size() >= PATH_MAX) {
-        MEDIA_ERR_LOG("File path too long %{public}d", (int)filePath.size());
+        MEDIA_ERR_LOG("File path too long %{private}d", (int)filePath.size());
         return errCode;
     }
-    MEDIA_INFO_LOG("File path is %{public}s", filePath.c_str());
+    MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
+
     char actualPath[PATH_MAX];
-    memset_s(actualPath, PATH_MAX, '\0', PATH_MAX);
+    if (memset_s(actualPath, PATH_MAX, '\0', PATH_MAX)) {
+        MEDIA_ERR_LOG("Failed to memset_s actualPath");
+        return errCode;
+    }
+
     auto absFilePath = realpath(filePath.c_str(), actualPath);
     if (absFilePath == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{public}s %{public}d",
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{private}s %{private}d",
                       filePath.c_str(), errno);
         return errCode;
     }
 
-    MEDIA_INFO_LOG("File absFilePath is %{public}s", absFilePath);
+    MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath);
     return open(absFilePath, flags);
 }
 
