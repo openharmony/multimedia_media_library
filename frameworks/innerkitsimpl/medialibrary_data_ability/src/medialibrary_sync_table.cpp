@@ -102,7 +102,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
     const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName, const std::string &tableName,
     std::vector<std::string> &devices, bool isLast)
 {
-    MEDIA_ERR_LOG("SyncPullTable table = %{public}s, isLast = %{public}d", tableName.c_str(), isLast);
+    MEDIA_ERR_LOG("SyncPullTable table = %{private}s, isLast = %{private}d", tableName.c_str(), isLast);
     // start sync
     DistributedRdb::SyncOption option;
     option.mode = DistributedRdb::SyncMode::PULL;
@@ -119,7 +119,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPullTable device = %{public}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPullTable device = %{private}s syncResult = %{private}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
@@ -127,7 +127,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
                 MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(iter->first, DEVICE_SYNCSTATUS_COMPLETE,
                                                                            bundleName);
             }
-            MEDIA_ERR_LOG("SyncPullTable device = %{public}s success", iter->first.c_str());
+            MEDIA_ERR_LOG("SyncPullTable device = %{private}s success", iter->first.c_str());
         }
     };
 
@@ -148,7 +148,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
 bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
                                           const std::string &tableName, std::vector<std::string> &devices, bool isBlock)
 {
-    MEDIA_ERR_LOG("SyncPushTable table = %{public}s", tableName.c_str());
+    MEDIA_ERR_LOG("SyncPushTable table = %{private}s", tableName.c_str());
     // start sync
     DistributedRdb::SyncOption option;
     option.mode = DistributedRdb::SyncMode::PUSH;
@@ -165,11 +165,11 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPushTable device = %{public}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPushTable device = %{private}s syncResult = %{private}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
-            MEDIA_ERR_LOG("SyncPushTable device = %{public}s success", iter->first.c_str());
+            MEDIA_ERR_LOG("SyncPushTable device = %{private}s success", iter->first.c_str());
         }
     };
 

@@ -99,7 +99,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_002, TestSize.
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get audio assets prsent in particalar directory and subdirectories.
+ * CaseDescription: Get audio assets prsent in particular directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetAudioAssets_testlevel0_001, TestSize.Level0)
 {
@@ -195,7 +195,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_004, TestSize.
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get video assets present in particalar directory and subdirectories.
+ * CaseDescription: Get video assets present in particular directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAssets_testlevel0_001, TestSize.Level0)
 {
@@ -313,7 +313,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_CreateMediaAsset_test_007, TestSize.
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get image assets present in particalar directory and subdirectories.
+ * CaseDescription: Get image assets present in particular directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAssets_testlevel0_001, TestSize.Level0)
 {
@@ -361,7 +361,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAssets_test_002, TestSize.Le
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get media assets present in particalar directory and subdirectories.
+ * CaseDescription: Get media assets present in particular directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetMediaAssets_testlevel0_001, TestSize.Level0)
 {
@@ -409,7 +409,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetMediaAssets_test_002, TestSize.Le
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get image media assets present in particalar directory and subdirectories.
+ * CaseDescription: Get image media assets present in particular directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetIMageAlbumAssets_testlevel0_001, TestSize.Level0)
 {
@@ -477,7 +477,7 @@ HWTEST_F(MediaLibraryUnitTest, medialibrary_GetImageAlbumAssets_test_002, TestSi
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: Get video media assets present in particalar directory and subdirectories.
+ * CaseDescription: Get video media assets present in particular directory and subdirectories.
  */
 HWTEST_F(MediaLibraryUnitTest, medialibrary_GetVideoAlbumAssets_testlevel0_003, TestSize.Level0)
 {

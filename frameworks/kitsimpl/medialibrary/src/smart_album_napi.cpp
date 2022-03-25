@@ -91,13 +91,13 @@ napi_value SmartAlbumNapi::Init(napi_env env, napi_value exports)
             }
         }
     }
-    NAPI_DEBUG_LOG("SmartAlbumNapi::Init nullptr, status: %{public}d", status);
+    NAPI_DEBUG_LOG("SmartAlbumNapi::Init nullptr, status: %{private}d", status);
     return nullptr;
 }
 
 void SmartAlbumNapi::SetSmartAlbumNapiProperties(const SmartAlbumAsset &albumData)
 {
-    NAPI_ERR_LOG("SetSmartAlbumNapiProperties name = %{public}s", albumData.GetAlbumName().c_str());
+    NAPI_ERR_LOG("SetSmartAlbumNapiProperties name = %{private}s", albumData.GetAlbumName().c_str());
     this->albumId_ = albumData.GetAlbumId();
     this->albumName_ = albumData.GetAlbumName();
     this->albumUri_ = albumData.GetAlbumUri();
@@ -131,7 +131,7 @@ napi_value SmartAlbumNapi::SmartAlbumNapiConstructor(napi_env env, napi_callback
                 obj.release();
                 return thisVar;
             } else {
-                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
+                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{private}d", status);
             }
         }
     }
@@ -154,7 +154,7 @@ napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, SmartAlbumAsset &a
         if (status == napi_ok && result != nullptr) {
             return result;
         } else {
-            NAPI_ERR_LOG("Failed to create snart album asset instance, status: %{public}d", status);
+            NAPI_ERR_LOG("Failed to create snart album asset instance, status: %{private}d", status);
         }
     }
 
@@ -198,7 +198,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumId(napi_env env, napi_callback_info in
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -225,13 +225,13 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumName(napi_env env, napi_callback_info 
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         name = obj->albumName_;
-        NAPI_DEBUG_LOG("JSGetSmartAlbumName name = %{public}s", name.c_str());
+        NAPI_DEBUG_LOG("JSGetSmartAlbumName name = %{private}s", name.c_str());
         status = napi_create_string_utf8(env, name.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -259,7 +259,7 @@ napi_value SmartAlbumNapi::JSSmartAlbumNameSetter(napi_env env, napi_callback_in
 
     if (thisVar == nullptr || napi_typeof(env, argv[PARAM0], &valueType) != napi_ok
         || valueType != napi_string) {
-        NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
+        NAPI_ERR_LOG("Invalid arguments type! valueType: %{private}d", valueType);
         return jsResult;
     }
 
@@ -285,7 +285,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumTag(napi_env env, napi_callback_info i
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -312,7 +312,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCapacity(napi_env env, napi_callback_i
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -339,7 +339,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCategoryId(napi_env env, napi_callback
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -366,7 +366,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCategoryName(napi_env env, napi_callba
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -393,7 +393,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCoverUri(napi_env env, napi_callback_i
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
 
@@ -420,7 +420,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumUri(napi_env env, napi_callback_info i
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
         return undefinedResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -439,7 +439,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
     NativeRdb::DataAbilityPredicates predicates;
     NativeRdb::ValuesBucket valuesBucket;
     int32_t changedRows;
-    NAPI_DEBUG_LOG("CommitModifyNative = %{public}s", context->objectInfo->GetSmartAlbumName().c_str());
+    NAPI_DEBUG_LOG("CommitModifyNative = %{private}s", context->objectInfo->GetSmartAlbumName().c_str());
     if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName())) {
         valuesBucket.PutString(SMARTALBUM_DB_NAME, context->objectInfo->GetSmartAlbumName());
         predicates.EqualTo(SMARTALBUM_DB_ID, std::to_string(context->objectInfo->GetSmartAlbumId()));
@@ -469,7 +469,7 @@ static void SetFileFav(bool isFavourite, SmartAlbumNapiAsyncContext *context)
     predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(fileId));
     changedRows = context->objectInfo->GetDataAbilityHelper()->Update(uri, values, predicates);
     context->changedRows = changedRows;
-    NAPI_DEBUG_LOG("SetFileFav OUT  = %{public}d", changedRows);
+    NAPI_DEBUG_LOG("SetFileFav OUT  = %{private}d", changedRows);
 }
 
 static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
@@ -496,7 +496,7 @@ static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
     predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(fileId));
     changedRows = context->objectInfo->GetDataAbilityHelper()->Update(uri, values, predicates);
     context->changedRows = changedRows;
-    NAPI_DEBUG_LOG("SetFileTrash OUT  = %{public}d", changedRows);
+    NAPI_DEBUG_LOG("SetFileTrash OUT  = %{private}d", changedRows);
 }
 
 static void AddAssetNative(SmartAlbumNapiAsyncContext *context)

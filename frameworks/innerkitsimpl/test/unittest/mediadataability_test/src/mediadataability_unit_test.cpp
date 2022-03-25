@@ -63,8 +63,8 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAllFiles_Test_001, Tes
     while (fileAsset != nullptr) {
         Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
         NativeRdb::ValuesBucket valuesBucketDelete;
-        MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::uri :%{public}s", fileAsset->GetUri().c_str());
-        MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::path :%{public}s", fileAsset->GetPath().c_str());
+        MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::uri :%{private}s", fileAsset->GetUri().c_str());
+        MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::path :%{private}s", fileAsset->GetPath().c_str());
         valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
         int retVal = g_rdbStoreTest.Insert(deleteAssetUri, valuesBucketDelete);
         EXPECT_NE((retVal < 0), true);
@@ -263,12 +263,12 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_001, TestSi
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
 
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::GetId = %{public}d", fileAsset->GetId());
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::GetUri = %{public}s", fileAsset->GetUri().c_str());
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::GetId = %{private}d", fileAsset->GetId());
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::GetUri = %{private}s", fileAsset->GetUri().c_str());
     Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
     int changedRows = g_rdbStoreTest.Update(updateAssetUri, valuesBucketUpdate, predicates);
     EXPECT_NE(changedRows < 0, true);
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::changedRows = %{public}d", changedRows);
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::changedRows = %{private}d", changedRows);
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::End");
 }
 
@@ -301,11 +301,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_002, TestSi
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
     valuesBucketUpdate.PutInt(MEDIA_DATA_DB_ORIENTATION, 1);
 
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::GetUri = %{public}s", fileAsset->GetUri().c_str());
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::GetUri = %{private}s", fileAsset->GetUri().c_str());
     Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
     int changedRows = g_rdbStoreTest.Update(updateAssetUri, valuesBucketUpdate, predicates);
     EXPECT_NE(changedRows < 0, true);
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::changedRows = %{public}d", changedRows);
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::changedRows = %{private}d", changedRows);
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::End");
 }
 
@@ -337,11 +337,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_003, TestSi
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_NAME, "U" + fileAsset->GetDisplayName());
 
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::GetUri = %{public}s", fileAsset->GetUri().c_str());
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::GetUri = %{private}s", fileAsset->GetUri().c_str());
     Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
     int changedRows = g_rdbStoreTest.Update(updateAssetUri, valuesBucketUpdate, predicates);
     EXPECT_NE(changedRows < 0, true);
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::changedRows = %{public}d", changedRows);
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::changedRows = %{private}d", changedRows);
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::End");
 }
 
@@ -372,11 +372,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_OpenFile_Test_001, TestSize.
     string mode = MEDIA_FILEMODE_READONLY;
 
     Uri openFileUri(fileUri);
-    MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
+    MEDIA_INFO_LOG("openFileUri = %{private}s", openFileUri.ToString().c_str());
     int32_t fd = g_rdbStoreTest.OpenFile(openFileUri, mode);
 
     EXPECT_NE(fd <= 0, true);
-    MEDIA_INFO_LOG("MediaDataAbility_OpenFile_Test_001::fd = %{public}d", fd);
+    MEDIA_INFO_LOG("MediaDataAbility_OpenFile_Test_001::fd = %{private}d", fd);
     MEDIA_INFO_LOG("MediaDataAbility_OpenFile_Test_001::End");
 }
 
@@ -407,11 +407,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseFile_Test_001, TestSize
     string mode = MEDIA_FILEMODE_READWRITE;
 
     Uri openFileUri(fileUri);
-    MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
+    MEDIA_INFO_LOG("openFileUri = %{private}s", openFileUri.ToString().c_str());
     int32_t fd = g_rdbStoreTest.OpenFile(openFileUri, mode);
 
     EXPECT_NE(fd <= 0, true);
-    MEDIA_INFO_LOG("MediaDataAbility_CloseFile_Test_001::fd = %{public}d", fd);
+    MEDIA_INFO_LOG("MediaDataAbility_CloseFile_Test_001::fd = %{private}d", fd);
 
     Uri closeAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
 
@@ -448,7 +448,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_GetAlbum_Test_001, TestSize.
     predicates2.EqualTo(MEDIA_DATA_DB_ID, std::to_string(1));
     Uri uri(MEDIALIBRARY_DATA_URI);
     g_rdbStoreTest.Update(uri, valuesBucket1, predicates2);
-    
+
     NativeRdb::DataAbilityPredicates filePredicates;
     NativeRdb::ValuesBucket fileValuesBucket;
     fileValuesBucket.PutString(MEDIA_DATA_DB_BUCKET_NAME, "newTest");

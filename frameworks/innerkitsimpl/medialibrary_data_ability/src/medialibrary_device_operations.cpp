@@ -42,14 +42,14 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
     MediaLibraryDeviceDb mediaLibraryDeviceDb;
     std::string strQueryCondition =
         DEVICE_DB_DEVICEID + "= '" + deviceInfo.deviceUdid + "'";
-    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::InsertDeviceInfo deviceId = %{public}s",
+    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::InsertDeviceInfo deviceId = %{private}s",
         deviceInfo.deviceUdid.c_str());
     mediaLibAbsPredDevice.SetWhereClause(strQueryCondition);
     queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
 
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
-    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::InsertDeviceInfo ret = %{public}d, count = %{public}d", ret, count);
+    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::InsertDeviceInfo ret = %{private}d, count = %{private}d", ret, count);
     if (ret == NativeRdb::E_OK) {
         if (count > 0) {
             // 更新数据库
@@ -88,7 +88,7 @@ bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const std::shared_ptr<Native
     MediaLibraryDeviceDb mediaLibraryDeviceDb;
     std::string strQueryCondition =
         DEVICE_DB_DEVICEID + " = '" + deviceInfo.deviceUdid + "'";
-    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo deviceId = %{public}s",
+    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo deviceId = %{private}s",
         deviceInfo.deviceUdid.c_str());
     mediaLibAbsPredDevice.SetWhereClause(strQueryCondition);
     queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
@@ -165,7 +165,7 @@ bool MediaLibraryDeviceOperations::GetSyncStatusById(const std::shared_ptr<Nativ
         queryResultSet->GetColumnIndex(DEVICE_DB_SYNC_STATUS, columnIndexId);
         queryResultSet->GetInt(columnIndexId, syncStatus);
     }
-    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::GetSyncStatusById syncStatus = %{public}d", syncStatus);
+    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::GetSyncStatusById syncStatus = %{private}d", syncStatus);
     return true;
 }
 

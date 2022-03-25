@@ -48,7 +48,7 @@ MediaLibraryDevice *MediaLibraryDevice::GetInstance()
 void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<Context> &context)
 {
     dataAbilityhelper_ = OHOS::AppExecFwk::DataAbilityHelper::Creator(context);
-    MEDIA_INFO_LOG("MediaLibraryDevice::SetAbilityContext create dataAbilityhelper %{public}d",
+    MEDIA_INFO_LOG("MediaLibraryDevice::SetAbilityContext create dataAbilityhelper %{private}d",
         (dataAbilityhelper_ != nullptr));
 }
 
@@ -65,7 +65,7 @@ void MediaLibraryDevice::GetAllDeviceId(
 void MediaLibraryDevice::OnDeviceOnline(
     const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo, const std::string &bundleName)
 {
-    MEDIA_INFO_LOG("OnDeviceOnline deviceId = %{public}s", deviceInfo.deviceId);
+    MEDIA_INFO_LOG("OnDeviceOnline deviceId = %{private}s", deviceInfo.deviceId);
 
     if (mediaLibraryDeviceHandler_ == nullptr) {
         MEDIA_ERR_LOG("OnDeviceOnline mediaLibraryDeviceHandler null");
@@ -97,7 +97,7 @@ void MediaLibraryDevice::OnDeviceOnline(
 void MediaLibraryDevice::OnDeviceOffline(
     const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo, const std::string &bundleName)
 {
-    MEDIA_INFO_LOG("OnDeviceOffline deviceId = %{public}s", deviceInfo.deviceId);
+    MEDIA_INFO_LOG("OnDeviceOffline deviceId = %{private}s", deviceInfo.deviceId);
 
     if (mediaLibraryDeviceHandler_ == nullptr) {
         MEDIA_ERR_LOG("OnDeviceOffline mediaLibraryDeviceHandler null");
@@ -108,7 +108,7 @@ void MediaLibraryDevice::OnDeviceOffline(
         std::string devId = deviceInfo.deviceId;
         auto info = deviceInfoMap_.find(devId);
         if (info == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("OnDeviceOffline can not find deviceId:%{public}s", devId.c_str());
+            MEDIA_ERR_LOG("OnDeviceOffline can not find deviceId:%{private}s", devId.c_str());
             return;
         }
         if (mediaLibraryDeviceOperations_ != nullptr) {
@@ -126,12 +126,12 @@ void MediaLibraryDevice::OnDeviceOffline(
 
 void MediaLibraryDevice::OnDeviceChanged(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
-    MEDIA_INFO_LOG("MediaLibraryDevice OnDeviceChanged called deviceId = %{public}s", deviceInfo.deviceId);
+    MEDIA_INFO_LOG("MediaLibraryDevice OnDeviceChanged called deviceId = %{private}s", deviceInfo.deviceId);
 }
 
 void MediaLibraryDevice::OnDeviceReady(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
-    MEDIA_INFO_LOG("MediaLibraryDevice OnDeviceReady called deviceId = %{public}s", deviceInfo.deviceId);
+    MEDIA_INFO_LOG("MediaLibraryDevice OnDeviceReady called deviceId = %{private}s", deviceInfo.deviceId);
 }
 
 void MediaLibraryDevice::ClearAllDevices()
@@ -182,7 +182,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     // 获取同一网络中的所有设备Id
     std::vector<OHOS::DistributedHardware::DmDeviceInfo> deviceList;
     GetAllDeviceId(deviceList, bundleName);
-    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
+    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{private}d", (int) deviceList.size());
     for (auto& deviceInfo : deviceList) {
         OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
         GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo, bundleName);
@@ -195,7 +195,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
 
     std::vector<OHOS::Media::MediaLibraryDeviceInfo> deviceDataBaseList;
     mediaLibraryDeviceOperations_->GetAllDeviceDatas(rdbStore, deviceDataBaseList);
-    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore deviceDataBaseList size = %{public}d",
+    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore deviceDataBaseList size = %{private}d",
         (int) deviceDataBaseList.size());
     for (OHOS::Media::MediaLibraryDeviceInfo deviceInfo : deviceDataBaseList) {
         if (!IsHasDevice(deviceInfo.deviceUdid)) {
@@ -204,7 +204,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
             }
         }
     }
-    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore OUT deviceInfoMap size = %{public}d",
+    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore OUT deviceInfoMap size = %{private}d",
         (int) deviceInfoMap_.size());
     return true;
 }
@@ -216,7 +216,7 @@ bool MediaLibraryDevice::UpdateDevicieSyncStatus(
         lock_guard<mutex> autoLock(deviceLock_);
         auto info = deviceInfoMap_.find(deviceId);
         if (info == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("UpdateDevicieSyncStatus can not find deviceId:%{public}s", deviceId.c_str());
+            MEDIA_ERR_LOG("UpdateDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
             return false;
         }
         return mediaLibraryDeviceOperations_->UpdateSyncStatus(rdbStore_, info->second.deviceUdid, syncStatus,
@@ -232,7 +232,7 @@ bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &deviceId, int32
         lock_guard<mutex> autoLock(deviceLock_);
         auto info = deviceInfoMap_.find(deviceId);
         if (info == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("GetDevicieSyncStatus can not find deviceId:%{public}s", deviceId.c_str());
+            MEDIA_ERR_LOG("GetDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
             return false;
         }
         return mediaLibraryDeviceOperations_->GetSyncStatusById(rdbStore_, deviceId, syncStatus,
@@ -247,7 +247,7 @@ std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId, 
     std::string deviceUdid;
     auto ret = deviceManager.GetUdidByNetworkId(bundleName, deviceId, deviceUdid);
     if (ret != 0) {
-        MEDIA_INFO_LOG("GetDeviceUdid error deviceId = %{public}s", deviceId.c_str());
+        MEDIA_INFO_LOG("GetDeviceUdid error deviceId = %{private}s", deviceId.c_str());
         return std::string();
     }
     return deviceUdid;
@@ -265,11 +265,11 @@ void MediaLibraryDevice::GetMediaLibraryDeviceInfo(const OHOS::DistributedHardwa
 
 string MediaLibraryDevice::GetNetworkIdBySelfId(const std::string &selfId, const std::string &bundleName)
 {
-    MEDIA_INFO_LOG("GetNetworkIdBySelfId can not find selfId:%{public}s", selfId.c_str());
+    MEDIA_INFO_LOG("GetNetworkIdBySelfId can not find selfId:%{private}s", selfId.c_str());
 
     map<string, MediaLibraryDeviceInfo>::iterator iter = deviceInfoMap_.begin();
     while (iter != deviceInfoMap_.end()) {
-        MEDIA_INFO_LOG("GetNetworkIdBySelfId iter->second.selfId:%{public}s", iter->second.selfId.c_str());
+        MEDIA_INFO_LOG("GetNetworkIdBySelfId iter->second.selfId:%{private}s", iter->second.selfId.c_str());
         if (selfId.compare(iter->second.selfId) == 0) {
             return iter->second.deviceId;
         }
