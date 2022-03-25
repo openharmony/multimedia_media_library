@@ -45,6 +45,7 @@ SmartAlbumNapi::~SmartAlbumNapi()
 {
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
 }
 
@@ -52,7 +53,8 @@ void SmartAlbumNapi::SmartAlbumNapiDestructor(napi_env env, void *nativeObject, 
 {
     SmartAlbumNapi *album = reinterpret_cast<SmartAlbumNapi*>(nativeObject);
     if (album != nullptr) {
-        album->~SmartAlbumNapi();
+        delete album;
+        album = nullptr;
     }
 }
 

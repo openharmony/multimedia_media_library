@@ -271,6 +271,7 @@ AVMetadataHelperNapi::~AVMetadataHelperNapi()
 {
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
     nativeAVMetadataHelper_ = nullptr;
 }

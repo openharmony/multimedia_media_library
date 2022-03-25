@@ -45,6 +45,7 @@ AudioAssetNapi::~AudioAssetNapi()
 {
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
+        wrapper_ = nullptr;
     }
 }
 
@@ -52,7 +53,8 @@ void AudioAssetNapi::AudioAssetNapiDestructor(napi_env env, void *nativeObject, 
 {
     AudioAssetNapi *audio = reinterpret_cast<AudioAssetNapi*>(nativeObject);
     if (audio != nullptr) {
-        audio->~AudioAssetNapi();
+        delete audio;
+        audio = nullptr;
     }
 }
 
