@@ -1489,6 +1489,22 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
     return result;
 }
 
+extern "C" __attribute__((visibility("default")))
+void* OHOS_MEDIA_NativeGetThumbnail(const char* uri, void* context) {
+    if (uri == nullptr || context == nullptr) {
+        HiLog::Info(LABEL, "uri or context is null while trying call NativeGetThumbnail");
+        return nullptr;
+    }
+    std::string uriStr(uri);
+    auto runtimeContext = *reinterpret_cast<std::shared_ptr<OHOS::AbilityRuntime::Context>*>(context);
+    auto ret = FileAssetNapi::NativeGetThumbnail(uriStr, runtimeContext);
+    if (ret == nullptr) {
+        HiLog::Info(LABEL, "return value from NativeGetThumbnail is nullptr, uri: %{private}s", uri);
+        return nullptr;
+    }
+    return ret.release();
+}
+
 std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     const std::shared_ptr<OHOS::AbilityRuntime::Context> &runtimeContext)
 {
