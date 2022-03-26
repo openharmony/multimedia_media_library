@@ -39,7 +39,7 @@ public:
                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleGetAlbumCapacity(const NativeRdb::ValuesBucket &values,
                                 const std::shared_ptr<RdbStore> &rdbStore);
-    int32_t HandleFileOperation(const std::string &uri, const NativeRdb::ValuesBucket &values,
+    int32_t HandleFileOperation(const std::string &oprn, const NativeRdb::ValuesBucket &values,
                                 const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                                 const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail);
     int32_t HandleModifyAsset(const std::string &rowNum, const std::string &srcPath,
