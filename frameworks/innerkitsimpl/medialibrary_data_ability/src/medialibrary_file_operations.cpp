@@ -328,9 +328,18 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
     if (values.GetObject(MEDIA_DATA_DB_URI, valueObject)) {
         valueObject.GetString(actualUri);
     }
+    string srcPath;
+    string networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(actualUri);
+    if (!networkId.empty()) {
+        if (oprn == MEDIA_FILEOPRN_CLOSEASSET) {
+            return HandleCloseAsset(actualUri, srcPath, values, rdbStore);
+        } else {
+            return errCode;
+        }
+    }
 
     string id = MediaLibraryDataAbilityUtils::GetIdFromUri(actualUri);
-    string srcPath = MediaLibraryDataAbilityUtils::GetPathFromDb(id, rdbStore);
+    srcPath = MediaLibraryDataAbilityUtils::GetPathFromDb(id, rdbStore);
     CHECK_AND_RETURN_RET_LOG(!srcPath.empty(), DATA_ABILITY_FAIL, "Failed to obtain path from Database");
 
     if (oprn == MEDIA_FILEOPRN_MODIFYASSET) {
