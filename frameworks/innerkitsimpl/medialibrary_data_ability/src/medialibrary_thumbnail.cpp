@@ -891,7 +891,7 @@ int32_t MediaLibraryThumbnail::SetSource(std::shared_ptr<AVMetadataHelper> avMet
         return -1;
     }
     int64_t length = static_cast<int64_t>(st.st_size);
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource length = %{public}lld", length);
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource length = %{public}lld", (long long)length);
     int32_t ret = avMetadataHelper->SetSource(fd, 0, length, 1);
     if (ret != 0) {
         MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource fail");
