@@ -12,17 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "mediathumbnail_test.h"
+
+#include <unistd.h>
+
 #include "data_ability_helper.h"
+#include "system_ability_definition.h"
 #include "hilog/log.h"
 #include "iservice_registry.h"
 #include "mediathumbnail_test_cb.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_data_ability.h"
-#include "mediathumbnail_test.h"
 #include "media_log.h"
 #include "permission/permission_kit.h"
-#include "system_ability_definition.h"
-#include <unistd.h>
 
 using namespace std;
 using namespace OHOS::NativeRdb;

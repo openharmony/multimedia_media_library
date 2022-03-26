@@ -19,8 +19,9 @@
 #include <cstdio>
 #include <thread>
 
-#include "fetch_result.h"
 #include "gtest/gtest.h"
+
+#include "fetch_result.h"
 #include "medialibrary_data_ability.h"
 
 namespace OHOS {

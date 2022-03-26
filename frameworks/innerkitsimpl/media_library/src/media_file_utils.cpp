@@ -186,12 +186,8 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
         MEDIA_ERR_LOG("Open failed for source file");
         return errCode;
     }
-    std::string absNewPath = "";
-    if (!PathToRealPath(newPath, absNewPath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", newPath.c_str());
-        return errCode;
-    }
-    int32_t dest = open(absNewPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
+
+    int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
     if (dest == -1) {
         MEDIA_ERR_LOG("Open failed for destination file %{private}d", errno);
         close(source);

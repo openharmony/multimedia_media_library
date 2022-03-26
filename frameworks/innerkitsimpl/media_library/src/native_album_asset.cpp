@@ -23,7 +23,6 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-
 NativeAlbumAsset::NativeAlbumAsset()
 {
     albumId_ = DEFAULT_ALBUM_ID;

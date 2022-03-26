@@ -40,7 +40,6 @@ namespace OHOS {
 namespace Media {
 namespace {
 const std::unordered_set<int32_t> UID_FREE_CHECK {
-    0,          // unittest:x:0:
     1006        // file_manager:x:1006:
 };
 const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
