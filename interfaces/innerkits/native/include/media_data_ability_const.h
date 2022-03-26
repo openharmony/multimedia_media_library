@@ -444,7 +444,8 @@ static const std::string ALBUM_DB_COND = MEDIA_DATA_DB_ID + " = ?";
 static const std::string SMARTALBUM_DB_COND = SMARTALBUM_DB_ID + " = ?";
 static const std::string SMARTALBUM_MAP_DE_SMARTALBUM_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ?";
 static const std::string SMARTALBUM_MAP_DE_ASSETS_COND = SMARTALBUMMAP_DB_ASSET_ID + " = ?";
-static const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ? AND " + SMARTALBUMMAP_DB_ASSET_ID + " = ?";
+static const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ? AND " +
+                                                  SMARTALBUMMAP_DB_ASSET_ID + " = ?";
 static const std::string DEVICE_DB_COND = DEVICE_DB_DEVICEID + " = ?";
 static const std::string MEDIA_DEVICE_QUERYALLDEVICE = "query_all_device";
 static const std::string MEDIA_DEVICE_QUERYACTIVEDEVICE = "query_active_device";

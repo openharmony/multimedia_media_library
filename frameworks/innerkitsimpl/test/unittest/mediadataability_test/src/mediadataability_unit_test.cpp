@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
+#include "mediadataability_unit_test.h"
 #include "data_ability_helper.h"
 #include "iservice_registry.h"
 #include "media_log.h"
-#include "mediadataability_unit_test.h"
 #include "permission/permission_kit.h"
 #include "system_ability_definition.h"
 

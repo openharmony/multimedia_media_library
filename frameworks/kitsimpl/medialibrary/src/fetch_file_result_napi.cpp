@@ -117,7 +117,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 obj.release();
                 return thisVar;
             } else {
-            NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
+                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
             }
         }
     }
