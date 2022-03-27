@@ -185,17 +185,13 @@ static string GetFileMediaTypeUri(MediaType mediaType, const string& networkId)
     switch (mediaType) {
         case MEDIA_TYPE_AUDIO:
             return uri + MEDIALIBRARY_TYPE_AUDIO_URI;
-            break;
         case MEDIA_TYPE_VIDEO:
             return uri + MEDIALIBRARY_TYPE_VIDEO_URI;
-            break;
         case MEDIA_TYPE_IMAGE:
             return uri + MEDIALIBRARY_TYPE_IMAGE_URI;
-            break;
         case MEDIA_TYPE_FILE:
         default:
             return uri + MEDIALIBRARY_TYPE_FILE_URI;
-            break;
     }
 }
 
