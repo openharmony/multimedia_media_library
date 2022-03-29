@@ -26,6 +26,13 @@ ohos_copy("medialibrary_declaration") {
   module_install_name = ""
 }
 
+base_output_path = get_label_info(":medialibraryinf", "target_out_dir")
+medialibraryinf_obj_path = base_output_path + "/medialibraryinf.o"
+gen_js_obj("medialibraryinf_js") {
+  input = "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/medialibraryinf.js"
+  output = medialibraryinf_obj_path
+}
+
 ohos_shared_library("medialibrary") {
   include_dirs = [
     "//drivers/peripheral/display/interfaces/include",
@@ -67,10 +74,12 @@ ohos_shared_library("medialibrary") {
   }
 
   deps = [
+    ":medialibraryinf_js",
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
     "//foundation/aafwk/standard/frameworks/kits/appkit:appkit_native",
     "//foundation/aafwk/standard/interfaces/innerkits/base:base",
     "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager:dataobs_manager",
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//foundation/ace/napi:ace_napi",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_standard/interfaces/innerkits/native/media:media_client",

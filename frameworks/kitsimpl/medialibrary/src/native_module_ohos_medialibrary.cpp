@@ -14,6 +14,8 @@
  */
 
 #include "native_module_ohos_medialibrary.h"
+extern const char _binary_medialibraryinf_js_start[];
+extern const char _binary_medialibraryinf_js_end[];
 
 namespace OHOS {
 namespace Media {
@@ -35,6 +37,18 @@ static napi_value Export(napi_env env, napi_value exports)
     MediaScannerNapi::Init(env, exports);
     AVMetadataHelperNapi::Init(env, exports);
     return exports;
+}
+
+extern "C" __attribute__((visibility("default"))) void NAPI_multimedia_medialibrary_GetJSCode(const char** buf,
+    int* bufLen)
+{
+    if (buf != nullptr) {
+        *buf = _binary_medialibraryinf_js_start;
+    }
+
+    if (bufLen != nullptr) {
+        *bufLen = _binary_medialibraryinf_js_end - _binary_medialibraryinf_js_start;
+    }
 }
 
 /*
