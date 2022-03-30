@@ -92,6 +92,9 @@
               },
               "name": "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary"
           }
+        ],
+        "test": [
+          "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/test:test"
         ]
       }
     }
