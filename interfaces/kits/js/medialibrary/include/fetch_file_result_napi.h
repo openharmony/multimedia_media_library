@@ -33,7 +33,7 @@ public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value CreateFetchFileResult(napi_env env, FetchResult &fileResult,
                                             std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper);
-    FetchResult *GetFetchResultObject();
+    std::shared_ptr<FetchResult> GetFetchResultObject();
 
     std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper() const;
 
@@ -54,7 +54,7 @@ private:
 
     napi_env env_;
     napi_ref wrapper_;
-    FetchResult *fetchFileResult_ = nullptr;
+    std::shared_ptr<FetchResult> fetchFileResult_;
 
     static thread_local napi_ref sConstructor_;
     static thread_local FetchResult *sFetchFileResult_;
