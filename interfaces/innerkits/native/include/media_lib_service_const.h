@@ -193,6 +193,8 @@ const std::unordered_set<std::string> SUPPORTED_IMAGE_FORMATS_SET {
                                                 IMAGE_CONTAINER_TYPE_BMP,
                                                 IMAGE_CONTAINER_TYPE_GIF,
                                                 IMAGE_CONTAINER_TYPE_JPG,
+                                                IMAGE_CONTAINER_TYPE_JPEG,
+                                                IMAGE_CONTAINER_TYPE_JPE,
                                                 IMAGE_CONTAINER_TYPE_PNG,
                                                 IMAGE_CONTAINER_TYPE_WEBP,
                                                 IMAGE_CONTAINER_TYPE_RAW,
