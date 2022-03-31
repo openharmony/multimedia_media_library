@@ -75,9 +75,9 @@ void MediaScannerUnitTest::TearDownTestCase(void)
     HiLog::Info(LABEL, "TearDownTestCase invoked");
     g_msInstance = nullptr;
 
-    if (remove("/storage/media/100/local/files/gtest_Audio1.aac") != 0
-        || remove("/storage/media/100/local/files/gtest_Image1.jpg") != 0
-        || remove("/storage/media/100/local/files/gtest_Video1.mp4") != 0
+    if (remove("/storage/media/100/local/files/gtest_Image1.jpg") != 0
+        || remove("/storage/media/100/local/files/gtest_Image2.png") != 0
+        || remove("/storage/media/100/local/files/gtest_Image3.jpeg") != 0
         || remove("/storage/media/100/local/files/gtest_Text1.txt") != 0
         || remove("/storage/media/100/local/files/.HiddenFile") != 0) {
         HiLog::Error(LABEL, "Test files deletion failed");
@@ -146,7 +146,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
 
 /*
  * Feature : MediaScannerUnitTest
- * Function : Scan an image file
+ * Function : Scan a jpg image file
  * SubFunction : NA
  * FunctionPoints : NA
  * EnvContions : NA
@@ -181,22 +181,22 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
 
 /*
  * Feature : MediaScannerUnitTest
- * Function : Scan a video file
+ * Function : Scan a png image file
  * SubFunction : NA
  * FunctionPoints : NA
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaScannerUnitTest, mediascanner_ScanVideo_Test_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_002, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_Video1.mp4";
+    string path = g_prefixPath + "/gtest_Image2.png";
     HiLog::Info(LABEL, "ScanFile test case for: %{private}s", path.c_str());
 
-    bool createRes = CreateFile("/storage/media/100/local/files/gtest_Video1.mp4");
+    bool createRes = CreateFile("/storage/media/100/local/files/gtest_Image2.png");
     EXPECT_EQ(createRes, true);
 
     int result;
-    std::string testcaseName("mediascanner_ScanVideo_Test_001");
+    std::string testcaseName("mediascanner_ScanImage_Test_002");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
@@ -221,16 +221,16 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanVideo_Test_001, TestSize.Level0)
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaScannerUnitTest, mediascanner_ScanAudio_Test_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_003, TestSize.Level0)
 {
-    string path = g_prefixPath + "/gtest_Audio1.aac";
+    string path = g_prefixPath + "/gtest_Image3.jpeg";
     HiLog::Info(LABEL, "ScanFile test case for: %{private}s", path.c_str());
 
-    bool createRes = CreateFile("/storage/media/100/local/files/gtest_Audio1.aac");
+    bool createRes = CreateFile("/storage/media/100/local/files/gtest_Image3.jpeg");
     EXPECT_EQ(createRes, true);
 
     int result;
-    std::string testcaseName("mediascanner_ScanAudio_Test_001");
+    std::string testcaseName("mediascanner_ScanImage_Test_003");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
