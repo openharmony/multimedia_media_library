@@ -136,12 +136,12 @@ ScanState MediaScannerClient::ScanInternal(string &path, const shared_ptr<IMedia
     auto connectResult = ConnectAbility();
     CHECK_AND_RETURN_RET_LOG(connectResult == CONN_SUCCESS, SCAN_ERROR, "Service error %{private}d", connectResult);
 
-    auto callbackStub = new(std::nothrow) MediaScannerOperationCallbackStub();
+    sptr<MediaScannerOperationCallbackStub> callbackStub = new(std::nothrow) MediaScannerOperationCallbackStub();
     CHECK_AND_RETURN_RET_LOG(callbackStub != nullptr, SCAN_MEM_ALLOC_FAIL, "ScannerOperCallback creation failed");
 
     callbackStub->SetApplicationCallback(appCb);
 
-    auto callbackRemoteObj = callbackStub->AsObject();
+    sptr<IRemoteObject> callbackRemoteObj = callbackStub->AsObject();
     CHECK_AND_RETURN_RET_LOG(callbackRemoteObj != nullptr, SCAN_MEM_ALLOC_FAIL, "callback remote obj is null");
 
     // If service is not connected, add the request into queue. Queue will be processed OnAbilityConnected callback

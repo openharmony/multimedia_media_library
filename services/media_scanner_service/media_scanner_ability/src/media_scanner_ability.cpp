@@ -48,7 +48,7 @@ sptr<IRemoteObject> MediaScannerAbility::OnConnect(const Want &want)
     OHOS::AppExecFwk::Ability::OnConnect(want);
 
     // Creating remote object and returning to client
-    auto scannerAbilityService = new(std::nothrow) MediaScannerAbilityService();
+    sptr<IMediaScannerAbility> scannerAbilityService = new(std::nothrow) MediaScannerAbilityService();
     CHECK_AND_RETURN_RET_LOG(scannerAbilityService != nullptr, nullptr, "Remote object creation failed at ability");
 
     return scannerAbilityService->AsObject();
