@@ -60,6 +60,7 @@ ohos_hap("medialibrary_dynamic_hap") {
   hap_name = "Media_Library"
   part_name = "prebuilt_hap"
   subsystem_name = "applications"
+  module_install_dir = "app/com.ohos.medialibrary.MediaLibraryDataA"
 }
 
 ohos_shared_library("medialibrary_data_ability") {
