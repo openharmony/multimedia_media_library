@@ -54,6 +54,7 @@ ohos_hap("mediascanner_dynamic_hap") {
   hap_name = "Media_Scanner"
   part_name = "prebuilt_hap"
   subsystem_name = "applications"
+  module_install_dir = "app/com.ohos.medialibrary.MediaScannerAbilityA"
 }
 
 ohos_shared_library("media_scanner_service") {
