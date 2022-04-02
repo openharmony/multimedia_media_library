@@ -184,6 +184,8 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
 napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
     std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "CreateFileAsset");
+
     napi_status status;
     napi_value result = nullptr;
     napi_value constructor;
@@ -202,6 +204,8 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
     }
 
     napi_get_undefined(env, &result);
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     return result;
 }
 

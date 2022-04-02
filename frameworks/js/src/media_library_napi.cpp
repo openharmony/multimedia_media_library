@@ -17,6 +17,7 @@
 
 #include <sys/sendfile.h>
 #include "media_file_utils.h"
+#include "bytrace.h"
 #include "medialibrary_peer_info.h"
 #include "medialibrary_data_ability.h"
 #include "media_data_ability_const.h"
@@ -207,6 +208,8 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
 napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callback_info info)
 {
     NAPI_DEBUG_LOG("GetMediaLibraryNewInstance IN");
+    StartTrace(BYTRACE_TAG_OHOS, "Get MediaLibraryNewInstance");
+
     napi_value result = nullptr;
     napi_value ctor;
     size_t argc = ARGS_ONE;
@@ -228,6 +231,8 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
 
     napi_get_undefined(env, &result);
     NAPI_DEBUG_LOG("GetMediaLibraryNewInstance OUT");
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     return result;
 }
 
@@ -579,7 +584,9 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
 
 static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "GetFileAssetsExecute");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
     vector<string> columns;
     NativeRdb::DataAbilityPredicates predicates;
     if (!context->uri.empty()) {
@@ -618,17 +625,20 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
             // Create FetchResult object using the contents of resultSet
             context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
             context->fetchFileResult->networkId_ = context->networkId;
+            FinishTrace(BYTRACE_TAG_OHOS);
             return;
         } else {
             NAPI_ERR_LOG("Query for get fileAssets failed");
         }
     }
     context->error = ERR_INVALID_OUTPUT;
+    FinishTrace(BYTRACE_TAG_OHOS);
 }
 
 static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
                                                MediaLibraryAsyncContext *context)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "GetFileAssetsAsyncCallbackComplete");
     napi_value fileResult = nullptr;
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -667,11 +677,15 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+
     delete context;
+    FinishTrace(BYTRACE_TAG_OHOS);
 }
 
 napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info info)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "JSGetFileAssets");
+
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
@@ -708,6 +722,7 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
         }
     }
 
+    FinishTrace(BYTRACE_TAG_OHOS);
     return result;
 }
 static string getNetworkId(const string& selfId)
@@ -819,6 +834,7 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<NativeRdb::AbsSharedResultSe
 
 static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "GetResultDataExecute");
     NAPI_ERR_LOG("GetResultDataExecute IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
@@ -844,6 +860,7 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetResultData resultSet is nullptr");
+        FinishTrace(BYTRACE_TAG_OHOS);
         return;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -854,11 +871,13 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
             context->albumNativeArray.push_back(move(albumData));
         }
     }
+    FinishTrace(BYTRACE_TAG_OHOS);
 }
 
 static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
                                         MediaLibraryAsyncContext *context)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "AlbumsAsyncCallbackComplete");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -891,11 +910,15 @@ static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+
     delete context;
+    FinishTrace(BYTRACE_TAG_OHOS);
 }
 
 napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "JSGetAlbums");
+
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
@@ -930,6 +953,7 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
         }
     }
 
+    FinishTrace(BYTRACE_TAG_OHOS);
     return result;
 }
 

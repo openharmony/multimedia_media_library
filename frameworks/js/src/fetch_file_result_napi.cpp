@@ -14,6 +14,7 @@
  */
 
 #include "fetch_file_result_napi.h"
+#include "bytrace.h"
 #include "medialibrary_napi_log.h"
 
 using OHOS::HiviewDFX::HiLog;
@@ -85,6 +86,8 @@ napi_value FetchFileResultNapi::Init(napi_env env, napi_value exports)
 // Constructor callback
 napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, napi_callback_info info)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "FetchFileResultNapiConstructor");
+
     napi_status status;
     napi_value result = nullptr;
     napi_value thisVar = nullptr;
@@ -108,6 +111,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 fetchRes.release();
             } else {
                 NAPI_ERR_LOG("No native instance assigned yet");
+                FinishTrace(BYTRACE_TAG_OHOS);
                 return result;
             }
 
@@ -115,18 +119,23 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                                FetchFileResultNapi::FetchFileResultNapiDestructor, nullptr, &(obj->wrapper_));
             if (status == napi_ok) {
                 obj.release();
+                FinishTrace(BYTRACE_TAG_OHOS);
                 return thisVar;
             } else {
                 NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
             }
         }
     }
+
+    FinishTrace(BYTRACE_TAG_OHOS);
     return result;
 }
 
 napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult &fileResult,
     std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "CreateFetchFileResult");
+
     napi_status status;
     napi_value result = nullptr;
     napi_value constructor;
@@ -145,6 +154,8 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult 
     }
 
     napi_get_undefined(env, &result);
+    FinishTrace(BYTRACE_TAG_OHOS);
+
     return result;
 }
 
@@ -209,6 +220,7 @@ napi_value FetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info i
 
 static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, FetchFileResultAsyncContext* context)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "GetPositionObjectCompleteCallback");
     napi_value jsFileAsset = nullptr;
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -240,11 +252,15 @@ static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, 
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+
+    FinishTrace(BYTRACE_TAG_OHOS);
     delete context;
 }
 
 napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_info info)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "JSGetFirstObject");
+
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
@@ -284,6 +300,7 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
         NAPI_ASSERT(env, false, "JSGetFirstObject obj == nullptr");
     }
 
+    FinishTrace(BYTRACE_TAG_OHOS);
     return result;
 }
 
@@ -431,6 +448,8 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
 
 static void GetAllObjectCompleteCallback(napi_env env, napi_status status, FetchFileResultAsyncContext* context)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "GetAllObjectCompleteCallback");
+
     napi_value jsFileAsset = nullptr;
     napi_value jsFileArray = nullptr;
 
@@ -470,6 +489,8 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
+
+    FinishTrace(BYTRACE_TAG_OHOS);
     delete context;
 }
 
@@ -492,6 +513,8 @@ void GetAllObjectFromFetchResult(const FetchFileResultAsyncContext &asyncContext
 
 napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info info)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "JSGetAllObject");
+
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
@@ -531,6 +554,7 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
         NAPI_ASSERT(env, false, "JSGetAllObject obj == nullptr");
     }
 
+    FinishTrace(BYTRACE_TAG_OHOS);
     return result;
 }
 
