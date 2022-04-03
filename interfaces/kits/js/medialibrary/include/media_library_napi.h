@@ -187,7 +187,6 @@ private:
 
     static napi_value JSStoreMediaAsset(napi_env env, napi_callback_info info);
     static napi_value JSStartImagePreview(napi_env env, napi_callback_info info);
-    static napi_value JSStartMediaSelect(napi_env env, napi_callback_info info);
 
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);

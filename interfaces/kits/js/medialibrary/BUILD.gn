@@ -34,7 +34,8 @@ action("gen_medialibraryinf_abc") {
 
   args = [
     "--src-js",
-    rebase_path("//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/medialibraryinf.js"),
+    rebase_path(
+        "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/medialibraryinf.js"),
     "--dst-file",
     rebase_path(target_out_dir + "/medialibraryinf.abc"),
     "--node",
@@ -45,9 +46,7 @@ action("gen_medialibraryinf_abc") {
     rebase_path("${node_modules}"),
     "--module",
   ]
-  deps = [
-    "//ark/ts2abc/ts2panda:ark_ts2abc_build",
-  ]
+  deps = [ "//ark/ts2abc/ts2panda:ark_ts2abc_build" ]
 
   inputs = [ "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/medialibraryinf.js" ]
   outputs = [ target_out_dir + "/medialibraryinf.abc" ]
@@ -110,8 +109,8 @@ ohos_shared_library("medialibrary") {
   }
 
   deps = [
-    ":medialibraryinf_js",
     ":medialibraryinf_abc",
+    ":medialibraryinf_js",
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
     "//foundation/aafwk/standard/frameworks/kits/appkit:appkit_native",
     "//foundation/aafwk/standard/interfaces/innerkits/base:base",
