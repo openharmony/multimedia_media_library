@@ -101,8 +101,7 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getActivePeers", JSGetActivePeers),
         DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers),
         DECLARE_NAPI_FUNCTION("storeMediaAsset", JSStoreMediaAsset),
-        DECLARE_NAPI_FUNCTION("startImagePreview", JSStartImagePreview),
-        DECLARE_NAPI_FUNCTION("startMediaSelect", JSStartMediaSelect)
+        DECLARE_NAPI_FUNCTION("startImagePreview", JSStartImagePreview)
     };
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("getMediaLibrary", GetMediaLibraryNewInstance),

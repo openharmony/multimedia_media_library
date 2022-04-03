@@ -57,7 +57,13 @@ async function startMediaSelect(option, asyncCallback)
 
 function getMediaLibrary(context)
 {
-    return medialibrary.getMediaLibrary(context)
+    let obj = medialibrary.getMediaLibrary(context)
+    console.log("MediaLibrary getMediaLibrary inner ");
+    if (obj != undefined) {
+        console.log("MediaLibrary getMediaLibrary inner add startMediaSelect");
+        obj.startMediaSelect = startMediaSelect;
+    }
+    return obj;
 }
 
 export default {

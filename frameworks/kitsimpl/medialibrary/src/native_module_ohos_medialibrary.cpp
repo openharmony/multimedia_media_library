@@ -16,6 +16,8 @@
 #include "native_module_ohos_medialibrary.h"
 extern const char _binary_medialibraryinf_js_start[];
 extern const char _binary_medialibraryinf_js_end[];
+extern const char _binary_medialibraryinf_abc_start[];
+extern const char _binary_medialibraryinf_abc_end[];
 
 namespace OHOS {
 namespace Media {
@@ -48,6 +50,18 @@ extern "C" __attribute__((visibility("default"))) void NAPI_multimedia_medialibr
 
     if (bufLen != nullptr) {
         *bufLen = _binary_medialibraryinf_js_end - _binary_medialibraryinf_js_start;
+    }
+}
+
+extern "C" __attribute__((visibility("default"))) void NAPI_multimedia_medialibrary_GetABCCode(const char** buf,
+    int* bufLen)
+{
+    if (buf != nullptr) {
+        *buf = _binary_medialibraryinf_abc_start;
+    }
+
+    if (bufLen != nullptr) {
+        *bufLen = _binary_medialibraryinf_abc_end - _binary_medialibraryinf_abc_start;
     }
 }
 
