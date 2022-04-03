@@ -44,7 +44,7 @@ async function startMediaSelect(option, asyncCallback)
         console.log("MediaLibrary startMediaSelectInner callback " + uri);
         return asyncCallback(result.resultCode, uri)
     }
-    return new Promise ((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         if (result.resultCode == 0) {
             console.log("MediaLibrary startMediaSelectInner promise " + uri);
             resolve(uri)
