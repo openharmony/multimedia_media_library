@@ -33,7 +33,7 @@ config("media_scanner_ability_public_config") {
     "$MEDIA_LIB_INNERKITS_DIR/media_scanner/include",
     "//drivers/peripheral/display/interfaces/include",
     "//drivers/peripheral/base",
-    "//foundation/multimedia/media_standard/interfaces/innerkits/native/media/include",
+    "//foundation/multimedia/media_standard/interfaces/inner_api/native",
     "//third_party/json/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/innerkits/native_rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/innerkitsimpl/native_rdb/include",
@@ -79,7 +79,7 @@ ohos_shared_library("media_scanner_service") {
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
-    "//foundation/multimedia/media_standard/interfaces/innerkits/native/media:media_client",
+    "//foundation/multimedia/media_standard/interfaces/inner_api/native:media_client",
     "//utils/native/base:utils",
   ]
 
