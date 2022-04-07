@@ -40,7 +40,7 @@ config("media_data_ability_public_config") {
     "//foundation/communication/dsoftbus/interfaces/kits/common",
     "//foundation/distributedschedule/safwk/services/safwk/include",
     "//foundation/distributedhardware/devicemanager/interfaces/inner_kits/native_cpp/include",
-    "//foundation/multimedia/media_standard/interfaces/innerkits/native/media/include/",
+    "//foundation/multimedia/media_standard/interfaces/inner_api/native",
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
     "//third_party/json/include",
