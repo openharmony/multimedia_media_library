@@ -3789,7 +3789,7 @@ void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
     }
     char absPath[PATH_MAX] = {0};
     memset_s(absPath, PATH_MAX, '\0', PATH_MAX);
-    auto ptr = realpath(context->src.c_str(), absPath);
+    auto ptr = realpath(context->storeMediaSrc.c_str(), absPath);
     if (ptr == nullptr) {
         NAPI_ERR_LOG("src path is not exist");
         return;
@@ -3875,27 +3875,11 @@ napi_value GetPropertyValueByPropertyName(
         NAPI_ERR_LOG("GetPropertyValueByPropertyName not exist %{public}s", propertyName);
         return nullptr;
     }
-
     if (napi_get_named_property(env, jsObject, propertyName, &value) != napi_ok) {
         NAPI_ERR_LOG("GetPropertyValueByPropertyName get fail %{public}s", propertyName);
         return nullptr;
     }
     return value;
-}
-
-static tuple<bool, unique_ptr<char[]>, size_t> ToUTF8String(napi_env env, napi_value value)
-{
-    size_t strLen = 0;
-    napi_status status = napi_get_value_string_utf8(env, value, nullptr, -1, &strLen);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("ToUTF8String get fail");
-        return { false, nullptr, 0 };
-    }
-
-    size_t bufLen = strLen + 1;
-    unique_ptr<char[]> str = make_unique<char[]>(bufLen);
-    status = napi_get_value_string_utf8(env, value, str.get(), bufLen, &strLen);
-    return make_tuple(status == napi_ok, move(str), strLen);
 }
 
 static bool GetFileName(const string &src, string &fileName)
@@ -3932,6 +3916,21 @@ int ConvertMediaType(const string &mimeType)
     return MediaType::MEDIA_TYPE_FILE;
 }
 
+static tuple<bool, unique_ptr<char[]>, size_t> ToUTF8String(napi_env env, napi_value value)
+{
+    size_t strLen = 0;
+    napi_status status = napi_get_value_string_utf8(env, value, nullptr, -1, &strLen);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("ToUTF8String get fail");
+        return { false, nullptr, 0 };
+    }
+
+    size_t bufLen = strLen + 1;
+    unique_ptr<char[]> str = make_unique<char[]>(bufLen);
+    status = napi_get_value_string_utf8(env, value, str.get(), bufLen, &strLen);
+    return make_tuple(status == napi_ok, move(str), strLen);
+}
+
 bool GetStoreMediaAssetProper(napi_env env, napi_value param, const string &proper, string &res)
 {
     bool succ;
@@ -3955,16 +3954,15 @@ napi_value GetStoreMediaAssetArgs(napi_env env, napi_value param,
 {
     napi_value result = nullptr;
     auto context = &asyncContext;
-    if (!GetStoreMediaAssetProper(env, param, "src", context->src)) {
+    if (!GetStoreMediaAssetProper(env, param, "src", context->storeMediaSrc)) {
         NAPI_ERR_LOG("param get fail");
         return nullptr;
     }
     string fileName;
-    if (GetFileName(context->src, fileName)) {
+    if (GetFileName(context->storeMediaSrc, fileName)) {
         NAPI_ERR_LOG("src file name is not proper");
         context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
     };
-
     context->valuesBucket.PutString(MEDIA_DATA_DB_NAME, fileName);
     string mimeType;
     if (!GetStoreMediaAssetProper(env, param, "mimeType", mimeType)) {
@@ -3977,9 +3975,8 @@ napi_value GetStoreMediaAssetArgs(napi_env env, napi_value param,
         NAPI_ERR_LOG("param empty");
     }
     context->valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-
-    NAPI_DEBUG_LOG("src:%{public}s mime:%{public}s relp:%{public}s filename:%{public}s",
-        context->src.c_str(), mimeType.c_str(), relativePath.c_str(), fileName.c_str());
+    NAPI_DEBUG_LOG("src:%{private}s mime:%{private}s relp:%{private}s filename:%{private}s",
+        context->storeMediaSrc.c_str(), mimeType.c_str(), relativePath.c_str(), fileName.c_str());
     napi_get_undefined(env, &result);
     return result;
 }
@@ -4061,14 +4058,12 @@ Ability *CreateAsyncCallbackInfo(napi_env env)
         napi_get_last_error_info(env, &errorInfo);
         NAPI_ERR_LOG("get_global=%{public}d err:%{public}s", ret, errorInfo->error_message);
     }
-
     napi_value abilityObj = 0;
     ret = napi_get_named_property(env, global, "ability", &abilityObj);
     if (ret != napi_ok) {
         napi_get_last_error_info(env, &errorInfo);
         NAPI_ERR_LOG("get_named_property=%{public}d e:%{public}s", ret, errorInfo->error_message);
     }
-
     Ability *ability = nullptr;
     ret = napi_get_value_external(env, abilityObj, (void **)&ability);
     if (ret != napi_ok) {
@@ -4082,11 +4077,9 @@ bool IsArrayForNapiValue(napi_env env, napi_value param, uint32_t &arraySize)
 {
     bool isArray = false;
     arraySize = 0;
-
     if (napi_is_array(env, param, &isArray) != napi_ok || isArray == false) {
         return false;
     }
-
     if (napi_get_array_length(env, param, &arraySize) != napi_ok) {
         return false;
     }
@@ -4118,7 +4111,7 @@ napi_value GetImagePreviewArgsUri(napi_env env, napi_value param, MediaLibraryAs
         uri += ",";
     }
     context.uri = uri.substr(0, uri.length() - 1);
-    NAPI_ERR_LOG("GetImagePreviewArgs res %{public}s", context.uri.c_str());
+    NAPI_DEBUG_LOG("GetImagePreviewArgs res %{private}s", context.uri.c_str());
     napi_value res;
     napi_get_undefined(env, &res);
     return res;
@@ -4126,17 +4119,17 @@ napi_value GetImagePreviewArgsUri(napi_env env, napi_value param, MediaLibraryAs
 
 napi_value GetImagePreviewArgsNum(napi_env env, napi_value param, MediaLibraryAsyncContext &context)
 {
+    context.imagePreviewIndex = 0;
     napi_valuetype valueType = napi_undefined;
     napi_typeof(env, param, &valueType);
     if (valueType != napi_number) {
         NAPI_ERR_LOG("not napi value");
         return nullptr;
     }
-    int32_t result = 0;
-    if (napi_get_value_int32(env, param, &result) != napi_ok) {
+    if (napi_get_value_int32(env, param, &context.imagePreviewIndex) != napi_ok) {
         NAPI_ERR_LOG("get property value fail");
     }
-    NAPI_ERR_LOG("GetImagePreviewArgs num %{public}d", result);
+    NAPI_ERR_LOG("GetImagePreviewArgs num %{public}d", context.imagePreviewIndex);
     napi_value res;
     napi_get_undefined(env, &res);
     return res;
@@ -4176,6 +4169,9 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
                     string bundleName = "com.ohos.photos";
                     string abilityName = "com.ohos.photos.MainAbility";
                     want.SetElementName(deviceId, bundleName, abilityName);
+                    want.SetUri(context->uri);
+                    want.SetAction("ohos.want.action.viewData");
+                    want.SetParam("index", context->imagePreviewIndex);
                     context->error = context->ability_->StartAbility(want);
                 }
             },

@@ -234,7 +234,8 @@ struct MediaLibraryAsyncContext {
     std::vector<std::unique_ptr<SmartAlbumAsset>> smartAlbumNativeArray;
     std::vector<std::unique_ptr<SmartAlbumAsset>> privateSmartAlbumNativeArray;
     Ability *ability_;
-    std::string src;
+    std::string storeMediaSrc;
+    int32_t imagePreviewIndex;
 };
 } // namespace Media
 } // namespace OHOS
