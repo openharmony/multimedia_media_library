@@ -57,16 +57,19 @@ async function startMediaSelect(option, asyncCallback)
 
 function getMediaLibrary(context)
 {
-    let obj = medialibrary.getMediaLibrary(context)
+    let media = medialibrary.getMediaLibrary(context)
     console.log("MediaLibrary getMediaLibrary inner ");
-    if (obj != undefined) {
+    if (media != undefined) {
         console.log("MediaLibrary getMediaLibrary inner add startMediaSelect");
-        obj.startMediaSelect = startMediaSelect;
+        media.startMediaSelect = startMediaSelect;
     }
-    return obj;
+    return media;
 }
 
 export default {
-    startMediaSelect: startMediaSelect,
     getMediaLibrary: getMediaLibrary,
+    MediaType: medialibrary.MediaType,
+    FileKey: medialibrary.FileKey,
+    DirectoryType: medialibrary.DirectoryType,
+    PrivateAlbumType: medialibrary.PrivateAlbumType,
 }
