@@ -28,6 +28,7 @@
 #include "napi/native_node_api.h"
 #include "smart_album_asset.h"
 #include "values_bucket.h"
+#include "mediadata_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -125,6 +126,7 @@ public:
 
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env, napi_callback_info info);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
+    static std::shared_ptr<AppExecFwk::MediaDataHelper> sMediaDataHelper_;
 
 public:
     static const std::string PERMISSION_NAME_READ_MEDIA;
