@@ -3898,6 +3898,21 @@ static bool GetStoreMediaAssetProper(napi_env env, napi_value param, const strin
     return true;
 }
 
+static string GetDefaultDirectory(int mediaType)
+{
+    string relativePath;
+    if (mediaType == MediaType::MEDIA_TYPE_IMAGE) {
+        relativePath = "Pictures/";
+    } else if (mediaType == MediaType::MEDIA_TYPE_VIDEO) {
+        relativePath = "Videos/";
+    } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
+        relativePath = "Audios/";
+    } else {
+        relativePath = "Documents/";
+    }
+    return relativePath;
+}
+
 static napi_value GetStoreMediaAssetArgs(napi_env env, napi_value param,
     MediaLibraryAsyncContext &asyncContext)
 {
@@ -3918,11 +3933,12 @@ static napi_value GetStoreMediaAssetArgs(napi_env env, napi_value param,
         NAPI_ERR_LOG("param get fail");
         return nullptr;
     }
-    context->valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, ConvertMediaType(mimeType));
+    auto mediaType = ConvertMediaType(mimeType);
+    context->valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     string relativePath;
     if (!GetStoreMediaAssetProper(env, param, "relativePath", relativePath)) {
         NAPI_DEBUG_LOG("optional relativePath param empty");
-        relativePath = "Others/";
+        relativePath = GetDefaultDirectory(mediaType);
     }
     context->valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     NAPI_DEBUG_LOG("src:%{private}s mime:%{private}s relp:%{private}s filename:%{private}s",
