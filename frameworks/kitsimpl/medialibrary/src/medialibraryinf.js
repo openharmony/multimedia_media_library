@@ -18,7 +18,7 @@ const featureAbility = requireNapi('ability.featureAbility');
 
 async function startMediaSelect(option, asyncCallback)
 {
-    console.log("MediaLibrary startMediaSelectInner param len " + arguments.length);
+    console.log("MediaLibrary startMediaSelectInner param num " + arguments.length);
     console.log("MediaLibrary startMediaSelectInner param " + JSON.stringify(option));
     let select = "singleselect"
     if (option.count > 1) {
