@@ -598,11 +598,12 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaDataHelper::Query(
 {
     HILOG_INFO("MediaDataHelper::Query start.");
     std::shared_ptr<NativeRdb::AbsSharedResultSet> resultset = nullptr;
-
+/*
     if (!CheckUriParam(uri)) {
         HILOG_ERROR("%{public}s called. CheckUriParam uri failed", __func__);
         return resultset;
     }
+*/
 
     if (uri_ == nullptr) {
         HILOG_INFO("MediaDataHelper::Query before ConnectMediaDataExtAbility.");

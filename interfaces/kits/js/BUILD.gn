@@ -133,6 +133,8 @@ ohos_shared_library("medialibrary") {
     "native_appdatamgr:native_dataability",
     "native_appdatamgr:native_rdb",
     "permission_standard:libpermissionsdk_standard",
+    "ipc:ipc_core",
+    "ipc_js:rpc",
   ]
 
   relative_install_dir = "module/multimedia"

@@ -130,6 +130,7 @@ shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper
 
     string strUri = MEDIALIBRARY_DATA_URI;
     std::shared_ptr<AppExecFwk::DataAbilityHelper> dataAbilityHelper = nullptr;
+    std::shared_ptr<AppExecFwk::MediaDataHelper> mediaDataHelper = nullptr;
     napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode_);
     if (status != napi_ok) {
         NAPI_INFO_LOG("argv[0] is not a context");
@@ -150,6 +151,10 @@ shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper
             }
             NAPI_INFO_LOG("Get Stage model DataAbilityHelper");
             dataAbilityHelper = DataAbilityHelper::Creator(context, std::make_shared<Uri>(strUri));
+	    AppExecFwk::Want want;
+	    want.SetElementName("com.example.myapplication", "MediaDataService");
+	    mediaDataHelper = MediaDataHelper::Creator(context, want, std::make_shared<Uri>("mediadata://media"));
+
         } else {
             auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
             if (ability == nullptr) {

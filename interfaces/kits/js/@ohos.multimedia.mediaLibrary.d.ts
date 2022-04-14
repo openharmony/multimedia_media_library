@@ -16,6 +16,7 @@
 import { AsyncCallback, Callback } from './basic';
 import Context from './app/context';
 import image from './@ohos.multimedia.image';
+import rpc from './@ohos.rpc';
 
 /**
  * @name mediaLibrary
@@ -1033,6 +1034,8 @@ declare namespace mediaLibrary {
      * @syscap SystemCapability.Multimedia.MediaLibrary.Core
      * @param callback no value returned
      */
+    getMediaRemoteStub(): rpc.RemoteObject;
+
     release(callback: AsyncCallback<void>): void;
     /**
      * Release MediaLibrary instance
