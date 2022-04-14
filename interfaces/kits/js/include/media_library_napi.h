@@ -29,6 +29,9 @@
 #include "smart_album_asset.h"
 #include "values_bucket.h"
 #include "mediadata_helper.h"
+#include "napi_remote_object.h"
+#include "mediadata_stub_impl.h"
+#include "mediadata_proxy.h"
 
 namespace OHOS {
 namespace Media {
@@ -125,6 +128,7 @@ public:
     ~MediaLibraryNapi();
 
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> GetDataAbilityHelper(napi_env env, napi_callback_info info);
+    static std::shared_ptr<AppExecFwk::MediaDataHelper> GetMediaDataHelper(napi_env env, napi_callback_info info);
     static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
     static std::shared_ptr<AppExecFwk::MediaDataHelper> sMediaDataHelper_;
 
@@ -171,6 +175,7 @@ private:
 
     static napi_value JSStoreMediaAsset(napi_env env, napi_callback_info info);
     static napi_value JSStartImagePreview(napi_env env, napi_callback_info info);
+    static napi_value JSGetMediaRemoteStub(napi_env env, napi_callback_info info);
 
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
