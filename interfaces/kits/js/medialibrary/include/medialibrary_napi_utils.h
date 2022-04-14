@@ -16,6 +16,8 @@
 #ifndef MEDIALIBRARY_NAPI_UTILS_H
 #define MEDIALIBRARY_NAPI_UTILS_H
 
+#include <tuple>
+#include <memory>
 #include <vector>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -299,6 +301,70 @@ public:
         }
         napi_delete_async_work(env, work);
         NAPI_DEBUG_LOG("InvokeJSAsyncMethod OUT");
+    }
+
+    static std::tuple<bool, std::unique_ptr<char[]>, size_t> ToUTF8String(napi_env env, napi_value value)
+    {
+        size_t strLen = 0;
+        napi_status status = napi_get_value_string_utf8(env, value, nullptr, -1, &strLen);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("ToUTF8String get fail, %{public}d", status);
+            return { false, nullptr, 0 };
+        }
+
+        size_t bufLen = strLen + 1;
+        std::unique_ptr<char[]> str = std::make_unique<char[]>(bufLen);
+        if (str == nullptr) {
+            NAPI_ERR_LOG("ToUTF8String get memory fail");
+            return { false, nullptr, 0 };
+        }
+        status = napi_get_value_string_utf8(env, value, str.get(), bufLen, &strLen);
+        return std::make_tuple(status == napi_ok, move(str), strLen);
+    }
+
+    static bool IsExistsByPropertyName(napi_env env, napi_value jsObject, const char *propertyName)
+    {
+        bool result = false;
+        if (napi_has_named_property(env, jsObject, propertyName, &result) == napi_ok) {
+            return result;
+        } else {
+            NAPI_ERR_LOG("IsExistsByPropertyName not exist %{public}s", propertyName);
+            return false;
+        }
+    }
+
+    static napi_value GetPropertyValueByName(napi_env env, napi_value jsObject, const char *propertyName)
+    {
+        napi_value value = nullptr;
+        if (IsExistsByPropertyName(env, jsObject, propertyName) == false) {
+            NAPI_ERR_LOG("GetPropertyValueByName not exist %{public}s", propertyName);
+            return nullptr;
+        }
+        if (napi_get_named_property(env, jsObject, propertyName, &value) != napi_ok) {
+            NAPI_ERR_LOG("GetPropertyValueByName get fail %{public}s", propertyName);
+            return nullptr;
+        }
+        return value;
+    }
+
+    static bool CheckJSArgsTypeAsFunc(napi_env env, napi_value arg)
+    {
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, arg, &valueType);
+        return (valueType == napi_function);
+    }
+
+    static bool IsArrayForNapiValue(napi_env env, napi_value param, uint32_t &arraySize)
+    {
+        bool isArray = false;
+        arraySize = 0;
+        if ((napi_is_array(env, param, &isArray) != napi_ok) || (isArray == false)) {
+            return false;
+        }
+        if (napi_get_array_length(env, param, &arraySize) != napi_ok) {
+            return false;
+        }
+        return true;
     }
 };
 } // namespace Media

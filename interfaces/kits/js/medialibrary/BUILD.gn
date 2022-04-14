@@ -10,9 +10,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import("//ark/ts2abc/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
+import("//foundation/ace/ace_engine/ace_config.gni")
 
 js_declaration("medialibrary_js") {
   part_name = "multimedia_media_library_standard"
@@ -24,6 +25,47 @@ ohos_copy("medialibrary_declaration") {
   outputs = [ target_out_dir + "/$target_name/" ]
   module_source_dir = target_out_dir + "/$target_name"
   module_install_name = ""
+}
+
+# compile .js to .abc.
+action("gen_medialibraryinf_abc") {
+  visibility = [ ":*" ]
+  script = "//ark/ts2abc/ts2panda/scripts/generate_js_bytecode.py"
+
+  args = [
+    "--src-js",
+    rebase_path(
+        "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/medialibraryinf.js"),
+    "--dst-file",
+    rebase_path(target_out_dir + "/medialibraryinf.abc"),
+    "--node",
+    rebase_path("${node_path}"),
+    "--frontend-tool-path",
+    rebase_path("${ts2abc_build_path}"),
+    "--node-modules",
+    rebase_path("${node_modules}"),
+    "--module",
+  ]
+  deps = [ "//ark/ts2abc/ts2panda:ark_ts2abc_build" ]
+
+  inputs = [ "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/medialibraryinf.js" ]
+  outputs = [ target_out_dir + "/medialibraryinf.abc" ]
+}
+
+base_output_path = get_label_info(":medialibraryinf_js", "target_out_dir")
+medialibraryinf_obj_path = base_output_path + "/medialibraryinf.o"
+gen_js_obj("medialibraryinf_js") {
+  input = "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/medialibraryinf.js"
+  output = medialibraryinf_obj_path
+  dep = ":gen_medialibraryinf_abc"
+}
+
+abc_output_path = get_label_info(":medialibraryinf_abc", "target_out_dir")
+medialibraryinf_abc_obj_path = abc_output_path + "/medialibraryinf_abc.o"
+gen_js_obj("medialibraryinf_abc") {
+  input = "$target_out_dir/medialibraryinf.abc"
+  output = medialibraryinf_abc_obj_path
+  dep = ":gen_medialibraryinf_abc"
 }
 
 ohos_shared_library("medialibrary") {
@@ -67,10 +109,13 @@ ohos_shared_library("medialibrary") {
   }
 
   deps = [
+    ":medialibraryinf_abc",
+    ":medialibraryinf_js",
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
     "//foundation/aafwk/standard/frameworks/kits/appkit:appkit_native",
     "//foundation/aafwk/standard/interfaces/innerkits/base:base",
     "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager:dataobs_manager",
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//foundation/ace/napi:ace_napi",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native:media_client",
