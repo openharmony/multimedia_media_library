@@ -84,7 +84,7 @@ std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Si
 
     vector<uint8_t> image;
     if (!GetImage(key, image)) {
-        if (uri.substr(0, MEDIALIBRARY_MEDIA_PREFIX.length()).compare(MEDIALIBRARY_MEDIA_PREFIX)) {
+        if (!uri.substr(0, MEDIALIBRARY_MEDIA_PREFIX.length()).compare(MEDIALIBRARY_MEDIA_PREFIX)) {
             return nullptr;
         }
 
