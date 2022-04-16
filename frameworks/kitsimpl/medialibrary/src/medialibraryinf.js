@@ -68,6 +68,7 @@ function getMediaLibrary(context)
 
 export default {
     getMediaLibrary: getMediaLibrary,
+    getMediaLibraryHelper: medialibrary.getMediaLibraryHelper,
     MediaType: medialibrary.MediaType,
     FileKey: medialibrary.FileKey,
     DirectoryType: medialibrary.DirectoryType,
