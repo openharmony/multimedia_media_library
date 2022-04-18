@@ -15,22 +15,16 @@ import("//build/ohos.gni")
 
 MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
 MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
-MEDIA_LIB_KITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/kitsimpl"
 
-config("mediadataext_ability_public_config") {
+config("media_data_extension_public_config") {
   include_dirs = [
-    "$MEDIA_LIB_KITS_DIR/media_service_extension/include",
-    "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
     "$MEDIA_LIB_INNERKITS_DIR/medialibrary_data_extension/include",
+    "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
     "$MEDIA_LIB_INNERKITS_DIR/media_library/include",
     "//foundation/aafwk/standard/interfaces/innerkits/want/include",
     "//foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk/content",
     "//foundation/aafwk/standard/interfaces/innerkits/ability_manager/include",
-    "//foundation/aafwk/aafwk/standard/interfaces/innerkits/runtime/include",
     "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
-    "//foundation/communication/ipc/ipc/native/src/napi/include",
-    "//foundation/aafwk/standard/interfaces/kits/napi/aafwk/inner/napi_common",
-    "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager/include",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
     "//foundation/aafwk/standard/interfaces/innerkits/app_manager/include/appmgr",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/appmgr",
@@ -46,7 +40,7 @@ config("mediadataext_ability_public_config") {
     "//foundation/communication/dsoftbus/interfaces/kits/common",
     "//foundation/distributedschedule/safwk/services/safwk/include",
     "//foundation/distributedhardware/devicemanager/interfaces/inner_kits/native_cpp/include",
-    "//foundation/multimedia/media_standard/interfaces/innerkits/native/media/include/",
+    "//foundation/multimedia/media_standard/interfaces/inner_api/native",
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
     "//third_party/json/include",
@@ -57,36 +51,55 @@ config("mediadataext_ability_public_config") {
     cflags = [ "-DBINDER_IPC_32BIT" ]
   }
 }
+ohos_hap("medialibrary_ext_hap") {
+  hap_profile = "./app/config.json"
+  js2abc = false
+  shared_libraries = [ "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension" ]
+  certificate_profile = "$MEDIA_LIB_INNERKITS_DIR/signature/medialib.p7b"
+  hap_name = "Media_Library_Ext"
+  part_name = "prebuilt_hap"
+  subsystem_name = "applications"
+  module_install_dir = "app/com.ohos.medialibrary.MediaLibraryData"
+}
 
-ohos_shared_library("media_service_extension") {
+ohos_shared_library("medialibrary_data_extension") {
   install_enable = true
 
   sources = [
-    "src/mediadata_connection.cpp",
-    "src/mediadata_proxy.cpp",
-    "src/mediadata_stub.cpp",
-    "src/mediadata_stub_impl.cpp",
-    "src/mediadata_helper.cpp",
-    "src/mediadata_uv_queue.cpp",
+    "src/medialibrary_album_db.cpp",
+    "src/medialibrary_album_operations.cpp",
+    "src/medialibrary_data_manager.cpp",
+    "src/medialibrary_data_manager_utils.cpp",
+    "src/medialibrary_device.cpp",
+    "src/medialibrary_device_db.cpp",
+    "src/medialibrary_device_operations.cpp",
+    "src/medialibrary_file_db.cpp",
+    "src/medialibrary_file_operations.cpp",
+    "src/medialibrary_kvstore_operations.cpp",
+    "src/medialibrary_smartalbum_db.cpp",
+    "src/medialibrary_smartalbum_map_db.cpp",
+    "src/medialibrary_smartalbum_map_operations.cpp",
+    "src/medialibrary_smartalbum_operations.cpp",
+    "src/medialibrary_sync_table.cpp",
+    "src/medialibrary_thumbnail.cpp",
+    "src/uri_helper.cpp",
   ]
 
-  public_configs = [ ":mediadataext_ability_public_config" ]
-  cflags = [ "-DOLD_MEDIA_STD_API" ]
+  public_configs = [ ":media_data_extension_public_config" ]
 
   deps = [
     "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client:media_scanner_client",
     "$MEDIA_LIB_INNERKITS_DIR/media_library:media_library",
     "$MEDIA_LIB_INNERKITS_DIR/media_library:media_thumbnail_helper",
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
-    "//foundation/aafwk/standard/interfaces/innerkits/runtime:runtime",
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
+    "//foundation/aafwk/standard/interfaces/innerkits/runtime:runtime",
     "//foundation/aafwk/standard/services/abilitymgr:abilityms",
     "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
+    "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
     "//foundation/distributedhardware/devicemanager/interfaces/inner_kits/native_cpp:devicemanagersdk",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
-    "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager:dataobs_manager",
     "//utils/native/base:utils",
   ]
   deps += [ "//third_party/openssl:libcrypto_static" ]
@@ -96,8 +109,6 @@ ohos_shared_library("media_service_extension") {
     "access_token:libaccesstoken_sdk",
     "bytrace_standard:bytrace_core",
     "hiviewdfx_hilog_native:libhilog",
-    "ability_runtime:ability_context_native",
-    "ability_runtime:ability_manager",
     "ipc:ipc_core",
     "multimedia_media_standard:media_client",
     "native_appdatamgr:native_appdatafwk",

@@ -1,0 +1,57 @@
+{
+    "app": {
+        "bundleName": "com.ohos.medialibrary.MediaLibraryDataA",
+        "removable": false,
+        "userDataClearable": false,
+        "singleton": false,
+        "keepAlive": true,
+        "vendor": "ohos",
+        "version": {
+            "code": 1,
+            "name": "1.0"
+        },
+        "apiVersion": {
+            "compatible": 3,
+            "target": 3
+        }
+    },
+    "deviceConfig": {
+        "default": {
+            "removable": false,
+            "userDataClearable": false,
+            "singleton": false,
+            "keepAlive": true
+        }
+    },
+    "module": {
+        "package": "com.ohos.MediaLibraryDataAbility.src",
+        "name": "MediaLibraryDataAbility",
+        "deviceType": [
+            "tv",
+            "phone",
+            "car"
+        ],
+        "distro": {
+            "deliveryWithInstall": true,
+            "moduleName": "DataAbility",
+            "moduleType": "entry"
+        },
+        "abilities": [
+            {
+                "name": "MediaLibraryDataAbility",
+                "icon": "",
+                "label": "MediaData Ability",
+                "launchType": "standard",
+                "type": "data",
+                "visible": true,
+                "srcLanguage": "c++",
+                "uri": "dataability://media"
+            }
+        ],
+        "reqPermissions": [
+            {
+              "name": "ohos.permission.GET_BUNDLE_INFO_PRIVILEGED"
+            }
+        ]
+    }
+}
