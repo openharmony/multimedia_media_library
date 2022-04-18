@@ -20,13 +20,22 @@
 #include "mediadata_stub.h"
 #include "mediadata_uv_queue.h"
 #include "native_engine/native_value.h"
+#include "context.h"
+#include "foundation/aafwk/standard/frameworks/kits/appkit/native/ability_runtime/context/context.h"
+#include "rdb_errno.h"
+#include "rdb_helper.h"
+#include "rdb_open_callback.h"
+#include "rdb_store.h"
+#include "rdb_store_config.h"
+#include "rdb_types.h"
 
 namespace OHOS {
 namespace AppExecFwk {
 class MediaDataStubImpl : public MediaDataStub {
 public:
-    explicit MediaDataStubImpl(napi_env env)
+    explicit MediaDataStubImpl(napi_env env, std::shared_ptr<AbilityRuntime::Context> &context)
     {
+	context_ = context;
         uvQueue_ = std::make_shared<AbilityRuntime::MediaDataUvQueue>(env);
     }
 
@@ -65,8 +74,13 @@ public:
     std::vector<std::shared_ptr<AppExecFwk::DataAbilityResult>> ExecuteBatch(
         const std::vector<std::shared_ptr<AppExecFwk::DataAbilityOperation>> &operations) override;
 
+    int32_t InitMediaLibraryRdbStore();
 private:
     std::shared_ptr<AbilityRuntime::MediaDataUvQueue> uvQueue_;
+    //std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    std::shared_ptr<AbilityRuntime::Context> context_ = nullptr;
+    
+   // bool isRdbStoreInitialized = false;
 };
 } // namespace AppExecFwk
 } // namespace OHOS
