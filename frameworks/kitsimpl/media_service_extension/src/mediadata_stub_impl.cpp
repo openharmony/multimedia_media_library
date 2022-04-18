@@ -14,8 +14,26 @@
  */
 
 #include "mediadata_stub_impl.h"
-
+#include "abs_rdb_predicates.h"
+#include "data_ability_predicates.h"
+#include "device_manager.h"
+#include "device_manager_callback.h"
+#include "medialibrary_album_operations.h"
+#include "medialibrary_smartalbum_map_operations.h"
+#include "medialibrary_smartalbum_operations.h"
+#include "medialibrary_device.h"
+#include "medialibrary_device_info.h"
+#include "medialibrary_file_operations.h"
+#include "medialibrary_kvstore_operations.h"
+#include "result_set.h"
 #include "hilog_wrapper.h"
+#include "medialibrary_data_manager.h"
+
+using namespace std;
+using namespace OHOS::AppExecFwk;
+using namespace OHOS::NativeRdb;
+using namespace OHOS::DistributedKv;
+using namespace OHOS::Media;
 
 namespace OHOS {
 namespace AppExecFwk {
@@ -68,13 +86,57 @@ int MediaDataStubImpl::Delete(const Uri &uri, const NativeRdb::DataAbilityPredic
     return ret;
 }
 
+int32_t MediaDataStubImpl::InitMediaLibraryRdbStore()
+{
+    HILOG_INFO("InitMediaLibraryRdbStore IN |Rdb Verison %{private}d", MEDIA_RDB_VERSION);
+    MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context_);
+    /*
+    if (isRdbStoreInitialized) {
+        return 0;
+    }
+
+    int32_t errCode = 0;
+    string databaseDir = context_->GetDatabaseDir() + "/" + MEDIA_DATA_ABILITY_DB_NAME;
+    RdbStoreConfig config(databaseDir);
+    config.SetBundleName("com.example.myapplicaion");
+    config.SetName(MEDIA_DATA_ABILITY_DB_NAME);
+    MediaLibraryDataCallBack rdbDataCallBack;
+
+    rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
+    if (rdbStore_ == nullptr) {
+        HILOG_ERROR("InitMediaRdbStore GetRdbStore is failed ");
+        return errCode;
+    }
+    sRdbStoreInitialized = true;
+    */
+
+    return 0;
+}
+
 std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaDataStubImpl::Query(const Uri &uri,
     std::vector<std::string> &columns, const NativeRdb::DataAbilityPredicates &predicates)
 {
-    HILOG_INFO("%{public}s begin.", __func__);
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> ret = nullptr;
-    HILOG_INFO("%{public}s end successfully.", __func__);
-    return ret;
+    HILOG_INFO("MediaDataStubImpl::%{public}s begin.", __func__);
+    shared_ptr<AbsSharedResultSet> queryResultSet;
+    /*
+    TableType tabletype = TYPE_ALBUM_TABLE;
+    string strRow, uriString = uri.ToString();
+    if (tabletype == TYPE_SMARTALBUM || tabletype == TYPE_SMARTALBUM_MAP) {
+        HILOG_INFO("MediaDataStubImpl::%{public}s smartalbum.", __func__);
+    } else if (tabletype == TYPE_ASSETSMAP_TABLE || tabletype == TYPE_SMARTALBUMASSETS_TABLE) {
+        HILOG_INFO("MediaDataStubImpl::%{public}s assetmap.", __func__);
+    } else if (tabletype == TYPE_ALL_DEVICE || tabletype == TYPE_ACTIVE_DEVICE) {
+        HILOG_INFO("MediaDataStubImpl::%{public}s device", __func__);
+    } else if (tabletype == TYPE_ALBUM_TABLE) {
+        HILOG_INFO("MediaDataStubImpl::%{public}s album.", __func__);
+            queryResultSet = rdbStore_->QuerySql("SELECT * FROM " + ABLUM_VIEW_NAME);
+    } else {
+    }
+    */
+    queryResultSet =  MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
+
+    HILOG_INFO("MediaDataStubImpl::%{public}s end.", __func__);
+    return queryResultSet;
 }
 
 std::string MediaDataStubImpl::GetType(const Uri &uri)
