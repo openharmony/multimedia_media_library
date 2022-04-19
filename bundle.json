@@ -44,7 +44,6 @@
             "//foundation/multimedia/medialibrary_standard/sa_profile:medialibrary_service_sa_profile",
             "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary",
             "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary_js",
-            "//foundation/multimedia/medialibrary_standard/services/media_library_service:media_library_service_packages",
             "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_ability:medialibrary_data_ability",
             "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/media_scanner_ability:media_scanner_service",
             "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/client:media_scanner_client"
@@ -56,22 +55,17 @@
                   "header_files": [
                     "album_asset.h",
                     "fetch_result.h",
-                    "image_asset.h",
                     "imedia_scanner_client.h",
                     "media_data_ability_const.h",
                     "media_library.h",
                     "media_log.h",
                     "media_thumbnail_helper.h",
                     "smart_album_asset.h",
-                    "audio_asset.h",
                     "file_asset.h",
-                    "imedia_library_client.h",
-                    "media_asset.h",
                     "media_lib_service_const.h",
                     "media_library_manager.h",
                     "media_scanner_const.h",
-                    "native_album_asset.h",
-                    "video_asset.h"
+                    "native_album_asset.h"
                   ]
                 },
                 "name": "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library"
@@ -80,7 +74,6 @@
               "header": {
                 "header_base": "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary/include",
                 "header_files": [
-                  "album_asset_napi.h",
                   "fetch_file_result_napi.h",
                   "media_library_napi.h",
                   "album_napi.h",

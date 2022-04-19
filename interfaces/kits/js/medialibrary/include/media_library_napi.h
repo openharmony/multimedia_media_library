@@ -17,23 +17,17 @@
 #define MEDIA_LIBRARY_NAPI_H
 
 #include "abs_shared_result_set.h"
-#include "album_asset_napi.h"
 #include "album_napi.h"
-#include "audio_asset_napi.h"
 #include "data_ability_helper.h"
 #include "data_ability_observer_stub.h"
 #include "data_ability_predicates.h"
 #include "fetch_file_result_napi.h"
 #include "file_asset_napi.h"
-#include "image_asset_napi.h"
-#include "imedia_library_client.h"
-#include "media_asset_napi.h"
 #include "napi_base_context.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "smart_album_asset.h"
 #include "values_bucket.h"
-#include "video_asset_napi.h"
 
 namespace OHOS {
 namespace Media {
@@ -125,7 +119,6 @@ public:
 class MediaLibraryNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
-    IMediaLibraryClient* GetMediaLibClientInstance();
 
     MediaLibraryNapi();
     ~MediaLibraryNapi();
@@ -142,17 +135,6 @@ private:
     static napi_value MediaLibraryNapiConstructor(napi_env env, napi_callback_info info);
 
     static napi_value GetMediaLibraryNewInstance(napi_env env, napi_callback_info info);
-    static napi_value GetMediaLibraryOldInstance(napi_env env, napi_callback_info info);
-    static napi_value GetMediaAssets(napi_env env, napi_callback_info info);
-    static napi_value GetAudioAssets(napi_env env, napi_callback_info info);
-    static napi_value GetVideoAssets(napi_env env, napi_callback_info info);
-    static napi_value GetImageAssets(napi_env env, napi_callback_info info);
-    static napi_value GetVideoAlbums(napi_env env, napi_callback_info info);
-    static napi_value GetImageAlbums(napi_env env, napi_callback_info info);
-    static napi_value CreateAudioAsset(napi_env env, napi_callback_info info);
-    static napi_value CreateVideoAsset(napi_env env, napi_callback_info info);
-    static napi_value CreateImageAsset(napi_env env, napi_callback_info info);
-    static napi_value CreateAlbum(napi_env env, napi_callback_info info);
 
     // New APIs For L2
     static napi_value JSGetPublicDirectory(napi_env env, napi_callback_info info);
@@ -192,8 +174,6 @@ private:
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
     void UnregisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
 
-    IMediaLibraryClient *mediaLibrary_;
-
     napi_env env_;
     napi_ref wrapper_;
     static bool isStageMode_;
@@ -217,11 +197,6 @@ struct MediaLibraryAsyncContext {
     std::string order;
     std::string uri;
     std::string networkId;
-    std::vector<std::unique_ptr<MediaAsset>> mediaAssets;
-    std::vector<std::unique_ptr<AudioAsset>> audioAssets;
-    std::vector<std::unique_ptr<VideoAsset>> videoAssets;
-    std::vector<std::unique_ptr<ImageAsset>> imageAssets;
-    std::vector<std::unique_ptr<AlbumAsset>> albumAssets;
     std::unique_ptr<FetchResult> fetchFileResult;
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<SmartAlbumAsset> smartAlbumData;
