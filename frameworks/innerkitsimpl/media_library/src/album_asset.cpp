@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -77,10 +77,12 @@ void AlbumAsset::SetAlbumPath(const string albumPath)
 {
     albumPath_ = albumPath;
 }
+
 void AlbumAsset::SetAlbumVirtual(const bool albumVirtual)
 {
     albumVirtual_ = albumVirtual;
 }
+
 int32_t AlbumAsset::GetAlbumId() const
 {
     return albumId_;
@@ -110,14 +112,17 @@ string AlbumAsset::GetAlbumRelativePath() const
 {
     return albumRelativePath_;
 }
+
 string AlbumAsset::GetCoverUri() const
 {
     return coverUri_;
 }
+
 string AlbumAsset::GetAlbumPath() const
 {
     return albumPath_;
 }
+
 bool AlbumAsset::GetAlbumVirtual() const
 {
     return albumVirtual_;

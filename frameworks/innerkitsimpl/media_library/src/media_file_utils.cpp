@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,10 +14,9 @@
  */
 
 #include "media_file_utils.h"
-
-#include <regex>
 #include <cerrno>
-
+#include <regex>
+#include "directory_ex.h"
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
 #include "media_log.h"
@@ -28,6 +27,7 @@ namespace OHOS {
 namespace Media {
 int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
 {
+    CHECK_AND_RETURN_RET_LOG(fpath != nullptr, DATA_ABILITY_FAIL, "fpath == nullptr");
     int32_t errRet = remove(fpath);
     if (errRet) {
         perror(fpath);
@@ -165,22 +165,33 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 {
     struct stat fst;
     bool errCode = false;
-    char actualPath[PATH_MAX];
-
-    auto absFilePath = realpath(filePath.c_str(), actualPath);
-    if (absFilePath == nullptr) {
+    if (filePath.size() >= PATH_MAX) {
+        MEDIA_ERR_LOG("File path too long %{private}d", (int)filePath.size());
+        return errCode;
+    }
+    MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
+    std::string absFilePath = "";
+    if (!PathToRealPath(filePath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
+        return errCode;
+    }
+    if (absFilePath.empty()) {
         MEDIA_ERR_LOG("Failed to obtain the canonical path for source path%{private}s %{private}d",
                       filePath.c_str(), errno);
         return errCode;
     }
 
-    int32_t source = open(absFilePath, O_RDONLY);
+    int32_t source = open(absFilePath.c_str(), O_RDONLY);
     if (source == -1) {
         MEDIA_ERR_LOG("Open failed for source file");
         return errCode;
     }
-
-    int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
+    std::string absNewPath = "";
+    if (!PathToRealPath(newPath, absNewPath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", newPath.c_str());
+        return errCode;
+    }
+    int32_t dest = open(absNewPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
     if (dest == -1) {
         MEDIA_ERR_LOG("Open failed for destination file %{private}d", errno);
         close(source);
@@ -216,12 +227,12 @@ bool MediaFileUtils::CopyFile(const string &filePath, const string &newPath)
         return false;
     }
 
-    if (IsFileExists(filePath) == true && !IsFileExists(newPathCorrected)) {
+    if (IsFileExists(filePath) && !IsFileExists(newPathCorrected)) {
         errCode = true; // set to create file if directory exists
         if (!(IsDirectory(newPath))) {
             errCode = CreateDirectory(newPath);
         }
-        if (errCode == true) {
+        if (errCode) {
             char actualPath[PATH_MAX];
             char* canonicalDirPath = realpath(newPath.c_str(), actualPath);
             if (canonicalDirPath == nullptr) {
@@ -250,8 +261,8 @@ bool MediaFileUtils::RenameDir(const string &oldPath, const string &newPath)
 
 bool MediaFileUtils::CheckDisplayName(std::string displayName)
 {
-    int size = displayName.length();
-    if (size <= 0 || size > DISPLAYNAME_MAX) {
+    size_t size = displayName.length();
+    if (size == 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
     std::regex express("[\\\\/:*?\"<>|{}\\[\\]]");
@@ -265,8 +276,8 @@ bool MediaFileUtils::CheckDisplayName(std::string displayName)
 
 bool MediaFileUtils::CheckTitle(std::string title)
 {
-    int size = title.length();
-    if (size <= 0 || size > DISPLAYNAME_MAX) {
+    size_t size = title.length();
+    if (size == 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
     std::regex express("[\\.\\\\/:*?\"<>|{}\\[\\]]");

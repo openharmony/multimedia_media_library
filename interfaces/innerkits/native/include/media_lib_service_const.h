@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_LIB_SERVICE_CONST_H
-#define MEDIA_LIB_SERVICE_CONST_H
+#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIB_SERVICE_CONST_H_
+#define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIB_SERVICE_CONST_H_
 
 #include <unordered_set>
 
@@ -131,12 +131,13 @@ const int32_t DEFAULT_MEDIA_PARENT = 0;
 const bool DEFAULT_ALBUM_VIRTUAL = false;
 const uint64_t DEFAULT_MEDIA_DATE_TAKEN = 0;
 const std::string DEFAULT_MEDIA_ALBUM_URI = "";
+const bool DEFAULT_MEDIA_IS_PENDING = false;
 const std::string ROOT_MEDIA_DIR = "/storage/media/local/files/";
 const char SLASH_CHAR = '/';
 const int32_t OPEN_FDS = 64;
 const int32_t MILLISECONDS = 1000;
 const char DOT_CHAR = '.';
-const int32_t DISPLAYNAME_MAX = 128;
+const size_t DISPLAYNAME_MAX = 128;
 const int32_t TIMEPENDING_MIN = 30 * 60;
 
 const std::string SKIPLIST_FILE_PATH = "/data/SkipScanFile.txt";
@@ -203,4 +204,5 @@ const std::unordered_set<std::string> SUPPORTED_IMAGE_FORMATS_SET {
                                                 };
 } // namespace OHOS
 } // namespace Media
-#endif // MEDIA_LIB_SERVICE_CONST_H
+
+#endif  // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIB_SERVICE_CONST_H_

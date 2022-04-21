@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_DATA_ABILITY_CONST_H
-#define MEDIA_DATA_ABILITY_CONST_H
+#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_DATA_ABILITY_CONST_H_
+#define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_DATA_ABILITY_CONST_H_
 #include "media_lib_service_const.h"
 namespace OHOS {
 namespace Media {
@@ -46,97 +46,98 @@ const int32_t DEVICE_OPERATION_ERR = -1;
 const int32_t DEVICE_SYNCSTATUSING = 0;
 const int32_t DEVICE_SYNCSTATUS_COMPLETE = 1;
 
-const std::string MEDIA_DATA_DB_Path = "/data/media/";
-const std::string MEDIA_DATA_DEVICE_PATH = "local";
-const std::string MEDIALIBRARY_TABLE = "Files";
-const std::string SMARTALBUM_TABLE = "SmartAlbum";
-const std::string SMARTALBUM_MAP_TABLE = "SmartAlbumMap";
-const std::string CATEGORY_SMARTALBUM_MAP_TABLE = "CategorySmartAlbumMap";
-const std::string DEVICE_TABLE = "Device";
+static const std::string MEDIA_DATA_DB_Path = "/data/media/";
+static const std::string MEDIA_DATA_DEVICE_PATH = "local";
+static const std::string MEDIALIBRARY_TABLE = "Files";
+static const std::string SMARTALBUM_TABLE = "SmartAlbum";
+static const std::string SMARTALBUM_MAP_TABLE = "SmartAlbumMap";
+static const std::string CATEGORY_SMARTALBUM_MAP_TABLE = "CategorySmartAlbumMap";
+static const std::string DEVICE_TABLE = "Device";
 
-const std::string MEDIA_DATA_ABILITY_DB_NAME = "media_library.db";
+static const std::string MEDIA_DATA_ABILITY_DB_NAME = "media_library.db";
 
-const std::string BUNDLE_NAME = "com.ohos.medialibrary.MediaLibraryDataA";
+static const std::string BUNDLE_NAME = "com.ohos.medialibrary.MediaLibraryDataA";
 
-const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "dataability://";
-const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
-const std::string MEDIALIBRARY_MEDIA_PREFIX = MEDIALIBRARY_DATA_ABILITY_PREFIX + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-const std::string MEDIALIBRARY_TYPE_AUDIO_URI = "/audio";
-const std::string MEDIALIBRARY_TYPE_VIDEO_URI = "/video";
-const std::string MEDIALIBRARY_TYPE_IMAGE_URI = "/image";
-const std::string MEDIALIBRARY_TYPE_FILE_URI  =  "/file";
-const std::string MEDIALIBRARY_TYPE_ALBUM_URI  =  "/album";
-const std::string MEDIALIBRARY_TYPE_SMARTALBUM_CHANGE_URI  =  "/smartalbum";
-const std::string MEDIALIBRARY_TYPE_DEVICE_URI  =  "/device";
-const std::string MEDIALIBRARY_TYPE_SMART_URI = "/smart";
+static const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "dataability://";
+static const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
+static const std::string MEDIALIBRARY_MEDIA_PREFIX = MEDIALIBRARY_DATA_ABILITY_PREFIX +
+                                                     MEDIALIBRARY_DATA_URI_IDENTIFIER;
+static const std::string MEDIALIBRARY_TYPE_AUDIO_URI = "/audio";
+static const std::string MEDIALIBRARY_TYPE_VIDEO_URI = "/video";
+static const std::string MEDIALIBRARY_TYPE_IMAGE_URI = "/image";
+static const std::string MEDIALIBRARY_TYPE_FILE_URI  =  "/file";
+static const std::string MEDIALIBRARY_TYPE_ALBUM_URI  =  "/album";
+static const std::string MEDIALIBRARY_TYPE_SMARTALBUM_CHANGE_URI  =  "/smartalbum";
+static const std::string MEDIALIBRARY_TYPE_DEVICE_URI  =  "/device";
+static const std::string MEDIALIBRARY_TYPE_SMART_URI = "/smart";
 
-const std::string MEDIALIBRARY_DATA_URI = "dataability:///media";
-const std::string MEDIALIBRARY_SMARTALBUM_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_TABLE;
-const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_MAP_TABLE;
-const std::string MEDIALIBRARY_CATEGORY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/"
+static const std::string MEDIALIBRARY_DATA_URI = "dataability:///media";
+static const std::string MEDIALIBRARY_SMARTALBUM_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_TABLE;
+static const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_MAP_TABLE;
+static const std::string MEDIALIBRARY_CATEGORY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/"
                                                              + CATEGORY_SMARTALBUM_MAP_TABLE;
 
-const std::string MEDIALIBRARY_AUDIO_URI = MEDIALIBRARY_DATA_URI + '/' + "audio";
-const std::string MEDIALIBRARY_VIDEO_URI = MEDIALIBRARY_DATA_URI + '/' + "video";
-const std::string MEDIALIBRARY_IMAGE_URI = MEDIALIBRARY_DATA_URI + '/' + "image";
-const std::string MEDIALIBRARY_FILE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "file";
-const std::string MEDIALIBRARY_ALBUM_URI  =  MEDIALIBRARY_DATA_URI + '/' + "album";
-const std::string MEDIALIBRARY_SMARTALBUM_CHANGE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "smartalbum";
-const std::string MEDIALIBRARY_DEVICE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "device";
-const std::string MEDIALIBRARY_SMART_URI = MEDIALIBRARY_DATA_URI + '/' + "smart";
-const std::string MEDIALIBRARY_REMOTEFILE_URI = MEDIALIBRARY_DATA_URI + '/' + "remotfile";
+static const std::string MEDIALIBRARY_AUDIO_URI = MEDIALIBRARY_DATA_URI + '/' + "audio";
+static const std::string MEDIALIBRARY_VIDEO_URI = MEDIALIBRARY_DATA_URI + '/' + "video";
+static const std::string MEDIALIBRARY_IMAGE_URI = MEDIALIBRARY_DATA_URI + '/' + "image";
+static const std::string MEDIALIBRARY_FILE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "file";
+static const std::string MEDIALIBRARY_ALBUM_URI  =  MEDIALIBRARY_DATA_URI + '/' + "album";
+static const std::string MEDIALIBRARY_SMARTALBUM_CHANGE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "smartalbum";
+static const std::string MEDIALIBRARY_DEVICE_URI  =  MEDIALIBRARY_DATA_URI + '/' + "device";
+static const std::string MEDIALIBRARY_SMART_URI = MEDIALIBRARY_DATA_URI + '/' + "smart";
+static const std::string MEDIALIBRARY_REMOTEFILE_URI = MEDIALIBRARY_DATA_URI + '/' + "remotfile";
 
-const std::string MEDIA_DATA_DB_ID = "file_id";
-const std::string MEDIA_DATA_DB_URI = "uri";
-const std::string MEDIA_DATA_DB_FILE_PATH = "data";
-const std::string MEDIA_DATA_DB_SIZE = "size";
-const std::string MEDIA_DATA_DB_PARENT_ID = "parent";
-const std::string MEDIA_DATA_DB_DATE_MODIFIED = "date_modified";
-const std::string MEDIA_DATA_DB_DATE_ADDED = "date_added";
-const std::string MEDIA_DATA_DB_MIME_TYPE = "mime_type";
-const std::string MEDIA_DATA_DB_TITLE = "title";
-const std::string MEDIA_DATA_DB_DESCRIPTION = "description";
-const std::string MEDIA_DATA_DB_NAME = "display_name";
-const std::string MEDIA_DATA_DB_ORIENTATION = "orientation";
-const std::string MEDIA_DATA_DB_LATITUDE = "latitude";
-const std::string MEDIA_DATA_DB_LONGITUDE = "longitude";
-const std::string MEDIA_DATA_DB_DATE_TAKEN = "date_taken";
-const std::string MEDIA_DATA_DB_THUMBNAIL = "thumbnail";
+static const std::string MEDIA_DATA_DB_ID = "file_id";
+static const std::string MEDIA_DATA_DB_URI = "uri";
+static const std::string MEDIA_DATA_DB_FILE_PATH = "data";
+static const std::string MEDIA_DATA_DB_SIZE = "size";
+static const std::string MEDIA_DATA_DB_PARENT_ID = "parent";
+static const std::string MEDIA_DATA_DB_DATE_MODIFIED = "date_modified";
+static const std::string MEDIA_DATA_DB_DATE_ADDED = "date_added";
+static const std::string MEDIA_DATA_DB_MIME_TYPE = "mime_type";
+static const std::string MEDIA_DATA_DB_TITLE = "title";
+static const std::string MEDIA_DATA_DB_DESCRIPTION = "description";
+static const std::string MEDIA_DATA_DB_NAME = "display_name";
+static const std::string MEDIA_DATA_DB_ORIENTATION = "orientation";
+static const std::string MEDIA_DATA_DB_LATITUDE = "latitude";
+static const std::string MEDIA_DATA_DB_LONGITUDE = "longitude";
+static const std::string MEDIA_DATA_DB_DATE_TAKEN = "date_taken";
+static const std::string MEDIA_DATA_DB_THUMBNAIL = "thumbnail";
 
-const std::string MEDIA_DATA_DB_LCD = "lcd";
-const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";
-const std::string MEDIA_DATA_DB_BUCKET_NAME = "bucket_display_name";
-const std::string MEDIA_DATA_DB_DURATION = "duration";
-const std::string MEDIA_DATA_DB_ARTIST = "artist";
+static const std::string MEDIA_DATA_DB_LCD = "lcd";
+static const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";
+static const std::string MEDIA_DATA_DB_BUCKET_NAME = "bucket_display_name";
+static const std::string MEDIA_DATA_DB_DURATION = "duration";
+static const std::string MEDIA_DATA_DB_ARTIST = "artist";
 
-const std::string MEDIA_DATA_DB_AUDIO_ALBUM = "audio_album";
-const std::string MEDIA_DATA_DB_MEDIA_TYPE = "media_type";
+static const std::string MEDIA_DATA_DB_AUDIO_ALBUM = "audio_album";
+static const std::string MEDIA_DATA_DB_MEDIA_TYPE = "media_type";
 
-const std::string MEDIA_DATA_DB_HEIGHT = "height";
-const std::string MEDIA_DATA_DB_WIDTH = "width";
-const std::string MEDIA_DATA_DB_OWNER_PACKAGE = "owner_package";
+static const std::string MEDIA_DATA_DB_HEIGHT = "height";
+static const std::string MEDIA_DATA_DB_WIDTH = "width";
+static const std::string MEDIA_DATA_DB_OWNER_PACKAGE = "owner_package";
 
-const std::string MEDIA_DATA_DB_IS_FAV = "is_favorite";
-const std::string MEDIA_DATA_DB_IS_TRASH = "is_trash";
-const std::string MEDIA_DATA_DB_DATE_TRASHED = "date_trashed";
-const std::string MEDIA_DATA_DB_IS_PENDING = "is_pending";
-const std::string MEDIA_DATA_DB_TIME_PENDING = "time_pending";
-const std::string MEDIA_DATA_DB_RELATIVE_PATH = "relative_path";
-const std::string MEDIA_DATA_DB_VOLUME_NAME = "volume_name";
-const std::string MEDIA_DATA_DB_SELF_ID = "self_id";
+static const std::string MEDIA_DATA_DB_IS_FAV = "is_favorite";
+static const std::string MEDIA_DATA_DB_IS_TRASH = "is_trash";
+static const std::string MEDIA_DATA_DB_DATE_TRASHED = "date_trashed";
+static const std::string MEDIA_DATA_DB_IS_PENDING = "is_pending";
+static const std::string MEDIA_DATA_DB_TIME_PENDING = "time_pending";
+static const std::string MEDIA_DATA_DB_RELATIVE_PATH = "relative_path";
+static const std::string MEDIA_DATA_DB_VOLUME_NAME = "volume_name";
+static const std::string MEDIA_DATA_DB_SELF_ID = "self_id";
 
-const std::string MEDIA_DATA_DB_ALBUM = "album";
-const std::string MEDIA_DATA_DB_ALBUM_ID = "album_id";
-const std::string MEDIA_DATA_DB_ALBUM_NAME = "album_name";
-const std::string MEDIA_DATA_DB_COUNT = "count";
+static const std::string MEDIA_DATA_DB_ALBUM = "album";
+static const std::string MEDIA_DATA_DB_ALBUM_ID = "album_id";
+static const std::string MEDIA_DATA_DB_ALBUM_NAME = "album_name";
+static const std::string MEDIA_DATA_DB_COUNT = "count";
 
 // ringtone uri constants
-const std::string MEDIA_DATA_DB_RINGTONE_URI = "ringtone_uri";
-const std::string MEDIA_DATA_DB_ALARM_URI = "alarm_uri";
-const std::string MEDIA_DATA_DB_NOTIFICATION_URI = "notification_uri";
-const std::string MEDIA_DATA_DB_RINGTONE_TYPE = "ringtone_type";
+static const std::string MEDIA_DATA_DB_RINGTONE_URI = "ringtone_uri";
+static const std::string MEDIA_DATA_DB_ALARM_URI = "alarm_uri";
+static const std::string MEDIA_DATA_DB_NOTIFICATION_URI = "notification_uri";
+static const std::string MEDIA_DATA_DB_RINGTONE_TYPE = "ringtone_type";
 
-const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " ("
+static const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " ("
                                        + MEDIA_DATA_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                                        + MEDIA_DATA_DB_FILE_PATH + " TEXT, "
                                        + MEDIA_DATA_DB_SIZE + " BIGINT, "
@@ -173,7 +174,7 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        + MEDIA_DATA_DB_URI + " TEXT, "
                                        + MEDIA_DATA_DB_ALBUM + " TEXT)";
 
-const std::string CREATE_IMAGE_VIEW = "CREATE VIEW Image AS SELECT "
+static const std::string CREATE_IMAGE_VIEW = "CREATE VIEW Image AS SELECT "
                                       + MEDIA_DATA_DB_ID + ", "
                                       + MEDIA_DATA_DB_FILE_PATH + ", "
                                       + MEDIA_DATA_DB_SIZE + ", "
@@ -197,7 +198,7 @@ const std::string CREATE_IMAGE_VIEW = "CREATE VIEW Image AS SELECT "
                                       + "FROM Files WHERE "
                                       + MEDIA_DATA_DB_MEDIA_TYPE + " = 3";
 
-const std::string CREATE_VIDEO_VIEW = "CREATE VIEW Video AS SELECT "
+static const std::string CREATE_VIDEO_VIEW = "CREATE VIEW Video AS SELECT "
                                       + MEDIA_DATA_DB_ID + ", "
                                       + MEDIA_DATA_DB_FILE_PATH + ", "
                                       + MEDIA_DATA_DB_SIZE + ", "
@@ -218,7 +219,7 @@ const std::string CREATE_VIDEO_VIEW = "CREATE VIEW Video AS SELECT "
                                       + "FROM Files WHERE "
                                       + MEDIA_DATA_DB_MEDIA_TYPE + " = 4";
 
-const std::string CREATE_AUDIO_VIEW = "CREATE VIEW Audio AS SELECT "
+static const std::string CREATE_AUDIO_VIEW = "CREATE VIEW Audio AS SELECT "
                                       + MEDIA_DATA_DB_ID + ", "
                                       + MEDIA_DATA_DB_FILE_PATH + ", "
                                       + MEDIA_DATA_DB_SIZE + ", "
@@ -237,10 +238,10 @@ const std::string CREATE_AUDIO_VIEW = "CREATE VIEW Audio AS SELECT "
                                       + "FROM Files WHERE "
                                       + MEDIA_DATA_DB_MEDIA_TYPE + " = 5";
 
-const std::string FILE_TABLE = "file";
-const std::string ABLUM_TABLE = "album";
-const std::string ABLUM_VIEW_NAME = "Album";
-const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
+static const std::string FILE_TABLE = "file";
+static const std::string ABLUM_TABLE = "album";
+static const std::string ABLUM_VIEW_NAME = "Album";
+static const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + " AS SELECT count( " + FILE_TABLE + "."
                                       + MEDIA_DATA_DB_DATE_TRASHED + "= 0 OR NULL) AS "
                                       + MEDIA_DATA_DB_COUNT + ", "
@@ -271,7 +272,7 @@ const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_NAME + ", "
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
-const std::string DISTRIBUTED_ABLUM_COLUMNS = "SELECT count( " + FILE_TABLE + "."
+static const std::string DISTRIBUTED_ABLUM_COLUMNS = "SELECT count( " + FILE_TABLE + "."
                                                + MEDIA_DATA_DB_DATE_TRASHED + "= 0 OR NULL) AS "
                                                + MEDIA_DATA_DB_COUNT + ", "
                                                + ABLUM_TABLE + "." + MEDIA_DATA_DB_RELATIVE_PATH + ", "
@@ -287,7 +288,7 @@ const std::string DISTRIBUTED_ABLUM_COLUMNS = "SELECT count( " + FILE_TABLE + ".
                                                + ABLUM_TABLE + "." + MEDIA_DATA_DB_THUMBNAIL + ", "
                                                + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
                                                + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
-const std::string DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY = " WHERE "
+static const std::string DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY = " WHERE "
                                                         + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID + " = "
                                                         + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AND "
                                                         + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + " <> "
@@ -299,16 +300,16 @@ const std::string DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY = " WHERE "
                                                         + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_NAME + ", "
                                                         + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
                                                         + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
-const std::string SMARTALBUM_DB_ID = "album_id";
-const std::string SMARTALBUM_DB_NAME = "name";
-const std::string SMARTALBUM_DB_DESCRIPTION = "description";
-const std::string SMARTALBUM_DB_ALBUM_TYPE = "album_type";
-const std::string SMARTALBUM_DB_LATITUDE = "latitude";
-const std::string SMARTALBUM_DB_LONGITUDE = "longitude";
-const std::string SMARTALBUM_DB_DATE_ADDED = "date_added";
-const std::string SMARTALBUM_DB_DATE_MODIFIED = "date_modified";
-const std::string SMARTALBUM_DB_SELF_ID = "self_id";
-const std::string CREATE_SMARTALBUM_TABLE = "CREATE TABLE IF NOT EXISTS " + SMARTALBUM_TABLE + " ("
+static const std::string SMARTALBUM_DB_ID = "album_id";
+static const std::string SMARTALBUM_DB_NAME = "name";
+static const std::string SMARTALBUM_DB_DESCRIPTION = "description";
+static const std::string SMARTALBUM_DB_ALBUM_TYPE = "album_type";
+static const std::string SMARTALBUM_DB_LATITUDE = "latitude";
+static const std::string SMARTALBUM_DB_LONGITUDE = "longitude";
+static const std::string SMARTALBUM_DB_DATE_ADDED = "date_added";
+static const std::string SMARTALBUM_DB_DATE_MODIFIED = "date_modified";
+static const std::string SMARTALBUM_DB_SELF_ID = "self_id";
+static const std::string CREATE_SMARTALBUM_TABLE = "CREATE TABLE IF NOT EXISTS " + SMARTALBUM_TABLE + " ("
                                             + SMARTALBUM_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                                             + SMARTALBUM_DB_NAME + " TEXT, "
                                             + SMARTALBUM_DB_DESCRIPTION + " TEXT, "
@@ -319,23 +320,23 @@ const std::string CREATE_SMARTALBUM_TABLE = "CREATE TABLE IF NOT EXISTS " + SMAR
                                             + SMARTALBUM_DB_DATE_MODIFIED + " BIGINT, "
                                             + SMARTALBUM_DB_SELF_ID + " TEXT) ";
 
-const std::string SMARTALBUMMAP_DB_ID = "map_id";
-const std::string SMARTALBUMMAP_DB_CATEGORY_ID = "id";
-const std::string SMARTALBUMMAP_DB_ALBUM_ID = "album_id";
-const std::string SMARTALBUMMAP_DB_ASSET_ID = "asset_id";
-const std::string SMARTALBUMMAP_DB_SELF_ID = "self_id";
-const std::string CREATE_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXISTS " + SMARTALBUM_MAP_TABLE + " ("
+static const std::string SMARTALBUMMAP_DB_ID = "map_id";
+static const std::string SMARTALBUMMAP_DB_CATEGORY_ID = "id";
+static const std::string SMARTALBUMMAP_DB_ALBUM_ID = "album_id";
+static const std::string SMARTALBUMMAP_DB_ASSET_ID = "asset_id";
+static const std::string SMARTALBUMMAP_DB_SELF_ID = "self_id";
+static const std::string CREATE_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXISTS " + SMARTALBUM_MAP_TABLE + " ("
                                             + SMARTALBUMMAP_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                                             + SMARTALBUMMAP_DB_CATEGORY_ID + " INT, "
                                             + SMARTALBUMMAP_DB_ALBUM_ID + " INT, "
                                             + SMARTALBUMMAP_DB_ASSET_ID + " INT, "
                                             + SMARTALBUMMAP_DB_SELF_ID + " TEXT) ";
-const std::string CATEGORY_SMARTALBUMMAP_DB_ID = "category_map_id";
-const std::string CATEGORY_SMARTALBUMMAP_DB_CATEGORY_ID = "category_id";
-const std::string CATEGORY_SMARTALBUMMAP_DB_CATEGORY_NAME = "category_name";
-const std::string CATEGORY_SMARTALBUMMAP_DB_ALBUM_ID = "album_id";
-const std::string CATEGORY_SMARTALBUMMAP_DB_SELF_ID = "self_id";
-const std::string CREATE_CATEGORY_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXISTS "
+static const std::string CATEGORY_SMARTALBUMMAP_DB_ID = "category_map_id";
+static const std::string CATEGORY_SMARTALBUMMAP_DB_CATEGORY_ID = "category_id";
+static const std::string CATEGORY_SMARTALBUMMAP_DB_CATEGORY_NAME = "category_name";
+static const std::string CATEGORY_SMARTALBUMMAP_DB_ALBUM_ID = "album_id";
+static const std::string CATEGORY_SMARTALBUMMAP_DB_SELF_ID = "self_id";
+static const std::string CREATE_CATEGORY_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXISTS "
                                             + CATEGORY_SMARTALBUM_MAP_TABLE + " ("
                                             + CATEGORY_SMARTALBUMMAP_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                                             + CATEGORY_SMARTALBUMMAP_DB_CATEGORY_ID + " INT, "
@@ -343,18 +344,18 @@ const std::string CREATE_CATEGORY_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXI
                                             + CATEGORY_SMARTALBUMMAP_DB_ALBUM_ID + " INT, "
                                             + SMARTALBUMMAP_DB_SELF_ID + " TEXT) ";
 
-const std::string DEVICE_DB_ID = "id";
-const std::string DEVICE_DB_DEVICEID = "device_id";
-const std::string DEVICE_DB_NETWORK_ID = "network_id";
-const std::string DEVICE_DB_NAME = "device_name";
-const std::string DEVICE_DB_IP = "device_ip";
-const std::string DEVICE_DB_SYNC_STATUS = "sync_status";
-const std::string DEVICE_DB_SELF_ID = "self_id";
-const std::string DEVICE_DB_TYPE = "device_type";
-const std::string DEVICE_DB_PREPATH = "pre_path";
-const std::string DEVICE_DB_DATE_ADDED = "date_added";
-const std::string DEVICE_DB_DATE_MODIFIED = "date_modified";
-const std::string CREATE_DEVICE_TABLE = "CREATE TABLE IF NOT EXISTS " + DEVICE_TABLE + " ("
+static const std::string DEVICE_DB_ID = "id";
+static const std::string DEVICE_DB_DEVICEID = "device_id";
+static const std::string DEVICE_DB_NETWORK_ID = "network_id";
+static const std::string DEVICE_DB_NAME = "device_name";
+static const std::string DEVICE_DB_IP = "device_ip";
+static const std::string DEVICE_DB_SYNC_STATUS = "sync_status";
+static const std::string DEVICE_DB_SELF_ID = "self_id";
+static const std::string DEVICE_DB_TYPE = "device_type";
+static const std::string DEVICE_DB_PREPATH = "pre_path";
+static const std::string DEVICE_DB_DATE_ADDED = "date_added";
+static const std::string DEVICE_DB_DATE_MODIFIED = "date_modified";
+static const std::string CREATE_DEVICE_TABLE = "CREATE TABLE IF NOT EXISTS " + DEVICE_TABLE + " ("
                                             + DEVICE_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                                             + DEVICE_DB_DEVICEID + " TEXT, "
                                             + DEVICE_DB_NETWORK_ID + " TEXT, "
@@ -366,12 +367,12 @@ const std::string CREATE_DEVICE_TABLE = "CREATE TABLE IF NOT EXISTS " + DEVICE_T
                                             + DEVICE_DB_PREPATH + " TEXT, "
                                             + DEVICE_DB_DATE_ADDED + " BIGINT DEFAULT 0, "
                                             + DEVICE_DB_DATE_MODIFIED + " BIGINT DEFAULT 0) ";
-const std::string SMARTALBUM_TABLE_NAME = "smartalbum";
-const std::string SMARTALBUMMAP_TABLE_NAME = "smartAlbumMap";
-const std::string CATEGORY_SMARTALBUMMAP_TABLE_NAME = "categorySmartAlbumMap";
-const std::string SMARTABLUMASSETS_VIEW_NAME = "SmartAlbumAssets";
-const std::string SMARTABLUMASSETS_ALBUMCAPACITY = "albumCapacity";
-const std::string CREATE_SMARTABLUMASSETS_VIEW = "CREATE VIEW " + SMARTABLUMASSETS_VIEW_NAME
+static const std::string SMARTALBUM_TABLE_NAME = "smartalbum";
+static const std::string SMARTALBUMMAP_TABLE_NAME = "smartAlbumMap";
+static const std::string CATEGORY_SMARTALBUMMAP_TABLE_NAME = "categorySmartAlbumMap";
+static const std::string SMARTABLUMASSETS_VIEW_NAME = "SmartAlbumAssets";
+static const std::string SMARTABLUMASSETS_ALBUMCAPACITY = "albumCapacity";
+static const std::string CREATE_SMARTABLUMASSETS_VIEW = "CREATE VIEW " + SMARTABLUMASSETS_VIEW_NAME
                         + " AS SELECT COUNT(" + MEDIALIBRARY_TABLE + "."+ MEDIA_DATA_DB_DATE_TRASHED + " = 0"
                         + " OR NULL ) AS " + SMARTABLUMASSETS_ALBUMCAPACITY + ", "
                         + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID + ", "
@@ -389,8 +390,8 @@ const std::string CREATE_SMARTABLUMASSETS_VIEW = "CREATE VIEW " + SMARTABLUMASSE
                         + " GROUP BY IFNULL( " + SMARTALBUM_TABLE_NAME + "." + SMARTALBUMMAP_DB_ALBUM_ID + ", "
                         + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID + " ), "
                         + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_SELF_ID;
-const std::string ASSETMAP_VIEW_NAME = "AssetMap";
-const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW " + ASSETMAP_VIEW_NAME
+static const std::string ASSETMAP_VIEW_NAME = "AssetMap";
+static const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW " + ASSETMAP_VIEW_NAME
                         + " AS SELECT * FROM "
                         + MEDIALIBRARY_TABLE + " a " + ", "
                         + SMARTALBUM_MAP_TABLE + " b "
@@ -399,54 +400,55 @@ const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW " + ASSETMAP_VIEW_NAME
                         + "b." + SMARTALBUMMAP_DB_ASSET_ID;
 
 // File operations constants
-const std::string MEDIA_OPERN_KEYWORD = "operation";
-const std::string MEDIA_FILEOPRN = "file_operation";
-const std::string MEDIA_ALBUMOPRN = "album_operation";
-const std::string MEDIA_KVSTOREOPRN = "kvstore_operation";
-const std::string MEDIA_SMARTALBUMOPRN = "albumsmart_operation";
-const std::string MEDIA_SMARTALBUMMAPOPRN = "smartalbummap_operation";
-const std::string MEDIA_FILEOPRN_CREATEASSET = "create_asset";
-const std::string MEDIA_FILEOPRN_MODIFYASSET = "modify_asset";
-const std::string MEDIA_FILEOPRN_DELETEASSET = "delete_asset";
-const std::string MEDIA_FILEOPRN_GETALBUMCAPACITY = "get_album_capacity";
-const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
-const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
-const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
+static const std::string MEDIA_OPERN_KEYWORD = "operation";
+static const std::string MEDIA_FILEOPRN = "file_operation";
+static const std::string MEDIA_ALBUMOPRN = "album_operation";
+static const std::string MEDIA_KVSTOREOPRN = "kvstore_operation";
+static const std::string MEDIA_SMARTALBUMOPRN = "albumsmart_operation";
+static const std::string MEDIA_SMARTALBUMMAPOPRN = "smartalbummap_operation";
+static const std::string MEDIA_FILEOPRN_CREATEASSET = "create_asset";
+static const std::string MEDIA_FILEOPRN_MODIFYASSET = "modify_asset";
+static const std::string MEDIA_FILEOPRN_DELETEASSET = "delete_asset";
+static const std::string MEDIA_FILEOPRN_GETALBUMCAPACITY = "get_album_capacity";
+static const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
+static const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
+static const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
 
 // ringtone uris
-const std::string MEDIA_KVSTOREOPRN_SET_URI = "set_ringtone_uri";
-const std::string MEDIA_KVSTOREOPRN_SET_NOTIFICATION_URI = "set_notification_uri";
-const std::string MEDIA_KVSTOREOPRN_SET_ALARM_URI = "set_alarm_uri";
-const std::string MEDIA_KVSTOREOPRN_GET_URI = "get_ringtone_uri";
-const std::string MEDIA_KVSTOREOPRN_GET_NOTIFICATION_URI = "get_notification_uri";
-const std::string MEDIA_KVSTOREOPRN_GET_ALARM_URI = "get_alarm_uri";
+static const std::string MEDIA_KVSTOREOPRN_SET_URI = "set_ringtone_uri";
+static const std::string MEDIA_KVSTOREOPRN_SET_NOTIFICATION_URI = "set_notification_uri";
+static const std::string MEDIA_KVSTOREOPRN_SET_ALARM_URI = "set_alarm_uri";
+static const std::string MEDIA_KVSTOREOPRN_GET_URI = "get_ringtone_uri";
+static const std::string MEDIA_KVSTOREOPRN_GET_NOTIFICATION_URI = "get_notification_uri";
+static const std::string MEDIA_KVSTOREOPRN_GET_ALARM_URI = "get_alarm_uri";
 
-const std::string MEDIA_ALBUMOPRN_CREATEALBUM = "create_album";
-const std::string MEDIA_ALBUMOPRN_MODIFYALBUM = "modify_album";
-const std::string MEDIA_ALBUMOPRN_DELETEALBUM = "delete_album";
-const std::string MEDIA_ALBUMOPRN_QUERYALBUM = "query_album";
-const std::string MEDIA_SMARTALBUMOPRN_CREATEALBUM = "create_smartalbum";
-const std::string MEDIA_SMARTALBUMOPRN_MODIFYALBUM = "modify_smartalbum";
-const std::string MEDIA_SMARTALBUMOPRN_DELETEALBUM = "delete_smartalbum";
-const std::string MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM = "add_smartalbum_map";
-const std::string MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM = "remove_smartalbum_map";
-const std::string MEDIA_FILEMODE = "mode";
-const std::string MEDIA_FILEDESCRIPTOR = "fd";
-const std::string MEDIA_FILEMODE_READONLY = "r";
-const std::string MEDIA_FILEMODE_WRITEONLY = "w";
-const std::string MEDIA_FILEMODE_READWRITE = "rw";
-const std::string MEDIA_FILEMODE_WRITETRUNCATE = "wt";
-const std::string MEDIA_FILEMODE_WRITEAPPEND = "wa";
-const std::string MEDIA_FILEMODE_READWRITETRUNCATE = "rwt";
+static const std::string MEDIA_ALBUMOPRN_CREATEALBUM = "create_album";
+static const std::string MEDIA_ALBUMOPRN_MODIFYALBUM = "modify_album";
+static const std::string MEDIA_ALBUMOPRN_DELETEALBUM = "delete_album";
+static const std::string MEDIA_ALBUMOPRN_QUERYALBUM = "query_album";
+static const std::string MEDIA_SMARTALBUMOPRN_CREATEALBUM = "create_smartalbum";
+static const std::string MEDIA_SMARTALBUMOPRN_MODIFYALBUM = "modify_smartalbum";
+static const std::string MEDIA_SMARTALBUMOPRN_DELETEALBUM = "delete_smartalbum";
+static const std::string MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM = "add_smartalbum_map";
+static const std::string MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM = "remove_smartalbum_map";
+static const std::string MEDIA_FILEMODE = "mode";
+static const std::string MEDIA_FILEDESCRIPTOR = "fd";
+static const std::string MEDIA_FILEMODE_READONLY = "r";
+static const std::string MEDIA_FILEMODE_WRITEONLY = "w";
+static const std::string MEDIA_FILEMODE_READWRITE = "rw";
+static const std::string MEDIA_FILEMODE_WRITETRUNCATE = "wt";
+static const std::string MEDIA_FILEMODE_WRITEAPPEND = "wa";
+static const std::string MEDIA_FILEMODE_READWRITETRUNCATE = "rwt";
 
-const std::string ALBUM_DB_COND = MEDIA_DATA_DB_ID + " = ?";
-const std::string SMARTALBUM_DB_COND = SMARTALBUM_DB_ID + " = ?";
-const std::string SMARTALBUM_MAP_DE_SMARTALBUM_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ?";
-const std::string SMARTALBUM_MAP_DE_ASSETS_COND = SMARTALBUMMAP_DB_ASSET_ID + " = ?";
-const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ? AND " + SMARTALBUMMAP_DB_ASSET_ID + " = ?";
-const std::string DEVICE_DB_COND = DEVICE_DB_DEVICEID + " = ?";
-const std::string MEDIA_DEVICE_QUERYALLDEVICE = "query_all_device";
-const std::string MEDIA_DEVICE_QUERYACTIVEDEVICE = "query_active_device";
-} // namespace OHOS
+static const std::string ALBUM_DB_COND = MEDIA_DATA_DB_ID + " = ?";
+static const std::string SMARTALBUM_DB_COND = SMARTALBUM_DB_ID + " = ?";
+static const std::string SMARTALBUM_MAP_DE_SMARTALBUM_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ?";
+static const std::string SMARTALBUM_MAP_DE_ASSETS_COND = SMARTALBUMMAP_DB_ASSET_ID + " = ?";
+static const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ? AND " + SMARTALBUMMAP_DB_ASSET_ID + " = ?";
+static const std::string DEVICE_DB_COND = DEVICE_DB_DEVICEID + " = ?";
+static const std::string MEDIA_DEVICE_QUERYALLDEVICE = "query_all_device";
+static const std::string MEDIA_DEVICE_QUERYACTIVEDEVICE = "query_active_device";
 } // namespace Media
-#endif // MEDIA_DATA_ABILITY_CONST_H
+} // namespace OHOS
+
+#endif  // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_DATA_ABILITY_CONST_H_

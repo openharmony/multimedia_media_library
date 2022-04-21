@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,6 +25,10 @@ namespace OHOS {
 namespace Media {
 void UpdateDateModifiedForAlbum(const shared_ptr<RdbStore> &rdbStore, const string &albumPath)
 {
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore == nullptr");
+        return;
+    }
     if (!albumPath.empty()) {
         int32_t count(0);
         vector<string> whereArgs = { albumPath };
@@ -151,10 +155,15 @@ int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(const ValuesBucket &v
     MEDIA_INFO_LOG("HandleGetAlbumCapacity OUT");
     return errorCode;
 }
+
 int ModifyDisName(const string &dstFileName,
     const string &destAlbumPath, const string &srcPath, const shared_ptr<RdbStore> &rdbStore)
 {
     int32_t errCode = DATA_ABILITY_SUCCESS;
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore == nullptr");
+        return DATA_ABILITY_FAIL;
+    }
     if (dstFileName == ".nomedia") {
         int32_t deletedRows(ALBUM_OPERATION_ERR);
         vector<string> whereArgs = {(destAlbumPath.back() != '/' ?
@@ -187,6 +196,7 @@ int ModifyDisName(const string &dstFileName,
     }
     return errCode;
 }
+
 int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, const string &srcPath,
     const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
@@ -263,9 +273,14 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, cons
 
     return errCode;
 }
+
 void CreateThumbnail(const shared_ptr<RdbStore> &rdbStore,
     const shared_ptr<MediaLibraryThumbnail> &mediaThumbnail, string id)
 {
+    if (mediaThumbnail == nullptr) {
+        MEDIA_ERR_LOG("rdbStore == nullptr");
+        return;
+    }
     if (!id.empty()) {
         string kvId;
         ThumbRdbOpt opts = {
@@ -279,6 +294,7 @@ void CreateThumbnail(const shared_ptr<RdbStore> &rdbStore,
         }
     }
 }
+
 int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &values,
                                                            const shared_ptr<RdbStore> &rdbStore)
 {
@@ -309,6 +325,7 @@ int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &v
     }
     return errCode;
 }
+
 int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, const ValuesBucket &values,
     const shared_ptr<RdbStore> &rdbStore, const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail)
 {

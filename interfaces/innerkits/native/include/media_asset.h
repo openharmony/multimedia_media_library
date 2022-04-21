@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_ASSET_H
-#define MEDIA_ASSET_H
+#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_ASSET_H_
+#define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_ASSET_H_
 
 #include <cstdio>
 #include <cstdlib>
@@ -52,4 +52,5 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_ASSET_H
+
+#endif  // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_ASSET_H_

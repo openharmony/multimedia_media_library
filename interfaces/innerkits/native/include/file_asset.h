@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FILE_ASSET_H
-#define FILE_ASSET_H
+#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_FILE_ASSET_H_
+#define INTERFACES_INNERKITS_NATIVE_INCLUDE_FILE_ASSET_H_
 
 #include <string>
 #include "media_lib_service_const.h"
@@ -115,6 +115,7 @@ public:
     int32_t OpenAsset(const std::string &filePath, const std::string &mode);
     int32_t CloseAsset(int32_t fd);
     bool IsFileExists(const std::string &filePath);
+
 private:
     int32_t id_;
     std::string uri_;
@@ -155,4 +156,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif  // FILE_ASSET_H
+
+#endif  // INTERFACES_INNERKITS_NATIVE_INCLUDE_FILE_ASSET_H_

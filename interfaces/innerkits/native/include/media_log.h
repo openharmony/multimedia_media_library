@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_LOG_H
-#define OHOS_MEDIA_LOG_H
+#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LOG_H_
+#define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LOG_H_
 
 #include <stdio.h>
 #include "hilog/log.h"

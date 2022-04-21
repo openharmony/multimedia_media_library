@@ -16,11 +16,12 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIADATAABILITY_TEST_INCLUDE_MEDIADATAABILITY_UNIT_TEST_H_
 #define FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIADATAABILITY_TEST_INCLUDE_MEDIADATAABILITY_UNIT_TEST_H_
 
-#include <thread>
 #include <cstdio>
+#include <thread>
+
+#include "fetch_result.h"
 #include "gtest/gtest.h"
 #include "medialibrary_data_ability.h"
-#include "fetch_result.h"
 
 namespace OHOS {
 namespace Media {

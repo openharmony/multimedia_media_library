@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_THUMBNAIL_HELPER_H
-#define MEDIA_THUMBNAIL_HELPER_H
+#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_THUMBNAIL_HELPER_H_
+#define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_THUMBNAIL_HELPER_H_
 
 #include <securec.h>
 #include "pixel_map.h"
@@ -49,4 +49,4 @@ protected:
 };
 } // namespace Media
 } // namespace  OHOS
-#endif  // MEDIA_THUMBNAIL_HELPER_H
+#endif  // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_THUMBNAIL_HELPER_H_
