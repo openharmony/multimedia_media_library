@@ -17,10 +17,7 @@
 #define MEDIA_LIBRARY_H
 
 #include "album_asset.h"
-#include "audio_asset.h"
-#include "image_asset.h"
 #include "media_asset.h"
-#include "video_asset.h"
 
 namespace OHOS {
 namespace Media {
