@@ -77,7 +77,7 @@ ohos_shared_library("medialibrary") {
     "//third_party/node/src",
     "//foundation/ace/napi/interfaces/kits",
     "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/innerkits/native_rdb/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_ability/include",
     "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager/include",

@@ -27,9 +27,9 @@ config("media_library_config") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//utils/native/base/include",
     "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/innerkits/native_rdb/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/innerkits/native_appdatafwk/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/appdatafwk/include",
   ]
 
   cflags = [
