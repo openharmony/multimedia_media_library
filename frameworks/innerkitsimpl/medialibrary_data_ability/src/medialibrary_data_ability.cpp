@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -40,6 +40,7 @@ namespace OHOS {
 namespace Media {
 namespace {
 const std::unordered_set<int32_t> UID_FREE_CHECK {
+    0,          // unittest:x:0:
     1006        // file_manager:x:1006:
 };
 const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
@@ -183,7 +184,7 @@ bool MediaLibraryDataCallBack::GetDistributedTables()
 
 int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
 {
-    MEDIA_INFO_LOG("InitMediaLibraryRdbStore IN |Rdb Verison %{private}d", MEDIA_RDB_VERSION);
+    MEDIA_INFO_LOG("InitMediaLibraryRdbStore IN |Rdb Version %{private}d", MEDIA_RDB_VERSION);
     if (isRdbStoreInitialized) {
         return DATA_ABILITY_SUCCESS;
     }
@@ -191,6 +192,7 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
     int32_t errCode(DATA_ABILITY_FAIL);
     auto context = GetAbilityContext();
     if (context == nullptr) {
+        MEDIA_ERR_LOG("InitMediaRdbStore context is nullptr");
         return errCode;
     }
     string databaseDir = context->GetDatabaseDir() + "/" + MEDIA_DATA_ABILITY_DB_NAME;
