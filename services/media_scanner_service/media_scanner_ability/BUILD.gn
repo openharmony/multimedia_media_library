@@ -35,9 +35,9 @@ config("media_scanner_ability_public_config") {
     "//drivers/peripheral/base",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native",
     "//third_party/json/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/innerkits/native_rdb/include",
-    "//foundation/distributeddatamgr/appdatamgr/frameworks/innerkitsimpl/native_rdb/include",
-    "//foundation/distributeddatamgr/appdatamgr/frameworks/innerkitsimpl/native_appdatafwk/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/rdb/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include",
   ]
 
