@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,13 +13,12 @@
  * limitations under the License.
  */
 
-#include "mediadataability_unit_test.h"
-#include "system_ability_definition.h"
 #include "data_ability_helper.h"
-#include "permission/permission_kit.h"
-#include "media_log.h"
 #include "iservice_registry.h"
-
+#include "media_log.h"
+#include "mediadataability_unit_test.h"
+#include "permission/permission_kit.h"
+#include "system_ability_definition.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -28,6 +27,7 @@ namespace OHOS {
 namespace Media {
 MediaLibraryDataAbility g_rdbStoreTest;
 string g_createUri1, g_createUri2;
+int uid = 5010;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> medialibraryDataAbilityHelper = nullptr;
 int g_fd1 = DATA_ABILITY_FAIL;
 int g_fd2 = DATA_ABILITY_FAIL;
@@ -57,7 +57,7 @@ std::shared_ptr<AppExecFwk::DataAbilityHelper> CreateMediaLibraryHelper()
     if (medialibraryDataAbilityHelper == nullptr) {
         MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper == nullptr");
         std::shared_ptr<Uri> dataAbilityUri = std::make_shared<Uri>("dataability:///media");
-        medialibraryDataAbilityHelper = CreateDataAHelper(5010, dataAbilityUri);
+        medialibraryDataAbilityHelper = CreateDataAHelper(uid, dataAbilityUri);
     }
     MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper != nullptr");
     return medialibraryDataAbilityHelper;

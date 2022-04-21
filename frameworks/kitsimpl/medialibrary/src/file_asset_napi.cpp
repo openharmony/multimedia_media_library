@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -66,6 +66,7 @@ FileAssetNapi::FileAssetNapi()
     displayName_ = DEFAULT_MEDIA_NAME;
     duration_ = DEFAULT_MEDIA_DURATION;
     parent_ = DEFAULT_PARENT_ID;
+    dateTaken_ = DEFAULT_MEDIA_DATE_TAKEN;
 }
 
 FileAssetNapi::~FileAssetNapi()
@@ -899,6 +900,7 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
 
 static void JSCommitModifyExecute(FileAssetAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri updateAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET);
     Media::MediaType mediaType = context->objectInfo->GetMediaType();
@@ -969,6 +971,7 @@ napi_value GetJSArgsForCommitModify(napi_env env, size_t argc,
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -1021,6 +1024,7 @@ napi_value FileAssetNapi::JSCommitModify(napi_env env, napi_callback_info info)
 
 static void JSOpenExecute(FileAssetAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
         NativeRdb::ValueObject valueObject;
         string fileUri = context->objectInfo->GetFileUri();
@@ -1078,6 +1082,7 @@ napi_value GetJSArgsForOpen(napi_env env,
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     size_t res = 0;
     char buffer[SIZE];
 
@@ -1142,6 +1147,7 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
 
 static void JSCloseExecute(FileAssetAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
@@ -1199,6 +1205,7 @@ napi_value GetJSArgsForClose(napi_env env,
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     int32_t fd = 0;
 
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
@@ -1330,6 +1337,7 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataAbilityHelper> &abilit
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectInfo->sAbilityHelper_ != nullptr &&
         context->objectInfo->sThumbnailHelper_ != nullptr) {
         int32_t fileId = context->objectInfo->GetFileId();
@@ -1406,7 +1414,7 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
-
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     context->thumbWidth = Media::DEFAULT_THUMBNAIL_SIZE.width;
@@ -1574,6 +1582,10 @@ static void JSFavoriteCallbackComplete(napi_env env, napi_status status,
 static bool GetIsDirectoryiteNative(napi_env env, const FileAssetAsyncContext &fileContext)
 {
     FileAssetAsyncContext *context = const_cast<FileAssetAsyncContext *>(&fileContext);
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Async context is null");
+        return false;
+    }
     bool IsDirectory = false;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri isDirectoryAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_ISDIRECTORY);
@@ -1620,6 +1632,7 @@ static napi_value GetJSArgsForIsDirectory(napi_env env,
     const int32_t refCount = 1;
     napi_value result;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -1680,6 +1693,7 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
 
 static void JSIsFavoriteExecute(FileAssetAsyncContext* context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     context->isFavorite = context->objectInfo->IsFavorite();
 }
 
@@ -1715,6 +1729,7 @@ napi_value GetJSArgsForFavorite(napi_env env,
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     bool isFavorite = false;
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
@@ -1795,7 +1810,7 @@ static napi_value GetJSArgsForIsFavorite(napi_env env,
     const int32_t refCount = 1;
     napi_value result;
     auto context = &asyncContext;
-
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
@@ -1853,6 +1868,7 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
 
 static void JSTrashExecute(FileAssetAsyncContext* context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri uri(abilityUri);
@@ -1903,6 +1919,7 @@ napi_value GetJSArgsForTrash(napi_env env,
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     bool isTrash = false;
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
@@ -1969,6 +1986,7 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
 
 static void JSIsTrashExecute(FileAssetAsyncContext* context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     context->isTrash = context->objectInfo->IsTrash();
 }
 
@@ -2006,7 +2024,7 @@ static napi_value GetJSArgsForIsTrash(napi_env env,
     const int32_t refCount = 1;
     napi_value result;
     auto context = &asyncContext;
-
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;

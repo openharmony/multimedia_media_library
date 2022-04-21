@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,17 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "mediathumbnail_test.h"
+#include "data_ability_helper.h"
+#include "hilog/log.h"
+#include "iservice_registry.h"
 #include "mediathumbnail_test_cb.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_data_ability.h"
+#include "mediathumbnail_test.h"
 #include "media_log.h"
-#include "hilog/log.h"
-#include "system_ability_definition.h"
-#include "data_ability_helper.h"
 #include "permission/permission_kit.h"
-#include "iservice_registry.h"
+#include "system_ability_definition.h"
 #include <unistd.h>
 
 using namespace std;
@@ -36,6 +35,7 @@ namespace Media {
 MediaLibraryDataAbility g_rdbStoreTest;
 MediaLibraryThumbnail g_mediaThumbnail;
 int g_index = 0;
+int uid = 5010;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> medialibraryDataAbilityHelper = nullptr;
 static const std::string DATABASE_NAME = "/" + MEDIA_DATA_ABILITY_DB_NAME;
 static const std::string ABILITY_URI = Media::MEDIALIBRARY_DATA_URI;
@@ -70,7 +70,7 @@ std::shared_ptr<AppExecFwk::DataAbilityHelper> CreateMediaLibraryHelper()
     if (medialibraryDataAbilityHelper == nullptr) {
         MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper == nullptr");
         std::shared_ptr<Uri> dataAbilityUri = std::make_shared<Uri>("dataability:///media");
-        medialibraryDataAbilityHelper = CreateDataAHelper(5010, dataAbilityUri);
+        medialibraryDataAbilityHelper = CreateDataAHelper(uid, dataAbilityUri);
     }
     MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper != nullptr");
     return medialibraryDataAbilityHelper;
@@ -207,7 +207,7 @@ static int ParseThumbnailResult(std::shared_ptr<OHOS::NativeRdb::AbsSharedResult
     if (rowCount == 0) {
         return rowCount;
     }
-    int idClumnIndex,thumbClumnIndex,lcdClumnIndex;
+    int idClumnIndex, thumbClumnIndex, lcdClumnIndex;
     int indexRet = querySet->GetColumnIndex(Media::MEDIA_DATA_DB_ID, idClumnIndex);
     indexRet = querySet->GetColumnIndex(Media::MEDIA_DATA_DB_THUMBNAIL, thumbClumnIndex);
     indexRet = querySet->GetColumnIndex(Media::MEDIA_DATA_DB_LCD, lcdClumnIndex);

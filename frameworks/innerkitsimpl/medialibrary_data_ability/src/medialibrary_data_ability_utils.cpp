@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -214,7 +214,7 @@ bool MediaLibraryDataAbilityUtils::isAlbumExistInDb(const std::string &relativeP
             int32_t idVal;
             queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
             queryResultSet->GetInt(columnIndexId, idVal);
-            MEDIA_INFO_LOG("id = %{private}d", idVal);
+            MEDIA_INFO_LOG("id = %{public}d", idVal);
             outRow = idVal;
             return true;
         }
@@ -323,7 +323,7 @@ shared_ptr<FileAsset> MediaLibraryDataAbilityUtils::GetFileAssetFromDb(const str
     }
 
     if (tableName.empty()) {
-        MEDIA_ERR_LOG("Get tableName fail, networkId is %{private}s", networkId.c_str());
+        MEDIA_ERR_LOG("Get tableName fail, networkId is %{public}s", networkId.c_str());
         return nullptr;
     }
     AbsRdbPredicates absPredicates(tableName);
@@ -360,7 +360,7 @@ bool MediaLibraryDataAbilityUtils::checkFilePending(const shared_ptr<FileAsset> 
 
 bool MediaLibraryDataAbilityUtils::checkOpenMode(const string &mode)
 {
-    MEDIA_INFO_LOG("checkOpenMode in mode %{private}s", mode.c_str());
+    MEDIA_INFO_LOG("checkOpenMode in mode %{public}s", mode.c_str());
 
     std::string lowModeStr = mode;
     std::transform(lowModeStr.begin(), lowModeStr.end(), lowModeStr.begin(), [](unsigned char c) {
@@ -403,7 +403,7 @@ int32_t MediaLibraryDataAbilityUtils::setFilePending(string &uriStr,
     }
 
     if (tableName.empty()) {
-        MEDIA_ERR_LOG("Get tableName fail, networkId is %{private}s", networkId.c_str());
+        MEDIA_ERR_LOG("Get tableName fail, networkId is %{public}s", networkId.c_str());
         return DATA_ABILITY_FAIL;
     }
     (void)rdbStore->Update(changedRows, tableName, values, strUpdateCondition, selectionArgs);
@@ -453,8 +453,8 @@ int64_t MediaLibraryDataAbilityUtils::UTCTimeSeconds()
 
 bool MediaLibraryDataAbilityUtils::CheckDisplayName(std::string displayName)
 {
-    int size = displayName.length();
-    if (size <= 0 || size > DISPLAYNAME_MAX) {
+    size_t size = displayName.length();
+    if (size == 0 || size > DISPLAYNAME_MAX) {
         return false;
     }
     std::regex express("[\\.\\\\/:*?\"<>|{}\\[\\]]");

@@ -67,5 +67,5 @@ int32_t MediaLibraryAlbumDb::DeleteAlbumInfo(const int32_t albumId, const shared
 
     return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
-}  // namespace Media
-}  // namespace OHOS
+} // namespace Media
+} // namespace OHOS

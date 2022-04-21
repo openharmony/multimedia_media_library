@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_LIBRARY_NAPI_H
-#define MEDIA_LIBRARY_NAPI_H
+#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_LIBRARY_NAPI_H_
+#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_LIBRARY_NAPI_H_
 
 #include "abs_shared_result_set.h"
 #include "album_napi.h"
@@ -214,4 +214,5 @@ struct MediaLibraryAsyncContext {
 };
 } // namespace Media
 } // namespace OHOS
-#endif /* MEDIA_LIBRARY_NAPI_H */
+
+#endif  // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_LIBRARY_NAPI_H_

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,6 +35,7 @@ int64_t MediaLibrarySmartAlbumDb::InsertSmartAlbumInfo(const ValuesBucket &value
     CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, ALBUM_OPERATION_ERR, "Insert failed");
     return outRowId;
 }
+
 int64_t MediaLibrarySmartAlbumDb::InsertCategorySmartAlbumInfo(const ValuesBucket &values,
     const shared_ptr<RdbStore> &rdbStore)
 {
@@ -50,6 +51,7 @@ int64_t MediaLibrarySmartAlbumDb::InsertCategorySmartAlbumInfo(const ValuesBucke
     CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, ALBUM_OPERATION_ERR, "Insert failed");
     return outRowId;
 }
+
 int32_t MediaLibrarySmartAlbumDb::DeleteSmartAlbumInfo(const int32_t albumId, const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (albumId > 0), ALBUM_OPERATION_ERR, "Invalid input");

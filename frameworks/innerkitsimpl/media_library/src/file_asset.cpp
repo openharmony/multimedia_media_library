@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include "file_asset.h"
 #include <cerrno>
+#include "directory_ex.h"
 #include "media_data_ability_const.h"
 #include "media_file_utils.h"
 #include "media_lib_service_const.h"
@@ -46,7 +47,8 @@ FileAsset::FileAsset()
     albumName_(DEFAULT_ALBUM_NAME),
     parent_(DEFAULT_MEDIA_PARENT),
     albumUri_(DEFAULT_MEDIA_ALBUM_URI),
-    dateTaken_(DEFAULT_MEDIA_DATE_TAKEN)
+    dateTaken_(DEFAULT_MEDIA_DATE_TAKEN),
+    isPending_(DEFAULT_MEDIA_IS_PENDING)
 {}
 
 int32_t FileAsset::GetId() const
@@ -243,22 +245,27 @@ int32_t FileAsset::GetParent() const
 {
     return parent_;
 }
+
 void FileAsset::SetParent(int32_t parent)
 {
     parent_ = parent;
 }
+
 const string &FileAsset::GetAlbumUri() const
 {
     return albumUri_;
 }
+
 void FileAsset::SetAlbumUri(const string &albumUri)
 {
     albumUri_ = albumUri;
 }
+
 int64_t FileAsset::GetDateTaken() const
 {
     return dateTaken_;
 }
+
 void FileAsset::SetDateTaken(int64_t dateTaken)
 {
     dateTaken_ = dateTaken;
@@ -268,6 +275,7 @@ bool FileAsset::IsPending() const
 {
     return isPending_;
 }
+
 void FileAsset::SetPending(bool dateTaken)
 {
     isPending_ = dateTaken;
@@ -399,22 +407,19 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
         return errCode;
     }
     MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
-
-    char actualPath[PATH_MAX];
-    if (memset_s(actualPath, PATH_MAX, '\0', PATH_MAX)) {
-        MEDIA_ERR_LOG("Failed to memset_s actualPath");
+    std::string absFilePath = "";
+    if (!PathToRealPath(filePath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
         return errCode;
     }
-
-    auto absFilePath = realpath(filePath.c_str(), actualPath);
-    if (absFilePath == nullptr) {
+    if (absFilePath.empty()) {
         MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{private}s %{private}d",
                       filePath.c_str(), errno);
         return errCode;
     }
 
-    MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath);
-    return open(absFilePath, flags);
+    MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath.c_str());
+    return open(absFilePath.c_str(), flags);
 }
 
 int32_t FileAsset::CloseAsset(int32_t fd)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -342,7 +342,7 @@ declare namespace mediaLibrary {
      * Set favorite for the file when the file is located.
      * @since 8
      * @syscap SystemCapability.Multimedia.MediaLibrary.Core
-     * @param isFavorite ture is favorite file, false is not favorite file
+     * @param isFavorite true is favorite file, false is not favorite file
      * @param callback Callback used to return, No value is returned.
      * @systemapi
      */
@@ -351,7 +351,7 @@ declare namespace mediaLibrary {
      * Set favorite for the file when the file is located.
      * @since 8
      * @syscap SystemCapability.Multimedia.MediaLibrary.Core
-     * @param isFavorite ture is favorite file, false is not favorite file
+     * @param isFavorite true is favorite file, false is not favorite file
      * @systemapi
      */
     favorite(isFavorite: boolean): Promise<void>;
@@ -1043,7 +1043,7 @@ declare namespace mediaLibrary {
   }
 
   /**
-   * thumbnail's size which have width and heigh
+   * thumbnail's size which have width and height
    * @syscap SystemCapability.Multimedia.MediaLibrary.Core
    * @since 8
    */
@@ -1107,7 +1107,7 @@ declare namespace mediaLibrary {
    */
   enum DeviceType {
     /**
-     * Unknow device type
+     * Unknown device type
      * @since 8
      * @syscap SystemCapability.Multimedia.MediaLibrary.DistributedCore
      * @systemapi

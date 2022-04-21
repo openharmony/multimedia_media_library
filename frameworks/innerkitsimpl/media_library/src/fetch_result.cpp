@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,9 +19,9 @@
 using namespace std;
 
 namespace {
-    const int ARG1 = 0;
-    const int ARG2 = 1;
-    const int ARG3 = 2;
+    const int ARG_INT32 = 0;
+    const int ARG_INT64 = 1;
+    const int ARG_STRING = 2;
 }
 
 namespace OHOS {
@@ -172,7 +172,7 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
             cellValue = longVal;
             break;
         default:
-            MEDIA_ERR_LOG("not match  dataType %{private}d!!!!!", dataType);
+            MEDIA_ERR_LOG("not match  dataType %{public}d!!!!!", dataType);
             break;
     }
 
@@ -199,56 +199,56 @@ unique_ptr<FileAsset> FetchResult::GetObject()
 {
     unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
 
-    fileAsset->SetId(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_ID, TYPE_INT32)));
+    fileAsset->SetId(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_ID, TYPE_INT32)));
 
-    fileAsset->SetMediaType(static_cast<Media::MediaType>(get<ARG1>(
+    fileAsset->SetMediaType(static_cast<Media::MediaType>(get<ARG_INT32>(
         GetRowValFromColumnn(MEDIA_DATA_DB_MEDIA_TYPE, TYPE_INT32))));
 
-    fileAsset->SetDisplayName(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_NAME, TYPE_STRING)));
+    fileAsset->SetDisplayName(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_NAME, TYPE_STRING)));
 
-    fileAsset->SetRelativePath(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_RELATIVE_PATH, TYPE_STRING)));
+    fileAsset->SetRelativePath(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_RELATIVE_PATH, TYPE_STRING)));
 
-    fileAsset->SetParent(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_PARENT_ID, TYPE_INT32)));
+    fileAsset->SetParent(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_PARENT_ID, TYPE_INT32)));
 
-    fileAsset->SetSize(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_SIZE, TYPE_INT64)));
+    fileAsset->SetSize(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_SIZE, TYPE_INT64)));
 
-    fileAsset->SetDateAdded(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64)));
+    fileAsset->SetDateAdded(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64)));
 
-    fileAsset->SetDateModified(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_MODIFIED, TYPE_INT64)));
+    fileAsset->SetDateModified(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_MODIFIED, TYPE_INT64)));
 
-    fileAsset->SetDateTaken(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64)));
+    fileAsset->SetDateTaken(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64)));
 
-    fileAsset->SetPath(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_FILE_PATH, TYPE_STRING)));
+    fileAsset->SetPath(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_FILE_PATH, TYPE_STRING)));
 
-    fileAsset->SetMimeType(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_MIME_TYPE, TYPE_STRING)));
+    fileAsset->SetMimeType(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_MIME_TYPE, TYPE_STRING)));
 
-    fileAsset->SetTitle(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_TITLE, TYPE_STRING)));
+    fileAsset->SetTitle(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_TITLE, TYPE_STRING)));
 
-    fileAsset->SetArtist(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_ARTIST, TYPE_STRING)));
+    fileAsset->SetArtist(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_ARTIST, TYPE_STRING)));
 
-    fileAsset->SetAlbum(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_ALBUM, TYPE_STRING)));
+    fileAsset->SetAlbum(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_ALBUM, TYPE_STRING)));
 
-    fileAsset->SetWidth(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_WIDTH, TYPE_INT32)));
+    fileAsset->SetWidth(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_WIDTH, TYPE_INT32)));
 
-    fileAsset->SetHeight(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_HEIGHT, TYPE_INT32)));
+    fileAsset->SetHeight(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_HEIGHT, TYPE_INT32)));
 
-    fileAsset->SetDuration(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_DURATION, TYPE_INT32)));
+    fileAsset->SetDuration(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_DURATION, TYPE_INT32)));
 
-    fileAsset->SetOrientation(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_ORIENTATION, TYPE_INT32)));
+    fileAsset->SetOrientation(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_ORIENTATION, TYPE_INT32)));
 
-    fileAsset->SetAlbumId(get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32)));
+    fileAsset->SetAlbumId(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32)));
 
-    fileAsset->SetAlbumName(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_BUCKET_NAME, TYPE_STRING)));
+    fileAsset->SetAlbumName(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_BUCKET_NAME, TYPE_STRING)));
 
-    fileAsset->SetTimePending(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_TIME_PENDING, TYPE_INT64)));
+    fileAsset->SetTimePending(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_TIME_PENDING, TYPE_INT64)));
 
-    fileAsset->SetPending((get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_PENDING, TYPE_INT32)) != 0));
+    fileAsset->SetPending((get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_PENDING, TYPE_INT32)) != 0));
 
-    fileAsset->SetFavorite((get<ARG1>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_FAV, TYPE_INT32)) != 0));
+    fileAsset->SetFavorite((get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_FAV, TYPE_INT32)) != 0));
 
-    fileAsset->SetDateTrashed(get<ARG2>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64)));
+    fileAsset->SetDateTrashed(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64)));
 
-    fileAsset->SetSelfId(get<ARG3>(GetRowValFromColumnn(MEDIA_DATA_DB_SELF_ID, TYPE_STRING)));
+    fileAsset->SetSelfId(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_SELF_ID, TYPE_STRING)));
 
     fileAsset->SetUri(GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_)
         + "/" + to_string(fileAsset->GetId()));

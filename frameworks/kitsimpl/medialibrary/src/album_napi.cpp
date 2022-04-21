@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -500,6 +500,7 @@ napi_value AlbumNapi::JSGetAlbumVirtual(napi_env env, napi_callback_info info)
 static void GetFetchOptionsParam(napi_env env, napi_value arg, const AlbumNapiAsyncContext &context, bool &err)
 {
     AlbumNapiAsyncContext *asyncContext = const_cast<AlbumNapiAsyncContext *>(&context);
+    CHECK_NULL_PTR_RETURN_VOID(asyncContext, "Async context is null");
     char buffer[PATH_MAX];
     size_t res;
     uint32_t len = 0;
@@ -538,7 +539,7 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const AlbumNapiAs
 
     napi_has_named_property(env, arg, "selectionArgs", &present);
     if (present && napi_get_named_property(env, arg, "selectionArgs", &property) == napi_ok &&
-        napi_is_array(env, property, &boolResult) == napi_ok && boolResult == true) {
+        napi_is_array(env, property, &boolResult) == napi_ok && boolResult) {
         napi_get_array_length(env, property, &len);
         for (size_t i = 0; i < len; i++) {
             napi_get_element(env, property, i, &stringItem);
@@ -562,7 +563,7 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
     const int32_t refCount = 1;
     napi_value result;
     auto context = &asyncContext;
-
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
@@ -599,7 +600,7 @@ static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const n
     const int32_t refCount = 1;
     napi_value result;
     auto context = &asyncContext;
-
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
     for (size_t i = PARAM0; i < argc; i++) {
@@ -629,6 +630,7 @@ static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const n
 }
 static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
     string idPrefix = MEDIA_DATA_DB_BUCKET_ID + " = ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, idPrefix);
@@ -693,6 +695,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
 }
 static void CommitModifyNative(AlbumNapiAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
     NativeRdb::ValuesBucket valuesBucket;
     int32_t changedRows;
