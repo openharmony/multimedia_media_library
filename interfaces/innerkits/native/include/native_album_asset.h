@@ -19,10 +19,6 @@
 #include <string>
 #include <vector>
 
-#include "audio_asset.h"
-#include "image_asset.h"
-#include "video_asset.h"
-
 namespace OHOS {
 namespace Media {
 using namespace std;

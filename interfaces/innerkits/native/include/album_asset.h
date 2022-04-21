@@ -19,10 +19,6 @@
 #include <string>
 #include <vector>
 
-#include "audio_asset.h"
-#include "image_asset.h"
-#include "video_asset.h"
-
 namespace OHOS {
 namespace Media {
 using namespace std;
@@ -60,9 +56,6 @@ public:
     bool CreateAlbumAsset();
     bool DeleteAlbumAsset(const std::string &albumUri);
     bool ModifyAlbumAsset(const std::string &albumUri);
-
-    std::vector<std::unique_ptr<ImageAsset>> imageAssetList_;
-    std::vector<std::unique_ptr<VideoAsset>> videoAssetList_;
 
 private:
     int32_t albumId_;

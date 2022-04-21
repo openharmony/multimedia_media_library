@@ -41,16 +41,11 @@ config("media_library_config") {
 ohos_source_set("media_library_source") {
   sources = [
     "src/album_asset.cpp",
-    "src/audio_asset.cpp",
     "src/fetch_result.cpp",
     "src/file_asset.cpp",
-    "src/image_asset.cpp",
     "src/media_asset.cpp",
     "src/media_file_utils.cpp",
-    "src/media_library.cpp",
-    "src/media_library_utils.cpp",
     "src/smart_album_asset.cpp",
-    "src/video_asset.cpp",
   ]
 
   configs = [ ":media_library_config" ]
