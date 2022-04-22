@@ -52,6 +52,7 @@ static map<string, ListenerType> ListenerTypeMaps = {
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::sAbilityHelper_ = nullptr;
+std::shared_ptr<AppExecFwk::MediaDataHelper> MediaLibraryNapi::sMediaDataHelper_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
@@ -95,7 +96,8 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getActivePeers", JSGetActivePeers),
         DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers),
         DECLARE_NAPI_FUNCTION("storeMediaAsset", JSStoreMediaAsset),
-        DECLARE_NAPI_FUNCTION("startImagePreview", JSStartImagePreview)
+        DECLARE_NAPI_FUNCTION("startImagePreview", JSStartImagePreview),
+        DECLARE_NAPI_FUNCTION("getMediaRemoteStub", JSGetMediaRemoteStub)
     };
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("getMediaLibrary", GetMediaLibraryNewInstance),
@@ -152,10 +154,6 @@ shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper
             }
             NAPI_INFO_LOG("Get Stage model DataAbilityHelper");
             dataAbilityHelper = DataAbilityHelper::Creator(context, std::make_shared<Uri>(strUri));
-	    AppExecFwk::Want want;
-	    want.SetElementName("com.example.myapplication", "MediaDataService");
-	    mediaDataHelper = MediaDataHelper::Creator(context, want, std::make_shared<Uri>("mediadata://media"));
-
         } else {
             auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
             if (ability == nullptr) {
@@ -169,6 +167,32 @@ shared_ptr<AppExecFwk::DataAbilityHelper> MediaLibraryNapi::GetDataAbilityHelper
     return dataAbilityHelper;
 }
 
+shared_ptr<AppExecFwk::MediaDataHelper> MediaLibraryNapi::GetMediaDataHelper(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+
+    std::shared_ptr<AppExecFwk::MediaDataHelper> mediaDataHelper = nullptr;
+    napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode_);
+
+    if (status != napi_ok){
+
+    } else {
+        if (isStageMode_) {
+            auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
+            if (context == nullptr) {
+                NAPI_ERR_LOG("Failed to get native context instance");
+                return nullptr;
+            }
+            AppExecFwk::Want want;
+            want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
+            mediaDataHelper = MediaDataHelper::Creator(context, want, std::make_shared<Uri>("mediadata://media"));
+	}
+    }
+    return mediaDataHelper;
+}
 // Constructor callback
 napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_callback_info info)
 {
@@ -195,6 +219,11 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
             if (obj->sAbilityHelper_ == nullptr) {
                 obj->sAbilityHelper_ = GetDataAbilityHelper(env, info);
                 CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sAbilityHelper_, result, "Helper creation failed");
+            }
+
+            if (obj->sMediaDataHelper_ == nullptr) {
+                obj->sMediaDataHelper_ = GetMediaDataHelper(env, info);
+                CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sMediaDataHelper_, result, "Helper creation failed");
             }
         }
 
@@ -862,6 +891,14 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     Uri uri(queryUri);
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sAbilityHelper_->Query(
         uri, columns, predicates);
+
+    shared_ptr<NativeRdb::AbsSharedResultSet> mediaResultSet = context->objectInfo->sMediaDataHelper_->Query(
+        uri, columns, predicates);
+
+    if (mediaResultSet == nullptr) {
+        NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr");
+        return;
+    }
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetResultData resultSet is nullptr");
