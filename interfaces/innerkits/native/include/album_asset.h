@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ALBUM_ASSET_H
-#define ALBUM_ASSET_H
+#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_ALBUM_ASSET_H_
+#define INTERFACES_INNERKITS_NATIVE_INCLUDE_ALBUM_ASSET_H_
 
 #include <string>
 #include <vector>
@@ -71,4 +71,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // ALBUM_ASSET_H
+
+#endif  // INTERFACES_INNERKITS_NATIVE_INCLUDE_ALBUM_ASSET_H_

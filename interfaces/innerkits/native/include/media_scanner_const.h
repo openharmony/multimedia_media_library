@@ -53,6 +53,7 @@ enum ConnectionState : int32_t {
 const std::string SCANNER_BUNDLE_NAME = "com.ohos.medialibrary.MediaScannerAbilityA";
 const std::string SCANNER_ABILITY_NAME = "MediaScannerAbility";
 const int32_t NO_PARENT = 0;
-} // namespace OHOS
 } // namespace Media
+} // namespace OHOS
+
 #endif // MEDIA_SCANNER_CONST_H

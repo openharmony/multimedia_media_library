@@ -207,7 +207,10 @@ variant<int32_t, string> GetValFromColumn(string columnName,
     ColumnType type;
     int32_t integerVal;
     string stringVal;
-
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet == nullptr");
+        return cellValue;
+    }
     resultSet->GetColumnIndex(columnName, index);
     resultSet->GetColumnType(index, type);
     switch (type) {

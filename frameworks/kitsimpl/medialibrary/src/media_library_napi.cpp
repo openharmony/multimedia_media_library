@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "media_library_napi.h"
 
 #include <sys/sendfile.h>
@@ -375,6 +376,7 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
     const MediaLibraryAsyncContext &context, bool &err, bool &present)
 {
     MediaLibraryAsyncContext *asyncContext = const_cast<MediaLibraryAsyncContext *>(&context);
+    CHECK_NULL_PTR_RETURN_VOID(asyncContext, "Async context is null");
     char buffer[PATH_MAX];
     size_t res = 0;
     napi_value property = nullptr;
@@ -437,6 +439,7 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
 static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibraryAsyncContext &context, bool &err)
 {
     MediaLibraryAsyncContext *asyncContext = const_cast<MediaLibraryAsyncContext *>(&context);
+    CHECK_NULL_PTR_RETURN_VOID(asyncContext, "Async context is null");
     napi_value property = nullptr, stringItem = nullptr;
     bool present = false;
     DealWithCommonParam(env, arg, context, err, present);
@@ -576,6 +579,7 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
 
 static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     vector<string> columns;
     NativeRdb::DataAbilityPredicates predicates;
     if (!context->uri.empty()) {
@@ -711,7 +715,7 @@ static string getNetworkId(const string& selfId)
     return "";
 }
 
-static string GetFileMediaTypeUri(MediaType mediaType, const string& networkId)
+static string GetFileMediaTypeUri(MediaType mediaType, const string &networkId)
 {
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     switch (mediaType) {
@@ -771,6 +775,7 @@ ValVariant GetValFromColumn(string columnName, shared_ptr<NativeRdb::AbsSharedRe
 
 static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(album->GetAlbumId()));
     predicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
@@ -793,7 +798,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
 }
 
 void SetAlbumData(AlbumAsset* albumData, shared_ptr<NativeRdb::AbsSharedResultSet> resultSet,
-    const string& networkId)
+    const string &networkId)
 {
     // Get album id index and value
     albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet, TYPE_INT32)));
@@ -815,6 +820,7 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<NativeRdb::AbsSharedResultSe
 static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 {
     NAPI_ERR_LOG("GetResultDataExecute IN");
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
     if (context->objectInfo->sAbilityHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
@@ -929,6 +935,7 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
 
 static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     vector<string> columns;
     NativeRdb::DataAbilityPredicates predicates;
 
@@ -1001,6 +1008,10 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
 
 static bool CheckTitlePrams(MediaLibraryAsyncContext *context)
 {
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Async context is null");
+        return false;
+    }
     ValueObject valueObject;
     string title = "";
     if (context->valuesBucket.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
@@ -1077,6 +1088,10 @@ static bool CheckTypeOfType(const std::string& firstDirName, int32_t fileMediaTy
 }
 static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
 {
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Async context is null");
+        return false;
+    }
     ValueObject valueObject;
     string relativePath = "";
     if (context->valuesBucket.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
@@ -1121,6 +1136,7 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     int32_t fileMediaType = 0;
     size_t res = 0;
     char relativePathBuffer[PATH_MAX];
@@ -1155,6 +1171,30 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
     return result;
 }
 
+static void JSCreateAssetExecute(MediaLibraryAsyncContext *context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    if (!CheckTitlePrams(context)) {
+        context->error = ERR_DISPLAY_NAME_INVALID;
+        return;
+    }
+    if (!CheckRelativePathPrams(context)) {
+        context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
+        return;
+    }
+    if (context->objectInfo->sAbilityHelper_ != nullptr) {
+        Uri createFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
+        int index = context->objectInfo->sAbilityHelper_->Insert(createFileUri, context->valuesBucket);
+        if (index < 0) {
+            context->error = index;
+        } else {
+            getFileAssetById(index, "", context);
+        }
+    } else {
+        context->error = ERR_INVALID_OUTPUT;
+    }
+}
+
 napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -1179,25 +1219,7 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext*>(data);
-                if (!CheckTitlePrams(context)) {
-                    context->error = ERR_DISPLAY_NAME_INVALID;
-                    return;
-                }
-                if (!CheckRelativePathPrams(context)) {
-                    context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
-                    return;
-                }
-                if (context->objectInfo->sAbilityHelper_ != nullptr) {
-                    Uri createFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
-                    int index = context->objectInfo->sAbilityHelper_->Insert(createFileUri, context->valuesBucket);
-                    if (index < 0) {
-                        context->error = index;
-                    } else {
-                        getFileAssetById(index, "", context);
-                    }
-                } else {
-                    context->error = ERR_INVALID_OUTPUT;
-                }
+                JSCreateAssetExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSCreateAssetCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
@@ -1263,6 +1285,7 @@ napi_value GetJSArgsForModifyAsset(napi_env env, size_t argc, const napi_value a
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     FileAssetNapi *fileAssetObj = nullptr;
     size_t res = 0;
     char buffer[PATH_MAX];
@@ -1332,6 +1355,7 @@ napi_value MediaLibraryNapi::JSModifyAsset(napi_env env, napi_callback_info info
 
 static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
@@ -1396,6 +1420,7 @@ napi_value GetJSArgsForDeleteAsset(napi_env env, size_t argc, const napi_value a
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     size_t res = 0;
     char buffer[PATH_MAX];
 
@@ -1512,6 +1537,7 @@ napi_value GetJSArgsForOpenAsset(napi_env env, size_t argc, const napi_value arg
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     size_t res = 0;
     char buffer1[PATH_MAX], buffer2[SIZE];
 
@@ -1629,6 +1655,7 @@ napi_value GetJSArgsForCloseAsset(napi_env env, size_t argc, const napi_value ar
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     size_t res = 0;
     char buffer[PATH_MAX];
     int32_t fd = 0;
@@ -1738,6 +1765,7 @@ napi_value GetJSArgsForCreateAlbum(napi_env env, size_t argc, const napi_value a
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     AlbumNapi *albumNapiObj = nullptr;
 
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
@@ -1841,6 +1869,7 @@ napi_value GetJSArgsForModifyAlbum(napi_env env, size_t argc, const napi_value a
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     AlbumNapi *albumNapiObj = nullptr;
     int32_t albumId = 0;
 
@@ -1948,6 +1977,7 @@ napi_value GetJSArgsForDeleteAlbum(napi_env env, size_t argc, const napi_value a
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     int32_t albumId = 0;
 
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
@@ -2386,6 +2416,10 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
 
 static int32_t GetAlbumCapacity(MediaLibraryAsyncContext *context)
 {
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Async context is null");
+        return -1;
+    }
     string abilityUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_GETALBUMCAPACITY;
     Uri getAlbumCapacityUri(abilityUri);
 
@@ -2394,6 +2428,7 @@ static int32_t GetAlbumCapacity(MediaLibraryAsyncContext *context)
 
 static void GetFavSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     context->smartAlbumData = make_unique<SmartAlbumAsset>();
 
     context->smartAlbumData->SetAlbumId(FAVORIT_SMART_ALBUM_ID);
@@ -2406,6 +2441,7 @@ static void GetFavSmartAlbumExecute(MediaLibraryAsyncContext *context)
 
 static void GetTrashSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     context->smartAlbumData = make_unique<SmartAlbumAsset>();
 
     context->smartAlbumData->SetAlbumId(TRASH_SMART_ALBUM_ID);
@@ -2418,6 +2454,7 @@ static void GetTrashSmartAlbumExecute(MediaLibraryAsyncContext *context)
 
 static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
     if (context->objectInfo->sAbilityHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
@@ -2454,6 +2491,7 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
 
 static void GetSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
     if (context->objectInfo->sAbilityHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
@@ -2586,6 +2624,7 @@ napi_value GetJSArgsForCreateSmartAlbum(napi_env env, size_t argc, const napi_va
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     size_t res = 0;
     char buffer[PATH_MAX];
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
@@ -2693,6 +2732,7 @@ napi_value GetJSArgsForDeleteSmartAlbum(napi_env env, size_t argc, const napi_va
     const int32_t refCount = 1;
     napi_value result = nullptr;
     auto context = &asyncContext;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     size_t res = 0;
     char buffer[PATH_MAX];
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
@@ -2741,6 +2781,7 @@ static void JSDeleteSmartAlbumCompleteCallback(napi_env env, napi_status status,
 
 static void JSDeleteSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectInfo->sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri DeleteSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" + MEDIA_SMARTALBUMOPRN_DELETEALBUM);

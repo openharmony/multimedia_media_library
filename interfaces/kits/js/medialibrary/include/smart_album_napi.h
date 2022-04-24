@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
-#ifndef SMART_ALBUM_NAPI_H
-#define SMART_ALBUM_NAPI_H
-#include <vector>
+#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_SMART_ALBUM_NAPI_H_
+#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_SMART_ALBUM_NAPI_H_
+
 #include <algorithm>
+#include <vector>
 
 #include "ability.h"
 #include "ability_loader.h"
@@ -105,4 +106,5 @@ struct SmartAlbumNapiAsyncContext {
 };
 } // namespace Media
 } // namespace OHOS
-#endif /* ALBUM_NAPI_H */
+
+#endif  // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_SMART_ALBUM_NAPI_H_

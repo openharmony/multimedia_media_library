@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
-#define OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
+#ifndef FRAMEWORKS_INNERKITSIMPL_MEDIALIBRARY_DATA_ABILITY_INCLUDE_MEDIALIBRARY_ALBUM_OPERATIONS_H_
+#define FRAMEWORKS_INNERKITSIMPL_MEDIALIBRARY_DATA_ABILITY_INCLUDE_MEDIALIBRARY_ALBUM_OPERATIONS_H_
 
 #include <string>
 #include <variant>
@@ -23,10 +23,10 @@
 #include <unistd.h>
 
 #include "album_asset.h"
-#include "native_album_asset.h"
 #include "medialibrary_album_db.h"
-#include "rdb_store.h"
+#include "native_album_asset.h"
 #include "values_bucket.h"
+#include "rdb_store.h"
 
 namespace OHOS {
 namespace Media {
@@ -49,4 +49,5 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
+
+#endif  // FRAMEWORKS_INNERKITSIMPL_MEDIALIBRARY_DATA_ABILITY_INCLUDE_MEDIALIBRARY_ALBUM_OPERATIONS_H_

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVMETADATAHELPER_NAPI_H_
-#define AVMETADATAHELPER_NAPI_H_
+#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_AVMETADATAHELPER_NAPI_H_
+#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_AVMETADATAHELPER_NAPI_H_
 
 #include "avmetadatahelper.h"
 #include "napi/native_api.h"
@@ -48,4 +48,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif /* AVMETADATAHELPER_NAPI_H_ */
+
+#endif  // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_AVMETADATAHELPER_NAPI_H_

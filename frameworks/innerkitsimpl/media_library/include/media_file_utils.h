@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,27 +13,28 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_FILE_UTILS_H
-#define MEDIA_FILE_UTILS_H
+#ifndef FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_
+#define FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_
 
-#include <string>
 #include <fstream>
-#include <ftw.h>
+#include <string>
 #include <sstream>
-#include <sys/stat.h>
-#include <unistd.h>
+
+#include <ftw.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <limits.h>
+#include <pwd.h>
+#include <sys/stat.h>
 #include <sys/sendfile.h>
 #include <sys/types.h>
-#include <pwd.h>
-#include <grp.h>
 #include <securec.h>
+#include <unistd.h>
 
 namespace OHOS {
 namespace Media {
-const mode_t CHOWN_RWX_USR_GRP = 02770;
-const mode_t CHOWN_RW_USR_GRP = 0660;
+static const mode_t CHOWN_RWX_USR_GRP = 02770;
+static const mode_t CHOWN_RW_USR_GRP = 0660;
 
 /**
  * @brief Utility class for file operations
@@ -63,4 +64,5 @@ public:
 };
 } // namespace Media
 } // namespace  OHOS
-#endif  // MEDIA_FILE_UTILS_H
+
+#endif // FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_

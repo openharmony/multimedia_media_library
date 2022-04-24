@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,15 +14,16 @@
  */
 
 #include "media_thumbnail_helper.h"
+#include "bytrace.h"
+#include "distributed_kv_data_manager.h"
+#include "image_packer.h"
 #include "media_file_utils.h"
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
 #include "media_log.h"
-#include "bytrace.h"
-#include "distributed_kv_data_manager.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
-#include "image_packer.h"
+
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -30,8 +31,8 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-const string THUMBNAIL_APP_ID = "com.ohos.medialibrary.MediaLibraryDataA";
-const string THUMBNAIL_STORE_ID = "MediaThumbnailHelperStoreId1";
+static const string THUMBNAIL_APP_ID = "com.ohos.medialibrary.MediaLibraryDataA";
+static const string THUMBNAIL_STORE_ID = "MediaThumbnailHelperStoreId1";
 
 void MediaThumbnailHelper::InitKvStore()
 {

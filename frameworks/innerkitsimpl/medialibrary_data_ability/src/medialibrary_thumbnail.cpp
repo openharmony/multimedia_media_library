@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,17 +29,18 @@
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
 #include "uri_helper.h"
+
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-const string THUMBNAIL_END_SUFFIX = "_THU";
-const string THUMBNAIL_LCD_END_SUFFIX = "_LCD";
-const string FILE_URI_PREX = "file://";
+static const string THUMBNAIL_END_SUFFIX = "_THU";
+static const string THUMBNAIL_LCD_END_SUFFIX = "_LCD";
+static const string FILE_URI_PREX = "file://";
 
-const string THUMBNAIL_FORMAT = "image/jpeg";
+static const string THUMBNAIL_FORMAT = "image/jpeg";
 static constexpr uint8_t THUMBNAIL_QUALITY = 80;
 static constexpr uint32_t THUMBNAIL_QUERY_MAX = 1000;
 static constexpr int64_t AV_FRAME_TIME = 0;
@@ -96,7 +97,7 @@ void ParseQueryResult(shared_ptr<ResultSet> resultSet,
 
 bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
                                             ThumbnailData &data,
-                                            std::string &key)
+                                            std::string &outKey)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnail3 IN");
     int errorCode;
@@ -127,7 +128,7 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
             return false;
         }
 
-        if (!SaveThumbnailData(data)) {
+        if (SaveThumbnailData(data) != Status::SUCCESS) {
             return false;
         }
     }
@@ -137,7 +138,7 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
     if (!UpdateThumbnailInfo(opts, data, errorCode)) {
         return false;
     }
-    key = data.thumbnailKey;
+    outKey = data.thumbnailKey;
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnail3 OUT");
     return true;
@@ -150,7 +151,9 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts, string &key)
 
     ThumbnailData thumbnailData;
     int errorCode;
-    if (!QueryThumbnailInfo(opts, thumbnailData, errorCode)) {
+    shared_ptr<AbsSharedResultSet> queryResultSet;
+    queryResultSet = QueryThumbnailInfo(opts, thumbnailData, errorCode);
+    if (queryResultSet == nullptr) {
         return false;
     }
 
@@ -169,10 +172,20 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
 
     ThumbnailData thumbnailData;
     int errorCode;
-    if (!QueryThumbnailInfo(opts, thumbnailData, errorCode)) {
+    shared_ptr<AbsSharedResultSet> queryResultSet;
+    queryResultSet = QueryThumbnailInfo(opts, thumbnailData, errorCode);
+    if (queryResultSet == nullptr) {
         return false;
     }
+    bool ret = CreateLcd(opts, thumbnailData, key);
 
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcd OUT");
+    return ret;
+}
+
+bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, ThumbnailData &thumbnailData, string &outKey)
+{
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcd IN");
     if (!thumbnailData.lcdKey.empty() &&
         IsImageExist(thumbnailData.lcdKey)) {
         MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcd image has exist in kvStore");
@@ -201,24 +214,26 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
             return false;
         }
 
-        if (!SaveLcdData(thumbnailData)) {
+        if (SaveLcdData(thumbnailData) != Status::SUCCESS) {
             return false;
         }
     }
 
     if (thumbnailData.thumbnailKey.empty()) {
-        CreateThumbnail(opts, thumbnailData, key);
+        CreateThumbnail(opts, thumbnailData, outKey);
     }
 
     thumbnailData.thumbnail.clear();
 
     StartTrace(BYTRACE_TAG_OHOS, "CreateLcd UpdateThumbnailInfo");
+    int errorCode;
     if (!UpdateThumbnailInfo(opts, thumbnailData, errorCode)) {
+        MEDIA_INFO_LOG("UpdateThumbnailInfo faild errorCode : %{private}d", errorCode);
         return false;
     }
     FinishTrace(BYTRACE_TAG_OHOS);
 
-    key = thumbnailData.lcdKey;
+    outKey = thumbnailData.lcdKey;
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcd OUT");
     FinishTrace(BYTRACE_TAG_OHOS);
@@ -250,13 +265,13 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOp
     bool isFromLcd = isThumbnailFromLcd(size);
     if (isFromLcd) {
         if (thumbnailData.lcdKey.empty()) {
-            CreateLcd(opts, thumbnailData.lcdKey);
+            CreateLcd(opts, thumbnailData, thumbnailData.lcdKey);
         } else {
             return queryResultSet;
         }
     } else {
         if (thumbnailData.thumbnailKey.empty()) {
-            CreateThumbnail(opts, thumbnailData.thumbnailKey);
+            CreateThumbnail(opts, thumbnailData, thumbnailData.thumbnailKey);
         } else {
             return queryResultSet;
         }
@@ -475,12 +490,11 @@ bool MediaLibraryThumbnail::CompressImage(std::shared_ptr<PixelMap> &pixelMap,
         .quality = THUMBNAIL_QUALITY,
         .numberHint = NUM_1
     };
-
     data.resize(compressImage->GetByteCount());
 
     StartTrace(BYTRACE_TAG_OHOS, "imagePacker.StartPacking");
     ImagePacker imagePacker;
-    int errorCode = imagePacker.StartPacking(data.data(), data.size(), option);
+    uint32_t errorCode = imagePacker.StartPacking(data.data(), data.size(), option);
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to StartPacking %{private}d", errorCode);
         return false;
@@ -513,22 +527,22 @@ bool MediaLibraryThumbnail::CompressImage(std::shared_ptr<PixelMap> &pixelMap,
     return true;
 }
 
-bool MediaLibraryThumbnail::SaveImage(string &key, vector<uint8_t> &image)
+Status MediaLibraryThumbnail::SaveImage(string &key, vector<uint8_t> &image)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveImage IN");
-
+    Status status = Status::ERROR;
     if (singleKvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("KvStore is not init");
-        return false;
+        return status;
     }
 
     StartTrace(BYTRACE_TAG_OHOS, "SaveImage singleKvStorePtr_->Put");
     Value val(image);
-    singleKvStorePtr_->Put(key, val);
+    status = singleKvStorePtr_->Put(key, val);
     FinishTrace(BYTRACE_TAG_OHOS);
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveImage OUT");
-    return true;
+    return status;
 }
 
 shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailSet(ThumbRdbOpt &opts)
@@ -559,26 +573,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
                                                                          ThumbnailData &data, int &errorCode)
 {
     StartTrace(BYTRACE_TAG_OHOS, "QueryThumbnailInfo");
-
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailInfo IN row [%{private}s]",
-                   opts.row.c_str());
-    vector<string> column = {
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_THUMBNAIL,
-        MEDIA_DATA_DB_LCD,
-        MEDIA_DATA_DB_MEDIA_TYPE
-    };
-
-    vector<string> selectionArgs;
-    string strQueryCondition = MEDIA_DATA_DB_ID + "=" + opts.row;
-
-    RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.SetWhereClause(strQueryCondition);
-    rdbPredicates.SetWhereArgs(selectionArgs);
-
-    StartTrace(BYTRACE_TAG_OHOS, "opts.store->Query");
-    shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
+    shared_ptr<AbsSharedResultSet> resultSet = QueryThumbnailSet(opts);
     int rowCount = 0;
     errorCode = resultSet->GetRowCount(rowCount);
     if (errorCode != E_OK) {
@@ -588,7 +583,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
     FinishTrace(BYTRACE_TAG_OHOS);
 
     if (rowCount <= 0) {
-        MEDIA_ERR_LOG("No match! %{private}s", rdbPredicates.ToString().c_str());
+        MEDIA_ERR_LOG("No match files");
         errorCode = E_EMPTY_VALUES_BUCKET;
         return nullptr;
     }
@@ -801,23 +796,23 @@ bool MediaLibraryThumbnail::CreateLcdData(ThumbnailData &data)
     return ret;
 }
 
-bool MediaLibraryThumbnail::SaveThumbnailData(ThumbnailData &data)
+Status MediaLibraryThumbnail::SaveThumbnailData(ThumbnailData &data)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveThumbnailData IN");
 
-    bool ret = SaveImage(data.thumbnailKey, data.thumbnail);
+    Status status = SaveImage(data.thumbnailKey, data.thumbnail);
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveThumbnailData OUT");
-    return ret;
+    return status;
 }
-bool MediaLibraryThumbnail::SaveLcdData(ThumbnailData &data)
+Status MediaLibraryThumbnail::SaveLcdData(ThumbnailData &data)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveLcdData IN");
 
-    bool ret = SaveImage(data.lcdKey, data.lcd);
+    Status status = SaveImage(data.lcdKey, data.lcd);
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveLcdData OUT");
-    return ret;
+    return status;
 }
 bool MediaLibraryThumbnail::GetThumbnailFromKvStore(ThumbnailData &data)
 {
@@ -868,7 +863,7 @@ int32_t MediaLibraryThumbnail::SetSource(std::shared_ptr<AVMetadataHelper> avMet
         MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource avMetadataHelper == nullptr");
         return -1;
     }
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource path = %{public}s", path.c_str());
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource path = %{private}s", path.c_str());
     UriHelper uriHelper(path);
     if (uriHelper.UriType() != UriHelper::URI_TYPE_FILE && !uriHelper.AccessCheck(UriHelper::URI_READ)) {
         std::cout << "Invalid file Path" << std::endl;
@@ -876,9 +871,9 @@ int32_t MediaLibraryThumbnail::SetSource(std::shared_ptr<AVMetadataHelper> avMet
     }
     std::string rawFile = uriHelper.FormattedUri();
     rawFile = rawFile.substr(strlen("file://"));
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource rawFile = %{public}s", rawFile.c_str());
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource rawFile = %{private}s", rawFile.c_str());
     int32_t fd = open(rawFile.c_str(), O_RDONLY);
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource fd = %{public}d", fd);
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource fd = %{private}d", fd);
     if (fd <= 0) {
         MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource Open file failed");
         return -1;
@@ -891,7 +886,6 @@ int32_t MediaLibraryThumbnail::SetSource(std::shared_ptr<AVMetadataHelper> avMet
         return -1;
     }
     int64_t length = static_cast<int64_t>(st.st_size);
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource length = %{public}lld", (long long)length);
     int32_t ret = avMetadataHelper->SetSource(fd, 0, length, 1);
     if (ret != 0) {
         MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource fail");

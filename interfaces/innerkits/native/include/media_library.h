@@ -191,4 +191,5 @@ public:
 };
 }  // namespace Media
 }  // namespace OHOS
-#endif  // MEDIA_LIBRARY_H
+
+#endif  // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIBRARY_H_

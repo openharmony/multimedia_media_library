@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -77,6 +77,7 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
     }
     return parentId;
 }
+
 int32_t UpdateAlbumInfoUtil(const ValuesBucket &valuesBucket,
                             const string &albumPath,
                             const string &albumNewName,
@@ -123,7 +124,7 @@ int32_t UpdateAlbumInfoUtil(const ValuesBucket &valuesBucket,
     + MEDIA_DATA_DB_RELATIVE_PATH + " = replace(" + MEDIA_DATA_DB_RELATIVE_PATH
     + ", '" + albumPath + "', '" + newAlbumPath + "'), "
     + MEDIA_DATA_DB_ALBUM_NAME + " = replace(" + MEDIA_DATA_DB_ALBUM_NAME + ", '"
-    + albumPath.substr(slashIndex + 1) + "', '" + albumNewName + "')"
+    + albumPath.substr((int32_t)(slashIndex + 1)) + "', '" + albumNewName + "')"
     + "where " + MEDIA_DATA_DB_FILE_PATH + " LIKE '" + albumPath + "/%'";
 
         auto ret = rdbStore->ExecuteSql(modifyAlbumInternalsStmt);
@@ -198,11 +199,11 @@ int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(const string &oprn,
                 valueObject.GetString(albumNewName);
             }
             albumAsset.SetAlbumName(albumNewName);
-            if (albumAsset.ModifyAlbumAsset(albumPath) == true) {
+            if (albumAsset.ModifyAlbumAsset(albumPath)) {
                 errCode = UpdateAlbumInfoUtil(values, albumPath, albumNewName, rdbStore, albumDbOprn);
             }
         } else if (oprn == MEDIA_ALBUMOPRN_DELETEALBUM) {
-            if (albumAsset.DeleteAlbumAsset(albumPath) == true) {
+            if (albumAsset.DeleteAlbumAsset(albumPath)) {
                 errCode = DeleteAlbumInfoUtil(values, albumId, albumPath, rdbStore, albumDbOprn);
             }
         }
