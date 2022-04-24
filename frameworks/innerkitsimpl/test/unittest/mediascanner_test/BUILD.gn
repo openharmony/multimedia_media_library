@@ -34,9 +34,7 @@ ohos_unittest("mediascanner_unittest") {
     "//foundation/aafwk/standard/interfaces/innerkits/want/include",
     "//foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk/content",
     "//foundation/aafwk/standard/interfaces/innerkits/ability_manager/include",
-    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
     "//foundation/aafwk/standard/interfaces/innerkits/app_manager/include/appmgr",
-    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/rdb/include",
     "$MEDIA_LIB_INNERKITS_DIR/media_library/include",
@@ -46,7 +44,6 @@ ohos_unittest("mediascanner_unittest") {
     "$MEDIA_LIB_INNERKITS_DIR/medialibrary_data_ability/include",
     "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
-    "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler/include",
     "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl/media_scanner/include",
     "//third_party/json/include",
   ]
@@ -58,7 +55,6 @@ ohos_unittest("mediascanner_unittest") {
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
     "//foundation/aafwk/standard/interfaces/innerkits/uri:zuri",
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
-    "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler:libeventhandler",
     "//utils/native/base:utils",
   ]
 
