@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,12 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_THUMBNAIL_H
-#define MEDIA_THUMBNAIL_H
+#ifndef FRAMEWORKS_INNERKITSIMPL_MEDIALIBRARY_DATA_ABILITY_INCLUDE_MEDIALIBRARY_THUMBNAIL_H_
+#define FRAMEWORKS_INNERKITSIMPL_MEDIALIBRARY_DATA_ABILITY_INCLUDE_MEDIALIBRARY_THUMBNAIL_H_
 
+#include "avmetadatahelper.h"
 #include "media_thumbnail_helper.h"
 #include "rdb_helper.h"
-#include "avmetadatahelper.h"
+#include "single_kvstore.h"
 
 namespace OHOS {
 namespace Media {
@@ -75,7 +76,7 @@ private:
     bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, Size &size, std::vector<uint8_t> &data);
 
     // KV Store
-    bool SaveImage(std::string &key, std::vector<uint8_t> &image);
+    DistributedKv::Status SaveImage(std::string &key, std::vector<uint8_t> &image);
 
     // RDB Store
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
@@ -90,17 +91,19 @@ private:
     bool GenLcdKey(ThumbnailData &data);
     bool CreateThumbnailData(ThumbnailData &data);
     bool CreateLcdData(ThumbnailData &data);
-    bool SaveThumbnailData(ThumbnailData &data);
-    bool SaveLcdData(ThumbnailData &data);
+    DistributedKv::Status SaveThumbnailData(ThumbnailData &data);
+    DistributedKv::Status SaveLcdData(ThumbnailData &data);
 
     bool GetThumbnailFromKvStore(ThumbnailData &data);
     bool GetLcdFromKvStore(ThumbnailData &data);
     bool ResizeThumbnailToTarget(ThumbnailData &data, Size &size, std::unique_ptr<PixelMap> &pixelMap);
     bool ResizeLcdToTarget(ThumbnailData &data, Size &size, std::unique_ptr<PixelMap> &pixelMap);
 
-    bool CreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, std::string &key);
+    bool CreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, std::string &outKey);
+    bool CreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, std::string &outKey);
     int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
 };
 } // namespace Media
-} // namespace  OHOS
-#endif  // MEDIA_THUMBNAIL_H
+} // namespace OHOS
+
+#endif  // FRAMEWORKS_INNERKITSIMPL_MEDIALIBRARY_DATA_ABILITY_INCLUDE_MEDIALIBRARY_THUMBNAIL_H_

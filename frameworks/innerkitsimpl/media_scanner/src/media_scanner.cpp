@@ -463,7 +463,7 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
     int32_t errCode = ERR_SUCCESS;
     DIR *dirPath = nullptr;
     struct dirent *ent = nullptr;
-    int32_t len = path.length();
+    size_t len = path.length();
     struct stat statInfo;
 
     if (len >= FILENAME_MAX - 1) {
@@ -483,7 +483,7 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
 
     if ((dirPath = opendir(path.c_str())) == nullptr) {
         MEDIA_ERR_LOG("Failed to opendir %{private}s, errno %{private}d", path.c_str(), errno);
-        free(fName);
+        FREE_MEMORY_AND_SET_NULL(fName);
         return ERR_NOT_ACCESSIBLE;
     }
 
@@ -492,7 +492,7 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
             continue;
         }
 
-        if (strncpy_s(fName + len, FILENAME_MAX, ent->d_name, FILENAME_MAX - len)) {
+        if (strncpy_s(fName + len, FILENAME_MAX - len, ent->d_name, FILENAME_MAX - len)) {
             continue;
         }
 

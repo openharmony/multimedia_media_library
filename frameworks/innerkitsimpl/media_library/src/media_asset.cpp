@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -74,23 +74,19 @@ bool MediaAsset::CreateMediaAsset(AssetType assetType)
                     + SLASH_CHAR;
 
     uri_ = ROOT_MEDIA_DIR + name_;
-
-    if (!(name_.empty())) {
-        mediaType = GetMediaType(name_);
-        if ((assetType == ASSET_AUDIO && mediaType == MEDIA_TYPE_AUDIO) ||
-            (assetType == ASSET_VIDEO && mediaType == MEDIA_TYPE_VIDEO) ||
-            (assetType == ASSET_IMAGE && mediaType == MEDIA_TYPE_IMAGE)) {
-            errCode = true;
-            if (!(albumName_.empty())) {
-                uri_ = dirPath + name_;
-                if (!(MediaFileUtils::IsDirectory(dirPath))) {
-                    errCode = MediaFileUtils::CreateDirectory(dirPath);
-                }
-            }
-
-            if (errCode) {
-                errCode = MediaFileUtils::CreateFile(uri_);
-            }
+    CHECK_AND_RETURN_RET_LOG(!(name_.empty()), false, "name_.empty()");
+    mediaType = GetMediaType(name_);
+    if ((assetType == ASSET_AUDIO && mediaType == MEDIA_TYPE_AUDIO) ||
+        (assetType == ASSET_VIDEO && mediaType == MEDIA_TYPE_VIDEO) ||
+        (assetType == ASSET_IMAGE && mediaType == MEDIA_TYPE_IMAGE)) {
+        errCode = true;
+        CHECK_AND_RETURN_RET_LOG(!(albumName_.empty()), false, "albumName_.empty()");
+        uri_ = dirPath + name_;
+        if (!(MediaFileUtils::IsDirectory(dirPath))) {
+            errCode = MediaFileUtils::CreateDirectory(dirPath);
+        }
+        if (errCode) {
+            errCode = MediaFileUtils::CreateFile(uri_);
         }
     }
 

@@ -13,14 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef MEDIADATAABILITY_UNIT_TEST_H
-#define MEDIADATAABILITY_UNIT_TEST_H
+#ifndef FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIADATAABILITY_TEST_INCLUDE_MEDIADATAABILITY_UNIT_TEST_H_
+#define FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIADATAABILITY_TEST_INCLUDE_MEDIADATAABILITY_UNIT_TEST_H_
 
-#include <thread>
 #include <cstdio>
+#include <thread>
+
 #include "gtest/gtest.h"
-#include "medialibrary_data_ability.h"
+
 #include "fetch_result.h"
+#include "medialibrary_data_ability.h"
 
 namespace OHOS {
 namespace Media {
@@ -40,4 +42,5 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIADATAABILITY_UNIT_TEST_H
+
+#endif  // FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIADATAABILITY_TEST_INCLUDE_MEDIADATAABILITY_UNIT_TEST_H_

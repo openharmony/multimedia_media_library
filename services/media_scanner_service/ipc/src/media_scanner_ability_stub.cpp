@@ -41,7 +41,7 @@ int32_t MediaScannerAbilityStub::OnRemoteRequest(
             errCode = MediaScannerAbilityStub::HandleGetScanStatus(data, reply);
             break;
         default:
-            MEDIA_ERR_LOG("MediaScannerAbilityStub request code %{private}d not handled", code);
+            MEDIA_ERR_LOG("MediaScannerAbilityStub request code %{private}u not handled", code);
             errCode = IPCObjectStub::OnRemoteRequest(code, data, reply, option);
             break;
     }
@@ -59,7 +59,10 @@ int32_t MediaScannerAbilityStub::HandleScanDir(MessageParcel& data, MessageParce
     }
 
     int32_t result = ScanDirService(dirPath, remoteObject);
-    reply.WriteInt32(result);
+    if (!reply.WriteInt32(result)) {
+        MEDIA_ERR_LOG("MediaScannerServiceStub ipc write error");
+        return SCAN_STUB_WR_ERR;
+    }
 
     return ERR_NONE;
 }
@@ -74,17 +77,22 @@ int32_t MediaScannerAbilityStub::HandleScanFile(MessageParcel& data, MessageParc
     }
 
     int32_t result = ScanFileService(filePath, remoteObject);
-    if (reply.WriteInt32(result)) {
-        return ERR_NONE;
-    } else {
+    if (!reply.WriteInt32(result)) {
+        MEDIA_ERR_LOG("MediaScannerServiceStub ipc write error");
         return SCAN_STUB_WR_ERR;
     }
+
+    return ERR_NONE;
 }
 
 int32_t MediaScannerAbilityStub::HandleGetScanStatus(MessageParcel& data, MessageParcel &reply)
 {
     bool result = IsScannerRunning();
-    reply.WriteBool(result);
+    if (!reply.WriteBool(result)) {
+        MEDIA_ERR_LOG("MediaScannerServiceStub ipc write error");
+        return SCAN_STUB_WR_ERR;
+    }
+
     return ERR_NONE;
 }
 } // namespace Media

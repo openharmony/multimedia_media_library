@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIALIBRARY_KVSTORE_OPERATIONS_H
-#define OHOS_MEDIALIBRARY_KVSTORE_OPERATIONS_H
+#ifndef FRAMEWORKS_INNERKITSIMPL_MEDIALIBRARY_DATA_ABILITY_INCLUDE_MEDIALIBRARY_KVSTORE_OPERATIONS_H_
+#define FRAMEWORKS_INNERKITSIMPL_MEDIALIBRARY_DATA_ABILITY_INCLUDE_MEDIALIBRARY_KVSTORE_OPERATIONS_H_
 
 #include <string>
 
@@ -24,10 +24,10 @@
 
 namespace OHOS {
 namespace Media {
-const std::string RINGTONE_DEFAULT_KEY = "default_ringtone";
-const std::string RINGTONE_MULTISIM_KEY = "multisim_ringtone";
-const std::string RINGTONE_NOTIFICATION_KEY = "notification_tone";
-const std::string RINGTONE_ALARM_KEY = "alarm_tone";
+static const std::string RINGTONE_DEFAULT_KEY = "default_ringtone";
+static const std::string RINGTONE_MULTISIM_KEY = "multisim_ringtone";
+static const std::string RINGTONE_NOTIFICATION_KEY = "notification_tone";
+static const std::string RINGTONE_ALARM_KEY = "alarm_tone";
 
 enum RingtoneSimType : int32_t {
     DEFAULT = 0,
@@ -47,4 +47,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MEDIALIBRARY_KVSTORE_OPERATIONS_H
+
+#endif  // FRAMEWORKS_INNERKITSIMPL_MEDIALIBRARY_DATA_ABILITY_INCLUDE_MEDIALIBRARY_KVSTORE_OPERATIONS_H_

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -438,6 +438,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumUri(napi_env env, napi_callback_info i
 static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
 {
     SmartAlbumNapiAsyncContext *context = const_cast<SmartAlbumNapiAsyncContext *>(&albumContext);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
     NativeRdb::ValuesBucket valuesBucket;
     int32_t changedRows;
@@ -456,6 +457,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
 static void SetFileFav(bool isFavourite, SmartAlbumNapiAsyncContext *context)
 {
     NAPI_DEBUG_LOG("SetFileFav IN");
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     string abilityUri = MEDIALIBRARY_DATA_URI;
     NativeRdb::ValuesBucket values;
     int32_t changedRows;
@@ -477,6 +479,7 @@ static void SetFileFav(bool isFavourite, SmartAlbumNapiAsyncContext *context)
 static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
 {
     NAPI_DEBUG_LOG("SetFileTrash IN");
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     string abilityUri = MEDIALIBRARY_DATA_URI;
     NativeRdb::ValuesBucket values;
     int32_t changedRows;
@@ -503,6 +506,7 @@ static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
 
 static void AddAssetNative(SmartAlbumNapiAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     context->valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
     int32_t changedRows;
     Uri AddAsseturi(MEDIALIBRARY_DATA_URI + "/"
@@ -513,8 +517,8 @@ static void AddAssetNative(SmartAlbumNapiAsyncContext *context)
 }
 static void RemoveAssetNative(SmartAlbumNapiAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     context->valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
-
     int32_t changedRows;
     Uri RemoveAsseturi(MEDIALIBRARY_DATA_URI + "/"
     + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
@@ -545,6 +549,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Sma
 }
 static void UpdateAlbumCapacity(SmartAlbumNapiAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     vector<string> columns;
     NativeRdb::DataAbilityPredicates predicates;
     Uri uri(MEDIALIBRARY_DATA_URI + "/"
@@ -792,6 +797,7 @@ napi_value SmartAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
 static void GetFetchOptionsParam(napi_env env, napi_value arg, const SmartAlbumNapiAsyncContext &context, bool &err)
 {
     SmartAlbumNapiAsyncContext *asyncContext = const_cast<SmartAlbumNapiAsyncContext *>(&context);
+    CHECK_NULL_PTR_RETURN_VOID(asyncContext, "Async context is null");
     char buffer[PATH_MAX];
     size_t res;
     uint32_t len = 0;
@@ -830,7 +836,7 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const SmartAlbumN
 
     napi_has_named_property(env, arg, "selectionArgs", &present);
     if (present && napi_get_named_property(env, arg, "selectionArgs", &property) == napi_ok &&
-        napi_is_array(env, property, &boolResult) == napi_ok && boolResult == true) {
+        napi_is_array(env, property, &boolResult) == napi_ok && boolResult) {
         napi_get_array_length(env, property, &len);
         for (size_t i = 0; i < len; i++) {
             napi_get_element(env, property, i, &stringItem);
@@ -884,6 +890,7 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
 
 static void GetTrashFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " <> ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
@@ -903,6 +910,7 @@ static void GetTrashFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 
 static void GetFavFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? AND " + MEDIA_DATA_DB_IS_FAV + " = ? AND "
         + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
@@ -924,6 +932,7 @@ static void GetFavFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 
 static void GetFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? AND " + SMARTALBUMMAP_DB_ALBUM_ID + " = ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);

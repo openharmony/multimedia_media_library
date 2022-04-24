@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_NAPI_UTILS_H
-#define MEDIALIBRARY_NAPI_UTILS_H
-
+#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIALIBRARY_NAPI_UTILS_H_
+#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIALIBRARY_NAPI_UTILS_H_
+ 
 #include <tuple>
 #include <memory>
 #include <vector>
@@ -84,7 +84,6 @@
             return;                                \
         }                                          \
     } while (0)
-
 #define CHECK_IF_EQUAL(condition, errMsg)   \
     do {                                    \
         if (!(condition)) {                 \
@@ -369,4 +368,5 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif /* MEDIALIBRARY_NAPI_UTILS_H */
+
+#endif  // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIALIBRARY_NAPI_UTILS_H_

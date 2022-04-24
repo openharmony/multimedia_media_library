@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef FETCH_RESULT_H
-#define FETCH_RESULT_H
+#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_FETCH_RESULT_H_
+#define INTERFACES_INNERKITS_NATIVE_INCLUDE_FETCH_RESULT_H_
 
 #include <variant>
-#include "file_asset.h"
 #include "abs_shared_result_set.h"
+#include "file_asset.h"
 #include "media_lib_service_const.h"
 #include "media_data_ability_const.h"
 #include "rdb_errno.h"
@@ -39,7 +39,7 @@ enum ResultSetDataType {
  */
 class FetchResult {
 public:
-    FetchResult(const std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet>& resultset);
+    explicit FetchResult(const std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet>& resultset);
     FetchResult();
     virtual ~FetchResult();
 
@@ -66,4 +66,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // FETCH_RESULT_H
+
+#endif  // INTERFACES_INNERKITS_NATIVE_INCLUDE_FETCH_RESULT_H_

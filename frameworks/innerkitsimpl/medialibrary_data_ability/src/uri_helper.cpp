@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -39,13 +39,13 @@ static bool PathToRealFileUrl(const std::string_view &path, std::string &realPat
     }
 
     if ((path.length() >= PATH_MAX)) {
-        MEDIA_INFO_LOG("path len is error, the len is: [%{public}zu]", path.length());
+        MEDIA_INFO_LOG("path len is error, the len is: [%{private}zu]", path.length());
         return false;
     }
 
     char tmpPath[PATH_MAX] = {0};
     if (realpath(path.data(), tmpPath) == nullptr) {
-        MEDIA_INFO_LOG("path to realpath error, %{public}s", path.data());
+        MEDIA_INFO_LOG("path to realpath error, %{private}s", path.data());
         return false;
     }
 
@@ -72,13 +72,13 @@ bool StrToInt(const std::string_view& str, T& value)
     long long result = strtoll(addr, &end, 10); /* 10 means decimal */
     if ((end == addr) || (end[0] != '\0') || (errno == ERANGE) ||
             (result > LLONG_MAX) || (result < LLONG_MIN)) {
-        MEDIA_INFO_LOG("call StrToInt func false,  input str is: %{public}s!", valStr.c_str());
+        MEDIA_INFO_LOG("call StrToInt func false,  input str is: %{private}s!", valStr.c_str());
         return false;
     }
 
     if constexpr (std::is_same<int32_t, T>::value) {
         if ((result > INT_MAX) || (result < INT_MIN)) {
-            MEDIA_INFO_LOG("call StrToInt func false,  input str is: %{public}s!", valStr.c_str());
+            MEDIA_INFO_LOG("call StrToInt func false,  input str is: %{private}s!", valStr.c_str());
             return false;
         }
         value = static_cast<int32_t>(result);
@@ -223,7 +223,7 @@ void UriHelper::FormatMeForUri(const std::string_view &uri) noexcept
             break;
     }
 
-    MEDIA_INFO_LOG("formatted uri: %{public}s", formattedUri_.c_str());
+    MEDIA_INFO_LOG("formatted uri: %{private}s", formattedUri_.c_str());
 }
 
 void UriHelper::FormatMeForFd() noexcept
@@ -295,7 +295,7 @@ bool UriHelper::AccessCheck(uint8_t flag) const
         mode |= (flag & URI_WRITE) ? W_OK : 0;
         int ret = access(rawFileUri_.data(), static_cast<int>(mode));
         if (ret != 0) {
-            MEDIA_INFO_LOG("Fail to access path: %{public}s", rawFileUri_.data());
+            MEDIA_INFO_LOG("Fail to access path: %{private}s", rawFileUri_.data());
             return false;
         }
         return true;
@@ -334,7 +334,7 @@ bool UriHelper::ParseFdUri(std::string_view uri)
         CHECK_AND_RETURN_RET_LOG(StrToInt(sizeStr, size_), false, "Invalid fd url");
         fd_ = fd;
     } else {
-        MEDIA_INFO_LOG("invalid fd uri: %{public}s", uri.data());
+        MEDIA_INFO_LOG("invalid fd uri: %{private}s", uri.data());
         return false;
     }
     return CorrectFdParam();

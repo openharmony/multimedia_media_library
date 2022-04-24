@@ -13,33 +13,33 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_LIBRARY_MANAGER_H
-#define MEDIA_LIBRARY_MANAGER_H
+#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIBRARY_MANAGER_H_
+#define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIBRARY_MANAGER_H_
 
 #include <cerrno>
+#include <iostream>
+#include <variant>
 #include <dirent.h>
 #include <fcntl.h>
 #include <ftw.h>
 #include <securec.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <variant>
-#include <iostream>
 
 #include "ability.h"
+#include "ability_context.h"
 #include "ability_loader.h"
+#include "album_asset.h"
 #include "abs_shared_result_set.h"
+#include "context.h"
 #include "data_ability_helper.h"
 #include "data_ability_predicates.h"
+#include "data_ability_observer_stub.h"
+#include "file_asset.h"
+#include "fetch_result.h"
 #include "media_data_ability_const.h"
 #include "uri.h"
-#include "context.h"
-#include "ability_context.h"
 #include "values_bucket.h"
-#include "data_ability_observer_stub.h"
-#include "fetch_result.h"
-#include "album_asset.h"
-#include "file_asset.h"
 
 namespace OHOS {
 namespace Media {
@@ -218,4 +218,5 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif /* MEDIA_LIBRARY_MANAGER_H */
+
+#endif  // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIBRARY_MANAGER_H_

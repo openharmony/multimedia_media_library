@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,11 @@
  */
 
 #include "mediadataability_unit_test.h"
+#include "data_ability_helper.h"
+#include "iservice_registry.h"
 #include "media_log.h"
+#include "permission/permission_kit.h"
+#include "system_ability_definition.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -23,7 +27,8 @@ namespace OHOS {
 namespace Media {
 MediaLibraryDataAbility g_rdbStoreTest;
 string g_createUri1, g_createUri2;
-
+int uid = 5010;
+std::shared_ptr<AppExecFwk::DataAbilityHelper> medialibraryDataAbilityHelper = nullptr;
 int g_fd1 = DATA_ABILITY_FAIL;
 int g_fd2 = DATA_ABILITY_FAIL;
 int g_albumId1 = DATA_ABILITY_FAIL;
@@ -31,11 +36,34 @@ int g_albumId2 = DATA_ABILITY_FAIL;
 shared_ptr<NativeRdb::AbsSharedResultSet> g_resultSet1 = nullptr;
 shared_ptr<NativeRdb::AbsSharedResultSet> g_resultSet2 = nullptr;
 shared_ptr<NativeRdb::AbsSharedResultSet> g_resultSet3 = nullptr;
-
-void MediaDataAbilityUnitTest::SetUpTestCase(void)
+std::shared_ptr<AppExecFwk::DataAbilityHelper> CreateDataAHelper(
+    int32_t systemAbilityId, std::shared_ptr<Uri> dataAbilityUri)
 {
-    g_rdbStoreTest.InitMediaLibraryRdbStore();
+    MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateDataAHelper ");
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saManager == nullptr) {
+        MEDIA_INFO_LOG("DataMedialibraryRdbHelper Get system ability mgr failed.");
+        return nullptr;
+    }
+    auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
+    while (remoteObj == nullptr) {
+        MEDIA_INFO_LOG("DataMedialibraryRdbHelper GetSystemAbility Service Failed.");
+        return nullptr;
+    }
+    return AppExecFwk::DataAbilityHelper::Creator(remoteObj, dataAbilityUri);
 }
+std::shared_ptr<AppExecFwk::DataAbilityHelper> CreateMediaLibraryHelper()
+{
+    if (medialibraryDataAbilityHelper == nullptr) {
+        MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper == nullptr");
+        std::shared_ptr<Uri> dataAbilityUri = std::make_shared<Uri>("dataability:///media");
+        medialibraryDataAbilityHelper = CreateDataAHelper(uid, dataAbilityUri);
+    }
+    MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper != nullptr");
+    return medialibraryDataAbilityHelper;
+}
+void MediaDataAbilityUnitTest::SetUpTestCase(void)
+{}
 
 void MediaDataAbilityUnitTest::TearDownTestCase(void) {}
 void MediaDataAbilityUnitTest::SetUp(void) {}
@@ -44,7 +72,7 @@ void MediaDataAbilityUnitTest::TearDown(void) {}
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAllFiles_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::Start");
-
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
@@ -53,20 +81,22 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAllFiles_Test_001, Tes
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::helper->Query before");
+    resultSet = helper->Query(queryFileUri, columns, predicates);
+    MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::helper->Query after");
     EXPECT_NE((resultSet == nullptr), true);
     // Create FetchResult object using the contents of resultSet
     fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult == nullptr), true);
-    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
+    EXPECT_NE((fetchFileResult->GetCount() < 0), true);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     while (fileAsset != nullptr) {
         Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
         NativeRdb::ValuesBucket valuesBucketDelete;
         MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::uri :%{private}s", fileAsset->GetUri().c_str());
-        MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::path :%{private}s", fileAsset->GetPath().c_str());
         valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
-        int retVal = g_rdbStoreTest.Insert(deleteAssetUri, valuesBucketDelete);
+        MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::helper->Insert before");
+        int retVal = helper->Insert(deleteAssetUri, valuesBucketDelete);
+        MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::helper->Insert after");
         EXPECT_NE((retVal < 0), true);
 
         fileAsset = fetchFileResult->GetNextObject();
@@ -78,6 +108,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAllFiles_Test_001, Tes
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_001::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     int index = DATA_ABILITY_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
@@ -88,7 +119,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_001, TestSi
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
+    index = helper->Insert(createAssetUri, valuesBucket);
     g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
     EXPECT_NE((index <= 0), true);
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_001::End");
@@ -97,6 +128,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_001, TestSi
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_002::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     int index = DATA_ABILITY_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
@@ -107,7 +139,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_002, TestSi
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
+    index = helper->Insert(createAssetUri, valuesBucket);
     g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
     EXPECT_NE((index <= 0), true);
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_002::End");
@@ -116,6 +148,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_002, TestSi
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_003::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     int index = DATA_ABILITY_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
@@ -126,7 +159,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_003, TestSi
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
+    index = helper->Insert(createAssetUri, valuesBucket);
     g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
     EXPECT_NE((index <= 0), true);
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_003::End");
@@ -135,6 +168,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_003, TestSi
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_004::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     int index = DATA_ABILITY_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
@@ -145,7 +179,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_004, TestSi
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
+    index = helper->Insert(createAssetUri, valuesBucket);
     EXPECT_NE((index <= 0), false);
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_004::End");
 }
@@ -153,6 +187,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_004, TestSi
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_005::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     int index = DATA_ABILITY_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
@@ -161,7 +196,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_005, TestSi
     MediaType mediaType = MEDIA_TYPE_IMAGE;
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
+    index = helper->Insert(createAssetUri, valuesBucket);
     EXPECT_NE((index <= 0), false);
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_005::End");
 }
@@ -169,6 +204,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_005, TestSi
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAsset_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_DeleteAsset_Test_001::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     int index = DATA_ABILITY_FAIL;
     Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket;
@@ -178,14 +214,14 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAsset_Test_001, TestSi
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = g_rdbStoreTest.Insert(createAssetUri, valuesBucket);
+    index = helper->Insert(createAssetUri, valuesBucket);
     g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
     EXPECT_NE((index <= 0), true);
 
     Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
     NativeRdb::ValuesBucket valuesBucketDelete;
     valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, g_createUri1);
-    int retVal = g_rdbStoreTest.Insert(deleteAssetUri, valuesBucketDelete);
+    int retVal = helper->Insert(deleteAssetUri, valuesBucketDelete);
     EXPECT_NE((retVal < 0), true);
     MEDIA_INFO_LOG("MediaDataAbility_DeleteAsset_Test_001::End");
 }
@@ -193,6 +229,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAsset_Test_001, TestSi
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_QueryFiles_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_001::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
@@ -200,7 +237,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_QueryFiles_Test_001, TestSiz
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
     MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_001::End");
 }
@@ -208,6 +245,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_QueryFiles_Test_001, TestSiz
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_QueryFiles_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
@@ -216,14 +254,12 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_QueryFiles_Test_002, TestSiz
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
     MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::resultSet != nullptr");
 
     // Create FetchResult object using the contents of resultSet
     fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult == nullptr), true);
-    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::fetchFileResult != nullptr");
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
     MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::GetCount > 0");
 
@@ -237,6 +273,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_QueryFiles_Test_002, TestSiz
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
@@ -245,12 +282,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_001, TestSi
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
 
     // Create FetchResult object using the contents of resultSet
     fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult == nullptr), true);
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
 
     unique_ptr<FileAsset> fileAsset = nullptr;
@@ -266,7 +302,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_001, TestSi
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::GetId = %{private}d", fileAsset->GetId());
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::GetUri = %{private}s", fileAsset->GetUri().c_str());
     Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
-    int changedRows = g_rdbStoreTest.Update(updateAssetUri, valuesBucketUpdate, predicates);
+    int changedRows = helper->Update(updateAssetUri, valuesBucketUpdate, predicates);
     EXPECT_NE(changedRows < 0, true);
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::changedRows = %{private}d", changedRows);
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::End");
@@ -275,6 +311,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_001, TestSi
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
@@ -283,12 +320,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_002, TestSi
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
 
     // Create FetchResult object using the contents of resultSet
     fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult == nullptr), true);
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
 
     unique_ptr<FileAsset> fileAsset = nullptr;
@@ -303,7 +339,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_002, TestSi
 
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::GetUri = %{private}s", fileAsset->GetUri().c_str());
     Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
-    int changedRows = g_rdbStoreTest.Update(updateAssetUri, valuesBucketUpdate, predicates);
+    int changedRows = helper->Update(updateAssetUri, valuesBucketUpdate, predicates);
     EXPECT_NE(changedRows < 0, true);
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::changedRows = %{private}d", changedRows);
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::End");
@@ -312,6 +348,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_002, TestSi
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
@@ -320,12 +357,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_003, TestSi
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
 
     // Create FetchResult object using the contents of resultSet
     fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult == nullptr), true);
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
 
     unique_ptr<FileAsset> fileAsset = nullptr;
@@ -339,7 +375,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_003, TestSi
 
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::GetUri = %{private}s", fileAsset->GetUri().c_str());
     Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
-    int changedRows = g_rdbStoreTest.Update(updateAssetUri, valuesBucketUpdate, predicates);
+    int changedRows = helper->Update(updateAssetUri, valuesBucketUpdate, predicates);
     EXPECT_NE(changedRows < 0, true);
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::changedRows = %{private}d", changedRows);
     MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::End");
@@ -348,6 +384,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_003, TestSi
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_OpenFile_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_OpenFile_Test_001::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
@@ -356,12 +393,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_OpenFile_Test_001, TestSize.
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
 
     // Create FetchResult object using the contents of resultSet
     fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult == nullptr), true);
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
 
     unique_ptr<FileAsset> fileAsset = nullptr;
@@ -373,7 +409,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_OpenFile_Test_001, TestSize.
 
     Uri openFileUri(fileUri);
     MEDIA_INFO_LOG("openFileUri = %{private}s", openFileUri.ToString().c_str());
-    int32_t fd = g_rdbStoreTest.OpenFile(openFileUri, mode);
+    int32_t fd = helper->OpenFile(openFileUri, mode);
 
     EXPECT_NE(fd <= 0, true);
     MEDIA_INFO_LOG("MediaDataAbility_OpenFile_Test_001::fd = %{private}d", fd);
@@ -383,6 +419,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_OpenFile_Test_001, TestSize.
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseFile_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataAbility_CloseFile_Test_001::Start");
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
@@ -391,12 +428,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseFile_Test_001, TestSize
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = g_rdbStoreTest.Query(queryFileUri, columns, predicates);
+    resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
 
     // Create FetchResult object using the contents of resultSet
     fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult == nullptr), true);
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
 
     unique_ptr<FileAsset> fileAsset = nullptr;
@@ -408,7 +444,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseFile_Test_001, TestSize
 
     Uri openFileUri(fileUri);
     MEDIA_INFO_LOG("openFileUri = %{private}s", openFileUri.ToString().c_str());
-    int32_t fd = g_rdbStoreTest.OpenFile(openFileUri, mode);
+    int32_t fd = helper->OpenFile(openFileUri, mode);
 
     EXPECT_NE(fd <= 0, true);
     MEDIA_INFO_LOG("MediaDataAbility_CloseFile_Test_001::fd = %{private}d", fd);
@@ -420,7 +456,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseFile_Test_001, TestSize
 
     NativeRdb::ValuesBucket valuesBucketClose;
     valuesBucketClose.PutString(MEDIA_DATA_DB_URI, fileUri);
-    int32_t retValClose = g_rdbStoreTest.Insert(closeAssetUri, valuesBucketClose);
+    int32_t retValClose = helper->Insert(closeAssetUri, valuesBucketClose);
     EXPECT_NE(retValClose != DATA_ABILITY_SUCCESS, true);
 
     MEDIA_INFO_LOG("MediaDataAbility_CloseFile_Test_001::End");
@@ -428,6 +464,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseFile_Test_001, TestSize
 
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_GetAlbum_Test_001, TestSize.Level0)
 {
+    std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
     string abilityUri = Media::MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_ALBUMOPRN_QUERYALBUM;
     Uri createAssetUri(abilityUri);
     string queryAssetUri = Media::MEDIALIBRARY_DATA_URI;
@@ -435,25 +472,25 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_GetAlbum_Test_001, TestSize.
     NativeRdb::ValuesBucket valuesBucket;
     NativeRdb::DataAbilityPredicates predicates1;
     std::vector<std::string> columns;
-    g_rdbStoreTest.Query(createAssetUri, columns, predicates1);
+    helper->Query(createAssetUri, columns, predicates1);
 
     NativeRdb::DataAbilityPredicates queryPredicates;
     queryPredicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(1));
     std::vector<std::string> queryColumns;
-    g_rdbStoreTest.Query(createAssetUri1, queryColumns, queryPredicates);
+    helper->Query(createAssetUri1, queryColumns, queryPredicates);
 
     NativeRdb::DataAbilityPredicates predicates2;
     NativeRdb::ValuesBucket valuesBucket1;
     valuesBucket1.PutString(MEDIA_DATA_DB_TITLE, "newTest");
     predicates2.EqualTo(MEDIA_DATA_DB_ID, std::to_string(1));
     Uri uri(MEDIALIBRARY_DATA_URI);
-    g_rdbStoreTest.Update(uri, valuesBucket1, predicates2);
+    helper->Update(uri, valuesBucket1, predicates2);
 
     NativeRdb::DataAbilityPredicates filePredicates;
     NativeRdb::ValuesBucket fileValuesBucket;
     fileValuesBucket.PutString(MEDIA_DATA_DB_BUCKET_NAME, "newTest");
     filePredicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(1));
-    g_rdbStoreTest.Update(uri, fileValuesBucket, filePredicates);
+    helper->Update(uri, fileValuesBucket, filePredicates);
 }
 } // namespace Media
 } // namespace OHOS

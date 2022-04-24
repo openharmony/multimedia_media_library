@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,6 +29,7 @@ int32_t InsertAlbumAssetsInfoUtil(const ValuesBucket &valuesBucket,
     .InsertSmartAlbumMapInfo(values, rdbStore);
     return insertResult;
 }
+
 int32_t RemoveAlbumAssetsInfoUtil(const ValuesBucket &valuesBucket,
                                   shared_ptr<RdbStore> rdbStore,
                                   const MediaLibrarySmartAlbumMapDb &smartAlbumMapDbOprn)
@@ -49,6 +50,7 @@ int32_t RemoveAlbumAssetsInfoUtil(const ValuesBucket &valuesBucket,
     .DeleteSmartAlbumMapInfo(albumId, assetId, rdbStore);
     return deleteResult;
 }
+
 int32_t MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperations(const string &oprn,
                                                                            const ValuesBucket &valuesBucket,
                                                                            const shared_ptr<RdbStore> &rdbStore)

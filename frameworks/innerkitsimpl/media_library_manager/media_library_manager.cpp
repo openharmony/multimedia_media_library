@@ -89,7 +89,7 @@ variant<int32_t, string> GetValFromColumn(string columnName,
     ColumnType type;
     int32_t integerVal;
     string stringVal;
-
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, cellValue, "resultSet != nullptr");
     resultSet->GetColumnIndex(columnName, index);
     resultSet->GetColumnType(index, type);
     switch (type) {
