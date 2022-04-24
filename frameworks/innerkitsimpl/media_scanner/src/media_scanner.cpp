@@ -14,6 +14,7 @@
  */
 
 #include "media_scanner.h"
+#include "bytrace.h"
 #include "media_log.h"
 
 namespace OHOS {
@@ -50,6 +51,8 @@ void MediaScanner::ScanQueueCB(ScanRequest scanReq)
 {
     int32_t errCode = ERR_SCAN_NOT_INIT;
 
+    StartTrace(BYTRACE_TAG_OHOS, "ScanQueueCB");
+
     MediaScanner *scanner = MediaScanner::GetMediaScannerInstance();
     if (scanner != nullptr) {
         if (!scanner->isScannerInitDone_) {
@@ -61,14 +64,20 @@ void MediaScanner::ScanQueueCB(ScanRequest scanReq)
         string fileUri("");
         string path = scanReq.GetPath();
         if (scanReq.GetIsDirectory()) {
+            StartTrace(BYTRACE_TAG_OHOS, "ScanDirInternal");
             errCode = scanner->ScanDirInternal(const_cast<string &>(path));
+            FinishTrace(BYTRACE_TAG_OHOS);
         } else {
+            StartTrace(BYTRACE_TAG_OHOS, "ScanFileInternal");
             errCode = scanner->ScanFileInternal(const_cast<string &>(path));
+            FinishTrace(BYTRACE_TAG_OHOS);
             fileUri = scanner->mediaUri_;
         }
 
         scanner->ExecuteScannerClientCallback(scanReq.GetRequestId(), errCode, fileUri, path);
     }
+
+    FinishTrace(BYTRACE_TAG_OHOS);
 }
 
 bool MediaScanner::InitScanner(const std::shared_ptr<OHOS::AppExecFwk::Context> &context)
@@ -302,6 +311,8 @@ int32_t MediaScanner::RetrieveMetadata(Metadata &fileMetadata)
 // Visit the File
 int32_t MediaScanner::VisitFile(const Metadata &fileMD)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "VisitFile");
+
     auto fileMetadata = const_cast<Metadata *>(&fileMD);
     string mimeType = DEFAULT_FILE_MIME_TYPE;
     vector<string> supportedMimeTypes;
@@ -319,12 +330,15 @@ int32_t MediaScanner::VisitFile(const Metadata &fileMD)
         }
     }
 
+    FinishTrace(BYTRACE_TAG_OHOS);
     return errCode;
 }
 
 // Get Basic File Metadata from the file
 unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int32_t parentId)
 {
+    StartTrace(BYTRACE_TAG_OHOS, "GetFileMetaData");
+
     unique_ptr<Metadata> fileMetadata = make_unique<Metadata>();
     if (fileMetadata == nullptr) {
         MEDIA_ERR_LOG("File metadata is null");
@@ -376,6 +390,7 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
                       path.c_str(), rootDir.c_str());
     }
 
+    FinishTrace(BYTRACE_TAG_OHOS);
     return fileMetadata;
 }
 
