@@ -24,6 +24,10 @@
 #include "napi/native_node_api.h"
 #include "pixel_map_napi.h"
 #include "values_bucket.h"
+#include "mediadata_helper.h"
+#include "napi_remote_object.h"
+#include "mediadata_stub_impl.h"
+#include "mediadata_proxy.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,7 +40,7 @@ public:
 
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value CreateFileAsset(napi_env env, FileAsset &iAsset,
-                                      std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper);
+                                      std::shared_ptr<AppExecFwk::MediaDataHelper> abilityHelper);
 
     std::string GetFileDisplayName() const;
     std::string GetRelativePath() const;
@@ -50,7 +54,7 @@ public:
     void SetFavorite(bool isFavorite);
     bool IsTrash() const;
     void SetTrash(bool isTrash);
-    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
+    static std::shared_ptr<AppExecFwk::MediaDataHelper> sMediaDataHelper_;
     static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
         const std::shared_ptr<AbilityRuntime::Context> &context);
