@@ -3782,6 +3782,21 @@ napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info
     return result;
 }
 
+static int32_t CloseAsset(MediaLibraryAsyncContext *context, string uri)
+{
+    string abilityUri = MEDIALIBRARY_DATA_URI;
+    Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
+    context->valuesBucket.Clear();
+    context->valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
+    int32_t ret = context->objectInfo->sAbilityHelper_->Insert(closeAssetUri, context->valuesBucket);
+    NAPI_DEBUG_LOG("File close asset %{public}d", ret);
+    if (ret != DATA_ABILITY_SUCCESS) {
+        context->error = ret;
+        NAPI_ERR_LOG("File close asset fail, %{public}d", ret);
+    }
+    return ret;
+}
+
 static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
 {
     auto helper = context->objectInfo->sAbilityHelper_;
@@ -3826,11 +3841,13 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
     if (sendfile(destFd, srcFd, nullptr, statSrc.st_size) == -1) {
         close(srcFd);
         close(destFd);
+        CloseAsset(context, context->fileAsset->GetUri());
         NAPI_ERR_LOG("copy file fail %{public}d ", errno);
         return;
     }
     close(srcFd);
     close(destFd);
+    CloseAsset(context, context->fileAsset->GetUri());
     context->error = ERR_DEFAULT;
 }
 
