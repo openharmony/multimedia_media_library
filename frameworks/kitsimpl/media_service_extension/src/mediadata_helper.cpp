@@ -743,6 +743,7 @@ int MediaDataHelper::BatchInsert(Uri &uri, const std::vector<NativeRdb::ValuesBu
 
 bool MediaDataHelper::CheckUriParam(const Uri &uri)
 {
+/*
     HILOG_INFO("MediaDataHelper::CheckUriParam start.");
     Uri checkUri(uri.ToString());
     if (!CheckOhosUri(checkUri)) {
@@ -768,6 +769,7 @@ bool MediaDataHelper::CheckUriParam(const Uri &uri)
         }
     }
     HILOG_INFO("MediaDataHelper::CheckUriParam end.");
+    */
     return true;
 }
 
@@ -813,6 +815,7 @@ void MediaDataHelper::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAb
         HILOG_ERROR("%{public}s called. dataObserver is nullptr", __func__);
         return;
     }
+    /*
 
     Uri tmpUri(uri.ToString());
     std::lock_guard<std::mutex> lock_l(oplock_);
@@ -845,6 +848,7 @@ void MediaDataHelper::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAb
         return;
     }
     mediaDataProxy_->RegisterObserver(uri, dataObserver);
+    */
     HILOG_INFO("MediaDataHelper::RegisterObserver end.");
 }
 
