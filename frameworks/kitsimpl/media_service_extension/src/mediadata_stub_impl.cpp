@@ -66,6 +66,7 @@ int MediaDataStubImpl::Insert(const Uri &uri, const NativeRdb::ValuesBucket &val
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = 0;
     HILOG_INFO("%{public}s end successfully.", __func__);
+    ret =  MediaLibraryDataManager::GetInstance()->Insert(uri, value);
     return ret;
 }
 
@@ -152,6 +153,7 @@ int MediaDataStubImpl::BatchInsert(const Uri &uri, const std::vector<NativeRdb::
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = 0;
     HILOG_INFO("%{public}s end successfully.", __func__);
+    ret =  MediaLibraryDataManager::GetInstance()->BatchInsert(uri, values);
     return ret;
 }
 
