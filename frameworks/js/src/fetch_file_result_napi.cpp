@@ -25,7 +25,7 @@ namespace OHOS {
 namespace Media {
 thread_local napi_ref FetchFileResultNapi::sConstructor_ = nullptr;
 thread_local FetchResult *FetchFileResultNapi::sFetchFileResult_ = nullptr;
-std::shared_ptr<AppExecFwk::DataAbilityHelper> FetchFileResultNapi::sAbilityHelper = nullptr;
+std::shared_ptr<AppExecFwk::MediaDataHelper> FetchFileResultNapi::sMediaDataHelper = nullptr;
 
 FetchFileResultNapi::FetchFileResultNapi()
     : env_(nullptr), wrapper_(nullptr) {}
@@ -107,7 +107,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 obj->fetchFileResult_->isClosed_ = sFetchFileResult_->isClosed_;
                 obj->fetchFileResult_->count_ = sFetchFileResult_->count_;
                 obj->fetchFileResult_->networkId_ = sFetchFileResult_->networkId_;
-                obj->abilityHelper_ = sAbilityHelper;
+                obj->abilityHelper_ = sMediaDataHelper;
                 fetchRes.release();
             } else {
                 NAPI_ERR_LOG("No native instance assigned yet");
@@ -132,7 +132,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
 }
 
 napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult &fileResult,
-    std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper)
+    std::shared_ptr<AppExecFwk::MediaDataHelper> abilityHelper)
 {
     StartTrace(HITRACE_TAG_OHOS, "CreateFetchFileResult");
 
@@ -142,7 +142,7 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult 
 
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (status == napi_ok) {
-        sAbilityHelper = abilityHelper;
+        sMediaDataHelper = abilityHelper;
         sFetchFileResult_ = &fileResult;
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         sFetchFileResult_ = nullptr;
@@ -159,7 +159,7 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult 
     return result;
 }
 
-std::shared_ptr<AppExecFwk::DataAbilityHelper> FetchFileResultNapi::GetDataAbilityHelper() const
+std::shared_ptr<AppExecFwk::MediaDataHelper> FetchFileResultNapi::GetMediaDataHelper() const
 {
     return abilityHelper_;
 }
@@ -230,7 +230,7 @@ static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, 
 
     if (context->fileAsset != nullptr) {
         jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
-                                                     context->objectInfo->GetDataAbilityHelper());
+                                                     context->objectInfo->GetMediaDataHelper());
         if (jsFileAsset == nullptr) {
             NAPI_ERR_LOG("Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);
@@ -463,7 +463,7 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
         size_t i = 0;
         for (i = 0; i < len; i++) {
             jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAssetArray[i]),
-                                                         context->objectInfo->GetDataAbilityHelper());
+                                                         context->objectInfo->GetMediaDataHelper());
             if (jsFileAsset == nullptr || napi_set_element(env, jsFileArray, i, jsFileAsset) != napi_ok) {
                 NAPI_ERR_LOG("Failed to get file asset napi object");
                 napi_get_undefined(env, &jsContext->data);
