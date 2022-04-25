@@ -12,9 +12,7 @@
 # limitations under the License.
 
 import("//build/test.gni")
-
-MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
-MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
+import("//foundation/multimedia/medialibrary_standard/media_library.gni")
 
 module_output_path = "medialibrary_standard/medialibrary"
 
@@ -29,7 +27,7 @@ ohos_unittest("medialibrary_test") {
   include_dirs = [
     "./include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
-    "$MEDIA_LIB_INNERKITS_DIR/media_library/include/",
+    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include/",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include/",
     "//utils/native/base/include",
   ]
@@ -37,7 +35,7 @@ ohos_unittest("medialibrary_test") {
   sources = [ "src/medialibrary_unit_test.cpp" ]
 
   deps = [
-    "$MEDIA_LIB_INNERKITS_DIR/media_library:media_library",
+    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
     "//utils/native/base:utils",
   ]
