@@ -49,6 +49,7 @@ int MediaDataStubImpl::OpenFile(const Uri &uri, const std::string &mode)
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = -1;
+    ret = MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
     HILOG_INFO("%{public}s end successfully.", __func__);
     return ret;
 }
@@ -75,6 +76,7 @@ int MediaDataStubImpl::Update(const Uri &uri, const NativeRdb::ValuesBucket &val
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = 0;
+    ret =  MediaLibraryDataManager::GetInstance()->Update(uri, value, predicates);
     HILOG_INFO("%{public}s end successfully.", __func__);
     return ret;
 }
@@ -83,6 +85,7 @@ int MediaDataStubImpl::Delete(const Uri &uri, const NativeRdb::DataAbilityPredic
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = 0;
+    ret =  MediaLibraryDataManager::GetInstance()->Delete(uri, predicates);
     HILOG_INFO("%{public}s end successfully.", __func__);
     return ret;
 }
@@ -144,6 +147,7 @@ std::string MediaDataStubImpl::GetType(const Uri &uri)
 {
     HILOG_INFO("%{public}s begin.", __func__);
     std::string ret = "";
+    ret = MediaLibraryDataManager::GetInstance()->GetType(uri);
     HILOG_INFO("%{public}s end successfully.", __func__);
     return ret;
 }
