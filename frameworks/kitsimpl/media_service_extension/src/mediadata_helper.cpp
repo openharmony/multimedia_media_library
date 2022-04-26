@@ -51,7 +51,7 @@ MediaDataHelper::MediaDataHelper(const std::shared_ptr<Context> &context, const 
     const std::shared_ptr<Uri> &uri, const sptr<IMediaData> &mediaDataProxy)
 {
     HILOG_INFO("MediaDataHelper::MediaDataHelper start");
-    //token_ = context->GetToken();
+    token_ = context->GetToken();
     context_ = std::shared_ptr<Context>(context);
     want_ = want;
     uri_ = uri;
@@ -146,7 +146,7 @@ std::shared_ptr<MediaDataHelper> MediaDataHelper::Creator(
  * @return Returns the created MediaDataHelper instance.
  */
 std::shared_ptr<MediaDataHelper> MediaDataHelper::Creator(
-    const std::shared_ptr<Context> &context, const AAFwk::Want &want, const std::shared_ptr<Uri> &uri)
+    const std::shared_ptr<OHOS::AppExecFwk::Context> &context, const AAFwk::Want &want, const std::shared_ptr<Uri> &uri)
 {
     HILOG_INFO("MediaDataHelper::Creator with context, want and uri called start.");
     if (context == nullptr) {
@@ -170,7 +170,7 @@ std::shared_ptr<MediaDataHelper> MediaDataHelper::Creator(
 
     sptr<MediaDataConnection> mediaDataConnection = MediaDataConnection::GetInstance();
     if (!mediaDataConnection->IsExtAbilityConnected()) {
-        //mediaDataConnection->ConnectMediaDataExtAbility(want, context->GetToken());
+        mediaDataConnection->ConnectMediaDataExtAbility(want, context->GetToken());
     }
     mediaDataProxy = mediaDataConnection->GetMediaDataProxy();
     if (mediaDataProxy == nullptr) {
@@ -213,12 +213,13 @@ std::shared_ptr<MediaDataHelper> MediaDataHelper::Creator(
         HILOG_ERROR("MediaDataHelper::Creator failed, uri == nullptr");
         return nullptr;
     }
-
+    /*
     if (uri->GetScheme() != SCHEME_MEDIADATA) {
         HILOG_ERROR("MediaDataHelper::Creator failed, the Scheme is not mediadata, Scheme: %{public}s",
             uri->GetScheme().c_str());
         return nullptr;
     }
+    */
 
     HILOG_INFO("MediaDataHelper::Creator before ConnectMediaDataExtAbility.");
     sptr<IMediaData> mediaDataProxy = nullptr;

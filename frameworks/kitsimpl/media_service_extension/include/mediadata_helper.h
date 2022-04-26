@@ -77,7 +77,7 @@ public:
      *
      * @return Returns the created MediaDataHelper instance with a specified Uri.
      */
-    static std::shared_ptr<MediaDataHelper> Creator(const std::shared_ptr<Context> &context,
+    static std::shared_ptr<MediaDataHelper> Creator(const std::shared_ptr<OHOS::AppExecFwk::Context> &context,
         const AAFwk::Want &want, const std::shared_ptr<Uri> &uri);
 
     /**
