@@ -276,7 +276,8 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const ValuesBucket &valu
 
         result = DATA_ABILITY_FAIL;
         string operationType = MediaLibraryDataManagerUtils::GetOperationType(insertUri);
-        MEDIA_INFO_LOG("operationType = %{private}s", operationType.c_str());
+        MEDIA_INFO_LOG("MediaData Insert operationType = %{private}s", operationType.c_str());
+        MEDIA_INFO_LOG("MediaData Insert uri = %{public}s", insertUri.c_str());
         if ((operationType == MEDIA_FILEOPRN_CREATEASSET ||
             operationType == MEDIA_ALBUMOPRN_CREATEALBUM) && !CheckFileNameValid(value)) {
             return DATA_ABILITY_FILE_NAME_INVALID;
@@ -705,6 +706,8 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::Query(const Uri &uri,
     string::size_type pos = uriString.find_last_of('/');
     string type = uriString.substr(pos + 1);
     MEDIA_DEBUG_LOG("uriString = %{private}s, type = %{private}s, thumbnailQuery %{private}d, Rdb Verison %{private}d",
+        uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
+    MEDIA_DEBUG_LOG("MediaData uriString = %{public}s, type = %{public}s, thumbnailQuery %{public}d, Rdb Verison %{public}d",
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
 
