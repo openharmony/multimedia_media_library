@@ -29,7 +29,7 @@ unique_ptr<MediaScannerDb> MediaScannerDb::GetDatabaseInstance()
     return database;
 }
 
-void MediaScannerDb::SetRdbHelper(const shared_ptr<OHOS::AppExecFwk::DataAbilityHelper> &rdbhelper)
+void MediaScannerDb::SetRdbHelper(const shared_ptr<OHOS::AppExecFwk::MediaDataHelper> &rdbhelper)
 {
     rdbhelper_ = rdbhelper;
 }

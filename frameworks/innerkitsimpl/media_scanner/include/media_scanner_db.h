@@ -33,6 +33,10 @@
 #include "uri.h"
 #include "values_bucket.h"
 #include "want.h"
+#include "mediadata_helper.h"
+#include "napi_remote_object.h"
+#include "mediadata_stub_impl.h"
+#include "mediadata_proxy.h"
 
 namespace OHOS {
 namespace Media {
@@ -48,7 +52,7 @@ public:
     static unique_ptr<MediaScannerDb> GetDatabaseInstance();
     bool DeleteMetadata(const vector<string> &idList);
     void NotifyDatabaseChange(const MediaType mediaType);
-    void SetRdbHelper(const std::shared_ptr<AppExecFwk::DataAbilityHelper> &rdbhelper);
+    void SetRdbHelper(const std::shared_ptr<AppExecFwk::MediaDataHelper> &rdbhelper);
 
     string InsertMetadata(const Metadata &metadata);
     string UpdateMetadata(const Metadata &metadata);
@@ -68,7 +72,7 @@ public:
 private:
     std::string GetMediaTypeUri(MediaType mediaType);
     std::unique_ptr<Metadata> FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
-    std::shared_ptr<AppExecFwk::DataAbilityHelper> rdbhelper_;
+    std::shared_ptr<AppExecFwk::MediaDataHelper> rdbhelper_;
 };
 } // namespace Media
 } // namespace OHOS
