@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef FRAMEWORKS_SERVICES_MEDIA_LIBRARY_PROVIDER_MAIN_H_
-#define FRAMEWORKS_SERVICES_MEDIA_LIBRARY_PROVIDER_MAIN_H_
+#ifndef FRAMEWORKS_SERVICES_MEDIA_LIBRARY_PROVIDER_H_
+#define FRAMEWORKS_SERVICES_MEDIA_LIBRARY_PROVIDER_H_
 
 #endif
