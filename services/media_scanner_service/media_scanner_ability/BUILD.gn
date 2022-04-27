@@ -12,8 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
-MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
+import("//foundation/multimedia/medialibrary_standard/media_library.gni")
 
 config("media_scanner_ability_public_config") {
   include_dirs = [
@@ -24,7 +23,7 @@ config("media_scanner_ability_public_config") {
     "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
-    "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
+    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
     "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client/include",
     "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/ipc/include",
     "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/media_scanner_ability/include",

@@ -39,19 +39,19 @@
       },
       "build": {
         "sub_component": [
-            "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library_packages",
+            "//foundation/multimedia/medialibrary_standard/frameworks/services/media_library:medialibrary_data_ability",
+            "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
             "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
             "//foundation/multimedia/medialibrary_standard/sa_profile:medialibrary_service_sa_profile",
-            "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary",
-            "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary_js",
-            "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_ability:medialibrary_data_ability",
+            "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary",
+            "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary_js",
             "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/media_scanner_ability:media_scanner_service",
             "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/client:media_scanner_client"
         ],
         "inner_kits": [
             {
                 "header": {
-                  "header_base": "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
+                  "header_base": "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/include",
                   "header_files": [
                     "album_asset.h",
                     "fetch_result.h",
@@ -68,11 +68,11 @@
                     "native_album_asset.h"
                   ]
                 },
-                "name": "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library"
+                "name": "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library"
             },
             {
               "header": {
-                "header_base": "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary/include",
+                "header_base": "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/include",
                 "header_files": [
                   "fetch_file_result_napi.h",
                   "media_library_napi.h",
@@ -83,7 +83,7 @@
                   "medialibrary_peer_info.h"
                 ]
               },
-              "name": "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary:medialibrary"
+              "name": "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary"
           }
         ],
         "test": [

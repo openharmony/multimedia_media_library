@@ -27,8 +27,8 @@ ohos_shared_library("media_library_manager") {
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/appdatafwk/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library/include",
-    "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
+    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper/include",
+    "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/include",
     "//utils/native/base/include",
   ]
 
@@ -38,7 +38,7 @@ ohos_shared_library("media_library_manager") {
     "//foundation/aafwk/standard/interfaces/innerkits/base:base",
     "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager:dataobs_manager",
     "//foundation/aafwk/standard/interfaces/innerkits/uri:zuri",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library",
+    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//utils/native/base:utils",
   ]
 
