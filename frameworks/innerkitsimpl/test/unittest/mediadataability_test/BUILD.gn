@@ -12,9 +12,7 @@
 # limitations under the License.
 
 import("//build/test.gni")
-
-MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
-MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
+import("//foundation/multimedia/medialibrary_standard/media_library.gni")
 
 module_output_path = "medialibrary_standard/mediadataability"
 
@@ -35,13 +33,13 @@ ohos_unittest("mediadataability_test") {
     "//foundation/aafwk/standard/interfaces/innerkits/app_manager/include/appmgr",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/rdb/include",
-    "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
+    "$MEDIA_LIB_BASE_DIR/interfaces/inner_api/media_library_helper/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include/",
-    "$MEDIA_LIB_INNERKITS_DIR/media_library/include",
+    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "$MEDIA_LIB_INNERKITS_DIR/medialibrary_data_ability/include",
+    "$MEDIA_LIB_SERVICES_DIR/media_library/include",
     "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
     "//third_party/json/include",
@@ -51,8 +49,8 @@ ohos_unittest("mediadataability_test") {
 
   deps = [
     "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client:media_scanner_client",
-    "$MEDIA_LIB_INNERKITS_DIR/media_library:media_library",
-    "$MEDIA_LIB_INNERKITS_DIR/medialibrary_data_ability:medialibrary_data_ability",
+    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
+    "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
     "//foundation/aafwk/standard/interfaces/innerkits/ability_manager:ability_manager",

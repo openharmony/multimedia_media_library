@@ -14,6 +14,7 @@ import("//ark/ts2abc/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
 import("//foundation/ace/ace_engine/ace_config.gni")
+import("//foundation/multimedia/medialibrary_standard/media_library.gni")
 
 js_declaration("medialibrary_js") {
   part_name = "multimedia_media_library_standard"
@@ -35,7 +36,7 @@ action("gen_medialibraryinf_abc") {
   args = [
     "--src-js",
     rebase_path(
-        "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/medialibraryinf.js"),
+        "//foundation/multimedia/medialibrary_standard/frameworks/js/src/medialibraryinf.js"),
     "--dst-file",
     rebase_path(target_out_dir + "/medialibraryinf.abc"),
     "--node",
@@ -48,14 +49,14 @@ action("gen_medialibraryinf_abc") {
   ]
   deps = [ "//ark/ts2abc/ts2panda:ark_ts2abc_build" ]
 
-  inputs = [ "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/medialibraryinf.js" ]
+  inputs = [ "//foundation/multimedia/medialibrary_standard/frameworks/js/src/medialibraryinf.js" ]
   outputs = [ target_out_dir + "/medialibraryinf.abc" ]
 }
 
 base_output_path = get_label_info(":medialibraryinf_js", "target_out_dir")
 medialibraryinf_obj_path = base_output_path + "/medialibraryinf.o"
 gen_js_obj("medialibraryinf_js") {
-  input = "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/medialibraryinf.js"
+  input = "//foundation/multimedia/medialibrary_standard/frameworks/js/src/medialibraryinf.js"
   output = medialibraryinf_obj_path
   dep = ":gen_medialibraryinf_abc"
 }
@@ -73,13 +74,13 @@ ohos_shared_library("medialibrary") {
     "//drivers/peripheral/display/interfaces/include",
     "//drivers/peripheral/base",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native",
-    "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/medialibrary/include",
+    "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/include",
     "//third_party/node/src",
     "//foundation/ace/napi/interfaces/kits",
     "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_ability/include",
+    "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
     "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager/include",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include",
     "//foundation/multimedia/image_standard/interfaces/kits/js/common/include",
@@ -87,14 +88,14 @@ ohos_shared_library("medialibrary") {
   ]
 
   sources = [
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/album_napi.cpp",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/avmetadatahelper_napi.cpp",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/fetch_file_result_napi.cpp",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/file_asset_napi.cpp",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/media_library_napi.cpp",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/media_scanner_napi.cpp",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/native_module_ohos_medialibrary.cpp",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/medialibrary/src/smart_album_napi.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/js/src/album_napi.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/js/src/avmetadatahelper_napi.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/js/src/fetch_file_result_napi.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/js/src/file_asset_napi.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/js/src/media_library_napi.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/js/src/media_scanner_napi.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/js/src/native_module_ohos_medialibrary.cpp",
+    "//foundation/multimedia/medialibrary_standard/frameworks/js/src/smart_album_napi.cpp",
   ]
   if (target_cpu == "arm") {
     ldflags = [ "-Wl" ]
@@ -105,6 +106,7 @@ ohos_shared_library("medialibrary") {
   deps = [
     ":medialibraryinf_abc",
     ":medialibraryinf_js",
+    "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
     "//foundation/aafwk/standard/frameworks/kits/appkit:appkit_native",
     "//foundation/aafwk/standard/interfaces/innerkits/base:base",
@@ -113,8 +115,7 @@ ohos_shared_library("medialibrary") {
     "//foundation/ace/napi:ace_napi",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native:media_client",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library:media_library",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_ability:medialibrary_data_ability",
+    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/client:media_scanner_client",
     "//utils/native/base:utils",
   ]

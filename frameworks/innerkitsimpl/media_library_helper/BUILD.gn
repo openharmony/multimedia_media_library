@@ -23,7 +23,7 @@ config("media_library_config") {
   include_dirs = [
     "./",
     "./include",
-    "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
+    "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//utils/native/base/include",
     "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
@@ -76,7 +76,7 @@ ohos_shared_library("media_library") {
 }
 
 ohos_source_set("media_library_test_source") {
-  sources = [ "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/test/media_library_test.cpp" ]
+  sources = [ "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/test/media_library_test.cpp" ]
 
   configs = [ ":media_library_config" ]
 
@@ -99,8 +99,8 @@ ohos_executable("media_library_test") {
 ohos_static_library("media_thumbnail_helper") {
   sources = [ "src/media_thumbnail_helper.cpp" ]
   include_dirs = [
-    "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library/include",
+    "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/include",
+    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
     "//utils/native/base/include",
