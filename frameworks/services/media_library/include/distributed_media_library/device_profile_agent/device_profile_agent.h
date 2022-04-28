@@ -21,27 +21,27 @@
 #include "nlohmann/json.hpp"
 namespace OHOS {
 namespace Media {
-
 struct MedialibrayInfo {
-    int32_t version;
+    std::string version;
 };
 
 void from_json(const nlohmann::json &jsonObject, MedialibrayInfo &medialibraryInfo);
 
 class DeviceProfileAgent final : public DeviceProfile::IProfileEventCallback, 
-                                 public std::enable_shared_from_this<DeviceProfileAgent>{
+                                 public std::enable_shared_from_this<DeviceProfileAgent> {
 public:
     DeviceProfileAgent();
     virtual ~DeviceProfileAgent();
-    int32_t PutDeviceProfile(const int32_t version);
-    int32_t GetDeviceProfile(const std::string& udid, int32_t &version);
+    DeviceProfileAgent(const DeviceProfileAgent&) = delete;
+    DeviceProfileAgent& operator=(const DeviceProfileAgent&) = delete;
+    DeviceProfileAgent(const DeviceProfileAgent&&) = delete;
+    DeviceProfileAgent& operator=(const DeviceProfileAgent&&) = delete;
+    int32_t PutDeviceProfile(const std::string &version);
+    int32_t GetDeviceProfile(const std::string& udid, std::string &version);
     int32_t SyncDeviceProfile(const std::string &deviceId);
     void OnSyncCompleted(const DeviceProfile::SyncResult& syncResults) override;
     void OnProfileChanged(const DeviceProfile::ProfileChangeNotification& changeNotification) override;
 private:
-    // DeviceProfileAgent(const DeviceProfileAgent&);
-    // DeviceProfileAgent& operator=(const DeviceProfileAgent&) = delete;
-
     void SubScribeMediaLibaryVersionEvent();
     void UnSubScribeMediaLibaryVersionEvent();
 };

@@ -24,7 +24,7 @@ namespace Media {
 void from_json(const nlohmann::json &jsonObject, MedialibrayInfo &medialibraryInfo)
 {
     if (jsonObject.find("medialibrary_version") != jsonObject.end()) {
-        medialibraryInfo.version = jsonObject.at("medialibrary_version").get<int32_t>();
+        medialibraryInfo.version = jsonObject.at("medialibrary_version").get<std::string>();
     }
 }
 
@@ -75,28 +75,29 @@ int32_t DeviceProfileAgent::SyncDeviceProfile(const std::string &deviceId)
     syncOption.SetSyncMode(mode);
     syncOption.AddDevice(deviceId);
 
-    MEDIA_INFO_LOG("DeviceProfileAgent::SyncDeviceProfile, ret %{public}s", deviceId.c_str());
+    MEDIA_INFO_LOG("DeviceProfileAgent::SyncDeviceProfile, cid %{public}s", deviceId.c_str());
     // 执行同步接口
-    return DeviceProfile::DistributedDeviceProfileClient::GetInstance().SyncDeviceProfile(syncOption, shared_from_this());
+    return DeviceProfile::DistributedDeviceProfileClient::GetInstance().SyncDeviceProfile(
+        syncOption, shared_from_this());
 }
 
 // 将媒体库版本信息put到dp数据库
-int32_t DeviceProfileAgent::PutDeviceProfile(const int32_t version)
+int32_t DeviceProfileAgent::PutDeviceProfile(const std::string &version)
 {
     DeviceProfile::ServiceCharacteristicProfile profile;
-    profile.SetServiceId("com.ohos.medialibrary");  // system ?
+    profile.SetServiceId("comOhosMedialibrary");
     profile.SetServiceType("");
     nlohmann::json json;
     json["medialibrary_version"] = version; // "1.0";
     profile.SetCharacteristicProfileJson(json.dump());
-    MEDIA_INFO_LOG("DeviceProfileAgent::PutDeviceProfile, version %{public}d", version);
+    MEDIA_INFO_LOG("DeviceProfileAgent::PutDeviceProfile, version %{public}s", version.c_str());
     int32_t ret = DeviceProfile::DistributedDeviceProfileClient::GetInstance().PutDeviceProfile(profile);
     MEDIA_INFO_LOG("DeviceProfileAgent::PutDeviceProfile, ret %{public}d", ret);
     return ret;
 }
 
  // 解析get到的profile
-int32_t DeviceProfileAgent::GetDeviceProfile(const std::string &udid, int32_t &version)
+int32_t DeviceProfileAgent::GetDeviceProfile(const std::string &udid, std::string &version)
 {
     MEDIA_INFO_LOG("DeviceProfileAgent::GetDeviceProfile, udid %{public}s", udid.c_str());
     DeviceProfile::ServiceCharacteristicProfile profile;
