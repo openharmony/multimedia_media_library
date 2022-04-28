@@ -20,6 +20,7 @@
 #include "data_ability_helper.h"
 #include "device_manager.h"
 #include "device_manager_callback.h"
+#include "device_profile_agent.h"
 #include "event_handler.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_device_info.h"
@@ -30,7 +31,6 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::NativeRdb;
-using namespace std;
 
 class MediaLibraryDevice {
 public:
@@ -71,6 +71,7 @@ private:
     std::map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
     std::map<std::string, std::set<int>> excludeMap_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    std::shared_ptr<DeviceProfileAgent> dpa_;
 };
 } // namespace Media
 } // namespace OHOS
