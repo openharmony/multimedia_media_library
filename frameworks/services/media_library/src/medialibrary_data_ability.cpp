@@ -194,10 +194,17 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
         MEDIA_ERR_LOG("InitMediaRdbStore context is nullptr");
         return errCode;
     }
-    string databaseDir = context->GetDatabaseDir() + "/" + MEDIA_DATA_ABILITY_DB_NAME;
-    RdbStoreConfig config(databaseDir);
-    config.SetBundleName(bundleName_);
+
+    string databaseDir = context->GetDatabaseDir();
+    string relativePath = MEDIA_DATA_ABILITY_DB_NAME;
+
+    RdbStoreConfig config(databaseDir + "/" + relativePath);
+    config.SetBundleName(context->GetBundleName());
     config.SetName(MEDIA_DATA_ABILITY_DB_NAME);
+    config.SetRelativePath(relativePath);
+    config.SetEncryptLevel(ENCRYPTION_LEVEL);
+    config.SetAppModuleName(context->GetHapModuleInfo()->moduleName);
+
     MediaLibraryDataCallBack rdbDataCallBack;
 
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
