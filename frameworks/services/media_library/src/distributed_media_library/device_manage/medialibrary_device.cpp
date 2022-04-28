@@ -31,6 +31,7 @@ MediaLibraryDevice::MediaLibraryDevice()
         auto runner = AppExecFwk::EventRunner::Create("MediaLibraryDevice");
         mediaLibraryDeviceHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
     }
+    dpa_ = make_shared<DeviceProfileAgent>();
 }
 
 MediaLibraryDevice::~MediaLibraryDevice()
@@ -66,7 +67,6 @@ void MediaLibraryDevice::OnDeviceOnline(
     const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo, const std::string &bundleName)
 {
     MEDIA_INFO_LOG("OnDeviceOnline deviceId = %{private}s", deviceInfo.deviceId);
-
     if (mediaLibraryDeviceHandler_ == nullptr) {
         MEDIA_ERR_LOG("OnDeviceOnline mediaLibraryDeviceHandler null");
         return;
@@ -76,6 +76,9 @@ void MediaLibraryDevice::OnDeviceOnline(
         if (mediaLibraryDeviceOperations_ != nullptr) {
             OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
             GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo, bundleName);
+            if (dpa_ != nullptr) {
+                dpa_->GetDeviceProfile(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
+            }
             if (!mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mediaLibraryDeviceInfo, bundleName)) {
                 MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed!");
                 return;
@@ -175,6 +178,10 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
 {
     MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore IN");
     rdbStore_ = rdbStore;
+    if (dpa_ != nullptr) {
+        dpa_->PutDeviceProfile(1);
+    } 
+
     if (!QueryDeviceTable()) {
         MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore QueryDeviceTable fail!");
         return false;
