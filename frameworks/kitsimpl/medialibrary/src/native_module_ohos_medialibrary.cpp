@@ -41,7 +41,7 @@ static napi_value Export(napi_env env, napi_value exports)
     return exports;
 }
 
-extern "C" __attribute__((visibility("default"))) void NAPI_multimedia_medialibrary_GetJSCode(const char** buf,
+extern "C" __attribute__((visibility("default"))) void NAPI_multimedia_mediaLibrary_GetJSCode(const char** buf,
     int* bufLen)
 {
     if (buf != nullptr) {
@@ -53,7 +53,7 @@ extern "C" __attribute__((visibility("default"))) void NAPI_multimedia_medialibr
     }
 }
 
-extern "C" __attribute__((visibility("default"))) void NAPI_multimedia_medialibrary_GetABCCode(const char** buf,
+extern "C" __attribute__((visibility("default"))) void NAPI_multimedia_mediaLibrary_GetABCCode(const char** buf,
     int* bufLen)
 {
     if (buf != nullptr) {
@@ -73,7 +73,7 @@ static napi_module g_module = {
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = Export,
-    .nm_modname = "multimedia.medialibrary",
+    .nm_modname = "multimedia.mediaLibrary",
     .nm_priv = ((void*)0),
     .reserved = {0}
 };
