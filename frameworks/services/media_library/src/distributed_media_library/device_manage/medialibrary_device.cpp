@@ -179,7 +179,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore IN");
     rdbStore_ = rdbStore;
     if (dpa_ != nullptr) {
-        dpa_->PutDeviceProfile(1);
+        dpa_->PutDeviceProfile(MEDIA_LIBRARY_VERSION);
     } 
 
     if (!QueryDeviceTable()) {
@@ -193,6 +193,9 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     for (auto& deviceInfo : deviceList) {
         OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
         GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo, bundleName);
+        if (dpa_ != nullptr) {
+            dpa_->GetDeviceProfile(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
+        }
         if (mediaLibraryDeviceOperations_ != nullptr &&
             mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mediaLibraryDeviceInfo, bundleName)) {
             lock_guard<mutex> autoLock(deviceLock_);
