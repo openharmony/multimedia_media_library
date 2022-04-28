@@ -3856,6 +3856,30 @@ static int32_t CloseAsset(MediaLibraryAsyncContext *context, string uri)
     return ret;
 }
 
+static int32_t CopyFile(int32_t srcFd, int32_t destFd)
+{
+    int block = 4096;
+    auto copyBuf = make_unique<char[]>(block);
+    do {
+        ssize_t readSize = read(srcFd, copyBuf.get(), block);
+        if (readSize == -1) {
+            HiLog::Error(LABEL, "CopyFile read failed, %{public}d", errno);
+            return -1;
+        } else if (readSize == 0) {
+            break;
+        }
+        ssize_t writeSize = write(destFd, copyBuf.get(), readSize);
+        if (writeSize != readSize) {
+            HiLog::Error(LABEL, "CopyFile write failed, %{public}d", errno);
+            return -1;
+        }
+        if (readSize != block) {
+            break;
+        }
+    } while (true);
+    return ERR_DEFAULT;
+}
+
 static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
 {
     auto helper = context->objectInfo->sAbilityHelper_;
@@ -3897,7 +3921,7 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         close(srcFd);
         return;
     }
-    if (sendfile(destFd, srcFd, nullptr, statSrc.st_size) == -1) {
+    if (CopyFile(srcFd, destFd)) {
         close(srcFd);
         close(destFd);
         CloseAsset(context, context->fileAsset->GetUri());
