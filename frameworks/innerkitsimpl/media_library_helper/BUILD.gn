@@ -113,7 +113,7 @@ ohos_static_library("media_thumbnail_helper") {
 
   # cflags = [ "-DOLD_KV_API" ]
   external_deps = [
-    "bytrace_standard:bytrace_core",
+    "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "native_appdatamgr:native_appdatafwk",
     "native_appdatamgr:native_dataability",

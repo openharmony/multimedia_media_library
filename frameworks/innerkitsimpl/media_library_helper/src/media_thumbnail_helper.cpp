@@ -14,7 +14,7 @@
  */
 
 #include "media_thumbnail_helper.h"
-#include "bytrace.h"
+#include "hitrace_meter.h"
 #include "distributed_kv_data_manager.h"
 #include "image_packer.h"
 #include "media_file_utils.h"
