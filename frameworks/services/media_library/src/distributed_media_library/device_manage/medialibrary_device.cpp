@@ -180,7 +180,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     rdbStore_ = rdbStore;
     if (dpa_ != nullptr) {
         dpa_->PutDeviceProfile(MEDIA_LIBRARY_VERSION);
-    } 
+    }
 
     if (!QueryDeviceTable()) {
         MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore QueryDeviceTable fail!");
