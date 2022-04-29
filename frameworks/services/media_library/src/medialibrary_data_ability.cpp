@@ -18,7 +18,7 @@
 #include <unordered_set>
 
 #include "accesstoken_kit.h"
-#include "bytrace.h"
+#include "hitrace_meter.h"
 #include "bundle_mgr_interface.h"
 #include "file_ex.h"
 #include "ipc_singleton.h"
