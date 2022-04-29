@@ -14,6 +14,10 @@
  */
 
 #include "native_module_ohos_medialibrary.h"
+extern const char _binary_medialibraryinf_js_start[];
+extern const char _binary_medialibraryinf_js_end[];
+extern const char _binary_medialibraryinf_abc_start[];
+extern const char _binary_medialibraryinf_abc_end[];
 
 namespace OHOS {
 namespace Media {
@@ -37,6 +41,30 @@ static napi_value Export(napi_env env, napi_value exports)
     return exports;
 }
 
+extern "C" __attribute__((visibility("default"))) void NAPI_multimedia_mediaLibrary_GetJSCode(const char** buf,
+    int* bufLen)
+{
+    if (buf != nullptr) {
+        *buf = _binary_medialibraryinf_js_start;
+    }
+
+    if (bufLen != nullptr) {
+        *bufLen = _binary_medialibraryinf_js_end - _binary_medialibraryinf_js_start;
+    }
+}
+
+extern "C" __attribute__((visibility("default"))) void NAPI_multimedia_mediaLibrary_GetABCCode(const char** buf,
+    int* bufLen)
+{
+    if (buf != nullptr) {
+        *buf = _binary_medialibraryinf_abc_start;
+    }
+
+    if (bufLen != nullptr) {
+        *bufLen = _binary_medialibraryinf_abc_end - _binary_medialibraryinf_abc_start;
+    }
+}
+
 /*
  * module define
  */
@@ -45,7 +73,7 @@ static napi_module g_module = {
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = Export,
-    .nm_modname = "multimedia.medialibrary",
+    .nm_modname = "multimedia.mediaLibrary",
     .nm_priv = ((void*)0),
     .reserved = {0}
 };
