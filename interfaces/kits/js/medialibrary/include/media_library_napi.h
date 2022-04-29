@@ -205,6 +205,9 @@ private:
     static napi_value JSCreateSmartAlbum(napi_env env, napi_callback_info info);
     static napi_value JSDeleteSmartAlbum(napi_env env, napi_callback_info info);
 
+    static napi_value JSStoreMediaAsset(napi_env env, napi_callback_info info);
+    static napi_value JSStartImagePreview(napi_env env, napi_callback_info info);
+
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
     void UnregisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
@@ -250,6 +253,9 @@ struct MediaLibraryAsyncContext {
     std::vector<std::unique_ptr<AlbumAsset>> albumNativeArray;
     std::vector<std::unique_ptr<SmartAlbumAsset>> smartAlbumNativeArray;
     std::vector<std::unique_ptr<SmartAlbumAsset>> privateSmartAlbumNativeArray;
+    Ability *ability_;
+    std::string storeMediaSrc;
+    int32_t imagePreviewIndex;
 };
 } // namespace Media
 } // namespace OHOS
