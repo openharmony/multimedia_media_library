@@ -27,7 +27,7 @@ struct MedialibrayInfo {
 
 void from_json(const nlohmann::json &jsonObject, MedialibrayInfo &medialibraryInfo);
 
-class DeviceProfileAgent final : public DeviceProfile::IProfileEventCallback, 
+class DeviceProfileAgent final : public DeviceProfile::IProfileEventCallback,
                                  public std::enable_shared_from_this<DeviceProfileAgent> {
 public:
     DeviceProfileAgent();
