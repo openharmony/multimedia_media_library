@@ -23,6 +23,7 @@ using namespace OHOS::AppExecFwk;
 
 MediaLibraryDevice::MediaLibraryDevice()
 {
+    MEDIA_INFO_LOG("MediaLibraryDevice::constructor");
     if (mediaLibraryDeviceOperations_ == nullptr) {
         mediaLibraryDeviceOperations_ = std::make_unique<MediaLibraryDeviceOperations>();
     }
@@ -36,6 +37,7 @@ MediaLibraryDevice::MediaLibraryDevice()
 
 MediaLibraryDevice::~MediaLibraryDevice()
 {
+    MEDIA_INFO_LOG("MediaLibraryDevice::deconstructor");
     mediaLibraryDeviceOperations_ = nullptr;
     dataAbilityhelper_ = nullptr;
 }
@@ -78,6 +80,8 @@ void MediaLibraryDevice::OnDeviceOnline(
             GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo, bundleName);
             if (dpa_ != nullptr) {
                 dpa_->GetDeviceProfile(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
+            } else {
+                MEDIA_ERR_LOG("OnDeviceOnline device profile agent is null!!");
             }
             if (!mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mediaLibraryDeviceInfo, bundleName)) {
                 MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed!");
@@ -178,9 +182,11 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
 {
     MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore IN");
     rdbStore_ = rdbStore;
-    if (dpa_ != nullptr) {
-        dpa_->PutDeviceProfile(MEDIA_LIBRARY_VERSION);
+    if (dpa_ == nullptr) {
+        MEDIA_ERR_LOG("InitDeviceRdbStore device profile agent is null!!");
+        dpa_ = make_shared<DeviceProfileAgent>();
     }
+    dpa_->PutDeviceProfile(MEDIA_LIBRARY_VERSION);
 
     if (!QueryDeviceTable()) {
         MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore QueryDeviceTable fail!");
