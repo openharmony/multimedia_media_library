@@ -57,7 +57,6 @@ void DeviceProfileAgent::SubScribeMediaLibaryVersionEvent()
 
 void DeviceProfileAgent::UnSubScribeMediaLibaryVersionEvent()
 {
-    // 解除订阅
     std::list<DeviceProfile::ProfileEvent> subscribeInfos;
     subscribeInfos.emplace_back(DeviceProfile::ProfileEvent::EVENT_SYNC_COMPLETED);
     std::list<DeviceProfile::ProfileEvent> fileEvents;
@@ -68,25 +67,21 @@ void DeviceProfileAgent::UnSubScribeMediaLibaryVersionEvent()
 
 int32_t DeviceProfileAgent::SyncDeviceProfile(const std::string &deviceId)
 {
-    // 定义同步模式和范围
-    // todo:此sync是阻塞的還是异步的？
     DeviceProfile::SyncOptions syncOption;
     DeviceProfile::SyncMode mode = DeviceProfile::SyncMode::PULL;
     syncOption.SetSyncMode(mode);
     syncOption.AddDevice(deviceId);
 
     MEDIA_INFO_LOG("DeviceProfileAgent::SyncDeviceProfile, cid %{public}s", deviceId.c_str());
-    // 执行同步接口
     return DeviceProfile::DistributedDeviceProfileClient::GetInstance().SyncDeviceProfile(
         syncOption, shared_from_this());
 }
 
-// 将媒体库版本信息put到dp数据库
 int32_t DeviceProfileAgent::PutDeviceProfile(const std::string &version)
 {
     DeviceProfile::ServiceCharacteristicProfile profile;
-    profile.SetServiceId("comOhosMedialibrary");
-    profile.SetServiceType("");
+    profile.SetServiceId("ohosMedialibraryService");
+    profile.SetServiceType("characteristic.medialibrary.version");
     nlohmann::json json;
     json["medialibrary_version"] = version; // "1.0";
     profile.SetCharacteristicProfileJson(json.dump());
@@ -96,18 +91,21 @@ int32_t DeviceProfileAgent::PutDeviceProfile(const std::string &version)
     return ret;
 }
 
- // 解析get到的profile
 int32_t DeviceProfileAgent::GetDeviceProfile(const std::string &udid, std::string &version)
 {
-    MEDIA_INFO_LOG("DeviceProfileAgent::GetDeviceProfile, udid %{public}s", udid.c_str());
+    MEDIA_INFO_LOG("GetDeviceProfile, udid %{public}s", udid.c_str());
     DeviceProfile::ServiceCharacteristicProfile profile;
-    std::string serviceId;
-    DeviceProfile::DistributedDeviceProfileClient::GetInstance().GetDeviceProfile(udid, serviceId, profile);
+    std::string serviceId("ohosMedialibraryService");
+    int32_t ret = DeviceProfile::DistributedDeviceProfileClient::GetInstance().GetDeviceProfile(
+        udid, serviceId, profile);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("GetDeviceProfile, ret %{public}d", ret);
+    }
     std::string jsonData = profile.GetCharacteristicProfileJson();
     nlohmann::json jsonObject = nlohmann::json::parse(jsonData);
 
     version = jsonObject.at("medialibrary_version");
-    MEDIA_INFO_LOG("DeviceProfileAgent::GetDeviceProfile, jsonData %{public}s", jsonData.c_str());
+    MEDIA_INFO_LOG("GetDeviceProfile, jsonData %{public}s, ret %{public}d", jsonData.c_str(), ret);
     return 0;
 }
 void DeviceProfileAgent::OnSyncCompleted(const DeviceProfile::SyncResult& syncResults)
