@@ -3103,7 +3103,7 @@ static int32_t CloseAsset(MediaLibraryAsyncContext *context, string uri)
     Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
     context->valuesBucket.Clear();
     context->valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
-    int32_t ret = context->objectInfo->sAbilityHelper_->Insert(closeAssetUri, context->valuesBucket);
+    int32_t ret = context->objectInfo->sMediaDataHelper_->Insert(closeAssetUri, context->valuesBucket);
     NAPI_DEBUG_LOG("File close asset %{public}d", ret);
     if (ret != DATA_ABILITY_SUCCESS) {
         context->error = ret;
