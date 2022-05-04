@@ -24,16 +24,19 @@
 #include "ipc_singleton.h"
 #include "media_file_utils.h"
 #include "medialibrary_sync_table.h"
-#include "media_log.h"
 #include "ipc_skeleton.h"
 #include "sa_mgr_client.h"
 #include "string_ex.h"
 #include "sys_mgr_client.h"
 #include "system_ability_definition.h"
 #include "media_scanner.h"
+#include "datashare_ext_ability.h"
+#include "datashare_ext_ability_context.h"
+#include "media_log.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
+using namespace OHOS::AbilityRuntime;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DistributedKv;
 
@@ -66,12 +69,24 @@ std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::GetInstance()
     return instance_;
 }
 
+static DataShare::DataShareExtAbility * MediaDataShareCreator (const std::unique_ptr<Runtime>& runtime) 
+{
+    MEDIA_INFO_LOG("klh MediaLibraryCreator::%{public}s", __func__);
+	return new DataShareExtAbility();
+}
+
+__attribute__((constructor)) void RegisterDataShareCreator()
+{
+    MEDIA_INFO_LOG("klh MediaLibraryDataMgr::%{public}s", __func__);
+	DataShare::DataShareExtAbility::SetCreator(MediaDataShareCreator);
+}
+
 const std::string MediaLibraryDataManager::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
 const std::string MediaLibraryDataManager::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 
 void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
-    MEDIA_INFO_LOG("MediaLibraryDataMgr::%s", __func__);
+    MEDIA_INFO_LOG("MediaLibraryDataMgr::%{public}s", __func__);
     context_ = context;
     InitMediaLibraryRdbStore();
     MEDIA_INFO_LOG("bundleName = %{private}s", bundleName_.c_str());
