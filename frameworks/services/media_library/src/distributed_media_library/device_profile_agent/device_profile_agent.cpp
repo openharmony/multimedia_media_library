@@ -31,13 +31,13 @@ void from_json(const nlohmann::json &jsonObject, MedialibrayInfo &medialibraryIn
 DeviceProfileAgent::DeviceProfileAgent()
 {
     MEDIA_INFO_LOG("DeviceProfileAgent::constructor");
-    SubScribeMediaLibaryVersionEvent();
+    // SubScribeMediaLibaryVersionEvent();
 }
 
 DeviceProfileAgent::~DeviceProfileAgent()
 {
     MEDIA_INFO_LOG("DeviceProfileAgent::deconstructor");
-    UnSubScribeMediaLibaryVersionEvent();
+    // UnSubScribeMediaLibaryVersionEvent();
 }
 
 void DeviceProfileAgent::SubScribeMediaLibaryVersionEvent()
