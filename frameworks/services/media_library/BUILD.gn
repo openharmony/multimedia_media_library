@@ -103,8 +103,8 @@ ohos_shared_library("medialibrary_data_ability") {
   external_deps = [
     "ability_base:zuri",
     "access_token:libaccesstoken_sdk",
-    "bytrace_standard:bytrace_core",
     "eventhandler:libeventhandler",
+    "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "multimedia_media_standard:media_client",
