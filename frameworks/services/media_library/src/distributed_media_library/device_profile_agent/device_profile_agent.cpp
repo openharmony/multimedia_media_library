@@ -31,24 +31,20 @@ void from_json(const nlohmann::json &jsonObject, MedialibrayInfo &medialibraryIn
 DeviceProfileAgent::DeviceProfileAgent()
 {
     MEDIA_INFO_LOG("DeviceProfileAgent::constructor");
-    // SubScribeMediaLibaryVersionEvent();
 }
 
 DeviceProfileAgent::~DeviceProfileAgent()
 {
     MEDIA_INFO_LOG("DeviceProfileAgent::deconstructor");
-    // UnSubScribeMediaLibaryVersionEvent();
 }
 
 void DeviceProfileAgent::SubScribeMediaLibaryVersionEvent()
 {
-    // 订阅EVENT_SYNC_COMPLETED事件
     DeviceProfile::SubscribeInfo syncEventInfo;
     syncEventInfo.profileEvent = DeviceProfile::ProfileEvent::EVENT_SYNC_COMPLETED;
     std::list<DeviceProfile::SubscribeInfo> subscribeInfos;
     subscribeInfos.emplace_back(syncEventInfo);
 
-    // 执行订阅接口
     std::list<DeviceProfile::ProfileEvent> fileEvents;
     int32_t ret = DeviceProfile::DistributedDeviceProfileClient::GetInstance().SubscribeProfileEvents(
         subscribeInfos, shared_from_this(), fileEvents);
@@ -73,8 +69,10 @@ int32_t DeviceProfileAgent::SyncDeviceProfile(const std::string &deviceId)
     syncOption.AddDevice(deviceId);
 
     MEDIA_INFO_LOG("DeviceProfileAgent::SyncDeviceProfile, cid %{public}s", deviceId.c_str());
-    return DeviceProfile::DistributedDeviceProfileClient::GetInstance().SyncDeviceProfile(
+    int32_t ret = DeviceProfile::DistributedDeviceProfileClient::GetInstance().SyncDeviceProfile(
         syncOption, shared_from_this());
+    MEDIA_INFO_LOG("DeviceProfileAgent::SyncDeviceProfile, ret %{public}d", ret);
+    return ret;
 }
 
 int32_t DeviceProfileAgent::PutDeviceProfile(const std::string &version)
@@ -99,14 +97,21 @@ int32_t DeviceProfileAgent::GetDeviceProfile(const std::string &udid, std::strin
     int32_t ret = DeviceProfile::DistributedDeviceProfileClient::GetInstance().GetDeviceProfile(
         udid, serviceId, profile);
     if (ret != 0) {
-        MEDIA_ERR_LOG("GetDeviceProfile, ret %{public}d", ret);
+        version = "1.0";
+        MEDIA_ERR_LOG("GetDeviceProfile, ret %{public}d, version %{public}s", ret, version.c_str());
+        return ret;
     }
     std::string jsonData = profile.GetCharacteristicProfileJson();
     nlohmann::json jsonObject = nlohmann::json::parse(jsonData);
+    if (jsonObject.is_discarded()) {
+        MEDIA_ERR_LOG("parse json failed");
+        version = "1.0";
+        return ret;
+    }
 
     version = jsonObject.at("medialibrary_version");
     MEDIA_INFO_LOG("GetDeviceProfile, jsonData %{public}s, ret %{public}d", jsonData.c_str(), ret);
-    return 0;
+    return ret;
 }
 void DeviceProfileAgent::OnSyncCompleted(const DeviceProfile::SyncResult& syncResults)
 {
