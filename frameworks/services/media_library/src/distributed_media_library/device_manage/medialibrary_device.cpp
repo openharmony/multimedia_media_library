@@ -52,7 +52,7 @@ MediaLibraryDevice *MediaLibraryDevice::GetInstance()
 void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<Context> &context)
 {
     dataAbilityhelper_ = OHOS::AppExecFwk::DataAbilityHelper::Creator(context);
-    MEDIA_INFO_LOG("MediaLibraryDevice::SetAbilityContext create dataAbilityhelper %{private}d",
+    MEDIA_INFO_LOG("MediaLibraryDevice::SetAbilityContext create dataAbilityhelper %{public}d",
         (dataAbilityhelper_ != nullptr));
 }
 
@@ -172,7 +172,7 @@ bool MediaLibraryDevice::IsHasDevice(string deviceUdid)
         if (deviceUdid.compare(iter->second.deviceUdid) == 0) {
             return true;
         }
-        iter++;
+        iter = next(iter);
     }
     return false;
 }
@@ -191,7 +191,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     // 获取同一网络中的所有设备Id
     std::vector<OHOS::DistributedHardware::DmDeviceInfo> deviceList;
     GetAllDeviceId(deviceList, bundleName);
-    MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
+    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
     for (auto& deviceInfo : deviceList) {
         OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
         GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo, bundleName);
@@ -207,7 +207,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
 
     std::vector<OHOS::Media::MediaLibraryDeviceInfo> deviceDataBaseList;
     mediaLibraryDeviceOperations_->GetAllDeviceDatas(rdbStore, deviceDataBaseList);
-    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore deviceDataBaseList size = %{private}d",
+    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore deviceDataBaseList size = %{public}d",
         (int) deviceDataBaseList.size());
     for (OHOS::Media::MediaLibraryDeviceInfo deviceInfo : deviceDataBaseList) {
         if (!IsHasDevice(deviceInfo.deviceUdid)) {
@@ -216,7 +216,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
             }
         }
     }
-    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore OUT deviceInfoMap size = %{private}d",
+    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore OUT deviceInfoMap size = %{public}d",
         (int) deviceInfoMap_.size());
     return true;
 }
@@ -285,7 +285,7 @@ string MediaLibraryDevice::GetNetworkIdBySelfId(const std::string &selfId, const
         if (selfId.compare(iter->second.selfId) == 0) {
             return iter->second.deviceId;
         }
-        iter++;
+        iter = next(iter);
     }
     return "";
 }

@@ -44,7 +44,7 @@ int32_t MediaScannerAbilityProxy::ScanDirService(std::string &scanDirPath, const
 
     int32_t error = Remote()->SendRequest(MEDIA_SCAN_DIR_ABILITY, data, reply, option);
     if (error != ERR_NONE) {
-        MEDIA_ERR_LOG("%{private}s:: ScanDirService IPC failed, error: %{private}d", __func__, error);
+        MEDIA_ERR_LOG("%{private}s:: ScanDirService IPC failed, error: %{public}d", __func__, error);
         return SCAN_IPC_ERR;
     }
 
@@ -80,7 +80,7 @@ int32_t MediaScannerAbilityProxy::ScanFileService(std::string &scanFilePath, con
 
     int32_t error = Remote()->SendRequest(MEDIA_SCAN_FILE_ABILITY, data, reply, option);
     if (error != ERR_NONE) {
-        MEDIA_ERR_LOG("%{private}s:: ScanFileService IPC failed, error: %{private}d", __func__, error);
+        MEDIA_ERR_LOG("%{private}s:: ScanFileService IPC failed, error: %{public}d", __func__, error);
         return SCAN_IPC_ERR;
     }
 
@@ -106,7 +106,7 @@ bool MediaScannerAbilityProxy::IsScannerRunning()
 
     int32_t error = Remote()->SendRequest(MEDIA_GET_SCAN_STATUS, data, reply, option);
     if (error != ERR_NONE) {
-        MEDIA_ERR_LOG("%{private}s:: IsScannerRunning IPC failed, error: %{private}d", __func__, error);
+        MEDIA_ERR_LOG("%{private}s:: IsScannerRunning IPC failed, error: %{public}d", __func__, error);
         return false;
     }
 

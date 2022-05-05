@@ -54,7 +54,7 @@ void MediaThumbnailHelper::InitKvStore()
 #ifdef OLD_KV_API
     manager.GetSingleKvStore(options, appId, storeId, [&](Status status, unique_ptr<SingleKvStore> store) {
         if (status != Status::SUCCESS) {
-            MEDIA_ERR_LOG("KvStore get failed! %{private}d", status);
+            MEDIA_ERR_LOG("KvStore get failed! %{public}d", status);
         } else {
             singleKvStorePtr_ = std::move(store);
         }
@@ -62,7 +62,7 @@ void MediaThumbnailHelper::InitKvStore()
 #else
     Status status = manager.GetSingleKvStore(options, appId, storeId, singleKvStorePtr_);
     if (status != Status::SUCCESS) {
-        MEDIA_ERR_LOG("KvStore get failed! %{private}d", status);
+        MEDIA_ERR_LOG("KvStore get failed! %{public}d", status);
     }
 #endif
     MEDIA_INFO_LOG("MediaThumbnailHelper::InitMediaThumbnaiKvStore OUT");
@@ -94,7 +94,7 @@ std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Si
         FinishTrace(HITRACE_TAG_OHOS);
 
         if (syncStatus != DistributedKv::Status::SUCCESS) {
-            MEDIA_ERR_LOG("sync KvStore failed! ret %{private}d", syncStatus);
+            MEDIA_ERR_LOG("sync KvStore failed! ret %{public}d", syncStatus);
             return nullptr;
         }
         if (!GetImage(key, image)) {
@@ -153,7 +153,7 @@ bool MediaThumbnailHelper::ResizeImage(vector<uint8_t> &data, Size &size, unique
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data.data(),
         data.size(), opts, errorCode);
     if (errorCode != Media::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to create image source %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to create image source %{public}d", errorCode);
         return false;
     }
     FinishTrace(HITRACE_TAG_OHOS);
@@ -164,7 +164,7 @@ bool MediaThumbnailHelper::ResizeImage(vector<uint8_t> &data, Size &size, unique
     decodeOpts.desiredSize.height = size.height;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     if (errorCode != Media::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to create pixelmap %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to create pixelmap %{public}d", errorCode);
         return false;
     }
     FinishTrace(HITRACE_TAG_OHOS);

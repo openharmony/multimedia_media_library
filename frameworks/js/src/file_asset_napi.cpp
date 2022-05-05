@@ -173,7 +173,7 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
                 obj.release();
                 return thisVar;
             } else {
-                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{private}d", status);
+                NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
             }
         }
     }
@@ -184,7 +184,7 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
 napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
     std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper)
 {
-    StartTrace(BYTRACE_TAG_OHOS, "CreateFileAsset");
+    StartTrace(HITRACE_TAG_OHOS, "CreateFileAsset");
 
     napi_status status;
     napi_value result = nullptr;
@@ -199,12 +199,12 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
         if (status == napi_ok && result != nullptr) {
             return result;
         } else {
-            NAPI_ERR_LOG("Failed to create file asset instance, status: %{private}d", status);
+            NAPI_ERR_LOG("Failed to create file asset instance, status: %{public}d", status);
         }
     }
 
     napi_get_undefined(env, &result);
-    FinishTrace(BYTRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_OHOS);
 
     return result;
 }
@@ -280,7 +280,7 @@ napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -304,7 +304,7 @@ napi_value FileAssetNapi::JSGetFileUri(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -328,7 +328,7 @@ napi_value FileAssetNapi::JSGetFilePath(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -352,7 +352,7 @@ napi_value FileAssetNapi::JSGetFileDisplayName(napi_env env, napi_callback_info 
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -385,7 +385,7 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            NAPI_ERR_LOG("Invalid arguments type! valueType: %{private}d", valueType);
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
@@ -408,7 +408,7 @@ napi_value FileAssetNapi::JSGetMimeType(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -432,7 +432,7 @@ napi_value FileAssetNapi::JSGetMediaType(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -456,7 +456,7 @@ napi_value FileAssetNapi::JSGetTitle(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -485,7 +485,7 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            NAPI_ERR_LOG("Invalid arguments type! valueType: %{private}d", valueType);
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res);
@@ -507,7 +507,7 @@ napi_value FileAssetNapi::JSGetSize(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -531,7 +531,7 @@ napi_value FileAssetNapi::JSGetAlbumId(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -555,7 +555,7 @@ napi_value FileAssetNapi::JSGetAlbumName(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -579,7 +579,7 @@ napi_value FileAssetNapi::JSGetDateAdded(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -603,7 +603,7 @@ napi_value FileAssetNapi::JSGetDateModified(napi_env env, napi_callback_info inf
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -627,7 +627,7 @@ napi_value FileAssetNapi::JSGetOrientation(napi_env env, napi_callback_info info
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -657,7 +657,7 @@ napi_value FileAssetNapi::JSSetOrientation(napi_env env, napi_callback_info info
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_number) {
-            NAPI_ERR_LOG("Invalid arguments type! valueType: %{private}d", valueType);
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
 
@@ -681,7 +681,7 @@ napi_value FileAssetNapi::JSGetWidth(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -705,7 +705,7 @@ napi_value FileAssetNapi::JSGetHeight(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -729,7 +729,7 @@ napi_value FileAssetNapi::JSGetRelativePath(napi_env env, napi_callback_info inf
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -759,7 +759,7 @@ napi_value FileAssetNapi::JSSetRelativePath(napi_env env, napi_callback_info inf
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            NAPI_ERR_LOG("Invalid arguments type! valueType: %{private}d", valueType);
+            NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res);
@@ -780,7 +780,7 @@ napi_value FileAssetNapi::JSGetAlbum(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -804,7 +804,7 @@ napi_value FileAssetNapi::JSGetArtist(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -828,7 +828,7 @@ napi_value FileAssetNapi::JSGetDuration(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
 
@@ -851,7 +851,7 @@ napi_value FileAssetNapi::JSParent(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -871,7 +871,7 @@ napi_value FileAssetNapi::JSGetAlbumUri(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -891,7 +891,7 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return jsResult;
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
@@ -927,7 +927,7 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
         changedRows = context->objectInfo->sAbilityHelper_->Update(updateAssetUri, valuesBucket, predicates);
         if (changedRows < 0) {
             context->error = changedRows;
-            NAPI_ERR_LOG("File asset modification failed, err: %{private}d", changedRows);
+            NAPI_ERR_LOG("File asset modification failed, err: %{public}d", changedRows);
         } else {
             context->changedRows = changedRows;
             Uri modifyNotify(notifyUri);
@@ -957,7 +957,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->error);
         }
     } else {
-        NAPI_ERR_LOG("JSCommitModify fail %{private}d", context->error);
+        NAPI_ERR_LOG("JSCommitModify fail %{public}d", context->error);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
                                                      "CheckDisplayName fail");
         napi_get_undefined(env, &jsContext->data);
@@ -1042,7 +1042,7 @@ static void JSOpenExecute(FileAssetAsyncContext *context)
         int32_t retVal = context->objectInfo->sAbilityHelper_->OpenFile(openFileUri, mode);
         if (retVal <= 0) {
             context->error = retVal;
-            NAPI_ERR_LOG("File open asset failed, ret: %{private}d", retVal);
+            NAPI_ERR_LOG("File open asset failed, ret: %{public}d", retVal);
         } else {
             context->fd = retVal;
         }
@@ -1170,7 +1170,7 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
             }
         }
         context->error = retVal;
-        NAPI_ERR_LOG("File close asset failed %{private}d", retVal);
+        NAPI_ERR_LOG("File close asset failed %{public}d", retVal);
     } else {
         context->error = ERR_INVALID_OUTPUT;
         NAPI_ERR_LOG("Ability helper is null");
@@ -1276,7 +1276,7 @@ static string GetStringInfo(shared_ptr<NativeRdb::AbsSharedResultSet> resultSet,
     string res;
     int errorCode = resultSet->GetString(pos, res);
     if (errorCode != 0) {
-        NAPI_ERR_LOG("Failed to get string column %{private}d %{private}d", pos, errorCode);
+        NAPI_ERR_LOG("Failed to get string column %{public}d %{public}d", pos, errorCode);
     }
     return res;
 }
@@ -1398,7 +1398,7 @@ static void GetSizeInfo(napi_env env, napi_value configObj, std::string type, in
     bool exist = false;
     napi_status status = napi_has_named_property(env, configObj, type.c_str(), &exist);
     if (status != napi_ok || !exist) {
-        NAPI_ERR_LOG("can not find named property, status: %{private}d", status);
+        NAPI_ERR_LOG("can not find named property, status: %{public}d", status);
         return;
     }
 
@@ -1595,7 +1595,7 @@ static bool GetIsDirectoryiteNative(napi_env env, const FileAssetAsyncContext &f
     Uri isDirectoryAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_ISDIRECTORY);
     context->valuesBucket.PutInt(Media::MEDIA_DATA_DB_ID, context->objectInfo->GetFileId());
     int retVal = context->objectInfo->sAbilityHelper_->Insert(isDirectoryAssetUri, context->valuesBucket);
-    NAPI_DEBUG_LOG("GetIsDirectoryiteNative retVal = %{private}d", retVal);
+    NAPI_DEBUG_LOG("GetIsDirectoryiteNative retVal = %{public}d", retVal);
     if (retVal == SUCCESS) {
         IsDirectory = true;
     }
@@ -1713,7 +1713,7 @@ static void JSIsFavoriteCallbackComplete(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
-        NAPI_ERR_LOG("Get IsFavorite failed, ret: %{private}d", context->error);
+        NAPI_ERR_LOG("Get IsFavorite failed, ret: %{public}d", context->error);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "Ability helper is null");
         napi_get_undefined(env, &jsContext->data);
