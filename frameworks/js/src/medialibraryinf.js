@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-const medialibrary = requireInternal('multimedia.medialibrary');
+const medialibrary = requireInternal('multimedia.mediaLibrary');
 const featureAbility = requireNapi('ability.featureAbility');
 
 async function startMediaSelect(option, asyncCallback)
