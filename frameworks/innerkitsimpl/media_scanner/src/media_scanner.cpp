@@ -14,7 +14,7 @@
  */
 
 #include "media_scanner.h"
-#include "bytrace.h"
+#include "hitrace_meter.h"
 #include "media_log.h"
 
 namespace OHOS {
