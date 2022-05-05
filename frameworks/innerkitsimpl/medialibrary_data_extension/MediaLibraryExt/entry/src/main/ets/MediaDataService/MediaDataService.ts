@@ -1,4 +1,4 @@
-import ServiceExtension from '@ohos.application.ServiceExtension'
+import ServiceExtension from '@ohos.application.ServiceExtensionAbility'
 import rpc from '@ohos.rpc'
 import mediaLibrary from '@ohos.multimedia.mediaLibrary'
 
