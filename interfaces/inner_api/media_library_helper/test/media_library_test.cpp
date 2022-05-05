@@ -60,7 +60,7 @@ public:
         for (size_t i = 0; i < imageAssets.size(); i++) {
             MEDIA_DEBUG_LOG("uri: %{private}s", imageAssets[i]->uri_.c_str());
             MEDIA_DEBUG_LOG("id: %{private}d", imageAssets[i]->id_);
-            MEDIA_DEBUG_LOG("media type: %{private}d", imageAssets[i]->mediaType_);
+            MEDIA_DEBUG_LOG("media type: %{public}d", imageAssets[i]->mediaType_);
             MEDIA_DEBUG_LOG("mime type: %{private}s", imageAssets[i]->mimeType_.c_str());
             MEDIA_DEBUG_LOG("name: %{private}s", imageAssets[i]->name_.c_str());
             MEDIA_DEBUG_LOG("date added: %{private}lld", imageAssets[i]->dateAdded_);
@@ -81,9 +81,9 @@ public:
             for (size_t j = 0; j < albumAssets[i]->imageAssetList_.size(); j++) {
                 MEDIA_DEBUG_LOG("uri: %{private}s", albumAssets[i]->imageAssetList_[j]->uri_.c_str());
                 MEDIA_DEBUG_LOG("id: %{private}d", albumAssets[i]->imageAssetList_[j]->id_);
-                MEDIA_DEBUG_LOG("width: %{private}d", albumAssets[i]->imageAssetList_[j]->width_);
-                MEDIA_DEBUG_LOG("height: %{private}d", albumAssets[i]->imageAssetList_[j]->height_);
-                MEDIA_DEBUG_LOG("media type: %{private}d",
+                MEDIA_DEBUG_LOG("width: %{public}d", albumAssets[i]->imageAssetList_[j]->width_);
+                MEDIA_DEBUG_LOG("height: %{public}d", albumAssets[i]->imageAssetList_[j]->height_);
+                MEDIA_DEBUG_LOG("media type: %{public}d",
                                 albumAssets[i]->imageAssetList_[j]->mediaType_);
                 MEDIA_DEBUG_LOG("mime type: %{private}s",
                                 albumAssets[i]->imageAssetList_[j]->mimeType_.c_str());
@@ -98,10 +98,10 @@ public:
             for (size_t k = 0; k < albumAssets[i]->videoAssetList_.size(); k++) {
                 MEDIA_DEBUG_LOG("uri: %{private}s", albumAssets[i]->videoAssetList_[k]->uri_.c_str());
                 MEDIA_DEBUG_LOG("id: %{private}d", albumAssets[i]->videoAssetList_[k]->id_);
-                MEDIA_DEBUG_LOG("width: %{private}d", albumAssets[i]->videoAssetList_[k]->width_);
-                MEDIA_DEBUG_LOG("height: %{private}d", albumAssets[i]->videoAssetList_[k]->height_);
-                MEDIA_DEBUG_LOG("duration: %{private}d", albumAssets[i]->videoAssetList_[k]->duration_);
-                MEDIA_DEBUG_LOG("media type: %{private}d",
+                MEDIA_DEBUG_LOG("width: %{public}d", albumAssets[i]->videoAssetList_[k]->width_);
+                MEDIA_DEBUG_LOG("height: %{public}d", albumAssets[i]->videoAssetList_[k]->height_);
+                MEDIA_DEBUG_LOG("duration: %{public}d", albumAssets[i]->videoAssetList_[k]->duration_);
+                MEDIA_DEBUG_LOG("media type: %{public}d",
                                 albumAssets[i]->videoAssetList_[k]->mediaType_);
                 MEDIA_DEBUG_LOG("mime type: %{private}s",
                                 albumAssets[i]->videoAssetList_[k]->mimeType_.c_str());

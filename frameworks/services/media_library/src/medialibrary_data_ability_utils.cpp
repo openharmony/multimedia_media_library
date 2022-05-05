@@ -259,7 +259,7 @@ bool MediaLibraryDataAbilityUtils::isFileExistInDb(const string &path, const sha
     unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     if (queryResultSet != nullptr) {
         queryResultSet->GetRowCount(count);
-        MEDIA_INFO_LOG("count is %{private}d", count);
+        MEDIA_INFO_LOG("count is %{public}d", count);
         if (count > 0) {
             return true;
         }
@@ -379,7 +379,7 @@ int32_t MediaLibraryDataAbilityUtils::setFilePending(string &uriStr,
 {
     string id = MediaLibraryDataAbilityUtils::GetIdFromUri(uriStr);
     string networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(uriStr);
-    MEDIA_INFO_LOG("setFilePending id = %{private}s, networkId = %{private}s, isPending = %{private}d",
+    MEDIA_INFO_LOG("setFilePending id = %{private}s, networkId = %{private}s, isPending = %{public}d",
         id.c_str(), networkId.c_str(), isPending);
     vector<string> selectionArgs = {};
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + id;

@@ -206,7 +206,7 @@ static int ParseThumbnailResult(std::shared_ptr<OHOS::NativeRdb::AbsSharedResult
 
     querySet->GoToFirstRow();
     querySet->GetRowCount(rowCount);
-    HiLog::Debug(LABEL, "Query with row %{private}d", rowCount);
+    HiLog::Debug(LABEL, "Query with row %{public}d", rowCount);
     if (rowCount == 0) {
         return rowCount;
     }

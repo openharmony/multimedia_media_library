@@ -65,7 +65,7 @@ bool MediaFileUtils::CreateDirectory(const string& dirPath)
             string folderPath = subStr;
             mode_t mask = umask(0);
             if (mkdir(folderPath.c_str(), CHOWN_RWX_USR_GRP) == -1) {
-                MEDIA_ERR_LOG("Failed to create directory %{private}d", errno);
+                MEDIA_ERR_LOG("Failed to create directory %{public}d", errno);
                 umask(mask);
                 return false;
             }
@@ -166,7 +166,7 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
     struct stat fst;
     bool errCode = false;
     if (filePath.size() >= PATH_MAX) {
-        MEDIA_ERR_LOG("File path too long %{private}d", (int)filePath.size());
+        MEDIA_ERR_LOG("File path too long %{public}d", (int)filePath.size());
         return errCode;
     }
     MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
@@ -176,7 +176,7 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
         return errCode;
     }
     if (absFilePath.empty()) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path%{private}s %{private}d",
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path%{private}s %{public}d",
                       filePath.c_str(), errno);
         return errCode;
     }
@@ -189,7 +189,7 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 
     int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
     if (dest == -1) {
-        MEDIA_ERR_LOG("Open failed for destination file %{private}d", errno);
+        MEDIA_ERR_LOG("Open failed for destination file %{public}d", errno);
         close(source);
         return errCode;
     }

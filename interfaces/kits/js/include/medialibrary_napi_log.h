@@ -27,7 +27,7 @@
 
 #define NAPI_HILOG(op, fmt, args...) \
     do {                                  \
-        op(LOG_APP, "{%{private}s-%{private}s:%{private}d} " fmt, __FILENAME__, __FUNCTION__, __LINE__, ##args);  \
+        op(LOG_APP, "{%{public}s-%{public}s:%{public}d} " fmt, __FILENAME__, __FUNCTION__, __LINE__, ##args);  \
     } while (0)
 
 
