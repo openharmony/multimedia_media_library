@@ -73,25 +73,27 @@ void MediaLibraryDevice::OnDeviceOnline(
         MEDIA_ERR_LOG("OnDeviceOnline mediaLibraryDeviceHandler null");
         return;
     }
+    if (dpa_ != nullptr) {
+        dpa_->SyncDeviceProfile(deviceInfo.deviceId);
+    }
     auto nodeOnline = [this, deviceInfo, bundleName]() {
         // 更新数据库
         if (mediaLibraryDeviceOperations_ != nullptr) {
-            OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
-            GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo, bundleName);
+            OHOS::Media::MediaLibraryDeviceInfo mldevInfo;
+            GetMediaLibraryDeviceInfo(deviceInfo, mldevInfo, bundleName);
             if (dpa_ != nullptr) {
-                dpa_->GetDeviceProfile(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
+                dpa_->GetDeviceProfile(mldevInfo.deviceUdid, mldevInfo.versionId);
             } else {
                 MEDIA_ERR_LOG("OnDeviceOnline device profile agent is null!!");
             }
-            if (!mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mediaLibraryDeviceInfo, bundleName)) {
+            if (!mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mldevInfo, bundleName)) {
                 MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed!");
                 return;
             }
             lock_guard<mutex> autoLock(deviceLock_);
-            deviceInfoMap_[deviceInfo.deviceId] = mediaLibraryDeviceInfo;
-        } else {
-            MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed mediaLibraryDeviceOperations_ = null !");
-            return;
+            deviceInfoMap_[deviceInfo.deviceId] = mldevInfo;
+            MEDIA_INFO_LOG("OnDeviceOnline cid %{public}s media library version %{public}s",
+                mldevInfo.deviceId.c_str(), mldevInfo.versionId.c_str());
         }
         // 设备变更通知
         NotifyDeviceChange();
@@ -200,6 +202,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
         OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
         GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo, bundleName);
         if (dpa_ != nullptr) {
+            dpa_->SyncDeviceProfile(deviceInfo.deviceId);
             dpa_->GetDeviceProfile(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
         }
         if (mediaLibraryDeviceOperations_ != nullptr &&
