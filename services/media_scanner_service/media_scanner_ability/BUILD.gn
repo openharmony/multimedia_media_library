@@ -36,6 +36,7 @@ config("media_scanner_ability_public_config") {
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension/include",
   ]
 
   if (target_cpu == "arm") {
@@ -77,6 +78,7 @@ ohos_shared_library("media_scanner_service") {
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native:media_client",
+    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension:media_service_extension",
     "//utils/native/base:utils",
   ]
 
