@@ -20,7 +20,6 @@
 #include "ability.h"
 #include "ability_loader.h"
 #include "context.h"
-#include "dummy_values_bucket.h"
 #include "uri.h"
 #include "want.h"
 #include "media_scanner_ability_service.h"
