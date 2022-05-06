@@ -32,6 +32,7 @@
 #include "media_scanner.h"
 #include "datashare_ext_ability.h"
 #include "datashare_ext_ability_context.h"
+#include "media_datashare_ext_ability.h"
 #include "media_log.h"
 
 using namespace std;
@@ -71,8 +72,8 @@ std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::GetInstance()
 
 static DataShare::DataShareExtAbility * MediaDataShareCreator (const std::unique_ptr<Runtime>& runtime) 
 {
-    MEDIA_INFO_LOG("klh MediaLibraryCreator::%{public}s", __func__);
-	return new DataShareExtAbility();
+        MEDIA_INFO_LOG("klh MediaLibraryCreator::%s", __func__);
+	return  MediaDataShareExtAbility::Create(runtime);
 }
 
 __attribute__((constructor)) void RegisterDataShareCreator()
