@@ -16,11 +16,11 @@ import("//foundation/multimedia/medialibrary_standard/media_library.gni")
 
 config("media_scanner_ability_public_config") {
   include_dirs = [
-    "//foundation/aafwk/standard/interfaces/innerkits/want/include",
-    "//foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk/content",
-    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager/include",
-    "//foundation/aafwk/standard/interfaces/innerkits/app_manager/include/appmgr",
-    "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
+    "${aainnerkits_path}/want/include",
+    "${aainnerkits_path}/want/include/ohos/aafwk/content",
+    "${aainnerkits_path}/ability_manager/include",
+    "${aainnerkits_path}/app_manager/include/appmgr",
+    "${aakits_path}/ability/native/include",
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
     "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
@@ -72,9 +72,9 @@ ohos_shared_library("media_scanner_service") {
   public_configs = [ ":media_scanner_ability_public_config" ]
 
   deps = [
+    "${aainnerkits_path}/want:want",
+    "${aakits_path}/ability/native:abilitykit_native",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
-    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
-    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native:media_client",
     "//utils/native/base:utils",
