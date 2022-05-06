@@ -42,10 +42,12 @@
             "//foundation/multimedia/medialibrary_standard/frameworks/services/media_library:medialibrary_data_ability",
             "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
             "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
+            "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension:media_service_extension",
             "//foundation/multimedia/medialibrary_standard/sa_profile:medialibrary_service_sa_profile",
             "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary",
             "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary_js",
             "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/media_scanner_ability:media_scanner_service",
+            "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
             "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/client:media_scanner_client"
         ],
         "inner_kits": [

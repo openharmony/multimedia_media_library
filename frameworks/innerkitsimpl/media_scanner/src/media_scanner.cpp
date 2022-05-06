@@ -20,6 +20,7 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+using namespace OHOS::AppExecFwk;
 
 MediaScanner::MediaScanner()
 {
@@ -84,7 +85,9 @@ bool MediaScanner::InitScanner(const std::shared_ptr<OHOS::AppExecFwk::Context> 
 {
     auto contextUri = make_unique<Uri>(MEDIALIBRARY_DATA_URI);
     if ((context != nullptr) && (contextUri != nullptr)) {
-        rdbhelper_ = OHOS::AppExecFwk::DataAbilityHelper::Creator(context, move(contextUri));
+        AppExecFwk::Want want;
+        want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
+        rdbhelper_ = MediaDataHelper::Creator(context, want, std::make_shared<Uri>("mediadata://media"));
         if (rdbhelper_ != nullptr) {
             mediaScannerDb_->SetRdbHelper(rdbhelper_);
             return true;
@@ -631,7 +634,7 @@ int32_t MediaScanner::ScanDirInternal(const string &path)
 
     // Check if it is hidden folder
     if (IsDirHiddenRecursive(path)) {
-        MEDIA_ERR_LOG("%{private}s is hidden", path.c_str());
+        MEDIA_ERR_LOG("MediaData %{private}s is hidden", path.c_str());
         return ERR_NOT_ACCESSIBLE;
     }
 
