@@ -199,11 +199,16 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
     }
 
     int32_t errCode(DATA_ABILITY_FAIL);
+    string databaseDir = context_->GetDatabaseDir();
+    string relativePath = MEDIA_DATA_ABILITY_DB_NAME;
 
-    string databaseDir = context_->GetDatabaseDir() + "/" + MEDIA_DATA_ABILITY_DB_NAME;
-    RdbStoreConfig config(databaseDir);
-    config.SetBundleName(bundleName_);
+    RdbStoreConfig config(databaseDir + "/" + relativePath);
+    config.SetBundleName(context_->GetBundleName());
     config.SetName(MEDIA_DATA_ABILITY_DB_NAME);
+    config.SetRelativePath(relativePath);
+    config.SetEncryptLevel(ENCRYPTION_LEVEL);
+    config.SetAppModuleName(context_->GetHapModuleInfo()->moduleName);
+
     MediaLibraryDataCallBack rdbDataCallBack;
 
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
