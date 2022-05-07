@@ -703,7 +703,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
     string networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(uriString);
     string::size_type pos = uriString.find_last_of('/');
     string type = uriString.substr(pos + 1);
-    MEDIA_DEBUG_LOG("uriString = %{private}s, type = %{private}s, thumbnailQuery %{private}d, Rdb Version %{private}d",
+    MEDIA_DEBUG_LOG("uriString = %{public}s, type = %{private}s, thumbnailQuery %{private}d, Rdb Version %{private}d",
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
 
