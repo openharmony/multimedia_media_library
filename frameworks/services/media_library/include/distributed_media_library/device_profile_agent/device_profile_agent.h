@@ -16,16 +16,17 @@
 #ifndef DEVCIE_PROFILE_AGENT_H
 #define DEVCIE_PROFILE_AGENT_H
 
-#include "profile_change_notification.h"
 #include "iprofile_event_callback.h"
+#include "profile_change_notification.h"
 #include "nlohmann/json.hpp"
+
 namespace OHOS {
 namespace Media {
-struct MedialibrayInfo {
+struct MedialibrayDpInfo {
     std::string version;
 };
 
-void from_json(const nlohmann::json &jsonObject, MedialibrayInfo &medialibraryInfo);
+void from_json(const nlohmann::json &jsonObject, MedialibrayDpInfo &medialibraryInfo);
 
 class DeviceProfileAgent final : public DeviceProfile::IProfileEventCallback,
                                  public std::enable_shared_from_this<DeviceProfileAgent> {
@@ -47,4 +48,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MEDIALIBRARY_ALBUM_DB_H
+#endif // DEVCIE_PROFILE_AGENT_H
