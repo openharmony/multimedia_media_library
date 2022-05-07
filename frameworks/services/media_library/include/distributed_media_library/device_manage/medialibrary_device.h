@@ -71,7 +71,7 @@ private:
     std::map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
     std::map<std::string, std::set<int>> excludeMap_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
-    std::shared_ptr<DeviceProfileAgent> dpa_;
+    std::unique_ptr<DeviceProfileAgent> dpa_;
 };
 } // namespace Media
 } // namespace OHOS
