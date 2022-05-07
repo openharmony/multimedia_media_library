@@ -23,6 +23,7 @@ using namespace OHOS::AppExecFwk;
 
 MediaLibraryDevice::MediaLibraryDevice()
 {
+    MEDIA_DEBUG_LOG("MediaLibraryDevice::constructor");
     if (mediaLibraryDeviceOperations_ == nullptr) {
         mediaLibraryDeviceOperations_ = std::make_unique<MediaLibraryDeviceOperations>();
     }
@@ -31,12 +32,15 @@ MediaLibraryDevice::MediaLibraryDevice()
         auto runner = AppExecFwk::EventRunner::Create("MediaLibraryDevice");
         mediaLibraryDeviceHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
     }
+    dpa_ = make_unique<DeviceProfileAgent>();
 }
 
 MediaLibraryDevice::~MediaLibraryDevice()
 {
+    MEDIA_DEBUG_LOG("MediaLibraryDevice::deconstructor");
     mediaLibraryDeviceOperations_ = nullptr;
     dataAbilityhelper_ = nullptr;
+    dpa_ = nullptr;
 }
 
 MediaLibraryDevice *MediaLibraryDevice::GetInstance()
@@ -66,25 +70,27 @@ void MediaLibraryDevice::OnDeviceOnline(
     const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo, const std::string &bundleName)
 {
     MEDIA_INFO_LOG("OnDeviceOnline deviceId = %{private}s", deviceInfo.deviceId);
-
     if (mediaLibraryDeviceHandler_ == nullptr) {
         MEDIA_ERR_LOG("OnDeviceOnline mediaLibraryDeviceHandler null");
         return;
     }
+
     auto nodeOnline = [this, deviceInfo, bundleName]() {
         // 更新数据库
         if (mediaLibraryDeviceOperations_ != nullptr) {
-            OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
-            GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo, bundleName);
-            if (!mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mediaLibraryDeviceInfo, bundleName)) {
+            OHOS::Media::MediaLibraryDeviceInfo mldevInfo;
+            GetMediaLibraryDeviceInfo(deviceInfo, mldevInfo, bundleName);
+            if (dpa_ != nullptr) {
+                dpa_->GetDeviceProfile(mldevInfo.deviceUdid, mldevInfo.versionId);
+            }
+            if (!mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mldevInfo, bundleName)) {
                 MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed!");
                 return;
             }
             lock_guard<mutex> autoLock(deviceLock_);
-            deviceInfoMap_[deviceInfo.deviceId] = mediaLibraryDeviceInfo;
-        } else {
-            MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed mediaLibraryDeviceOperations_ = null !");
-            return;
+            deviceInfoMap_[deviceInfo.deviceId] = mldevInfo;
+            MEDIA_INFO_LOG("OnDeviceOnline cid %{public}s media library version %{public}s",
+                mldevInfo.deviceId.c_str(), mldevInfo.versionId.c_str());
         }
         // 设备变更通知
         NotifyDeviceChange();
@@ -173,8 +179,11 @@ bool MediaLibraryDevice::IsHasDevice(string deviceUdid)
 
 bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore, std::string &bundleName)
 {
-    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore IN");
     rdbStore_ = rdbStore;
+    if (dpa_ != nullptr) {
+        dpa_->PutDeviceProfile(MEDIA_LIBRARY_VERSION);
+    }
+
     if (!QueryDeviceTable()) {
         MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore QueryDeviceTable fail!");
         return false;
@@ -182,10 +191,13 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     // 获取同一网络中的所有设备Id
     std::vector<OHOS::DistributedHardware::DmDeviceInfo> deviceList;
     GetAllDeviceId(deviceList, bundleName);
-    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{private}d", (int) deviceList.size());
+    MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
     for (auto& deviceInfo : deviceList) {
         OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
         GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo, bundleName);
+        if (dpa_ != nullptr) {
+            dpa_->GetDeviceProfile(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
+        }
         if (mediaLibraryDeviceOperations_ != nullptr &&
             mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mediaLibraryDeviceInfo, bundleName)) {
             lock_guard<mutex> autoLock(deviceLock_);
