@@ -38,6 +38,7 @@ const int32_t MEDIA_RDB_VERSION = 2;
 #else
 const int32_t MEDIA_RDB_VERSION = 1;
 #endif
+static const std::string MEDIA_LIBRARY_VERSION = "1.0";
 const int32_t MEDIA_RDB_VERSION_NEW = 5;
 const int32_t MEDIA_SMARTALBUM_RDB_VERSION = 1;
 const int32_t MEDIA_SMARTALBUMMAP_RDB_VERSION = 1;
