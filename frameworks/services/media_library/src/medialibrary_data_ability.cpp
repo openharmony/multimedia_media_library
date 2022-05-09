@@ -203,13 +203,18 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
     config.SetName(MEDIA_DATA_ABILITY_DB_NAME);
     config.SetRelativePath(relativePath);
     config.SetEncryptLevel(ENCRYPTION_LEVEL);
-    config.SetAppModuleName(context->GetHapModuleInfo()->moduleName);
+    auto moduleInfo = context->GetHapModuleInfo();
+    if (moduleInfo != nullptr) {
+        config.SetAppModuleName(moduleInfo->moduleName);
+    } else {
+        MEDIA_ERR_LOG("GetHapModuleInfo is nullptr");
+    }
 
     MediaLibraryDataCallBack rdbDataCallBack;
 
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
     if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("InitMediaRdbStore GetRdbStore is failed ");
+        MEDIA_ERR_LOG("InitMediaRdbStore GetRdbStore is failed");
         return errCode;
     }
 
