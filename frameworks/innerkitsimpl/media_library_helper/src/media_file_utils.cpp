@@ -229,14 +229,13 @@ bool MediaFileUtils::CopyFile(const string &filePath, const string &newPath)
             errCode = CreateDirectory(newPath);
         }
         if (errCode) {
-            char actualPath[PATH_MAX];
-            char* canonicalDirPath = realpath(newPath.c_str(), actualPath);
-            if (canonicalDirPath == nullptr) {
+            string canonicalDirPath = "";
+            if (!PathToRealPath(newPath, canonicalDirPath)) {
                 MEDIA_ERR_LOG("Failed to obtain the canonical path for newpath %{private}s %{private}d",
                               filePath.c_str(), errno);
                 return false;
             }
-            newPathCorrected = std::string(canonicalDirPath) + "/" + GetFilename(filePath);
+            newPathCorrected = canonicalDirPath + "/" + GetFilename(filePath);
             errCode = CopyFileUtil(filePath, newPathCorrected);
         }
     }
