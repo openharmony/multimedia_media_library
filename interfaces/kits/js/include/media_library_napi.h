@@ -32,6 +32,7 @@
 #include "napi_remote_object.h"
 #include "mediadata_stub_impl.h"
 #include "mediadata_proxy.h"
+#include "datashare_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -129,6 +130,8 @@ public:
 
     static std::shared_ptr<AppExecFwk::MediaDataHelper> GetMediaDataHelper(napi_env env, napi_callback_info info);
     static std::shared_ptr<AppExecFwk::MediaDataHelper> sMediaDataHelper_;
+    static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);
+    static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
 
 public:
     static const std::string PERMISSION_NAME_READ_MEDIA;
