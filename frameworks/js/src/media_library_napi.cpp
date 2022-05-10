@@ -52,6 +52,7 @@ static map<string, ListenerType> ListenerTypeMaps = {
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 std::shared_ptr<AppExecFwk::MediaDataHelper> MediaLibraryNapi::sMediaDataHelper_ = nullptr;
+std::shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::sDataShareHelper_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
@@ -149,6 +150,34 @@ shared_ptr<AppExecFwk::MediaDataHelper> MediaLibraryNapi::GetMediaDataHelper(nap
     }
     return mediaDataHelper;
 }
+
+shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::GetDataShareHelper(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+
+    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = nullptr;
+    napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode_);
+
+    if (status != napi_ok){
+
+    } else {
+        if (isStageMode_) {
+            auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
+            if (context == nullptr) {
+                NAPI_ERR_LOG("Failed to get native context instance");
+                return nullptr;
+            }
+            AppExecFwk::Want want;
+            want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
+            dataShareHelper = DataShare::DataShareHelper::Creator(context, want, std::make_shared<Uri>("datashare://com.ohos.medialibrary.medialibrarydata.datashare"));
+	}
+    }
+    return dataShareHelper;
+}
+
 // Constructor callback
 napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_callback_info info)
 {
@@ -177,9 +206,9 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
                 CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sMediaDataHelper_, result, "Helper creation failed");
             }
 
-            if (obj->sMediaDataHelper_ == nullptr) {
-                obj->sMediaDataHelper_ = GetMediaDataHelper(env, info);
-                CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sMediaDataHelper_, result, "Helper creation failed");
+            if (obj->sDataShareHelper_ == nullptr) {
+                obj->sDataShareHelper_ = GetDataShareHelper(env, info);
+                CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sDataShareHelper_, result, "Helper creation failed");
             }
         }
 
@@ -828,6 +857,7 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     NAPI_ERR_LOG("GetResultDataExecute IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates sharePredicates;
     if (context->objectInfo->sMediaDataHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
     }
@@ -837,6 +867,12 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
         predicates.SetOrder(context->order);
     }
 
+   // sharePredicates.SetWhereClause(context->selection);
+   // sharePredicates.SetWhereArgs(context->selectionArgs);
+   // if (!context->order.empty()) {
+   //     sharePredicates.SetOrder(context->order);
+   // }
+
     vector<string> columns;
     string queryUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
     if (!context->networkId.empty()) {
@@ -845,8 +881,13 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
         NAPI_DEBUG_LOG("queryAlbumUri is = %{private}s", queryUri.c_str());
     }
     Uri uri(queryUri);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sMediaDataHelper_->Query(
-        uri, columns, predicates);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
+        uri, columns, sharePredicates);
+
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr");
+        return;
+    }
 
     shared_ptr<NativeRdb::AbsSharedResultSet> mediaResultSet = context->objectInfo->sMediaDataHelper_->Query(
         uri, columns, predicates);
@@ -861,10 +902,10 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
         FinishTrace(HITRACE_TAG_OHOS);
         return;
     }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+    while (mediaResultSet->GoToNextRow() == NativeRdb::E_OK) {
         unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
         if (albumData != nullptr) {
-            SetAlbumData(albumData.get(), resultSet, context->networkId);
+            SetAlbumData(albumData.get(), mediaResultSet , context->networkId);
             SetAlbumCoverUri(context, albumData);
             context->albumNativeArray.push_back(move(albumData));
         }

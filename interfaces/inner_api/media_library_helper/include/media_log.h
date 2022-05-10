@@ -19,6 +19,36 @@
 #include <stdio.h>
 #include "hilog/log.h"
 
+#ifdef HILOG_FATAL
+#undef HILOG_FATAL
+#endif
+
+#ifdef HILOG_ERROR
+#undef HILOG_ERROR
+#endif
+
+#ifdef HILOG_WARN
+#undef HILOG_WARN
+#endif
+
+#ifdef HILOG_INFO
+#undef HILOG_INFO
+#endif
+
+#ifdef HILOG_DEBUG
+#undef HILOG_DEBUG
+#endif
+
+#define HILOG_DEBUG(type, ...) ((void)HiLogPrint((type), LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
+
+#define HILOG_INFO(type, ...) ((void)HiLogPrint((type), LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
+
+#define HILOG_WARN(type, ...) ((void)HiLogPrint((type), LOG_WARN, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
+
+#define HILOG_ERROR(type, ...) ((void)HiLogPrint((type), LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
+
+#define HILOG_FATAL(type, ...) ((void)HiLogPrint((type), LOG_FATAL, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
+
 #undef LOG_DOMAIN
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002B00

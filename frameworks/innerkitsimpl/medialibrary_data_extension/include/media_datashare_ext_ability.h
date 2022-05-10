@@ -26,6 +26,7 @@
 
 namespace OHOS {
 namespace AbilityRuntime {
+using namespace DataShare;
 /**
  * @brief Basic datashare extension ability components.
  */
@@ -120,7 +121,7 @@ public:
      *
      * @return Returns the index of the inserted data record.
      */
-    int Insert(const Uri &uri, const NativeRdb::ValuesBucket &value) override;
+    int Insert(const Uri &uri, const DataShareValuesBucket &value) override;
 
     /**
      * @brief Updates data records in the database.
@@ -131,8 +132,8 @@ public:
      *
      * @return Returns the number of data records updated.
      */
-    int Update(const Uri &uri, const NativeRdb::ValuesBucket &value,
-        const NativeRdb::DataAbilityPredicates &predicates) override;
+    int Update(const Uri &uri, const DataShareValuesBucket &value,
+        const DataSharePredicates &predicates) override;
 
     /**
      * @brief Deletes one or more data records from the database.
@@ -142,7 +143,7 @@ public:
      *
      * @return Returns the number of data records deleted.
      */
-    int Delete(const Uri &uri, const NativeRdb::DataAbilityPredicates &predicates) override;
+    int Delete(const Uri &uri, const DataSharePredicates &predicates) override;
 
     /**
      * @brief Deletes one or more data records from the database.
@@ -153,8 +154,8 @@ public:
      *
      * @return Returns the query result.
      */
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(const Uri &uri, std::vector<std::string> &columns,
-        const NativeRdb::DataAbilityPredicates &predicates) override;
+    std::shared_ptr<DataShareAbstractResultSet> Query(const Uri &uri, std::vector<std::string> &columns,
+        const DataSharePredicates &predicates) override;
 
     /**
      * @brief Obtains the MIME type matching the data specified by the URI of the Data ability. This method should be
@@ -174,7 +175,7 @@ public:
      *
      * @return Returns the number of data records inserted.
      */
-    int BatchInsert(const Uri &uri, const std::vector<NativeRdb::ValuesBucket> &values) override;
+    int BatchInsert(const Uri &uri, const std::vector<DataShareValuesBucket> &values) override;
 
     /**
      * @brief Registers an observer to DataObsMgr specified by the given Uri.
@@ -234,8 +235,8 @@ public:
      * @param operations Indicates a list of database operations on the database.
      * @return Returns the result of each operation, in array.
      */
-    std::vector<std::shared_ptr<AppExecFwk::DataAbilityResult>> ExecuteBatch(
-        const std::vector<std::shared_ptr<AppExecFwk::DataAbilityOperation>> &operations) override;
+    std::vector<std::shared_ptr<DataShareResult>> ExecuteBatch(
+        const std::vector<std::shared_ptr<DataShareOperation>> &operations) override;
 private:
     bool CheckCallingPermission(const std::string &permission);
 
