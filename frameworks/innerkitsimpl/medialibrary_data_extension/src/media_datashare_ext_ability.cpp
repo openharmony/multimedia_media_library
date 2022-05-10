@@ -102,7 +102,7 @@ int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const std::string &mod
     return ret;
 }
 
-int MediaDataShareExtAbility::Insert(const Uri &uri, const NativeRdb::ValuesBucket &value)
+int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket &value)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
@@ -117,8 +117,8 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const NativeRdb::ValuesBuck
     return ret;
 }
 
-int MediaDataShareExtAbility::Update(const Uri &uri, const NativeRdb::ValuesBucket &value,
-    const NativeRdb::DataAbilityPredicates &predicates)
+int MediaDataShareExtAbility::Update(const Uri &uri, const DataShareValuesBucket &value,
+    const DataSharePredicates &predicates)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
@@ -133,7 +133,7 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const NativeRdb::ValuesBuck
     return ret;
 }
 
-int MediaDataShareExtAbility::Delete(const Uri &uri, const NativeRdb::DataAbilityPredicates &predicates)
+int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
@@ -148,8 +148,8 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const NativeRdb::DataAbilit
     return ret;
 }
 
-std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
-    std::vector<std::string> &columns, const NativeRdb::DataAbilityPredicates &predicates)
+std::shared_ptr<DataShareAbstractResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
+    std::vector<std::string> &columns, const DataSharePredicates &predicates)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
@@ -168,7 +168,7 @@ std::string MediaDataShareExtAbility::GetType(const Uri &uri)
     return ret;
 }
 
-int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<NativeRdb::ValuesBucket> &values)
+int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<DataShareValuesBucket> &values)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
@@ -260,8 +260,8 @@ Uri MediaDataShareExtAbility::DenormalizeUri(const Uri &uri)
     return ret;
 }
 
-std::vector<std::shared_ptr<AppExecFwk::DataAbilityResult>> MediaDataShareExtAbility::ExecuteBatch(
-    const std::vector<std::shared_ptr<AppExecFwk::DataAbilityOperation>> &operations)
+std::vector<std::shared_ptr<DataShareResult>> MediaDataShareExtAbility::ExecuteBatch(
+    const std::vector<std::shared_ptr<DataShareOperation>> &operations)
 {
     HILOG_INFO("%{public}s begin.", __func__);
     auto ret = DataShareExtAbility::ExecuteBatch(operations);
