@@ -45,9 +45,7 @@ const std::unordered_set<int32_t> UID_FREE_CHECK {
 const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
     "com.ohos.medialibrary.MediaScannerAbilityA"
 };
-const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {
-    "com.ohos.screenshot"
-};
+const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {};
 std::mutex bundleMgrMutex;
 }
 const std::string MediaLibraryDataAbility::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
