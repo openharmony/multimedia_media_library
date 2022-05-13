@@ -13,6 +13,9 @@
 
 import("//build/ohos.gni")
 
+aainnerkits_path = "//foundation/aafwk/standard/interfaces/innerkits"
+aakits_path = "//foundation/aafwk/standard/frameworks/kits"
+
 ohos_shared_library("media_library_manager") {
   install_enable = true
 
@@ -22,8 +25,8 @@ ohos_shared_library("media_library_manager") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//drivers/peripheral/base",
     "//drivers/peripheral/display/interfaces/include",
-    "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
-    "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager/include",
+    "${aakits_path}/ability/native/include",
+    "${aainnerkits_path}/dataobs_manager/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/appdatafwk/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
@@ -33,11 +36,11 @@ ohos_shared_library("media_library_manager") {
   ]
 
   deps = [
-    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
-    "//foundation/aafwk/standard/frameworks/kits/appkit:appkit_native",
-    "//foundation/aafwk/standard/interfaces/innerkits/base:base",
-    "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager:dataobs_manager",
-    "//foundation/aafwk/standard/interfaces/innerkits/uri:zuri",
+    "${aainnerkits_path}/base:base",
+    "${aainnerkits_path}/dataobs_manager:dataobs_manager",
+    "${aainnerkits_path}/uri:zuri",
+    "${aakits_path}/ability/native:abilitykit_native",
+    "${aakits_path}/appkit:appkit_native",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//utils/native/base:utils",
   ]
