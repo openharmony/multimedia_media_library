@@ -40,6 +40,7 @@
       "build": {
         "sub_component": [
             "//foundation/multimedia/medialibrary_standard/frameworks/services/media_library:medialibrary_data_ability",
+            "//foundation/multimedia/medialibrary_standard/frameworks/services/media_scanner:media_scanner_lib",
             "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
             "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
             "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension:media_service_extension",
@@ -82,7 +83,8 @@
                   "file_asset_napi.h",
                   "smart_album_napi.h",
                   "medialibrary_napi_utils.h",
-                  "medialibrary_peer_info.h"
+                  "medialibrary_peer_info.h",
+                  "media_scanner_napi.h"
                 ]
               },
               "name": "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary"

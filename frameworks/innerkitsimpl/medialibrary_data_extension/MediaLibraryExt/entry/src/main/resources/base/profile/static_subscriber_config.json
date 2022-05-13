@@ -1,0 +1,19 @@
+{
+    "commonEvents": [
+        {
+            "name":"MediaScannerSubscribe",
+            "permission": "",
+            "types": [],
+            "events": [
+                "usual.event.POWER_CONNECTED",
+                "usual.event.POWER_DISCONNECTED",
+                "usual.event.USER_SWITCHED",
+                "usual.event.USER_STARTING",
+                "usual.event.SCREEN_OFF",
+                "usual.event.SCREEN_ON",
+                "usual.event.TIME_TICK",
+                "usual.event.BOOT_COMPLETED"
+            ]
+        }
+    ]
+}

@@ -17,14 +17,14 @@
 #define MEDIA_SCANNER_NAPI_H
 #include <unordered_map>
 
-#include "imedia_scanner_client.h"
 #include "medialibrary_napi_utils.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "imedia_scanner_app_callback.h"
 
 namespace OHOS {
 namespace Media {
-static const std::string SCANNER_HELPER_NAPI_CLASS_NAME = "MediaScannerHelper";
+static const std::string SCANNER_HELPER_NAPI_CLASS_NAME = "ScannerInstance";
 
 class MediaScannerNapiCallback : public IMediaScannerAppCallback {
 public:
@@ -54,7 +54,7 @@ private:
     static napi_value GetMediaScannerInstance(napi_env env, napi_callback_info info);
 
     static napi_value NapiScanUtils(napi_env env, napi_callback_info info, const std::string &scanType);
-    std::shared_ptr<IMediaScannerClient> mediaScanner_;
+//    std::shared_ptr<MediaScanner> mediaScanner_;
     std::shared_ptr<MediaScannerNapiCallback> mediaScannerNapiCallbackObj_;
 
     napi_env env_;
