@@ -66,8 +66,16 @@ function getMediaLibrary(context)
     return media;
 }
 
+function getScannerInstance()
+{
+    let media = medialibrary.getScannerInstance()
+    console.log("MediaLibrary getScannerInstance js caller ");
+    return media;
+}
+
 export default {
     getMediaLibrary: getMediaLibrary,
+    getScannerInstance: getScannerInstance,
     MediaType: medialibrary.MediaType,
     FileKey: medialibrary.FileKey,
     DirectoryType: medialibrary.DirectoryType,

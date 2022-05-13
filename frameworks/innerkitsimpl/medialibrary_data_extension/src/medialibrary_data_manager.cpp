@@ -94,11 +94,12 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     MEDIA_INFO_LOG("MediaLibraryDataManager::OnStop");
     rdbStore_ = nullptr;
     isRdbStoreInitialized = false;
-
+/*
     if (scannerClient_ != nullptr) {
         scannerClient_->Release();
         scannerClient_ = nullptr;
     }
+*/
 
     if (kvStorePtr_ != nullptr) {
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
@@ -823,6 +824,7 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<Values
 
 void MediaLibraryDataManager::ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1)
 {
+/*
     if (scannerClient_ == nullptr) {
         scannerClient_ = MediaScannerHelperFactory::CreateScannerHelper();
     }
@@ -844,6 +846,7 @@ void MediaLibraryDataManager::ScanFile(const ValuesBucket &values, const shared_
             CHECK_AND_RETURN_LOG(ret == 0, "Failed to initiate scan request");
         }
     }
+*/
 }
 
 /**

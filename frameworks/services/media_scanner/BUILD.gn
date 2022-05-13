@@ -1,4 +1,4 @@
-# Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+# Copyright (C) 2021 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,3 +10,68 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/medialibrary_standard/media_library.gni")
+
+config("media_scanner_public_config") {
+  include_dirs = [
+    "//foundation/aafwk/standard/interfaces/innerkits/want/include",
+    "//foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk/content",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
+    "//utils/native/base/include",
+    "${MEDIA_LIB_SERVICES_DIR}/media_scanner/include/scanner",
+    "${MEDIA_LIB_SERVICES_DIR}/media_scanner/include/callback",
+    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
+    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension/include",
+    "//drivers/peripheral/display/interfaces/include",
+    "//drivers/peripheral/base",
+    "//third_party/json/include",
+    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/dataability/include",
+    "//foundation/multimedia/media_standard/interfaces/inner_api/native",
+  ]
+
+  if (target_cpu == "arm") {
+    cflags = [ "-DBINDER_IPC_32BIT" ]
+  }
+}
+
+ohos_shared_library("media_scanner_lib") {
+  install_enable = true
+  sources = [
+    "$MEDIA_LIB_SERVICES_DIR/media_scanner/src/scanner/media_scan_executor.cpp",
+    "$MEDIA_LIB_SERVICES_DIR/media_scanner/src/scanner/media_scanner.cpp",
+    "$MEDIA_LIB_SERVICES_DIR/media_scanner/src/scanner/media_scanner_db.cpp",
+    "$MEDIA_LIB_SERVICES_DIR/media_scanner/src/scanner/metadata.cpp",
+    "$MEDIA_LIB_SERVICES_DIR/media_scanner/src/scanner/metadata_extractor.cpp",
+    "$MEDIA_LIB_SERVICES_DIR/media_scanner/src/scanner/scanner_utils.cpp",
+    "$MEDIA_LIB_SERVICES_DIR/media_scanner/src/callback/media_scanner_operation_callback_proxy.cpp",
+    "$MEDIA_LIB_SERVICES_DIR/media_scanner/src/callback/media_scanner_operation_callback_stub.cpp",
+  ]
+
+  public_configs = [ ":media_scanner_public_config" ]
+
+  deps = [
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
+    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
+    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
+    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
+    "//utils/native/base:utils",
+    "//foundation/multimedia/media_standard/interfaces/inner_api/native:media_client",
+  ]
+
+  external_deps = [
+    "ability_base:zuri",
+    "bytrace_standard:bytrace_core",
+    "hiviewdfx_hilog_native:libhilog",
+    "native_appdatamgr:native_rdb",
+    "native_appdatamgr:native_appdatafwk",
+    "native_appdatamgr:native_dataability",
+  ]
+
+  subsystem_name = "multimedia"
+  part_name = "multimedia_media_library_standard"
+}

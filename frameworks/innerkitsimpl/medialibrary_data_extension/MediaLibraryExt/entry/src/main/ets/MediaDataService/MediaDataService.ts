@@ -2,7 +2,7 @@ import ServiceExtension from '@ohos.application.ServiceExtensionAbility'
 import rpc from '@ohos.rpc'
 import mediaLibrary from '@ohos.multimedia.mediaLibrary'
 
-class StubTest extends rpc.RemoteObject{
+export class MediaScannerReceiver extends rpc.RemoteObject{
     constructor(des) {
         if (typeof des === 'string') {
             super(des);
@@ -51,6 +51,12 @@ class StubTest extends rpc.RemoteObject{
     }
 }
 
+function ScannerCallback(status: number, uri: string)
+{
+    console.log('[ttt] [MediaDataTest] ScannerComplete!!!, uri: ' + uri + ', status: ' + status);
+    return 0;
+}
+
 class MediaDataService extends ServiceExtension{
     onCreate(want) {
         console.log('[ttt] [MediaDataTest] ServiceExtAbility onCreate, want:' + want.abilityName);
@@ -62,8 +68,8 @@ class MediaDataService extends ServiceExtension{
 
     onConnect(want) {
         console.log('[ttt] [MediaDataTest] ServiceExtAbility onConnect , want:' + want.abilityName);
-       // return new StubTest("test");
-      return mediaLibrary.getMediaLibrary().getMediaRemoteStub(this.context);
+        // return new StubTest("test");
+        return mediaLibrary.getMediaLibrary().getMediaRemoteStub(this.context);
     }
 
     onDisconnect(want) {
