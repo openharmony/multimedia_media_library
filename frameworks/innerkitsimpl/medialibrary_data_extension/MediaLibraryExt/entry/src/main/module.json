@@ -31,6 +31,17 @@
         "description": "$string:description_serviceability",
         "type": "service",
         "visible": true
+      },
+      {
+        "srcEntrance": "./ets/MediaScannerSubscribe/MediaScannerSubscribe.ts",
+        "name": "MediaScannerSubscribe",
+        "description": "subscriber",
+        "type": "staticSubscriber",
+        "metadata":[{
+          "name": "ohos.extension.staticSubscriber",
+          "resource": "@profile:static_subscriber_config"
+        }],
+        "visible": true
       }
     ],
     "requestPermissions": [
