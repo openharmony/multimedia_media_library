@@ -33,6 +33,8 @@ config("media_data_extension_public_config") {
     "//foundation/aafwk/standard/interfaces/innerkits/ability_manager/include",
     "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/consumer/include",
     "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager/include",
     "//foundation/aafwk/standard/services/common/include",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
