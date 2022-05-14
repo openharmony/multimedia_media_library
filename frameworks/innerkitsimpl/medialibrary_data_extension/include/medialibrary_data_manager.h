@@ -49,6 +49,9 @@
 #include "medialibrary_thumbnail.h"
 #include "distributed_kv_data_manager.h"
 #include "timer.h"
+#include "datashare_predicates.h"
+#include "datashare_abs_result_set.h"
+#include "datashare_abstract_result_set.h"
 
 namespace OHOS {
 namespace Media {
@@ -84,6 +87,9 @@ namespace Media {
         EXPORT std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(const Uri &uri,
             const std::vector<std::string> &columns,
             const NativeRdb::DataAbilityPredicates &predicates);
+        EXPORT std::shared_ptr<DataShare::DataShareAbstractResultSet> Query(const Uri &uri,
+            const std::vector<std::string> &columns,
+            const DataShare::DataSharePredicates &predicates);
         EXPORT int32_t OpenFile(const Uri &uri, const std::string &mode);
         EXPORT std::string GetType(const Uri &uri);
 
