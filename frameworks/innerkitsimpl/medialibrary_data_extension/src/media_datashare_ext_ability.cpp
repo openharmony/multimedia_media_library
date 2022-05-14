@@ -27,6 +27,13 @@
 #include "js_runtime_utils.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "medialibrary_data_manager.h"
+
+using namespace std;
+using namespace OHOS::AppExecFwk;
+using namespace OHOS::NativeRdb;
+using namespace OHOS::DistributedKv;
+using namespace OHOS::Media;
 
 namespace OHOS {
 namespace AbilityRuntime {
@@ -152,11 +159,13 @@ std::shared_ptr<DataShareAbstractResultSet> MediaDataShareExtAbility::Query(cons
     std::vector<std::string> &columns, const DataSharePredicates &predicates)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
-    HILOG_INFO("%{public}s begin.", __func__);
+    HILOG_INFO("klh %{public}s begin.", __func__);
 
-    auto ret = DataShareExtAbility::Query(uri, columns, predicates);
-    HILOG_INFO("%{public}s end.", __func__);
-    return ret;
+    std::shared_ptr<DataShare::DataShareAbstractResultSet> queryResultSet;
+    queryResultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
+    HILOG_INFO("klh %{public}s end.", __func__);
+
+    return queryResultSet;
 }
 
 std::string MediaDataShareExtAbility::GetType(const Uri &uri)

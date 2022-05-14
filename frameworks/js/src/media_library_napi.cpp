@@ -807,6 +807,37 @@ ValVariant GetValFromColumn(string columnName, shared_ptr<NativeRdb::AbsSharedRe
     return cellValue;
 }
 
+ValVariant GetValFromColumn(string columnName, shared_ptr<DataShare::DataShareResultSet> &resultSet,
+    ResultSetDataType type)
+{
+    int index;
+    ValVariant cellValue;
+    int integerVal;
+    string stringVal;
+    int64_t longVaL;
+
+    resultSet->GetColumnIndex(columnName, index);
+    switch (type) {
+        case TYPE_STRING:
+            resultSet->GetString(index, stringVal);
+            cellValue = stringVal;
+            break;
+        case TYPE_INT32:
+            resultSet->GetInt(index, integerVal);
+            cellValue = integerVal;
+            break;
+        case TYPE_INT64:
+            resultSet->GetLong(index, longVaL);
+            cellValue = longVaL;
+            break;
+        default:
+            NAPI_ERR_LOG("No type: type %{private}d", type);
+            cellValue = "Notype";
+            break;
+    }
+    return cellValue;
+}
+
 static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -851,6 +882,26 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<NativeRdb::AbsSharedResultSe
                                                                   resultSet, TYPE_INT64)));
 }
 
+void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSet> resultSet,
+    const string &networkId)
+{
+    // Get album id index and value
+    albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet, TYPE_INT32)));
+
+    // Get album title index and value
+    albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet, TYPE_STRING)));
+
+    // Get album asset count index and value
+    albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet, TYPE_INT32)));
+    albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) +
+        "/" + to_string(albumData->GetAlbumId()));
+    // Get album relativePath index and value
+    albumData->SetAlbumRelativePath(get<string>(GetValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
+                                                                 resultSet, TYPE_STRING)));
+    albumData->SetAlbumDateModified(get<int64_t>(GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED,
+                                                                  resultSet, TYPE_INT64)));
+}
+
 static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 {
     StartTrace(HITRACE_TAG_OHOS, "GetResultDataExecute");
@@ -866,12 +917,11 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     if (!context->order.empty()) {
         predicates.SetOrder(context->order);
     }
-
-   // sharePredicates.SetWhereClause(context->selection);
-   // sharePredicates.SetWhereArgs(context->selectionArgs);
-   // if (!context->order.empty()) {
-   //     sharePredicates.SetOrder(context->order);
-   // }
+    sharePredicates.SetWhereClause(context->selection);
+    sharePredicates.SetWhereArgs(context->selectionArgs);
+    if (!context->order.empty()) {
+        sharePredicates.SetOrder(context->order);
+    }
 
     vector<string> columns;
     string queryUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
@@ -889,6 +939,17 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
         return;
     }
 
+    resultSet->GoToFirstRow();
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
+        if (albumData != nullptr) {
+             NAPI_ERR_LOG("resultSet 1 id is %{public}d", get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet, TYPE_INT32)));
+             SetAlbumData(albumData.get(), resultSet , context->networkId);
+             SetAlbumCoverUri(context, albumData);
+             context->albumNativeArray.push_back(move(albumData));
+	}
+    }
+/*
     shared_ptr<NativeRdb::AbsSharedResultSet> mediaResultSet = context->objectInfo->sMediaDataHelper_->Query(
         uri, columns, predicates);
 
@@ -897,19 +958,16 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
         return;
     }
 
-    if (resultSet == nullptr) {
-        NAPI_ERR_LOG("GetResultData resultSet is nullptr");
-        FinishTrace(HITRACE_TAG_OHOS);
-        return;
-    }
     while (mediaResultSet->GoToNextRow() == NativeRdb::E_OK) {
         unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
         if (albumData != nullptr) {
+            NAPI_ERR_LOG("resultSet 2 id is %{public}d", get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet, TYPE_INT32)));
             SetAlbumData(albumData.get(), mediaResultSet , context->networkId);
             SetAlbumCoverUri(context, albumData);
             context->albumNativeArray.push_back(move(albumData));
         }
     }
+    */
     FinishTrace(HITRACE_TAG_OHOS);
 }
 
