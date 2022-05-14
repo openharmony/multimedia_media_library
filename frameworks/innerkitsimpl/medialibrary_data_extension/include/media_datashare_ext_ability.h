@@ -23,6 +23,7 @@
 #include "native_engine/native_reference.h"
 #include "native_engine/native_value.h"
 #include "values_bucket.h"
+#include "datashare_values_bucket.h"
 
 namespace OHOS {
 namespace AbilityRuntime {

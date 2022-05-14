@@ -92,8 +92,8 @@ bool MediaScannerObj::InitScanner(void)
     auto contextUri = make_unique<Uri>(MEDIALIBRARY_DATA_URI);
     if ((context != nullptr) && (contextUri != nullptr)) {
         AppExecFwk::Want want;
-        want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
-        rdbhelper_ = MediaDataHelper::Creator(context, want, std::make_shared<Uri>("mediadata://media"));
+        want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
+        rdbhelper_ = DataShareHelper::Creator(context, want, std::make_shared<Uri>("datashare://media"));
         if (rdbhelper_ != nullptr) {
             mediaScannerDb_->SetRdbHelper(rdbhelper_);
             return true;

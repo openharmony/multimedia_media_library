@@ -128,8 +128,6 @@ public:
     MediaLibraryNapi();
     ~MediaLibraryNapi();
 
-    static std::shared_ptr<AppExecFwk::MediaDataHelper> GetMediaDataHelper(napi_env env, napi_callback_info info);
-    static std::shared_ptr<AppExecFwk::MediaDataHelper> sMediaDataHelper_;
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);
     static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
 

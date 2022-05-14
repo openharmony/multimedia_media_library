@@ -38,6 +38,7 @@
 #include "napi_remote_object.h"
 #include "mediadata_stub_impl.h"
 #include "mediadata_proxy.h"
+#include "datashare_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -47,16 +48,16 @@ class AlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
-        std::shared_ptr<AppExecFwk::MediaDataHelper> abilityHelper);
+        std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
     int32_t GetAlbumId() const;
-    std::shared_ptr<AppExecFwk::MediaDataHelper> GetMediaDataHelper() const;
+    std::shared_ptr<DataShare::DataShareHelper> GetMediaDataHelper() const;
     std::string GetAlbumName() const;
     std::string GetAlbumPath() const;
     std::string GetNetworkId() const;
     AlbumNapi();
     ~AlbumNapi();
 
-    static std::shared_ptr<AppExecFwk::MediaDataHelper> sMediaDataHelper;
+    static std::shared_ptr<DataShare::DataShareHelper> sMediaDataHelper;
 
 private:
     static void AlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -88,7 +89,7 @@ private:
     bool albumVirtual_;
     std::string albumPath_ = "";
 
-    std::shared_ptr<AppExecFwk::MediaDataHelper> abilityHelper_;
+    std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
 
     napi_env env_;
     napi_ref wrapper_;
