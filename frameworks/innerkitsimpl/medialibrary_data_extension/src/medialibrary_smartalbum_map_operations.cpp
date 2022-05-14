@@ -17,24 +17,25 @@
 #include "media_log.h"
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
-int32_t InsertAlbumAssetsInfoUtil(const ValuesBucket &valuesBucket,
+int32_t InsertAlbumAssetsInfoUtil(const DataShareValuesBucket &valuesBucket,
                                   shared_ptr<RdbStore> rdbStore,
                                   const MediaLibrarySmartAlbumMapDb &smartAlbumMapDbOprn)
 {
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
+    DataShareValuesBucket values = const_cast<DataShareValuesBucket &>(valuesBucket);
     int32_t insertResult = const_cast<MediaLibrarySmartAlbumMapDb &>(smartAlbumMapDbOprn)
     .InsertSmartAlbumMapInfo(values, rdbStore);
     return insertResult;
 }
-int32_t RemoveAlbumAssetsInfoUtil(const ValuesBucket &valuesBucket,
+int32_t RemoveAlbumAssetsInfoUtil(const DataShareValuesBucket &valuesBucket,
                                   shared_ptr<RdbStore> rdbStore,
                                   const MediaLibrarySmartAlbumMapDb &smartAlbumMapDbOprn)
 {
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
-    ValueObject valueObject;
+    DataShareValuesBucket values = const_cast<DataShareValuesBucket &>(valuesBucket);
+    DataShareValueObject valueObject;
     int32_t albumId = 0;
     int32_t assetId = 0;
     if (values.GetObject(SMARTALBUMMAP_DB_ALBUM_ID, valueObject)) {
@@ -50,10 +51,10 @@ int32_t RemoveAlbumAssetsInfoUtil(const ValuesBucket &valuesBucket,
     return deleteResult;
 }
 int32_t MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperations(const string &oprn,
-                                                                           const ValuesBucket &valuesBucket,
+                                                                           const DataShareValuesBucket &valuesBucket,
                                                                            const shared_ptr<RdbStore> &rdbStore)
 {
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
+    DataShareValuesBucket values = const_cast<DataShareValuesBucket &>(valuesBucket);
     MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
     int32_t errCode = DATA_ABILITY_FAIL;
     if (oprn == MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM) {

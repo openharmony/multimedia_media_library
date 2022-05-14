@@ -88,8 +88,8 @@ vector<string> MediaScannerDb::BatchInsert(const vector<Metadata> &metadataList)
 
 unique_ptr<Metadata> MediaScannerDb::ReadMetadata(const string &path)
 {
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    DataAbilityPredicates predicates = {};
+    shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
+    DataShare::DataSharePredicates predicates = {};
     predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
 
     Uri uri(MEDIALIBRARY_DATA_URI);
@@ -113,7 +113,7 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
 {
     int32_t updateCount(0);
     ValuesBucket values;
-    DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(metadata.GetFileId()));
 
     MediaType mediaType = metadata.GetFileMediaType();
@@ -181,7 +181,7 @@ int32_t MediaScannerDb::UpdateMetadata(const vector<Metadata> &metadataList)
 bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 {
     int32_t deletedCount(0);
-    DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     predicates.In(MEDIA_DATA_DB_ID, idList);
 
     Uri deleteUri(MEDIALIBRARY_DATA_URI);
@@ -211,8 +211,8 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
     columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
     columns.push_back(MEDIA_DATA_DB_NAME);
 
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    DataAbilityPredicates predicates;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
+    DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
 
     Uri abilityUri(MEDIALIBRARY_DATA_URI);
@@ -236,14 +236,14 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
  */
 unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const string &path)
 {
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
     unordered_map<int32_t, MediaType> idMap = {};
 
     vector<string> columns = {};
     columns.push_back(MEDIA_DATA_DB_ID);
     columns.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
 
-    DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     // Append % to end of the path for using LIKE statement
     auto modifiedPath = path;
     modifiedPath = modifiedPath.back() != '/' ? modifiedPath + "/%" : modifiedPath + "%";
@@ -274,12 +274,12 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
 string MediaScannerDb::GetFileDBUriFromPath(const string &path)
 {
     string uri("");
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
 
     vector<string> columns = {};
     columns.push_back(MEDIA_DATA_DB_URI);
 
-    DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
@@ -322,8 +322,8 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
     int32_t albumId = 0;
     int32_t columnIndex = -1;
 
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    DataAbilityPredicates predicates;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
+    DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
 
     Uri uri(MEDIALIBRARY_DATA_URI);
@@ -343,8 +343,8 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
 
 void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap)
 {
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    DataAbilityPredicates predicates;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
+    DataShare::DataSharePredicates predicates;
     int32_t mediaType = static_cast<int>(MediaType::MEDIA_TYPE_ALBUM);
     predicates.Contains(MEDIA_DATA_DB_FILE_PATH, path);
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(mediaType));
@@ -432,7 +432,7 @@ void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)
     //MediaLibraryDataManager::GetInstance()->NotifyChange(uri); 
 }
 
-unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<AbsSharedResultSet> &resultSet)
+unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<DataShare::DataShareResultSet> &resultSet)
 {
     unique_ptr<Metadata> metadata = make_unique<Metadata>();
     CHECK_AND_RETURN_RET_LOG(metadata != nullptr, nullptr, "Metadata object creation failed");

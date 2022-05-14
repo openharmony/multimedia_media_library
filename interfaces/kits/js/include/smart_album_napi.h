@@ -38,6 +38,7 @@
 #include "napi_remote_object.h"
 #include "mediadata_stub_impl.h"
 #include "mediadata_proxy.h"
+#include "datashare_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -47,16 +48,16 @@ class SmartAlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value CreateSmartAlbumNapi(napi_env env, SmartAlbumAsset &albumData,
-        std::shared_ptr<AppExecFwk::MediaDataHelper> abilityHelper);
+        std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
     int32_t GetSmartAlbumId() const;
-    std::shared_ptr<AppExecFwk::MediaDataHelper> GetMediaDataHelper() const;
+    std::shared_ptr<DataShare::DataShareHelper> GetMediaDataHelper() const;
     std::string GetSmartAlbumName() const;
     int32_t GetAlbumPrivateType() const;
     void SetAlbumCapacity(int32_t albumCapacity);
     SmartAlbumNapi();
     ~SmartAlbumNapi();
 
-    static std::shared_ptr<AppExecFwk::MediaDataHelper> sMediaDataHelper;
+    static std::shared_ptr<DataShare::DataShareHelper> sMediaDataHelper;
 
 private:
     static void SmartAlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -87,7 +88,7 @@ private:
     std::string albumCategoryName_;
     std::string albumCoverUri_;
 
-    std::shared_ptr<AppExecFwk::MediaDataHelper> abilityHelper_;
+    std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
     static thread_local SmartAlbumAsset *sAlbumData_;
     napi_env env_;
     napi_ref wrapper_;

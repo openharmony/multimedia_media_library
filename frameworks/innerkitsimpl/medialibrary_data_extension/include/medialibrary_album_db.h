@@ -21,10 +21,15 @@
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 #include "sys/stat.h"
+#include "datashare_predicates.h"
+#include "datashare_values_bucket.h"
+#include "datashare_abs_result_set.h"
+#include "datashare_abstract_result_set.h"
 
 namespace OHOS {
 namespace Media {
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
 using namespace std;
 
 class MediaLibraryAlbumDb {
@@ -34,8 +39,8 @@ public:
 
     string GetAlbumPath(const int32_t albumId, const shared_ptr<RdbStore> &rdbStore);
     int32_t DeleteAlbumInfo(const int32_t albumId, const shared_ptr<RdbStore> &rdbStore);
-    int32_t UpdateAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
-    int64_t InsertAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int32_t UpdateAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int64_t InsertAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS
