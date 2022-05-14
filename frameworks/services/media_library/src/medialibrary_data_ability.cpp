@@ -54,11 +54,11 @@ REGISTER_AA(MediaLibraryDataAbility);
 
 void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
 {
-    MEDIA_INFO_LOG("MediaLibraryDataAbility::OnStart");
+    MEDIA_INFO_LOG("xhl MediaLibraryDataAbility::OnStart");
     Ability::OnStart(want);
     InitMediaLibraryRdbStore();
-    MEDIA_INFO_LOG("bundleName = %{private}s", bundleName_.c_str());
-    auto abilityContext = std::make_unique<MediaLibraryDataAbility>(*this);
+
+    auto abilityContext = std::make_unique<MediaLibraryDataAbility>(*this); // todo 改为shared_from_this
     if (abilityContext != nullptr) {
         MediaLibraryDevice::GetInstance()->SetAbilityContext(move(abilityContext));
     }
@@ -92,14 +92,7 @@ void MediaLibraryDataAbility::OnStop()
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
         kvStorePtr_ = nullptr;
     }
-    if (deviceStateCallback_ != nullptr && deviceInitCallback_ != nullptr) {
-        auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
-        deviceManager.UnInitDeviceManager(bundleName_);
-        deviceInitCallback_ = nullptr;
-        deviceManager.UnRegisterDevStateCallback(bundleName_);
-        deviceStateCallback_ = nullptr;
-        MediaLibraryDevice::GetInstance()->ClearAllDevices();
-    }
+    MediaLibraryDevice::GetInstance()->Stop();
     UnSubscribeRdbStoreObserver();
 }
 
@@ -181,7 +174,6 @@ bool MediaLibraryDataCallBack::GetDistributedTables()
 
 int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
 {
-    MEDIA_INFO_LOG("InitMediaLibraryRdbStore IN |Rdb Version %{public}d", MEDIA_RDB_VERSION);
     if (isRdbStoreInitialized) {
         return DATA_ABILITY_SUCCESS;
     }
@@ -224,7 +216,7 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
 
     isRdbStoreInitialized = true;
     mediaThumbnail_ = std::make_shared<MediaLibraryThumbnail>();
-    MEDIA_INFO_LOG("InitMediaLibraryRdbStore SUCCESS");
+    MEDIA_INFO_LOG("InitMediaLibraryRdbStore SUCCESS, Rdb Version %{public}d", MEDIA_RDB_VERSION);
     return DATA_ABILITY_SUCCESS;
 }
 
@@ -898,36 +890,17 @@ void MediaLibraryDataAbility::InitDeviceData()
         MEDIA_ERR_LOG("MediaLibraryDataAbility InitDeviceData rdbStore is null");
         return;
     }
-    std::string extra = "";
-    auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
-    deviceInitCallback_ = std::make_shared<MediaLibraryInitCallback>();
-    if (deviceInitCallback_ == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryDataAbility MediaLibraryInitCallback failed!");
-        return;
-    }
-    deviceManager.InitDeviceManager(bundleName_, deviceInitCallback_);
 
     MEDIA_DEBUG_LOG("Distribute StartTrace:InitDeviceRdbStoreTrace");
     StartTrace(HITRACE_TAG_OHOS, "InitDeviceRdbStoreTrace", -1);
     if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_, bundleName_)) {
-        MEDIA_ERR_LOG("MediaLibraryDataAbility InitDeviceData failed!");
+        MEDIA_ERR_LOG("xhl MediaLibraryDataAbility InitDeviceData failed!");
         return;
     }
     FinishTrace(HITRACE_TAG_OHOS);
     MEDIA_DEBUG_LOG("Distribute FinishTrace:InitDeviceRdbStoreTrace");
 
-    deviceStateCallback_ = std::make_shared<MediaLibraryDeviceStateCallback>(rdbStore_, bundleName_);
-    if (deviceStateCallback_ == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryDataAbility MediaLibraryDeviceStateCallback failed!");
-        return;
-    }
-
-    if (deviceManager.RegisterDevStateCallback(bundleName_, extra, deviceStateCallback_) != 0) {
-        deviceStateCallback_ = nullptr;
-        MEDIA_ERR_LOG("MediaLibraryDataAbility RegisterDevStateCallback failed!");
-        return;
-    }
-    MEDIA_INFO_LOG("MediaLibraryDataAbility InitDeviceData OUT");
+    MEDIA_INFO_LOG("xhl MediaLibraryDataAbility InitDeviceData OUT");
 }
 
 bool MediaLibraryDataAbility::SubscribeRdbStoreObserver()
@@ -986,7 +959,7 @@ bool MediaLibraryDataAbility::QuerySync(const std::string &deviceId, const std::
     }
 
     int32_t syncStatus = DEVICE_SYNCSTATUSING;
-    auto result = MediaLibraryDevice::GetInstance()->GetDevicieSyncStatus(deviceId, syncStatus, bundleName_);
+    auto result = MediaLibraryDevice::GetInstance()->GetDevicieSyncStatus(deviceId, syncStatus);
     if (result && syncStatus == DEVICE_SYNCSTATUS_COMPLETE) {
         return true;
     }
@@ -1156,36 +1129,6 @@ void MediaLibraryDataAbility::InitialiseKvStore()
 
 void ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) {}
 
-void MediaLibraryDeviceStateCallback::OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
-{
-    MediaLibraryDevice::GetInstance()->OnDeviceOnline(deviceInfo, bundleName_);
-
-    MediaLibrarySyncTable syncTable;
-    std::string deviceId = deviceInfo.deviceId;
-    std::vector<std::string> devices = { deviceId };
-    syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
-}
-
-void MediaLibraryDeviceStateCallback::OnDeviceOffline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
-{
-    MediaLibraryDevice::GetInstance()->OnDeviceOffline(deviceInfo, bundleName_);
-}
-
-void MediaLibraryDeviceStateCallback::OnDeviceChanged(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
-{
-    MediaLibraryDevice::GetInstance()->OnDeviceChanged(deviceInfo);
-}
-
-void MediaLibraryDeviceStateCallback::OnDeviceReady(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
-{
-    MediaLibraryDevice::GetInstance()->OnDeviceReady(deviceInfo);
-}
-
-void MediaLibraryInitCallback::OnRemoteDied()
-{
-    MEDIA_INFO_LOG("MediaLibraryInitCallback OnRemoteDied call");
-}
-
 MediaLibraryRdbStoreObserver::MediaLibraryRdbStoreObserver(std::string &bundleName)
 {
     bundleName_ = bundleName;
@@ -1216,7 +1159,7 @@ void MediaLibraryRdbStoreObserver::OnChange(const std::vector<std::string>& devi
     }
     MediaLibraryDevice::GetInstance()->NotifyRemoteFileChange();
     for (auto &deviceId : devices) {
-        MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(deviceId, DEVICE_SYNCSTATUS_COMPLETE, bundleName_);
+        MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(deviceId, DEVICE_SYNCSTATUS_COMPLETE);
         isNotifyDeviceChange_ = true;
     }
 }
