@@ -23,6 +23,10 @@
 #include "rdb_store.h"
 #include "rdb_errno.h"
 #include "values_bucket.h"
+#include "datashare_predicates.h"
+#include "datashare_values_bucket.h"
+#include "datashare_abs_result_set.h"
+#include "datashare_abstract_result_set.h"
 
 namespace OHOS {
 namespace Media {
@@ -31,7 +35,7 @@ public:
     MediaLibraryFileDb() = default;
     ~MediaLibraryFileDb() = default;
 
-    int32_t Insert(const OHOS::NativeRdb::ValuesBucket &values,
+    int32_t Insert(const OHOS::DataShare::DataShareValuesBucket &values,
                    const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
     int32_t Delete(const std::string &strRow, const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
     int32_t Modify(const std::string &rowNum, const std::string &dstPath,
