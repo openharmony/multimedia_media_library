@@ -51,7 +51,6 @@ static map<string, ListenerType> ListenerTypeMaps = {
 };
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
-std::shared_ptr<AppExecFwk::MediaDataHelper> MediaLibraryNapi::sMediaDataHelper_ = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::sDataShareHelper_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
@@ -124,33 +123,6 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
     return nullptr;
 }
 
-shared_ptr<AppExecFwk::MediaDataHelper> MediaLibraryNapi::GetMediaDataHelper(napi_env env, napi_callback_info info)
-{
-    size_t argc = ARGS_ONE;
-    napi_value argv[ARGS_ONE] = {0};
-    napi_value thisVar = nullptr;
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-
-    std::shared_ptr<AppExecFwk::MediaDataHelper> mediaDataHelper = nullptr;
-    napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode_);
-
-    if (status != napi_ok){
-
-    } else {
-        if (isStageMode_) {
-            auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
-            if (context == nullptr) {
-                NAPI_ERR_LOG("Failed to get native context instance");
-                return nullptr;
-            }
-            AppExecFwk::Want want;
-            want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
-            mediaDataHelper = MediaDataHelper::Creator(context, want, std::make_shared<Uri>("mediadata://media"));
-    }
-    }
-    return mediaDataHelper;
-}
-
 shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::GetDataShareHelper(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_ONE;
@@ -199,11 +171,6 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
             // Initialize the ChangeListener object
             if (g_listObj == nullptr) {
                 g_listObj = make_unique<ChangeListenerNapi>(env);
-            }
-
-            if (obj->sMediaDataHelper_ == nullptr) {
-                obj->sMediaDataHelper_ = GetMediaDataHelper(env, info);
-                CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sMediaDataHelper_, result, "Helper creation failed");
             }
 
             if (obj->sDataShareHelper_ == nullptr) {
@@ -607,7 +574,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     vector<string> columns;
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     if (!context->uri.empty()) {
         NAPI_ERR_LOG("context->uri is = %{private}s", context->uri.c_str());
         context->networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(context->uri);
@@ -638,8 +605,8 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     Uri uri(queryUri);
     shared_ptr<AbsSharedResultSet> resultSet;
 
-    if (context->objectInfo->sMediaDataHelper_ != nullptr) {
-        resultSet = context->objectInfo->sMediaDataHelper_->Query(uri, columns, predicates);
+    if (context->objectInfo->sDataShareHelper_ != nullptr) {
+        resultSet = context->objectInfo->sDataShareHelper_->Query(uri, columns, predicates);
         if (resultSet != nullptr) {
             // Create FetchResult object using the contents of resultSet
             context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
@@ -673,7 +640,7 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
         // Create FetchResult object using the contents of resultSet
         if (context->fetchFileResult != nullptr) {
             fileResult = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchFileResult),
-                                                                    context->objectInfo->sMediaDataHelper_);
+                                                                    context->objectInfo->sDataShareHelper_);
             if (context->fetchFileResult->GetCount() < 0) {
                 MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
                                                              "find no data by options");
@@ -776,7 +743,7 @@ static string GetFileMediaTypeUri(MediaType mediaType, const string &networkId)
 }
 
 using ValVariant = variant<int, int64_t, string>;
-ValVariant GetValFromColumn(string columnName, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+ValVariant GetValFromColumn(string columnName, shared_ptr<DataShare::DataShareResultSet> &resultSet,
     ResultSetDataType type)
 {
     int index;
@@ -841,7 +808,7 @@ ValVariant GetValFromColumn(string columnName, shared_ptr<DataShare::DataShareRe
 static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(album->GetAlbumId()));
     predicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     predicates.Limit(1);
@@ -852,7 +819,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
         NAPI_DEBUG_LOG("querycoverUri is = %{private}s", queryUri.c_str());
     }
     Uri uri(queryUri);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sMediaDataHelper_->Query(
+    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
         uri, columns, predicates);
     unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     fetchFileResult->networkId_ = context->networkId;
@@ -862,7 +829,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     NAPI_DEBUG_LOG("coverUri is = %{private}s", album->GetCoverUri().c_str());
 }
 
-void SetAlbumData(AlbumAsset* albumData, shared_ptr<NativeRdb::AbsSharedResultSet> resultSet,
+void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSet> resultSet,
     const string &networkId)
 {
     // Get album id index and value
@@ -907,9 +874,9 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     StartTrace(HITRACE_TAG_OHOS, "GetResultDataExecute");
     NAPI_ERR_LOG("GetResultDataExecute IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     DataShare::DataSharePredicates sharePredicates;
-    if (context->objectInfo->sMediaDataHelper_ == nullptr) {
+    if (context->objectInfo->sDataShareHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
     }
     predicates.SetWhereClause(context->selection);
@@ -950,7 +917,7 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 	}
     }
 /*
-    shared_ptr<NativeRdb::AbsSharedResultSet> mediaResultSet = context->objectInfo->sMediaDataHelper_->Query(
+    shared_ptr<DataShare::DataShareResultSet> mediaResultSet = context->objectInfo->sDataShareHelper_->Query(
         uri, columns, predicates);
 
     if (mediaResultSet == nullptr) {
@@ -995,7 +962,7 @@ static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
             napi_create_array(env, &albumArray);
             for (size_t i = 0; i < context->albumNativeArray.size(); i++) {
                 napi_value albumNapiObj = AlbumNapi::CreateAlbumNapi(env, *(context->albumNativeArray[i]),
-                    context->objectInfo->sMediaDataHelper_);
+                    context->objectInfo->sDataShareHelper_);
                 napi_set_element(env, albumArray, i, albumNapiObj);
             }
             jsContext->status = true;
@@ -1058,15 +1025,15 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     vector<string> columns;
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
 
     predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(id));
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     shared_ptr<AbsSharedResultSet> resultSet;
 
-    if (context->objectInfo->sMediaDataHelper_ != nullptr
-        && ((resultSet = context->objectInfo->sMediaDataHelper_->Query(uri, columns, predicates)) != nullptr)) {
+    if (context->objectInfo->sDataShareHelper_ != nullptr
+        && ((resultSet = context->objectInfo->sDataShareHelper_->Query(uri, columns, predicates)) != nullptr)) {
         // Create FetchResult object using the contents of resultSet
         context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
         context->fetchFileResult->networkId_ = networkId;
@@ -1076,7 +1043,7 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
             Media::MediaType mediaType = context->fileAsset->GetMediaType();
             string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
             Uri modifyNotify(notifyUri);
-            context->objectInfo->sMediaDataHelper_->NotifyChange(modifyNotify);
+            context->objectInfo->sDataShareHelper_->NotifyChange(modifyNotify);
         }
     }
 }
@@ -1099,7 +1066,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->data);
         } else {
             jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
-                                                         context->objectInfo->sMediaDataHelper_);
+                                                         context->objectInfo->sDataShareHelper_);
             if (jsFileAsset == nullptr) {
                 NAPI_ERR_LOG("Failed to get file asset napi object");
                 napi_get_undefined(env, &jsContext->data);
@@ -1303,9 +1270,9 @@ static void JSCreateAssetExecute(MediaLibraryAsyncContext *context)
         context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
         return;
     }
-    if (context->objectInfo->sMediaDataHelper_ != nullptr) {
+    if (context->objectInfo->sDataShareHelper_ != nullptr) {
         Uri createFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
-        int index = context->objectInfo->sMediaDataHelper_->Insert(createFileUri, context->valuesBucket);
+        int index = context->objectInfo->sDataShareHelper_->Insert(createFileUri, context->valuesBucket);
         if (index < 0) {
             context->error = index;
         } else {
@@ -1361,11 +1328,11 @@ static void JSModifyAssetCompleteCallback(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->objectInfo->sMediaDataHelper_ != nullptr) {
+    if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri updateAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
 
-        NativeRdb::ValueObject valueObject;
+        DataShare::DataShareValueObject valueObject;
         string notifyUri;
         context->valuesBucket.GetObject(MEDIA_DATA_DB_URI, valueObject);
         valueObject.GetString(notifyUri);
@@ -1374,7 +1341,7 @@ static void JSModifyAssetCompleteCallback(napi_env env, napi_status status,
             notifyUri = notifyUri.substr(0, index);
         }
 
-        int retVal = context->objectInfo->sMediaDataHelper_->Insert(updateAssetUri,
+        int retVal = context->objectInfo->sDataShareHelper_->Insert(updateAssetUri,
             context->valuesBucket);
         if (retVal < 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
@@ -1385,7 +1352,7 @@ static void JSModifyAssetCompleteCallback(napi_env env, napi_status status,
             jsContext->status = true;
             napi_get_undefined(env, &jsContext->error);
             Uri modifyNotify(notifyUri);
-            context->objectInfo->sMediaDataHelper_->NotifyChange(modifyNotify);
+            context->objectInfo->sDataShareHelper_->NotifyChange(modifyNotify);
         }
     } else {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
@@ -1477,11 +1444,11 @@ napi_value MediaLibraryNapi::JSModifyAsset(napi_env env, napi_callback_info info
 static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    if (context->objectInfo->sMediaDataHelper_ != nullptr) {
+    if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
 
-        NativeRdb::ValueObject valueObject;
+        DataShare::DataShareValueObject valueObject;
         string notifyUri;
         string mediaType;
         context->valuesBucket.GetObject(MEDIA_DATA_DB_URI, valueObject);
@@ -1496,14 +1463,14 @@ static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
         }
         notifyUri = MEDIALIBRARY_DATA_URI + "/" + mediaType;
         NAPI_DEBUG_LOG("JSDeleteAssetExcute notifyUri = %{private}s", notifyUri.c_str());
-        int retVal = context->objectInfo->sMediaDataHelper_->Insert(deleteAssetUri,
+        int retVal = context->objectInfo->sDataShareHelper_->Insert(deleteAssetUri,
             context->valuesBucket);
         if (retVal < 0) {
             context->error = retVal;
         } else {
             context->retVal = retVal;
             Uri deleteNotify(notifyUri);
-            context->objectInfo->sMediaDataHelper_->NotifyChange(deleteNotify);
+            context->objectInfo->sDataShareHelper_->NotifyChange(deleteNotify);
         }
     } else {
         context->error = ERR_INVALID_OUTPUT;
@@ -1615,8 +1582,8 @@ static void JSOpenAssetCompleteCallback(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->objectInfo->sMediaDataHelper_ != nullptr) {
-        NativeRdb::ValueObject valueObject;
+    if (context->objectInfo->sDataShareHelper_ != nullptr) {
+        DataShare::DataShareValueObject valueObject;
         string fileUri = "";
         string mode = MEDIA_FILEMODE_READONLY;
 
@@ -1629,7 +1596,7 @@ static void JSOpenAssetCompleteCallback(napi_env env, napi_status status,
         }
 
         Uri openFileUri(fileUri);
-        int32_t retVal = context->objectInfo->sMediaDataHelper_->OpenFile(openFileUri, mode);
+        int32_t retVal = context->objectInfo->sDataShareHelper_->OpenFile(openFileUri, mode);
         if (retVal <= 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
                 "File open asset failed");
@@ -1732,7 +1699,7 @@ static void JSCloseAssetCompleteCallback(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->objectInfo->sMediaDataHelper_ != nullptr) {
+    if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
         ValueObject valueObject;
@@ -1744,7 +1711,7 @@ static void JSCloseAssetCompleteCallback(napi_env env, napi_status status,
 
         int32_t retVal = close(fd);
         if (retVal == DATA_ABILITY_SUCCESS) {
-            retVal = context->objectInfo->sMediaDataHelper_->Insert(closeAssetUri, context->valuesBucket);
+            retVal = context->objectInfo->sDataShareHelper_->Insert(closeAssetUri, context->valuesBucket);
             if (retVal == DATA_ABILITY_SUCCESS) {
                 napi_create_int32(env, DATA_ABILITY_SUCCESS, &jsContext->data);
                 napi_get_undefined(env, &jsContext->error);
@@ -1851,11 +1818,11 @@ static void JSCreateAlbumCompleteCallback(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->objectInfo->sMediaDataHelper_ != nullptr) {
+    if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri createAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
 
-        int albumId = context->objectInfo->sMediaDataHelper_->Insert(createAlbumUri,
+        int albumId = context->objectInfo->sDataShareHelper_->Insert(createAlbumUri,
             context->valuesBucket);
         if (albumId < 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, albumId,
@@ -1956,11 +1923,11 @@ static void JSModifyAlbumCompleteCallback(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->objectInfo->sMediaDataHelper_ != nullptr) {
+    if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri modifyAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_MODIFYALBUM);
 
-        int retVal = context->objectInfo->sMediaDataHelper_->Insert(modifyAlbumUri,
+        int retVal = context->objectInfo->sDataShareHelper_->Insert(modifyAlbumUri,
             context->valuesBucket);
         if (retVal < 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
@@ -2064,11 +2031,11 @@ static void JSDeleteAlbumCompleteCallback(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->objectInfo->sMediaDataHelper_ != nullptr) {
+    if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM);
 
-        int retVal = context->objectInfo->sMediaDataHelper_->Insert(deleteAlbumUri,
+        int retVal = context->objectInfo->sDataShareHelper_->Insert(deleteAlbumUri,
             context->valuesBucket);
         if (retVal < 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
@@ -2240,36 +2207,36 @@ void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, Cha
     switch (typeEnum) {
         case AUDIO_LISTENER:
             listObj.audioDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_AUDIO);
-            sMediaDataHelper_->RegisterObserver(Uri(MEDIALIBRARY_AUDIO_URI), listObj.audioDataObserver_);
+            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_AUDIO_URI), listObj.audioDataObserver_);
             break;
         case VIDEO_LISTENER:
             listObj.videoDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_VIDEO);
-            sMediaDataHelper_->RegisterObserver(Uri(MEDIALIBRARY_VIDEO_URI), listObj.videoDataObserver_);
+            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_VIDEO_URI), listObj.videoDataObserver_);
             break;
         case IMAGE_LISTENER:
             listObj.imageDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_IMAGE);
-            sMediaDataHelper_->RegisterObserver(Uri(MEDIALIBRARY_IMAGE_URI), listObj.imageDataObserver_);
+            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_IMAGE_URI), listObj.imageDataObserver_);
             break;
         case FILE_LISTENER:
             listObj.fileDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_FILE);
-            sMediaDataHelper_->RegisterObserver(Uri(MEDIALIBRARY_FILE_URI), listObj.fileDataObserver_);
+            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_FILE_URI), listObj.fileDataObserver_);
             break;
         case SMARTALBUM_LISTENER:
             listObj.smartAlbumDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_SMARTALBUM);
-            sMediaDataHelper_->RegisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
+            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
                                               listObj.smartAlbumDataObserver_);
             break;
         case DEVICE_LISTENER:
             listObj.deviceDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_DEVICE);
-            sMediaDataHelper_->RegisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
+            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
             break;
         case REMOTEFILE_LISTENER:
             listObj.remoteFileDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_REMOTEFILE);
-            sMediaDataHelper_->RegisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
+            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
             break;
         case ALBUM_LISTENER:
             listObj.albumDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_ALBUM);
-            sMediaDataHelper_->RegisterObserver(Uri(MEDIALIBRARY_ALBUM_URI), listObj.albumDataObserver_);
+            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_ALBUM_URI), listObj.albumDataObserver_);
             break;
         default:
             NAPI_ERR_LOG("Invalid Media Type!");
@@ -2333,7 +2300,7 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
             CHECK_NULL_PTR_RETURN_VOID(listObj.audioDataObserver_, "Failed to obtain audio data observer");
 
             mediaType = MEDIA_TYPE_AUDIO;
-            sMediaDataHelper_->UnregisterObserver(Uri(MEDIALIBRARY_AUDIO_URI), listObj.audioDataObserver_);
+            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_AUDIO_URI), listObj.audioDataObserver_);
 
             delete listObj.audioDataObserver_;
             listObj.audioDataObserver_ = nullptr;
@@ -2342,7 +2309,7 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
             CHECK_NULL_PTR_RETURN_VOID(listObj.videoDataObserver_, "Failed to obtain video data observer");
 
             mediaType = MEDIA_TYPE_VIDEO;
-            sMediaDataHelper_->UnregisterObserver(Uri(MEDIALIBRARY_VIDEO_URI), listObj.videoDataObserver_);
+            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_VIDEO_URI), listObj.videoDataObserver_);
 
             delete listObj.videoDataObserver_;
             listObj.videoDataObserver_ = nullptr;
@@ -2351,7 +2318,7 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
             CHECK_NULL_PTR_RETURN_VOID(listObj.imageDataObserver_, "Failed to obtain image data observer");
 
             mediaType = MEDIA_TYPE_IMAGE;
-            sMediaDataHelper_->UnregisterObserver(Uri(MEDIALIBRARY_IMAGE_URI), listObj.imageDataObserver_);
+            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_IMAGE_URI), listObj.imageDataObserver_);
 
             delete listObj.imageDataObserver_;
             listObj.imageDataObserver_ = nullptr;
@@ -2360,7 +2327,7 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
             CHECK_NULL_PTR_RETURN_VOID(listObj.fileDataObserver_, "Failed to obtain file data observer");
 
             mediaType = MEDIA_TYPE_FILE;
-            sMediaDataHelper_->UnregisterObserver(Uri(MEDIALIBRARY_FILE_URI), listObj.fileDataObserver_);
+            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_FILE_URI), listObj.fileDataObserver_);
 
             delete listObj.fileDataObserver_;
             listObj.fileDataObserver_ = nullptr;
@@ -2369,7 +2336,7 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
             CHECK_NULL_PTR_RETURN_VOID(listObj.smartAlbumDataObserver_, "Failed to obtain smart album data observer");
 
             mediaType = MEDIA_TYPE_SMARTALBUM;
-            sMediaDataHelper_->UnregisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
+            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
                                                 listObj.smartAlbumDataObserver_);
 
             delete listObj.smartAlbumDataObserver_;
@@ -2379,7 +2346,7 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
             CHECK_NULL_PTR_RETURN_VOID(listObj.deviceDataObserver_, "Failed to obtain device data observer");
 
             mediaType = MEDIA_TYPE_DEVICE;
-            sMediaDataHelper_->UnregisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
+            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
 
             delete listObj.deviceDataObserver_;
             listObj.deviceDataObserver_ = nullptr;
@@ -2388,7 +2355,7 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
             CHECK_NULL_PTR_RETURN_VOID(listObj.remoteFileDataObserver_, "Failed to obtain remote file data observer");
 
             mediaType = MEDIA_TYPE_REMOTEFILE;
-            sMediaDataHelper_->UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
+            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
 
             delete listObj.remoteFileDataObserver_;
             listObj.remoteFileDataObserver_ = nullptr;
@@ -2397,7 +2364,7 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
             CHECK_NULL_PTR_RETURN_VOID(listObj.albumDataObserver_, "Failed to obtain album data observer");
 
             mediaType = MEDIA_TYPE_ALBUM;
-            sMediaDataHelper_->UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.albumDataObserver_);
+            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.albumDataObserver_);
 
             delete listObj.albumDataObserver_;
             listObj.albumDataObserver_ = nullptr;
@@ -2544,7 +2511,7 @@ static int32_t GetAlbumCapacity(MediaLibraryAsyncContext *context)
     string abilityUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_GETALBUMCAPACITY;
     Uri getAlbumCapacityUri(abilityUri);
 
-    return context->objectInfo->sMediaDataHelper_->Insert(getAlbumCapacityUri, context->valuesBucket);
+    return context->objectInfo->sDataShareHelper_->Insert(getAlbumCapacityUri, context->valuesBucket);
 }
 
 static void GetFavSmartAlbumExecute(MediaLibraryAsyncContext *context)
@@ -2576,8 +2543,8 @@ static void GetTrashSmartAlbumExecute(MediaLibraryAsyncContext *context)
 static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
-    if (context->objectInfo->sMediaDataHelper_ == nullptr) {
+    DataShare::DataSharePredicates predicates;
+    if (context->objectInfo->sDataShareHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
     }
     if (context->privateAlbumType == TYPE_FAVORITE) {
@@ -2593,7 +2560,7 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
     Uri uri(MEDIALIBRARY_DATA_URI + "/"
             + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
             + SMARTABLUMASSETS_VIEW_NAME);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sMediaDataHelper_->Query(
+    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
         uri, columns, predicates);
     if (resultSet != nullptr) {
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -2613,8 +2580,8 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
 static void GetSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
-    if (context->objectInfo->sMediaDataHelper_ == nullptr) {
+    DataShare::DataSharePredicates predicates;
+    if (context->objectInfo->sDataShareHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
     }
     predicates.SetWhereClause(context->selection);
@@ -2624,7 +2591,7 @@ static void GetSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
     }
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTABLUMASSETS_VIEW_NAME);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sMediaDataHelper_->Query(
+    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
         uri, columns, predicates);
     if (resultSet != nullptr) {
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -2661,7 +2628,7 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status,
             napi_value albumArray = nullptr;
             napi_create_array(env, &albumArray);
             napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumData),
-                context->objectInfo->sMediaDataHelper_);
+                context->objectInfo->sDataShareHelper_);
             napi_set_element(env, albumArray, 0, albumNapiObj);
             napi_get_undefined(env, &jsContext->error);
             jsContext->data = albumArray;
@@ -2672,7 +2639,7 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status,
             for (size_t i = 0; i < context->privateSmartAlbumNativeArray.size(); i++) {
                 napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env,
                     *(context->privateSmartAlbumNativeArray[i]),
-                    context->objectInfo->sMediaDataHelper_);
+                    context->objectInfo->sDataShareHelper_);
                 napi_set_element(env, albumArray, i, albumNapiObj);
             }
             napi_get_undefined(env, &jsContext->error);
@@ -2781,7 +2748,7 @@ static void JSCreateSmartAlbumCompleteCallback(napi_env env, napi_status status,
         } else {
             jsContext->status = true;
             napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumNativeArray[0]),
-                                                                           context->objectInfo->sMediaDataHelper_);
+                                                                           context->objectInfo->sDataShareHelper_);
             jsContext->data = albumNapiObj;
             napi_get_undefined(env, &jsContext->error);
         }
@@ -2817,11 +2784,11 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
-                if (context->objectInfo->sMediaDataHelper_ != nullptr) {
+                if (context->objectInfo->sDataShareHelper_ != nullptr) {
                     string abilityUri = MEDIALIBRARY_DATA_URI;
                     Uri CreateSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" +
                         MEDIA_SMARTALBUMOPRN_CREATEALBUM);
-                    int retVal = context->objectInfo->sMediaDataHelper_->Insert(CreateSmartAlbumUri,
+                    int retVal = context->objectInfo->sDataShareHelper_->Insert(CreateSmartAlbumUri,
                         context->valuesBucket);
                     if (retVal > 0) {
                         context->selection = SMARTALBUM_DB_ID + " = ?";
@@ -2903,10 +2870,10 @@ static void JSDeleteSmartAlbumCompleteCallback(napi_env env, napi_status status,
 static void JSDeleteSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    if (context->objectInfo->sMediaDataHelper_ != nullptr) {
+    if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri DeleteSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" + MEDIA_SMARTALBUMOPRN_DELETEALBUM);
-        int retVal = context->objectInfo->sMediaDataHelper_->Insert(DeleteSmartAlbumUri,
+        int retVal = context->objectInfo->sDataShareHelper_->Insert(DeleteSmartAlbumUri,
             context->valuesBucket);
         NAPI_DEBUG_LOG("JSDeleteSmartAlbumCompleteCallback retVal = %{public}d", retVal);
         if (retVal < 0) {
@@ -3035,13 +3002,13 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
     napi_get_undefined(env, &jsContext->data);
 
     vector<std::string> columns;
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     std::string strQueryCondition = DEVICE_DB_DATE_MODIFIED + " = 0";
     predicates.SetWhereClause(strQueryCondition);
     predicates.SetWhereArgs(context->selectionArgs);
 
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sMediaDataHelper_->Query(
+    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
         uri, columns, predicates);
 
     if (resultSet == nullptr) {
@@ -3097,12 +3064,12 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
     napi_get_undefined(env, &jsContext->data);
 
     vector<string> columns;
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
 
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sMediaDataHelper_->Query(
+    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
         uri, columns, predicates);
 
     if (resultSet == nullptr) {
@@ -3227,7 +3194,7 @@ static int32_t CloseAsset(MediaLibraryAsyncContext *context, string uri)
     Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
     context->valuesBucket.Clear();
     context->valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
-    int32_t ret = context->objectInfo->sMediaDataHelper_->Insert(closeAssetUri, context->valuesBucket);
+    int32_t ret = context->objectInfo->sDataShareHelper_->Insert(closeAssetUri, context->valuesBucket);
     NAPI_DEBUG_LOG("File close asset %{public}d", ret);
     if (ret != DATA_ABILITY_SUCCESS) {
         context->error = ret;
@@ -3238,9 +3205,9 @@ static int32_t CloseAsset(MediaLibraryAsyncContext *context, string uri)
 
 static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
 {
-    auto helper = context->objectInfo->sMediaDataHelper_;
+    auto helper = context->objectInfo->sDataShareHelper_;
     if (helper == nullptr) {
-        NAPI_ERR_LOG("sMediaDataHelper_ is not exist");
+        NAPI_ERR_LOG("sDataShareHelper_ is not exist");
         context->error = ERR_INVALID_OUTPUT;
         return;
     }

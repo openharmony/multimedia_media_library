@@ -32,6 +32,7 @@
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
@@ -64,7 +65,7 @@ MediaLibraryThumbnail::MediaLibraryThumbnail()
     InitKvStore();
 }
 
-void ParseStringResult(shared_ptr<ResultSet> resultSet,
+void ParseStringResult(shared_ptr<NativeRdb::ResultSet> resultSet,
                        int index, string &data, int &errorCode)
 {
     bool isNull = true;
@@ -83,7 +84,7 @@ void ParseStringResult(shared_ptr<ResultSet> resultSet,
     }
 }
 
-void ParseQueryResult(shared_ptr<ResultSet> resultSet,
+void ParseQueryResult(shared_ptr<NativeRdb::ResultSet> resultSet,
                       ThumbnailRdbData &data, int &errorCode)
 {
     ParseStringResult(resultSet, NUM_0, data.id, errorCode);
@@ -638,7 +639,7 @@ bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
     rdbPredicates.IsNull(MEDIA_DATA_DB_THUMBNAIL);
     rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
 
-    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
+    shared_ptr<NativeRdb::ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     int rowCount = 0;
     errorCode = resultSet->GetRowCount(rowCount);
     if (errorCode != E_OK) {
@@ -690,7 +691,7 @@ bool MediaLibraryThumbnail::UpdateThumbnailInfo(ThumbRdbOpt &opts,
                                                 int &errorCode)
 {
     MEDIA_DEBUG_LOG("MediaLibraryThumbnail::UpdateThumbnailInfo IN");
-    ValuesBucket values;
+    DataShareValuesBucket values;
     int changedRows;
     if (data.thumbnailKey.empty() && data.lcdKey.empty()) {
         MEDIA_ERR_LOG("No key to update!");

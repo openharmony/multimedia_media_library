@@ -21,6 +21,11 @@
 #include "distributed_kv_data_manager.h"
 #include "media_data_ability_const.h"
 #include "values_bucket.h"
+#include "rdb_store.h"
+#include "datashare_values_bucket.h"
+#include "datashare_predicates.h"
+#include "datashare_abs_result_set.h"
+#include "datashare_abstract_result_set.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,7 +41,7 @@ enum RingtoneSimType : int32_t {
 
 class MediaLibraryKvStoreOperations {
 public:
-    int32_t HandleKvStoreInsertOperations(const std::string &uri, const NativeRdb::ValuesBucket &valuesBucket,
+    int32_t HandleKvStoreInsertOperations(const std::string &uri, const DataShare::DataShareValuesBucket &valuesBucket,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStorePtr);
     std::string HandleKvStoreGetOperations(const std::string &uri,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStorePtr);

@@ -25,9 +25,15 @@
 #include "medialibrary_album_operations.h"
 #include "fetch_result.h"
 #include "file_asset.h"
+#include "datashare_predicates.h"
+#include "datashare_values_bucket.h"
+#include "datashare_abs_result_set.h"
+#include "datashare_abstract_result_set.h"
 
 namespace OHOS {
 namespace Media {
+
+using namespace OHOS::DataShare;
 class MediaLibraryDataManagerUtils {
 public:
     MediaLibraryDataManagerUtils();

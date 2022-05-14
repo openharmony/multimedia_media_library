@@ -58,7 +58,7 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
     const std::shared_ptr<OHOSApplication> &application, std::shared_ptr<AbilityHandler> &handler,
     const sptr<IRemoteObject> &token)
 {
-    DataShareExtAbility::Init(record, application, handler, token);
+    //MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr();
 }
 
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
@@ -88,15 +88,17 @@ std::vector<std::string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, 
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
-    auto ret = DataShareExtAbility::GetFileTypes(uri, mimeTypeFilter);
+    //auto ret = MediaLibraryDataManager::GetInstance()->GetFileTypes(uri, mimeTypeFilter);
     HILOG_INFO("%{public}s end.", __func__);
-    return ret;
+    //return ret;
+    std::vector<std::string> ret;
+    return ret; 
 }
 
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    auto ret = DataShareExtAbility::OpenFile(uri, mode);
+    auto ret = MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }
@@ -104,9 +106,10 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
 int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const std::string &mode)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    auto ret = DataShareExtAbility::OpenRawFile(uri, mode);
+    //auto ret = MediaLibraryDataManager::GetInstance()->OpenRawFile(uri, mode);
     HILOG_INFO("%{public}s end.", __func__);
-    return ret;
+    //return ret;
+    return 0;
 }
 
 int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket &value)
@@ -119,7 +122,7 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
         return ret;
     }
 
-    ret = DataShareExtAbility::Insert(uri, value);
+    ret = MediaLibraryDataManager::GetInstance()->Insert(uri, value);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }
@@ -135,7 +138,7 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataShareValuesBucket
         return ret;
     }
 
-    ret = DataShareExtAbility::Update(uri, value, predicates);
+    ret = MediaLibraryDataManager::GetInstance()->Update(uri, value, predicates);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }
@@ -150,7 +153,7 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
         return ret;
     }
 
-    ret = DataShareExtAbility::Delete(uri, predicates);
+    ret = MediaLibraryDataManager::GetInstance()->Delete(uri, predicates);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }
@@ -172,7 +175,7 @@ std::string MediaDataShareExtAbility::GetType(const Uri &uri)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
-    auto ret = DataShareExtAbility::GetType(uri);
+    auto ret = MediaLibraryDataManager::GetInstance()->GetType(uri);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }
@@ -187,7 +190,7 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<Data
         return ret;
     }
 
-    ret = DataShareExtAbility::BatchInsert(uri, values);
+    //ret = MediaLibraryDataManager::GetInstance()->BatchInsert(uri, values);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }
@@ -195,7 +198,7 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<Data
 bool MediaDataShareExtAbility::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    DataShareExtAbility::RegisterObserver(uri, dataObserver);
+    //MediaLibraryDataManager::GetInstance()->RegisterObserver(uri, dataObserver);
     auto obsMgrClient = DataObsMgrClient::GetInstance();
     if (obsMgrClient == nullptr) {
         HILOG_ERROR("%{public}s obsMgrClient is nullptr", __func__);
@@ -214,7 +217,7 @@ bool MediaDataShareExtAbility::RegisterObserver(const Uri &uri, const sptr<AAFwk
 bool MediaDataShareExtAbility::UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    DataShareExtAbility::UnregisterObserver(uri, dataObserver);
+    //MediaLibraryDataManager::GetInstance()->UnregisterObserver(uri, dataObserver);
     auto obsMgrClient = DataObsMgrClient::GetInstance();
     if (obsMgrClient == nullptr) {
         HILOG_ERROR("%{public}s obsMgrClient is nullptr", __func__);
@@ -234,7 +237,6 @@ bool MediaDataShareExtAbility::NotifyChange(const Uri &uri)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
-    DataShareExtAbility::NotifyChange(uri);
     auto obsMgrClient = DataObsMgrClient::GetInstance();
     if (obsMgrClient == nullptr) {
         HILOG_ERROR("%{public}s obsMgrClient is nullptr", __func__);
@@ -254,16 +256,20 @@ Uri MediaDataShareExtAbility::NormalizeUri(const Uri &uri)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
-    auto ret = DataShareExtAbility::NormalizeUri(uri);
+    auto ret = uri;
+    //auto ret = MediaLibraryDataManager::GetInstance()->NormalizeUri(uri);
     HILOG_INFO("%{public}s end.", __func__);
+
     return ret;
+    
 }
 
 Uri MediaDataShareExtAbility::DenormalizeUri(const Uri &uri)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
-    auto ret = DataShareExtAbility::DenormalizeUri(uri);
+    auto ret = uri;
+    //auto ret = MediaLibraryDataManager::GetInstance()->DenormalizeUri(uri);
 
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
@@ -273,7 +279,8 @@ std::vector<std::shared_ptr<DataShareResult>> MediaDataShareExtAbility::ExecuteB
     const std::vector<std::shared_ptr<DataShareOperation>> &operations)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    auto ret = DataShareExtAbility::ExecuteBatch(operations);
+    std::vector<std::shared_ptr<DataShareResult>> ret;
+    //auto ret = MediaLibraryDataManager::GetInstance()->ExecuteBatch(operations);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }

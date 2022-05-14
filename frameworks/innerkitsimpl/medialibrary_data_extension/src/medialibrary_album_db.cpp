@@ -18,10 +18,11 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
-int64_t MediaLibraryAlbumDb::InsertAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+int64_t MediaLibraryAlbumDb::InsertAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid RDB store");
 
@@ -32,12 +33,12 @@ int64_t MediaLibraryAlbumDb::InsertAlbumInfo(const ValuesBucket &values, const s
     return outRowId;
 }
 
-int32_t MediaLibraryAlbumDb::UpdateAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+int32_t MediaLibraryAlbumDb::UpdateAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
 
     // Get album_id from valuebucket
-    ValueObject obj;
+    DataShareValueObject obj;
     int32_t albumId(0);
 
     auto contains = values.GetObject(MEDIA_DATA_DB_ID, obj);
