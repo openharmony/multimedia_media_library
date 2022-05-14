@@ -15,15 +15,28 @@
 
 #include "medialibrary_device.h"
 #include "media_log.h"
+#include "medialibrary_sync_table.h"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::AppExecFwk;
 
+std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::mlDMInstance_ = nullptr;
+
 MediaLibraryDevice::MediaLibraryDevice()
 {
     MEDIA_DEBUG_LOG("MediaLibraryDevice::constructor");
+}
+
+MediaLibraryDevice::~MediaLibraryDevice()
+{
+    MEDIA_DEBUG_LOG("MediaLibraryDevice::deconstructor");
+}
+
+void MediaLibraryDevice::Start()
+{
+    MEDIA_DEBUG_LOG("xhl MediaLibraryDevice::start");
     if (mediaLibraryDeviceOperations_ == nullptr) {
         mediaLibraryDeviceOperations_ = std::make_unique<MediaLibraryDeviceOperations>();
     }
@@ -33,20 +46,28 @@ MediaLibraryDevice::MediaLibraryDevice()
         mediaLibraryDeviceHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
     }
     dpa_ = make_unique<DeviceProfileAgent>();
+    RegisterToDM();
+    MEDIA_ERR_LOG("xhl start end");
 }
 
-MediaLibraryDevice::~MediaLibraryDevice()
+void MediaLibraryDevice::Stop()
 {
-    MEDIA_DEBUG_LOG("MediaLibraryDevice::deconstructor");
+    MEDIA_INFO_LOG("Stop enter");
+    UnRegisterFromDM();
+    ClearAllDevices();
     mediaLibraryDeviceOperations_ = nullptr;
     dataAbilityhelper_ = nullptr;
     dpa_ = nullptr;
 }
 
-MediaLibraryDevice *MediaLibraryDevice::GetInstance()
+std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::GetInstance()
 {
-    static MediaLibraryDevice mediaLibraryDevice;
-    return &mediaLibraryDevice;
+    static std::once_flag onceFlag;
+    std::call_once(onceFlag, []() mutable {
+        mlDMInstance_ = std::make_shared<MediaLibraryDevice>();
+        mlDMInstance_->Start();
+    });
+    return mlDMInstance_;
 }
 
 void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<Context> &context)
@@ -57,17 +78,16 @@ void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<Context> &conte
 }
 
 void MediaLibraryDevice::GetAllDeviceId(
-    std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList, std::string &bundleName)
+    std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList)
 {
     MEDIA_INFO_LOG("MediaLibraryDevice::GetAllDeviceId IN");
     std::string extra = "";
     auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
-    deviceManager.GetTrustedDeviceList(bundleName, extra, deviceList);
-    MEDIA_INFO_LOG("MediaLibraryDevice::GetAllDeviceId OUT");
+    deviceManager.GetTrustedDeviceList(bundleName_, extra, deviceList);
+    MEDIA_INFO_LOG("MediaLibraryDevice::already online device num: %{public}d", deviceList.size());
 }
 
-void MediaLibraryDevice::OnDeviceOnline(
-    const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo, const std::string &bundleName)
+void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
     MEDIA_INFO_LOG("OnDeviceOnline deviceId = %{private}s", deviceInfo.deviceId);
     if (mediaLibraryDeviceHandler_ == nullptr) {
@@ -75,23 +95,28 @@ void MediaLibraryDevice::OnDeviceOnline(
         return;
     }
 
-    auto nodeOnline = [this, deviceInfo, bundleName]() {
+    auto nodeOnline = [this, deviceInfo]() {
         // 更新数据库
         if (mediaLibraryDeviceOperations_ != nullptr) {
             OHOS::Media::MediaLibraryDeviceInfo mldevInfo;
-            GetMediaLibraryDeviceInfo(deviceInfo, mldevInfo, bundleName);
+            GetMediaLibraryDeviceInfo(deviceInfo, mldevInfo);
             if (dpa_ != nullptr) {
                 dpa_->GetDeviceProfile(mldevInfo.deviceUdid, mldevInfo.versionId);
             }
-            if (!mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mldevInfo, bundleName)) {
+            if (!mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mldevInfo, bundleName_)) {
                 MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed!");
                 return;
             }
+            MediaLibrarySyncTable syncTable;
+            std::vector<std::string> devices = { mldevInfo.deviceId };
+            syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
+
             lock_guard<mutex> autoLock(deviceLock_);
             deviceInfoMap_[deviceInfo.deviceId] = mldevInfo;
             MEDIA_INFO_LOG("OnDeviceOnline cid %{public}s media library version %{public}s",
                 mldevInfo.deviceId.c_str(), mldevInfo.versionId.c_str());
         }
+
         // 设备变更通知
         NotifyDeviceChange();
     };
@@ -100,8 +125,7 @@ void MediaLibraryDevice::OnDeviceOnline(
     }
 }
 
-void MediaLibraryDevice::OnDeviceOffline(
-    const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo, const std::string &bundleName)
+void MediaLibraryDevice::OnDeviceOffline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
     MEDIA_INFO_LOG("OnDeviceOffline deviceId = %{private}s", deviceInfo.deviceId);
 
@@ -109,7 +133,7 @@ void MediaLibraryDevice::OnDeviceOffline(
         MEDIA_ERR_LOG("OnDeviceOffline mediaLibraryDeviceHandler null");
         return;
     }
-    auto nodeOffline = [this, deviceInfo, bundleName]() {
+    auto nodeOffline = [this, deviceInfo]() {
         lock_guard<mutex> autoLock(deviceLock_);
         std::string devId = deviceInfo.deviceId;
         auto info = deviceInfoMap_.find(devId);
@@ -118,7 +142,7 @@ void MediaLibraryDevice::OnDeviceOffline(
             return;
         }
         if (mediaLibraryDeviceOperations_ != nullptr) {
-            mediaLibraryDeviceOperations_->UpdateDeviceInfo(rdbStore_, info->second, bundleName);
+            mediaLibraryDeviceOperations_->UpdateDeviceInfo(rdbStore_, info->second, bundleName_);
         }
         deviceInfoMap_.erase(devId);
 
@@ -165,21 +189,21 @@ void MediaLibraryDevice::NotifyRemoteFileChange()
     }
 }
 
-bool MediaLibraryDevice::IsHasDevice(string deviceUdid)
+bool MediaLibraryDevice::IsHasDevice(const string &deviceUdid)
 {
-    map<string, MediaLibraryDeviceInfo>::iterator iter =  deviceInfoMap_.begin();
-    while (iter != deviceInfoMap_.end()) {
-        if (deviceUdid.compare(iter->second.deviceUdid) == 0) {
+    for (auto &[_, info] : deviceInfoMap_) {
+        if (!deviceUdid.compare(info.deviceUdid)) {
             return true;
         }
-        iter = next(iter);
     }
     return false;
 }
 
-bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore, std::string &bundleName)
+bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    const std::string &bundleName)
 {
     rdbStore_ = rdbStore;
+    bundleName_ = bundleName;
     if (dpa_ != nullptr) {
         dpa_->PutDeviceProfile(MEDIA_LIBRARY_VERSION);
     }
@@ -190,16 +214,16 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     }
     // 获取同一网络中的所有设备Id
     std::vector<OHOS::DistributedHardware::DmDeviceInfo> deviceList;
-    GetAllDeviceId(deviceList, bundleName);
-    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
+    GetAllDeviceId(deviceList);
+    MEDIA_ERR_LOG("xhl MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
     for (auto& deviceInfo : deviceList) {
         OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
-        GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo, bundleName);
+        GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo);
         if (dpa_ != nullptr) {
             dpa_->GetDeviceProfile(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
         }
         if (mediaLibraryDeviceOperations_ != nullptr &&
-            mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mediaLibraryDeviceInfo, bundleName)) {
+            mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mediaLibraryDeviceInfo, bundleName_)) {
             lock_guard<mutex> autoLock(deviceLock_);
             deviceInfoMap_[deviceInfo.deviceId] = mediaLibraryDeviceInfo;
         }
@@ -212,7 +236,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     for (OHOS::Media::MediaLibraryDeviceInfo deviceInfo : deviceDataBaseList) {
         if (!IsHasDevice(deviceInfo.deviceUdid)) {
             if (mediaLibraryDeviceOperations_ != nullptr) {
-                mediaLibraryDeviceOperations_->UpdateDeviceInfo(rdbStore_, deviceInfo, bundleName);
+                mediaLibraryDeviceOperations_->UpdateDeviceInfo(rdbStore_, deviceInfo, bundleName_);
             }
         }
     }
@@ -221,8 +245,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     return true;
 }
 
-bool MediaLibraryDevice::UpdateDevicieSyncStatus(
-    const std::string &deviceId, int32_t syncStatus, const std::string &bundleName)
+bool MediaLibraryDevice::UpdateDevicieSyncStatus(const std::string &deviceId, int32_t syncStatus)
 {
     if (mediaLibraryDeviceOperations_ != nullptr) {
         lock_guard<mutex> autoLock(deviceLock_);
@@ -232,13 +255,12 @@ bool MediaLibraryDevice::UpdateDevicieSyncStatus(
             return false;
         }
         return mediaLibraryDeviceOperations_->UpdateSyncStatus(rdbStore_, info->second.deviceUdid, syncStatus,
-                                                               bundleName);
+                                                               bundleName_);
     }
     return false;
 }
 
-bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &deviceId, int32_t &syncStatus,
-                                              const std::string &bundleName)
+bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &deviceId, int32_t &syncStatus)
 {
     if (mediaLibraryDeviceOperations_ != nullptr) {
         lock_guard<mutex> autoLock(deviceLock_);
@@ -248,16 +270,16 @@ bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &deviceId, int32
             return false;
         }
         return mediaLibraryDeviceOperations_->GetSyncStatusById(rdbStore_, deviceId, syncStatus,
-                                                                bundleName);
+                                                                bundleName_);
     }
     return false;
 }
 
-std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId, const std::string &bundleName)
+std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId)
 {
-    auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
+    auto &deviceManager = DistributedHardware::DeviceManager::GetInstance();
     std::string deviceUdid;
-    auto ret = deviceManager.GetUdidByNetworkId(bundleName, deviceId, deviceUdid);
+    auto ret = deviceManager.GetUdidByNetworkId(bundleName_, deviceId, deviceUdid);
     if (ret != 0) {
         MEDIA_INFO_LOG("GetDeviceUdid error deviceId = %{private}s", deviceId.c_str());
         return std::string();
@@ -265,28 +287,23 @@ std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId, 
     return deviceUdid;
 }
 
-void MediaLibraryDevice::GetMediaLibraryDeviceInfo(const OHOS::DistributedHardware::DmDeviceInfo &dmInfo,
-                                                   OHOS::Media::MediaLibraryDeviceInfo& mlInfo,
-                                                   const std::string &bundleName)
+void MediaLibraryDevice::GetMediaLibraryDeviceInfo(const DistributedHardware::DmDeviceInfo &dmInfo,
+    MediaLibraryDeviceInfo& mlInfo)
 {
     mlInfo.deviceId = dmInfo.deviceId;
     mlInfo.deviceName = dmInfo.deviceName;
     mlInfo.deviceTypeId = dmInfo.deviceTypeId;
-    mlInfo.deviceUdid = GetUdidByNetworkId(mlInfo.deviceId, bundleName);
+    mlInfo.deviceUdid = GetUdidByNetworkId(mlInfo.deviceId);
 }
 
-string MediaLibraryDevice::GetNetworkIdBySelfId(const std::string &selfId, const std::string &bundleName)
+string MediaLibraryDevice::GetNetworkIdBySelfId(const std::string &selfId)
 {
-    MEDIA_INFO_LOG("GetNetworkIdBySelfId can not find selfId:%{private}s", selfId.c_str());
-
-    map<string, MediaLibraryDeviceInfo>::iterator iter = deviceInfoMap_.begin();
-    while (iter != deviceInfoMap_.end()) {
-        MEDIA_INFO_LOG("GetNetworkIdBySelfId iter->second.selfId:%{private}s", iter->second.selfId.c_str());
-        if (selfId.compare(iter->second.selfId) == 0) {
-            return iter->second.deviceId;
+    for (auto &[_, info] : deviceInfoMap_) {
+        if (!selfId.compare(info.selfId)) {
+            return info.selfId;
         }
-        iter = next(iter);
     }
+    MEDIA_ERR_LOG("GetNetworkIdBySelfId can not find selfId:%{private}s", selfId.c_str());
     return "";
 }
 
@@ -297,6 +314,45 @@ bool MediaLibraryDevice::QueryDeviceTable()
         return mediaLibraryDeviceOperations_->QueryDeviceTable(rdbStore_, excludeMap_);
     }
     return false;
+}
+
+void MediaLibraryDevice::OnRemoteDied()
+{
+    MEDIA_INFO_LOG("dm instance died");
+    UnRegisterFromDM();
+    RegisterToDM();
+
+}
+
+void MediaLibraryDevice::RegisterToDM()
+{
+    // todo: 注册过程修改为起线程，防止注册失败
+    auto &deviceManager = DistributedHardware::DeviceManager::GetInstance();
+    int errCode = deviceManager.InitDeviceManager(bundleName_, shared_from_this());
+    if (errCode != 0) {
+        MEDIA_ERR_LOG("xhl RegisterToDm InitDeviceManager failed %{public}d", errCode);
+    }
+
+    std::string extra = "";
+    errCode = deviceManager.RegisterDevStateCallback(bundleName_, extra, shared_from_this());
+    if (errCode != 0) {
+        MEDIA_ERR_LOG("xhl RegisterDevStateCallback failed errCode %{public}d", errCode);
+    }
+    MEDIA_ERR_LOG("xhl RegisterToDM success!");
+}
+
+void MediaLibraryDevice::UnRegisterFromDM()
+{
+    auto &deviceManager = DistributedHardware::DeviceManager::GetInstance();
+    int errCode = deviceManager.UnRegisterDevStateCallback(bundleName_);
+    if (errCode != 0) {
+        MEDIA_ERR_LOG("xhl UnRegisterDevStateCallback failed errCode %{public}d", errCode);
+    }
+    errCode = deviceManager.UnInitDeviceManager(bundleName_);
+    if (errCode != 0) {
+        MEDIA_ERR_LOG("xhl UnInitDeviceManager failed errCode %{public}d", errCode);
+    }
+    MEDIA_ERR_LOG("xhl UnRegisterFromDM success");
 }
 } // namespace Media
 } // namespace OHOS
