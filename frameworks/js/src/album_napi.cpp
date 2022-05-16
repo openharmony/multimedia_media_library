@@ -697,7 +697,7 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     DataShare::DataSharePredicates predicates;
-    NativeRdb::ValuesBucket valuesBucket;
+    DataShare::DataShareValuesBucket valuesBucket;
     int32_t changedRows;
     context->selection += " AND ";
     if (MediaFileUtils::CheckTitle(context->objectInfo->GetAlbumName())) {
@@ -709,7 +709,7 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
             context->objectInfo->GetMediaDataHelper()->Update(uri, valuesBucket, predicates);
         if (changedRows > 0) {
             DataShare::DataSharePredicates filePredicates;
-            NativeRdb::ValuesBucket fileValuesBucket;
+            DataShare::DataShareValuesBucket fileValuesBucket;
             fileValuesBucket.PutString(MEDIA_DATA_DB_BUCKET_NAME, context->objectInfo->GetAlbumName());
             filePredicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(context->objectInfo->GetAlbumId()));
             fileValuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
