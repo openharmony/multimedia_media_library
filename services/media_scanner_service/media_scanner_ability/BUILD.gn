@@ -16,8 +16,6 @@ import("//foundation/multimedia/medialibrary_standard/media_library.gni")
 
 config("media_scanner_ability_public_config") {
   include_dirs = [
-    "${aainnerkits_path}/want/include",
-    "${aainnerkits_path}/want/include/ohos/aafwk/content",
     "${aainnerkits_path}/ability_manager/include",
     "${aainnerkits_path}/app_manager/include/appmgr",
     "${aakits_path}/ability/native/include",
@@ -72,7 +70,6 @@ ohos_shared_library("media_scanner_service") {
   public_configs = [ ":media_scanner_ability_public_config" ]
 
   deps = [
-    "${aainnerkits_path}/want:want",
     "${aakits_path}/ability/native:abilitykit_native",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
@@ -81,6 +78,7 @@ ohos_shared_library("media_scanner_service") {
   ]
 
   external_deps = [
+    "ability_base:want",
     "ability_base:zuri",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",

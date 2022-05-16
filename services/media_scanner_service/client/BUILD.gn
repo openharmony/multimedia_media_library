@@ -22,8 +22,6 @@ config("media_data_ability_public_config") {
   include_dirs = [
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
-    "${aainnerkits_path}/want/include",
-    "${aainnerkits_path}/want/include/ohos/aafwk/content",
     "${aainnerkits_path}/ability_manager/include",
     "${aainnerkits_path}/app_manager/include/appmgr",
     "${aaservices_path}/abilitymgr/include",
@@ -49,7 +47,6 @@ ohos_shared_library("media_scanner_client") {
 
   deps = [
     "${aainnerkits_path}/ability_manager:ability_manager",
-    "${aainnerkits_path}/want:want",
     "${aakits_path}/ability/native:abilitykit_native",
     "${aaservices_path}/abilitymgr:abilityms",
     "//foundation/distributedschedule/safwk/interfaces/innerkits/safwk:system_ability_fwk",
@@ -57,6 +54,7 @@ ohos_shared_library("media_scanner_client") {
   ]
 
   external_deps = [
+    "ability_base:want",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "samgr_standard:samgr_proxy",
