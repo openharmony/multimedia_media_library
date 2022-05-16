@@ -41,6 +41,7 @@
 #include "media_volume.h"
 #include "uri.h"
 #include "values_bucket.h"
+#include "datashare_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -233,7 +234,7 @@ public:
     int32_t QueryTotalSize(MediaVolume &outMediaVolume);
 
 private:
-    static std::shared_ptr<AppExecFwk::MediaDataHelper> sAbilityHelper_;
+    static shared_ptr<DataShare::DataShareHelper> sAbilityHelper_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -75,6 +75,7 @@ ohos_shared_library("medialibrary") {
     "//drivers/peripheral/base",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native",
     "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/include",
+    "//foundation/multimedia/medialibrary_standard/medialibrary_data_extension/include",
     "//third_party/node/src",
     "//foundation/arkui/napi/interfaces/kits",
     "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
@@ -85,8 +86,11 @@ ohos_shared_library("medialibrary") {
     "//foundation/multimedia/image_standard/interfaces/innerkits/include",
     "//foundation/multimedia/image_standard/interfaces/kits/js/common/include",
     "//foundation/distributedhardware/devicemanager/interfaces/inner_kits/native_cpp/include",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
+    "//foundation/distributeddatamgr/appdatamgr/framework/native/data_share/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/framework/native/data_share/provider/include",
 
   ]
 
@@ -121,6 +125,7 @@ ohos_shared_library("medialibrary") {
     "//foundation/multimedia/media_standard/interfaces/inner_api/native:media_client",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension:media_service_extension",
+    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//utils/native/base:utils",
   ]
