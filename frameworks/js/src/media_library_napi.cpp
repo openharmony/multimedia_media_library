@@ -26,7 +26,7 @@
 #include "file_ex.h"
 #include "uv.h"
 #include "string_ex.h"
-#include "ohos/aafwk/base/string_wrapper.h"
+#include "string_wrapper.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
