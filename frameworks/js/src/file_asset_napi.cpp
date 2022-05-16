@@ -910,7 +910,7 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
     Media::MediaType mediaType = context->objectInfo->GetMediaType();
     string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
     DataShare::DataSharePredicates predicates;
-    NativeRdb::ValuesBucket valuesBucket;
+    DataShare::DataShareValuesBucket valuesBucket;
     int32_t changedRows;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
 
@@ -1155,7 +1155,7 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
-        ValueObject valueObject;
+        DataShare::DataShareValueObject valueObject;
         int fd = 0;
 
         if (context->valuesBucket.GetObject(MEDIA_FILEDESCRIPTOR, valueObject)) {
@@ -1281,7 +1281,7 @@ static string GetStringInfo(shared_ptr<DataShare::DataShareResultSet> resultSet,
     return res;
 }
 
-static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<MediaDataHelper> &abilityHelper,
+static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper> &abilityHelper,
     shared_ptr<MediaThumbnailHelper> &thumbnailHelper, int32_t &fileId,
     std::string &uri, int32_t &width, int32_t &height)
 {
@@ -1548,8 +1548,8 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
 
     string meidaUri = MEDIALIBRARY_DATA_URI;
     AppExecFwk::Want want;
-    want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
-    auto dataAbilityHelper = MediaDataHelper::Creator(context, want, std::make_shared<Uri>(meidaUri));
+    want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
+    auto dataAbilityHelper = DataShare::DataShareHelper::Creator(context, want, std::make_shared<Uri>("datashare://com.ohos.medialibrary.medialibrarydata.datashare"));
     if (dataAbilityHelper == nullptr) {
         return nullptr;
     }
@@ -1777,9 +1777,9 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
                 FileAssetAsyncContext* context = static_cast<FileAssetAsyncContext*>(data);
                 if (context->objectInfo->sDataShareHelper_ != nullptr) {
                     Uri uri(MEDIALIBRARY_DATA_URI);
-                    ValueObject valueObject;
+                    DataShare::DataShareValueObject valueObject;
                     DataShare::DataSharePredicates predicates;
-                    NativeRdb::ValuesBucket valuesBucket;
+                    DataShare::DataShareValuesBucket valuesBucket;
                     bool isFavorite = false;
                     if (context->valuesBucket.GetObject(MEDIA_DATA_DB_IS_FAV, valueObject)) {
                         valueObject.GetBool(isFavorite);
@@ -1878,7 +1878,7 @@ static void JSTrashExecute(FileAssetAsyncContext* context)
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri uri(abilityUri);
-        ValueObject valueObject;
+        DataShare::DataShareValueObject valueObject;
         DataShare::DataSharePredicates predicates;
 
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));

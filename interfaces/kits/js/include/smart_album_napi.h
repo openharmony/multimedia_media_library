@@ -34,10 +34,7 @@
 #include "result_set.h"
 #include "uri.h"
 #include "values_bucket.h"
-#include "mediadata_helper.h"
 #include "napi_remote_object.h"
-#include "mediadata_stub_impl.h"
-#include "mediadata_proxy.h"
 #include "datashare_helper.h"
 
 namespace OHOS {
@@ -104,7 +101,7 @@ struct SmartAlbumNapiAsyncContext {
     bool status;
     int32_t changedRows;
     std::string selection;
-    OHOS::NativeRdb::ValuesBucket valuesBucket;
+    OHOS::DataShare::DataShareValuesBucket valuesBucket;
     std::vector<std::string> selectionArgs;
     std::string order;
     std::unique_ptr<FetchResult> fetchResult;

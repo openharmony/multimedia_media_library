@@ -440,7 +440,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
     SmartAlbumNapiAsyncContext *context = const_cast<SmartAlbumNapiAsyncContext *>(&albumContext);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     DataShare::DataSharePredicates predicates;
-    NativeRdb::ValuesBucket valuesBucket;
+    DataShare::DataShareValuesBucket valuesBucket;
     int32_t changedRows;
     NAPI_DEBUG_LOG("CommitModifyNative = %{private}s", context->objectInfo->GetSmartAlbumName().c_str());
     if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName())) {
@@ -459,7 +459,7 @@ static void SetFileFav(bool isFavourite, SmartAlbumNapiAsyncContext *context)
     NAPI_DEBUG_LOG("SetFileFav IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     string abilityUri = MEDIALIBRARY_DATA_URI;
-    NativeRdb::ValuesBucket values;
+    DataShare::DataShareValuesBucket values;
     int32_t changedRows;
     values.PutBool(MEDIA_DATA_DB_IS_FAV, isFavourite);
     Uri uri(abilityUri);
@@ -481,7 +481,7 @@ static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
     NAPI_DEBUG_LOG("SetFileTrash IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     string abilityUri = MEDIALIBRARY_DATA_URI;
-    NativeRdb::ValuesBucket values;
+    DataShare::DataShareValuesBucket values;
     int32_t changedRows;
     if (isTrash) {
         int64_t timeNow = MediaFileUtils::UTCTimeSeconds();

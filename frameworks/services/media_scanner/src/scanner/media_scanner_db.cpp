@@ -21,6 +21,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
 
 MediaScannerDb::MediaScannerDb() {}
 
@@ -37,7 +38,7 @@ void MediaScannerDb::SetRdbHelper(void)
 string MediaScannerDb::InsertMetadata(const Metadata &metadata)
 {
     int32_t rowNum(0);
-    ValuesBucket values;
+    DataShareValuesBucket values;
 
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri = GetMediaTypeUri(mediaType);
@@ -112,7 +113,7 @@ unique_ptr<Metadata> MediaScannerDb::ReadMetadata(const string &path)
 string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
 {
     int32_t updateCount(0);
-    ValuesBucket values;
+    DataShareValuesBucket values;
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(metadata.GetFileId()));
 

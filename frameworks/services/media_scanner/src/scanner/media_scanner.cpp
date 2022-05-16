@@ -21,6 +21,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::AppExecFwk;
+using namespace OHOS::DataShare;
 
 MediaScannerObj::MediaScannerObj()
 {
