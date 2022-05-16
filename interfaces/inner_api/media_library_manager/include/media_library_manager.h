@@ -40,6 +40,7 @@
 #include "media_data_ability_const.h"
 #include "uri.h"
 #include "values_bucket.h"
+#include "datashare_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -214,7 +215,7 @@ public:
     unique_ptr<FetchResult> GetAlbumFileAssets(const int32_t albumId, const MediaFetchOptions &fetchOptions);
 
 private:
-    static shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
+    static shared_ptr<DataShare::DataShareHelper> sAbilityHelper_;
 };
 } // namespace Media
 } // namespace OHOS

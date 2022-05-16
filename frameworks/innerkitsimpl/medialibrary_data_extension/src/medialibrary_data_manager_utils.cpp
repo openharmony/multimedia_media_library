@@ -326,14 +326,15 @@ shared_ptr<FileAsset> MediaLibraryDataManagerUtils::GetFileAssetFromDb(const str
         MEDIA_ERR_LOG("Get tableName fail, networkId is %{private}s", networkId.c_str());
         return nullptr;
     }
-    AbsRdbPredicates absPredicates(tableName);
+    DataSharePredicates absPredicates(tableName);
     absPredicates.SetWhereClause(strQueryCondition);
     absPredicates.SetWhereArgs(selectionArgs);
 
     vector<string> columns;
 
-    shared_ptr<AbsSharedResultSet> resultSet = rdbStore->Query(absPredicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Failed to obtain path from database");
+    shared_ptr<DataShareAbstractResultSet> innerResultSet = rdbStore->Query(absPredicates, columns);
+    CHECK_AND_RETURN_RET_LOG(innerResultSet != nullptr, nullptr, "Failed to obtain path from database");
+    shared_ptr<DataShareResultSet> resultSet = make_shared<DataShareResultSet>(innerResultSet);
 
     shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>(resultSet);
     if (fetchFileResult == nullptr) {

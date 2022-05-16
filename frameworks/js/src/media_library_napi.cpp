@@ -27,6 +27,7 @@
 #include "uv.h"
 #include "string_ex.h"
 #include "ohos/aafwk/base/string_wrapper.h"
+//#include "medialibrary_data_manager_utils.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -570,13 +571,15 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     DataShare::DataSharePredicates predicates;
     if (!context->uri.empty()) {
         NAPI_ERR_LOG("context->uri is = %{private}s", context->uri.c_str());
-        context->networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(context->uri);
-        string fileId = MediaLibraryDataAbilityUtils::GetIdFromUri(context->uri);
+/*
+        context->networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(context->uri);
+        string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(context->uri);
         if (!fileId.empty()) {
             string idPrefix = MEDIA_DATA_DB_ID + " = ? ";
             MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, idPrefix);
             context->selectionArgs.insert(context->selectionArgs.begin(), fileId);
         }
+*/
     }
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, prefix);
@@ -596,7 +599,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     }
     NAPI_DEBUG_LOG("queryUri is = %{private}s", queryUri.c_str());
     Uri uri(queryUri);
-    shared_ptr<AbsSharedResultSet> resultSet;
+    shared_ptr<DataShare::DataShareResultSet> resultSet;
 
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
         resultSet = context->objectInfo->sDataShareHelper_->Query(uri, columns, predicates);
@@ -759,44 +762,13 @@ ValVariant GetValFromColumn(string columnName, shared_ptr<DataShare::DataShareRe
     return cellValue;
 }
 
-ValVariant GetValFromColumn(string columnName, shared_ptr<DataShare::DataShareResultSet> &resultSet,
-    ResultSetDataType type)
-{
-    int index;
-    ValVariant cellValue;
-    int integerVal;
-    string stringVal;
-    int64_t longVaL;
-
-    resultSet->GetColumnIndex(columnName, index);
-    switch (type) {
-        case TYPE_STRING:
-            resultSet->GetString(index, stringVal);
-            cellValue = stringVal;
-            break;
-        case TYPE_INT32:
-            resultSet->GetInt(index, integerVal);
-            cellValue = integerVal;
-            break;
-        case TYPE_INT64:
-            resultSet->GetLong(index, longVaL);
-            cellValue = longVaL;
-            break;
-        default:
-            NAPI_ERR_LOG("No type: type %{private}d", type);
-            cellValue = "Notype";
-            break;
-    }
-    return cellValue;
-}
-
 static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(album->GetAlbumId()));
     predicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
-    predicates.Limit(1);
+    //predicates.Limit(1);
     vector<string> columns;
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!context->networkId.empty()) {
@@ -812,26 +784,6 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     string coverUri = fileAsset->GetUri();
     album->SetCoverUri(coverUri);
     NAPI_DEBUG_LOG("coverUri is = %{private}s", album->GetCoverUri().c_str());
-}
-
-void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSet> resultSet,
-    const string &networkId)
-{
-    // Get album id index and value
-    albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet, TYPE_INT32)));
-
-    // Get album title index and value
-    albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet, TYPE_STRING)));
-
-    // Get album asset count index and value
-    albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet, TYPE_INT32)));
-    albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) +
-        "/" + to_string(albumData->GetAlbumId()));
-    // Get album relativePath index and value
-    albumData->SetAlbumRelativePath(get<string>(GetValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
-                                                                 resultSet, TYPE_STRING)));
-    albumData->SetAlbumDateModified(get<int64_t>(GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED,
-                                                                  resultSet, TYPE_INT64)));
 }
 
 void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSet> resultSet,
@@ -1006,7 +958,7 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
     predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(id));
 
     Uri uri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet;
+    shared_ptr<DataShare::DataShareResultSet> resultSet;
 
     if (context->objectInfo->sDataShareHelper_ != nullptr
         && ((resultSet = context->objectInfo->sDataShareHelper_->Query(uri, columns, predicates)) != nullptr)) {
@@ -1076,7 +1028,7 @@ static bool CheckTitlePrams(MediaLibraryAsyncContext *context)
         NAPI_ERR_LOG("Async context is null");
         return false;
     }
-    ValueObject valueObject;
+    DataShare::DataShareValueObject valueObject;
     string title = "";
     if (context->valuesBucket.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
         valueObject.GetString(title);
@@ -1156,7 +1108,7 @@ static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
         NAPI_ERR_LOG("Async context is null");
         return false;
     }
-    ValueObject valueObject;
+    DataShare::DataShareValueObject valueObject;
     string relativePath = "";
     if (context->valuesBucket.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
         valueObject.GetString(relativePath);
@@ -1678,7 +1630,7 @@ static void JSCloseAssetCompleteCallback(napi_env env, napi_status status,
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
-        ValueObject valueObject;
+        DataShare::DataShareValueObject valueObject;
         int fd = 0;
 
         if (context->valuesBucket.GetObject(MEDIA_FILEDESCRIPTOR, valueObject)) {
@@ -3544,6 +3496,7 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
 napi_value MediaLibraryNapi::JSGetMediaRemoteStub(napi_env env, napi_callback_info info)
 {
     napi_value remoteStub = nullptr;
+    /*
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
@@ -3568,6 +3521,7 @@ napi_value MediaLibraryNapi::JSGetMediaRemoteStub(napi_env env, napi_callback_in
             remoteStub = NAPI_ohos_rpc_CreateJsRemoteObject(env, remoteObject);
 	}
     }
+    */
      return remoteStub;
  }
 } // namespace Media

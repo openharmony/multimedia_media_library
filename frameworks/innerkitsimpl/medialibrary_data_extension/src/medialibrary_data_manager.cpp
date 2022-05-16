@@ -475,8 +475,11 @@ shared_ptr<DataShareAbstractResultSet> QueryAlbum(string strQueryCondition,
         if (!strQueryCondition.empty()) {
             strQueryCondition = ObtionCondition(strQueryCondition, predicates.GetWhereArgs());
         }
-        string distributedAlbumSql = MediaLibraryDataManagerUtils::GetDistributedAlbumSql(strQueryCondition, tableName);
-        queryResultSet = rdbStore->QuerySql(distributedAlbumSql);
+        mediaLibAbsPredAlbum.SetWhereClause(strQueryCondition);
+        mediaLibAbsPredAlbum.SetWhereArgs(predicates.GetWhereArgs());
+        //mediaLibAbsPredAlbum.Limit(predicates.GetLimit());
+        mediaLibAbsPredAlbum.SetOrder(predicates.GetOrder());
+        queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
     } else {
         DataSharePredicates mediaLibAbsPredAlbum(ABLUM_VIEW_NAME);
         if (!strQueryCondition.empty()) {
@@ -487,7 +490,7 @@ shared_ptr<DataShareAbstractResultSet> QueryAlbum(string strQueryCondition,
 	    */
             mediaLibAbsPredAlbum.SetWhereClause(strQueryCondition);
             mediaLibAbsPredAlbum.SetWhereArgs(predicates.GetWhereArgs());
-            mediaLibAbsPredAlbum.Limit(predicates.GetLimit());
+            //mediaLibAbsPredAlbum.Limit(predicates.GetLimit());
             mediaLibAbsPredAlbum.SetOrder(predicates.GetOrder());
         }
         queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
@@ -508,7 +511,7 @@ shared_ptr<DataShareAbstractResultSet> QueryDeviceInfo(string strQueryCondition,
 
     deviceDataSharePredicates.SetWhereClause(strQueryCondition);
     deviceDataSharePredicates.SetWhereArgs(predicates.GetWhereArgs());
-    deviceDataSharePredicates.Limit(predicates.GetLimit());
+    //deviceDataSharePredicates.Limit(predicates.GetLimit());
     deviceDataSharePredicates.SetOrder(predicates.GetOrder());
 
     queryResultSet = rdbStore->Query(deviceDataSharePredicates, columns);
@@ -659,9 +662,9 @@ shared_ptr<DataShareAbstractResultSet> GenThumbnail(shared_ptr<RdbStore> rdb,
         .height = height
     };
 
-    MEDIA_INFO_LOG("Get thumbnail [ %{private}s ]", opts.row.c_str());
+    MEDIA_INFO_LOG("Get thumbnail [ %{private}s ], width %{private}d", opts.row.c_str(), size.width);
     StartTrace(BYTRACE_TAG_OHOS, "thumbnail->GetThumbnailKey");
-    queryResultSet = thumbnail->GetThumbnailKey(opts, size);
+    //queryResultSet = thumbnail->GetThumbnailKey(opts, size);
     FinishTrace(BYTRACE_TAG_OHOS);
 
     return queryResultSet;
@@ -1033,14 +1036,16 @@ bool MediaLibraryDataManager::QuerySync()
 
     std::vector<std::string> columns;
     std::vector<std::string> devices;
-    shared_ptr<DataShareAbstractResultSet> queryResultSet;
+    shared_ptr<DataShareAbstractResultSet> innerResultSet;
+    shared_ptr<DataShareResultSet> queryResultSet;
     DataSharePredicates deviceDataSharePredicates(DEVICE_TABLE);
     deviceDataSharePredicates.SetWhereClause(strQueryCondition);
 
-    queryResultSet = rdbStore_->Query(deviceDataSharePredicates, columns);
-    if (queryResultSet == nullptr) {
+    innerResultSet = rdbStore_->Query(deviceDataSharePredicates, columns);
+    if (innerResultSet == nullptr) {
         return false;
     }
+    queryResultSet = std::make_shared<DataShareResultSet>(innerResultSet);
 
     if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t columnIndexId;
