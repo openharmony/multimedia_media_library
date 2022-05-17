@@ -40,7 +40,7 @@ int32_t MediaScannerOperationCallbackStub::OnRemoteRequest(
             errCode = MediaScannerOperationCallbackStub::HandleOnCallback(data);
             break;
         default:
-            MEDIA_ERR_LOG("MediaScannerOperationCallbackStub request code %{private}d not handled", code);
+            MEDIA_ERR_LOG("MediaScannerOperationCallbackStub request code %{public}d not handled", code);
             errCode = IPCObjectStub::OnRemoteRequest(code, data, reply, option);
             break;
     }

@@ -149,7 +149,7 @@ int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(const ValuesBucket &v
 
     if (resultSet != nullptr) {
         resultSet->GetRowCount(errorCode);
-        MEDIA_INFO_LOG("HandleGetAlbumCapacity GetRowCount %{private}d", errorCode);
+        MEDIA_INFO_LOG("HandleGetAlbumCapacity GetRowCount %{public}d", errorCode);
     }
 
     MEDIA_INFO_LOG("HandleGetAlbumCapacity OUT");
