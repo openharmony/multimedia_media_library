@@ -97,27 +97,25 @@ variant<int32_t, string> GetValFromColumn(string columnName,
     shared_ptr<DataShareResultSet> &resultSet)
 {
     variant<int32_t, string> cellValue;
-    /*
     int32_t index;
-    ColumnType type;
-    int33_t integerVal;
+    DataShare::DataType type;
+    int32_t integerVal;
     string stringVal;
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, cellValue, "resultSet != nullptr");
     resultSet->GetColumnIndex(columnName, index);
-    resultSet->GetColumnType(index, type);
+    resultSet->GetDataType(index, type);
     switch (type) {
-        case ColumnType::TYPE_STRING:
+	    case DataShare::DataType::TYPE_STRING:
             resultSet->GetString(index, stringVal);
             cellValue = stringVal;
             break;
-        case ColumnType::TYPE_INTEGER:
+	    case DataShare::DataType::TYPE_INTEGER:
             resultSet->GetInt(index, integerVal);
             cellValue = integerVal;
             break;
         default:
             break;
     }
-    */
 
     return cellValue;
 }

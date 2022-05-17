@@ -58,7 +58,13 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
     const std::shared_ptr<OHOSApplication> &application, std::shared_ptr<AbilityHandler> &handler,
     const sptr<IRemoteObject> &token)
 {
-    //MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr();
+    DataShareExtAbility::Init(record, application, handler, token);
+    auto context = GetContext();
+    if (context == nullptr) {
+        HILOG_ERROR("Failed to get context");
+        return;
+    }
+    MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context);
 }
 
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
