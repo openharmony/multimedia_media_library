@@ -27,9 +27,6 @@ ohos_unittest("mediascanner_unittest") {
     "./include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
-    "${aainnerkits_path}/uri/include",
-    "${aainnerkits_path}/want/include",
-    "${aainnerkits_path}/want/include/ohos/aafwk/content",
     "${aainnerkits_path}/ability_manager/include",
     "${aainnerkits_path}/app_manager/include/appmgr",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
@@ -51,13 +48,13 @@ ohos_unittest("mediascanner_unittest") {
     "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client:media_scanner_client",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
-    "${aainnerkits_path}/uri:zuri",
-    "${aainnerkits_path}/want:want",
     "${aakits_path}/ability/native:abilitykit_native",
     "//utils/native/base:utils",
   ]
 
   external_deps = [
+    "ability_base:want",
+    "ability_base:zuri",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "native_appdatamgr:native_appdatafwk",
