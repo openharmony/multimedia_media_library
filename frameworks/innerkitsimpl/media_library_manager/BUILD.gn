@@ -36,9 +36,7 @@ ohos_shared_library("media_library_manager") {
   ]
 
   deps = [
-    "${aainnerkits_path}/base:base",
     "${aainnerkits_path}/dataobs_manager:dataobs_manager",
-    "${aainnerkits_path}/uri:zuri",
     "${aakits_path}/ability/native:abilitykit_native",
     "${aakits_path}/appkit:appkit_native",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
@@ -46,6 +44,7 @@ ohos_shared_library("media_library_manager") {
   ]
 
   external_deps = [
+    "ability_base:zuri",
     "ability_runtime:ability_manager",
     "bundle_framework:appexecfwk_base",
     "hiviewdfx_hilog_native:libhilog",
