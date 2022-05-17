@@ -72,7 +72,7 @@ int32_t MediaLibraryDataAbilityUtils::GetParentIdFromDb(const string &path, cons
 }
 string MediaLibraryDataAbilityUtils::GetParentDisplayNameFromDb(const int &id, const shared_ptr<RdbStore> &rdbStore)
 {
-    string parentName;
+    string parentName = "";
     int32_t columnIndex(0);
     if (rdbStore != nullptr) {
         AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
@@ -80,9 +80,15 @@ string MediaLibraryDataAbilityUtils::GetParentDisplayNameFromDb(const int &id, c
         vector<string> columns;
         columns.push_back(MEDIA_DATA_DB_NAME);
         unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+
         auto ret = queryResultSet->GoToFirstRow();
+        CHECK_AND_RETURN_RET_LOG(ret == 0, parentName, "Failed to shift at first row");
+
         ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_NAME, columnIndex);
+        CHECK_AND_RETURN_RET_LOG(ret == 0, parentName, "Failed to obtain column index");
+
         ret = queryResultSet->GetString(columnIndex, parentName);
+        CHECK_AND_RETURN_RET_LOG(ret == 0, parentName, "Failed to obtain parent name");
     }
     return parentName;
 }
