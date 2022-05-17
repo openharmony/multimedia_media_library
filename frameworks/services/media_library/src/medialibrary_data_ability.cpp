@@ -164,11 +164,11 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 #ifdef RDB_UPGRADE_MOCK
     const std::string ALTER_MOCK_COLUMN = "ALTER TABLE " + MEDIALIBRARY_TABLE +
                                           " ADD COLUMN upgrade_test_column INT DEFAULT 0";
-    MEDIA_INFO_LOG("OnUpgrade |Rdb Version %{private}d => %{private}d", oldVersion, newVersion);
+    MEDIA_INFO_LOG("OnUpgrade |Rdb Version %{public}d => %{public}d", oldVersion, newVersion);
     int32_t error_code = NativeRdb::E_ERROR;
     error_code = store.ExecuteSql(ALTER_MOCK_COLUMN);
     if (error_code != NativeRdb::E_OK) {
-        MEDIA_INFO_LOG("Upgrade rdb error %{private}d", error_code);
+        MEDIA_INFO_LOG("Upgrade rdb error %{public}d", error_code);
     }
 #endif
     return E_OK;
@@ -219,7 +219,7 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
     if (rdbDataCallBack.GetDistributedTables()) {
         auto ret = rdbStore_->SetDistributedTables(
             {MEDIALIBRARY_TABLE, SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE});
-        MEDIA_INFO_LOG("InitMediaLibraryRdbStore ret = %{private}d", ret);
+        MEDIA_INFO_LOG("InitMediaLibraryRdbStore ret = %{public}d", ret);
     }
 
     isRdbStoreInitialized = true;
@@ -427,7 +427,7 @@ string MediaLibraryDataAbility::ObtionCondition(string &strQueryCondition, const
 {
     for (string args : whereArgs) {
         size_t pos = strQueryCondition.find('?');
-        MEDIA_INFO_LOG("obtionCondition pos = %{private}d", (int)pos);
+        MEDIA_INFO_LOG("obtionCondition pos = %{public}d", (int)pos);
         if (pos != string::npos) {
             MEDIA_INFO_LOG("ObtionCondition before = %{private}s", strQueryCondition.c_str());
             strQueryCondition.replace(pos, 1, "'" + args + "'");
@@ -570,7 +570,7 @@ bool MediaLibraryDataAbility::ParseThumbnailInfo(string &uriString, Size &size)
     vector<string> vectorKeys;
     SplitKeys(queryKeys, vectorKeys);
     if (vectorKeys.size() != keyWords.size()) {
-        MEDIA_ERR_LOG("Parse error keys count %{private}d", (int)vectorKeys.size());
+        MEDIA_ERR_LOG("Parse error keys count %{public}d", (int)vectorKeys.size());
         return false;
     }
     string action;
@@ -595,7 +595,7 @@ bool MediaLibraryDataAbility::ParseThumbnailInfo(string &uriString, Size &size)
             }
         }
     }
-    MEDIA_INFO_LOG("ParseThumbnailInfo| action [%{private}s] width %{private}d height %{private}d",
+    MEDIA_INFO_LOG("ParseThumbnailInfo| action [%{private}s] width %{public}d height %{public}d",
         action.c_str(), width, height);
     if (action != MEDIA_DATA_DB_THUMBNAIL || width <= 0 || height <= 0) {
         MEDIA_ERR_LOG("ParseThumbnailInfo | Error args");
@@ -706,7 +706,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
     string networkId = MediaLibraryDataAbilityUtils::GetNetworkIdFromUri(uriString);
     string::size_type pos = uriString.find_last_of('/');
     string type = uriString.substr(pos + 1);
-    MEDIA_DEBUG_LOG("uriString = %{public}s, type = %{private}s, thumbnailQuery %{private}d, Rdb Version %{private}d",
+    MEDIA_DEBUG_LOG("uriString = %{private}s, type = %{private}s, thumbnailQuery %{public}d, Rdb Version %{public}d",
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
 
@@ -714,7 +714,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
         StartTrace(HITRACE_TAG_OHOS, "QuerySync");
         auto ret = QuerySync();
         FinishTrace(HITRACE_TAG_OHOS);
-        MEDIA_INFO_LOG("MediaLibraryDataAbility QuerySync result = %{private}d", ret);
+        MEDIA_INFO_LOG("MediaLibraryDataAbility QuerySync result = %{public}d", ret);
     }
 
     if (thumbnailQuery) {
@@ -877,7 +877,7 @@ int32_t MediaLibraryDataAbility::OpenFile(const Uri &uri, const std::string &mod
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     int32_t fd = fileAsset->OpenAsset(path, mode);
     if (fd < 0) {
-        MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
+        MEDIA_ERR_LOG("open file fd %{private}d, errno %{public}d", fd, errno);
         return DATA_ABILITY_HAS_FD_ERROR;
     }
     if (isWriteMode && fd > 0) {
@@ -1150,7 +1150,7 @@ void MediaLibraryDataAbility::InitialiseKvStore()
 
     Status status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_STOREID, kvStorePtr_);
     if (status != Status::SUCCESS || kvStorePtr_ == nullptr) {
-        MEDIA_INFO_LOG("MediaLibraryDataAbility::InitialiseKvStore failed %{private}d", status);
+        MEDIA_INFO_LOG("MediaLibraryDataAbility::InitialiseKvStore failed %{public}d", status);
     }
 }
 

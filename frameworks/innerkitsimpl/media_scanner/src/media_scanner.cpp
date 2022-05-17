@@ -497,7 +497,7 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
     fName[len++] = '/';
 
     if ((dirPath = opendir(path.c_str())) == nullptr) {
-        MEDIA_ERR_LOG("Failed to opendir %{private}s, errno %{private}d", path.c_str(), errno);
+        MEDIA_ERR_LOG("Failed to opendir %{private}s, errno %{public}d", path.c_str(), errno);
         FREE_MEMORY_AND_SET_NULL(fName);
         return ERR_NOT_ACCESSIBLE;
     }

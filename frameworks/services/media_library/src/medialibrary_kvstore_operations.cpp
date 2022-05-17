@@ -131,17 +131,17 @@ string MediaLibraryKvStoreOperations::HandleKvStoreGetOperations(const string &u
         string key = GetRingtoneUriKey(stoi(keyString));
         auto status = kvStorePtr->Get(key, value);
         if (status != Status::SUCCESS) {
-            MEDIA_ERR_LOG("%{private}s Get key error: %{private}d", __func__, status);
+            MEDIA_ERR_LOG("%{private}s Get key error: %{public}d", __func__, status);
         }
     } else if (uri.find(MEDIA_KVSTOREOPRN_GET_NOTIFICATION_URI) != string::npos) {
         auto status = kvStorePtr->Get(RINGTONE_NOTIFICATION_KEY, value);
         if (status != Status::SUCCESS) {
-            MEDIA_ERR_LOG("%{private}s Get notification key error: %{private}d", __func__, status);
+            MEDIA_ERR_LOG("%{private}s Get notification key error: %{public}d", __func__, status);
         }
     } else if (uri.find(MEDIA_KVSTOREOPRN_GET_ALARM_URI) != string::npos) {
         auto status = kvStorePtr->Get(RINGTONE_ALARM_KEY, value);
         if (status != Status::SUCCESS) {
-            MEDIA_ERR_LOG("%{private}s Get alarm key error: %{private}d", __func__, status);
+            MEDIA_ERR_LOG("%{private}s Get alarm key error: %{public}d", __func__, status);
         }
     }
 

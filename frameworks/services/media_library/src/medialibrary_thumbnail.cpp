@@ -71,13 +71,13 @@ void ParseStringResult(shared_ptr<ResultSet> resultSet,
     bool isNull = true;
     errorCode = resultSet->IsColumnNull(index, isNull);
     if (errorCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to check column %{private}d null %{private}d", index, errorCode);
+        MEDIA_ERR_LOG("Failed to check column %{private}d null %{public}d", index, errorCode);
     }
 
     if (!isNull) {
         errorCode = resultSet->GetString(index, data);
         if (errorCode != E_OK) {
-            MEDIA_ERR_LOG("Failed to get column %{private}d string %{private}d", index, errorCode);
+            MEDIA_ERR_LOG("Failed to get column %{private}d string %{public}d", index, errorCode);
         }
     } else {
         MEDIA_INFO_LOG("Get column %{private}d null", index);
@@ -228,7 +228,7 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, ThumbnailData &thumbnai
     StartTrace(HITRACE_TAG_OHOS, "CreateLcd UpdateThumbnailInfo");
     int errorCode;
     if (!UpdateThumbnailInfo(opts, thumbnailData, errorCode)) {
-        MEDIA_INFO_LOG("UpdateThumbnailInfo faild errorCode : %{private}d", errorCode);
+        MEDIA_INFO_LOG("UpdateThumbnailInfo faild errorCode : %{public}d", errorCode);
         return false;
     }
     FinishTrace(HITRACE_TAG_OHOS);
@@ -290,7 +290,7 @@ unique_ptr<PixelMap> MediaLibraryThumbnail::GetThumbnailByRdb(ThumbRdbOpt &opts,
     ParseQueryResult(resultSet, rdbData, errorCode);
 
     if (errorCode != E_OK) {
-        MEDIA_ERR_LOG("Failed GetThumbnailKey errorCode : %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed GetThumbnailKey errorCode : %{public}d", errorCode);
         return nullptr;
     }
 
@@ -310,7 +310,7 @@ void MediaLibraryThumbnail::CreateThumbnails(ThumbRdbOpt &opts)
     vector<ThumbnailRdbData> infos;
     int errorCode = -1;
     if (!QueryThumbnailInfos(opts, infos, errorCode)) {
-        MEDIA_ERR_LOG("Failed to QueryThumbnailInfos %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to QueryThumbnailInfos %{public}d", errorCode);
         return;
     }
 
@@ -341,7 +341,7 @@ bool MediaLibraryThumbnail::LoadAudioFile(string &path,
     std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     int32_t errorCode = SetSource(avMetadataHelper, path);
     if (errorCode != 0) {
-        MEDIA_ERR_LOG("Av meta data helper set source failed %{private}d", errorCode);
+        MEDIA_ERR_LOG("Av meta data helper set source failed %{public}d", errorCode);
         return false;
     }
 
@@ -357,7 +357,7 @@ bool MediaLibraryThumbnail::LoadAudioFile(string &path,
                                                                               audioPicMemory->GetSize(),
                                                                               opts, error);
     if (audioImageSource == nullptr) {
-        MEDIA_ERR_LOG("Failed to create image source! %{private}d", error);
+        MEDIA_ERR_LOG("Failed to create image source! %{public}d", error);
         return false;
     }
 
@@ -382,7 +382,7 @@ bool MediaLibraryThumbnail::LoadVideoFile(string &path,
     std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     int32_t errorCode = SetSource(avMetadataHelper, path);
     if (errorCode != 0) {
-        MEDIA_ERR_LOG("Av meta data helper set source failed %{private}d", errorCode);
+        MEDIA_ERR_LOG("Av meta data helper set source failed %{public}d", errorCode);
         return false;
     }
     PixelMapParams param;
@@ -412,7 +412,7 @@ bool MediaLibraryThumbnail::LoadImageFile(string &path,
                                                                          opts,
                                                                          errorCode);
     if (errorCode != Media::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to create image source path %{private}s err %{private}d",
+        MEDIA_ERR_LOG("Failed to create image source path %{private}s err %{public}d",
                       path.c_str(), errorCode);
         return false;
     }
@@ -422,7 +422,7 @@ bool MediaLibraryThumbnail::LoadImageFile(string &path,
     DecodeOptions decodeOpts;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     if (errorCode != Media::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to create pixelmap path %{private}s err %{private}d",
+        MEDIA_ERR_LOG("Failed to create pixelmap path %{private}s err %{public}d",
                       path.c_str(), errorCode);
         return false;
     }
@@ -496,7 +496,7 @@ bool MediaLibraryThumbnail::CompressImage(std::shared_ptr<PixelMap> &pixelMap,
     ImagePacker imagePacker;
     uint32_t errorCode = imagePacker.StartPacking(data.data(), data.size(), option);
     if (errorCode != Media::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to StartPacking %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to StartPacking %{public}d", errorCode);
         return false;
     }
     FinishTrace(HITRACE_TAG_OHOS);
@@ -504,7 +504,7 @@ bool MediaLibraryThumbnail::CompressImage(std::shared_ptr<PixelMap> &pixelMap,
     StartTrace(HITRACE_TAG_OHOS, "imagePacker.AddImage");
     errorCode = imagePacker.AddImage(*compressImage);
     if (errorCode != Media::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to StartPacking %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to StartPacking %{public}d", errorCode);
         return false;
     }
     FinishTrace(HITRACE_TAG_OHOS);
@@ -513,7 +513,7 @@ bool MediaLibraryThumbnail::CompressImage(std::shared_ptr<PixelMap> &pixelMap,
     int64_t packedSize = 0;
     errorCode = imagePacker.FinalizePacking(packedSize);
     if (errorCode != Media::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to StartPacking %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to StartPacking %{public}d", errorCode);
         return false;
     }
     FinishTrace(HITRACE_TAG_OHOS);
@@ -577,7 +577,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
     int rowCount = 0;
     errorCode = resultSet->GetRowCount(rowCount);
     if (errorCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to get row count %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to get row count %{public}d", errorCode);
         return nullptr;
     }
     FinishTrace(HITRACE_TAG_OHOS);
@@ -590,14 +590,14 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
 
     errorCode = resultSet->GoToFirstRow();
     if (errorCode != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", errorCode);
         return nullptr;
     }
 
     int columnCount = 0;
     errorCode = resultSet->GetColumnCount(columnCount);
     if (errorCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to get column count %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to get column count %{public}d", errorCode);
         return nullptr;
     }
 
@@ -637,7 +637,7 @@ bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
     int rowCount = 0;
     errorCode = resultSet->GetRowCount(rowCount);
     if (errorCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to get row count %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to get row count %{public}d", errorCode);
         return false;
     }
 
@@ -649,14 +649,14 @@ bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
 
     errorCode = resultSet->GoToFirstRow();
     if (errorCode != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", errorCode);
         return false;
     }
 
     int columnCount = 0;
     errorCode = resultSet->GetColumnCount(columnCount);
     if (errorCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to get column count %{private}d", errorCode);
+        MEDIA_ERR_LOG("Failed to get column count %{public}d", errorCode);
         return false;
     }
 
@@ -704,7 +704,7 @@ bool MediaLibraryThumbnail::UpdateThumbnailInfo(ThumbRdbOpt &opts,
     errorCode = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID+" = ?",
         vector<string> { opts.row });
     if (errorCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{private}d", errorCode);
+        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", errorCode);
         return false;
     }
     FinishTrace(HITRACE_TAG_OHOS);

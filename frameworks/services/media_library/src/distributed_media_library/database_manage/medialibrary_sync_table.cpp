@@ -102,7 +102,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
     const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName, const std::string &tableName,
     std::vector<std::string> &devices, bool isLast)
 {
-    MEDIA_ERR_LOG("SyncPullTable table = %{private}s, isLast = %{private}d", tableName.c_str(), isLast);
+    MEDIA_ERR_LOG("SyncPullTable table = %{private}s, isLast = %{public}d", tableName.c_str(), isLast);
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "Rdb Store is not initialized");
     // start sync
     DistributedRdb::SyncOption option;
@@ -120,7 +120,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPullTable device = %{private}s syncResult = %{private}d",
+                MEDIA_ERR_LOG("SyncPullTable device = %{private}s syncResult = %{public}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
@@ -167,7 +167,7 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPushTable device = %{private}s syncResult = %{private}d",
+                MEDIA_ERR_LOG("SyncPushTable device = %{private}s syncResult = %{public}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
