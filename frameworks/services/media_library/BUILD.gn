@@ -92,7 +92,6 @@ ohos_shared_library("medialibrary_data_ability") {
   ]
 
   deps = [
-    "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client:media_scanner_client",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_thumbnail_helper",
     "${aafwk_kits_path}/ability/native:abilitykit_native",

@@ -74,6 +74,8 @@ public:
     std::vector<std::shared_ptr<AppExecFwk::DataAbilityResult>> ExecuteBatch(
         const std::vector<std::shared_ptr<AppExecFwk::DataAbilityOperation>> &operations) override;
 
+    void Scan(std::string path, uint8_t isDir) override;
+
     int32_t InitMediaLibraryRdbStore();
 private:
     std::shared_ptr<AbilityRuntime::MediaDataUvQueue> uvQueue_;

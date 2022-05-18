@@ -51,7 +51,7 @@ declare namespace mediaLibrary {
    * @StageModelOnly
    * @return Instance of MediaScanner
    */
-  function getScannerInstance(): ScannerInstance;
+  function getScannerInstance(context: Context): ScannerInstance;
 
   /**
    * Enumeration types for different kind of Media Files

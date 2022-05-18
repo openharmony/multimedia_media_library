@@ -84,7 +84,6 @@ ohos_shared_library("medialibrary") {
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
     "${aafwk_inner_api_path}/dataobs_manager/include",
     "${aainnerkits_path}/dataobs_manager/include",
-    "${MEDIA_LIB_SERVICES_DIR}/media_scanner/include/scanner",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include",
     "//foundation/multimedia/image_standard/interfaces/kits/js/common/include",
     "//foundation/distributedhardware/devicemanager/interfaces/inner_kits/native_cpp/include",
@@ -121,7 +120,6 @@ ohos_shared_library("medialibrary") {
     "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension:media_service_extension",
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//utils/native/base:utils",
-    "${MEDIA_LIB_SERVICES_DIR}/media_scanner:media_scanner_lib",
   ]
 
   external_deps = [

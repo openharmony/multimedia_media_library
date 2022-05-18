@@ -16,6 +16,7 @@ import("//build/ohos.gni")
 MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
 MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
 MEDIA_LIB_KITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/kitsimpl"
+MEDIA_SCANNER_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_scanner"
 
 config("mediadataext_ability_public_config") {
   include_dirs = [
@@ -54,6 +55,7 @@ config("mediadataext_ability_public_config") {
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
     "//third_party/json/include",
+    "${MEDIA_SCANNER_DIR}/include/scanner",
   ]
   include_dirs += [ "//third_party/openssl/include/" ]
 
@@ -78,7 +80,6 @@ ohos_shared_library("media_service_extension") {
   cflags = [ "-DOLD_MEDIA_STD_API" ]
 
   deps = [
-    "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client:media_scanner_client",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_thumbnail_helper",
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",

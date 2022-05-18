@@ -43,6 +43,7 @@ MediaDataStub::MediaDataStub()
     stubFuncMap_[CMD_NORMALIZE_URI] = &MediaDataStub::CmdNormalizeUri;
     stubFuncMap_[CMD_DENORMALIZE_URI] = &MediaDataStub::CmdDenormalizeUri;
     stubFuncMap_[CMD_EXECUTE_BATCH] = &MediaDataStub::CmdExecuteBatch;
+    stubFuncMap_[CMD_SCAN] = &MediaDataStub::CmdExecuteScan;
 }
 
 MediaDataStub::~MediaDataStub()
@@ -413,6 +414,25 @@ ErrCode MediaDataStub::CmdExecuteBatch(MessageParcel &data, MessageParcel &reply
         }
     }
     HILOG_INFO("MediaDataStub::CmdExecuteBatchInner end");
+    return NO_ERROR;
+}
+ErrCode MediaDataStub::CmdExecuteScan(MessageParcel &data, MessageParcel &reply)
+{
+    HILOG_INFO("MediaDataStub::CmdExecuteScan start");
+    std::string path = "";
+    if (!data.ReadString(path)) {
+        HILOG_ERROR("MediaDataStub::CmdExecuteScan fail to ReadString path");
+        return ERR_INVALID_VALUE;
+    }
+    uint8_t isDir = 0;
+    if (!data.ReadUint8(isDir)) {
+        HILOG_ERROR("MediaDataStub::CmdExecuteScan fail to ReadUint8 isDir");
+        return ERR_INVALID_VALUE;
+    }
+
+    Scan(path, isDir);
+
+    HILOG_INFO("MediaDataStub::CmdExecuteScan end");
     return NO_ERROR;
 }
 } // namespace AppExecFwk
