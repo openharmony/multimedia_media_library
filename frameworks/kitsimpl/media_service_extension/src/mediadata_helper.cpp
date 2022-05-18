@@ -244,6 +244,54 @@ std::shared_ptr<MediaDataHelper> MediaDataHelper::Creator(
     return std::shared_ptr<MediaDataHelper>(ptrMediaDataHelper);
 }
 
+MediaDataHelper::MediaDataHelper(const sptr<IRemoteObject> &token, const std::shared_ptr<Uri> &uri,
+   const sptr<IMediaData> &mediaDataProxy)
+{
+    HILOG_INFO("MediaDataHelper::MediaDataHelper token start!");
+    token_ = token;
+    uri_ = uri;
+    mediaDataProxy_ = mediaDataProxy;
+    mediaDataConnection_ = MediaDataConnection::GetInstance();
+    HILOG_INFO("MediaDataHelper::MediaDataHelper token end!");
+}
+
+std::shared_ptr<MediaDataHelper> MediaDataHelper::Creator(
+    const sptr<IRemoteObject> &token, const AAFwk::Want &want, const std::shared_ptr<Uri> &uri)
+{
+    HILOG_INFO("MediaDataHelper::Creator with token uri called start.");
+    if (token == nullptr) {
+        HILOG_ERROR("MediaDataHelper::Creator (token, uri) failed, token == nullptr");
+        return nullptr;
+    }
+
+    if (uri == nullptr) {
+        HILOG_ERROR("MediaDataHelper::Creator (token, uri) failed, uri == nullptr");
+        return nullptr;
+    }
+
+    HILOG_INFO("MediaDataHelper::Creator before AcquireDataAbility.");
+    sptr<MediaDataConnection> mediaDataConnection = MediaDataConnection::GetInstance();
+    if (!mediaDataConnection->IsExtAbilityConnected()) {
+        mediaDataConnection->ConnectMediaDataExtAbility(want, token);
+    }
+
+    sptr<IMediaData> mediaDataProxy = mediaDataConnection->GetMediaDataProxy();
+
+    if (mediaDataProxy == nullptr) {
+        HILOG_WARN("MediaDataHelper::Creator get invalid mediaDataProxy");
+    }
+    HILOG_INFO("MediaDataHelper::Creator after AcquireDataAbility.");
+
+    MediaDataHelper *ptrMediaDataHelper = new (std::nothrow) MediaDataHelper(token, uri, mediaDataProxy);
+    if (ptrMediaDataHelper == nullptr) {
+        HILOG_ERROR("MediaDataHelper::Creator (token, uri) failed, create MediaDataHelper failed");
+        return nullptr;
+    }
+
+    HILOG_INFO("MediaDataHelper::Creator with token uri called end.");
+    return std::shared_ptr<MediaDataHelper>(ptrMediaDataHelper);
+}
+
 /**
  * @brief Releases the client resource of the data share.
  * You should call this method to releases client resource after the data operations are complete.
