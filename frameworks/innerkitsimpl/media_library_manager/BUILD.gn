@@ -30,6 +30,7 @@ ohos_shared_library("media_library_manager") {
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/include",
     "//utils/native/base/include",
+    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension/include",
   ]
 
   deps = [
@@ -40,6 +41,8 @@ ohos_shared_library("media_library_manager") {
     "//foundation/aafwk/standard/interfaces/innerkits/uri:zuri",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//utils/native/base:utils",
+    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension:media_service_extension",
+    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
   ]
 
   external_deps = [
