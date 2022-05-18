@@ -28,6 +28,7 @@
 #include "result_set.h"
 #include "hilog_wrapper.h"
 #include "medialibrary_data_manager.h"
+#include "media_scanner.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -209,5 +210,18 @@ std::vector<std::shared_ptr<AppExecFwk::DataAbilityResult>> MediaDataStubImpl::E
     HILOG_INFO("%{public}s end successfully.", __func__);
     return results;
 }
+
+void MediaDataStubImpl::Scan(const string path, uint8_t isDir)
+{
+    HILOG_INFO("%{public}s begin.", __func__);
+    std::string filePath = path;
+    if (!isDir) {
+        MediaScannerObj::GetMediaScannerInstance()->ScanFile(filePath, nullptr);
+    } else {
+        MediaScannerObj::GetMediaScannerInstance()->ScanDir(filePath, nullptr);
+    }
+    HILOG_INFO("%{public}s end.", __func__);
+}
+
 } // namespace AppExecFwk
 } // namespace OHOS

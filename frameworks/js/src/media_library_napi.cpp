@@ -163,8 +163,8 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
 
     unique_ptr<MediaLibraryNapi> obj = make_unique<MediaLibraryNapi>();
     if (obj != nullptr) {
-        obj->env_ = env;
 
+        obj->env_ = env;
         if (g_isNewApi) {
             // Initialize the ChangeListener object
             if (g_listObj == nullptr) {

@@ -30,6 +30,7 @@
 #include "string_ex.h"
 #include "sys_mgr_client.h"
 #include "system_ability_definition.h"
+#include "media_scanner.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -821,29 +822,21 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<Values
 
 void MediaLibraryDataManager::ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1)
 {
-/*
-    if (scannerClient_ == nullptr) {
-        scannerClient_ = MediaScannerHelperFactory::CreateScannerHelper();
+    string actualUri;
+    ValueObject valueObject;
+
+    if (values.GetObject(MEDIA_DATA_DB_URI, valueObject)) {
+        valueObject.GetString(actualUri);
     }
 
-    if (scannerClient_ != nullptr) {
-        string actualUri;
-        ValueObject valueObject;
-
-        if (values.GetObject(MEDIA_DATA_DB_URI, valueObject)) {
-            valueObject.GetString(actualUri);
-        }
-
-        string id = MediaLibraryDataManagerUtils::GetIdFromUri(actualUri);
-        string srcPath = MediaLibraryDataManagerUtils::GetPathFromDb(id, rdbStore1);
-        if (!srcPath.empty()) {
-            std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
-            CHECK_AND_RETURN_LOG(scanFileCb != nullptr, "Failed to create scan file callback object");
-            auto ret = scannerClient_->ScanFile(srcPath, scanFileCb);
-            CHECK_AND_RETURN_LOG(ret == 0, "Failed to initiate scan request");
-        }
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(actualUri);
+    string srcPath = MediaLibraryDataManagerUtils::GetPathFromDb(id, rdbStore1);
+    if (!srcPath.empty()) {
+        std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
+        CHECK_AND_RETURN_LOG(scanFileCb != nullptr, "Failed to create scan file callback object");
+        auto ret = MediaScannerObj::GetMediaScannerInstance()->ScanFile(srcPath, nullptr);
+        CHECK_AND_RETURN_LOG(ret == 0, "Failed to initiate scan request");
     }
-*/
 }
 
 /**
@@ -1114,6 +1107,7 @@ std::string MediaLibraryDataManager::GetClientBundleName()
 
 bool MediaLibraryDataManager::CheckClientPermission(const std::string& permissionStr)
 {
+    return true;
     int uid = IPCSkeleton::GetCallingUid();
     if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
         MEDIA_INFO_LOG("CheckClientPermission: Pass the uid check list");

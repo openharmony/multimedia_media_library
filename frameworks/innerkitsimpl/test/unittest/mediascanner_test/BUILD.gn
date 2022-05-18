@@ -48,7 +48,6 @@ ohos_unittest("mediascanner_unittest") {
   sources = [ "./src/mediascanner_unit_test.cpp" ]
 
   deps = [
-    "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client:media_scanner_client",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
     "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",

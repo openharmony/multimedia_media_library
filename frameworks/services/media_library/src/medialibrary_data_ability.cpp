@@ -811,6 +811,7 @@ int32_t MediaLibraryDataAbility::BatchInsert(const Uri &uri, const vector<Values
 
 void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1)
 {
+/*
     if (scannerClient_ == nullptr) {
         scannerClient_ = MediaScannerHelperFactory::CreateScannerHelper();
     }
@@ -832,6 +833,7 @@ void MediaLibraryDataAbility::ScanFile(const ValuesBucket &values, const shared_
             CHECK_AND_RETURN_LOG(ret == 0, "Failed to initiate scan request");
         }
     }
+*/
 }
 
 /**
