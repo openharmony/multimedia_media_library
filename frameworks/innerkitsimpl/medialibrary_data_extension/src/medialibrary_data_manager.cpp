@@ -435,6 +435,7 @@ shared_ptr<DataShareAbstractResultSet> QueryFile(string strQueryCondition,
         mediaLibAbsPredFile.Distinct();
     }
     */
+    MEDIA_INFO_LOG("StrQueryCondition %{public}s", strQueryCondition.c_str());
     mediaLibAbsPredFile.SetWhereClause(strQueryCondition);
     mediaLibAbsPredFile.SetWhereArgs(predicates.GetWhereArgs());
     //mediaLibAbsPredFile.Limit(predicates.GetLimit());
@@ -664,7 +665,7 @@ shared_ptr<DataShareAbstractResultSet> GenThumbnail(shared_ptr<RdbStore> rdb,
 
     MEDIA_INFO_LOG("Get thumbnail [ %{private}s ], width %{private}d", opts.row.c_str(), size.width);
     StartTrace(BYTRACE_TAG_OHOS, "thumbnail->GetThumbnailKey");
-    //queryResultSet = thumbnail->GetThumbnailKey(opts, size);
+    queryResultSet = thumbnail->GetThumbnailKey(opts, size);
     FinishTrace(BYTRACE_TAG_OHOS);
 
     return queryResultSet;

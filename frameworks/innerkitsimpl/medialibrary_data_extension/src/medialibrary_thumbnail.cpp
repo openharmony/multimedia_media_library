@@ -42,7 +42,7 @@ const string FILE_URI_PREX = "file://";
 
 const string THUMBNAIL_FORMAT = "image/jpeg";
 static constexpr uint8_t THUMBNAIL_QUALITY = 80;
-static constexpr uint32_t THUMBNAIL_QUERY_MAX = 1000;
+//static constexpr uint32_t THUMBNAIL_QUERY_MAX = 1000;
 static constexpr int64_t AV_FRAME_TIME = 0;
 
 static constexpr uint8_t NUM_0 = 0;
@@ -65,7 +65,7 @@ MediaLibraryThumbnail::MediaLibraryThumbnail()
     InitKvStore();
 }
 
-void ParseStringResult(shared_ptr<NativeRdb::ResultSet> resultSet,
+void ParseStringResult(shared_ptr<DataShareResultSet> resultSet,
                        int index, string &data, int &errorCode)
 {
     bool isNull = true;
@@ -84,7 +84,7 @@ void ParseStringResult(shared_ptr<NativeRdb::ResultSet> resultSet,
     }
 }
 
-void ParseQueryResult(shared_ptr<NativeRdb::ResultSet> resultSet,
+void ParseQueryResult(shared_ptr<DataShareResultSet> resultSet,
                       ThumbnailRdbData &data, int &errorCode)
 {
     ParseStringResult(resultSet, NUM_0, data.id, errorCode);
@@ -93,6 +93,7 @@ void ParseQueryResult(shared_ptr<NativeRdb::ResultSet> resultSet,
     ParseStringResult(resultSet, NUM_3, data.lcdKey, errorCode);
     data.mediaType = MediaType::MEDIA_TYPE_DEFAULT;
     errorCode = resultSet->GetInt(NUM_4, data.mediaType);
+    MEDIA_INFO_LOG("id %{public}s path %{public}s", data.id.c_str(), data.path.c_str());
 }
 
 bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
@@ -227,9 +228,8 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
     return true;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &opts, Size &size)
+shared_ptr<DataShareAbstractResultSet> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &opts, Size &size)
 {
-    shared_ptr<AbsSharedResultSet> queryResultSet;
     MEDIA_INFO_LOG("MediaLibraryThumbnail::GetThumbnailKey IN");
     if (singleKvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("KvStore is not init");
@@ -238,7 +238,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOp
 
     ThumbnailData thumbnailData;
     int errorCode;
-    queryResultSet = QueryThumbnailInfo(opts, thumbnailData, errorCode);
+    auto queryResultSet = QueryThumbnailInfo(opts, thumbnailData, errorCode);
     if (queryResultSet == nullptr) {
         return queryResultSet;
     }
@@ -251,12 +251,14 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOp
     bool isFromLcd = isThumbnailFromLcd(size);
     if (isFromLcd) {
         if (thumbnailData.lcdKey.empty()) {
+            queryResultSet.reset();
             CreateLcd(opts, thumbnailData.lcdKey);
         } else {
             return queryResultSet;
         }
     } else {
         if (thumbnailData.thumbnailKey.empty()) {
+            queryResultSet.reset();
             CreateThumbnail(opts, thumbnailData.thumbnailKey);
         } else {
             return queryResultSet;
@@ -271,8 +273,9 @@ unique_ptr<PixelMap> MediaLibraryThumbnail::GetThumbnailByRdb(ThumbRdbOpt &opts,
                                                               Size &size, const std::string &uri)
 {
     int errorCode;
-    shared_ptr<AbsSharedResultSet> resultSet = GetThumbnailKey(opts, size);
+    shared_ptr<DataShareAbstractResultSet> innerResultSet = GetThumbnailKey(opts, size);
     ThumbnailRdbData rdbData;
+    shared_ptr<DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(innerResultSet);
     ParseQueryResult(resultSet, rdbData, errorCode);
 
     if (errorCode != E_OK) {
@@ -532,7 +535,7 @@ bool MediaLibraryThumbnail::SaveImage(string &key, vector<uint8_t> &image)
     return true;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailSet(ThumbRdbOpt &opts)
+shared_ptr<DataShareAbstractResultSet> MediaLibraryThumbnail::QueryThumbnailSet(ThumbRdbOpt &opts)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailSet IN row [%{private}s]",
                    opts.row.c_str());
@@ -547,16 +550,16 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailSet(ThumbRdb
     vector<string> selectionArgs;
     string strQueryCondition = MEDIA_DATA_DB_ID + "=" + opts.row;
 
-    RdbPredicates rdbPredicates(opts.table);
+    DataSharePredicates rdbPredicates(opts.table);
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
 
-    shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
+    shared_ptr<DataShareAbstractResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailSet OUT");
     return resultSet;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
+shared_ptr<DataShareAbstractResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
                                                                          ThumbnailData &data, int &errorCode)
 {
     StartTrace(BYTRACE_TAG_OHOS, "QueryThumbnailInfo");
@@ -574,13 +577,14 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
     vector<string> selectionArgs;
     string strQueryCondition = MEDIA_DATA_DB_ID + "=" + opts.row;
 
-    RdbPredicates rdbPredicates(opts.table);
+    DataSharePredicates rdbPredicates(opts.table);
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
 
     StartTrace(BYTRACE_TAG_OHOS, "opts.store->Query");
-    shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
+    shared_ptr<DataShareAbstractResultSet> innerResultSet = opts.store->Query(rdbPredicates, column);
     int rowCount = 0;
+    shared_ptr<DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(innerResultSet);
     errorCode = resultSet->GetRowCount(rowCount);
     if (errorCode != E_OK) {
         MEDIA_ERR_LOG("Failed to get row count %{private}d", errorCode);
@@ -589,7 +593,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
     FinishTrace(BYTRACE_TAG_OHOS);
 
     if (rowCount <= 0) {
-        MEDIA_ERR_LOG("No match! %{private}s", rdbPredicates.ToString().c_str());
+        MEDIA_ERR_LOG("No match! %{private}s", rdbPredicates.GetWhereClause().c_str());
         errorCode = E_EMPTY_VALUES_BUCKET;
         return nullptr;
     }
@@ -620,7 +624,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
     MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailInfo OUT");
     FinishTrace(BYTRACE_TAG_OHOS);
 
-    return resultSet;
+    return innerResultSet;
 }
 
 bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
@@ -635,11 +639,12 @@ bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
         MEDIA_DATA_DB_LCD,
         MEDIA_DATA_DB_MEDIA_TYPE
     };
-    RdbPredicates rdbPredicates(opts.table);
+    DataSharePredicates rdbPredicates(opts.table);
     rdbPredicates.IsNull(MEDIA_DATA_DB_THUMBNAIL);
-    rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
+    //rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
 
-    shared_ptr<NativeRdb::ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
+    auto innerResultSet = opts.store->Query(rdbPredicates, column);
+    shared_ptr<DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(innerResultSet);
     int rowCount = 0;
     errorCode = resultSet->GetRowCount(rowCount);
     if (errorCode != E_OK) {
@@ -648,7 +653,7 @@ bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
     }
 
     if (rowCount <= 0) {
-        MEDIA_ERR_LOG("No match! %{private}s", rdbPredicates.ToString().c_str());
+        //MEDIA_ERR_LOG("No match! %{private}s", rdbPredicates.ToString().c_str());
         errorCode = E_EMPTY_VALUES_BUCKET;
         return false;
     }
