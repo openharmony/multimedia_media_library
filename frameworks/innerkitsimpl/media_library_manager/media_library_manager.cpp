@@ -119,8 +119,8 @@ variant<int32_t, string> GetValFromColumn(string columnName,
 
 int64_t GetLongValFromColumn(string columnName, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
-    int index;
-    int64_t longVal;
+    int index = 0;
+    int64_t longVal = 0;
     resultSet->GetColumnIndex(columnName, index);
     resultSet->GetLong(index, longVal);
     return longVal;
@@ -389,7 +389,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
 
 int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 {
-    MEDIA_INFO_LOG("QueryTotalSize start");
+    MEDIA_DEBUG_LOG("QueryTotalSize start");
     if (sAbilityHelper_ == nullptr) {
         MEDIA_ERR_LOG("sAbilityHelper_ is null");
         return DATA_ABILITY_FAIL;
@@ -405,23 +405,21 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("get rdbstore failed");
+        MEDIA_ERR_LOG("get rdbstore failed %{public}d", ret);
         return DATA_ABILITY_HAS_DB_ERROR;
     }
-    MEDIA_INFO_LOG("count = %{public}d", (int)count);
+    MEDIA_DEBUG_LOG("count = %{public}d", (int)count);
     if (count >= 0) {
         while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
             int mediatype = get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, queryResultSet));
-            MEDIA_INFO_LOG("mediatype = %{public}d", mediatype);
             int64_t size = GetLongValFromColumn(MEDIA_DATA_DB_SIZE, queryResultSet);
-            MEDIA_INFO_LOG("size = %{public}lld", size);
+            MEDIA_DEBUG_LOG("mediatype = %{public}d, size = %{public}lld", mediatype, size);
             outMediaVolume.SetSize(mediatype, size);
         }
     }
-    MEDIA_INFO_LOG("GetFilesSize = %{public}lld", outMediaVolume.GetFilesSize());
-    MEDIA_INFO_LOG("GetVideosSize = %{public}lld", outMediaVolume.GetVideosSize());
-    MEDIA_INFO_LOG("GetImagesSize = %{public}lld", outMediaVolume.GetImagesSize());
-    MEDIA_INFO_LOG("GetAudiosSize = %{public}lld", outMediaVolume.GetAudiosSize());
+    MEDIA_INFO_LOG("FilesSize:%{public}lld, VideosSize:%{public}lld, ImagesSize:%{public}lld, AudiosSize:%{public}lld",
+        outMediaVolume.GetFilesSize(), outMediaVolume.GetVideosSize(), outMediaVolume.GetImagesSize(),
+        outMediaVolume.GetAudiosSize());
     return DATA_ABILITY_SUCCESS;
 }
 } // namespace Media

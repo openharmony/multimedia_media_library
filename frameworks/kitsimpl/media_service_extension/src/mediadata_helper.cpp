@@ -247,18 +247,18 @@ std::shared_ptr<MediaDataHelper> MediaDataHelper::Creator(
 MediaDataHelper::MediaDataHelper(const sptr<IRemoteObject> &token, const std::shared_ptr<Uri> &uri,
    const sptr<IMediaData> &mediaDataProxy)
 {
-    HILOG_INFO("MediaDataHelper::MediaDataHelper token start!");
+    HILOG_DEBUG("MediaDataHelper::MediaDataHelper token start!");
     token_ = token;
     uri_ = uri;
     mediaDataProxy_ = mediaDataProxy;
     mediaDataConnection_ = MediaDataConnection::GetInstance();
-    HILOG_INFO("MediaDataHelper::MediaDataHelper token end!");
+    HILOG_DEBUG("MediaDataHelper::MediaDataHelper token end!");
 }
 
 std::shared_ptr<MediaDataHelper> MediaDataHelper::Creator(
     const sptr<IRemoteObject> &token, const AAFwk::Want &want, const std::shared_ptr<Uri> &uri)
 {
-    HILOG_INFO("MediaDataHelper::Creator with token uri called start.");
+    HILOG_DEBUG("MediaDataHelper::Creator with token uri called start.");
     if (token == nullptr) {
         HILOG_ERROR("MediaDataHelper::Creator (token, uri) failed, token == nullptr");
         return nullptr;
@@ -269,7 +269,7 @@ std::shared_ptr<MediaDataHelper> MediaDataHelper::Creator(
         return nullptr;
     }
 
-    HILOG_INFO("MediaDataHelper::Creator before AcquireDataAbility.");
+    HILOG_DEBUG("MediaDataHelper::Creator before AcquireDataAbility.");
     sptr<MediaDataConnection> mediaDataConnection = MediaDataConnection::GetInstance();
     if (!mediaDataConnection->IsExtAbilityConnected()) {
         mediaDataConnection->ConnectMediaDataExtAbility(want, token);
@@ -280,7 +280,7 @@ std::shared_ptr<MediaDataHelper> MediaDataHelper::Creator(
     if (mediaDataProxy == nullptr) {
         HILOG_WARN("MediaDataHelper::Creator get invalid mediaDataProxy");
     }
-    HILOG_INFO("MediaDataHelper::Creator after AcquireDataAbility.");
+    HILOG_DEBUG("MediaDataHelper::Creator after AcquireDataAbility.");
 
     MediaDataHelper *ptrMediaDataHelper = new (std::nothrow) MediaDataHelper(token, uri, mediaDataProxy);
     if (ptrMediaDataHelper == nullptr) {
@@ -288,7 +288,7 @@ std::shared_ptr<MediaDataHelper> MediaDataHelper::Creator(
         return nullptr;
     }
 
-    HILOG_INFO("MediaDataHelper::Creator with token uri called end.");
+    HILOG_DEBUG("MediaDataHelper::Creator with token uri called end.");
     return std::shared_ptr<MediaDataHelper>(ptrMediaDataHelper);
 }
 

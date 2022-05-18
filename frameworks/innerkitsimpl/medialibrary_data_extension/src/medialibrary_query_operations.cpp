@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,7 +27,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryQueryOperations::QueryMediaVolumeInfo
 {
     shared_ptr<AbsSharedResultSet> querySet = const_cast<MediaLibraryQueryDb &>(queryDb).QuerySql(QUERY_MEDIA_VOLUME,
         rdbStore);
-    MEDIA_ERR_LOG("QUERY_MEDIA_VOLUME = %{public}s", QUERY_MEDIA_VOLUME.c_str());
+    MEDIA_DEBUG_LOG("QUERY_MEDIA_VOLUME = %{public}s", QUERY_MEDIA_VOLUME.c_str());
     return querySet;
 }
 
@@ -44,7 +44,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryQueryOperations::HandleMediaVolume(
 shared_ptr<AbsSharedResultSet> MediaLibraryQueryOperations::HandleQueryOperations(
     const string &oprn, const QueryData &queryData, const shared_ptr<RdbStore> &rdbStore)
 {
-    MEDIA_ERR_LOG("HandleSmartAlbumOperations");
+    MEDIA_DEBUG_LOG("HandleSmartAlbumOperations");
     MediaLibraryQueryDb queryDb;
     shared_ptr<AbsSharedResultSet> querySet;
     ValueObject valueObject;
