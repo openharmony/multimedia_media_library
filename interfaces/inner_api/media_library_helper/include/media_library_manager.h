@@ -38,6 +38,7 @@
 #include "file_asset.h"
 #include "fetch_result.h"
 #include "media_data_ability_const.h"
+#include "media_volume.h"
 #include "uri.h"
 #include "values_bucket.h"
 
@@ -96,6 +97,15 @@ public:
      * @version 1.0
      */
     void InitMediaLibraryManager(const shared_ptr<AppExecFwk::Context> context);
+
+    /**
+     * @brief Initializes the environment for Media Library Manager
+     *
+     * @param context The Ability context required for calling Data Ability Helper APIs
+     * @since 1.0
+     * @version 1.0
+     */
+    void InitMediaLibraryManager(const sptr<IRemoteObject> &token);
 
     /**
      * @brief Obtain a FetchResult object from which File Assets can be obtained
@@ -212,9 +222,18 @@ public:
      * @version 1.0
      */
     unique_ptr<FetchResult> GetAlbumFileAssets(const int32_t albumId, const MediaFetchOptions &fetchOptions);
+    /**
+     * @brief Obtain a mediaVolume object from MediaAssets can be obtained
+     *
+     * @param MediaVolume MediaVolume for outValue
+     * @return errorcode
+     * @since 1.0
+     * @version 1.0
+     */
+    int32_t QueryTotalSize(MediaVolume &outMediaVolume);
 
 private:
-    static shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
+    static std::shared_ptr<AppExecFwk::MediaDataHelper> sAbilityHelper_;
 };
 } // namespace Media
 } // namespace OHOS
