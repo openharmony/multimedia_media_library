@@ -934,7 +934,7 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
 
-    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(id));
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + to_string(id));
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     shared_ptr<DataShare::DataShareResultSet> resultSet;
