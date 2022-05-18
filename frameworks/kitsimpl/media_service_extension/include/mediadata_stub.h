@@ -45,6 +45,7 @@ private:
     ErrCode CmdNormalizeUri(MessageParcel &data, MessageParcel &reply);
     ErrCode CmdDenormalizeUri(MessageParcel &data, MessageParcel &reply);
     ErrCode CmdExecuteBatch(MessageParcel &data, MessageParcel &reply);
+    ErrCode CmdExecuteScan(MessageParcel &data, MessageParcel &reply);
 
     using RequestFuncType = int (MediaDataStub::*)(MessageParcel &data, MessageParcel &reply);
     std::map<uint32_t, RequestFuncType> stubFuncMap_;

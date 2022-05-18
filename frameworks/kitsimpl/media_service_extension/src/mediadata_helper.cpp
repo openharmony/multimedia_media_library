@@ -1113,5 +1113,37 @@ std::vector<std::shared_ptr<DataAbilityResult>> MediaDataHelper::ExecuteBatch(
     HILOG_INFO("MediaDataHelper::ExecuteBatch end");
     return results;
 }
+
+void MediaDataHelper::Scan(std::string path, uint8_t isDir)
+{
+    HILOG_INFO("MediaDataHelper::Scan start");
+    if (uri_ == nullptr) {
+        if (!mediaDataConnection_->IsExtAbilityConnected()) {
+            mediaDataConnection_->ConnectMediaDataExtAbility(want_, token_);
+        }
+        mediaDataProxy_ = mediaDataConnection_->GetMediaDataProxy();
+        if (mediaDataProxy_ == nullptr) {
+            HILOG_ERROR("MediaDataHelper::Scan failed mediaDataProxy_ == nullptr");
+            return;
+        }
+    } else {
+        mediaDataProxy_ = mediaDataConnection_->GetMediaDataProxy();
+    }
+
+    if (mediaDataProxy_ == nullptr) {
+        HILOG_ERROR("%{public}s failed with invalid mediaDataProxy_", __func__);
+        return;
+    }
+
+    mediaDataProxy_->Scan(path, isDir);
+    if (uri_ == nullptr) {
+        if (mediaDataConnection_->IsExtAbilityConnected()) {
+            mediaDataConnection_->DisconnectMediaDataExtAbility();
+        }
+        mediaDataProxy_ = nullptr;
+    }
+    HILOG_INFO("MediaDataHelper::Scan end");
+    return;
+}
 }  // namespace AppExecFwk
 }  // namespace OHOS

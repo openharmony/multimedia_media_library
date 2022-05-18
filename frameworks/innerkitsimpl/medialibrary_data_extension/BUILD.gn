@@ -15,8 +15,14 @@ import("//build/ohos.gni")
 
 MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
 MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
+MEDIA_SCANNER_SOURCE_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_scanner"
 
 config("media_data_extension_public_config") {
+  include_scanner = [
+    "${MEDIA_SCANNER_SOURCE_DIR}/include/callback",
+    "${MEDIA_SCANNER_SOURCE_DIR}/include/scanner",
+  ]
+
   include_dirs = [
     "$MEDIA_LIB_INNERKITS_DIR/medialibrary_data_extension/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
@@ -47,6 +53,7 @@ config("media_data_extension_public_config") {
     "//third_party/json/include",
   ]
   include_dirs += [ "//third_party/openssl/include/" ]
+  include_dirs += include_scanner
 
   if (target_cpu == "arm") {
     cflags = [ "-DBINDER_IPC_32BIT" ]
@@ -88,9 +95,19 @@ ohos_resources("MediaLibStage_resources") {
   hap_profile = "MediaLibraryExt/entry/src/main/module.json"
 }
 
-
 ohos_shared_library("medialibrary_data_extension") {
   install_enable = true
+
+  media_scan_source = [
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/callback/media_scanner_operation_callback_proxy.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/callback/media_scanner_operation_callback_stub.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scan_executor.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scanner.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scanner_db.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/metadata.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/metadata_extractor.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/scanner_utils.cpp",
+  ]
 
   sources = [
     "src/medialibrary_album_db.cpp",
@@ -111,6 +128,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_thumbnail.cpp",
     "src/uri_helper.cpp",
   ]
+  sources += media_scan_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 
