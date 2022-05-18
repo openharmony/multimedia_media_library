@@ -714,10 +714,12 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::Query(const Uri &uri,
     string type = uriString.substr(pos + 1);
     MEDIA_DEBUG_LOG("uriString = %{private}s, type = %{private}s, thumbnailQuery %{private}d, Rdb Verison %{private}d",
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
+    MEDIA_DEBUG_LOG("MediaData uriString = %{public}s, type = %{public}s, thumbnailQuery %{public}d, Rdb Verison %{public}d",
+        uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     if (uriString.find(MEDIA_QUERYOPRN_QUERYVOLUME) != string::npos) {
         QueryData queryData;
-        MediaLibraryQueryOperations queryOprn;
-        queryResultSet = queryOprn.HandleQueryOperations(MEDIA_QUERYOPRN_QUERYVOLUME, queryData, rdbStore_);
+        queryResultSet = MediaLibraryQueryOperations::HandleQueryOperations(MEDIA_QUERYOPRN_QUERYVOLUME, queryData,
+            rdbStore_);
         return queryResultSet;
     }
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
