@@ -714,8 +714,8 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::Query(const Uri &uri,
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     if (uriString.find(MEDIA_QUERYOPRN_QUERYVOLUME) != string::npos) {
         QueryData queryData;
-        MediaLibraryQueryOperations queryOprn;
-        queryResultSet = queryOprn.HandleQueryOperations(MEDIA_QUERYOPRN_QUERYVOLUME, queryData, rdbStore_);
+        queryResultSet = MediaLibraryQueryOperations::HandleQueryOperations(MEDIA_QUERYOPRN_QUERYVOLUME, queryData,
+            rdbStore_);
         return queryResultSet;
     }
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
