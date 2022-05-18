@@ -80,6 +80,8 @@ public:
     static std::shared_ptr<MediaDataHelper> Creator(const std::shared_ptr<OHOS::AppExecFwk::Context> &context,
         const AAFwk::Want &want, const std::shared_ptr<Uri> &uri);
 
+    static std::shared_ptr<MediaDataHelper> Creator(const sptr<IRemoteObject> &token, const AAFwk::Want &want,
+        const std::shared_ptr<Uri> &uri);
     /**
      * @brief Releases the client resource of the Data share.
      * You should call this method to releases client resource after the data operations are complete.
@@ -253,6 +255,8 @@ private:
         const std::shared_ptr<Uri> &uri, const sptr<IMediaData> &mediaDataProxy);
     MediaDataHelper(const std::shared_ptr<Context> &context, const AAFwk::Want &want,
         const std::shared_ptr<Uri> &uri, const sptr<IMediaData> &mediaDataProxy);
+    MediaDataHelper(const sptr<IRemoteObject> &token, const std::shared_ptr<Uri> &uri,
+        const sptr<IMediaData> &mediaDataProxy);
     void AddMediaDataDeathRecipient(const sptr<IRemoteObject> &token);
     void OnSchedulerDied(const wptr<IRemoteObject> &remote);
     bool CheckUriParam(const Uri &uri);

@@ -233,7 +233,7 @@ public:
     int32_t QueryTotalSize(MediaVolume &outMediaVolume);
 
 private:
-    static std::shared_ptr<AppExecFwk::DataAbilityHelper> sAbilityHelper_;
+    static std::shared_ptr<AppExecFwk::MediaDataHelper> sAbilityHelper_;
 };
 } // namespace Media
 } // namespace OHOS
