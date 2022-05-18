@@ -13,12 +13,13 @@
 
 import("//build/ohos.gni")
 import("//foundation/multimedia/medialibrary_standard/media_library.gni")
+import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
 
 config("media_scanner_ability_public_config") {
   include_dirs = [
-    "${aainnerkits_path}/ability_manager/include",
-    "${aainnerkits_path}/app_manager/include/appmgr",
-    "${aakits_path}/ability/native/include",
+    "${aafwk_inner_api_path}/ability_manager/include",
+    "${aafwk_inner_api_path}/app_manager/include/appmgr",
+    "${aafwk_kits_path}/ability/native/include",
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
     "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
@@ -70,7 +71,7 @@ ohos_shared_library("media_scanner_service") {
   public_configs = [ ":media_scanner_ability_public_config" ]
 
   deps = [
-    "${aakits_path}/ability/native:abilitykit_native",
+    "${aafwk_kits_path}/ability/native:abilitykit_native",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native:media_client",
