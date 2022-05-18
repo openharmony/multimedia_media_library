@@ -33,6 +33,7 @@
 #include "medialibrary_device_info.h"
 #include "medialibrary_file_operations.h"
 #include "medialibrary_kvstore_operations.h"
+#include "medialibrary_query_operations.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 #include "rdb_open_callback.h"
