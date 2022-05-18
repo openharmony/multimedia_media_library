@@ -1039,6 +1039,7 @@ static void JSOpenExecute(FileAssetAsyncContext *context)
         }
 
         Uri openFileUri(fileUri);
+        NAPI_ERR_LOG("gdh OpenFile");
         int32_t retVal = context->objectInfo->sDataShareHelper_->OpenFile(openFileUri, mode);
         if (retVal <= 0) {
             context->error = retVal;
