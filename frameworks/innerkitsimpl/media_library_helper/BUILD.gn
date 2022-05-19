@@ -66,11 +66,11 @@ ohos_shared_library("media_library") {
   ]
 
   external_deps = [
+    "dataability:native_dataability",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
-    "native_appdatamgr:native_appdatafwk",
-    "native_appdatamgr:native_dataability",
-    "native_appdatamgr:native_rdb",
+    "relational_store:native_appdatafwk",
+    "relational_store:native_rdb",
   ]
 
   part_name = "multimedia_media_library_standard"
@@ -115,11 +115,11 @@ ohos_static_library("media_thumbnail_helper") {
 
   # cflags = [ "-DOLD_KV_API" ]
   external_deps = [
+    "dataability:native_dataability",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
-    "native_appdatamgr:native_appdatafwk",
-    "native_appdatamgr:native_dataability",
-    "native_appdatamgr:native_rdb",
+    "relational_store:native_appdatafwk",
+    "relational_store:native_rdb",
   ]
   subsystem_name = "multimedia"
   part_name = "multimedia_media_library_standard"
