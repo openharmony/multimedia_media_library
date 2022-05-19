@@ -1,0 +1,51 @@
+{
+    "app": {
+        "bundleName": "com.ohos.medialibrary.MediaScannerAbilityA",
+        "removable": false,
+        "userDataClearable": false,
+        "singleton": false,
+        "keepAlive": true,
+        "vendor": "ohos",
+        "version": {
+            "code": 1,
+            "name": "1.0"
+        },
+        "apiVersion": {
+            "compatible": 3,
+            "target": 3
+        }
+    },
+    "deviceConfig": {
+        "default": {
+            "removable": false,
+            "userDataClearable": false,
+            "singleton": false,
+            "keepAlive": true
+        }
+    },
+    "module": {
+        "package": "com.ohos.MediaScannerAbility.src",
+        "name": "MediaScannerAbility",
+        "deviceType": [
+            "tv",
+            "phone",
+            "car"
+        ],
+        "distro": {
+            "deliveryWithInstall": true,
+            "moduleName": "scanner",
+            "moduleType": "entry"
+        },
+        "abilities": [
+            {
+                "name": "MediaScannerAbility",
+                "icon": "",
+                "label": "Scanner Ability",
+                "launchType": "standard",
+                "type": "service",
+                "visible": true,
+                "srcLanguage": "c++"
+            }
+        ]
+    }
+}

@@ -144,7 +144,7 @@ shared_ptr<AppExecFwk::MediaDataHelper> MediaLibraryNapi::GetMediaDataHelper(nap
             AppExecFwk::Want want;
             want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
             mediaDataHelper = MediaDataHelper::Creator(context, want, std::make_shared<Uri>("mediadata://media"));
-	    }
+    }
     }
     return mediaDataHelper;
 }

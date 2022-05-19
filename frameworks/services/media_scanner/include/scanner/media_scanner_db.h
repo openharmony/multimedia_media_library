@@ -30,7 +30,6 @@
 #include "uri.h"
 #include "values_bucket.h"
 #include "want.h"
-//#include "napi_remote_object.h"
 
 namespace OHOS {
 namespace Media {
@@ -66,7 +65,6 @@ public:
 private:
     std::string GetMediaTypeUri(MediaType mediaType);
     std::unique_ptr<Metadata> FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
-    //std::shared_ptr<MediaLibraryDataManager> rdbhelper_;
 };
 } // namespace Media
 } // namespace OHOS
