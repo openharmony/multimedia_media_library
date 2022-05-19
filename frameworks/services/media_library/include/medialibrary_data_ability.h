@@ -132,7 +132,7 @@ namespace Media {
         std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
         std::shared_ptr<MediaLibraryThumbnail> mediaThumbnail_;
         std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
-        bool isRdbStoreInitialized; // todo: 改为atomic
+        bool isRdbStoreInitialized;
         std::string bundleName_;
         OHOS::sptr<AppExecFwk::IBundleMgr> bundleMgr_;
 };
@@ -166,7 +166,7 @@ private:
     std::unique_ptr<OHOS::Utils::Timer> timer_ {nullptr};
     uint32_t timerId_ {0};
     std::string bundleName_;
-    bool isNotifyDeviceChange_; // todo:改为原子操作
+    bool isNotifyDeviceChange_;
 };
 } // namespace Media
 } // namespace OHOS

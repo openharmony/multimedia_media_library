@@ -37,7 +37,7 @@ class MediaLibraryDevice : public DistributedHardware::DeviceStateCallback,
                             public DistributedHardware::DmInitCallback,
                             public std::enable_shared_from_this<MediaLibraryDevice> {
 public:
-    MediaLibraryDevice(); // todo:改为私有构造，但是会报错
+    MediaLibraryDevice();
     ~MediaLibraryDevice();
     static std::shared_ptr<MediaLibraryDevice> GetInstance();
     void Start();
@@ -67,7 +67,7 @@ private:
     void RegisterToDM();
     void UnRegisterFromDM();
 private:
-    static constexpr int SHORT_UDID_LEN = 8; // todo 放到cpp中
+    static constexpr int SHORT_UDID_LEN = 8;
     static constexpr int RANDOM_NUM = 999;
 
     static std::shared_ptr<MediaLibraryDevice> mlDMInstance_;
@@ -79,7 +79,7 @@ private:
     std::map<std::string, std::set<int>> excludeMap_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     std::unique_ptr<DeviceProfileAgent> dpa_;
-    std::string bundleName_; // "com.ohos.medialibrary.MediaLibraryDataA";
+    std::string bundleName_ { "com.ohos.medialibrary.MediaLibraryDataA" };
 };
 } // namespace Media
 } // namespace OHOS

@@ -36,7 +36,7 @@ MediaLibraryDevice::~MediaLibraryDevice()
 
 void MediaLibraryDevice::Start()
 {
-    MEDIA_DEBUG_LOG("xhl MediaLibraryDevice::start");
+    MEDIA_DEBUG_LOG("MediaLibraryDevice::start");
     if (mediaLibraryDeviceOperations_ == nullptr) {
         mediaLibraryDeviceOperations_ = std::make_unique<MediaLibraryDeviceOperations>();
     }
@@ -47,7 +47,6 @@ void MediaLibraryDevice::Start()
     }
     dpa_ = make_unique<DeviceProfileAgent>();
     RegisterToDM();
-    MEDIA_ERR_LOG("xhl start end");
 }
 
 void MediaLibraryDevice::Stop()
@@ -84,7 +83,6 @@ void MediaLibraryDevice::GetAllDeviceId(
     std::string extra = "";
     auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
     deviceManager.GetTrustedDeviceList(bundleName_, extra, deviceList);
-    MEDIA_INFO_LOG("MediaLibraryDevice::already online device num: %{public}d", deviceList.size());
 }
 
 void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
@@ -215,7 +213,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     // 获取同一网络中的所有设备Id
     std::vector<OHOS::DistributedHardware::DmDeviceInfo> deviceList;
     GetAllDeviceId(deviceList);
-    MEDIA_ERR_LOG("xhl MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
+    MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
     for (auto& deviceInfo : deviceList) {
         OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
         GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo);
@@ -321,24 +319,22 @@ void MediaLibraryDevice::OnRemoteDied()
     MEDIA_INFO_LOG("dm instance died");
     UnRegisterFromDM();
     RegisterToDM();
-
 }
 
 void MediaLibraryDevice::RegisterToDM()
 {
-    // todo: 注册过程修改为起线程，防止注册失败
     auto &deviceManager = DistributedHardware::DeviceManager::GetInstance();
     int errCode = deviceManager.InitDeviceManager(bundleName_, shared_from_this());
     if (errCode != 0) {
-        MEDIA_ERR_LOG("xhl RegisterToDm InitDeviceManager failed %{public}d", errCode);
+        MEDIA_ERR_LOG("RegisterToDm InitDeviceManager failed %{public}d", errCode);
     }
 
     std::string extra = "";
     errCode = deviceManager.RegisterDevStateCallback(bundleName_, extra, shared_from_this());
     if (errCode != 0) {
-        MEDIA_ERR_LOG("xhl RegisterDevStateCallback failed errCode %{public}d", errCode);
+        MEDIA_ERR_LOG("RegisterDevStateCallback failed errCode %{public}d", errCode);
     }
-    MEDIA_ERR_LOG("xhl RegisterToDM success!");
+    MEDIA_INFO_LOG("RegisterToDM success!");
 }
 
 void MediaLibraryDevice::UnRegisterFromDM()
@@ -346,13 +342,13 @@ void MediaLibraryDevice::UnRegisterFromDM()
     auto &deviceManager = DistributedHardware::DeviceManager::GetInstance();
     int errCode = deviceManager.UnRegisterDevStateCallback(bundleName_);
     if (errCode != 0) {
-        MEDIA_ERR_LOG("xhl UnRegisterDevStateCallback failed errCode %{public}d", errCode);
+        MEDIA_ERR_LOG("UnRegisterDevStateCallback failed errCode %{public}d", errCode);
     }
     errCode = deviceManager.UnInitDeviceManager(bundleName_);
     if (errCode != 0) {
-        MEDIA_ERR_LOG("xhl UnInitDeviceManager failed errCode %{public}d", errCode);
+        MEDIA_ERR_LOG("UnInitDeviceManager failed errCode %{public}d", errCode);
     }
-    MEDIA_ERR_LOG("xhl UnRegisterFromDM success");
+    MEDIA_INFO_LOG("UnRegisterFromDM success");
 }
 } // namespace Media
 } // namespace OHOS
