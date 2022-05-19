@@ -134,6 +134,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_sync_table.cpp",
     "src/medialibrary_thumbnail.cpp",
     "src/media_datashare_ext_ability.cpp",
+    "src/media_datashare_stub_impl.cpp",
     "src/uri_helper.cpp",
     "src/medialibrary_query_db.cpp",
     "src/medialibrary_query_operations.cpp",
