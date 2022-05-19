@@ -47,10 +47,10 @@ ohos_shared_library("media_library_manager") {
     "ability_base:zuri",
     "ability_runtime:ability_manager",
     "bundle_framework:appexecfwk_base",
+    "dataability:native_dataability",
     "hiviewdfx_hilog_native:libhilog",
-    "native_appdatamgr:native_appdatafwk",
-    "native_appdatamgr:native_dataability",
-    "native_appdatamgr:native_rdb",
+    "relational_store:native_appdatafwk",
+    "relational_store:native_rdb",
   ]
 
   part_name = "multimedia_media_library_standard"
