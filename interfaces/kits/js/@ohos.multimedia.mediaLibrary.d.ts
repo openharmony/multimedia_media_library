@@ -45,15 +45,6 @@ declare namespace mediaLibrary {
   function getMediaLibrary(context: Context): MediaLibrary;
 
   /**
-   * Returns an instance of MediaScanner
-   * @since 8
-   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
-   * @StageModelOnly
-   * @return Instance of MediaScanner
-   */
-  function getScannerInstance(context: Context): ScannerInstance;
-
-  /**
    * Enumeration types for different kind of Media Files
    * @since 8
    * @syscap SystemCapability.Multimedia.MediaLibrary.Core
@@ -1052,30 +1043,6 @@ declare namespace mediaLibrary {
      * @syscap SystemCapability.Multimedia.MediaLibrary.Core
      */
     release(): Promise<void>;
-  }
-  /**
-   * Media scan option
-   * @syscap SystemCapability.Multimedia.MediaLibrary.Core
-   * @since 8
-   */
-  interface ScannerInstance {
-    /**
-     * Scan directory
-     * @since 8
-     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
-     * @param path want to scan path
-     * @param callback return the scan result
-     */
-    scanDir(path: string, callback: AsyncCallback<number, string>): void;
-
-    /**
-     * Scan a file
-     * @since 8
-     * @syscap SystemCapability.Multimedia.MediaLibrary.Core
-     * @param path scan file
-     * @param callback return the scan result
-     */
-    scanFile(path: string, callback: AsyncCallback<number, string>): void;
   }
 
   /**
