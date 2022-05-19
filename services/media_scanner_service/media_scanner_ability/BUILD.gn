@@ -81,6 +81,7 @@ ohos_shared_library("media_scanner_service") {
     "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:napi_base_context",
+    "dataability:native_dataability",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
