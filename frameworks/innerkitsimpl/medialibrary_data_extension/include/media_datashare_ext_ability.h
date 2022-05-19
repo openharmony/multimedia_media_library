@@ -18,8 +18,7 @@
 
 #include "abs_shared_result_set.h"
 #include "data_ability_predicates.h"
-#include "js_datashare_ext_ability.h"
-#include "js_runtime.h"
+#include "datashare_ext_ability.h"
 #include "native_engine/native_reference.h"
 #include "native_engine/native_value.h"
 #include "values_bucket.h"
@@ -31,9 +30,9 @@ using namespace DataShare;
 /**
  * @brief Basic datashare extension ability components.
  */
-class MediaDataShareExtAbility : public JsDataShareExtAbility {
+class MediaDataShareExtAbility : public DataShareExtAbility {
 public:
-    MediaDataShareExtAbility(JsRuntime& jsRuntime);
+    MediaDataShareExtAbility(Runtime& runtime);
     virtual ~MediaDataShareExtAbility() override;
 
     /**
@@ -241,7 +240,7 @@ public:
 private:
     bool CheckCallingPermission(const std::string &permission);
 
-    JsRuntime& jsRuntime_;
+    Runtime& runtime_;
 };
 } // namespace AbilityRuntime
 } // namespace OHOS
