@@ -825,15 +825,10 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     StartTrace(HITRACE_TAG_OHOS, "GetResultDataExecute");
     NAPI_ERR_LOG("GetResultDataExecute IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    DataShare::DataSharePredicates predicates;
     DataShare::DataSharePredicates sharePredicates;
+
     if (context->objectInfo->sDataShareHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
-    }
-    predicates.SetWhereClause(context->selection);
-    predicates.SetWhereArgs(context->selectionArgs);
-    if (!context->order.empty()) {
-        predicates.SetOrder(context->order);
     }
     sharePredicates.SetWhereClause(context->selection);
     sharePredicates.SetWhereArgs(context->selectionArgs);
@@ -854,38 +849,18 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr");
+        FinishTrace(HITRACE_TAG_OHOS);
         return;
     }
 
-    resultSet->GoToFirstRow();
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
         if (albumData != nullptr) {
-             NAPI_ERR_LOG("resultSet 1 id is %{public}d", get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet, TYPE_INT32)));
              SetAlbumData(albumData.get(), resultSet , context->networkId);
              SetAlbumCoverUri(context, albumData);
              context->albumNativeArray.push_back(move(albumData));
 	}
     }
-/*
-    shared_ptr<DataShare::DataShareResultSet> mediaResultSet = context->objectInfo->sDataShareHelper_->Query(
-        uri, columns, predicates);
-
-    if (mediaResultSet == nullptr) {
-        NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr");
-        return;
-    }
-
-    while (mediaResultSet->GoToNextRow() == NativeRdb::E_OK) {
-        unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
-        if (albumData != nullptr) {
-            NAPI_ERR_LOG("resultSet 2 id is %{public}d", get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet, TYPE_INT32)));
-            SetAlbumData(albumData.get(), mediaResultSet , context->networkId);
-            SetAlbumCoverUri(context, albumData);
-            context->albumNativeArray.push_back(move(albumData));
-        }
-    }
-    */
     FinishTrace(HITRACE_TAG_OHOS);
 }
 

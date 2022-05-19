@@ -19,12 +19,11 @@
 #include "accesstoken_kit.h"
 #include "bytrace.h"
 #include "dataobs_mgr_client.h"
-#include "datashare_stub_impl.h"
+#include "media_datashare_stub_impl.h"
 #include "hilog_wrapper.h"
 #include "ipc_skeleton.h"
-#include "js_datashare_ext_ability_context.h"
-#include "js_runtime.h"
-#include "js_runtime_utils.h"
+#include "datashare_ext_ability_context.h"
+#include "runtime.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "medialibrary_data_manager.h"
@@ -45,10 +44,10 @@ constexpr int INVALID_VALUE = -1;
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const std::unique_ptr<Runtime>& runtime)
 {
-    return new MediaDataShareExtAbility(static_cast<JsRuntime&>(*runtime));
+    return new MediaDataShareExtAbility(static_cast<Runtime&>(*runtime));
 }
 
-MediaDataShareExtAbility::MediaDataShareExtAbility(JsRuntime& jsRuntime) : JsDataShareExtAbility(jsRuntime), jsRuntime_(jsRuntime) {}
+MediaDataShareExtAbility::MediaDataShareExtAbility(Runtime& runtime) : DataShareExtAbility(), runtime_(runtime) {}
 
 MediaDataShareExtAbility::~MediaDataShareExtAbility()
 {
@@ -64,6 +63,8 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
         HILOG_ERROR("Failed to get context");
         return;
     }
+    HILOG_INFO("%{public}s runtime language  %{public}d", __func__, runtime_.GetLanguage());
+
     MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context);
 }
 
@@ -77,11 +78,11 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 sptr<IRemoteObject> MediaDataShareExtAbility::OnConnect(const AAFwk::Want &want)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
-    HILOG_INFO("%{public}s begin. klh", __func__);
+    HILOG_INFO("%{public}s begin. ", __func__);
     Extension::OnConnect(want);
-    sptr<DataShareStubImpl> remoteObject = new (std::nothrow) DataShareStubImpl(
+    sptr<MediaDataShareStubImpl> remoteObject = new (std::nothrow) MediaDataShareStubImpl(
         std::static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()),
-        reinterpret_cast<napi_env>(&jsRuntime_.GetNativeEngine()));
+        nullptr);
     if (remoteObject == nullptr) {
         HILOG_ERROR("%{public}s No memory allocated for DataShareStubImpl", __func__);
         return nullptr;
