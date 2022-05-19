@@ -114,7 +114,6 @@ namespace Media {
         static const std::string PERMISSION_NAME_WRITE_MEDIA;
         std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
         DistributedKv::DistributedKvDataManager dataManager_;
-        // std::shared_ptr<IMediaScannerClient> scannerClient_;
         std::shared_ptr<MediaLibraryThumbnail> mediaThumbnail_;
         std::shared_ptr<MediaLibraryDeviceStateCallback> deviceStateCallback_;
         std::shared_ptr<MediaLibraryInitCallback> deviceInitCallback_;

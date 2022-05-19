@@ -95,13 +95,6 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     MEDIA_INFO_LOG("MediaLibraryDataManager::OnStop");
     rdbStore_ = nullptr;
     isRdbStoreInitialized = false;
-/*
-    if (scannerClient_ != nullptr) {
-        scannerClient_->Release();
-        scannerClient_ = nullptr;
-    }
-*/
-
     if (kvStorePtr_ != nullptr) {
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
         kvStorePtr_ = nullptr;

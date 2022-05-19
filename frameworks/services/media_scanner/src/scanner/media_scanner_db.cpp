@@ -32,7 +32,6 @@ unique_ptr<MediaScannerDb> MediaScannerDb::GetDatabaseInstance()
 
 void MediaScannerDb::SetRdbHelper(void)
 {
-    //rdbhelper_ = rdbhelper;
 }
 
 string MediaScannerDb::InsertMetadata(const Metadata &metadata)
