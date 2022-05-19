@@ -54,11 +54,11 @@ REGISTER_AA(MediaLibraryDataAbility);
 
 void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
 {
-    MEDIA_INFO_LOG("xhl MediaLibraryDataAbility::OnStart");
+    MEDIA_INFO_LOG("MediaLibraryDataAbility::OnStart");
     Ability::OnStart(want);
     InitMediaLibraryRdbStore();
 
-    auto abilityContext = std::make_unique<MediaLibraryDataAbility>(*this); // todo 改为shared_from_this
+    auto abilityContext = std::make_unique<MediaLibraryDataAbility>(*this);
     if (abilityContext != nullptr) {
         MediaLibraryDevice::GetInstance()->SetAbilityContext(move(abilityContext));
     }
@@ -894,13 +894,13 @@ void MediaLibraryDataAbility::InitDeviceData()
     MEDIA_DEBUG_LOG("Distribute StartTrace:InitDeviceRdbStoreTrace");
     StartTrace(HITRACE_TAG_OHOS, "InitDeviceRdbStoreTrace", -1);
     if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_, bundleName_)) {
-        MEDIA_ERR_LOG("xhl MediaLibraryDataAbility InitDeviceData failed!");
+        MEDIA_ERR_LOG("MediaLibraryDataAbility InitDeviceData failed!");
         return;
     }
     FinishTrace(HITRACE_TAG_OHOS);
     MEDIA_DEBUG_LOG("Distribute FinishTrace:InitDeviceRdbStoreTrace");
 
-    MEDIA_INFO_LOG("xhl MediaLibraryDataAbility InitDeviceData OUT");
+    MEDIA_INFO_LOG("MediaLibraryDataAbility InitDeviceData OUT");
 }
 
 bool MediaLibraryDataAbility::SubscribeRdbStoreObserver()
