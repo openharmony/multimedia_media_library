@@ -541,7 +541,7 @@ Status MediaLibraryThumbnail::SaveImage(string &key, vector<uint8_t> &image)
     status = singleKvStorePtr_->Put(key, val);
     FinishTrace(HITRACE_TAG_OHOS);
 
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveImage OUT");
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveImage OUT status: %{public}d", (int)status);
     return status;
 }
 
@@ -792,7 +792,7 @@ bool MediaLibraryThumbnail::CreateLcdData(ThumbnailData &data)
 
     bool ret = CompressImage(data.source, size, data.lcd);
 
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcdData OUT");
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcdData OUT ret: %{public}d", (int)ret);
     return ret;
 }
 
