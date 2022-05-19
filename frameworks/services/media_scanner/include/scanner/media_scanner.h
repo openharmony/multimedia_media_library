@@ -43,10 +43,6 @@
 #include "scanner_utils.h"
 #include "imedia_scanner_operation_callback.h"
 #include "iremote_object.h"
-//#include "mediadata_helper.h"
-//#include "napi_remote_object.h"
-//#include "mediadata_stub_impl.h"
-//#include "mediadata_proxy.h"
 
 #define FREE_MEMORY_AND_SET_NULL(fName)      \
     do {                                     \
@@ -114,8 +110,6 @@ private:
     std::unordered_set<int32_t> scannedIds_;
     std::vector<Metadata> batchUpdate_;
     std::unique_ptr<MediaScannerDb> mediaScannerDb_;
-    //std::shared_ptr<AppExecFwk::MediaDataHelper> rdbhelper_;
-    //std::shared_ptr<OHOS::AppExecFwk::Context> abilityContext_;
     std::unordered_map<int32_t, sptr<IMediaScannerOperationCallback>> scanResultCbMap_;
 };
 } // namespace Media
