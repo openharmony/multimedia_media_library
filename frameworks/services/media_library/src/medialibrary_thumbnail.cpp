@@ -226,7 +226,7 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, ThumbnailData &thumbnai
     thumbnailData.thumbnail.clear();
 
     StartTrace(HITRACE_TAG_OHOS, "CreateLcd UpdateThumbnailInfo");
-    int errorCode;
+    int errorCode = -1;
     if (!UpdateThumbnailInfo(opts, thumbnailData, errorCode)) {
         MEDIA_INFO_LOG("UpdateThumbnailInfo faild errorCode : %{public}d", errorCode);
         return false;
