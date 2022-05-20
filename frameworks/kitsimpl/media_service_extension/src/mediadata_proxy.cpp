@@ -580,5 +580,36 @@ std::vector<std::shared_ptr<AppExecFwk::DataAbilityResult>> MediaDataProxy::Exec
     HILOG_INFO("%{public}s end successfully.", __func__);
     return results;
 }
+
+void MediaDataProxy::Scan(std::string path, uint8_t isDir)
+{
+    HILOG_INFO("%{public}s begin.", __func__);
+    MessageParcel data;
+
+    if (!data.WriteInterfaceToken(MediaDataProxy::GetDescriptor())) {
+        HILOG_ERROR("%{public}s WriteInterfaceToken failed", __func__);
+        return;
+    }
+
+    if (!data.WriteString(path)) {
+        HILOG_ERROR("fail to path ret");
+        return;
+    }
+
+    if (!data.WriteUint8(isDir)) {
+        HILOG_ERROR("fail to path ret");
+        return;
+    }
+    MessageParcel reply;
+    MessageOption option;
+    int32_t err = Remote()->SendRequest(CMD_SCAN, data, reply, option);
+    if (err != NO_ERROR) {
+        HILOG_ERROR("fail to SendRequest. err: %{public}d", err);
+        return;
+    }
+
+    HILOG_INFO("%{public}s end successfully.", __func__);
+    return;
+}
 } // namespace AppExecFwk
 } // namespace OHOS

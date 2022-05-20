@@ -60,6 +60,8 @@ public:
 
     virtual std::vector<std::shared_ptr<AppExecFwk::DataAbilityResult>> ExecuteBatch(
         const std::vector<std::shared_ptr<AppExecFwk::DataAbilityOperation>> &operations) override;
+
+    virtual void Scan(std::string path, uint8_t isDir) override;
 private:
     static inline BrokerDelegator<MediaDataProxy> delegator_;
 };

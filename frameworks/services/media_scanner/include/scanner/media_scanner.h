@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_SCANNER_H
-#define MEDIA_SCANNER_H
+#ifndef MEDIA_SCANNER_OBJ_H
+#define MEDIA_SCANNER_OBJ_H
 
 #include <algorithm>
 #include <cerrno>
@@ -43,10 +43,6 @@
 #include "scanner_utils.h"
 #include "imedia_scanner_operation_callback.h"
 #include "iremote_object.h"
-#include "mediadata_helper.h"
-#include "napi_remote_object.h"
-#include "mediadata_stub_impl.h"
-#include "mediadata_proxy.h"
 
 #define FREE_MEMORY_AND_SET_NULL(fName)      \
     do {                                     \
@@ -63,18 +59,18 @@ namespace Media {
  * @since 1.0
  * @version 1.0
  */
-class MediaScanner {
+class MediaScannerObj {
 public:
-    static MediaScanner *GetMediaScannerInstance();
+    static MediaScannerObj *GetMediaScannerInstance();
     int32_t ScanFile(std::string &path, const sptr<IRemoteObject> &callback);
     int32_t ScanDir(std::string &path, const sptr<IRemoteObject> &callback);
     bool IsScannerRunning();
-    void SetAbilityContext(const std::shared_ptr<OHOS::AppExecFwk::Context> &context);
+    void SetAbilityContext(void);
     void ReleaseAbilityHelper();
 
 private:
-    MediaScanner();
-    ~MediaScanner();
+    MediaScannerObj();
+    ~MediaScannerObj();
 
     static void ScanQueueCB(ScanRequest sr);
     std::unique_ptr<Metadata> GetFileMetadata(const std::string &path, const int32_t parentId);
@@ -90,7 +86,7 @@ private:
     bool IsFileScanned(Metadata &fileMetadata);
     bool IsDirHidden(const std::string &path);
     bool IsDirHiddenRecursive(const std::string &path);
-    bool InitScanner(const std::shared_ptr<OHOS::AppExecFwk::Context> &context);
+    bool InitScanner(void);
 
     int32_t VisitFile(const Metadata &fileMetadata);
     int32_t WalkFileTree(const std::string &path, int32_t parentId);
@@ -114,11 +110,9 @@ private:
     std::unordered_set<int32_t> scannedIds_;
     std::vector<Metadata> batchUpdate_;
     std::unique_ptr<MediaScannerDb> mediaScannerDb_;
-    std::shared_ptr<AppExecFwk::MediaDataHelper> rdbhelper_;
-    std::shared_ptr<OHOS::AppExecFwk::Context> abilityContext_;
     std::unordered_map<int32_t, sptr<IMediaScannerOperationCallback>> scanResultCbMap_;
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif // MEDIA_SCANNER_H
+#endif // MEDIA_SCANNER_OBJ_H

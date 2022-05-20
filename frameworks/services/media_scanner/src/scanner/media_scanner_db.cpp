@@ -15,6 +15,7 @@
 
 #include "media_scanner_db.h"
 #include "media_log.h"
+#include "medialibrary_data_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -29,9 +30,8 @@ unique_ptr<MediaScannerDb> MediaScannerDb::GetDatabaseInstance()
     return database;
 }
 
-void MediaScannerDb::SetRdbHelper(const shared_ptr<OHOS::AppExecFwk::MediaDataHelper> &rdbhelper)
+void MediaScannerDb::SetRdbHelper(void)
 {
-    rdbhelper_ = rdbhelper;
 }
 
 string MediaScannerDb::InsertMetadata(const Metadata &metadata)
@@ -65,10 +65,8 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
     values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
 
-    if (rdbhelper_ != nullptr) {
-        Uri abilityUri(MEDIALIBRARY_DATA_URI);
-        rowNum = rdbhelper_->Insert(abilityUri, values);
-    }
+    Uri abilityUri(MEDIALIBRARY_DATA_URI);
+    rowNum = MediaLibraryDataManager::GetInstance()->Insert(abilityUri, values);
 
     if (rowNum <= 0) {
         MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed, return %{private}d", rowNum);
@@ -94,11 +92,9 @@ unique_ptr<Metadata> MediaScannerDb::ReadMetadata(const string &path)
     DataAbilityPredicates predicates = {};
     predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
 
-    if (rdbhelper_ != nullptr) {
-        Uri uri(MEDIALIBRARY_DATA_URI);
-        vector<string> columns = {};
-        resultSet = rdbhelper_->Query(uri, columns, predicates);
-    }
+    Uri uri(MEDIALIBRARY_DATA_URI);
+    vector<string> columns = {};
+    resultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
 
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{private}s", path.c_str());
 
@@ -148,10 +144,8 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
     values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
 
-    if (rdbhelper_ != nullptr) {
-        Uri uri(MEDIALIBRARY_DATA_URI);
-        updateCount = rdbhelper_->Update(uri, values, predicates);
-    }
+    Uri uri(MEDIALIBRARY_DATA_URI);
+    updateCount = MediaLibraryDataManager::GetInstance()->Update(uri, values, predicates);
 
     if (updateCount <= 0) {
         MEDIA_ERR_LOG("RDBSTORE update failed");
@@ -192,9 +186,7 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 
     Uri deleteUri(MEDIALIBRARY_DATA_URI);
 
-    if (rdbhelper_ != nullptr) {
-        deletedCount = rdbhelper_->Delete(deleteUri, predicates);
-    }
+    deletedCount = MediaLibraryDataManager::GetInstance()->Delete(deleteUri, predicates);
 
     if (deletedCount > 0) {
         return true;
@@ -223,10 +215,8 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
     DataAbilityPredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
 
-    if (rdbhelper_ != nullptr) {
-        Uri abilityUri(MEDIALIBRARY_DATA_URI);
-        resultSet = rdbhelper_->Query(abilityUri, columns, predicates);
-    }
+    Uri abilityUri(MEDIALIBRARY_DATA_URI);
+    resultSet = MediaLibraryDataManager::GetInstance()->Query(abilityUri, columns, predicates);
 
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{private}s", path.c_str());
 
@@ -259,10 +249,8 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
     modifiedPath = modifiedPath.back() != '/' ? modifiedPath + "/%" : modifiedPath + "%";
     predicates.Like(MEDIA_DATA_DB_FILE_PATH, modifiedPath);
 
-    if (rdbhelper_ != nullptr) {
-        Uri queryUri(MEDIALIBRARY_DATA_URI);
-        resultSet = rdbhelper_->Query(queryUri, columns, predicates);
-    }
+    Uri queryUri(MEDIALIBRARY_DATA_URI);
+    resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
 
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, idMap, "No entries found for this path");
 
@@ -294,10 +282,8 @@ string MediaScannerDb::GetFileDBUriFromPath(const string &path)
     DataAbilityPredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
 
-    if (rdbhelper_ != nullptr) {
-        Uri queryUri(MEDIALIBRARY_DATA_URI);
-        resultSet = rdbhelper_->Query(queryUri, columns, predicates);
-    }
+    Uri queryUri(MEDIALIBRARY_DATA_URI);
+    resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
 
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
         MEDIA_ERR_LOG("No result found for this path");
@@ -340,11 +326,9 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
     DataAbilityPredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
 
-    if (rdbhelper_ != nullptr) {
-        Uri uri(MEDIALIBRARY_DATA_URI);
-        vector<string> columns = {MEDIA_DATA_DB_ID};
-        resultSet = rdbhelper_->Query(uri, columns, predicates);
-    }
+    Uri uri(MEDIALIBRARY_DATA_URI);
+    vector<string> columns = {MEDIA_DATA_DB_ID};
+    resultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
 
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
         MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{private}s", path.c_str());
@@ -365,11 +349,9 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
     predicates.Contains(MEDIA_DATA_DB_FILE_PATH, path);
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(mediaType));
 
-    if (rdbhelper_ != nullptr) {
-        Uri uri(MEDIALIBRARY_DATA_URI);
-        vector<string> columns = {MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_DATE_MODIFIED};
-        resultSet = rdbhelper_->Query(uri, columns, predicates);
-    }
+    Uri uri(MEDIALIBRARY_DATA_URI);
+    vector<string> columns = {MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_DATE_MODIFIED};
+    resultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
 
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{private}s", path.c_str());
@@ -442,11 +424,12 @@ string MediaScannerDb::GetMediaTypeUri(MediaType mediaType)
 
 void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)
 {
-    CHECK_AND_RETURN_LOG(rdbhelper_ != nullptr, "RDB helper unavailable");
+//    CHECK_AND_RETURN_LOG(rdbhelper_ != nullptr, "RDB helper unavailable");
 
     string notifyUri = GetMediaTypeUri(mediaType);
     Uri uri(notifyUri);
-    rdbhelper_->NotifyChange(uri);
+    // fix me
+    //MediaLibraryDataManager::GetInstance()->NotifyChange(uri); 
 }
 
 unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<AbsSharedResultSet> &resultSet)

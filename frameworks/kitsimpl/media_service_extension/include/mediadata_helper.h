@@ -249,6 +249,14 @@ public:
     std::vector<std::shared_ptr<DataAbilityResult>> ExecuteBatch(
         const Uri &uri, const std::vector<std::shared_ptr<DataAbilityOperation>> &operations);
 
+    /**
+     * @brief Performs scanning a dir.
+     *
+     * @param path, directory to scan.
+     * @param isDir, 0: sacn a file, others: dir.
+     */
+    void Scan(std::string path, uint8_t isDir);
+
 private:
     MediaDataHelper(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context, const AAFwk::Want &want);
     MediaDataHelper(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context, const AAFwk::Want &want,

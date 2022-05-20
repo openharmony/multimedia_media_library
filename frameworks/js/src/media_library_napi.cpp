@@ -144,7 +144,7 @@ shared_ptr<AppExecFwk::MediaDataHelper> MediaLibraryNapi::GetMediaDataHelper(nap
             AppExecFwk::Want want;
             want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
             mediaDataHelper = MediaDataHelper::Creator(context, want, std::make_shared<Uri>("mediadata://media"));
-	}
+    }
     }
     return mediaDataHelper;
 }
@@ -163,8 +163,8 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
 
     unique_ptr<MediaLibraryNapi> obj = make_unique<MediaLibraryNapi>();
     if (obj != nullptr) {
-        obj->env_ = env;
 
+        obj->env_ = env;
         if (g_isNewApi) {
             // Initialize the ChangeListener object
             if (g_listObj == nullptr) {
