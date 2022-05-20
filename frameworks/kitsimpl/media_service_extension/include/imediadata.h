@@ -53,6 +53,7 @@ public:
         CMD_NORMALIZE_URI = 13,
         CMD_DENORMALIZE_URI = 14,
         CMD_EXECUTE_BATCH = 15,
+        CMD_SCAN = 16,
     };
 
     /**
@@ -216,6 +217,8 @@ public:
      */
     virtual std::vector<std::shared_ptr<AppExecFwk::DataAbilityResult>> ExecuteBatch(
         const std::vector<std::shared_ptr<AppExecFwk::DataAbilityOperation>> &operations) = 0;
+
+    virtual void Scan(std::string path, uint8_t isDir) = 0;
 };
 } // namespace AppExecFwk
 } // namespace OHOS

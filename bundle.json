@@ -46,9 +46,7 @@
             "//foundation/multimedia/medialibrary_standard/sa_profile:medialibrary_service_sa_profile",
             "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary",
             "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary_js",
-            "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/media_scanner_ability:media_scanner_service",
-            "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
-            "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/client:media_scanner_client"
+            "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension"
         ],
         "inner_kits": [
             {
@@ -82,7 +80,8 @@
                   "file_asset_napi.h",
                   "smart_album_napi.h",
                   "medialibrary_napi_utils.h",
-                  "medialibrary_peer_info.h"
+                  "medialibrary_peer_info.h",
+                  "media_scanner_napi.h"
                 ]
               },
               "name": "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary"

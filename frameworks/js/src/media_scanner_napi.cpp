@@ -15,6 +15,7 @@
 
 #include "media_scanner_napi.h"
 #include "medialibrary_napi_log.h"
+#include "media_library_napi.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -25,15 +26,10 @@ namespace Media {
 thread_local napi_ref MediaScannerNapi::sConstructor_ = nullptr;
 
 MediaScannerNapi::MediaScannerNapi()
-    : mediaScanner_(nullptr), env_(nullptr), wrapper_(nullptr) {}
+    : env_(nullptr), wrapper_(nullptr) {}
 
 MediaScannerNapi::~MediaScannerNapi()
 {
-    if (mediaScanner_ != nullptr) {
-        mediaScanner_->Release();
-        mediaScanner_ = nullptr;
-    }
-
     if (wrapper_ != nullptr) {
         napi_delete_reference(env_, wrapper_);
         wrapper_ = nullptr;
@@ -83,15 +79,17 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
         unique_ptr<MediaScannerNapi> obj = make_unique<MediaScannerNapi>();
         if (obj != nullptr) {
             obj->env_ = env;
-            obj->mediaScanner_ = MediaScannerHelperFactory::CreateScannerHelper();
-            if (obj->mediaScanner_ == nullptr) {
-                NAPI_ERR_LOG("MediaScanner client instance creation failed!");
+
+            obj->sMediaDataHelper_ = MediaLibraryNapi::GetMediaDataHelper(env, info);
+            if (obj->sMediaDataHelper_ == nullptr) {
+                NAPI_ERR_LOG("[MediaScannerNapiConstructor] GetMediaDataHelper failed!");
                 return result;
             }
 
+
             obj->mediaScannerNapiCallbackObj_ = std::make_shared<MediaScannerNapiCallback>(env);
             if (obj->mediaScannerNapiCallbackObj_ == nullptr) {
-                NAPI_ERR_LOG("MediaScanner callback instance creation failed!");
+                NAPI_ERR_LOG("[MediaScannerNapiConstructor] callback instance creation failed!");
                 return result;
             }
 
@@ -101,11 +99,12 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
                 obj.release();
                 return thisVar;
             } else {
-                NAPI_ERR_LOG("Failed to wrap the native media scanner client, status: %{private}d", status);
+                NAPI_ERR_LOG("[MediaScannerNapiConstructor] Failed to wrap the native media scanner client, status: %{private}d", status);
             }
         }
     }
 
+    NAPI_INFO_LOG("[MediaScannerNapiConstructor] failed");
     return result;
 }
 
@@ -122,17 +121,23 @@ napi_value MediaScannerNapi::GetMediaScannerInstance(napi_env env, napi_callback
     napi_status status;
     napi_value result = nullptr;
     napi_value ctor;
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
 
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     status = napi_get_reference_value(env, sConstructor_, &ctor);
     if (status == napi_ok) {
-        status = napi_new_instance(env, ctor, 0, nullptr, &result);
+        status = napi_new_instance(env, ctor, argc, argv, &result);
         if (status == napi_ok) {
+            NAPI_INFO_LOG("[GetMediaScannerInstance] success");
             return result;
         } else {
-            NAPI_ERR_LOG("New instance could not be obtained, status: %{private}d", status);
+            NAPI_ERR_LOG("[GetMediaScannerInstance] New instance could not be obtained, status: %{public}d", status);
         }
     }
 
+    NAPI_ERR_LOG("[GetMediaScannerInstance] failed , status = %{public}d", status);
     napi_get_undefined(env, &result);
     return result;
 }
@@ -175,6 +180,7 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameters");
 
+    NAPI_INFO_LOG("[MediaScannerNapi::NapiScanUtils] start");
     napi_get_undefined(env, &result);
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
     if (status == napi_ok && obj != nullptr) {
@@ -196,11 +202,11 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
                 return result;
             }
         }
-
+        errCode = 0;
         if (scanType == "FILE") {
-            errCode = obj->mediaScanner_->ScanFile(path, obj->mediaScannerNapiCallbackObj_);
+            obj->sMediaDataHelper_->Scan(path, 0);
         } else if (scanType == "DIR") {
-            errCode = obj->mediaScanner_->ScanDir(path, obj->mediaScannerNapiCallbackObj_);
+            obj->sMediaDataHelper_->Scan(path, 1);
         }
 
         if (errCode == 0) {
@@ -210,7 +216,7 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
             InvokeJSCallback(env, errCode, "", callbackRef);
         }
     }
-
+    NAPI_INFO_LOG("[MediaScannerNapi::NapiScanUtils] end");
     return result;
 }
 

@@ -22,7 +22,7 @@ namespace Media {
 using namespace std;
 using namespace OHOS::AppExecFwk;
 
-MediaScanner::MediaScanner()
+MediaScannerObj::MediaScannerObj()
 {
     if (mediaScannerDb_ == nullptr) {
         mediaScannerDb_ = MediaScannerDb::GetDatabaseInstance();
@@ -32,34 +32,39 @@ MediaScanner::MediaScanner()
     scanExector_.SetCallbackFunction(ScanQueueCB);
 }
 
-MediaScanner::~MediaScanner()
+MediaScannerObj::~MediaScannerObj()
 {
     mediaScannerDb_ = nullptr;
+/*
     if (rdbhelper_ != nullptr) {
         rdbhelper_->Release();
         rdbhelper_ = nullptr;
     }
+*/
 }
 
 // Get Media Scanner Instance
-MediaScanner *MediaScanner::GetMediaScannerInstance()
+MediaScannerObj *MediaScannerObj::GetMediaScannerInstance()
 {
-    static MediaScanner scanner;
+    static MediaScannerObj scanner;
     return &scanner;
 }
 
-void MediaScanner::ScanQueueCB(ScanRequest scanReq)
+void MediaScannerObj::ScanQueueCB(ScanRequest scanReq)
 {
     int32_t errCode = ERR_SCAN_NOT_INIT;
 
     StartTrace(BYTRACE_TAG_OHOS, "ScanQueueCB");
 
-    MediaScanner *scanner = MediaScanner::GetMediaScannerInstance();
+    MediaScannerObj *scanner = MediaScannerObj::GetMediaScannerInstance();
     if (scanner != nullptr) {
         if (!scanner->isScannerInitDone_) {
+/*
             if (scanner->InitScanner(scanner->abilityContext_)) {
                 scanner->isScannerInitDone_ = true;
             }
+*/
+            scanner->isScannerInitDone_ = true;
         }
 
         string fileUri("");
@@ -81,8 +86,9 @@ void MediaScanner::ScanQueueCB(ScanRequest scanReq)
     FinishTrace(BYTRACE_TAG_OHOS);
 }
 
-bool MediaScanner::InitScanner(const std::shared_ptr<OHOS::AppExecFwk::Context> &context)
+bool MediaScannerObj::InitScanner(void)
 {
+/*
     auto contextUri = make_unique<Uri>(MEDIALIBRARY_DATA_URI);
     if ((context != nullptr) && (contextUri != nullptr)) {
         AppExecFwk::Want want;
@@ -93,12 +99,13 @@ bool MediaScanner::InitScanner(const std::shared_ptr<OHOS::AppExecFwk::Context> 
             return true;
         }
     }
+*/
 
-    MEDIA_ERR_LOG("Failed to initialize scanner");
+    MEDIA_ERR_LOG("Success to initialize scanner");
     return false;
 }
 
-vector<string> MediaScanner::GetSupportedMimeTypes()
+vector<string> MediaScannerObj::GetSupportedMimeTypes()
 {
     vector<string> mimeTypeList;
     mimeTypeList.push_back(DEFAULT_AUDIO_MIME_TYPE);
@@ -109,7 +116,7 @@ vector<string> MediaScanner::GetSupportedMimeTypes()
     return mimeTypeList;
 }
 
-int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCallback)
+int32_t MediaScannerObj::ScanFile(string &path, const sptr<IRemoteObject> &remoteCallback)
 {
     MEDIA_INFO_LOG("%{private}s: %{private}s", __func__, path.c_str());
     int32_t errCode = ERR_MEM_ALLOC_FAIL;
@@ -157,11 +164,12 @@ int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCa
     return errCode;
 }
 
-int32_t MediaScanner::ScanDir(string &path, const sptr<IRemoteObject> &remoteCallback)
+int32_t MediaScannerObj::ScanDir(string &path, const sptr<IRemoteObject> &remoteCallback)
 {
     int32_t errCode = ERR_MEM_ALLOC_FAIL;
     bool isDir = true;
 
+    MEDIA_INFO_LOG("[MediaScannerObj::ScanDir] start, path = %{public}s", path.c_str());
     if (path.empty()) {
         MEDIA_ERR_LOG("ScanDir: Path is empty");
         return ERR_EMPTY_ARGS;
@@ -200,7 +208,7 @@ int32_t MediaScanner::ScanDir(string &path, const sptr<IRemoteObject> &remoteCal
     return errCode;
 }
 
-void MediaScanner::CleanupDirectory(const string &path)
+void MediaScannerObj::CleanupDirectory(const string &path)
 {
     vector<int32_t> toBeDeletedIds = {};
     unordered_set<MediaType> mediaTypeSet = {};
@@ -235,7 +243,7 @@ void MediaScanner::CleanupDirectory(const string &path)
     scannedIds_.clear();
 }
 
-int32_t MediaScanner::StartBatchProcessingToDB()
+int32_t MediaScannerObj::StartBatchProcessingToDB()
 {
     unordered_set<MediaType> mediaTypeSet = {};
     string uri = "";
@@ -264,7 +272,7 @@ int32_t MediaScanner::StartBatchProcessingToDB()
     return ERR_SUCCESS;
 }
 
-int32_t MediaScanner::StartBatchProcessIfFull()
+int32_t MediaScannerObj::StartBatchProcessIfFull()
 {
     if (batchUpdate_.size() >= MAX_BATCH_SIZE) {
         return StartBatchProcessingToDB();
@@ -272,7 +280,7 @@ int32_t MediaScanner::StartBatchProcessIfFull()
     return ERR_SUCCESS;
 }
 
-int32_t MediaScanner::BatchUpdateRequest(Metadata &fileMetadata)
+int32_t MediaScannerObj::BatchUpdateRequest(Metadata &fileMetadata)
 {
     batchUpdate_.push_back(fileMetadata);
     return StartBatchProcessIfFull();
@@ -280,7 +288,7 @@ int32_t MediaScanner::BatchUpdateRequest(Metadata &fileMetadata)
 
 // Check if the file entry already exists in the DB. Compare filename, size,
 // path, and modified date.
-bool MediaScanner::IsFileScanned(Metadata &fileMetadata)
+bool MediaScannerObj::IsFileScanned(Metadata &fileMetadata)
 {
     string filePath = fileMetadata.GetFilePath();
     unique_ptr<Metadata> md = mediaScannerDb_->GetFileModifiedInfo(filePath);
@@ -301,7 +309,7 @@ bool MediaScanner::IsFileScanned(Metadata &fileMetadata)
     return false;
 }
 
-int32_t MediaScanner::RetrieveMetadata(Metadata &fileMetadata)
+int32_t MediaScannerObj::RetrieveMetadata(Metadata &fileMetadata)
 {
     // Stub impl. This will be implemented by the extractor
     int32_t errCode = ERR_SUCCESS;
@@ -312,7 +320,7 @@ int32_t MediaScanner::RetrieveMetadata(Metadata &fileMetadata)
 }
 
 // Visit the File
-int32_t MediaScanner::VisitFile(const Metadata &fileMD)
+int32_t MediaScannerObj::VisitFile(const Metadata &fileMD)
 {
     StartTrace(BYTRACE_TAG_OHOS, "VisitFile");
 
@@ -338,7 +346,7 @@ int32_t MediaScanner::VisitFile(const Metadata &fileMD)
 }
 
 // Get Basic File Metadata from the file
-unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int32_t parentId)
+unique_ptr<Metadata> MediaScannerObj::GetFileMetadata(const string &path, const int32_t parentId)
 {
     StartTrace(BYTRACE_TAG_OHOS, "GetFileMetaData");
 
@@ -399,7 +407,7 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
 
 
 // Get the internal details of the file
-int32_t MediaScanner::ScanFileContent(const string &path, const int32_t parentId)
+int32_t MediaScannerObj::ScanFileContent(const string &path, const int32_t parentId)
 {
     unique_ptr<Metadata> fileMetadata = nullptr;
     int32_t errCode = ERR_FAIL;
@@ -416,7 +424,7 @@ int32_t MediaScanner::ScanFileContent(const string &path, const int32_t parentId
 }
 
 // Scan the file path
-int32_t MediaScanner::ScanFileInternal(const string &path)
+int32_t MediaScannerObj::ScanFileInternal(const string &path)
 {
     int32_t errCode = ERR_FAIL;
 
@@ -437,7 +445,7 @@ int32_t MediaScanner::ScanFileInternal(const string &path)
     return errCode;
 }
 
-int32_t MediaScanner::InsertAlbumInfo(string &albumPath, int32_t parentId, string &albumName)
+int32_t MediaScannerObj::InsertAlbumInfo(string &albumPath, int32_t parentId, string &albumName)
 {
     int32_t albumId = ERR_FAIL;
 
@@ -476,7 +484,7 @@ int32_t MediaScanner::InsertAlbumInfo(string &albumPath, int32_t parentId, strin
     return albumId;
 }
 
-int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
+int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
 {
     int32_t errCode = ERR_SUCCESS;
     DIR *dirPath = nullptr;
@@ -541,7 +549,7 @@ int32_t MediaScanner::WalkFileTree(const string &path, int32_t parentId)
 }
 
 // Initialize the skip list
-void MediaScanner::InitSkipList()
+void MediaScannerObj::InitSkipList()
 {
     hash<string> hashStr;
     size_t hashPath;
@@ -560,7 +568,7 @@ void MediaScanner::InitSkipList()
 }
 
 // Check if path is part of Skip scan list
-bool MediaScanner::CheckSkipScanList(const string &path)
+bool MediaScannerObj::CheckSkipScanList(const string &path)
 {
     hash<string> hashStr;
     size_t hashPath;
@@ -579,7 +587,7 @@ bool MediaScanner::CheckSkipScanList(const string &path)
 }
 
 // Check if the directory is hidden
-bool MediaScanner::IsDirHidden(const string &path)
+bool MediaScannerObj::IsDirHidden(const string &path)
 {
     bool dirHid = false;
 
@@ -607,7 +615,7 @@ bool MediaScanner::IsDirHidden(const string &path)
 }
 
 // Check if the dir is hidden
-bool MediaScanner::IsDirHiddenRecursive(const string &path)
+bool MediaScannerObj::IsDirHiddenRecursive(const string &path)
 {
     bool dirHid = false;
     string curPath = path;
@@ -628,7 +636,7 @@ bool MediaScanner::IsDirHiddenRecursive(const string &path)
 }
 
 // Scan the directory path recursively
-int32_t MediaScanner::ScanDirInternal(const string &path)
+int32_t MediaScannerObj::ScanDirInternal(const string &path)
 {
     int32_t errCode = ERR_FAIL;
 
@@ -655,7 +663,7 @@ int32_t MediaScanner::ScanDirInternal(const string &path)
     return errCode;
 }
 
-void MediaScanner::ExecuteScannerClientCallback(int32_t reqId, int32_t status, const string &uri, const string &path)
+void MediaScannerObj::ExecuteScannerClientCallback(int32_t reqId, int32_t status, const string &uri, const string &path)
 {
     auto iter = scanResultCbMap_.find(reqId);
     if (iter != scanResultCbMap_.end()) {
@@ -665,7 +673,7 @@ void MediaScanner::ExecuteScannerClientCallback(int32_t reqId, int32_t status, c
     }
 }
 
-void MediaScanner::StoreCallbackObjInMap(int32_t reqId, sptr<IMediaScannerOperationCallback>& callback)
+void MediaScannerObj::StoreCallbackObjInMap(int32_t reqId, sptr<IMediaScannerOperationCallback>& callback)
 {
     auto itr = scanResultCbMap_.find(reqId);
     if (itr == scanResultCbMap_.end()) {
@@ -673,31 +681,36 @@ void MediaScanner::StoreCallbackObjInMap(int32_t reqId, sptr<IMediaScannerOperat
     }
 }
 
-int32_t MediaScanner::GetAvailableRequestId()
+int32_t MediaScannerObj::GetAvailableRequestId()
 {
     static int32_t i = 0;
 
     return ++i;
 }
 
-void MediaScanner::SetAbilityContext(const std::shared_ptr<OHOS::AppExecFwk::Context> &context)
+void MediaScannerObj::SetAbilityContext(void)
 {
-    abilityContext_ = context;
+//    abilityContext_ = context;
 }
 
-void MediaScanner::ReleaseAbilityHelper()
+void MediaScannerObj::ReleaseAbilityHelper()
 {
+/*
     if (rdbhelper_ != nullptr) {
         rdbhelper_->Release();
         rdbhelper_ = nullptr;
-        mediaScannerDb_->SetRdbHelper(rdbhelper_);
+        mediaScannerDb_->SetRdbHelper();
+    }
+*/
+    if (mediaScannerDb_ != nullptr) {
+        mediaScannerDb_->SetRdbHelper();
     }
 
     isScannerInitDone_ = false;
-    abilityContext_ = nullptr;
+//    abilityContext_ = nullptr;
 }
 
-bool MediaScanner::IsScannerRunning()
+bool MediaScannerObj::IsScannerRunning()
 {
     return !scanResultCbMap_.empty();
 }
