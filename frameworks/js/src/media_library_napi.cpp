@@ -608,7 +608,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     shared_ptr<DataShare::DataShareResultSet> resultSet;
 
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        resultSet = context->objectInfo->sDataShareHelper_->Query(uri, columns, predicates);
+        resultSet = context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
         if (resultSet != nullptr) {
             // Create FetchResult object using the contents of resultSet
             context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
@@ -791,7 +791,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     }
     Uri uri(queryUri);
     shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
-        uri, columns, predicates);
+        uri, predicates, columns);
     unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     fetchFileResult->networkId_ = context->networkId;
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
@@ -845,7 +845,7 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     }
     Uri uri(queryUri);
     shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
-        uri, columns, sharePredicates);
+        uri, sharePredicates, columns);
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr");
@@ -959,7 +959,7 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
     shared_ptr<DataShare::DataShareResultSet> resultSet;
 
     if (context->objectInfo->sDataShareHelper_ != nullptr
-        && ((resultSet = context->objectInfo->sDataShareHelper_->Query(uri, columns, predicates)) != nullptr)) {
+        && ((resultSet = context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns)) != nullptr)) {
         // Create FetchResult object using the contents of resultSet
         context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
         context->fetchFileResult->networkId_ = networkId;
@@ -2489,7 +2489,7 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
             + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
             + SMARTABLUMASSETS_VIEW_NAME);
     shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
-        uri, columns, predicates);
+        uri, predicates, columns);
     if (resultSet != nullptr) {
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             unique_ptr<SmartAlbumAsset> albumData = make_unique<SmartAlbumAsset>();
@@ -2520,7 +2520,7 @@ static void GetSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTABLUMASSETS_VIEW_NAME);
     shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
-        uri, columns, predicates);
+        uri, predicates, columns);
     if (resultSet != nullptr) {
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             unique_ptr<SmartAlbumAsset> albumData = make_unique<SmartAlbumAsset>();
@@ -2937,7 +2937,7 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
 
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE);
     shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
-        uri, columns, predicates);
+        uri, predicates, columns);
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("JSGetActivePeers resultSet is null");
@@ -2998,7 +2998,7 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
 
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE);
     shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
-        uri, columns, predicates);
+        uri, predicates, columns);
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("JSGetAllPeers resultSet is null");
