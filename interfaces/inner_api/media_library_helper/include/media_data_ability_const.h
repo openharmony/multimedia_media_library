@@ -60,7 +60,7 @@ static const std::string MEDIA_DATA_ABILITY_DB_NAME = "media_library.db";
 static const std::string BUNDLE_NAME = "com.ohos.medialibrary.MediaLibraryDataA";
 static const std::string ENCRYPTION_LEVEL = "el2";
 
-static const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "dataability://";
+static const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "datashare://";
 static const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
 static const std::string MEDIALIBRARY_MEDIA_PREFIX = MEDIALIBRARY_DATA_ABILITY_PREFIX +
                                                      MEDIALIBRARY_DATA_URI_IDENTIFIER;
@@ -73,7 +73,7 @@ static const std::string MEDIALIBRARY_TYPE_SMARTALBUM_CHANGE_URI  =  "/smartalbu
 static const std::string MEDIALIBRARY_TYPE_DEVICE_URI  =  "/device";
 static const std::string MEDIALIBRARY_TYPE_SMART_URI = "/smart";
 
-static const std::string MEDIALIBRARY_DATA_URI = "dataability:///media";
+static const std::string MEDIALIBRARY_DATA_URI = "datashare:///media";
 static const std::string MEDIALIBRARY_SMARTALBUM_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_TABLE;
 static const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_MAP_TABLE;
 static const std::string MEDIALIBRARY_CATEGORY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/"
