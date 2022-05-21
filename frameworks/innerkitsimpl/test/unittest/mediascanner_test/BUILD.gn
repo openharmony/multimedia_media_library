@@ -39,7 +39,7 @@ ohos_unittest("mediascanner_unittest") {
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
     "${aafwk_kits_path}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
-    "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl/media_scanner/include",
+    "$MEDIA_LIB_BASE_DIR/frameworks/services/media_scanner/include/scanner",
     "//third_party/json/include",
   ]
 
