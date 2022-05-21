@@ -26,7 +26,7 @@ int64_t MediaLibraryDeviceDb::InsertDeviceInfo(const ValuesBucket &values, const
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, DEVICE_OPERATION_ERR, "Invalid RDB store");
     int64_t outRowId(0);
     int32_t insertResult = rdbStore->Insert(outRowId, DEVICE_TABLE, values);
-    CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, DEVICE_OPERATION_ERR, "Insert failed");
+    CHECK_AND_RETURN_RET_LOG(insertResult == NativeRdb::E_OK, DEVICE_OPERATION_ERR, "Insert failed");
 
     return outRowId;
 }
@@ -40,7 +40,7 @@ int32_t MediaLibraryDeviceDb::DeleteDeviceInfo(const std::string &deviceId,
     vector<string> whereArgs = { deviceId };
 
     int32_t deleteResult = rdbStore->Delete(deletedRows, DEVICE_TABLE, DEVICE_DB_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, DEVICE_OPERATION_ERR, "Delete failed");
+    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, DEVICE_OPERATION_ERR, "Delete failed");
 
     return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
@@ -64,7 +64,7 @@ int32_t MediaLibraryDeviceDb::UpdateDeviceInfo(const ValuesBucket &values, const
     vector<string> whereArgs = { deviceId };
 
     int32_t updateResult = rdbStore->Update(updatedRows, DEVICE_TABLE, values, DEVICE_DB_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(updateResult == E_OK, DEVICE_OPERATION_ERR, "Update failed");
+    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, DEVICE_OPERATION_ERR, "Update failed");
 
     return (updatedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }

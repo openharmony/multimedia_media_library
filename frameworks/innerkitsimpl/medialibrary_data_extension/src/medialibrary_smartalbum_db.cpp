@@ -15,10 +15,12 @@
 
 #include "medialibrary_smartalbum_db.h"
 #include "media_log.h"
+#include "rdb_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
@@ -32,8 +34,8 @@ int64_t MediaLibrarySmartAlbumDb::InsertSmartAlbumInfo(const DataShareValuesBuck
     if (value.GetObject(SMARTALBUM_DB_ID, valueObject)) {
             valueObject.GetInt(albumId);
         }
-    int32_t insertResult = rdbStore->Insert(outRowId, SMARTALBUM_TABLE, values);
-    CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, ALBUM_OPERATION_ERR, "Insert failed");
+    int32_t insertResult = rdbStore->Insert(outRowId, SMARTALBUM_TABLE, RdbUtils::ToValuesBucket(values));
+    CHECK_AND_RETURN_RET_LOG(insertResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Insert failed");
     return outRowId;
 }
 int64_t MediaLibrarySmartAlbumDb::InsertCategorySmartAlbumInfo(const DataShareValuesBucket &values,
@@ -47,8 +49,8 @@ int64_t MediaLibrarySmartAlbumDb::InsertCategorySmartAlbumInfo(const DataShareVa
     if (value.GetObject(SMARTALBUM_DB_ID, valueObject)) {
             valueObject.GetInt(albumId);
         }
-    int32_t insertResult = rdbStore->Insert(outRowId, CATEGORY_SMARTALBUM_MAP_TABLE, values);
-    CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, ALBUM_OPERATION_ERR, "Insert failed");
+    int32_t insertResult = rdbStore->Insert(outRowId, CATEGORY_SMARTALBUM_MAP_TABLE, RdbUtils::ToValuesBucket(values));
+    CHECK_AND_RETURN_RET_LOG(insertResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Insert failed");
     return outRowId;
 }
 int32_t MediaLibrarySmartAlbumDb::DeleteSmartAlbumInfo(const int32_t albumId, const shared_ptr<RdbStore> &rdbStore)
@@ -57,7 +59,7 @@ int32_t MediaLibrarySmartAlbumDb::DeleteSmartAlbumInfo(const int32_t albumId, co
     int32_t deletedRows(ALBUM_OPERATION_ERR);
     vector<string> whereArgs = { std::to_string(albumId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_TABLE, SMARTALBUM_DB_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, ALBUM_OPERATION_ERR, "Delete failed");
+    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
     return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
 }  // namespace Media

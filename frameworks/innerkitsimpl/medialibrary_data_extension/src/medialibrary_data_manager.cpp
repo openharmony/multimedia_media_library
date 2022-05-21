@@ -34,6 +34,7 @@
 #include "datashare_ext_ability_context.h"
 #include "media_datashare_ext_ability.h"
 #include "media_log.h"
+#include "rdb_utils.h"
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 
@@ -44,6 +45,7 @@ using namespace OHOS::AbilityRuntime;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::DataShare;
+using namespace OHOS::RdbDataShareAdapter::RdbUtils;
 
 namespace OHOS {
 namespace Media {
@@ -198,7 +200,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
         MEDIA_INFO_LOG("Upgrade rdb error %{private}d", error_code);
     }
 #endif
-    return E_OK;
+    return NativeRdb::E_OK;
 }
 
 bool MediaLibraryDataCallBack::GetDistributedTables()
@@ -326,7 +328,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
 
     // Normal URI scenario
     int64_t outRowId = DATA_ABILITY_FAIL;
-    (void)rdbStore_->Insert(outRowId, MEDIALIBRARY_TABLE, value);
+    (void)rdbStore_->Insert(outRowId, MEDIALIBRARY_TABLE, ToValuesBucket(value));
 
     syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
     return outRowId;
@@ -366,13 +368,13 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
     return deletedRows;
 }
 
-shared_ptr<DataShareAbstractResultSet> QueryBySmartTableType(TableType tabletype,
+shared_ptr<ResultSetBridge> QueryBySmartTableType(TableType tabletype,
     string strQueryCondition,
     DataSharePredicates predicates,
     vector<string> columns,
     std::shared_ptr<NativeRdb::RdbStore> rdbStore)
 {
-    shared_ptr<DataShareAbstractResultSet> queryResultSet;
+    shared_ptr<ResultSetBridge> queryResultSet;
     if (tabletype == TYPE_SMARTALBUM) {
         DataSharePredicates mediaLibSAAbsPred(SMARTALBUM_TABLE);
 	/*
@@ -407,13 +409,13 @@ shared_ptr<DataShareAbstractResultSet> QueryBySmartTableType(TableType tabletype
     return queryResultSet;
 }
 
-shared_ptr<DataShareAbstractResultSet> QueryFile(string strQueryCondition,
+shared_ptr<ResultSetBridge> QueryFile(string strQueryCondition,
     DataSharePredicates predicates,
     vector<string> columns,
     std::shared_ptr<NativeRdb::RdbStore> rdbStore,
     string networkId)
 {
-    shared_ptr<DataShareAbstractResultSet> queryResultSet;
+    shared_ptr<ResultSetBridge> queryResultSet;
     string tableName = MEDIALIBRARY_TABLE;
     if (!networkId.empty()) {
         MEDIA_DEBUG_LOG("ObtainDistributedTableName start");
@@ -462,13 +464,13 @@ string ObtionCondition(string &strQueryCondition, const vector<string> &whereArg
     return strQueryCondition;
 }
 
-shared_ptr<DataShareAbstractResultSet> QueryAlbum(string strQueryCondition,
+shared_ptr<ResultSetBridge> QueryAlbum(string strQueryCondition,
     DataSharePredicates predicates,
     vector<string> columns,
     std::shared_ptr<NativeRdb::RdbStore> rdbStore,
     string networkId)
 {
-    shared_ptr<DataShareAbstractResultSet> queryResultSet;
+    shared_ptr<ResultSetBridge> queryResultSet;
     if (!networkId.empty()) {
         string tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
         MEDIA_INFO_LOG("tableName is %{private}s", tableName.c_str());
@@ -499,10 +501,10 @@ shared_ptr<DataShareAbstractResultSet> QueryAlbum(string strQueryCondition,
     return queryResultSet;
 }
 
-shared_ptr<DataShareAbstractResultSet> QueryDeviceInfo(string strQueryCondition,
+shared_ptr<ResultSetBridge> QueryDeviceInfo(string strQueryCondition,
     DataSharePredicates predicates, vector<string> columns, std::shared_ptr<NativeRdb::RdbStore> rdbStore)
 {
-    shared_ptr<DataShareAbstractResultSet> queryResultSet;
+    shared_ptr<ResultSetBridge> queryResultSet;
     DataSharePredicates deviceDataSharePredicates(DEVICE_TABLE);
     /*
     if (predicates.IsDistinct()) {
@@ -520,13 +522,13 @@ shared_ptr<DataShareAbstractResultSet> QueryDeviceInfo(string strQueryCondition,
     return queryResultSet;
 }
 
-shared_ptr<DataShareAbstractResultSet> QueryByViewType(TableType tabletype,
+shared_ptr<ResultSetBridge> QueryByViewType(TableType tabletype,
     string strQueryCondition,
     DataSharePredicates predicates,
     vector<string> columns,
     std::shared_ptr<NativeRdb::RdbStore> rdbStore)
 {
-    shared_ptr<DataShareAbstractResultSet> queryResultSet;
+    shared_ptr<ResultSetBridge> queryResultSet;
     if (tabletype == TYPE_ASSETSMAP_TABLE) {
 	string tableName = ASSETMAP_VIEW_NAME;
         DataSharePredicates mediaLibAbsPredAlbum(tableName);
@@ -637,11 +639,11 @@ bool ParseThumbnailInfo(string &uriString, vector<int> &space)
     return true;
 }
 
-shared_ptr<DataShareAbstractResultSet> GenThumbnail(shared_ptr<RdbStore> rdb,
+shared_ptr<ResultSetBridge> GenThumbnail(shared_ptr<RdbStore> rdb,
     shared_ptr<MediaLibraryThumbnail> thumbnail,
     string &rowId, vector<int> space, string &networkId)
 {
-    shared_ptr<DataShareAbstractResultSet> queryResultSet;
+    shared_ptr<ResultSetBridge> queryResultSet;
     int width = space[0];
     int height = space[1];
     string filesTableName = MEDIALIBRARY_TABLE;
@@ -713,7 +715,7 @@ static void DealWithUriString(string &uriString, TableType &tabletype,
     }
 }
 
-shared_ptr<DataShareAbstractResultSet> MediaLibraryDataManager::Query(const Uri &uri,
+shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
                                                               const vector<string> &columns,
                                                               const DataSharePredicates &predicates)
 {
@@ -732,7 +734,7 @@ shared_ptr<DataShareAbstractResultSet> MediaLibraryDataManager::Query(const Uri 
     */
     FinishTrace(BYTRACE_TAG_OHOS);
 
-    shared_ptr<DataShareAbstractResultSet> queryResultSet;
+    shared_ptr<ResultSetBridge> queryResultSet;
     TableType tabletype = TYPE_DATA;
     string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
 
@@ -815,7 +817,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
 
     vector<string> whereArgs = predicates.GetWhereArgs();
     if (uriString.find(MEDIA_SMARTALBUMOPRN) != string::npos) {
-        (void)rdbStore_->Update(changedRows, SMARTALBUM_TABLE, value, strUpdateCondition, whereArgs);
+        (void)rdbStore_->Update(changedRows, SMARTALBUM_TABLE, ToValuesBucket(value), strUpdateCondition, whereArgs);
     } else if (uriString.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
         (void)rdbStore_->Update(changedRows, SMARTALBUM_MAP_TABLE, value, strUpdateCondition, whereArgs);
     } else {
@@ -826,7 +828,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
             return result;
             }
         }
-    (void)rdbStore_->Update(changedRows, MEDIALIBRARY_TABLE, value, strUpdateCondition, whereArgs);
+    (void)rdbStore_->Update(changedRows, MEDIALIBRARY_TABLE, ToValuesBucket(value), strUpdateCondition, whereArgs);
     }
     if (changedRows >= 0) {
         MediaLibrarySyncTable syncTable;
@@ -1037,12 +1039,12 @@ bool MediaLibraryDataManager::QuerySync()
 
     std::vector<std::string> columns;
     std::vector<std::string> devices;
-    shared_ptr<DataShareAbstractResultSet> innerResultSet;
+    shared_ptr<ResultSetBridge> innerResultSet;
     shared_ptr<DataShareResultSet> queryResultSet;
     DataSharePredicates deviceDataSharePredicates(DEVICE_TABLE);
     deviceDataSharePredicates.SetWhereClause(strQueryCondition);
 
-    innerResultSet = rdbStore_->Query(deviceDataSharePredicates, columns);
+    innerResultSet = rdbStore_->Query(ToValuesBucket(deviceDataSharePredicate), columns);
     if (innerResultSet == nullptr) {
         return false;
     }

@@ -98,7 +98,7 @@ int32_t UpdateAlbumInfoUtil(const DataShareValuesBucket &valuesBucket,
 
     int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
     MEDIA_DATA_DB_FILE_PATH + " LIKE ? OR " + MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
-        if (deleteResult != E_OK) {
+        if (deleteResult != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Delete rows failed");
         }
         return DATA_ABILITY_SUCCESS;
@@ -146,7 +146,7 @@ int32_t DeleteAlbumInfoUtil(const DataShareValuesBucket &valuesBucket, int32_t a
 
     int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
     MEDIA_DATA_DB_FILE_PATH + " LIKE ?", whereArgs);
-        if (deleteResult != E_OK) {
+        if (deleteResult != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Delete rows failed");
         }
     }
