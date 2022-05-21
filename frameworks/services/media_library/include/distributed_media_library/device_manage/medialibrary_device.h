@@ -37,8 +37,11 @@ class MediaLibraryDevice : public DistributedHardware::DeviceStateCallback,
                             public DistributedHardware::DmInitCallback,
                             public std::enable_shared_from_this<MediaLibraryDevice> {
 public:
-    MediaLibraryDevice();
-    ~MediaLibraryDevice();
+    virtual ~MediaLibraryDevice();
+    MediaLibraryDevice(const MediaLibraryDevice&) = delete;
+    MediaLibraryDevice(MediaLibraryDevice&&) = delete;
+    MediaLibraryDevice& operator=(const MediaLibraryDevice&) = delete;
+    MediaLibraryDevice& operator=(MediaLibraryDevice&&) = delete;
     static std::shared_ptr<MediaLibraryDevice> GetInstance();
     void Start();
     void Stop();
@@ -50,7 +53,7 @@ public:
 
     void SetAbilityContext(const std::shared_ptr<OHOS::AppExecFwk::Context> &context);
     void GetAllDeviceId(std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList);
-    bool InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &bundleName);
+    bool InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void ClearAllDevices();
     void NotifyDeviceChange();
     void NotifyRemoteFileChange();
@@ -59,6 +62,8 @@ public:
     string GetNetworkIdBySelfId(const std::string &selfId);
 
 private:
+    MediaLibraryDevice();
+
     std::string GetUdidByNetworkId(const std::string &deviceId);
     void GetMediaLibraryDeviceInfo(const OHOS::DistributedHardware::DmDeviceInfo &dmInfo,
                                    OHOS::Media::MediaLibraryDeviceInfo& mlInfo);
@@ -79,7 +84,7 @@ private:
     std::map<std::string, std::set<int>> excludeMap_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     std::unique_ptr<DeviceProfileAgent> dpa_;
-    std::string bundleName_ { "com.ohos.medialibrary.MediaLibraryDataA" };
+    std::string bundleName_;
 };
 } // namespace Media
 } // namespace OHOS

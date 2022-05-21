@@ -81,13 +81,11 @@ namespace Media {
             const NativeRdb::DataAbilityPredicates &predicates) override;
         EXPORT int32_t OpenFile(const Uri &uri, const std::string &mode) override;
         EXPORT std::string GetType(const Uri &uri) override;
-
     protected:
         void OnStart(const AAFwk::Want &want) override;
         void OnStop() override;
 
     private:
-        static constexpr const char DEVICE_BUNDLENAME[] = "com.ohos.medialibrary.MediaLibraryDataA";
         std::string GetOperationType(const std::string &uri);
         void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
         void InitDeviceData();

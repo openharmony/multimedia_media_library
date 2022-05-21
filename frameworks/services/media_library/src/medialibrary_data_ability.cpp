@@ -92,7 +92,9 @@ void MediaLibraryDataAbility::OnStop()
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
         kvStorePtr_ = nullptr;
     }
-    MediaLibraryDevice::GetInstance()->Stop();
+    if (MediaLibraryDevice::GetInstance()) {
+        MediaLibraryDevice::GetInstance()->Stop();
+    };
     UnSubscribeRdbStoreObserver();
 }
 
@@ -101,7 +103,7 @@ MediaLibraryDataAbility::MediaLibraryDataAbility(void)
     isRdbStoreInitialized = false;
     rdbStore_ = nullptr;
     kvStorePtr_ = nullptr;
-    bundleName_ = DEVICE_BUNDLENAME;
+    bundleName_ = BUNDLE_NAME;
 }
 
 MediaLibraryDataAbility::~MediaLibraryDataAbility(void)
@@ -893,7 +895,7 @@ void MediaLibraryDataAbility::InitDeviceData()
 
     MEDIA_DEBUG_LOG("Distribute StartTrace:InitDeviceRdbStoreTrace");
     StartTrace(HITRACE_TAG_OHOS, "InitDeviceRdbStoreTrace", -1);
-    if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_, bundleName_)) {
+    if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_)) {
         MEDIA_ERR_LOG("MediaLibraryDataAbility InitDeviceData failed!");
         return;
     }
