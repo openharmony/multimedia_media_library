@@ -332,7 +332,7 @@ shared_ptr<FileAsset> MediaLibraryDataManagerUtils::GetFileAssetFromDb(const str
 
     vector<string> columns;
 
-    shared_ptr<DataShareAbstractResultSet> innerResultSet = rdbStore->Query(absPredicates, columns);
+    shared_ptr<ResultSetBridge> innerResultSet = rdbStore->Query(absPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(innerResultSet != nullptr, nullptr, "Failed to obtain path from database");
     shared_ptr<DataShareResultSet> resultSet = make_shared<DataShareResultSet>(innerResultSet);
 
