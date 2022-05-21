@@ -37,6 +37,7 @@ MediaLibraryDevice::~MediaLibraryDevice()
 void MediaLibraryDevice::Start()
 {
     MEDIA_DEBUG_LOG("MediaLibraryDevice::start");
+    bundleName_ = BUNDLE_NAME;
     if (mediaLibraryDeviceOperations_ == nullptr) {
         mediaLibraryDeviceOperations_ = std::make_unique<MediaLibraryDeviceOperations>();
     }
@@ -63,8 +64,10 @@ std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::GetInstance()
 {
     static std::once_flag onceFlag;
     std::call_once(onceFlag, []() mutable {
-        mlDMInstance_ = std::make_shared<MediaLibraryDevice>();
-        mlDMInstance_->Start();
+        mlDMInstance_ = std::shared_ptr<MediaLibraryDevice>(new(std::nothrow) MediaLibraryDevice());
+        if (mlDMInstance_ != nullptr) {
+            mlDMInstance_ ->Start();
+        }
     });
     return mlDMInstance_;
 }
@@ -79,10 +82,12 @@ void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<Context> &conte
 void MediaLibraryDevice::GetAllDeviceId(
     std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList)
 {
-    MEDIA_INFO_LOG("MediaLibraryDevice::GetAllDeviceId IN");
     std::string extra = "";
     auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
-    deviceManager.GetTrustedDeviceList(bundleName_, extra, deviceList);
+    int32_t ret = deviceManager.GetTrustedDeviceList(bundleName_, extra, deviceList);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("get trusted device list failed, ret %{public}d", ret);
+    }
 }
 
 void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
@@ -197,11 +202,9 @@ bool MediaLibraryDevice::IsHasDevice(const string &deviceUdid)
     return false;
 }
 
-bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const std::string &bundleName)
+bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
     rdbStore_ = rdbStore;
-    bundleName_ = bundleName;
     if (dpa_ != nullptr) {
         dpa_->PutDeviceProfile(MEDIA_LIBRARY_VERSION);
     }
