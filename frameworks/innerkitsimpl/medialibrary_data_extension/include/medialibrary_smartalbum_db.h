@@ -30,7 +30,6 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::NativeRdb;
-using namespace OHOS::DataShare;
 using namespace std;
 
 class MediaLibrarySmartAlbumDb {
@@ -38,9 +37,9 @@ public:
     MediaLibrarySmartAlbumDb() = default;
     ~MediaLibrarySmartAlbumDb() = default;
     int32_t DeleteSmartAlbumInfo(const int32_t albumId, const shared_ptr<RdbStore> &rdbStore);
-    int32_t UpdateSmartAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
-    int64_t InsertSmartAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
-    int64_t InsertCategorySmartAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int32_t UpdateSmartAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int64_t InsertSmartAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int64_t InsertCategorySmartAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS

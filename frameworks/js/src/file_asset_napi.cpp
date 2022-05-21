@@ -924,7 +924,7 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
         valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, context->objectInfo->GetRelativePath());
         valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
-        changedRows = context->objectInfo->sDataShareHelper_->Update(updateAssetUri, valuesBucket, predicates);
+        changedRows = context->objectInfo->sDataShareHelper_->Update(updateAssetUri, predicates, valuesBucket);
         if (changedRows < 0) {
             context->error = changedRows;
             NAPI_ERR_LOG("File asset modification failed, err: %{public}d", changedRows);
@@ -1305,7 +1305,7 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
 
     StartTrace(HITRACE_TAG_OHOS, "abilityHelper->Query");
     DataShare::DataSharePredicates predicates;
-    shared_ptr<DataShare::DataShareResultSet> resultSet = abilityHelper->Query(queryUri1, columns, predicates);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = abilityHelper->Query(queryUri1, predicates, columns);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("Query thumbnail error");
         return nullptr;
@@ -1787,7 +1787,7 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
                     }
                     valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavorite);
                     predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
-                    context->objectInfo->sDataShareHelper_->Update(uri, valuesBucket, predicates);
+                    context->objectInfo->sDataShareHelper_->Update(uri, predicates, valuesBucket);
                     context->status = true;
                     context->objectInfo->SetFavorite(isFavorite);
                 } else {
@@ -1883,7 +1883,7 @@ static void JSTrashExecute(FileAssetAsyncContext* context)
         DataShare::DataSharePredicates predicates;
 
         predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetFileId()));
-        context->objectInfo->sDataShareHelper_->Update(uri, context->valuesBucket, predicates);
+        context->objectInfo->sDataShareHelper_->Update(uri, predicates, context->valuesBucket);
         context->objectInfo->SetTrash(context->isTrash);
     } else {
         context->error = ERR_INVALID_OUTPUT;

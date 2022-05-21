@@ -140,6 +140,8 @@ ohos_shared_library("medialibrary") {
     "dataability:native_dataability",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
+    "relational_store:datashare_common",
+    "relational_store:native_dataability",
     "permission_standard:libpermissionsdk_standard",
     "relational_store:native_appdatafwk",
     "relational_store:native_rdb",

@@ -98,7 +98,7 @@ namespace Media {
     private:
         static constexpr const char DEVICE_BUNDLENAME[] = "com.ohos.medialibrary.MediaLibraryDataA";
         std::string GetOperationType(const std::string &uri);
-        void ScanFile(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
+        void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
         void InitDeviceData();
         bool SubscribeRdbStoreObserver();
         bool UnSubscribeRdbStoreObserver();

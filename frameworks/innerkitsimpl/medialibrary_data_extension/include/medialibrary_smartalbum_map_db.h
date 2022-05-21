@@ -37,8 +37,8 @@ public:
     int32_t DeleteSmartAlbumMapInfo(const int32_t albumId, const int32_t assetId, const shared_ptr<RdbStore> &rdbStore);
     int32_t DeleteAllSmartAlbumMapInfo(const int32_t albumId, const shared_ptr<RdbStore> &rdbStore);
     int32_t DeleteAllAssetsMapInfo(const int32_t assetId, const shared_ptr<RdbStore> &rdbStore);
-    int32_t UpdateSmartAlbumMapInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
-    int64_t InsertSmartAlbumMapInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int32_t UpdateSmartAlbumMapInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int64_t InsertSmartAlbumMapInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS

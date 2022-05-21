@@ -22,7 +22,7 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
-int32_t MediaLibraryFileDb::Insert(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+int32_t MediaLibraryFileDb::Insert(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
     MEDIA_ERR_LOG("MediaLibraryFileDb::Insert in");
     int64_t outRowId = -1;
@@ -69,7 +69,7 @@ int32_t MediaLibraryFileDb::Modify(const string &rowNum, const string &dstPath,
 
         struct stat statInfo {};
         if (stat(dstPath.c_str(), &statInfo) == 0) {
-            DataShareValuesBucket values;
+            ValuesBucket values;
             values.PutString(MEDIA_DATA_DB_FILE_PATH, dstPath);
             values.PutString(MEDIA_DATA_DB_BUCKET_NAME, bucketName);
             values.PutInt(MEDIA_DATA_DB_BUCKET_ID, bucketId);

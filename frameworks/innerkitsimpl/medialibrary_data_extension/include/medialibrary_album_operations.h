@@ -27,18 +27,14 @@
 #include "medialibrary_album_db.h"
 #include "rdb_store.h"
 #include "values_bucket.h"
-#include "datashare_values_bucket.h"
-#include "datashare_predicates.h"
-#include "datashare_abs_result_set.h"
-#include "result_set_bridge.h"
 
 namespace OHOS {
 namespace Media {
 class MediaLibraryAlbumOperations {
 public:
-    int32_t HandleAlbumOperations(const std::string &uri, const DataShare::DataShareValuesBucket &values,
+    int32_t HandleAlbumOperations(const std::string &uri, const NativeRdb::ValuesBucket &values,
                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    int32_t HandleAlbumOperations(const std::string &uri, const DataShare::DataShareValuesBucket &values,
+    int32_t HandleAlbumOperations(const std::string &uri, const NativeRdb::ValuesBucket &values,
                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                                   vector<int32_t> &outIds);
     std::shared_ptr<NativeAlbumAsset> nativeAlbumAsset_ = std::make_shared<NativeAlbumAsset>();

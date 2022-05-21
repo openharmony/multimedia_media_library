@@ -19,6 +19,7 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
@@ -110,7 +111,7 @@ NativeAlbumAsset MediaLibraryDataManagerUtils::CreateDirectorys(const string rel
     NativeAlbumAsset albumAsset;
     if (!relativePath.empty()) {
         string path = relativePath;
-        DataShareValuesBucket values;
+        ValuesBucket values;
         values.PutString(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR + path);
         MediaLibraryAlbumOperations albumOprn;
         int32_t errorcode = albumOprn.HandleAlbumOperations(MEDIA_ALBUMOPRN_CREATEALBUM, values, rdbStore, outIds);
@@ -126,7 +127,7 @@ int32_t MediaLibraryDataManagerUtils::DeleteDirectorys(vector<int32_t> &outIds,
     if (!outIds.empty()) {
         MediaLibraryAlbumOperations albumOprn;
         for (vector<int32_t>::reverse_iterator it = outIds.rbegin(); it != outIds.rend(); ++it) {
-            DataShareValuesBucket values;
+            ValuesBucket values;
             int32_t id = *it;
             values.PutInt(MEDIA_DATA_DB_ID, id);
             errorCode = albumOprn.HandleAlbumOperations(MEDIA_ALBUMOPRN_DELETEALBUM, values, rdbStore, outIds);
@@ -326,17 +327,18 @@ shared_ptr<FileAsset> MediaLibraryDataManagerUtils::GetFileAssetFromDb(const str
         MEDIA_ERR_LOG("Get tableName fail, networkId is %{private}s", networkId.c_str());
         return nullptr;
     }
-    DataSharePredicates absPredicates(tableName);
+    AbsRdbPredicates absPredicates(tableName);
     absPredicates.SetWhereClause(strQueryCondition);
     absPredicates.SetWhereArgs(selectionArgs);
 
     vector<string> columns;
 
-    shared_ptr<ResultSetBridge> innerResultSet = rdbStore->Query(absPredicates, columns);
-    CHECK_AND_RETURN_RET_LOG(innerResultSet != nullptr, nullptr, "Failed to obtain path from database");
-    shared_ptr<DataShareResultSet> resultSet = make_shared<DataShareResultSet>(innerResultSet);
+    shared_ptr<AbsSharedResultSet> resultSet = rdbStore->Query(absPredicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Failed to obtain path from database");
 
-    shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>(resultSet);
+    shared_ptr<ResultSetBridge> rsBridge = RdbUtils::ToResultSetBridge(resultSet);
+    shared_ptr<DataShareResultSet> dataShareRs = make_shared<DataShareResultSet>(rsBridge);
+    shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>(dataShareRs);
     if (fetchFileResult == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain fetch file result");
         return nullptr;
@@ -454,7 +456,7 @@ int64_t MediaLibraryDataManagerUtils::UTCTimeSeconds()
 
 bool MediaLibraryDataManagerUtils::CheckDisplayName(std::string displayName)
 {
-    int size = displayName.length();
+    auto size = displayName.length();
     if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }

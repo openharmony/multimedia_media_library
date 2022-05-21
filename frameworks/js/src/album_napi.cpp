@@ -651,7 +651,7 @@ static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
     NAPI_DEBUG_LOG("queryUri is = %{private}s", queryUri.c_str());
     Uri uri(queryUri);
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
-        context->objectInfo->GetMediaDataHelper()->Query(uri, columns, predicates);
+        context->objectInfo->GetMediaDataHelper()->Query(uri, predicates, columns);
     context->fetchResult = std::make_unique<FetchResult>(move(resultSet));
     context->fetchResult->networkId_ = context->objectInfo->GetNetworkId();
 }
@@ -706,7 +706,7 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
         valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
         Uri uri(MEDIALIBRARY_DATA_URI);
         changedRows =
-            context->objectInfo->GetMediaDataHelper()->Update(uri, valuesBucket, predicates);
+            context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, valuesBucket);
         if (changedRows > 0) {
             DataShare::DataSharePredicates filePredicates;
             DataShare::DataShareValuesBucket fileValuesBucket;
@@ -716,7 +716,7 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
                 MediaFileUtils::UTCTimeSeconds());
             Uri fileUuri(MEDIALIBRARY_DATA_URI);
             changedRows =
-                context->objectInfo->GetMediaDataHelper()->Update(fileUuri, fileValuesBucket, filePredicates);
+                context->objectInfo->GetMediaDataHelper()->Update(fileUuri, filePredicates, fileValuesBucket);
         }
     } else {
         changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;

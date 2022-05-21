@@ -19,17 +19,15 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
-using namespace OHOS::DataShare;
-using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
-int64_t MediaLibrarySmartAlbumMapDb::InsertSmartAlbumMapInfo(const DataShareValuesBucket &values,
+int64_t MediaLibrarySmartAlbumMapDb::InsertSmartAlbumMapInfo(const ValuesBucket &values,
                                                              const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid RDB store");
     int64_t outRowId(0);
-    int32_t insertResult = rdbStore->Insert(outRowId, SMARTALBUM_MAP_TABLE, RdbUitls::ToValuesBucket(values));
+    int32_t insertResult = rdbStore->Insert(outRowId, SMARTALBUM_MAP_TABLE, values);
     CHECK_AND_RETURN_RET_LOG(insertResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Insert failed");
     return outRowId;
 }

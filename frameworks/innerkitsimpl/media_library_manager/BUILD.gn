@@ -58,6 +58,8 @@ ohos_shared_library("media_library_manager") {
     "hiviewdfx_hilog_native:libhilog",
     "relational_store:native_appdatafwk",
     "relational_store:native_rdb",
+    "relational_store:datashare_common",
+    "relational_store:native_dataability",
   ]
 
   part_name = "multimedia_media_library_standard"
