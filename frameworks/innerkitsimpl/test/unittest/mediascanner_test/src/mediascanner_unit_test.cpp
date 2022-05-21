@@ -16,6 +16,7 @@
 #include "mediascanner_unit_test.h"
 #include "hilog/log.h"
 #include "media_log.h"
+#include "scanner_utils.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -29,7 +30,6 @@ namespace OHOS {
 namespace Media {
 namespace {
     constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "ApplicationMediaScannerGtest"};
-    shared_ptr<IMediaScannerClient> g_msInstance = nullptr;
 
     int32_t g_callbackStatus(0);
     int32_t g_filescanstatus(0);
@@ -64,16 +64,11 @@ void MediaScannerUnitTest::WaitForCallback()
 void MediaScannerUnitTest::SetUpTestCase(void)
 {
     HiLog::Info(LABEL, "SetUpTestCase invoked");
-    g_msInstance = MediaScannerHelperFactory::CreateScannerHelper();
-    if (g_msInstance == nullptr) {
-        HiLog::Error(LABEL, "Scanner instance not available");
-    }
 }
 
 void MediaScannerUnitTest::TearDownTestCase(void)
 {
     HiLog::Info(LABEL, "TearDownTestCase invoked");
-    g_msInstance = nullptr;
 
     if (remove("/storage/media/100/local/files/gtest_Image1.jpg") != 0
         || remove("/storage/media/100/local/files/gtest_Image2.png") != 0
@@ -126,14 +121,13 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
     string path = g_prefixPath;
     HiLog::Info(LABEL, "ScanDir test case for: %{private}s", path.c_str());
 
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    int result;
+    int result = 0;
     std::string testcaseName("mediascanner_ScanDir_test_001");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-    result = g_msInstance->ScanDir(path, appCallback);
+
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
@@ -161,15 +155,13 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
     EXPECT_EQ(createRes, true);
 
     // scan the file
-    int result;
+    int result = 0;
     std::string testcaseName("mediascanner_ScanImage_Test_001");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanFile(path, appCallback);
     EXPECT_EQ(result, g_filescanstatus);
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -195,15 +187,13 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_002, TestSize.Level0)
     bool createRes = CreateFile("/storage/media/100/local/files/gtest_Image2.png");
     EXPECT_EQ(createRes, true);
 
-    int result;
+    int result = 0;
     std::string testcaseName("mediascanner_ScanImage_Test_002");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanFile(path, appCallback);
     EXPECT_EQ(result, g_filescanstatus);
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -229,15 +219,13 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_003, TestSize.Level0)
     bool createRes = CreateFile("/storage/media/100/local/files/gtest_Image3.jpeg");
     EXPECT_EQ(createRes, true);
 
-    int result;
+    int result = 0;
     std::string testcaseName("mediascanner_ScanImage_Test_003");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanFile(path, appCallback);
     EXPECT_EQ(result, g_filescanstatus);
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -263,15 +251,13 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanTextFile_Test_001, TestSize.Leve
     bool createRes = CreateFile("/storage/media/100/local/files/gtest_Text1.txt");
     EXPECT_EQ(createRes, true);
 
-    int result;
+    int result = 0;
     std::string testcaseName("mediascanner_ScanTextFile_Test_001");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanFile(path, appCallback);
     EXPECT_EQ(result, g_filescanstatus);
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -297,15 +283,13 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanHiddenFile_Test_001, TestSize.Le
     bool createRes = CreateFile("/storage/media/100/local/files/.HiddenFile");
     EXPECT_EQ(createRes, true);
 
-    int result;
+    int result = 0;
     std::string testcaseName("mediascanner_ScanHiddenFile_Test_001");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanFile(path, appCallback);
     EXPECT_EQ(result, g_filescanstatus);
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -328,15 +312,13 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_002, TestSize.Level0)
     string path = g_prefixPath;
     HiLog::Info(LABEL, "ScanDir test case for: %{private}s", path.c_str());
 
-    int result;
+    int result = 0;
     std::string testcaseName("mediascanner_ScanDir_test_002");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanDir(path, appCallback);
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
@@ -360,15 +342,13 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_CononicalPathtest_001, Test
     string path = g_prefixPath + "/../files";
     HiLog::Info(LABEL, "ScanDir test case for: %{private}s", path.c_str());
 
-    int result;
+    int result = 0;
     std::string testcaseName("mediascanner_ScanDir_CononicalPathtest_001");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanDir(path, appCallback);
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
@@ -392,15 +372,13 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_001, Tes
     string path = g_prefixPath + "/../files/gtest_Image1.jpg";
     HiLog::Info(LABEL, "ScanFile test case for: %{private}s", path.c_str());
 
-    int result;
+    int result = 0;
     std::string testcaseName("mediascanner_ScanFile_CononicalPathtest_001");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanFile(path, appCallback);
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
@@ -424,15 +402,13 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_002, Tes
     string path = g_prefixPath + "/../files/gtest_Text1.txt";
     HiLog::Info(LABEL, "ScanFile test case for: %{private}s", path.c_str());
 
-    int result;
+    int result = 0;
     std::string testcaseName("mediascanner_ScanFile_CononicalPathtest_002");
     g_isCallbackReceived = false;
     g_callbackStatus = -1;
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((g_msInstance != nullptr), true);
-    result = g_msInstance->ScanFile(path, appCallback);
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {

@@ -28,8 +28,6 @@
 #include "gtest/gtest.h"
 #include "fetch_result.h"
 #include "imedia_scanner_client.h"
-#include "medialibrary_data_ability.h"
-#include "scanner_utils.h"
 
 namespace OHOS {
 namespace Media {
