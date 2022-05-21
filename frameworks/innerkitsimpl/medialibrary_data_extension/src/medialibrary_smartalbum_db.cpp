@@ -19,37 +19,35 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
-using namespace OHOS::DataShare;
-using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
-int64_t MediaLibrarySmartAlbumDb::InsertSmartAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+int64_t MediaLibrarySmartAlbumDb::InsertSmartAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid RDB store");
     int64_t outRowId(0);
     int32_t albumId = 0;
-    DataShareValuesBucket value = const_cast<DataShareValuesBucket &>(values);
-    DataShareValueObject valueObject;
+    ValuesBucket value = const_cast<ValuesBucket &>(values);
+    ValueObject valueObject;
     if (value.GetObject(SMARTALBUM_DB_ID, valueObject)) {
             valueObject.GetInt(albumId);
         }
-    int32_t insertResult = rdbStore->Insert(outRowId, SMARTALBUM_TABLE, RdbUtils::ToValuesBucket(values));
+    int32_t insertResult = rdbStore->Insert(outRowId, SMARTALBUM_TABLE, values);
     CHECK_AND_RETURN_RET_LOG(insertResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Insert failed");
     return outRowId;
 }
-int64_t MediaLibrarySmartAlbumDb::InsertCategorySmartAlbumInfo(const DataShareValuesBucket &values,
+int64_t MediaLibrarySmartAlbumDb::InsertCategorySmartAlbumInfo(const ValuesBucket &values,
     const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid RDB store");
     int64_t outRowId(0);
     int32_t albumId = 0;
-    DataShareValuesBucket value = const_cast<DataShareValuesBucket &>(values);
-    DataShareValueObject valueObject;
+    ValuesBucket value = const_cast<ValuesBucket &>(values);
+    ValueObject valueObject;
     if (value.GetObject(SMARTALBUM_DB_ID, valueObject)) {
             valueObject.GetInt(albumId);
         }
-    int32_t insertResult = rdbStore->Insert(outRowId, CATEGORY_SMARTALBUM_MAP_TABLE, RdbUtils::ToValuesBucket(values));
+    int32_t insertResult = rdbStore->Insert(outRowId, CATEGORY_SMARTALBUM_MAP_TABLE, values);
     CHECK_AND_RETURN_RET_LOG(insertResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Insert failed");
     return outRowId;
 }

@@ -23,7 +23,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-int32_t InsertAlbumInfoUtil(const DataShareValuesBucket &valuesBucket,
+int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
                             const string &albumPath,
                             shared_ptr<RdbStore> rdbStore,
                             const MediaLibraryAlbumDb &albumDbOprn,
@@ -35,7 +35,7 @@ int32_t InsertAlbumInfoUtil(const DataShareValuesBucket &valuesBucket,
     int32_t parentId = albumAsset.GetAlbumId();
     string path = albumPath;
     while (parentPath.length() < path.length() - 1) {
-        DataShareValuesBucket values;
+        ValuesBucket values;
         string relativePath;
         if (path.substr(path.length() - 1) != "/") {
             path = path + "/";
@@ -77,14 +77,14 @@ int32_t InsertAlbumInfoUtil(const DataShareValuesBucket &valuesBucket,
     }
     return parentId;
 }
-int32_t UpdateAlbumInfoUtil(const DataShareValuesBucket &valuesBucket,
+int32_t UpdateAlbumInfoUtil(const ValuesBucket &valuesBucket,
                             const string &albumPath,
                             const string &albumNewName,
                             shared_ptr<RdbStore> rdbStore,
                             const MediaLibraryAlbumDb &albumDbOprn)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    DataShareValuesBucket values = const_cast<DataShareValuesBucket &>(valuesBucket);
+    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
     string newAlbumPath;
 
     if ((rdbStore == nullptr) || (albumPath.empty()) || (albumNewName.empty())) {
@@ -133,11 +133,10 @@ int32_t UpdateAlbumInfoUtil(const DataShareValuesBucket &valuesBucket,
     return retVal;
 }
 
-int32_t DeleteAlbumInfoUtil(const DataShareValuesBucket &valuesBucket, int32_t albumId, const string &albumPath,
+int32_t DeleteAlbumInfoUtil(const ValuesBucket &valuesBucket, int32_t albumId, const string &albumPath,
                             shared_ptr<RdbStore> rdbStore, const MediaLibraryAlbumDb &albumDbOprn)
 {
     int32_t retVal;
-    DataShareValuesBucket values = const_cast<DataShareValuesBucket &>(valuesBucket);
 
     retVal = const_cast<MediaLibraryAlbumDb &>(albumDbOprn).DeleteAlbumInfo(albumId, rdbStore);
     if ((retVal == DATA_ABILITY_SUCCESS) && (rdbStore != nullptr) && (!albumPath.empty())) {
@@ -155,15 +154,15 @@ int32_t DeleteAlbumInfoUtil(const DataShareValuesBucket &valuesBucket, int32_t a
 }
 
 int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(const string &oprn,
-                                                           const DataShareValuesBucket &valuesBucket,
+                                                           const ValuesBucket &valuesBucket,
                                                            const shared_ptr<RdbStore> &rdbStore,
                                                            vector<int32_t> &outIds)
 {
-    DataShareValuesBucket values = const_cast<DataShareValuesBucket &>(valuesBucket);
+    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
     AlbumAsset albumAsset;
     MediaLibraryAlbumDb albumDbOprn;
     int32_t errCode = DATA_ABILITY_FAIL;
-    DataShareValueObject valueObject;
+    ValueObject valueObject;
     int32_t outRow = -1;
     if (oprn == MEDIA_ALBUMOPRN_CREATEALBUM) {
         string albumPath = "";
@@ -211,7 +210,7 @@ int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(const string &oprn,
     return errCode;
 }
 int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(const string &oprn,
-                                                           const DataShareValuesBucket &valuesBucket,
+                                                           const ValuesBucket &valuesBucket,
                                                            const shared_ptr<RdbStore> &rdbStore)
 {
     vector<int32_t> outIds;

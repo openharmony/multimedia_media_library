@@ -28,33 +28,29 @@
 #include "values_bucket.h"
 #include "datashare_values_bucket.h"
 #include "rdb_utils.h"
-#include "value_object.h"
 #include "medialibrary_thumbnail.h"
-#include "datashare_predicates.h"
-#include "datashare_abs_result_set.h"
-#include "result_set_bridge.h"
 
 namespace OHOS {
 namespace Media {
 class MediaLibraryFileOperations {
 public:
-    int32_t HandleCreateAsset(const DataShare::DataShareValuesBucket &values,
+    int32_t HandleCreateAsset(const NativeRdb::ValuesBucket &values,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    int32_t HandleCloseAsset(std::string &actualUri, std::string &srcPath, const DataShare::DataShareValuesBucket &values,
+    int32_t HandleCloseAsset(std::string &actualUri, std::string &srcPath, const NativeRdb::ValuesBucket &values,
                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    int32_t HandleGetAlbumCapacity(const DataShare::DataShareValuesBucket &values,
+    int32_t HandleGetAlbumCapacity(const NativeRdb::ValuesBucket &values,
                                 const std::shared_ptr<RdbStore> &rdbStore);
-    int32_t HandleFileOperation(const std::string &oprn, const DataShare::DataShareValuesBucket &values,
+    int32_t HandleFileOperation(const std::string &oprn, const NativeRdb::ValuesBucket &values,
                                 const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                                 const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail);
     int32_t HandleModifyAsset(const std::string &rowNum, const std::string &srcPath,
-                              const DataShare::DataShareValuesBucket &values,
+                              const NativeRdb::ValuesBucket &values,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleDeleteAsset(const std::string &rowNum, const std::string &srcPath,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    int32_t HandleIsDirectoryAsset(const DataShare::DataShareValuesBucket &values,
+    int32_t HandleIsDirectoryAsset(const NativeRdb::ValuesBucket &values,
                                    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    DataShare::DataShareValuesBucket UpdateBasicAssetDetails(int32_t mediaType,
+    NativeRdb::ValuesBucket UpdateBasicAssetDetails(int32_t mediaType,
                                                     const std::string &fileName,
                                                     const std::string &relPath,
                                                     const std::string &path);

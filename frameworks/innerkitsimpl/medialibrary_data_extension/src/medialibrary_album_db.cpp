@@ -18,28 +18,26 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
-using namespace OHOS::DataShare;
-using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
-int64_t MediaLibraryAlbumDb::InsertAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+int64_t MediaLibraryAlbumDb::InsertAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid RDB store");
 
     int64_t outRowId(0);
-    int32_t insertResult = rdbStore->Insert(outRowId, MEDIALIBRARY_TABLE, RdbUtils::ToValuesBucket(values));
+    int32_t insertResult = rdbStore->Insert(outRowId, MEDIALIBRARY_TABLE, values);
     CHECK_AND_RETURN_RET_LOG(insertResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Insert failed");
 
     return outRowId;
 }
 
-int32_t MediaLibraryAlbumDb::UpdateAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+int32_t MediaLibraryAlbumDb::UpdateAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
 
     // Get album_id from valuebucket
-    DataShareValueObject obj;
+    ValueObject obj;
     int32_t albumId(0);
 
     auto contains = values.GetObject(MEDIA_DATA_DB_ID, obj);
@@ -51,7 +49,7 @@ int32_t MediaLibraryAlbumDb::UpdateAlbumInfo(const DataShareValuesBucket &values
     int32_t updatedRows(0);
     vector<string> whereArgs = { std::to_string(albumId) };
 
-    int32_t updateResult = rdbStore->Update(updatedRows, MEDIALIBRARY_TABLE, RdbUtils::ToValuesBucket(values), ALBUM_DB_COND, whereArgs);
+    int32_t updateResult = rdbStore->Update(updatedRows, MEDIALIBRARY_TABLE, values, ALBUM_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Update failed");
 
     return (updatedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
