@@ -116,10 +116,10 @@ int MediaDataShareStubImpl::Delete(const Uri &uri, const DataSharePredicates &pr
 }
 
 std::shared_ptr<DataShareResultSet> MediaDataShareStubImpl::Query(const Uri &uri,
-    std::vector<std::string> &columns, const DataSharePredicates &predicates)
+    const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
     LOG_INFO("begin.");
-    std::shared_ptr<DataShareAbstractResultSet> ret = nullptr;
+    std::shared_ptr<ResultSetBridge> ret = nullptr;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {

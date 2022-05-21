@@ -134,8 +134,8 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
     return ret;
 }
 
-int MediaDataShareExtAbility::Update(const Uri &uri, const DataShareValuesBucket &value,
-    const DataSharePredicates &predicates)
+int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &predicates,
+		const DataShareValuesBucket &value)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
@@ -165,13 +165,13 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
     return ret;
 }
 
-std::shared_ptr<DataShareAbstractResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
-    std::vector<std::string> &columns, const DataSharePredicates &predicates)
+std::shared_ptr<ResultSetBridge> MediaDataShareExtAbility::Query(const Uri &uri,
+    const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("klh %{public}s begin.", __func__);
 
-    std::shared_ptr<DataShare::DataShareAbstractResultSet> queryResultSet;
+    std::shared_ptr<DataShare::ResultSetBridge> queryResultSet;
     queryResultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
     HILOG_INFO("klh %{public}s end.", __func__);
 
