@@ -79,7 +79,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptio
     shared_ptr<DataShareResultSet> resultSet = nullptr;
 
     if (sAbilityHelper_ == nullptr
-        || ((resultSet = sAbilityHelper_->Query(uri, columns, predicates)) == nullptr)) {
+        || ((resultSet = sAbilityHelper_->Query(uri, predicates, columns)) == nullptr)) {
         MEDIA_ERR_LOG("Resultset retrieval failure caused Query operation to fail");
     } else {
         // Create FetchResult object using the contents of resultSet
@@ -152,7 +152,7 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
     shared_ptr<DataShareResultSet> resultSet = sAbilityHelper_->Query(
-        uri, columns, predicates);
+        uri, predicates, columns);
 
     if (resultSet != nullptr) {
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -379,7 +379,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
         Uri uri(MEDIALIBRARY_DATA_URI);
 
         shared_ptr<DataShareResultSet> resultSet =
-            sAbilityHelper_->Query(uri, columns, predicates);
+            sAbilityHelper_->Query(uri, predicates, columns);
 
         fetchFileResult = make_unique<FetchResult>(resultSet);
         if (fetchFileResult == nullptr) {

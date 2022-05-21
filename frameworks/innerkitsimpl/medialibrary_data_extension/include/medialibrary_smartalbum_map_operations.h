@@ -29,7 +29,7 @@
 #include "values_bucket.h"
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
-#include "datashare_abstract_result_set.h"
+#include "result_set_bridge.h"
 
 namespace OHOS {
 namespace Media {

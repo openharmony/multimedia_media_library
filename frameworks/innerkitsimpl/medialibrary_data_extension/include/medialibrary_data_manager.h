@@ -51,7 +51,7 @@
 #include "timer.h"
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
-#include "datashare_abstract_result_set.h"
+#include "result_set_bridge.h"
 
 namespace OHOS {
 namespace Media {
@@ -84,7 +84,7 @@ namespace Media {
         EXPORT int32_t BatchInsert(const Uri &uri, const std::vector<DataShare::DataShareValuesBucket> &values);
         EXPORT int32_t Update(const Uri &uri, const DataShare::DataShareValuesBucket &value,
                        const DataShare::DataSharePredicates &predicates);
-        EXPORT std::shared_ptr<DataShare::DataShareAbstractResultSet> Query(const Uri &uri,
+        EXPORT std::shared_ptr<DataShare::ResultSetBridge> Query(const Uri &uri,
             const std::vector<std::string> &columns,
             const DataShare::DataSharePredicates &predicates);
         EXPORT int32_t OpenFile(const Uri &uri, const std::string &mode);

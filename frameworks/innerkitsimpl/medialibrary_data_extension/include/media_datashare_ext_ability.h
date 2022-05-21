@@ -132,8 +132,8 @@ public:
      *
      * @return Returns the number of data records updated.
      */
-    int Update(const Uri &uri, const DataShareValuesBucket &value,
-        const DataSharePredicates &predicates) override;
+    int Update(const Uri &uri, const DataSharePredicates &predicates,
+		    const DataShareValuesBucket &value) override;
 
     /**
      * @brief Deletes one or more data records from the database.
@@ -154,8 +154,8 @@ public:
      *
      * @return Returns the query result.
      */
-    std::shared_ptr<DataShareAbstractResultSet> Query(const Uri &uri, std::vector<std::string> &columns,
-        const DataSharePredicates &predicates) override;
+    std::shared_ptr<ResultSetBridge> Query(const Uri &uri, const DataSharePredicates &predicates,
+		    std::vector<std::string> &columns) override;
 
     /**
      * @brief Obtains the MIME type matching the data specified by the URI of the Data ability. This method should be
