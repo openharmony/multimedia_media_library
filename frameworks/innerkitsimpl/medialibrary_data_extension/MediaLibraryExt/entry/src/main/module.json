@@ -50,7 +50,7 @@
         "srcLanguage": "ets",
         "description": "mediadatashare",
         "type": "dataShare",
-        "uri": "datashare://com.ohos.medialibrary.medialibrarydata.datashare",
+        "uri": "datashare://media",
         "visible": true
       }
     ],

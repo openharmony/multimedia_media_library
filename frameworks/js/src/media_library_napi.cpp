@@ -144,7 +144,7 @@ shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::GetDataShareHelper(napi
             }
             AppExecFwk::Want want;
             want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
-            dataShareHelper = DataShare::DataShareHelper::Creator(context, want, std::make_shared<Uri>("datashare://com.ohos.medialibrary.medialibrarydata.datashare"));
+            dataShareHelper = DataShare::DataShareHelper::Creator(context, want, std::make_shared<Uri>(MEDIALIBRARY_DATA_URI));
 	}
     }
     return dataShareHelper;
