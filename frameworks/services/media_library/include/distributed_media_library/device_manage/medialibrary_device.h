@@ -22,6 +22,7 @@
 #include "device_manager.h"
 #include "device_manager_callback.h"
 #include "device_profile_agent.h"
+#include "distributed_kv_data_manager.h"
 #include "event_handler.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_device_info.h"
@@ -71,6 +72,9 @@ private:
     bool IsHasDevice(const std::string &deviceUdid);
     void RegisterToDM();
     void UnRegisterFromDM();
+    void PutKvDB();
+    void GetKvDB(const std::string &udid, std::string &val);
+    void InitKvStore();
 private:
     static constexpr int SHORT_UDID_LEN = 8;
     static constexpr int RANDOM_NUM = 999;
@@ -85,6 +89,7 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     std::unique_ptr<DeviceProfileAgent> dpa_;
     std::string bundleName_;
+    std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
 };
 } // namespace Media
 } // namespace OHOS

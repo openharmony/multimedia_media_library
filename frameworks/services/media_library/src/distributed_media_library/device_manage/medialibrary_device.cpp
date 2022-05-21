@@ -16,6 +16,7 @@
 #include "medialibrary_device.h"
 #include "media_log.h"
 #include "medialibrary_sync_table.h"
+#include "parameter.h"
 
 namespace OHOS {
 namespace Media {
@@ -48,6 +49,7 @@ void MediaLibraryDevice::Start()
     }
     dpa_ = make_unique<DeviceProfileAgent>();
     RegisterToDM();
+    InitKvStore();
 }
 
 void MediaLibraryDevice::Stop()
@@ -72,6 +74,71 @@ std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::GetInstance()
     return mlDMInstance_;
 }
 
+void MediaLibraryDevice::InitKvStore()
+{
+    DistributedKv::DistributedKvDataManager kvManager;
+    DistributedKv::Options options = {
+        .createIfMissing = true,
+        .encrypt = true,
+        .persistent = true,
+        .backup = true,
+        .autoSync = true,
+        .securityLevel = DistributedKv::SecurityLevel::NO_LABEL,
+        .syncPolicy = DistributedKv::SyncPolicy::HIGH,
+        .kvStoreType = DistributedKv::KvStoreType::SINGLE_VERSION
+    };
+    DistributedKv::AppId appId = { BUNDLE_NAME };
+    DistributedKv::StoreId storeId = { "mediaLibrayMultiDevInfoFetch" };
+    DistributedKv::Status status = kvManager.GetSingleKvStore(options, appId, storeId, kvStorePtr_);
+    if (status != DistributedKv::Status::SUCCESS) {
+        MEDIA_ERR_LOG("KvStore get failed! %{public}d", status);
+        return;
+    }
+    MEDIA_INFO_LOG("KvStore get success!");
+    PutKvDB();
+}
+
+void MediaLibraryDevice::GetKvDB(const std::string &udid, std::string &val)
+{
+    if (kvStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("kvstore is nullptr");
+        return;
+    }
+
+    std::string key = udid + bundleName_;
+
+    DistributedKv::Key k(key);
+    DistributedKv::Value v;
+    DistributedKv::Status status = kvStorePtr_->Get(k, v);
+    if (status != DistributedKv::Status::SUCCESS) {
+        MEDIA_ERR_LOG("get kvstore failed %{public}d", status);
+        return;
+    }
+    std::string versionInfo = v.ToString();
+    MEDIA_INFO_LOG("get kvstore success! ml version info %{public}s", versionInfo.c_str());
+    val = versionInfo;
+}
+
+void MediaLibraryDevice::PutKvDB()
+{
+    if (kvStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("kvstore is nullptr");
+        return;
+    }
+
+    std::string devId = "";
+    std::string key = GetUdidByNetworkId(devId) + bundleName_;
+    std::string val("mediaLibaray-version-1.0"); // todo converto json
+
+    DistributedKv::Key k(key);
+    DistributedKv::Value v(val);
+    DistributedKv::Status status = kvStorePtr_->Put(k, v);
+    if (status != DistributedKv::Status::SUCCESS) {
+        MEDIA_ERR_LOG("put kvstore failed %{public}d", status);
+    }
+    MEDIA_INFO_LOG("put kvstore success!");
+}
+
 void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<Context> &context)
 {
     dataAbilityhelper_ = OHOS::AppExecFwk::DataAbilityHelper::Creator(context);
@@ -86,7 +153,7 @@ void MediaLibraryDevice::GetAllDeviceId(
     auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
     int32_t ret = deviceManager.GetTrustedDeviceList(bundleName_, extra, deviceList);
     if (ret != 0) {
-        MEDIA_ERR_LOG("get trusted device list failed, ret %{public}d", ret);
+         MEDIA_ERR_LOG("get trusted device list failed, ret %{public}d", ret);
     }
 }
 
@@ -103,6 +170,7 @@ void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDevic
         if (mediaLibraryDeviceOperations_ != nullptr) {
             OHOS::Media::MediaLibraryDeviceInfo mldevInfo;
             GetMediaLibraryDeviceInfo(deviceInfo, mldevInfo);
+            GetKvDB(mldevInfo.deviceUdid, mldevInfo.versionId);
             if (dpa_ != nullptr) {
                 dpa_->GetDeviceProfile(mldevInfo.deviceUdid, mldevInfo.versionId);
             }
@@ -220,6 +288,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     for (auto& deviceInfo : deviceList) {
         OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
         GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo);
+        GetKvDB(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
         if (dpa_ != nullptr) {
             dpa_->GetDeviceProfile(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
         }
@@ -278,6 +347,17 @@ bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &deviceId, int32
 
 std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId)
 {
+    if (deviceId.empty()) {
+        constexpr int32_t DEVICE_ID_SIZE = 65;
+        char localDeviceId[DEVICE_ID_SIZE] = {0};
+        GetDevUdid(localDeviceId, DEVICE_ID_SIZE);
+        std::string localUdid = std::string(localDeviceId);
+        MEDIA_INFO_LOG("get local udid %{public}s", localUdid.c_str());
+        if (localUdid.empty()) {
+            MEDIA_ERR_LOG("get local udid failed");
+        }
+        return localUdid;
+    }
     auto &deviceManager = DistributedHardware::DeviceManager::GetInstance();
     std::string deviceUdid;
     auto ret = deviceManager.GetUdidByNetworkId(bundleName_, deviceId, deviceUdid);
