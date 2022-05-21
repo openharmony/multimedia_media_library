@@ -44,7 +44,7 @@ void UpdateDateModifiedForAlbum(const shared_ptr<RdbStore> &rdbStore, const stri
     }
 }
 
-int32_t MediaLibraryFileOperations::HandleCreateAsset(const DataShareValuesBucket &values,
+int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values,
                                                       const shared_ptr<RdbStore> &rdbStore)
 {
     string relativePath(""), path(""), displayName("");
@@ -52,7 +52,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const DataShareValuesBucke
     int32_t mediaType = static_cast<int32_t>(MEDIA_TYPE_FILE);
     FileAsset fileAsset;
     MediaLibraryFileDb fileDbOprn;
-    DataShareValueObject valueObject;
+    ValueObject valueObject;
     NativeAlbumAsset  nativeAlbumAsset;
     // Obtain file displayName
     if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
@@ -92,7 +92,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const DataShareValuesBucke
     errCode = fileAsset.CreateAsset(path);
     if (errCode == DATA_ABILITY_SUCCESS) {
         // Fill basic file information into DB
-        DataShareValuesBucket updatedAssetInfo = UpdateBasicAssetDetails(mediaType, displayName, relativePath, path);
+        ValuesBucket updatedAssetInfo = UpdateBasicAssetDetails(mediaType, displayName, relativePath, path);
         updatedAssetInfo.PutInt(MEDIA_DATA_DB_BUCKET_ID, nativeAlbumAsset.GetAlbumId());
         updatedAssetInfo.PutInt(MEDIA_DATA_DB_PARENT_ID, nativeAlbumAsset.GetAlbumId());
         updatedAssetInfo.PutString(MEDIA_DATA_DB_BUCKET_NAME, nativeAlbumAsset.GetAlbumName());
@@ -102,7 +102,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const DataShareValuesBucke
     return errCode;
 }
 
-int32_t MediaLibraryFileOperations::HandleCloseAsset(string &uriStr, string &srcPath, const DataShareValuesBucket &values,
+int32_t MediaLibraryFileOperations::HandleCloseAsset(string &uriStr, string &srcPath, const ValuesBucket &values,
     const shared_ptr<RdbStore> &rdbStore)
 {
     int32_t errorCode = MediaLibraryDataManagerUtils::setFilePending(uriStr, false, rdbStore);
@@ -122,13 +122,13 @@ int32_t MediaLibraryFileOperations::HandleCloseAsset(string &uriStr, string &src
     return DATA_ABILITY_SUCCESS;
 }
 
-int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(const DataShareValuesBucket &values,
+int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(const ValuesBucket &values,
     const shared_ptr<RdbStore> &rdbStore)
 {
     MEDIA_INFO_LOG("HandleGetAlbumCapacity IN");
     int32_t errorCode = DATA_ABILITY_FAIL;
     unique_ptr<AbsSharedResultSet> resultSet = nullptr;
-    DataShareValueObject valueObject;
+    ValueObject valueObject;
     bool isFavourite = false;
     if (values.GetObject(MEDIA_DATA_DB_IS_FAV, valueObject)) {
         valueObject.GetBool(isFavourite);
@@ -192,12 +192,12 @@ int ModifyDisName(const string &dstFileName,
     return errCode;
 }
 int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, const string &srcPath,
-    const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+    const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
     string dstFilePath, dstReFilePath, dstFileName, destAlbumPath, bucketName;
     int32_t errCode = DATA_ABILITY_SUCCESS;
     int32_t bucketId = 0;
-    DataShareValueObject valueObject;
+    ValueObject valueObject;
     FileAsset fileAsset;
     MediaLibraryFileDb fileDbOprn;
     if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
@@ -283,11 +283,11 @@ void CreateThumbnail(const shared_ptr<RdbStore> &rdbStore,
         }
     }
 }
-int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const DataShareValuesBucket &values,
+int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &values,
                                                            const shared_ptr<RdbStore> &rdbStore)
 {
     int32_t errCode = DATA_ABILITY_FAIL;
-    DataShareValueObject valueObject;
+    ValueObject valueObject;
     int32_t id = 0;
     shared_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
@@ -314,7 +314,7 @@ int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const DataShareValues
     }
     return errCode;
 }
-int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, const DataShareValuesBucket &values,
+int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, const ValuesBucket &values,
     const shared_ptr<RdbStore> &rdbStore, const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail)
 {
     int32_t errCode = DATA_ABILITY_FAIL;
@@ -328,7 +328,7 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
     }
 
     string actualUri;
-    DataShareValueObject valueObject;
+    ValueObject valueObject;
 
     if (values.GetObject(MEDIA_DATA_DB_URI, valueObject)) {
         valueObject.GetString(actualUri);
@@ -361,12 +361,12 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
     return errCode;
 }
 
-DataShareValuesBucket MediaLibraryFileOperations::UpdateBasicAssetDetails(int32_t mediaType,
+ValuesBucket MediaLibraryFileOperations::UpdateBasicAssetDetails(int32_t mediaType,
                                                                  const string &fileName,
                                                                  const string &relPath,
                                                                  const string &path)
 {
-    DataShareValuesBucket assetInfoBucket;
+    ValuesBucket assetInfoBucket;
     assetInfoBucket.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, relPath);
     assetInfoBucket.PutString(Media::MEDIA_DATA_DB_NAME, fileName);
     assetInfoBucket.PutString(Media::MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(fileName));

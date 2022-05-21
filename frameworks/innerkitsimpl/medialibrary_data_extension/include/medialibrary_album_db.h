@@ -40,8 +40,8 @@ public:
 
     string GetAlbumPath(const int32_t albumId, const shared_ptr<RdbStore> &rdbStore);
     int32_t DeleteAlbumInfo(const int32_t albumId, const shared_ptr<RdbStore> &rdbStore);
-    int32_t UpdateAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
-    int64_t InsertAlbumInfo(const DataShareValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int32_t UpdateAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int64_t InsertAlbumInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS

@@ -26,7 +26,7 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-FetchResult::FetchResult(const shared_ptr<OHOS::DataShare::DataShareResultSet>& resultset)
+FetchResult::FetchResult(const shared_ptr<DataShare::DataShareResultSet>& resultset)
 {
     count_ = 0;
     if (resultset != nullptr) {

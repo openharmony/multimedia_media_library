@@ -33,6 +33,7 @@
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
@@ -84,7 +85,7 @@ void ParseStringResult(shared_ptr<ResultSet> resultSet,
     }
 }
 
-void ParseQueryResult(shared_ptr<ResultSet> resultSet,
+void ParseQueryResult(shared_ptr<AbsSharedResultSet> &resultSet,
                       ThumbnailRdbData &data, int &errorCode)
 {
     ParseStringResult(resultSet, NUM_0, data.id, errorCode);
@@ -284,10 +285,10 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOp
 unique_ptr<PixelMap> MediaLibraryThumbnail::GetThumbnailByRdb(ThumbRdbOpt &opts,
                                                               Size &size, const std::string &uri)
 {
-    int errorCode;
-    shared_ptr<AbsSharedResultSet> resultSet = GetThumbnailKey(opts, size);
+    int errorCode = E_OK;
+    //shared_ptr<AbsSharedResultSet> resultSet = GetThumbnailKey(opts, size);
     ThumbnailRdbData rdbData;
-    ParseQueryResult(resultSet, rdbData, errorCode);
+    //ParseQueryResult(resultSet, rdbData, errorCode);
 
     if (errorCode != E_OK) {
         MEDIA_ERR_LOG("Failed GetThumbnailKey errorCode : %{private}d", errorCode);

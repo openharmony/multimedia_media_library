@@ -19,7 +19,6 @@
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
-using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
@@ -52,13 +51,13 @@ string MediaLibraryKvStoreOperations::GetKey(const string &uri)
 }
 
 int32_t MediaLibraryKvStoreOperations::HandleKvStoreInsertOperations(const string &oprn,
-    const DataShareValuesBucket &valuesBucket, const shared_ptr<SingleKvStore> &kvStorePtr)
+    const ValuesBucket &valuesBucket, const shared_ptr<SingleKvStore> &kvStorePtr)
 {
     MEDIA_INFO_LOG("MediaLibraryKvStoreOperations::%{private}s", __func__);
     CHECK_AND_RETURN_RET_LOG(kvStorePtr != nullptr, DATA_ABILITY_FAIL, "kv store not available");
 
-    DataShareValuesBucket values = const_cast<DataShareValuesBucket &>(valuesBucket);
-    DataShareValueObject valueObject;
+    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
+    ValueObject valueObject;
 
     if (oprn == MEDIA_KVSTOREOPRN_SET_URI) {
         string ringtoneUri = "";

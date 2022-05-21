@@ -40,7 +40,7 @@ enum ResultSetDataType {
  */
 class FetchResult {
 public:
-    explicit FetchResult(const std::shared_ptr<OHOS::DataShare::DataShareResultSet>& resultset);
+    explicit FetchResult(const std::shared_ptr<DataShare::DataShareResultSet>& resultset);
     FetchResult();
     virtual ~FetchResult();
 

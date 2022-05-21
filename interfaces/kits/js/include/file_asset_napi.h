@@ -27,7 +27,6 @@
 #include "napi_remote_object.h"
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
-#include "datashare_abstract_result_set.h"
 #include "datashare_helper.h"
 
 namespace OHOS {

@@ -84,8 +84,8 @@ int MediaDataShareStubImpl::Insert(const Uri &uri, const DataShareValuesBucket &
     return ret;
 }
 
-int MediaDataShareStubImpl::Update(const Uri &uri, const DataShareValuesBucket &value,
-    const DataSharePredicates &predicates)
+int MediaDataShareStubImpl::Update(const Uri &uri, const DataSharePredicates &predicates,
+    const DataShareValuesBucket &value)
 {
     LOG_INFO("begin.");
     int ret = 0;
@@ -95,7 +95,7 @@ int MediaDataShareStubImpl::Update(const Uri &uri, const DataShareValuesBucket &
         LOG_ERROR("%{public}s end failed.", __func__);
         return ret;
     }
-    ret = extension->Update(uri, value, predicates);
+    ret = extension->Update(uri, predicates, value);
     LOG_INFO("end successfully.");
     return ret;
 }
@@ -126,7 +126,7 @@ std::shared_ptr<DataShareResultSet> MediaDataShareStubImpl::Query(const Uri &uri
         LOG_ERROR("%{public}s end failed.", __func__);
         return nullptr;
     }
-    ret = extension->Query(uri, columns, predicates);
+    ret = extension->Query(uri, predicates, columns);
     std::shared_ptr<DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(ret);
     LOG_INFO("end successfully.");
     return resultSet;

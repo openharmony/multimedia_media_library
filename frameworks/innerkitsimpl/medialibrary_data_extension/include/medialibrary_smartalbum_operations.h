@@ -27,17 +27,13 @@
 #include "medialibrary_data_manager_utils.h"
 #include "rdb_store.h"
 #include "values_bucket.h"
-#include "datashare_values_bucket.h"
-#include "datashare_predicates.h"
-#include "datashare_abs_result_set.h"
-#include "result_set_bridge.h"
 
 namespace OHOS {
 namespace Media {
 class MediaLibrarySmartAlbumOperations {
 public:
     int32_t HandleSmartAlbumOperations(const std::string &uri,
-                                       const DataShare::DataShareValuesBucket &values,
+                                       const NativeRdb::ValuesBucket &values,
                                        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 };
 } // namespace Media
