@@ -172,10 +172,12 @@ int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(const string &oprn,
         CHECK_AND_RETURN_RET_LOG(!albumPath.empty(), DATA_ABILITY_FAIL, "Path is empty");
         albumAsset.SetAlbumPath(albumPath);
         if (!MediaLibraryDataManagerUtils::isAlbumExistInDb(albumPath, rdbStore, outRow)) {
+            MEDIA_ERR_LOG("klh Create %{public}s", albumPath.c_str());
             albumAsset.CreateAlbumAsset();
             errCode = InsertAlbumInfoUtil(values, albumPath, rdbStore, albumDbOprn, outIds);
         } else {
             if (!MediaFileUtils::IsDirectory(albumPath)) {
+                MEDIA_ERR_LOG("klh Create 2 %{public}s", albumPath.c_str());
                 albumAsset.CreateAlbumAsset();
             } else {
                 outRow = DATA_ABILITY_DUPLICATE_CREATE;

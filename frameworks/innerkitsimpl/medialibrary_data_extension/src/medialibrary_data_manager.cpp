@@ -307,6 +307,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
             return DATA_ABILITY_FILE_NAME_INVALID;
         }
         if (insertUri.find(MEDIA_FILEOPRN) != string::npos) {
+            MEDIA_ERR_LOG("klh File %{public}s", insertUri.c_str());
             result = fileOprn.HandleFileOperation(operationType, value, rdbStore_, mediaThumbnail_);
             // After successful close asset operation, do a scan file
             if ((result >= 0) && (operationType == MEDIA_FILEOPRN_CLOSEASSET)) {
@@ -314,6 +315,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
             }
             syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
         } else if (insertUri.find(MEDIA_ALBUMOPRN) != string::npos) {
+            MEDIA_ERR_LOG("klh Album %{public}s", insertUri.c_str());
             result = albumOprn.HandleAlbumOperations(operationType, value, rdbStore_);
             syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_TABLE, devices);
         } else if (insertUri.find(MEDIA_SMARTALBUMOPRN) != string::npos) {
@@ -379,30 +381,18 @@ shared_ptr<ResultSetBridge> QueryBySmartTableType(TableType tabletype,
     shared_ptr<AbsSharedResultSet> queryResultSet;
     if (tabletype == TYPE_SMARTALBUM) {
         AbsRdbPredicates mediaLibSAAbsPred(SMARTALBUM_TABLE);
-	/*
-        if (predicates.IsDistinct()) {
-            mediaLibSAAbsPred.Distinct();
-        }
-	*/
 
         mediaLibSAAbsPred.SetWhereClause(strQueryCondition);
         mediaLibSAAbsPred.SetWhereArgs(predicates.GetWhereArgs());
-        //mediaLibSAAbsPred.Limit(predicates.GetLimit());
         mediaLibSAAbsPred.SetOrder(predicates.GetOrder());
 
         queryResultSet = rdbStore->Query(mediaLibSAAbsPred, columns);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     } else if (tabletype == TYPE_SMARTALBUM_MAP) {
         AbsRdbPredicates mediaLibSAMAbsPred(SMARTALBUM_MAP_TABLE);
-        /*
-        if (predicates.IsDistinct()) {
-            mediaLibSAMAbsPred.Distinct();
-        }
-	*/
 
         mediaLibSAMAbsPred.SetWhereClause(strQueryCondition);
         mediaLibSAMAbsPred.SetWhereArgs(predicates.GetWhereArgs());
-        //mediaLibSAMAbsPred.Limit(predicates.GetLimit());
         mediaLibSAMAbsPred.SetOrder(predicates.GetOrder());
 
         queryResultSet = rdbStore->Query(mediaLibSAMAbsPred, columns);
@@ -434,15 +424,9 @@ shared_ptr<ResultSetBridge> QueryFile(string strQueryCondition,
         devices.push_back(networkId);
         mediaLibAbsPredFile.InDevices(devices);
     }
-    /*
-    if (predicates.IsDistinct()) {
-        mediaLibAbsPredFile.Distinct();
-    }
-    */
     MEDIA_INFO_LOG("StrQueryCondition %{public}s", strQueryCondition.c_str());
     mediaLibAbsPredFile.SetWhereClause(strQueryCondition);
     mediaLibAbsPredFile.SetWhereArgs(predicates.GetWhereArgs());
-    //mediaLibAbsPredFile.Limit(predicates.GetLimit());
     mediaLibAbsPredFile.SetOrder(predicates.GetOrder());
 
     StartTrace(BYTRACE_TAG_OHOS, "QueryFile RdbStore->Query");
@@ -482,23 +466,18 @@ shared_ptr<ResultSetBridge> QueryAlbum(string strQueryCondition,
         }
         mediaLibAbsPredAlbum.SetWhereClause(strQueryCondition);
         mediaLibAbsPredAlbum.SetWhereArgs(predicates.GetWhereArgs());
-        //mediaLibAbsPredAlbum.Limit(predicates.GetLimit());
         mediaLibAbsPredAlbum.SetOrder(predicates.GetOrder());
         queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
     } else {
         AbsRdbPredicates mediaLibAbsPredAlbum(ABLUM_VIEW_NAME);
         if (!strQueryCondition.empty()) {
-	    /*
-            if (predicates.IsDistinct()) {
-                mediaLibAbsPredAlbum.Distinct();
-            }
-	    */
             mediaLibAbsPredAlbum.SetWhereClause(strQueryCondition);
             mediaLibAbsPredAlbum.SetWhereArgs(predicates.GetWhereArgs());
-            //mediaLibAbsPredAlbum.Limit(predicates.GetLimit());
             mediaLibAbsPredAlbum.SetOrder(predicates.GetOrder());
-        }
-        queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
+            queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
+        } else {
+	    queryResultSet = rdbStore->QuerySql("SELECT * FROM " + ABLUM_VIEW_NAME);
+	}
     }
     return RdbUtils::ToResultSetBridge(queryResultSet);
 }
@@ -508,15 +487,9 @@ shared_ptr<ResultSetBridge> QueryDeviceInfo(string strQueryCondition,
 {
     shared_ptr<AbsSharedResultSet> queryResultSet;
     AbsRdbPredicates deviceDataSharePredicates(DEVICE_TABLE);
-    /*
-    if (predicates.IsDistinct()) {
-        deviceDataSharePredicates.Distinct();
-    }
-    */
 
     deviceDataSharePredicates.SetWhereClause(strQueryCondition);
     deviceDataSharePredicates.SetWhereArgs(predicates.GetWhereArgs());
-    //deviceDataSharePredicates.Limit(predicates.GetLimit());
     deviceDataSharePredicates.SetOrder(predicates.GetOrder());
 
     queryResultSet = rdbStore->Query(deviceDataSharePredicates, columns);
@@ -535,32 +508,23 @@ shared_ptr<ResultSetBridge> QueryByViewType(TableType tabletype,
 	string tableName = ASSETMAP_VIEW_NAME;
         AbsRdbPredicates mediaLibAbsPredAlbum(tableName);
         if (!strQueryCondition.empty()) {
-            /*
-            if (predicates.IsDistinct()) {
-                mediaLibAbsPredAlbum.Distinct();
-            }
-	    */
             mediaLibAbsPredAlbum.SetWhereClause(strQueryCondition);
             mediaLibAbsPredAlbum.SetWhereArgs(predicates.GetWhereArgs());
-            //mediaLibAbsPredAlbum.Limit(predicates.GetLimit());
             mediaLibAbsPredAlbum.SetOrder(predicates.GetOrder());
-        }
-        queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
+            queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
+        } else {
+            queryResultSet = rdbStore->QuerySql("SELECT * FROM " + ASSETMAP_VIEW_NAME);
+	}
     } else if (tabletype == TYPE_SMARTALBUMASSETS_TABLE) {
-	string tableName = SMARTABLUMASSETS_VIEW_NAME;
         AbsRdbPredicates mediaLibAbsPredAlbum(SMARTABLUMASSETS_VIEW_NAME);
         if (!strQueryCondition.empty()) {
-            /*
-            if (predicates.IsDistinct()) {
-                mediaLibAbsPredAlbum.Distinct();
-            }
-	    */
             mediaLibAbsPredAlbum.SetWhereClause(strQueryCondition);
             mediaLibAbsPredAlbum.SetWhereArgs(predicates.GetWhereArgs());
-            //mediaLibAbsPredAlbum.Limit(predicates.GetLimit());
             mediaLibAbsPredAlbum.SetOrder(predicates.GetOrder());
-        }
-        queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
+            queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
+        } else {
+            queryResultSet = rdbStore->QuerySql("SELECT * FROM " + SMARTABLUMASSETS_VIEW_NAME);
+	}
     }
     return RdbUtils::ToResultSetBridge(queryResultSet);
 }
