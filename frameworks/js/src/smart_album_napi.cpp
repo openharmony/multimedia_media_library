@@ -445,7 +445,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
     NAPI_DEBUG_LOG("CommitModifyNative = %{private}s", context->objectInfo->GetSmartAlbumName().c_str());
     if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName())) {
         valuesBucket.PutString(SMARTALBUM_DB_NAME, context->objectInfo->GetSmartAlbumName());
-        predicates.EqualTo(SMARTALBUM_DB_ID, std::to_string(context->objectInfo->GetSmartAlbumId()));
+        predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectInfo->GetSmartAlbumId()));
         Uri CommitModifyuri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMOPRN +
                             "/" + MEDIA_SMARTALBUMOPRN_MODIFYALBUM);
         changedRows = context->objectInfo->GetMediaDataHelper()->Update(CommitModifyuri, predicates, valuesBucket);
@@ -470,7 +470,7 @@ static void SetFileFav(bool isFavourite, SmartAlbumNapiAsyncContext *context)
 
     DataShare::DataSharePredicates predicates;
 
-    predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(fileId));
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(fileId));
     changedRows = context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, values);
     context->changedRows = changedRows;
     NAPI_DEBUG_LOG("SetFileFav OUT  = %{private}d", changedRows);
@@ -498,7 +498,7 @@ static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
 
     DataShare::DataSharePredicates predicates;
 
-    predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(fileId));
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(fileId));
     changedRows = context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, values);
     context->changedRows = changedRows;
     NAPI_DEBUG_LOG("SetFileTrash OUT  = %{private}d", changedRows);
@@ -555,7 +555,7 @@ static void UpdateAlbumCapacity(SmartAlbumNapiAsyncContext *context)
     Uri uri(MEDIALIBRARY_DATA_URI + "/"
         + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
         + SMARTABLUMASSETS_VIEW_NAME);
-    predicates.EqualTo(SMARTALBUM_DB_ID, std::to_string(context->objectInfo->GetSmartAlbumId()));
+    predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectInfo->GetSmartAlbumId()));
     shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->GetMediaDataHelper()->Query(uri,
         predicates, columns);
     int32_t albumCapacityIndex = 0, albumCapacity = 1;

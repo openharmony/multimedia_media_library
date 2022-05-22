@@ -91,7 +91,7 @@ unique_ptr<Metadata> MediaScannerDb::ReadMetadata(const string &path)
 {
     shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
     DataShare::DataSharePredicates predicates = {};
-    predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + path);
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {};
@@ -115,7 +115,7 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     int32_t updateCount(0);
     DataShareValuesBucket values;
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(metadata.GetFileId()));
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + to_string(metadata.GetFileId()));
 
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri = GetMediaTypeUri(mediaType);
@@ -214,7 +214,7 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
 
     shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + path);
 
     Uri abilityUri(MEDIALIBRARY_DATA_URI);
     resultSet = MediaLibraryDataManager::GetInstance()->Query(abilityUri, columns, predicates);
@@ -248,7 +248,7 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
     // Append % to end of the path for using LIKE statement
     auto modifiedPath = path;
     modifiedPath = modifiedPath.back() != '/' ? modifiedPath + "/%" : modifiedPath + "%";
-    predicates.Like(MEDIA_DATA_DB_FILE_PATH, modifiedPath);
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " like " + modifiedPath );
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
     resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
@@ -281,7 +281,7 @@ string MediaScannerDb::GetFileDBUriFromPath(const string &path)
     columns.push_back(MEDIA_DATA_DB_URI);
 
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + path);
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
     resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
@@ -325,7 +325,7 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
 
     shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + path);
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {MEDIA_DATA_DB_ID};
