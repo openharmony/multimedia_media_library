@@ -780,8 +780,8 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(album->GetAlbumId()));
-    predicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    predicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = " + std::to_string(album->GetAlbumId()));
+    //predicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     //predicates.Limit(1);
     vector<string> columns;
     string queryUri = MEDIALIBRARY_DATA_URI;
