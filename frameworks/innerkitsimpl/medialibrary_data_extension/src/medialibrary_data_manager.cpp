@@ -97,7 +97,7 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
     context_ = context;
     InitMediaLibraryRdbStore();
     MEDIA_INFO_LOG("bundleName = %{private}s", bundleName_.c_str());
-    //MediaLibraryDevice::GetInstance()->SetAbilityContext(move(abilityContext));
+    MediaLibraryDevice::GetInstance()->SetAbilityContext(move(context));
     SubscribeRdbStoreObserver();
     InitDeviceData();
 
