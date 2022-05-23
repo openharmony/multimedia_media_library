@@ -33,6 +33,17 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::NativeRdb;
+struct GroupInfo {
+    std::string groupName;
+    std::string groupId;
+    std::string groupOwner;
+    int32_t groupType;
+    GroupInfo() : groupType(0) {}
+    GroupInfo(std::string name, std::string id, std::string owner, int32_t type)
+        : groupName(name), groupId(id), groupOwner(owner), groupType(type)
+    {
+    }
+};
 
 class MediaLibraryDevice : public DistributedHardware::DeviceStateCallback,
                             public DistributedHardware::DmInitCallback,
@@ -75,6 +86,11 @@ private:
     void PutKvDB();
     void GetKvDB(const std::string &udid, std::string &val);
     void InitKvStore();
+    void SyncKv(const std::string &udid, const std::string &devId);
+    bool QueryRelationship(const std::string &udid);
+    bool CheckPermission(const std::string &udid);
+    bool CheckIsSameAccount();
+    void DevOnlineProcess(const DistributedHardware::DmDeviceInfo &devInfo);
 private:
     static constexpr int SHORT_UDID_LEN = 8;
     static constexpr int RANDOM_NUM = 999;

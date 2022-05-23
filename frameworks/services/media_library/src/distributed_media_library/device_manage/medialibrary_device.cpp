@@ -1,5 +1,4 @@
-/*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+/* Copyright (C) 2021 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,15 +13,19 @@
  */
 
 #include "medialibrary_device.h"
+#include "device_auth.h"
 #include "media_log.h"
 #include "medialibrary_sync_table.h"
+#include "nlohmann/json.hpp"
 #include "parameter.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::AppExecFwk;
-
+const std::string SAME_ACCOUNT_MARK = "const.distributed_file_only_for_same_account_test";
+const std::string ML_MULTIDEV_INFO_ID = "mediaLibrayMultiDevInfoFetch";
 std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::mlDMInstance_ = nullptr;
 
 MediaLibraryDevice::MediaLibraryDevice()
@@ -88,14 +91,29 @@ void MediaLibraryDevice::InitKvStore()
         .kvStoreType = DistributedKv::KvStoreType::SINGLE_VERSION
     };
     DistributedKv::AppId appId = { BUNDLE_NAME };
-    DistributedKv::StoreId storeId = { "mediaLibrayMultiDevInfoFetch" };
+    DistributedKv::StoreId storeId = { ML_MULTIDEV_INFO_ID };
     DistributedKv::Status status = kvManager.GetSingleKvStore(options, appId, storeId, kvStorePtr_);
     if (status != DistributedKv::Status::SUCCESS) {
         MEDIA_ERR_LOG("KvStore get failed! %{public}d", status);
         return;
     }
-    MEDIA_INFO_LOG("KvStore get success!");
+    MEDIA_INFO_LOG("KvStore init success!");
     PutKvDB();
+}
+
+void MediaLibraryDevice::SyncKv(const std::string &udid, const std::string &devId)
+{
+    if (kvStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("kvstore is nullptr");
+        return;
+    }
+
+    std::string key = udid + bundleName_;
+    DistributedKv::DataQuery dataQuery;
+    dataQuery.KeyPrefix(key);
+    std::vector<std::string> deviceIds = { devId };
+    DistributedKv::Status status = kvStorePtr_->SyncWithCondition(deviceIds, DistributedKv::SyncMode::PULL, dataQuery);
+    MEDIA_ERR_LOG("kvstore sync end, status %{public}d", status);
 }
 
 void MediaLibraryDevice::GetKvDB(const std::string &udid, std::string &val)
@@ -112,11 +130,18 @@ void MediaLibraryDevice::GetKvDB(const std::string &udid, std::string &val)
     DistributedKv::Status status = kvStorePtr_->Get(k, v);
     if (status != DistributedKv::Status::SUCCESS) {
         MEDIA_ERR_LOG("get kvstore failed %{public}d", status);
+        val = MEDIA_LIBRARY_VERSION;
         return;
     }
     std::string versionInfo = v.ToString();
-    MEDIA_INFO_LOG("get kvstore success! ml version info %{public}s", versionInfo.c_str());
-    val = versionInfo;
+    nlohmann::json jsonObj = nlohmann::json::parse(versionInfo);
+    if (jsonObj.is_discarded()) {
+        MEDIA_ERR_LOG("parse json failed");
+        val = MEDIA_LIBRARY_VERSION;
+    }
+    val = jsonObj.at("medialibrary_version");
+    MEDIA_INFO_LOG("get kvstore success! key %{private}s, ml version info %{public}s, val %{public}s",
+        key.c_str(), versionInfo.c_str(), val.c_str());
 }
 
 void MediaLibraryDevice::PutKvDB()
@@ -128,15 +153,18 @@ void MediaLibraryDevice::PutKvDB()
 
     std::string devId = "";
     std::string key = GetUdidByNetworkId(devId) + bundleName_;
-    std::string val("mediaLibaray-version-1.0"); // todo converto json
+    nlohmann::json json;
+    json["medialibrary_version"] = MEDIA_LIBRARY_VERSION;
+    std::string val = json.dump();
 
     DistributedKv::Key k(key);
     DistributedKv::Value v(val);
     DistributedKv::Status status = kvStorePtr_->Put(k, v);
     if (status != DistributedKv::Status::SUCCESS) {
         MEDIA_ERR_LOG("put kvstore failed %{public}d", status);
+        return;
     }
-    MEDIA_INFO_LOG("put kvstore success!");
+    MEDIA_INFO_LOG("put kvstore success!, key %{private}s, val %{private}s", key.c_str(), val.c_str());
 }
 
 void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<Context> &context)
@@ -157,6 +185,44 @@ void MediaLibraryDevice::GetAllDeviceId(
     }
 }
 
+bool MediaLibraryDevice::CheckPermission(const std::string &udid)
+{
+    if (CheckIsSameAccount()) {
+        return true;
+    }
+    return QueryRelationship(udid); 
+}
+
+void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInfo &devInfo)
+{
+    MediaLibraryDeviceInfo mldevInfo;
+    GetMediaLibraryDeviceInfo(devInfo, mldevInfo);
+
+    SyncKv(mldevInfo.deviceUdid, mldevInfo.deviceId);
+    GetKvDB(mldevInfo.deviceUdid, mldevInfo.versionId);
+
+    if (!CheckPermission(mldevInfo.deviceUdid)) {
+        MEDIA_ERR_LOG("this dev has permission denied!");
+        return;
+    }
+
+    if (mediaLibraryDeviceOperations_ != nullptr &&
+        !mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mldevInfo, bundleName_)) {
+        MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed!");
+        return;
+    }
+    MediaLibrarySyncTable syncTable;
+    std::vector<std::string> devices = { mldevInfo.deviceId };
+    syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
+
+    lock_guard<mutex> autoLock(deviceLock_);
+    deviceInfoMap_[devInfo.deviceId] = mldevInfo;
+    MEDIA_INFO_LOG("OnDeviceOnline cid %{public}s media library version %{public}s",
+        mldevInfo.deviceId.c_str(), mldevInfo.versionId.c_str());
+
+    NotifyDeviceChange();
+}
+
 void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
     MEDIA_INFO_LOG("OnDeviceOnline deviceId = %{private}s", deviceInfo.deviceId);
@@ -166,30 +232,7 @@ void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDevic
     }
 
     auto nodeOnline = [this, deviceInfo]() {
-        // 更新数据库
-        if (mediaLibraryDeviceOperations_ != nullptr) {
-            OHOS::Media::MediaLibraryDeviceInfo mldevInfo;
-            GetMediaLibraryDeviceInfo(deviceInfo, mldevInfo);
-            GetKvDB(mldevInfo.deviceUdid, mldevInfo.versionId);
-            if (dpa_ != nullptr) {
-                dpa_->GetDeviceProfile(mldevInfo.deviceUdid, mldevInfo.versionId);
-            }
-            if (!mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mldevInfo, bundleName_)) {
-                MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed!");
-                return;
-            }
-            MediaLibrarySyncTable syncTable;
-            std::vector<std::string> devices = { mldevInfo.deviceId };
-            syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
-
-            lock_guard<mutex> autoLock(deviceLock_);
-            deviceInfoMap_[deviceInfo.deviceId] = mldevInfo;
-            MEDIA_INFO_LOG("OnDeviceOnline cid %{public}s media library version %{public}s",
-                mldevInfo.deviceId.c_str(), mldevInfo.versionId.c_str());
-        }
-
-        // 设备变更通知
-        NotifyDeviceChange();
+        DevOnlineProcess(deviceInfo);
     };
     if (!mediaLibraryDeviceHandler_->PostTask(nodeOnline)) {
         MEDIA_ERR_LOG("OnDeviceOnline handler postTask failed");
@@ -273,9 +316,6 @@ bool MediaLibraryDevice::IsHasDevice(const string &deviceUdid)
 bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
     rdbStore_ = rdbStore;
-    if (dpa_ != nullptr) {
-        dpa_->PutDeviceProfile(MEDIA_LIBRARY_VERSION);
-    }
 
     if (!QueryDeviceTable()) {
         MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore QueryDeviceTable fail!");
@@ -286,17 +326,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     GetAllDeviceId(deviceList);
     MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
     for (auto& deviceInfo : deviceList) {
-        OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
-        GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo);
-        GetKvDB(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
-        if (dpa_ != nullptr) {
-            dpa_->GetDeviceProfile(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
-        }
-        if (mediaLibraryDeviceOperations_ != nullptr &&
-            mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mediaLibraryDeviceInfo, bundleName_)) {
-            lock_guard<mutex> autoLock(deviceLock_);
-            deviceInfoMap_[deviceInfo.deviceId] = mediaLibraryDeviceInfo;
-        }
+        DevOnlineProcess(deviceInfo);	
     }
 
     std::vector<OHOS::Media::MediaLibraryDeviceInfo> deviceDataBaseList;
@@ -352,7 +382,7 @@ std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId)
         char localDeviceId[DEVICE_ID_SIZE] = {0};
         GetDevUdid(localDeviceId, DEVICE_ID_SIZE);
         std::string localUdid = std::string(localDeviceId);
-        MEDIA_INFO_LOG("get local udid %{public}s", localUdid.c_str());
+        MEDIA_INFO_LOG("get local udid %{private}s", localUdid.c_str());
         if (localUdid.empty()) {
             MEDIA_ERR_LOG("get local udid failed");
         }
@@ -432,6 +462,81 @@ void MediaLibraryDevice::UnRegisterFromDM()
         MEDIA_ERR_LOG("UnInitDeviceManager failed errCode %{public}d", errCode);
     }
     MEDIA_INFO_LOG("UnRegisterFromDM success");
+}
+
+void from_json(const nlohmann::json &jsonObject, GroupInfo &groupInfo)
+{
+    if (jsonObject.find(FIELD_GROUP_NAME) != jsonObject.end()) {
+        groupInfo.groupName = jsonObject.at(FIELD_GROUP_NAME).get<std::string>();
+    }
+
+    if (jsonObject.find(FIELD_GROUP_ID) != jsonObject.end()) {
+        groupInfo.groupId = jsonObject.at(FIELD_GROUP_ID).get<std::string>();
+    }
+
+    if (jsonObject.find(FIELD_GROUP_OWNER) != jsonObject.end()) {
+        groupInfo.groupOwner = jsonObject.at(FIELD_GROUP_OWNER).get<std::string>();
+    }
+
+    if (jsonObject.find(FIELD_GROUP_TYPE) != jsonObject.end()) {
+        groupInfo.groupType = jsonObject.at(FIELD_GROUP_TYPE).get<int32_t>();
+    }
+}
+
+bool MediaLibraryDevice::QueryRelationship(const std::string &udid)
+{
+    int ret = InitDeviceAuthService();
+    if (ret != 0) {
+        MEDIA_ERR_LOG("InitDeviceAuthService failed, ret %{public}d", ret);
+        return false;
+    }
+
+    auto hichainDevGroupMgr_ = GetGmInstance();
+    if (hichainDevGroupMgr_ == nullptr) {
+        MEDIA_ERR_LOG("failed to get hichain device group manager");
+        return false;
+    }
+
+    char *returnGroupVec = nullptr;
+    uint32_t groupNum = 0;
+    ret = hichainDevGroupMgr_->getRelatedGroups(ANY_OS_ACCOUNT, bundleName_.c_str(), udid.c_str(),
+        &returnGroupVec, &groupNum);
+    if (ret != 0 || returnGroupVec == nullptr) {
+        MEDIA_ERR_LOG("failed to get related groups, ret %{public}d", ret);
+        return false;
+    }
+
+    if (groupNum == 0) {
+        MEDIA_ERR_LOG("failed to get related groups, groupNum is %{public}u", groupNum);
+        return false;
+    }
+
+    std::string groups = std::string(returnGroupVec);
+    nlohmann::json jsonObject = nlohmann::json::parse(groups); // transform from cjson to cppjson
+    if (jsonObject.is_discarded()) {
+        MEDIA_INFO_LOG("returnGroupVec parse failed");
+        return false;
+    }
+
+    std::vector<GroupInfo> groupList;
+    groupList = jsonObject.get<std::vector<GroupInfo>>();
+    for (auto &a : groupList) {
+        MEDIA_INFO_LOG("group info:[groupName] %{public}s, [groupId] %{public}s, [groupType] %{public}d,",
+                       a.groupName.c_str(), a.groupId.c_str(), a.groupType);
+        if (a.groupType == PEER_TO_PEER_GROUP || a.groupType == ACROSS_ACCOUNT_AUTHORIZE_GROUP) {
+            return true;
+	}
+    }
+
+    return false;
+}
+
+bool MediaLibraryDevice::CheckIsSameAccount()
+{
+    // because of there no same_account, only for test, del later
+    bool ret = system::GetBoolParameter(SAME_ACCOUNT_MARK, false); 
+    MEDIA_INFO_LOG("SAME_ACCOUNT_MARK val is %{public}d", ret);
+    return ret;
 }
 } // namespace Media
 } // namespace OHOS
