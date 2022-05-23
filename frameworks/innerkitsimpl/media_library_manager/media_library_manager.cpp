@@ -20,8 +20,7 @@
 #include "media_log.h"
 
 using namespace std;
-using namespace OHOS::NativeRdb;
-using namespace OHOS::DataShare;
+using namespace OHOS::NativeRdb;;
 
 namespace OHOS {
 namespace Media {
@@ -31,15 +30,6 @@ MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 {
     static MediaLibraryManager mediaLibMgr;
     return &mediaLibMgr;
-}
-
-void MediaLibraryManager::InitMediaLibraryManager(const shared_ptr<AppExecFwk::Context> context)
-{
-    AppExecFwk::Want want;
-    want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
-    if (sAbilityHelper_ == nullptr) {
-        sAbilityHelper_ = AppExecFwk::MediaDataHelper::Creator(context, want, std::make_shared<Uri>("mediadata://media"));
-    }
 }
 
 void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &token)
@@ -65,7 +55,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptio
 {
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
-    DataSharePredicates predicates;
+    DataShare::DataSharePredicates predicates;
     MediaFetchOptions fetchOptions = const_cast<MediaFetchOptions &>(fetchOps);
 
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
@@ -120,7 +110,7 @@ variant<int32_t, string> GetValFromColumn(string columnName,
     return cellValue;
 }
 
-int64_t GetLongValFromColumn(string columnName, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+int64_t GetLongValFromColumn(string columnName, shared_ptr<DataShareResultSet> &resultSet)
 {
     int index = 0;
     int64_t longVal = 0;
@@ -151,7 +141,7 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
 
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<DataShareResultSet> resultSet = sAbilityHelper_->Query(
+    auto resultSet = sAbilityHelper_->Query(
         uri, predicates, columns);
 
     if (resultSet != nullptr) {
@@ -378,7 +368,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
         vector<string> columns;
         Uri uri(MEDIALIBRARY_DATA_URI);
 
-        shared_ptr<DataShareResultSet> resultSet =
+        auto resultSet =
             sAbilityHelper_->Query(uri, predicates, columns);
 
         fetchFileResult = make_unique<FetchResult>(resultSet);
@@ -399,8 +389,8 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
     }
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
-    DataAbilityPredicates predicates;
-    shared_ptr<AbsSharedResultSet> queryResultSet = sAbilityHelper_->Query(uri, columns, predicates);
+    DataSharePredicates predicates;
+    auto queryResultSet = sAbilityHelper_->Query(uri, predicates, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("queryResultSet is null!");
         return DATA_ABILITY_FAIL;

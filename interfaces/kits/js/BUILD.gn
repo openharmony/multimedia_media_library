@@ -124,7 +124,6 @@ ohos_shared_library("medialibrary") {
     "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native:media_client",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension:media_service_extension",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
     "//utils/native/base:utils",
