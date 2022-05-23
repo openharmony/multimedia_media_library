@@ -36,7 +36,6 @@ ohos_shared_library("media_library_manager") {
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/common/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/provider/include",
     "//utils/native/base/include",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension/include",
   ]
 
   deps = [
@@ -46,7 +45,6 @@ ohos_shared_library("media_library_manager") {
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//utils/native/base:utils",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension:media_service_extension",
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
   ]
 

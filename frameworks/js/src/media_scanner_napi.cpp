@@ -80,11 +80,12 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
         if (obj != nullptr) {
             obj->env_ = env;
 
+/*
             obj->sMediaDataHelper_ = MediaLibraryNapi::GetMediaDataHelper(env, info);
             if (obj->sMediaDataHelper_ == nullptr) {
                 NAPI_ERR_LOG("[MediaScannerNapiConstructor] GetMediaDataHelper failed!");
                 return result;
-            }
+            }*/
 
 
             obj->mediaScannerNapiCallbackObj_ = std::make_shared<MediaScannerNapiCallback>(env);
@@ -204,9 +205,9 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
         }
         errCode = 0;
         if (scanType == "FILE") {
-            obj->sMediaDataHelper_->Scan(path, 0);
+            //obj->sMediaDataHelper_->Scan(path, 0);
         } else if (scanType == "DIR") {
-            obj->sMediaDataHelper_->Scan(path, 1);
+            //obj->sMediaDataHelper_->Scan(path, 1);
         }
 
         if (errCode == 0) {
