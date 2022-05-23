@@ -16,6 +16,7 @@
 #include "medialibrary_query_operations.h"
 #include "medialibrary_query_db.h"
 #include "media_log.h"
+#include "rdb_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -41,7 +42,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryQueryOperations::HandleMediaVolume(
     return querySet;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryQueryOperations::HandleQueryOperations(
+shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryQueryOperations::HandleQueryOperations(
     const string &oprn, const QueryData &queryData, const shared_ptr<RdbStore> &rdbStore)
 {
     MEDIA_DEBUG_LOG("HandleSmartAlbumOperations");
