@@ -112,7 +112,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
     NativeRdb::AbsRdbPredicates predicate(tableName.c_str());
     (devices.size() > 0) ? predicate.InDevices(devices) : predicate.InAllDevices();
 
-    DistributedRdb::SyncCallback callback = [&bundleName, &isLast](const DistributedRdb::SyncResult& syncResult) {
+    DistributedRdb::SyncCallback callback = [&isLast](const DistributedRdb::SyncResult& syncResult) {
         // update device db
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
             if (iter->first.empty()) {
@@ -125,8 +125,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
                 continue;
             }
             if (isLast) {
-                MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(iter->first, DEVICE_SYNCSTATUS_COMPLETE,
-                                                                           bundleName);
+                MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(iter->first, DEVICE_SYNCSTATUS_COMPLETE);
             }
             MEDIA_ERR_LOG("SyncPullTable device = %{private}s success", iter->first.c_str());
         }
