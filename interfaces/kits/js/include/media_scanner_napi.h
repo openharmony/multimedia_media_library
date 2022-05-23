@@ -21,7 +21,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "imedia_scanner_app_callback.h"
-#include "mediadata_helper.h"
+//#include "mediadata_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -62,7 +62,7 @@ private:
     napi_ref wrapper_;
 
     static thread_local napi_ref sConstructor_;
-    std::shared_ptr<AppExecFwk::MediaDataHelper> sMediaDataHelper_;
+    //std::shared_ptr<AppExecFwk::MediaDataHelper> sMediaDataHelper_;
 };
 } // namespace Media
 } // namespace OHOS

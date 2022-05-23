@@ -46,6 +46,7 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+using namespace OHOS::DataShare;
 
 /**
  * @brief Structure for defining the condition for fetching of files and albums

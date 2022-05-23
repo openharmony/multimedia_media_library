@@ -715,8 +715,9 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     if (uriString.find(MEDIA_QUERYOPRN_QUERYVOLUME) != string::npos) {
         QueryData queryData;
-        queryResultSet = MediaLibraryQueryOperations::HandleQueryOperations(MEDIA_QUERYOPRN_QUERYVOLUME, queryData,
+        auto absResult = MediaLibraryQueryOperations::HandleQueryOperations(MEDIA_QUERYOPRN_QUERYVOLUME, queryData,
             rdbStore_);
+        queryResultSet = RdbUtils::ToResultSetBridge(absResult);
         return queryResultSet;
     }
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
@@ -826,7 +827,7 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
 void MediaLibraryDataManager::ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1)
 {
     string actualUri;
-    DataShareValueObject valueObject;
+    ValueObject valueObject;
 
     if (values.GetObject(MEDIA_DATA_DB_URI, valueObject)) {
         valueObject.GetString(actualUri);
