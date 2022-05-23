@@ -693,11 +693,9 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     }
 
     StartTrace(BYTRACE_TAG_OHOS, "CheckClientPermission");
-    /*
     if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
         return nullptr;
     }
-    */
     FinishTrace(BYTRACE_TAG_OHOS);
 
     shared_ptr<ResultSetBridge> queryResultSet;
@@ -1110,7 +1108,6 @@ std::string MediaLibraryDataManager::GetClientBundleName()
 
 bool MediaLibraryDataManager::CheckClientPermission(const std::string& permissionStr)
 {
-    /*
     int uid = IPCSkeleton::GetCallingUid();
     if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
         MEDIA_INFO_LOG("CheckClientPermission: Pass the uid check list");
@@ -1137,7 +1134,6 @@ bool MediaLibraryDataManager::CheckClientPermission(const std::string& permissio
         MEDIA_ERR_LOG("MediaLibraryDataManager Query: Have no media permission");
         return false;
     }
-    */
     return true;
 }
 
