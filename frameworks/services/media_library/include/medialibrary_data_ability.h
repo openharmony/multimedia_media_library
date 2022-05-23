@@ -63,8 +63,6 @@ namespace Media {
         TYPE_ALL_DEVICE,
         TYPE_ASSETSMAP_TABLE
     };
-    class MediaLibraryInitCallback;
-    class MediaLibraryDeviceStateCallback;
     class MediaLibraryRdbStoreObserver;
     class MediaLibraryDataAbility : public AppExecFwk::Ability {
     public:
@@ -83,13 +81,11 @@ namespace Media {
             const NativeRdb::DataAbilityPredicates &predicates) override;
         EXPORT int32_t OpenFile(const Uri &uri, const std::string &mode) override;
         EXPORT std::string GetType(const Uri &uri) override;
-
     protected:
         void OnStart(const AAFwk::Want &want) override;
         void OnStop() override;
 
     private:
-        static constexpr const char DEVICE_BUNDLENAME[] = "com.ohos.medialibrary.MediaLibraryDataA";
         std::string GetOperationType(const std::string &uri);
         void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
         void InitDeviceData();
@@ -133,8 +129,6 @@ namespace Media {
         std::shared_ptr<IMediaScannerClient> scannerClient_;
         std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
         std::shared_ptr<MediaLibraryThumbnail> mediaThumbnail_;
-        std::shared_ptr<MediaLibraryDeviceStateCallback> deviceStateCallback_;
-        std::shared_ptr<MediaLibraryInitCallback> deviceInitCallback_;
         std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
         bool isRdbStoreInitialized;
         std::string bundleName_;
@@ -156,26 +150,6 @@ public:
     ScanFileCallback() = default;
     ~ScanFileCallback() = default;
     void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
-};
-
-class MediaLibraryInitCallback : public OHOS::DistributedHardware::DmInitCallback {
-public:
-    virtual ~MediaLibraryInitCallback() {}
-    void OnRemoteDied() override;
-};
-
-class MediaLibraryDeviceStateCallback : public OHOS::DistributedHardware::DeviceStateCallback {
-public:
-    explicit MediaLibraryDeviceStateCallback(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::string &bundleName)
-        : bundleName_(bundleName), rdbStore_(rdbStore) {}
-    virtual ~MediaLibraryDeviceStateCallback() {};
-    void OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
-    void OnDeviceReady(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
-    void OnDeviceOffline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
-    void OnDeviceChanged(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
-private:
-    std::string bundleName_;
-    std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 };
 
 class MediaLibraryRdbStoreObserver : public NativeRdb::RdbStore::RdbStoreObserver {
