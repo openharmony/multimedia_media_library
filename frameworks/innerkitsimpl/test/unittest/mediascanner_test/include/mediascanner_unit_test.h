@@ -26,7 +26,6 @@
 #include <thread>
 
 #include "gtest/gtest.h"
-#include "fetch_result.h"
 #include "imedia_scanner_client.h"
 
 namespace OHOS {
