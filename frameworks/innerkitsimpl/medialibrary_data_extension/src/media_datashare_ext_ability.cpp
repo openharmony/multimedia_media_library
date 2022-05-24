@@ -75,6 +75,13 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     HILOG_INFO("%{public}s end.", __func__);
 }
 
+void MediaDataShareExtAbility::OnStop()
+{
+    HILOG_INFO("%{public}s begin.", __func__);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    HILOG_INFO("%{public}s end.", __func__);
+}
+
 sptr<IRemoteObject> MediaDataShareExtAbility::OnConnect(const AAFwk::Want &want)
 {
     BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
