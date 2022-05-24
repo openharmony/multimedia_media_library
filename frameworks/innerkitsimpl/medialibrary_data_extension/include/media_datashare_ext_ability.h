@@ -65,6 +65,8 @@ public:
      */
     void OnStart(const AAFwk::Want &want) override;
 
+    void OnStop() override;
+
     /**
      * @brief Called when this datashare extension ability is connected for the first time.
      *
