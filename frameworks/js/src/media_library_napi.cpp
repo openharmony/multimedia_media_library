@@ -2129,7 +2129,6 @@ void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, Cha
 {
     NAPI_DEBUG_LOG("Register change type = %{private}s", type.c_str());
 
-    /*
     int32_t typeEnum = GetListenerType(type);
     switch (typeEnum) {
         case AUDIO_LISTENER:
@@ -2168,7 +2167,6 @@ void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, Cha
         default:
             NAPI_ERR_LOG("Invalid Media Type!");
     }
-    */
 }
 
 napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
