@@ -1106,6 +1106,7 @@ std::string MediaLibraryDataManager::GetClientBundleName()
 
 bool MediaLibraryDataManager::CheckClientPermission(const std::string& permissionStr)
 {
+/*
     int uid = IPCSkeleton::GetCallingUid();
     if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
         MEDIA_INFO_LOG("CheckClientPermission: Pass the uid check list");
@@ -1132,6 +1133,7 @@ bool MediaLibraryDataManager::CheckClientPermission(const std::string& permissio
         MEDIA_ERR_LOG("MediaLibraryDataManager Query: Have no media permission");
         return false;
     }
+*/
     return true;
 }
 
