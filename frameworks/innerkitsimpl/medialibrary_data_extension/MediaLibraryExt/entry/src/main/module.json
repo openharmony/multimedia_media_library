@@ -52,6 +52,16 @@
         "type": "dataShare",
         "uri": "datashare://media",
         "visible": true
+      },
+      {
+        "srcEntrance": "./ets/FileExtensionAbility/FileExtensionAbility.ts",
+        "name": "FileExtensionAbility",
+        "icon": "$media:icon",
+        "srcLanguage": "ets",
+        "description": "mediafileextension",
+        "type": "file",
+        "uri": "dataability://mediafileext",
+        "visible": true
       }
     ],
     "requestPermissions": [
