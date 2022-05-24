@@ -49,6 +49,9 @@
 #include "medialibrary_thumbnail.h"
 #include "distributed_kv_data_manager.h"
 #include "timer.h"
+#include "datashare_predicates.h"
+#include "datashare_abs_result_set.h"
+#include "result_set_bridge.h"
 
 namespace OHOS {
 namespace Media {
@@ -76,14 +79,14 @@ namespace Media {
 
         EXPORT int32_t InitMediaLibraryRdbStore();
         EXPORT void InitialiseKvStore();
-        EXPORT int32_t Insert(const Uri &uri, const NativeRdb::ValuesBucket &value);
-        EXPORT int32_t Delete(const Uri &uri, const NativeRdb::DataAbilityPredicates &predicates);
-        EXPORT int32_t BatchInsert(const Uri &uri, const std::vector<NativeRdb::ValuesBucket> &values);
-        EXPORT int32_t Update(const Uri &uri, const NativeRdb::ValuesBucket &value,
-                       const NativeRdb::DataAbilityPredicates &predicates);
-        EXPORT std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(const Uri &uri,
+        EXPORT int32_t Insert(const Uri &uri, const DataShare::DataShareValuesBucket &value);
+        EXPORT int32_t Delete(const Uri &uri, const DataShare::DataSharePredicates &predicates);
+        EXPORT int32_t BatchInsert(const Uri &uri, const std::vector<DataShare::DataShareValuesBucket> &values);
+        EXPORT int32_t Update(const Uri &uri, const DataShare::DataShareValuesBucket &value,
+                       const DataShare::DataSharePredicates &predicates);
+        EXPORT std::shared_ptr<DataShare::ResultSetBridge> Query(const Uri &uri,
             const std::vector<std::string> &columns,
-            const NativeRdb::DataAbilityPredicates &predicates);
+            const DataShare::DataSharePredicates &predicates);
         EXPORT int32_t OpenFile(const Uri &uri, const std::string &mode);
         EXPORT std::string GetType(const Uri &uri);
 
@@ -102,13 +105,13 @@ namespace Media {
         bool QuerySync(const std::string &deviceId, const std::string &tableName);
         bool QuerySync();
 		
-        bool CheckFileNameValid(const ValuesBucket &value);
+        bool CheckFileNameValid(const DataShareValuesBucket &value);
         sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
         std::string GetClientBundleName();
         bool CheckClientPermission(const std::string& permissionStr);
         std::string GetClientBundle(int uid);
 
-        int32_t PreCheckInsert(const std::string &uri, const NativeRdb::ValuesBucket &value);
+        int32_t PreCheckInsert(const std::string &uri, const DataShare::DataShareValuesBucket &value);
 
         static const std::string PERMISSION_NAME_READ_MEDIA;
         static const std::string PERMISSION_NAME_WRITE_MEDIA;

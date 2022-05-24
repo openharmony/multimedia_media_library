@@ -14,15 +14,17 @@
  */
 
 #include "media_library_manager.h"
-#include "mediadata_helper.h"
+#include "datashare_predicates.h"
+#include "datashare_abs_result_set.h"
+
 #include "media_log.h"
 
 using namespace std;
-using namespace OHOS::NativeRdb;
+using namespace OHOS::NativeRdb;;
 
 namespace OHOS {
 namespace Media {
-std::shared_ptr<AppExecFwk::MediaDataHelper> MediaLibraryManager::sAbilityHelper_ = nullptr;
+shared_ptr<DataShare::DataShareHelper> MediaLibraryManager::sAbilityHelper_ = nullptr;
 
 MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 {
@@ -30,21 +32,12 @@ MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
     return &mediaLibMgr;
 }
 
-void MediaLibraryManager::InitMediaLibraryManager(const shared_ptr<AppExecFwk::Context> context)
-{
-    AppExecFwk::Want want;
-    want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
-    if (sAbilityHelper_ == nullptr) {
-        sAbilityHelper_ = AppExecFwk::MediaDataHelper::Creator(context, want, std::make_shared<Uri>("mediadata://media"));
-    }
-}
-
 void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &token)
 {
     AppExecFwk::Want want;
     want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
     if (sAbilityHelper_ == nullptr) {
-        sAbilityHelper_ = AppExecFwk::MediaDataHelper::Creator(token, want, std::make_shared<Uri>("mediadata://media"));
+        //sAbilityHelper_ = DataShare::DataShareHelper::Creator(context, make_shared<Uri>(strUri));
     }
 }
 
@@ -62,7 +55,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptio
 {
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
-    DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     MediaFetchOptions fetchOptions = const_cast<MediaFetchOptions &>(fetchOps);
 
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
@@ -74,10 +67,10 @@ unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptio
     predicates.SetOrder(fetchOptions.order);
 
     Uri uri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
 
     if (sAbilityHelper_ == nullptr
-        || ((resultSet = sAbilityHelper_->Query(uri, columns, predicates)) == nullptr)) {
+        || ((resultSet = sAbilityHelper_->Query(uri, predicates, columns)) == nullptr)) {
         MEDIA_ERR_LOG("Resultset retrieval failure caused Query operation to fail");
     } else {
         // Create FetchResult object using the contents of resultSet
@@ -91,22 +84,22 @@ unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptio
 }
 
 variant<int32_t, string> GetValFromColumn(string columnName,
-    shared_ptr<AbsSharedResultSet> &resultSet)
+    shared_ptr<DataShareResultSet> &resultSet)
 {
-    int32_t index;
     variant<int32_t, string> cellValue;
-    ColumnType type;
+    int32_t index;
+    DataShare::DataType type;
     int32_t integerVal;
     string stringVal;
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, cellValue, "resultSet != nullptr");
     resultSet->GetColumnIndex(columnName, index);
-    resultSet->GetColumnType(index, type);
+    resultSet->GetDataType(index, type);
     switch (type) {
-        case ColumnType::TYPE_STRING:
+	    case DataShare::DataType::TYPE_STRING:
             resultSet->GetString(index, stringVal);
             cellValue = stringVal;
             break;
-        case ColumnType::TYPE_INTEGER:
+	    case DataShare::DataType::TYPE_INTEGER:
             resultSet->GetInt(index, integerVal);
             cellValue = integerVal;
             break;
@@ -117,7 +110,7 @@ variant<int32_t, string> GetValFromColumn(string columnName,
     return cellValue;
 }
 
-int64_t GetLongValFromColumn(string columnName, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+int64_t GetLongValFromColumn(string columnName, shared_ptr<DataShareResultSet> &resultSet)
 {
     int index = 0;
     int64_t longVal = 0;
@@ -130,7 +123,7 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
 {
     vector<unique_ptr<AlbumAsset>> albums;
     MediaFetchOptions fetchOptions = const_cast<MediaFetchOptions &>(fetchOps);
-    DataAbilityPredicates predicates;
+    DataSharePredicates predicates;
 
     if (sAbilityHelper_ == nullptr) {
         MEDIA_ERR_LOG("Ability Helper is null");
@@ -148,8 +141,8 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
 
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = sAbilityHelper_->Query(
-        uri, columns, predicates);
+    auto resultSet = sAbilityHelper_->Query(
+        uri, predicates, columns);
 
     if (resultSet != nullptr) {
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -187,7 +180,7 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
 string MediaLibraryManager::CreateAsset(const FileAsset &fileAssetObj)
 {
     string createUri;
-    ValuesBucket valuesBucket;
+    DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, fileAssetObj.GetPath());
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAssetObj.GetMediaType());
 
@@ -220,7 +213,7 @@ string MediaLibraryManager::CreateAsset(const FileAsset &fileAssetObj)
 int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fileAssetObj)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    ValuesBucket valuesBucket;
+    DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, fileAssetObj.GetPath());
 
@@ -240,7 +233,7 @@ int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fil
 int32_t MediaLibraryManager::DeleteAsset(const string &uri)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    ValuesBucket valuesBucket;
+    DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
 
     if (sAbilityHelper_ != nullptr) {
@@ -259,7 +252,7 @@ int32_t MediaLibraryManager::DeleteAsset(const string &uri)
 int32_t MediaLibraryManager::OpenAsset(const string &uri, string &mode)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    ValuesBucket valuesBucket;
+    DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
     valuesBucket.PutString(MEDIA_FILEMODE, mode);
 
@@ -279,7 +272,7 @@ int32_t MediaLibraryManager::OpenAsset(const string &uri, string &mode)
 int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    ValuesBucket valuesBucket;
+    DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
 
     if (sAbilityHelper_ != nullptr) {
@@ -301,7 +294,7 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
 int32_t MediaLibraryManager::CreateAlbum(const AlbumAsset &albumNapiObj)
 {
     int32_t albumId = DATA_ABILITY_FAIL;
-    ValuesBucket valuesBucket;
+    DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, albumNapiObj.GetAlbumPath());
 
     if (sAbilityHelper_ != nullptr) {
@@ -320,7 +313,7 @@ int32_t MediaLibraryManager::CreateAlbum(const AlbumAsset &albumNapiObj)
 int32_t MediaLibraryManager::ModifyAlbum(const int32_t albumId, const AlbumAsset &albumNapiObj)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    ValuesBucket valuesBucket;
+    DataShareValuesBucket valuesBucket;
     valuesBucket.PutInt(MEDIA_DATA_DB_ID, albumId);
     valuesBucket.PutString(MEDIA_DATA_DB_ALBUM_NAME, albumNapiObj.GetAlbumName());
 
@@ -340,7 +333,7 @@ int32_t MediaLibraryManager::ModifyAlbum(const int32_t albumId, const AlbumAsset
 int32_t MediaLibraryManager::DeleteAlbum(const int32_t albumId)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    ValuesBucket valuesBucket;
+    DataShareValuesBucket valuesBucket;
     valuesBucket.PutInt(MEDIA_DATA_DB_ID, albumId);
 
     if (sAbilityHelper_ != nullptr) {
@@ -359,7 +352,7 @@ int32_t MediaLibraryManager::DeleteAlbum(const int32_t albumId)
 unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t albumId, const MediaFetchOptions &option)
 {
     unique_ptr<FetchResult> fetchFileResult = nullptr;
-    DataAbilityPredicates predicates;
+    DataSharePredicates predicates;
     MediaFetchOptions fetchOptions = const_cast<MediaFetchOptions &>(option);
 
     if (sAbilityHelper_ != nullptr) {
@@ -375,8 +368,8 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
         vector<string> columns;
         Uri uri(MEDIALIBRARY_DATA_URI);
 
-        shared_ptr<AbsSharedResultSet> resultSet =
-            sAbilityHelper_->Query(uri, columns, predicates);
+        auto resultSet =
+            sAbilityHelper_->Query(uri, predicates, columns);
 
         fetchFileResult = make_unique<FetchResult>(resultSet);
         if (fetchFileResult == nullptr) {
@@ -396,8 +389,8 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
     }
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
-    DataAbilityPredicates predicates;
-    shared_ptr<AbsSharedResultSet> queryResultSet = sAbilityHelper_->Query(uri, columns, predicates);
+    DataSharePredicates predicates;
+    auto queryResultSet = sAbilityHelper_->Query(uri, predicates, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("queryResultSet is null!");
         return DATA_ABILITY_FAIL;

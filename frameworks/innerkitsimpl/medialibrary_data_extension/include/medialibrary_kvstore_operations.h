@@ -21,6 +21,7 @@
 #include "distributed_kv_data_manager.h"
 #include "media_data_ability_const.h"
 #include "values_bucket.h"
+#include "rdb_store.h"
 
 namespace OHOS {
 namespace Media {

@@ -17,9 +17,13 @@
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "medialibrary_smartalbum_map_db.h"
+#include "datashare_predicates.h"
+#include "datashare_result_set.h"
+#include "rdb_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
@@ -28,13 +32,13 @@ void UpdateDateModifiedForAlbum(const shared_ptr<RdbStore> &rdbStore, const stri
     if (!albumPath.empty()) {
         int32_t count(0);
         vector<string> whereArgs = { albumPath };
-        ValuesBucket valuesBucket;
+        DataShareValuesBucket valuesBucket;
         valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
             MediaLibraryDataManagerUtils::GetAlbumDateModified(albumPath));
 
-        int32_t updateResult = rdbStore->Update(count, MEDIALIBRARY_TABLE, valuesBucket,
+        int32_t updateResult = rdbStore->Update(count, MEDIALIBRARY_TABLE, RdbUtils::ToValuesBucket(valuesBucket),
                                                 MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
-        if (updateResult != E_OK) {
+        if (updateResult != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Update failed for album");
         }
     }
@@ -80,7 +84,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
             int32_t deletedRows(FILE_OPERATION_ERR);
             vector<string> whereArgs = { path };
             int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, "data = ?", whereArgs);
-            if (deleteResult != E_OK) {
+            if (deleteResult != NativeRdb::E_OK) {
                 return errCode;
             }
         }
@@ -162,13 +166,13 @@ int ModifyDisName(const string &dstFileName,
 
         int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
             MEDIA_DATA_DB_FILE_PATH + " LIKE ? OR " + MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
-        if (deleteResult != E_OK) {
+        if (deleteResult != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Delete rows for the hidden album failed");
         }
         whereArgs.clear();
         whereArgs.push_back(srcPath);
         deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
-        if (deleteResult != E_OK) {
+        if (deleteResult != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Delete rows for the old path failed");
         }
         errCode = DATA_ABILITY_FAIL;
@@ -180,7 +184,7 @@ int ModifyDisName(const string &dstFileName,
 
         int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
                                                 MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
-        if (deleteResult != E_OK) {
+        if (deleteResult != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Delete rows failed");
         }
         errCode = DATA_ABILITY_FAIL;
@@ -285,7 +289,7 @@ int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &v
     int32_t errCode = DATA_ABILITY_FAIL;
     ValueObject valueObject;
     int32_t id = 0;
-    unique_ptr<AbsSharedResultSet> queryResultSet;
+    shared_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
     int32_t columnIndex;
     string path = "";
@@ -295,7 +299,8 @@ int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &v
     }
     MEDIA_ERR_LOG("HandleIsDirectoryAsset id = %{private}d", id);
     if (id != 0) {
-        AbsRdbPredicates mediaLibAbsPredFile(MEDIALIBRARY_TABLE);
+	string tableName = MEDIALIBRARY_TABLE;
+        AbsRdbPredicates mediaLibAbsPredFile(tableName);
         mediaLibAbsPredFile.EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
         queryResultSet = rdbStore->Query(mediaLibAbsPredFile, columns);
         while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {

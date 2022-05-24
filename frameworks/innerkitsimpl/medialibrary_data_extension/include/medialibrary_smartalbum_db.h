@@ -20,7 +20,12 @@
 #include "media_data_ability_const.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
+#include "rdb_store.h"
 #include "sys/stat.h"
+#include "datashare_values_bucket.h"
+#include "datashare_predicates.h"
+#include "datashare_abs_result_set.h"
+#include "result_set_bridge.h"
 
 namespace OHOS {
 namespace Media {

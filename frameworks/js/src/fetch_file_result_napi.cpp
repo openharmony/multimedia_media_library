@@ -24,7 +24,7 @@ namespace OHOS {
 namespace Media {
 thread_local napi_ref FetchFileResultNapi::sConstructor_ = nullptr;
 thread_local FetchResult *FetchFileResultNapi::sFetchFileResult_ = nullptr;
-std::shared_ptr<AppExecFwk::MediaDataHelper> FetchFileResultNapi::sMediaDataHelper = nullptr;
+std::shared_ptr<DataShare::DataShareHelper> FetchFileResultNapi::sMediaDataHelper = nullptr;
 
 FetchFileResultNapi::FetchFileResultNapi()
     : env_(nullptr), wrapper_(nullptr) {}
@@ -125,7 +125,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
 }
 
 napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult &fileResult,
-    std::shared_ptr<AppExecFwk::MediaDataHelper> abilityHelper)
+    std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -148,7 +148,7 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult 
     return result;
 }
 
-std::shared_ptr<AppExecFwk::MediaDataHelper> FetchFileResultNapi::GetMediaDataHelper() const
+std::shared_ptr<DataShare::DataShareHelper> FetchFileResultNapi::GetMediaDataHelper() const
 {
     return abilityHelper_;
 }

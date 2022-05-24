@@ -20,11 +20,14 @@
 #include "media_data_ability_const.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
+#include "rdb_store.h"
 #include "sys/stat.h"
+#include "datashare_values_bucket.h"
 
 namespace OHOS {
 namespace Media {
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
 using namespace std;
 
 class MediaLibrarySmartAlbumMapDb {

@@ -25,7 +25,7 @@ namespace Media {
 using namespace std;
 thread_local napi_ref AlbumNapi::sConstructor_ = nullptr;
 thread_local AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
-std::shared_ptr<AppExecFwk::MediaDataHelper> AlbumNapi::sMediaDataHelper = nullptr;
+std::shared_ptr<DataShare::DataShareHelper> AlbumNapi::sMediaDataHelper = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
 AlbumNapi::AlbumNapi()
@@ -143,7 +143,7 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
 }
 
 napi_value AlbumNapi::CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
-    std::shared_ptr<AppExecFwk::MediaDataHelper> abilityHelper)
+    std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -166,7 +166,7 @@ napi_value AlbumNapi::CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
     return result;
 }
 
-std::shared_ptr<AppExecFwk::MediaDataHelper> AlbumNapi::GetMediaDataHelper() const
+std::shared_ptr<DataShare::DataShareHelper> AlbumNapi::GetMediaDataHelper() const
 {
     return abilityHelper_;
 }
@@ -631,7 +631,7 @@ static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const n
 static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     string idPrefix = MEDIA_DATA_DB_BUCKET_ID + " = ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, idPrefix);
     context->selectionArgs.insert(context->selectionArgs.begin(), std::to_string(context->objectInfo->GetAlbumId()));
@@ -650,8 +650,8 @@ static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
         context->objectInfo->GetNetworkId() + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     NAPI_DEBUG_LOG("queryUri is = %{private}s", queryUri.c_str());
     Uri uri(queryUri);
-    std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
-        context->objectInfo->GetMediaDataHelper()->Query(uri, columns, predicates);
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
+        context->objectInfo->GetMediaDataHelper()->Query(uri, predicates, columns);
     context->fetchResult = std::make_unique<FetchResult>(move(resultSet));
     context->fetchResult->networkId_ = context->objectInfo->GetNetworkId();
 }
@@ -696,27 +696,27 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
 static void CommitModifyNative(AlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
-    NativeRdb::ValuesBucket valuesBucket;
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
     int32_t changedRows;
     context->selection += " AND ";
     if (MediaFileUtils::CheckTitle(context->objectInfo->GetAlbumName())) {
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
-        predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetAlbumId()));
+        predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetAlbumId()));
         valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
         Uri uri(MEDIALIBRARY_DATA_URI);
         changedRows =
-            context->objectInfo->GetMediaDataHelper()->Update(uri, valuesBucket, predicates);
+            context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, valuesBucket);
         if (changedRows > 0) {
-            NativeRdb::DataAbilityPredicates filePredicates;
-            NativeRdb::ValuesBucket fileValuesBucket;
+            DataShare::DataSharePredicates filePredicates;
+            DataShare::DataShareValuesBucket fileValuesBucket;
             fileValuesBucket.PutString(MEDIA_DATA_DB_BUCKET_NAME, context->objectInfo->GetAlbumName());
-            filePredicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(context->objectInfo->GetAlbumId()));
+            filePredicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = " + std::to_string(context->objectInfo->GetAlbumId()));
             fileValuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
                 MediaFileUtils::UTCTimeSeconds());
             Uri fileUuri(MEDIALIBRARY_DATA_URI);
             changedRows =
-                context->objectInfo->GetMediaDataHelper()->Update(fileUuri, fileValuesBucket, filePredicates);
+                context->objectInfo->GetMediaDataHelper()->Update(fileUuri, filePredicates, fileValuesBucket);
         }
     } else {
         changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;

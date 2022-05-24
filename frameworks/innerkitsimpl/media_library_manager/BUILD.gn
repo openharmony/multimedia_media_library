@@ -29,8 +29,12 @@ ohos_shared_library("media_library_manager") {
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/provider/include",
     "//utils/native/base/include",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension/include",
   ]
 
   deps = [
@@ -40,8 +44,8 @@ ohos_shared_library("media_library_manager") {
     "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager:dataobs_manager",
     "//foundation/aafwk/standard/interfaces/innerkits/uri:zuri",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//utils/native/base:utils",
-    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension:media_service_extension",
     "//foundation/aafwk/standard/interfaces/innerkits/want:want",
   ]
 
@@ -49,6 +53,7 @@ ohos_shared_library("media_library_manager") {
     "ability_runtime:ability_manager",
     "bundle_framework:appexecfwk_base",
     "hiviewdfx_hilog_native:libhilog",
+    "native_appdatamgr:datashare_common",
     "native_appdatamgr:native_appdatafwk",
     "native_appdatamgr:native_dataability",
     "native_appdatamgr:native_rdb",

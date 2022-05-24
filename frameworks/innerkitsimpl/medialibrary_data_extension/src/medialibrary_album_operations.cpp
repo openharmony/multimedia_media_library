@@ -98,7 +98,7 @@ int32_t UpdateAlbumInfoUtil(const ValuesBucket &valuesBucket,
 
     int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
     MEDIA_DATA_DB_FILE_PATH + " LIKE ? OR " + MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);
-        if (deleteResult != E_OK) {
+        if (deleteResult != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Delete rows failed");
         }
         return DATA_ABILITY_SUCCESS;
@@ -137,7 +137,6 @@ int32_t DeleteAlbumInfoUtil(const ValuesBucket &valuesBucket, int32_t albumId, c
                             shared_ptr<RdbStore> rdbStore, const MediaLibraryAlbumDb &albumDbOprn)
 {
     int32_t retVal;
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
 
     retVal = const_cast<MediaLibraryAlbumDb &>(albumDbOprn).DeleteAlbumInfo(albumId, rdbStore);
     if ((retVal == DATA_ABILITY_SUCCESS) && (rdbStore != nullptr) && (!albumPath.empty())) {
@@ -146,7 +145,7 @@ int32_t DeleteAlbumInfoUtil(const ValuesBucket &valuesBucket, int32_t albumId, c
 
     int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE,
     MEDIA_DATA_DB_FILE_PATH + " LIKE ?", whereArgs);
-        if (deleteResult != E_OK) {
+        if (deleteResult != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Delete rows failed");
         }
     }
@@ -173,10 +172,12 @@ int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(const string &oprn,
         CHECK_AND_RETURN_RET_LOG(!albumPath.empty(), DATA_ABILITY_FAIL, "Path is empty");
         albumAsset.SetAlbumPath(albumPath);
         if (!MediaLibraryDataManagerUtils::isAlbumExistInDb(albumPath, rdbStore, outRow)) {
+            MEDIA_ERR_LOG("klh Create %{public}s", albumPath.c_str());
             albumAsset.CreateAlbumAsset();
             errCode = InsertAlbumInfoUtil(values, albumPath, rdbStore, albumDbOprn, outIds);
         } else {
             if (!MediaFileUtils::IsDirectory(albumPath)) {
+                MEDIA_ERR_LOG("klh Create 2 %{public}s", albumPath.c_str());
                 albumAsset.CreateAlbumAsset();
             } else {
                 outRow = DATA_ABILITY_DUPLICATE_CREATE;

@@ -19,6 +19,7 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
@@ -55,7 +56,7 @@ int32_t MediaLibraryDataManagerUtils::GetParentIdFromDb(const string &path, cons
         vector<string> columns;
         columns.push_back(MEDIA_DATA_DB_ID);
 
-        unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+        unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, parentId, "Failed to obtain parentId from database");
 
         auto ret = queryResultSet->GoToFirstRow();
@@ -79,7 +80,7 @@ string MediaLibraryDataManagerUtils::GetParentDisplayNameFromDb(const int &id, c
         absPredicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
         vector<string> columns;
         columns.push_back(MEDIA_DATA_DB_NAME);
-        unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+        unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
         auto ret = queryResultSet->GoToFirstRow();
         ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_NAME, columnIndex);
         ret = queryResultSet->GetString(columnIndex, parentName);
@@ -141,7 +142,7 @@ NativeAlbumAsset MediaLibraryDataManagerUtils::GetAlbumAsset(const std::string &
     vector<string> columns;
     AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
     absPredicates.EqualTo(MEDIA_DATA_DB_ID, id);
-    unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+    unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t columnIndexId;
         int32_t idVal;
@@ -183,7 +184,7 @@ NativeAlbumAsset MediaLibraryDataManagerUtils::GetLastAlbumExistInDb(const std::
     string::size_type idx;
     string sql = "SELECT " + MEDIA_DATA_DB_RELATIVE_PATH + ","
     + MEDIA_DATA_DB_FILE_PATH + "," + MEDIA_DATA_DB_ID + " FROM " + MEDIALIBRARY_TABLE;
-    unique_ptr<ResultSet> queryResultSet = rdbStore->QuerySql(sql);
+    unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->QuerySql(sql);
     while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         queryResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, maxColumnIndexPath);
         queryResultSet->GetString(maxColumnIndexPath, maxPath);
@@ -207,7 +208,7 @@ bool MediaLibraryDataManagerUtils::isAlbumExistInDb(const std::string &relativeP
     vector<string> columns;
     AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
     absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, relativePath);
-    unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+    unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     if (queryResultSet != nullptr) {
         if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t columnIndexId;
@@ -256,7 +257,7 @@ bool MediaLibraryDataManagerUtils::isFileExistInDb(const string &path, const sha
     absPredicates.SetWhereArgs(selectionArgs);
     vector<string> columns;
     columns.push_back(MEDIA_DATA_DB_FILE_PATH);
-    unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+    unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     if (queryResultSet != nullptr) {
         queryResultSet->GetRowCount(count);
         MEDIA_INFO_LOG("count is %{private}d", count);
@@ -288,7 +289,7 @@ string MediaLibraryDataManagerUtils::GetPathFromDb(const string &id, const share
     vector<string> columns;
     columns.push_back(MEDIA_DATA_DB_FILE_PATH);
 
-    unique_ptr<ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+    unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, filePath, "Failed to obtain path from database");
 
     auto ret = queryResultSet->GoToFirstRow();
@@ -335,7 +336,9 @@ shared_ptr<FileAsset> MediaLibraryDataManagerUtils::GetFileAssetFromDb(const str
     shared_ptr<AbsSharedResultSet> resultSet = rdbStore->Query(absPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Failed to obtain path from database");
 
-    shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>(resultSet);
+    shared_ptr<ResultSetBridge> rsBridge = RdbUtils::ToResultSetBridge(resultSet);
+    shared_ptr<DataShareResultSet> dataShareRs = make_shared<DataShareResultSet>(rsBridge);
+    shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>(dataShareRs);
     if (fetchFileResult == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain fetch file result");
         return nullptr;
@@ -453,7 +456,7 @@ int64_t MediaLibraryDataManagerUtils::UTCTimeSeconds()
 
 bool MediaLibraryDataManagerUtils::CheckDisplayName(std::string displayName)
 {
-    int size = displayName.length();
+    auto size = displayName.length();
     if (size <= 0 || size > DISPLAYNAME_MAX) {
         return false;
     }

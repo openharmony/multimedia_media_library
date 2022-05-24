@@ -32,6 +32,8 @@
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
@@ -41,7 +43,7 @@ const string FILE_URI_PREX = "file://";
 
 const string THUMBNAIL_FORMAT = "image/jpeg";
 static constexpr uint8_t THUMBNAIL_QUALITY = 80;
-static constexpr uint32_t THUMBNAIL_QUERY_MAX = 1000;
+//static constexpr uint32_t THUMBNAIL_QUERY_MAX = 1000;
 static constexpr int64_t AV_FRAME_TIME = 0;
 
 static constexpr uint8_t NUM_0 = 0;
@@ -64,18 +66,18 @@ MediaLibraryThumbnail::MediaLibraryThumbnail()
     InitKvStore();
 }
 
-void ParseStringResult(shared_ptr<ResultSet> resultSet,
+void ParseStringResult(shared_ptr<AbsSharedResultSet> resultSet,
                        int index, string &data, int &errorCode)
 {
     bool isNull = true;
     errorCode = resultSet->IsColumnNull(index, isNull);
-    if (errorCode != E_OK) {
+    if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to check column %{private}d null %{private}d", index, errorCode);
     }
 
     if (!isNull) {
         errorCode = resultSet->GetString(index, data);
-        if (errorCode != E_OK) {
+        if (errorCode != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Failed to get column %{private}d string %{private}d", index, errorCode);
         }
     } else {
@@ -83,7 +85,7 @@ void ParseStringResult(shared_ptr<ResultSet> resultSet,
     }
 }
 
-void ParseQueryResult(shared_ptr<ResultSet> resultSet,
+void ParseQueryResult(shared_ptr<AbsSharedResultSet> resultSet,
                       ThumbnailRdbData &data, int &errorCode)
 {
     ParseStringResult(resultSet, NUM_0, data.id, errorCode);
@@ -92,6 +94,7 @@ void ParseQueryResult(shared_ptr<ResultSet> resultSet,
     ParseStringResult(resultSet, NUM_3, data.lcdKey, errorCode);
     data.mediaType = MediaType::MEDIA_TYPE_DEFAULT;
     errorCode = resultSet->GetInt(NUM_4, data.mediaType);
+    MEDIA_INFO_LOG("id %{public}s path %{public}s", data.id.c_str(), data.path.c_str());
 }
 
 bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
@@ -226,9 +229,8 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
     return true;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &opts, Size &size)
+shared_ptr<ResultSetBridge> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &opts, Size &size)
 {
-    shared_ptr<AbsSharedResultSet> queryResultSet;
     MEDIA_INFO_LOG("MediaLibraryThumbnail::GetThumbnailKey IN");
     if (singleKvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("KvStore is not init");
@@ -237,7 +239,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOp
 
     ThumbnailData thumbnailData;
     int errorCode;
-    queryResultSet = QueryThumbnailInfo(opts, thumbnailData, errorCode);
+    auto queryResultSet = QueryThumbnailInfo(opts, thumbnailData, errorCode);
     if (queryResultSet == nullptr) {
         return queryResultSet;
     }
@@ -250,12 +252,14 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOp
     bool isFromLcd = isThumbnailFromLcd(size);
     if (isFromLcd) {
         if (thumbnailData.lcdKey.empty()) {
+            queryResultSet.reset();
             CreateLcd(opts, thumbnailData.lcdKey);
         } else {
             return queryResultSet;
         }
     } else {
         if (thumbnailData.thumbnailKey.empty()) {
+            queryResultSet.reset();
             CreateThumbnail(opts, thumbnailData.thumbnailKey);
         } else {
             return queryResultSet;
@@ -269,12 +273,12 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOp
 unique_ptr<PixelMap> MediaLibraryThumbnail::GetThumbnailByRdb(ThumbRdbOpt &opts,
                                                               Size &size, const std::string &uri)
 {
-    int errorCode;
-    shared_ptr<AbsSharedResultSet> resultSet = GetThumbnailKey(opts, size);
+    int errorCode = NativeRdb::E_OK;
+    //auto resultSet = GetThumbnailKey(opts, size);
     ThumbnailRdbData rdbData;
-    ParseQueryResult(resultSet, rdbData, errorCode);
+    //ParseQueryResult(resultSet, rdbData, errorCode);
 
-    if (errorCode != E_OK) {
+    if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed GetThumbnailKey errorCode : %{private}d", errorCode);
         return nullptr;
     }
@@ -531,7 +535,7 @@ bool MediaLibraryThumbnail::SaveImage(string &key, vector<uint8_t> &image)
     return true;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailSet(ThumbRdbOpt &opts)
+shared_ptr<ResultSetBridge> MediaLibraryThumbnail::QueryThumbnailSet(ThumbRdbOpt &opts)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailSet IN row [%{private}s]",
                    opts.row.c_str());
@@ -546,16 +550,16 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailSet(ThumbRdb
     vector<string> selectionArgs;
     string strQueryCondition = MEDIA_DATA_DB_ID + "=" + opts.row;
 
-    RdbPredicates rdbPredicates(opts.table);
+    AbsRdbPredicates rdbPredicates(opts.table);
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
 
     shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailSet OUT");
-    return resultSet;
+    return RdbUtils::ToResultSetBridge(resultSet);
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
+shared_ptr<ResultSetBridge> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
                                                                          ThumbnailData &data, int &errorCode)
 {
     StartTrace(BYTRACE_TAG_OHOS, "QueryThumbnailInfo");
@@ -573,7 +577,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
     vector<string> selectionArgs;
     string strQueryCondition = MEDIA_DATA_DB_ID + "=" + opts.row;
 
-    RdbPredicates rdbPredicates(opts.table);
+    AbsRdbPredicates rdbPredicates(opts.table);
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
 
@@ -581,34 +585,34 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
     shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     int rowCount = 0;
     errorCode = resultSet->GetRowCount(rowCount);
-    if (errorCode != E_OK) {
+    if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to get row count %{private}d", errorCode);
         return nullptr;
     }
     FinishTrace(BYTRACE_TAG_OHOS);
 
     if (rowCount <= 0) {
-        MEDIA_ERR_LOG("No match! %{private}s", rdbPredicates.ToString().c_str());
-        errorCode = E_EMPTY_VALUES_BUCKET;
+        MEDIA_ERR_LOG("No match! %{private}s", rdbPredicates.GetWhereClause().c_str());
+        errorCode = NativeRdb::E_EMPTY_VALUES_BUCKET;
         return nullptr;
     }
 
     errorCode = resultSet->GoToFirstRow();
-    if (errorCode != E_OK) {
+    if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{private}d", errorCode);
         return nullptr;
     }
 
     int columnCount = 0;
     errorCode = resultSet->GetColumnCount(columnCount);
-    if (errorCode != E_OK) {
+    if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to get column count %{private}d", errorCode);
         return nullptr;
     }
 
     if (columnCount <= 0) {
         MEDIA_ERR_LOG("No column!");
-        errorCode = E_EMPTY_VALUES_BUCKET;
+        errorCode = NativeRdb::E_EMPTY_VALUES_BUCKET;
         return nullptr;
     }
 
@@ -619,7 +623,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRd
     MEDIA_INFO_LOG("MediaLibraryThumbnail::QueryThumbnailInfo OUT");
     FinishTrace(BYTRACE_TAG_OHOS);
 
-    return resultSet;
+    return RdbUtils::ToResultSetBridge(resultSet);
 }
 
 bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
@@ -634,40 +638,40 @@ bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
         MEDIA_DATA_DB_LCD,
         MEDIA_DATA_DB_MEDIA_TYPE
     };
-    RdbPredicates rdbPredicates(opts.table);
+    AbsRdbPredicates rdbPredicates(opts.table);
     rdbPredicates.IsNull(MEDIA_DATA_DB_THUMBNAIL);
-    rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
+    //rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
 
-    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
+    shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     int rowCount = 0;
     errorCode = resultSet->GetRowCount(rowCount);
-    if (errorCode != E_OK) {
+    if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to get row count %{private}d", errorCode);
         return false;
     }
 
     if (rowCount <= 0) {
-        MEDIA_ERR_LOG("No match! %{private}s", rdbPredicates.ToString().c_str());
-        errorCode = E_EMPTY_VALUES_BUCKET;
+        //MEDIA_ERR_LOG("No match! %{private}s", rdbPredicates.ToString().c_str());
+        errorCode = NativeRdb::E_EMPTY_VALUES_BUCKET;
         return false;
     }
 
     errorCode = resultSet->GoToFirstRow();
-    if (errorCode != E_OK) {
+    if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{private}d", errorCode);
         return false;
     }
 
     int columnCount = 0;
     errorCode = resultSet->GetColumnCount(columnCount);
-    if (errorCode != E_OK) {
+    if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to get column count %{private}d", errorCode);
         return false;
     }
 
     if (columnCount <= 0) {
         MEDIA_ERR_LOG("No column!");
-        errorCode = E_EMPTY_VALUES_BUCKET;
+        errorCode = NativeRdb::E_EMPTY_VALUES_BUCKET;
         return false;
     }
 
@@ -677,7 +681,7 @@ bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
         if (!data.path.empty()) {
             infos.push_back(data);
         }
-    } while (resultSet->GoToNextRow() == E_OK);
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
 
     resultSet.reset();
 

@@ -26,7 +26,8 @@
 #include "native_album_asset.h"
 #include "rdb_store.h"
 #include "values_bucket.h"
-#include "value_object.h"
+#include "datashare_values_bucket.h"
+#include "rdb_utils.h"
 #include "medialibrary_thumbnail.h"
 
 namespace OHOS {

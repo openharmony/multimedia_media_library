@@ -27,7 +27,7 @@ int64_t MediaLibraryAlbumDb::InsertAlbumInfo(const ValuesBucket &values, const s
 
     int64_t outRowId(0);
     int32_t insertResult = rdbStore->Insert(outRowId, MEDIALIBRARY_TABLE, values);
-    CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, ALBUM_OPERATION_ERR, "Insert failed");
+    CHECK_AND_RETURN_RET_LOG(insertResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Insert failed");
 
     return outRowId;
 }
@@ -50,7 +50,7 @@ int32_t MediaLibraryAlbumDb::UpdateAlbumInfo(const ValuesBucket &values, const s
     vector<string> whereArgs = { std::to_string(albumId) };
 
     int32_t updateResult = rdbStore->Update(updatedRows, MEDIALIBRARY_TABLE, values, ALBUM_DB_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(updateResult == E_OK, ALBUM_OPERATION_ERR, "Update failed");
+    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Update failed");
 
     return (updatedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
@@ -63,7 +63,7 @@ int32_t MediaLibraryAlbumDb::DeleteAlbumInfo(const int32_t albumId, const shared
     vector<string> whereArgs = { std::to_string(albumId) };
 
     int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, ALBUM_DB_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, ALBUM_OPERATION_ERR, "Delete failed");
+    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
 
     return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
