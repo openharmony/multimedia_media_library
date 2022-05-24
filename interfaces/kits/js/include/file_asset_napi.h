@@ -24,10 +24,10 @@
 #include "napi/native_node_api.h"
 #include "pixel_map_napi.h"
 #include "values_bucket.h"
-#include "mediadata_helper.h"
 #include "napi_remote_object.h"
-#include "mediadata_stub_impl.h"
-#include "mediadata_proxy.h"
+#include "datashare_predicates.h"
+#include "datashare_abs_result_set.h"
+#include "datashare_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -40,7 +40,7 @@ public:
 
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value CreateFileAsset(napi_env env, FileAsset &iAsset,
-                                      std::shared_ptr<AppExecFwk::MediaDataHelper> abilityHelper);
+                                      std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
 
     std::string GetFileDisplayName() const;
     std::string GetRelativePath() const;
@@ -54,7 +54,7 @@ public:
     void SetFavorite(bool isFavorite);
     bool IsTrash() const;
     void SetTrash(bool isTrash);
-    static std::shared_ptr<AppExecFwk::MediaDataHelper> sMediaDataHelper_;
+    static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
     static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
         const std::shared_ptr<AbilityRuntime::Context> &context);
@@ -146,7 +146,7 @@ struct FileAssetAsyncContext {
     napi_ref callbackRef;
     bool status;
     FileAssetNapi *objectInfo;
-    OHOS::NativeRdb::ValuesBucket valuesBucket;
+    OHOS::DataShare::DataShareValuesBucket valuesBucket;
     int32_t thumbWidth;
     int32_t thumbHeight;
     bool isDirectory;

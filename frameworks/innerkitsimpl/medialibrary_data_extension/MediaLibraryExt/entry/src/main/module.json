@@ -42,6 +42,16 @@
           "resource": "@profile:static_subscriber_config"
         }],
         "visible": true
+      },
+      {
+        "srcEntrance": "./ets/DataShareExtAbility/DataShareExtAbility.ts",
+        "name": "DataShareExtAbility",
+        "icon": "$media:icon",
+        "srcLanguage": "ets",
+        "description": "mediadatashare",
+        "type": "dataShare",
+        "uri": "datashare://media",
+        "visible": true
       }
     ],
     "requestPermissions": [

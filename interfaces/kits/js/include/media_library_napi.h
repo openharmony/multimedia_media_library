@@ -28,10 +28,8 @@
 #include "napi/native_node_api.h"
 #include "smart_album_asset.h"
 #include "values_bucket.h"
-#include "mediadata_helper.h"
 #include "napi_remote_object.h"
-#include "mediadata_stub_impl.h"
-#include "mediadata_proxy.h"
+#include "datashare_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -127,8 +125,8 @@ public:
     MediaLibraryNapi();
     ~MediaLibraryNapi();
 
-    static std::shared_ptr<AppExecFwk::MediaDataHelper> GetMediaDataHelper(napi_env env, napi_callback_info info);
-    static std::shared_ptr<AppExecFwk::MediaDataHelper> sMediaDataHelper_;
+    static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);
+    static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
 
 public:
     static const std::string PERMISSION_NAME_READ_MEDIA;
@@ -205,7 +203,7 @@ struct MediaLibraryAsyncContext {
     std::unique_ptr<FetchResult> fetchFileResult;
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<SmartAlbumAsset> smartAlbumData;
-    OHOS::NativeRdb::ValuesBucket valuesBucket;
+    OHOS::DataShare::DataShareValuesBucket valuesBucket;
     unsigned int dirType = 0;
     int32_t privateAlbumType = DEFAULT_PRIVATEALBUMTYPE;
     int32_t retVal;

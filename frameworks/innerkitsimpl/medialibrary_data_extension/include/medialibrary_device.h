@@ -36,7 +36,7 @@ class MediaLibraryDevice {
 public:
     static MediaLibraryDevice *GetInstance();
 
-    void SetAbilityContext(const std::shared_ptr<OHOS::AppExecFwk::Context> &context);
+    void SetAbilityContext(const std::shared_ptr<AbilityRuntime::Context> &context);
     void GetAllDeviceId(std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList, std::string &bundleName);
     void OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo, const std::string &bundleName);
     void OnDeviceReady(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo);
@@ -65,7 +65,7 @@ private:
     static constexpr int RANDOM_NUM = 999;
 
     std::unique_ptr<MediaLibraryDeviceOperations> mediaLibraryDeviceOperations_;
-    std::shared_ptr<AppExecFwk::DataAbilityHelper> dataAbilityhelper_;
+    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
     std::shared_ptr<AppExecFwk::EventHandler> mediaLibraryDeviceHandler_;
     std::mutex deviceLock_;
     std::map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;

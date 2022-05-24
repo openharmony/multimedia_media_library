@@ -15,6 +15,7 @@
 
 #include "medialibrary_smartalbum_map_db.h"
 #include "media_log.h"
+#include "rdb_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -27,7 +28,7 @@ int64_t MediaLibrarySmartAlbumMapDb::InsertSmartAlbumMapInfo(const ValuesBucket 
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid RDB store");
     int64_t outRowId(0);
     int32_t insertResult = rdbStore->Insert(outRowId, SMARTALBUM_MAP_TABLE, values);
-    CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, ALBUM_OPERATION_ERR, "Insert failed");
+    CHECK_AND_RETURN_RET_LOG(insertResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Insert failed");
     return outRowId;
 }
 int32_t MediaLibrarySmartAlbumMapDb::DeleteSmartAlbumMapInfo(const int32_t albumId,
@@ -39,7 +40,7 @@ int32_t MediaLibrarySmartAlbumMapDb::DeleteSmartAlbumMapInfo(const int32_t album
     int32_t deletedRows(ALBUM_OPERATION_ERR);
     vector<string> whereArgs = { std::to_string(albumId), std::to_string(assetId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_MAP_TABLE, SMARTALBUM_MAP_DB_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, ALBUM_OPERATION_ERR, "Delete failed");
+    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
     return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
 int32_t MediaLibrarySmartAlbumMapDb::DeleteAllSmartAlbumMapInfo(const int32_t albumId,
@@ -50,7 +51,7 @@ int32_t MediaLibrarySmartAlbumMapDb::DeleteAllSmartAlbumMapInfo(const int32_t al
     vector<string> whereArgs = { std::to_string(albumId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows,
         SMARTALBUM_MAP_TABLE, SMARTALBUM_MAP_DE_SMARTALBUM_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, ALBUM_OPERATION_ERR, "Delete failed");
+    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
     return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
 int32_t MediaLibrarySmartAlbumMapDb::DeleteAllAssetsMapInfo(const int32_t assetId,
@@ -61,7 +62,7 @@ int32_t MediaLibrarySmartAlbumMapDb::DeleteAllAssetsMapInfo(const int32_t assetI
     vector<string> whereArgs = { std::to_string(assetId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_MAP_TABLE,
         SMARTALBUM_MAP_DE_ASSETS_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, ALBUM_OPERATION_ERR, "Delete failed");
+    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
     return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
 }  // namespace Media

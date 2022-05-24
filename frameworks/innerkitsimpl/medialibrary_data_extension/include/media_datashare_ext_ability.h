@@ -13,48 +13,68 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIALIBRARY_I_MEDIADATA_H
-#define OHOS_MEDIALIBRARY_I_MEDIADATA_H
+#ifndef FOUNDATION_ABILITYRUNTIME_OHOS_MEDIA_DATASHARE_EXT_ABILITY_H
+#define FOUNDATION_ABILITYRUNTIME_OHOS_MEDIA_DATASHARE_EXT_ABILITY_H
 
-#include <string_ex.h>
-#include <iremote_broker.h>
-#include "uri.h"
+#include "abs_shared_result_set.h"
+#include "data_ability_predicates.h"
+#include "datashare_ext_ability.h"
+#include "native_engine/native_reference.h"
+#include "native_engine/native_value.h"
+#include "values_bucket.h"
+#include "datashare_values_bucket.h"
 
 namespace OHOS {
-namespace NativeRdb {
-class AbsSharedResultSet;
-class DataAbilityPredicates;
-class ValuesBucket;
-}
-namespace AAFwk {
-class IDataAbilityObserver;
-}
-namespace AppExecFwk {
-class DataAbilityResult;
-class DataAbilityOperation;
-
-class IMediaData : public IRemoteBroker {
+namespace AbilityRuntime {
+using namespace DataShare;
+/**
+ * @brief Basic datashare extension ability components.
+ */
+class MediaDataShareExtAbility : public DataShareExtAbility {
 public:
-    DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.AppExecFwk.IMediaData");
+    MediaDataShareExtAbility(Runtime& runtime);
+    virtual ~MediaDataShareExtAbility() override;
 
-    enum {
-        CMD_GET_FILE_TYPES = 1,
-        CMD_OPEN_FILE = 2,
-        CMD_OPEN_RAW_FILE = 3,
-        CMD_INSERT = 4,
-        CMD_UPDATE = 5,
-        CMD_DELETE = 6,
-        CMD_QUERY = 7,
-        CMD_GET_TYPE = 8,
-        CMD_BATCH_INSERT = 9,
-        CMD_REGISTER_OBSERVER = 10,
-        CMD_UNREGISTER_OBSERVER = 11,
-        CMD_NOTIFY_CHANGE = 12,
-        CMD_NORMALIZE_URI = 13,
-        CMD_DENORMALIZE_URI = 14,
-        CMD_EXECUTE_BATCH = 15,
-        CMD_SCAN = 16,
-    };
+    /**
+     * @brief Create MediaDataShareExtAbility.
+     *
+     * @param runtime The runtime.
+     * @return The MediaDataShareExtAbility instance.
+     */
+    static MediaDataShareExtAbility* Create(const std::unique_ptr<Runtime>& runtime);
+
+    /**
+     * @brief Init the extension.
+     *
+     * @param record the extension record.
+     * @param application the application info.
+     * @param handler the extension handler.
+     * @param token the remote token.
+     */
+    void Init(const std::shared_ptr<AppExecFwk::AbilityLocalRecord> &record,
+        const std::shared_ptr<AppExecFwk::OHOSApplication> &application,
+        std::shared_ptr<AppExecFwk::AbilityHandler> &handler,
+        const sptr<IRemoteObject> &token) override;
+
+    /**
+     * @brief Called when this datashare extension ability is started. You must override this function if you want to
+     *        perform some initialization operations during extension startup.
+     *
+     * This function can be called only once in the entire lifecycle of an extension.
+     * @param Want Indicates the {@link Want} structure containing startup information about the extension.
+     */
+    void OnStart(const AAFwk::Want &want) override;
+
+    /**
+     * @brief Called when this datashare extension ability is connected for the first time.
+     *
+     * You can override this function to implement your own processing logic.
+     *
+     * @param want Indicates the {@link Want} structure containing connection information about the datashare
+     * extension.
+     * @return Returns a pointer to the <b>sid</b> of the connected datashare extension ability.
+     */
+    sptr<IRemoteObject> OnConnect(const AAFwk::Want &want) override;
 
     /**
      * @brief Obtains the MIME types of files supported.
@@ -64,7 +84,7 @@ public:
      *
      * @return Returns the matched MIME types. If there is no match, null is returned.
      */
-    virtual std::vector<std::string> GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter) = 0;
+    std::vector<std::string> GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter) override;
 
     /**
      * @brief Opens a file in a specified remote path.
@@ -77,7 +97,7 @@ public:
      *
      * @return Returns the file descriptor.
      */
-    virtual int OpenFile(const Uri &uri, const std::string &mode) = 0;
+    int OpenFile(const Uri &uri, const std::string &mode) override;
 
     /**
      * @brief This is like openFile, open a file that need to be able to return sub-sections of files，often assets
@@ -91,7 +111,7 @@ public:
      *
      * @return Returns the RawFileDescriptor object containing file descriptor.
      */
-    virtual int OpenRawFile(const Uri &uri, const std::string &mode) = 0;
+    int OpenRawFile(const Uri &uri, const std::string &mode) override;
 
     /**
      * @brief Inserts a single data record into the database.
@@ -101,7 +121,7 @@ public:
      *
      * @return Returns the index of the inserted data record.
      */
-    virtual int Insert(const Uri &uri, const NativeRdb::ValuesBucket &value) = 0;
+    int Insert(const Uri &uri, const DataShareValuesBucket &value) override;
 
     /**
      * @brief Updates data records in the database.
@@ -112,8 +132,8 @@ public:
      *
      * @return Returns the number of data records updated.
      */
-    virtual int Update(const Uri &uri, const NativeRdb::ValuesBucket &value,
-        const NativeRdb::DataAbilityPredicates &predicates) = 0;
+    int Update(const Uri &uri, const DataSharePredicates &predicates,
+		    const DataShareValuesBucket &value) override;
 
     /**
      * @brief Deletes one or more data records from the database.
@@ -123,7 +143,7 @@ public:
      *
      * @return Returns the number of data records deleted.
      */
-    virtual int Delete(const Uri &uri, const NativeRdb::DataAbilityPredicates &predicates) = 0;
+    int Delete(const Uri &uri, const DataSharePredicates &predicates) override;
 
     /**
      * @brief Deletes one or more data records from the database.
@@ -134,8 +154,8 @@ public:
      *
      * @return Returns the query result.
      */
-    virtual std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(
-        const Uri &uri, std::vector<std::string> &columns, const NativeRdb::DataAbilityPredicates &predicates) = 0;
+    std::shared_ptr<ResultSetBridge> Query(const Uri &uri, const DataSharePredicates &predicates,
+		    std::vector<std::string> &columns) override;
 
     /**
      * @brief Obtains the MIME type matching the data specified by the URI of the Data ability. This method should be
@@ -145,7 +165,7 @@ public:
      *
      * @return Returns the MIME type that matches the data specified by uri.
      */
-    virtual std::string GetType(const Uri &uri) = 0;
+    std::string GetType(const Uri &uri) override;
 
     /**
      * @brief Inserts multiple data records into the database.
@@ -155,7 +175,7 @@ public:
      *
      * @return Returns the number of data records inserted.
      */
-    virtual int BatchInsert(const Uri &uri, const std::vector<NativeRdb::ValuesBucket> &values) = 0;
+    int BatchInsert(const Uri &uri, const std::vector<DataShareValuesBucket> &values) override;
 
     /**
      * @brief Registers an observer to DataObsMgr specified by the given Uri.
@@ -163,7 +183,7 @@ public:
      * @param uri, Indicates the path of the data to operate.
      * @param dataObserver, Indicates the IDataAbilityObserver object.
      */
-    virtual bool RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) = 0;
+    bool RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
 
     /**
      * @brief Deregisters an observer used for DataObsMgr specified by the given Uri.
@@ -171,7 +191,7 @@ public:
      * @param uri, Indicates the path of the data to operate.
      * @param dataObserver, Indicates the IDataAbilityObserver object.
      */
-    virtual bool UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) = 0;
+    bool UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
 
     /**
      * @brief Notifies the registered observers of a change to the data resource specified by Uri.
@@ -180,7 +200,7 @@ public:
      *
      * @return Return true if success. otherwise return false.
      */
-    virtual bool NotifyChange(const Uri &uri) = 0;
+    bool NotifyChange(const Uri &uri) override;
 
     /**
      * @brief Converts the given uri that refer to the Data ability into a normalized URI. A normalized URI can be used
@@ -195,7 +215,7 @@ public:
      *
      * @return Returns the normalized Uri object if the Data ability supports URI normalization; returns null otherwise.
      */
-    virtual Uri NormalizeUri(const Uri &uri) = 0;
+    Uri NormalizeUri(const Uri &uri) override;
 
     /**
      * @brief Converts the given normalized uri generated by normalizeUri(ohos.utils.net.Uri) into a denormalized one.
@@ -207,7 +227,7 @@ public:
      * passed to this method if there is nothing to do; returns null if the data identified by the original Uri cannot
      * be found in the current environment.
      */
-    virtual Uri DenormalizeUri(const Uri &uri) = 0;
+    Uri DenormalizeUri(const Uri &uri) override;
 
     /**
      * @brief Performs batch operations on the database.
@@ -215,12 +235,13 @@ public:
      * @param operations Indicates a list of database operations on the database.
      * @return Returns the result of each operation, in array.
      */
-    virtual std::vector<std::shared_ptr<AppExecFwk::DataAbilityResult>> ExecuteBatch(
-        const std::vector<std::shared_ptr<AppExecFwk::DataAbilityOperation>> &operations) = 0;
+    std::vector<std::shared_ptr<DataShareResult>> ExecuteBatch(
+        const std::vector<std::shared_ptr<DataShareOperation>> &operations) override;
+private:
+    bool CheckCallingPermission(const std::string &permission);
 
-    virtual void Scan(std::string path, uint8_t isDir) = 0;
+    Runtime& runtime_;
 };
-} // namespace AppExecFwk
+} // namespace AbilityRuntime
 } // namespace OHOS
-#endif // OHOS_APPEXECFWK_I_MEDIADATA_H
-
+#endif // FOUNDATION_ABILITYRUNTIME_OHOS_MEDIA_DATASHARE_EXT_ABILITY_H

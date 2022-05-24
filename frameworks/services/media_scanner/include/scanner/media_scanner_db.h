@@ -30,10 +30,13 @@
 #include "uri.h"
 #include "values_bucket.h"
 #include "want.h"
+#include "result_set_bridge.h"
+#include "datashare_result_set.h"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
+using namespace DataShare;
 
 class MediaScannerDb {
 public:
@@ -62,9 +65,11 @@ public:
     unique_ptr<Metadata> GetFileModifiedInfo(const string &path);
     unordered_map<int32_t, MediaType> GetIdsFromFilePath(const string &path);
 
+    static string FormatSqlPath(const string &path);
+
 private:
     std::string GetMediaTypeUri(MediaType mediaType);
-    std::unique_ptr<Metadata> FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    std::unique_ptr<Metadata> FillMetadata(const shared_ptr<DataShare::DataShareResultSet> &resultSet);
 };
 } // namespace Media
 } // namespace OHOS

@@ -21,6 +21,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
 
 MediaScannerDb::MediaScannerDb() {}
 
@@ -37,7 +38,7 @@ void MediaScannerDb::SetRdbHelper(void)
 string MediaScannerDb::InsertMetadata(const Metadata &metadata)
 {
     int32_t rowNum(0);
-    ValuesBucket values;
+    DataShareValuesBucket values;
 
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri = GetMediaTypeUri(mediaType);
@@ -88,15 +89,15 @@ vector<string> MediaScannerDb::BatchInsert(const vector<Metadata> &metadataList)
 
 unique_ptr<Metadata> MediaScannerDb::ReadMetadata(const string &path)
 {
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    DataAbilityPredicates predicates = {};
-    predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
+    DataShare::DataSharePredicates predicates = {};
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + path);
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {};
-    resultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
+    auto resultSetBridge = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
 
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{private}s", path.c_str());
+    CHECK_AND_RETURN_RET_LOG(resultSetBridge != nullptr, nullptr, "No result found for %{private}s", path.c_str());
+    auto resultSet = std::make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 
     unique_ptr<Metadata> metadata = FillMetadata(resultSet);
 
@@ -112,9 +113,9 @@ unique_ptr<Metadata> MediaScannerDb::ReadMetadata(const string &path)
 string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
 {
     int32_t updateCount(0);
-    ValuesBucket values;
-    DataAbilityPredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(metadata.GetFileId()));
+    DataShareValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + FormatSqlPath(to_string(metadata.GetFileId())));
 
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri = GetMediaTypeUri(mediaType);
@@ -181,7 +182,7 @@ int32_t MediaScannerDb::UpdateMetadata(const vector<Metadata> &metadataList)
 bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 {
     int32_t deletedCount(0);
-    DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     predicates.In(MEDIA_DATA_DB_ID, idList);
 
     Uri deleteUri(MEDIALIBRARY_DATA_URI);
@@ -211,14 +212,14 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
     columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
     columns.push_back(MEDIA_DATA_DB_NAME);
 
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    DataAbilityPredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + FormatSqlPath(path));
 
     Uri abilityUri(MEDIALIBRARY_DATA_URI);
-    resultSet = MediaLibraryDataManager::GetInstance()->Query(abilityUri, columns, predicates);
+    auto resultSetBridge = MediaLibraryDataManager::GetInstance()->Query(abilityUri, columns, predicates);
 
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{private}s", path.c_str());
+    CHECK_AND_RETURN_RET_LOG(resultSetBridge != nullptr, nullptr, "No result found for %{private}s", path.c_str());
+    auto resultSet = std::make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 
     int ret = resultSet->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, nullptr, "Failed to fetch first record");
@@ -236,23 +237,23 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
  */
 unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const string &path)
 {
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
     unordered_map<int32_t, MediaType> idMap = {};
 
     vector<string> columns = {};
     columns.push_back(MEDIA_DATA_DB_ID);
     columns.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
 
-    DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     // Append % to end of the path for using LIKE statement
     auto modifiedPath = path;
     modifiedPath = modifiedPath.back() != '/' ? modifiedPath + "/%" : modifiedPath + "%";
-    predicates.Like(MEDIA_DATA_DB_FILE_PATH, modifiedPath);
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " like " + FormatSqlPath(modifiedPath));
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
-    resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
+    auto resultSetBridge = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
 
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, idMap, "No entries found for this path");
+    CHECK_AND_RETURN_RET_LOG(resultSetBridge != nullptr, idMap, "No entries found for this path");
+    auto resultSet = std::make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 
     int32_t id(0);
     int32_t idIndex(0);
@@ -274,16 +275,17 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
 string MediaScannerDb::GetFileDBUriFromPath(const string &path)
 {
     string uri("");
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
 
     vector<string> columns = {};
     columns.push_back(MEDIA_DATA_DB_URI);
 
-    DataAbilityPredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + FormatSqlPath(path));
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
-    resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
+    auto resultSetBridge = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
+    CHECK_AND_RETURN_RET_LOG(resultSetBridge != nullptr, uri, "No entries found for this path");
+    auto resultSet = std::make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
         MEDIA_ERR_LOG("No result found for this path");
@@ -322,13 +324,16 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
     int32_t albumId = 0;
     int32_t columnIndex = -1;
 
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    DataAbilityPredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + FormatSqlPath(path));
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {MEDIA_DATA_DB_ID};
-    resultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
+    auto resultSetBridge = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
+    CHECK_AND_RETURN_RET_LOG(resultSetBridge != nullptr, albumId, "No result found for %{private}s", path.c_str());
+    auto resultSet = std::make_shared<DataShare::DataShareResultSet>(
+        
+    );
 
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
         MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{private}s", path.c_str());
@@ -343,15 +348,16 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
 
 void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap)
 {
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     int32_t mediaType = static_cast<int>(MediaType::MEDIA_TYPE_ALBUM);
     predicates.Contains(MEDIA_DATA_DB_FILE_PATH, path);
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(mediaType));
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_DATE_MODIFIED};
-    resultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
+    auto resultSetBridge = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
+    CHECK_AND_RETURN_LOG(resultSetBridge != nullptr, "No result found for %{private}s", path.c_str());
+    auto resultSet = std::make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{private}s", path.c_str());
@@ -432,15 +438,15 @@ void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)
     //MediaLibraryDataManager::GetInstance()->NotifyChange(uri); 
 }
 
-unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<AbsSharedResultSet> &resultSet)
+unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<DataShare::DataShareResultSet> &resultSet)
 {
     unique_ptr<Metadata> metadata = make_unique<Metadata>();
     CHECK_AND_RETURN_RET_LOG(metadata != nullptr, nullptr, "Metadata object creation failed");
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Result set for metadata is empty");
 
     std::vector<std::string> columnNames;
-    resultSet->GetAllColumnNames(columnNames);
 
+    resultSet->GetAllColumnNames(columnNames);
     for (const auto &col : columnNames) {
         int32_t columnIndex(0);
         resultSet->GetColumnIndex(col, columnIndex);
@@ -489,6 +495,11 @@ unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<AbsSharedResu
     }
 
     return metadata;
+}
+
+string MediaScannerDb::FormatSqlPath(const string &path)
+{
+	return "\'" + path + "\'";
 }
 } // namespace Media
 } // namespace OHOS
