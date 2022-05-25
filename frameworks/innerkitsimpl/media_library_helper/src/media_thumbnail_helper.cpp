@@ -128,11 +128,10 @@ DistributedKv::Status MediaThumbnailHelper::SyncKvstore(std::string key, const s
     DistributedKv::DataQuery dataQuery;
     dataQuery.KeyPrefix(key);
     std::vector<std::string> deviceIds = { deviceId };
-    MEDIA_DEBUG_LOG("Distribute StartTrace:SyncWithCondition");
-    StartTrace(HITRACE_TAG_OHOS, "SyncKvstore singleKvStorePtr_->SyncWithCondition");
-    DistributedKv::Status status = singleKvStorePtr_->SyncWithCondition(deviceIds, OHOS::DistributedKv::SyncMode::PULL,
-                                                                        dataQuery);
-    MEDIA_DEBUG_LOG("Distribute FinishTrace:SyncWithCondition");
+    MEDIA_DEBUG_LOG("Distribute StartTrace:Sync");
+    StartTrace(HITRACE_TAG_OHOS, "SyncKvstore singleKvStorePtr_->Sync");
+    auto status = singleKvStorePtr_->Sync(deviceIds, OHOS::DistributedKv::SyncMode::PULL, dataQuery);
+    MEDIA_DEBUG_LOG("Distribute FinishTrace:Sync");
     FinishTrace(HITRACE_TAG_OHOS);
 
     return status;
