@@ -33,13 +33,13 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::NativeRdb;
-struct GroupInfo {
+struct TrustedRelationshipGroupInfo {
     std::string groupName;
     std::string groupId;
     std::string groupOwner;
     int32_t groupType;
-    GroupInfo() : groupType(0) {}
-    GroupInfo(std::string name, std::string id, std::string owner, int32_t type)
+    TrustedRelationshipGroupInfo() : groupType(0) {}
+    TrustedRelationshipGroupInfo(std::string name, std::string id, std::string owner, int32_t type)
         : groupName(name), groupId(id), groupOwner(owner), groupType(type)
     {
     }

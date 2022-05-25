@@ -1,4 +1,5 @@
-/* Copyright (C) 2021 Huawei Device Co., Ltd.
+/*
+ * Copyright (C) 2021 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -82,7 +83,6 @@ void MediaLibraryDevice::InitKvStore()
     DistributedKv::DistributedKvDataManager kvManager;
     DistributedKv::Options options = {
         .createIfMissing = true,
-        .encrypt = true,
         .persistent = true,
         .backup = true,
         .autoSync = true,
@@ -181,7 +181,7 @@ void MediaLibraryDevice::GetAllDeviceId(
     auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
     int32_t ret = deviceManager.GetTrustedDeviceList(bundleName_, extra, deviceList);
     if (ret != 0) {
-         MEDIA_ERR_LOG("get trusted device list failed, ret %{public}d", ret);
+        MEDIA_ERR_LOG("get trusted device list failed, ret %{public}d", ret);
     }
 }
 
@@ -190,7 +190,7 @@ bool MediaLibraryDevice::CheckPermission(const std::string &udid)
     if (CheckIsSameAccount()) {
         return true;
     }
-    return QueryRelationship(udid); 
+    return QueryRelationship(udid);
 }
 
 void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInfo &devInfo)
@@ -326,7 +326,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     GetAllDeviceId(deviceList);
     MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
     for (auto& deviceInfo : deviceList) {
-        DevOnlineProcess(deviceInfo);	
+        DevOnlineProcess(deviceInfo);
     }
 
     std::vector<OHOS::Media::MediaLibraryDeviceInfo> deviceDataBaseList;
@@ -464,7 +464,7 @@ void MediaLibraryDevice::UnRegisterFromDM()
     MEDIA_INFO_LOG("UnRegisterFromDM success");
 }
 
-void from_json(const nlohmann::json &jsonObject, GroupInfo &groupInfo)
+void from_json(const nlohmann::json &jsonObject, TrustedRelationshipGroupInfo &groupInfo)
 {
     if (jsonObject.find(FIELD_GROUP_NAME) != jsonObject.end()) {
         groupInfo.groupName = jsonObject.at(FIELD_GROUP_NAME).get<std::string>();
@@ -518,14 +518,14 @@ bool MediaLibraryDevice::QueryRelationship(const std::string &udid)
         return false;
     }
 
-    std::vector<GroupInfo> groupList;
-    groupList = jsonObject.get<std::vector<GroupInfo>>();
+    std::vector<TrustedRelationshipGroupInfo> groupList;
+    groupList = jsonObject.get<std::vector<TrustedRelationshipGroupInfo>>();
     for (auto &a : groupList) {
         MEDIA_INFO_LOG("group info:[groupName] %{public}s, [groupId] %{public}s, [groupType] %{public}d,",
                        a.groupName.c_str(), a.groupId.c_str(), a.groupType);
         if (a.groupType == PEER_TO_PEER_GROUP || a.groupType == ACROSS_ACCOUNT_AUTHORIZE_GROUP) {
             return true;
-	}
+        }
     }
 
     return false;
@@ -534,7 +534,7 @@ bool MediaLibraryDevice::QueryRelationship(const std::string &udid)
 bool MediaLibraryDevice::CheckIsSameAccount()
 {
     // because of there no same_account, only for test, del later
-    bool ret = system::GetBoolParameter(SAME_ACCOUNT_MARK, false); 
+    bool ret = system::GetBoolParameter(SAME_ACCOUNT_MARK, false);
     MEDIA_INFO_LOG("SAME_ACCOUNT_MARK val is %{public}d", ret);
     return ret;
 }
