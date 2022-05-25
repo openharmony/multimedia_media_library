@@ -36,6 +36,7 @@
 #include "medialibrary_device_info.h"
 #include "medialibrary_file_operations.h"
 #include "medialibrary_kvstore_operations.h"
+#include "medialibrary_query_operations.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 #include "rdb_open_callback.h"
@@ -93,7 +94,7 @@ namespace Media {
         bool UnSubscribeRdbStoreObserver();
         bool QuerySync(const std::string &deviceId, const std::string &tableName);
         bool QuerySync();
-		
+
         bool CheckFileNameValid(const ValuesBucket &value);
         sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
         std::string GetClientBundleName();

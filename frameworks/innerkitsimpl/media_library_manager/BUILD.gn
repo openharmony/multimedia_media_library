@@ -33,6 +33,7 @@ ohos_shared_library("media_library_manager") {
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/include",
     "//utils/native/base/include",
+    "//foundation/multimedia/medialibrary_standard/frameworks/kitsimpl/media_service_extension/include",
   ]
 
   deps = [
