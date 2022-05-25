@@ -90,7 +90,7 @@ vector<string> MediaScannerDb::BatchInsert(const vector<Metadata> &metadataList)
 unique_ptr<Metadata> MediaScannerDb::ReadMetadata(const string &path)
 {
     DataShare::DataSharePredicates predicates = {};
-    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + path);
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + FormatSqlPath(path));
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {};
@@ -331,9 +331,7 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
     vector<string> columns = {MEDIA_DATA_DB_ID};
     auto resultSetBridge = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
     CHECK_AND_RETURN_RET_LOG(resultSetBridge != nullptr, albumId, "No result found for %{private}s", path.c_str());
-    auto resultSet = std::make_shared<DataShare::DataShareResultSet>(
-        
-    );
+    auto resultSet = std::make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
         MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{private}s", path.c_str());
