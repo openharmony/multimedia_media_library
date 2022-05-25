@@ -110,6 +110,10 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
         MEDIA_DEBUG_LOG("Distribute FinishTrace:SyncPullAllTableTrace");
     }
     InitialiseKvStore();
+
+    // scan the media dir
+    std::string srcPath = "/storage/media/local/files";
+    MediaScannerObj::GetMediaScannerInstance()->ScanDir(srcPath, nullptr);
 }
 
 void MediaLibraryDataManager::ClearMediaLibraryMgr()
