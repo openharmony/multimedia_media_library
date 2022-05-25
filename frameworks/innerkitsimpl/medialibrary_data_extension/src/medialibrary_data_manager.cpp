@@ -228,7 +228,6 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
     config.SetName(MEDIA_DATA_ABILITY_DB_NAME);
     config.SetRelativePath(relativePath);
     config.SetEncryptLevel(ENCRYPTION_LEVEL);
-    config.SetAppModuleName(context_->GetHapModuleInfo()->moduleName);
 
     MediaLibraryDataCallBack rdbDataCallBack;
 
