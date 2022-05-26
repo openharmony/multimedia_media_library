@@ -95,15 +95,18 @@ function ScannerCallback(status: number, uri: string)
     return 0;
 }
 
+let instance = undefined;
 class MediaScannerSubscriber extends StaticSubscriberExtensionAbility {
     onReceiveEvent(event) {
         console.log('[MediaScannerSubscriber] onReceiveEvent, event:' + event.event);
-        let isntance = mediaLibrary.getScannerInstance(this.context);
+        if (instance == undefined) {
+            instance = mediaLibrary.getScannerInstance(this.context);
+        }
         try {
             console.log('[MediaScannerSubscriber] start');
-            let boardcast = event.event;
-            isntance.scanDir(boardcast, ScannerCallback);
+            instance.scanDir(event.event, ScannerCallback);
         } catch (error) {
+            instance = undefined;
             console.log('[MediaScannerSubscriber] scan error:' + error);
         }
         console.log('[MediaScannerSubscriber] end');
