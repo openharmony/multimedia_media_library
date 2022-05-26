@@ -16,6 +16,7 @@
 #include "media_scanner_napi.h"
 #include "medialibrary_napi_log.h"
 #include "media_library_napi.h"
+#include "media_data_ability_const.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -24,6 +25,7 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 thread_local napi_ref MediaScannerNapi::sConstructor_ = nullptr;
+std::shared_ptr<DataShare::DataShareHelper> MediaScannerNapi::sDataShareHelper_ = nullptr;
 
 MediaScannerNapi::MediaScannerNapi()
     : env_(nullptr), wrapper_(nullptr) {}
@@ -80,12 +82,12 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
         if (obj != nullptr) {
             obj->env_ = env;
 
-/*
-            obj->sMediaDataHelper_ = MediaLibraryNapi::GetMediaDataHelper(env, info);
-            if (obj->sMediaDataHelper_ == nullptr) {
-                NAPI_ERR_LOG("[MediaScannerNapiConstructor] GetMediaDataHelper failed!");
+
+            obj->sDataShareHelper_ = MediaLibraryNapi::GetDataShareHelper(env, info);
+            if (obj->sDataShareHelper_ == nullptr) {
+                NAPI_ERR_LOG("[MediaScannerNapiConstructor] GetDataShareHelper failed!");
                 return result;
-            }*/
+            }
 
 
             obj->mediaScannerNapiCallbackObj_ = std::make_shared<MediaScannerNapiCallback>(env);
@@ -172,7 +174,7 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
     MediaScannerNapi *obj = nullptr;
-    string path = "";
+    string event = "";
     napi_ref callbackRef = nullptr;
     const int32_t refCount = 1;
     size_t res = 0;
@@ -190,7 +192,7 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
             napi_typeof(env, argv[PARAM0], &valueType);
             if (valueType == napi_string) {
                 napi_get_value_string_utf8(env, argv[PARAM0], buffer, PATH_MAX, &res);
-                path = string(buffer);
+                event = string(buffer);
             } else {
                 NAPI_ERR_LOG("Invalid arg, valueType: %{private}d", valueType);
                 return result;
@@ -204,14 +206,10 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
             }
         }
         errCode = 0;
-        if (scanType == "FILE") {
-            //obj->sMediaDataHelper_->Scan(path, 0);
-        } else if (scanType == "DIR") {
-            //obj->sMediaDataHelper_->Scan(path, 1);
-        }
+        DataShareScanBoardcast(event);
 
         if (errCode == 0) {
-            obj->mediaScannerNapiCallbackObj_->SetToMap(path, callbackRef);
+            obj->mediaScannerNapiCallbackObj_->SetToMap(event, callbackRef);
         } else {
             // Invoke JS callback functions based on results
             InvokeJSCallback(env, errCode, "", callbackRef);
@@ -229,6 +227,24 @@ napi_value MediaScannerNapi::ScanFile(napi_env env, napi_callback_info info)
 napi_value MediaScannerNapi::ScanDir(napi_env env, napi_callback_info info)
 {
     return NapiScanUtils(env, info, "DIR");
+}
+
+void MediaScannerNapi::DataShareScanBoardcast(const std::string &event)
+{
+    NAPI_INFO_LOG("MediaScannerNapi::DataShareScanBoardcast start, event: %{public}s", event.c_str());
+    if (sDataShareHelper_ == nullptr) {
+        NAPI_ERR_LOG("MediaScannerNapi::DataShareScanBoardcast datashare helper null");
+        return;
+    }
+    Uri insertUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN + "/" + MEDIA_SCAN_OPERATION);
+    OHOS::DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, event);
+    int index = sDataShareHelper_->Insert(insertUri, valuesBucket);
+    if (index < 0) {
+        NAPI_ERR_LOG("[MediaScannerNapi::DataShareScanBoardcast reture status %{public}d", index);
+    } else {
+        NAPI_INFO_LOG("[MediaScannerNapi::DataShareScanBoardcast success");
+    }
 }
 
 void MediaScannerNapiCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)
