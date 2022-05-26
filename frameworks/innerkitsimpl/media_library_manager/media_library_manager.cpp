@@ -14,7 +14,6 @@
  */
 
 #include "media_library_manager.h"
-
 #include "media_log.h"
 
 using namespace std;
@@ -30,12 +29,12 @@ MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
     return &mediaLibMgr;
 }
 
-void MediaLibraryManager::InitMediaLibraryManager(const shared_ptr<AppExecFwk::Context> context)
+void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &token)
 {
     string strUri = MEDIALIBRARY_DATA_URI;
 
     if (sAbilityHelper_ == nullptr) {
-        sAbilityHelper_ = AppExecFwk::DataAbilityHelper::Creator(context, make_shared<Uri>(strUri));
+        sAbilityHelper_ = AppExecFwk::DataAbilityHelper::Creator(token, make_shared<Uri>(strUri));
     }
 }
 
@@ -106,6 +105,15 @@ variant<int32_t, string> GetValFromColumn(string columnName,
     }
 
     return cellValue;
+}
+
+int64_t GetLongValFromColumn(string columnName, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+{
+    int index = 0;
+    int64_t longVal = 0;
+    resultSet->GetColumnIndex(columnName, index);
+    resultSet->GetLong(index, longVal);
+    return longVal;
 }
 
 vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOptions &fetchOps)
@@ -367,6 +375,42 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
     }
 
     return fetchFileResult;
+}
+
+int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
+{
+    MEDIA_DEBUG_LOG("QueryTotalSize start");
+    if (sAbilityHelper_ == nullptr) {
+        MEDIA_ERR_LOG("sAbilityHelper_ is null");
+        return DATA_ABILITY_FAIL;
+    }
+    vector<string> columns;
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
+    DataAbilityPredicates predicates;
+    shared_ptr<AbsSharedResultSet> queryResultSet = sAbilityHelper_->Query(uri, columns, predicates);
+    if (queryResultSet == nullptr) {
+        MEDIA_ERR_LOG("queryResultSet is null!");
+        return DATA_ABILITY_FAIL;
+    }
+    auto count = 0;
+    auto ret = queryResultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("get rdbstore failed %{public}d", ret);
+        return DATA_ABILITY_HAS_DB_ERROR;
+    }
+    MEDIA_DEBUG_LOG("count = %{public}d", (int)count);
+    if (count >= 0) {
+        while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+            int mediatype = get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, queryResultSet));
+            int64_t size = GetLongValFromColumn(MEDIA_DATA_DB_SIZE, queryResultSet);
+            MEDIA_DEBUG_LOG("mediatype = %{public}d, size = %{public}lld", mediatype, (long long)size);
+            outMediaVolume.SetSize(mediatype, size);
+        }
+    }
+    MEDIA_INFO_LOG("FilesSize:%{public}lld, VideosSize:%{public}lld, ImagesSize:%{public}lld, AudiosSize:%{public}lld",
+        (long long)outMediaVolume.GetFilesSize(), (long long)outMediaVolume.GetVideosSize(),
+        (long long)outMediaVolume.GetImagesSize(), (long long)outMediaVolume.GetAudiosSize());
+    return DATA_ABILITY_SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS
