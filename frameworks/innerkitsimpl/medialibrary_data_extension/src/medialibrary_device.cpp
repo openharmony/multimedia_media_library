@@ -50,7 +50,7 @@ void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<AbilityRuntime:
 {
     AppExecFwk::Want want;
     want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
-    dataShareHelper_ = DataShareHelper::Creator(context, want, std::make_shared<Uri>(MEDIALIBRARY_DATA_URI));
+    dataShareHelper_ = DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
     MEDIA_INFO_LOG("MediaLibraryDevice::SetAbilityContext create dataAbilityhelper %{private}d",
         (dataShareHelper_ != nullptr));
 }
