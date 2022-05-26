@@ -333,6 +333,17 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
         return result;
     }
 
+    // boardcast operation
+    if (insertUri.find(MEDIA_BOARDCASTOPRN) != string::npos) {
+        std::string operationType = MediaLibraryDataManagerUtils::GetOperationType(insertUri);
+        MEDIA_INFO_LOG("MediaData Insert operationType = %{private}s", operationType.c_str());
+        if (operationType == MEDIA_SCAN_OPERATION) {
+            std::string path = "/storage/media/local/files";
+            MediaScannerObj::GetMediaScannerInstance()->ScanDir(path, nullptr);
+        }
+        return DATA_ABILITY_SUCCESS;
+    }
+
     // Normal URI scenario
     int64_t outRowId = DATA_ABILITY_FAIL;
     (void)rdbStore_->Insert(outRowId, MEDIALIBRARY_TABLE, value);
