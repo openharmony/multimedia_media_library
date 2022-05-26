@@ -1546,7 +1546,7 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     string meidaUri = MEDIALIBRARY_DATA_URI;
     AppExecFwk::Want want;
     want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
-    auto dataAbilityHelper = DataShare::DataShareHelper::Creator(context, want, std::make_shared<Uri>(MEDIALIBRARY_DATA_URI));
+    auto dataAbilityHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
     if (dataAbilityHelper == nullptr) {
         return nullptr;
     }
