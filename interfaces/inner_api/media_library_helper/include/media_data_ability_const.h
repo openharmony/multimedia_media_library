@@ -428,6 +428,10 @@ static const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
 static const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
 static const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
 
+// BoardCast operation
+static const std::string MEDIA_BOARDCASTOPRN = "boardcast";
+static const std::string MEDIA_SCAN_OPERATION = "boardcast_scan";
+
 // ringtone uris
 static const std::string MEDIA_KVSTOREOPRN_SET_URI = "set_ringtone_uri";
 static const std::string MEDIA_KVSTOREOPRN_SET_NOTIFICATION_URI = "set_notification_uri";
