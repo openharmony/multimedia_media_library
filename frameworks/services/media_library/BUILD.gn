@@ -78,6 +78,8 @@ ohos_shared_library("medialibrary_data_ability") {
     "src/medialibrary_file_db.cpp",
     "src/medialibrary_file_operations.cpp",
     "src/medialibrary_kvstore_operations.cpp",
+    "src/medialibrary_query_db.cpp",
+    "src/medialibrary_query_operations.cpp",
     "src/medialibrary_smartalbum_db.cpp",
     "src/medialibrary_smartalbum_map_db.cpp",
     "src/medialibrary_smartalbum_map_operations.cpp",

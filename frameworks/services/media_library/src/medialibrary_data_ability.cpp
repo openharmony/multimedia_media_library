@@ -702,6 +702,12 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
     string type = uriString.substr(pos + 1);
     MEDIA_DEBUG_LOG("uriString = %{private}s, type = %{private}s, thumbnailQuery %{public}d, Rdb Version %{public}d",
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
+    if (uriString.find(MEDIA_QUERYOPRN_QUERYVOLUME) != string::npos) {
+        QueryData queryData;
+        queryResultSet = MediaLibraryQueryOperations::HandleQueryOperations(MEDIA_QUERYOPRN_QUERYVOLUME, queryData,
+            rdbStore_);
+        return queryResultSet;
+    }
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
 
     if (!networkId.empty() && (tabletype != TYPE_ASSETSMAP_TABLE) && (tabletype != TYPE_SMARTALBUMASSETS_TABLE)) {

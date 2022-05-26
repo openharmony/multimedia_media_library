@@ -132,6 +132,7 @@ const bool DEFAULT_ALBUM_VIRTUAL = false;
 const uint64_t DEFAULT_MEDIA_DATE_TAKEN = 0;
 const std::string DEFAULT_MEDIA_ALBUM_URI = "";
 const bool DEFAULT_MEDIA_IS_PENDING = false;
+const int32_t DEFAULT_MEDIAVOLUME = 0;
 const std::string ROOT_MEDIA_DIR = "/storage/media/local/files/";
 const char SLASH_CHAR = '/';
 const int32_t OPEN_FDS = 64;
