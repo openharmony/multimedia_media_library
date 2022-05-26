@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
-MEDIA_LIB_INNERKITS_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl"
-MEDIA_LIB_SERVICES_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/services"
+aafwk_inner_api_path = "//foundation/aafwk/standard/interfaces/innerkits"
+aafwk_kits_path = "//foundation/aafwk/standard/frameworks/kits"
+aafwk_path = "//foundation/aafwk/standard"
+aafwk_services_path = "//foundation/aafwk/standard/services"
