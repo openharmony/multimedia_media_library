@@ -97,12 +97,12 @@ function ScannerCallback(status: number, uri: string)
 
 class MediaScannerSubscriber extends StaticSubscriberExtensionAbility {
     onReceiveEvent(event) {
-        console.log('[MediaScannerSubscriber] onReceiveEvent, event:' + event.code);
+        console.log('[MediaScannerSubscriber] onReceiveEvent, event:' + event.event);
         let isntance = mediaLibrary.getScannerInstance(this.context);
         try {
             console.log('[MediaScannerSubscriber] start');
-            let path = "/storage/media/local/files/";
-            isntance.scanDir(path, ScannerCallback);
+            let boardcast = event.event;
+            isntance.scanDir(boardcast, ScannerCallback);
         } catch (error) {
             console.log('[MediaScannerSubscriber] scan error:' + error);
         }
