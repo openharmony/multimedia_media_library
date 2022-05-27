@@ -49,7 +49,7 @@ void MediaLibraryDevice::Start()
         auto runner = AppExecFwk::EventRunner::Create("MediaLibraryDevice");
         mediaLibraryDeviceHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
     }
-    devsInfoInter_ = make_unique<DevicesInfoInteraction>();
+    devsInfoInter_ = make_unique<DevicesInfoInteract>();
     if (devsInfoInter_ != nullptr) {
         devsInfoInter_->Init();
         std::string local = "";
@@ -127,7 +127,7 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
     if (devsInfoInter_ != nullptr) {
         if (!devsInfoInter_->GetMLDeviceInfos(mldevInfo.deviceUdid, mldevInfo.versionId)) {
             MEDIA_INFO_LOG("get ml infos failed, so try to sync pull first, wait...");
-	}
+        }
     }
     lock_guard<mutex> autoLock(deviceLock_);
     deviceInfoMap_[devInfo.deviceId] = mldevInfo;
@@ -147,7 +147,6 @@ void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDevic
         DevOnlineProcess(deviceInfo);
         NotifyDeviceChange();
     };
-
     if (!mediaLibraryDeviceHandler_->PostTask(nodeOnline)) {
         MEDIA_ERR_LOG("OnDeviceOnline handler postTask failed");
     }

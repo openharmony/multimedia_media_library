@@ -32,7 +32,7 @@ struct TrustedRelationshipGroupInfo {
     }
 };
 
-class DevicePermissionVerification final { 
+class DevicePermissionVerification final {
 public:
     DevicePermissionVerification() = default;
     ~DevicePermissionVerification() = default;

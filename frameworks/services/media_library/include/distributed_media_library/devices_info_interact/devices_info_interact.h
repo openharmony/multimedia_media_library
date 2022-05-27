@@ -21,16 +21,15 @@
 
 namespace OHOS {
 namespace Media {
-
-class DevicesInfoInteraction final : public DistributedKv::KvStoreSyncCallback,
-                                     public std::enable_shared_from_this<DevicesInfoInteraction> {
+class DevicesInfoInteract final : public DistributedKv::KvStoreSyncCallback,
+                                  public std::enable_shared_from_this<DevicesInfoInteract> {
 public:
-    DevicesInfoInteraction();
-    virtual ~DevicesInfoInteraction();
-    DevicesInfoInteraction(const DevicesInfoInteraction&) = delete;
-    DevicesInfoInteraction& operator=(const DevicesInfoInteraction&) = delete;
-    DevicesInfoInteraction(const DevicesInfoInteraction&&) = delete;
-    DevicesInfoInteraction& operator=(const DevicesInfoInteraction&&) = delete;
+    DevicesInfoInteract();
+    virtual ~DevicesInfoInteract();
+    DevicesInfoInteract(const DevicesInfoInteract&) = delete;
+    DevicesInfoInteract& operator=(const DevicesInfoInteract&) = delete;
+    DevicesInfoInteract(const DevicesInfoInteract&&) = delete;
+    DevicesInfoInteract& operator=(const DevicesInfoInteract&&) = delete;
 
     void Init();
     void PutMLDeviceInfos(const std::string &udid);

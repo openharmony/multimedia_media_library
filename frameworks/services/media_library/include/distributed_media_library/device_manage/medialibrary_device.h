@@ -88,7 +88,7 @@ private:
     std::unordered_map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
     std::map<std::string, std::set<int>> excludeMap_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
-    std::unique_ptr<DevicesInfoInteraction> devsInfoInter_;
+    std::unique_ptr<DevicesInfoInteract> devsInfoInter_;
     std::string bundleName_;
     std::mutex cvMtx_;
     std::condition_variable kvSyncDoneCv_;
