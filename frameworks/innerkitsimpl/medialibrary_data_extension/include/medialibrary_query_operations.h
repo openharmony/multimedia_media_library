@@ -33,15 +33,15 @@ struct QueryData {
 };
 class MediaLibraryQueryOperations {
 public:
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> HandleQueryOperations(const std::string &oprn,
+    static std::shared_ptr<NativeRdb::AbsSharedResultSet> HandleQueryOperations(const std::string &oprn,
         const QueryData &queryData, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> HandleMediaVolume(
+    static std::shared_ptr<NativeRdb::AbsSharedResultSet> HandleMediaVolume(
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const MediaLibraryQueryDb &queryDb);
 
 private:
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryMediaVolumeInfoUtil(
+    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryMediaVolumeInfoUtil(
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const MediaLibraryQueryDb &queryDb);
 };

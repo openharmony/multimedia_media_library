@@ -17,7 +17,6 @@
 
 #include "ability_info.h"
 #include "accesstoken_kit.h"
-#include "bytrace.h"
 #include "dataobs_mgr_client.h"
 #include "media_datashare_stub_impl.h"
 #include "hilog_wrapper.h"
@@ -84,7 +83,6 @@ void MediaDataShareExtAbility::OnStop()
 
 sptr<IRemoteObject> MediaDataShareExtAbility::OnConnect(const AAFwk::Want &want)
 {
-    BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin. ", __func__);
     Extension::OnConnect(want);
     sptr<MediaDataShareStubImpl> remoteObject = new (std::nothrow) MediaDataShareStubImpl(
@@ -100,7 +98,6 @@ sptr<IRemoteObject> MediaDataShareExtAbility::OnConnect(const AAFwk::Want &want)
 
 std::vector<std::string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter)
 {
-    BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
     //auto ret = MediaLibraryDataManager::GetInstance()->GetFileTypes(uri, mimeTypeFilter);
     HILOG_INFO("%{public}s end.", __func__);
@@ -128,7 +125,6 @@ int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const std::string &mod
 
 int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket &value)
 {
-    BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
     if (!CheckCallingPermission(abilityInfo_->writePermission)) {
@@ -144,7 +140,6 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
 int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &predicates,
 		const DataShareValuesBucket &value)
 {
-    BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
     if (!CheckCallingPermission(abilityInfo_->writePermission)) {
@@ -159,7 +154,6 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
 
 int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
-    BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
     if (!CheckCallingPermission(abilityInfo_->writePermission)) {
@@ -172,22 +166,18 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
     return ret;
 }
 
-std::shared_ptr<ResultSetBridge> MediaDataShareExtAbility::Query(const Uri &uri,
+std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
-    BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
-    HILOG_INFO("klh %{public}s begin.", __func__);
-
     std::shared_ptr<DataShare::ResultSetBridge> queryResultSet;
-    queryResultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
-    HILOG_INFO("klh %{public}s end.", __func__);
 
-    return queryResultSet;
+    queryResultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
+    std::shared_ptr<DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(queryResultSet);
+    return resultSet;
 }
 
 std::string MediaDataShareExtAbility::GetType(const Uri &uri)
 {
-    BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
     auto ret = MediaLibraryDataManager::GetInstance()->GetType(uri);
     HILOG_INFO("%{public}s end.", __func__);
@@ -196,7 +186,6 @@ std::string MediaDataShareExtAbility::GetType(const Uri &uri)
 
 int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<DataShareValuesBucket> &values)
 {
-    BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
     if (!CheckCallingPermission(abilityInfo_->writePermission)) {
@@ -249,7 +238,6 @@ bool MediaDataShareExtAbility::UnregisterObserver(const Uri &uri, const sptr<AAF
 
 bool MediaDataShareExtAbility::NotifyChange(const Uri &uri)
 {
-    BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
     auto obsMgrClient = DataObsMgrClient::GetInstance();
     if (obsMgrClient == nullptr) {
@@ -268,7 +256,6 @@ bool MediaDataShareExtAbility::NotifyChange(const Uri &uri)
 
 Uri MediaDataShareExtAbility::NormalizeUri(const Uri &uri)
 {
-    BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
     auto ret = uri;
     //auto ret = MediaLibraryDataManager::GetInstance()->NormalizeUri(uri);
@@ -280,7 +267,6 @@ Uri MediaDataShareExtAbility::NormalizeUri(const Uri &uri)
 
 Uri MediaDataShareExtAbility::DenormalizeUri(const Uri &uri)
 {
-    BYTRACE_NAME(BYTRACE_TAG_DISTRIBUTEDDATA, __PRETTY_FUNCTION__);
     HILOG_INFO("%{public}s begin.", __func__);
     auto ret = uri;
     //auto ret = MediaLibraryDataManager::GetInstance()->DenormalizeUri(uri);

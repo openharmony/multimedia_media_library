@@ -119,15 +119,14 @@ std::shared_ptr<DataShareResultSet> MediaDataShareStubImpl::Query(const Uri &uri
     const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
     LOG_INFO("begin.");
-    std::shared_ptr<ResultSetBridge> ret = nullptr;
+    std::shared_ptr<DataShareResultSet> resultSet = nullptr;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
         LOG_ERROR("%{public}s end failed.", __func__);
         return nullptr;
     }
-    ret = extension->Query(uri, predicates, columns);
-    std::shared_ptr<DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(ret);
+    resultSet = extension->Query(uri, predicates, columns);
     LOG_INFO("end successfully.");
     return resultSet;
 }
