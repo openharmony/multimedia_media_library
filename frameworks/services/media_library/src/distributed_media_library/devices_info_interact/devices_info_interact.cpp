@@ -24,17 +24,17 @@ namespace Media {
 static const std::string ML_MULTIDEV_INFO_ID = "mediaLibrayMultiDevInfoFetch";
 static const std::string MEDIA_LIBRARY_SERVICE_TYPE = "characteristic.medialibrary.version";
 
-DevicesInfoInteraction::DevicesInfoInteraction() : bundleName_(BUNDLE_NAME)
+DevicesInfoInteract::DevicesInfoInteract() : bundleName_(BUNDLE_NAME)
 {
-    MEDIA_DEBUG_LOG("DevicesInfoInteraction::constructor");
+    MEDIA_DEBUG_LOG("DevicesInfoInteract::constructor");
 }
 
-DevicesInfoInteraction::~DevicesInfoInteraction()
+DevicesInfoInteract::~DevicesInfoInteract()
 {
-    MEDIA_DEBUG_LOG("DevicesInfoInteraction::deconstructor");
+    MEDIA_DEBUG_LOG("DevicesInfoInteract::deconstructor");
 }
 
-void DevicesInfoInteraction::Init()
+void DevicesInfoInteract::Init()
 {
     DistributedKv::DistributedKvDataManager kvManager;
     DistributedKv::Options options = {
@@ -56,12 +56,12 @@ void DevicesInfoInteraction::Init()
     MEDIA_INFO_LOG("KvStore using for %{public}s init success!", ML_MULTIDEV_INFO_ID.c_str());
 }
 
-std::string DevicesInfoInteraction::GenerateKey(const std::string &udid)
+std::string DevicesInfoInteract::GenerateKey(const std::string &udid)
 {
     return (udid + bundleName_ + MEDIA_LIBRARY_SERVICE_TYPE);
 }
 
-void DevicesInfoInteraction::SyncMLDeviceInfos(const std::string &udid, const std::string &devId)
+void DevicesInfoInteract::SyncMLDeviceInfos(const std::string &udid, const std::string &devId)
 {
     if (kvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("kvstore is nullptr");
@@ -72,12 +72,12 @@ void DevicesInfoInteraction::SyncMLDeviceInfos(const std::string &udid, const st
     DistributedKv::DataQuery dataQuery;
     dataQuery.KeyPrefix(key);
     std::vector<std::string> deviceIds = { devId };
-    DistributedKv::Status status = kvStorePtr_->SyncWithCondition(deviceIds, DistributedKv::SyncMode::PULL,
+    DistributedKv::Status status = kvStorePtr_->Sync(deviceIds, DistributedKv::SyncMode::PULL,
         dataQuery, shared_from_this());
     MEDIA_ERR_LOG("kvstore sync end, status %{public}d", status);
 }
 
-bool DevicesInfoInteraction::GetMLDeviceInfos(const std::string &udid, std::string &val)
+bool DevicesInfoInteract::GetMLDeviceInfos(const std::string &udid, std::string &val)
 {
     if (kvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("kvstore is nullptr");
@@ -99,7 +99,7 @@ bool DevicesInfoInteraction::GetMLDeviceInfos(const std::string &udid, std::stri
     if (jsonObj.is_discarded()) {
         MEDIA_ERR_LOG("parse json failed");
         val = MEDIA_LIBRARY_VERSION;
-	return false;
+        return false;
     }
     val = jsonObj.at("medialibrary_version");
     MEDIA_INFO_LOG("get kvstore success! key %{private}s, ml version info %{public}s, val %{public}s",
@@ -107,7 +107,7 @@ bool DevicesInfoInteraction::GetMLDeviceInfos(const std::string &udid, std::stri
     return true;
 }
 
-void DevicesInfoInteraction::PutMLDeviceInfos(const std::string &udid)
+void DevicesInfoInteract::PutMLDeviceInfos(const std::string &udid)
 {
     if (kvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("kvstore is nullptr");
@@ -129,13 +129,12 @@ void DevicesInfoInteraction::PutMLDeviceInfos(const std::string &udid)
     MEDIA_INFO_LOG("put kvstore success!, key %{private}s, val %{private}s", key.c_str(), val.c_str());
 }
 
-void DevicesInfoInteraction::SyncCompleted(const std::map<std::string, DistributedKv::Status> &results)
+void DevicesInfoInteract::SyncCompleted(const std::map<std::string, DistributedKv::Status> &results)
 {
     for (auto &[devId, status] : results) {
         MEDIA_INFO_LOG("devId %{private}s, status %{public}d", devId.c_str(), status);
         MediaLibraryDevice::GetInstance()->OnSyncCompleted(devId, status);
     }
 }
-
 } // namespace Media
 } // namespace OHOS
