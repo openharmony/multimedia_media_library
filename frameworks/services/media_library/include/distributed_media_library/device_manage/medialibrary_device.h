@@ -16,12 +16,16 @@
 #ifndef OHOS_MEDIALIBRARY_DEVICE_H
 #define OHOS_MEDIALIBRARY_DEVICE_H
 
+#include <condition_variable>
+#include <mutex>
 #include <string>
 #include <unordered_map>
+
 #include "data_ability_helper.h"
 #include "device_manager.h"
 #include "device_manager_callback.h"
-#include "device_profile_agent.h"
+#include "devices_info_interact.h"
+#include "distributed_kv_data_manager.h"
 #include "event_handler.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_device_info.h"
@@ -54,23 +58,24 @@ public:
     void SetAbilityContext(const std::shared_ptr<OHOS::AppExecFwk::Context> &context);
     void GetAllDeviceId(std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList);
     bool InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    void ClearAllDevices();
     void NotifyDeviceChange();
     void NotifyRemoteFileChange();
     bool UpdateDevicieSyncStatus(const std::string &deviceId, int32_t syncStatus);
     bool GetDevicieSyncStatus(const std::string &deviceId, int32_t &syncStatus);
-    string GetNetworkIdBySelfId(const std::string &selfId);
-
+    std::string GetNetworkIdBySelfId(const std::string &selfId);
+    std::string GetUdidByNetworkId(const std::string &deviceId);
+    void OnSyncCompleted(const std::string &devId, const DistributedKv::Status staus);
 private:
     MediaLibraryDevice();
 
-    std::string GetUdidByNetworkId(const std::string &deviceId);
     void GetMediaLibraryDeviceInfo(const OHOS::DistributedHardware::DmDeviceInfo &dmInfo,
                                    OHOS::Media::MediaLibraryDeviceInfo& mlInfo);
     bool QueryDeviceTable();
+    void ClearAllDevices();
     bool IsHasDevice(const std::string &deviceUdid);
     void RegisterToDM();
     void UnRegisterFromDM();
+    void DevOnlineProcess(const DistributedHardware::DmDeviceInfo &devInfo);
 private:
     static constexpr int SHORT_UDID_LEN = 8;
     static constexpr int RANDOM_NUM = 999;
@@ -83,8 +88,10 @@ private:
     std::unordered_map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
     std::map<std::string, std::set<int>> excludeMap_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
-    std::unique_ptr<DeviceProfileAgent> dpa_;
+    std::unique_ptr<DevicesInfoInteract> devsInfoInter_;
     std::string bundleName_;
+    std::mutex cvMtx_;
+    std::condition_variable kvSyncDoneCv_;
 };
 } // namespace Media
 } // namespace OHOS
