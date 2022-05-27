@@ -12,8 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-
-aakits_path = "//foundation/aafwk/standard/frameworks/kits"
+import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
 
 group("media_library_packages") {
   deps = [ ":media_library" ]
@@ -28,7 +27,7 @@ config("media_library_config") {
     "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//utils/native/base/include",
-    "${aakits_path}/ability/native/include",
+    "${aafwk_kits_path}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/appdatafwk/include",
@@ -47,6 +46,7 @@ ohos_source_set("media_library_source") {
     "src/file_asset.cpp",
     "src/media_asset.cpp",
     "src/media_file_utils.cpp",
+    "src/media_volume.cpp",
     "src/native_album_asset.cpp",
     "src/smart_album_asset.cpp",
   ]

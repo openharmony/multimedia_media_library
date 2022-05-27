@@ -13,6 +13,7 @@
 
 import("//build/test.gni")
 import("//foundation/multimedia/medialibrary_standard/media_library.gni")
+import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
 
 module_output_path = "medialibrary_standard/mediadataability"
 
@@ -26,8 +27,8 @@ ohos_unittest("mediadataability_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./include",
-    "${aainnerkits_path}/ability_manager/include",
-    "${aainnerkits_path}/app_manager/include/appmgr",
+    "${aafwk_inner_api_path}/ability_manager/include",
+    "${aafwk_inner_api_path}/app_manager/include/appmgr",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/rdb/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/inner_api/media_library_helper/include",
@@ -37,7 +38,7 @@ ohos_unittest("mediadataability_test") {
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "$MEDIA_LIB_SERVICES_DIR/media_library/include",
-    "${aakits_path}/ability/native/include",
+    "${aafwk_kits_path}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
     "//third_party/json/include",
   ]
@@ -48,8 +49,8 @@ ohos_unittest("mediadataability_test") {
     "$MEDIA_LIB_BASE_DIR/services/media_scanner_service/client:media_scanner_client",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
-    "${aainnerkits_path}/ability_manager:ability_manager",
-    "${aakits_path}/ability/native:abilitykit_native",
+    "${aafwk_inner_api_path}/ability_manager:ability_manager",
+    "${aafwk_kits_path}/ability/native:abilitykit_native",
     "//utils/native/base:utils",
   ]
 
