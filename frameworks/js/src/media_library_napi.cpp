@@ -19,7 +19,7 @@
 #include "media_file_utils.h"
 #include "hitrace_meter.h"
 #include "medialibrary_peer_info.h"
-#include "medialibrary_data_ability.h"
+#include "medialibrary_data_manager.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_napi_log.h"
 #include "smart_album_napi.h"
@@ -577,7 +577,6 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     DataShare::DataSharePredicates predicates;
     if (!context->uri.empty()) {
         NAPI_ERR_LOG("context->uri is = %{private}s", context->uri.c_str());
-/*
         context->networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(context->uri);
         string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(context->uri);
         if (!fileId.empty()) {
@@ -585,7 +584,6 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
             MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, idPrefix);
             context->selectionArgs.insert(context->selectionArgs.begin(), fileId);
         }
-*/
     }
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, prefix);
