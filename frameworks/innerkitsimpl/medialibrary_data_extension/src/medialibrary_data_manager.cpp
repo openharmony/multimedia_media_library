@@ -18,7 +18,7 @@
 #include <unordered_set>
 
 #include "accesstoken_kit.h"
-#include "bytrace.h"
+#include "hitrace_meter.h"
 #include "bundle_mgr_interface.h"
 #include "file_ex.h"
 #include "ipc_singleton.h"
@@ -103,10 +103,10 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
 
     if (rdbStore_ != nullptr) {
         MEDIA_DEBUG_LOG("Distribute StartTrace:SyncPullAllTableTrace");
-        StartTrace(BYTRACE_TAG_OHOS, "SyncPullAllTableTrace");
+        StartTrace(HITRACE_TAG_OHOS, "SyncPullAllTableTrace");
         MediaLibrarySyncTable syncTable;
         syncTable.SyncPullAllTable(rdbStore_, bundleName_);
-        FinishTrace(BYTRACE_TAG_OHOS);
+        FinishTrace(HITRACE_TAG_OHOS);
         MEDIA_DEBUG_LOG("Distribute FinishTrace:SyncPullAllTableTrace");
     }
     InitialiseKvStore();
@@ -414,10 +414,10 @@ shared_ptr<ResultSetBridge> QueryFile(string strQueryCondition,
     string tableName = MEDIALIBRARY_TABLE;
     if (!networkId.empty()) {
         MEDIA_DEBUG_LOG("ObtainDistributedTableName start");
-        StartTrace(BYTRACE_TAG_OHOS, "QueryFile rdbStore->ObtainDistributedTableName");
+        StartTrace(HITRACE_TAG_OHOS, "QueryFile rdbStore->ObtainDistributedTableName");
         tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
         MEDIA_DEBUG_LOG("tableName in %{private}s", tableName.c_str());
-        FinishTrace(BYTRACE_TAG_OHOS);
+        FinishTrace(HITRACE_TAG_OHOS);
     }
     AbsRdbPredicates mediaLibAbsPredFile(tableName);
 
@@ -432,9 +432,9 @@ shared_ptr<ResultSetBridge> QueryFile(string strQueryCondition,
     mediaLibAbsPredFile.SetWhereArgs(predicates.GetWhereArgs());
     mediaLibAbsPredFile.SetOrder(predicates.GetOrder());
 
-    StartTrace(BYTRACE_TAG_OHOS, "QueryFile RdbStore->Query");
+    StartTrace(HITRACE_TAG_OHOS, "QueryFile RdbStore->Query");
     queryResultSet = rdbStore->Query(mediaLibAbsPredFile, columns);
-    FinishTrace(BYTRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_OHOS);
 
     return RdbUtils::ToResultSetBridge(queryResultSet);
 }
@@ -618,9 +618,9 @@ shared_ptr<ResultSetBridge> GenThumbnail(shared_ptr<RdbStore> rdb,
     string filesTableName = MEDIALIBRARY_TABLE;
 
     if (!networkId.empty()) {
-        StartTrace(BYTRACE_TAG_OHOS, "rdb->ObtainDistributedTableName");
+        StartTrace(HITRACE_TAG_OHOS, "rdb->ObtainDistributedTableName");
         filesTableName = rdb->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
-        FinishTrace(BYTRACE_TAG_OHOS);
+        FinishTrace(HITRACE_TAG_OHOS);
     }
 
     MEDIA_INFO_LOG("Get filesTableName [ %{private}s ]", filesTableName.c_str());
@@ -635,9 +635,9 @@ shared_ptr<ResultSetBridge> GenThumbnail(shared_ptr<RdbStore> rdb,
     };
 
     MEDIA_INFO_LOG("Get thumbnail [ %{private}s ], width %{private}d", opts.row.c_str(), size.width);
-    StartTrace(BYTRACE_TAG_OHOS, "thumbnail->GetThumbnailKey");
+    StartTrace(HITRACE_TAG_OHOS, "thumbnail->GetThumbnailKey");
     queryResultSet = thumbnail->GetThumbnailKey(opts, size);
-    FinishTrace(BYTRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_OHOS);
 
     return queryResultSet;
 }
@@ -688,18 +688,18 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
                                                               const vector<string> &columns,
                                                               const DataSharePredicates &predicates)
 {
-    StartTrace(BYTRACE_TAG_OHOS, "MediaLibraryDataManager::Query");
+    StartTrace(HITRACE_TAG_OHOS, "MediaLibraryDataManager::Query");
 
     if ((!isRdbStoreInitialized) || (rdbStore_ == nullptr)) {
         MEDIA_ERR_LOG("Rdb Store is not initialized");
         return nullptr;
     }
 
-    StartTrace(BYTRACE_TAG_OHOS, "CheckClientPermission");
+    StartTrace(HITRACE_TAG_OHOS, "CheckClientPermission");
     if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
         return nullptr;
     }
-    FinishTrace(BYTRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_OHOS);
 
     shared_ptr<ResultSetBridge> queryResultSet;
     TableType tabletype = TYPE_DATA;
@@ -723,16 +723,16 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     }
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
     if (!networkId.empty() && (tabletype != TYPE_ASSETSMAP_TABLE) && (tabletype != TYPE_SMARTALBUMASSETS_TABLE)) {
-        StartTrace(BYTRACE_TAG_OHOS, "QuerySync");
+        StartTrace(HITRACE_TAG_OHOS, "QuerySync");
         auto ret = QuerySync();
-        FinishTrace(BYTRACE_TAG_OHOS);
+        FinishTrace(HITRACE_TAG_OHOS);
         MEDIA_INFO_LOG("MediaLibraryDataManager QuerySync result = %{private}d", ret);
     }
 
     if (thumbnailQuery) {
-        StartTrace(BYTRACE_TAG_OHOS, "GenThumbnail");
+        StartTrace(HITRACE_TAG_OHOS, "GenThumbnail");
         queryResultSet = GenThumbnail(rdbStore_, mediaThumbnail_, strRow, space, networkId);
-        FinishTrace(BYTRACE_TAG_OHOS);
+        FinishTrace(HITRACE_TAG_OHOS);
     } else if (tabletype == TYPE_SMARTALBUM || tabletype == TYPE_SMARTALBUM_MAP) {
         queryResultSet = QueryBySmartTableType(tabletype, strQueryCondition, predicates, columns, rdbStore_);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
@@ -744,13 +744,13 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         queryResultSet = QueryAlbum(strQueryCondition, predicates, columns, rdbStore_, networkId);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     } else {
-        StartTrace(BYTRACE_TAG_OHOS, "QueryFile");
+        StartTrace(HITRACE_TAG_OHOS, "QueryFile");
         queryResultSet = QueryFile(strQueryCondition, predicates, columns, rdbStore_, networkId);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
-        FinishTrace(BYTRACE_TAG_OHOS);
+        FinishTrace(HITRACE_TAG_OHOS);
     }
 
-    FinishTrace(BYTRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_OHOS);
 
     return queryResultSet;
 }
@@ -915,12 +915,12 @@ void MediaLibraryDataManager::InitDeviceData()
     deviceManager.InitDeviceManager(bundleName_, deviceInitCallback_);
 
     MEDIA_DEBUG_LOG("Distribute StartTrace:InitDeviceRdbStoreTrace");
-    StartTrace(BYTRACE_TAG_OHOS, "InitDeviceRdbStoreTrace", -1);
+    StartTrace(HITRACE_TAG_OHOS, "InitDeviceRdbStoreTrace", -1);
     if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_, bundleName_)) {
         MEDIA_ERR_LOG("MediaLibraryDataManager InitDeviceData failed!");
         return;
     }
-    FinishTrace(BYTRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_OHOS);
     MEDIA_DEBUG_LOG("Distribute FinishTrace:InitDeviceRdbStoreTrace");
 
     deviceStateCallback_ = std::make_shared<MediaLibraryDeviceStateCallback>(rdbStore_, bundleName_);

@@ -45,19 +45,18 @@ ohos_shared_library("media_library_manager") {
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//utils/native/base:utils",
-    "//foundation/aafwk/standard/interfaces/innerkits/want:want",
   ]
 
   external_deps = [
+    "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:ability_manager",
     "bundle_framework:appexecfwk_base",
     "dataability:native_dataability",
     "hiviewdfx_hilog_native:libhilog",
+    "data_share:datashare_common",
     "relational_store:native_appdatafwk",
     "relational_store:native_rdb",
-    "relational_store:datashare_common",
-    "relational_store:native_dataability",
   ]
 
   part_name = "multimedia_media_library_standard"
