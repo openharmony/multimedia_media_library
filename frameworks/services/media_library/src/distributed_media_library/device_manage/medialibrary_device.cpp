@@ -14,14 +14,17 @@
  */
 
 #include "medialibrary_device.h"
+#include "device_permission_verification.h"
+#include "device_auth.h"
 #include "media_log.h"
 #include "medialibrary_sync_table.h"
+#include "parameter.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::AppExecFwk;
-
 std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::mlDMInstance_ = nullptr;
 
 MediaLibraryDevice::MediaLibraryDevice()
@@ -46,7 +49,12 @@ void MediaLibraryDevice::Start()
         auto runner = AppExecFwk::EventRunner::Create("MediaLibraryDevice");
         mediaLibraryDeviceHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
     }
-    dpa_ = make_unique<DeviceProfileAgent>();
+    devsInfoInter_ = make_unique<DevicesInfoInteract>();
+    if (devsInfoInter_ != nullptr) {
+        devsInfoInter_->Init();
+        std::string local = "";
+        devsInfoInter_->PutMLDeviceInfos(GetUdidByNetworkId(local));
+    }
     RegisterToDM();
 }
 
@@ -57,7 +65,7 @@ void MediaLibraryDevice::Stop()
     ClearAllDevices();
     mediaLibraryDeviceOperations_ = nullptr;
     dataAbilityhelper_ = nullptr;
-    dpa_ = nullptr;
+    devsInfoInter_ = nullptr;
 }
 
 std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::GetInstance()
@@ -89,6 +97,43 @@ void MediaLibraryDevice::GetAllDeviceId(
         MEDIA_ERR_LOG("get trusted device list failed, ret %{public}d", ret);
     }
 }
+void MediaLibraryDevice::OnSyncCompleted(const std::string &devId, const DistributedKv::Status status)
+{
+    MEDIA_INFO_LOG("OnSyncCompleted devid %{private}s, status %{public}d", devId.c_str(), status);
+    std::unique_lock<std::mutex> lock(cvMtx_);
+    kvSyncDoneCv_.notify_one();
+}
+
+void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInfo &devInfo)
+{
+    MediaLibraryDeviceInfo mldevInfo;
+    GetMediaLibraryDeviceInfo(devInfo, mldevInfo);
+
+    DevicePermissionVerification authVerify;
+    if (!authVerify.CheckPermission(mldevInfo.deviceUdid)) {
+        MEDIA_ERR_LOG("this dev has permission denied!");
+        return;
+    }
+
+    if (mediaLibraryDeviceOperations_ != nullptr &&
+        !mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mldevInfo, bundleName_)) {
+        MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed!");
+        return;
+    }
+    MediaLibrarySyncTable syncTable;
+    std::vector<std::string> devices = { mldevInfo.deviceId };
+    syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
+
+    if (devsInfoInter_ != nullptr) {
+        if (!devsInfoInter_->GetMLDeviceInfos(mldevInfo.deviceUdid, mldevInfo.versionId)) {
+            MEDIA_INFO_LOG("get ml infos failed, so try to sync pull first, wait...");
+        }
+    }
+    lock_guard<mutex> autoLock(deviceLock_);
+    deviceInfoMap_[devInfo.deviceId] = mldevInfo;
+    MEDIA_INFO_LOG("OnDeviceOnline cid %{public}s media library version %{public}s",
+        mldevInfo.deviceId.c_str(), mldevInfo.versionId.c_str());
+}
 
 void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
@@ -99,28 +144,7 @@ void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDevic
     }
 
     auto nodeOnline = [this, deviceInfo]() {
-        // 更新数据库
-        if (mediaLibraryDeviceOperations_ != nullptr) {
-            OHOS::Media::MediaLibraryDeviceInfo mldevInfo;
-            GetMediaLibraryDeviceInfo(deviceInfo, mldevInfo);
-            if (dpa_ != nullptr) {
-                dpa_->GetDeviceProfile(mldevInfo.deviceUdid, mldevInfo.versionId);
-            }
-            if (!mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mldevInfo, bundleName_)) {
-                MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed!");
-                return;
-            }
-            MediaLibrarySyncTable syncTable;
-            std::vector<std::string> devices = { mldevInfo.deviceId };
-            syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
-
-            lock_guard<mutex> autoLock(deviceLock_);
-            deviceInfoMap_[deviceInfo.deviceId] = mldevInfo;
-            MEDIA_INFO_LOG("OnDeviceOnline cid %{public}s media library version %{public}s",
-                mldevInfo.deviceId.c_str(), mldevInfo.versionId.c_str());
-        }
-
-        // 设备变更通知
+        DevOnlineProcess(deviceInfo);
         NotifyDeviceChange();
     };
     if (!mediaLibraryDeviceHandler_->PostTask(nodeOnline)) {
@@ -205,9 +229,6 @@ bool MediaLibraryDevice::IsHasDevice(const string &deviceUdid)
 bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
     rdbStore_ = rdbStore;
-    if (dpa_ != nullptr) {
-        dpa_->PutDeviceProfile(MEDIA_LIBRARY_VERSION);
-    }
 
     if (!QueryDeviceTable()) {
         MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore QueryDeviceTable fail!");
@@ -218,16 +239,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     GetAllDeviceId(deviceList);
     MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
     for (auto& deviceInfo : deviceList) {
-        OHOS::Media::MediaLibraryDeviceInfo mediaLibraryDeviceInfo;
-        GetMediaLibraryDeviceInfo(deviceInfo, mediaLibraryDeviceInfo);
-        if (dpa_ != nullptr) {
-            dpa_->GetDeviceProfile(mediaLibraryDeviceInfo.deviceUdid, mediaLibraryDeviceInfo.versionId);
-        }
-        if (mediaLibraryDeviceOperations_ != nullptr &&
-            mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mediaLibraryDeviceInfo, bundleName_)) {
-            lock_guard<mutex> autoLock(deviceLock_);
-            deviceInfoMap_[deviceInfo.deviceId] = mediaLibraryDeviceInfo;
-        }
+        DevOnlineProcess(deviceInfo);
     }
 
     std::vector<OHOS::Media::MediaLibraryDeviceInfo> deviceDataBaseList;
@@ -278,6 +290,17 @@ bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &deviceId, int32
 
 std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId)
 {
+    if (deviceId.empty()) {
+        constexpr int32_t DEVICE_ID_SIZE = 65;
+        char localDeviceId[DEVICE_ID_SIZE] = {0};
+        GetDevUdid(localDeviceId, DEVICE_ID_SIZE);
+        std::string localUdid = std::string(localDeviceId);
+        MEDIA_INFO_LOG("get local udid %{private}s", localUdid.c_str());
+        if (localUdid.empty()) {
+            MEDIA_ERR_LOG("get local udid failed");
+        }
+        return localUdid;
+    }
     auto &deviceManager = DistributedHardware::DeviceManager::GetInstance();
     std::string deviceUdid;
     auto ret = deviceManager.GetUdidByNetworkId(bundleName_, deviceId, deviceUdid);
