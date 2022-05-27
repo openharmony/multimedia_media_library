@@ -389,7 +389,7 @@ static const std::string CREATE_SMARTABLUMASSETS_VIEW = "CREATE VIEW " + SMARTAB
                         + " LEFT JOIN " + MEDIALIBRARY_TABLE
                         + " ON " + SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_ASSET_ID + " = "
                         + MEDIALIBRARY_TABLE + "." + MEDIA_DATA_DB_ID
-                        + " GROUP BY IFNULL( " + SMARTALBUM_TABLE_NAME + "." + SMARTALBUMMAP_DB_ALBUM_ID + ", "
+                        + " GROUP BY IFNULL( " + SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_ALBUM_ID + ", "
                         + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID + " ), "
                         + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_SELF_ID;
 static const std::string ASSETMAP_VIEW_NAME = "AssetMap";
@@ -401,10 +401,22 @@ static const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW " + ASSETMAP_VIEW_N
                         + "a." + MEDIA_DATA_DB_ID + " = "
                         + "b." + SMARTALBUMMAP_DB_ASSET_ID;
 
+static const std::string QUERY_MEDIA_VOLUME = "SELECT sum(" + MEDIA_DATA_DB_SIZE + ") AS "
+                        + MEDIA_DATA_DB_SIZE + ","
+                        + MEDIA_DATA_DB_MEDIA_TYPE + " FROM "
+                        + MEDIALIBRARY_TABLE + " WHERE "
+                        + MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_FILE) + " OR "
+                        + MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR "
+                        + MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " OR "
+                        + MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_AUDIO) + " AND "
+                        + MEDIA_DATA_DB_DATE_TRASHED + " = 0"
+                        + " GROUP BY " + MEDIA_DATA_DB_MEDIA_TYPE;
+
 // File operations constants
 static const std::string MEDIA_OPERN_KEYWORD = "operation";
 static const std::string MEDIA_FILEOPRN = "file_operation";
 static const std::string MEDIA_ALBUMOPRN = "album_operation";
+static const std::string MEDIA_QUERYOPRN = "query_operation";
 static const std::string MEDIA_KVSTOREOPRN = "kvstore_operation";
 static const std::string MEDIA_SMARTALBUMOPRN = "albumsmart_operation";
 static const std::string MEDIA_SMARTALBUMMAPOPRN = "smartalbummap_operation";
@@ -431,6 +443,7 @@ static const std::string MEDIA_ALBUMOPRN_QUERYALBUM = "query_album";
 static const std::string MEDIA_SMARTALBUMOPRN_CREATEALBUM = "create_smartalbum";
 static const std::string MEDIA_SMARTALBUMOPRN_MODIFYALBUM = "modify_smartalbum";
 static const std::string MEDIA_SMARTALBUMOPRN_DELETEALBUM = "delete_smartalbum";
+static const std::string MEDIA_QUERYOPRN_QUERYVOLUME = "query_media_volume";
 static const std::string MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM = "add_smartalbum_map";
 static const std::string MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM = "remove_smartalbum_map";
 static const std::string MEDIA_FILEMODE = "mode";
@@ -446,8 +459,8 @@ static const std::string ALBUM_DB_COND = MEDIA_DATA_DB_ID + " = ?";
 static const std::string SMARTALBUM_DB_COND = SMARTALBUM_DB_ID + " = ?";
 static const std::string SMARTALBUM_MAP_DE_SMARTALBUM_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ?";
 static const std::string SMARTALBUM_MAP_DE_ASSETS_COND = SMARTALBUMMAP_DB_ASSET_ID + " = ?";
-static const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ? AND " +
-                                                  SMARTALBUMMAP_DB_ASSET_ID + " = ?";
+static const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID +
+    " = ? AND " + SMARTALBUMMAP_DB_ASSET_ID + " = ?";
 static const std::string DEVICE_DB_COND = DEVICE_DB_DEVICEID + " = ?";
 static const std::string MEDIA_DEVICE_QUERYALLDEVICE = "query_all_device";
 static const std::string MEDIA_DEVICE_QUERYACTIVEDEVICE = "query_active_device";
