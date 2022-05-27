@@ -37,7 +37,7 @@ void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &tok
     AppExecFwk::Want want;
     want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
     if (sAbilityHelper_ == nullptr) {
-        //sAbilityHelper_ = DataShare::DataShareHelper::Creator(context, make_shared<Uri>(strUri));
+        sAbilityHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     }
 }
 
