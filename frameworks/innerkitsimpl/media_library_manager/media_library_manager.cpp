@@ -33,19 +33,8 @@ MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 
 void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &token)
 {
-    AppExecFwk::Want want;
-    want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
     if (sAbilityHelper_ == nullptr) {
-        sAbilityHelper_ = AppExecFwk::MediaDataHelper::Creator(context, want, std::make_shared<Uri>("mediadata://media"));
-    }
-}
-
-void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &token)
-{
-    AppExecFwk::Want want;
-    want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MediaDataService");
-    if (sAbilityHelper_ == nullptr) {
-        //sAbilityHelper_ = DataShare::DataShareHelper::Creator(context, make_shared<Uri>(strUri));
+	//sAbilityHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     }
 }
 
@@ -122,7 +111,6 @@ int64_t GetLongValFromColumn(string columnName, shared_ptr<DataShareResultSet> &
 {
     int index = 0;
     int64_t longVal = 0;
-    int index;
     resultSet->GetColumnIndex(columnName, index);
     resultSet->GetLong(index, longVal);
     return longVal;
