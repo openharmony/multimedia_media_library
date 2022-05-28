@@ -57,7 +57,7 @@ void MediaScannerObj::ScanQueueCB(ScanRequest scanReq)
 
     StartTrace(BYTRACE_TAG_OHOS, "ScanQueueCB");
 
-    MEDIA_INFO_LOG("%{public}s:start", __func__);
+    MEDIA_DEBUG_LOG("%{public}s:start", __func__);
     MediaScannerObj *scanner = MediaScannerObj::GetMediaScannerInstance();
     if (scanner != nullptr) {
         if (!scanner->isScannerInitDone_) {
@@ -73,18 +73,18 @@ void MediaScannerObj::ScanQueueCB(ScanRequest scanReq)
         string path = scanReq.GetPath();
         if (scanReq.GetIsDirectory()) {
             StartTrace(BYTRACE_TAG_OHOS, "ScanDirInternal");
-            MEDIA_INFO_LOG("%{public}s: dir %{public}s", __func__, path.c_str());
+            MEDIA_DEBUG_LOG("%{public}s: dir %{private}s", __func__, path.c_str());
             errCode = scanner->ScanDirInternal(const_cast<string &>(path));
             FinishTrace(BYTRACE_TAG_OHOS);
         } else {
             StartTrace(BYTRACE_TAG_OHOS, "ScanFileInternal");
-            MEDIA_INFO_LOG("%{public}s: file %{public}s", __func__, path.c_str());
+            MEDIA_DEBUG_LOG("%{public}s: file %{private}s", __func__, path.c_str());
             errCode = scanner->ScanFileInternal(const_cast<string &>(path));
             FinishTrace(BYTRACE_TAG_OHOS);
             fileUri = scanner->mediaUri_;
         }
 
-        MEDIA_INFO_LOG("%{public}s: before callback", __func__);
+        MEDIA_DEBUG_LOG("%{public}s: before callback", __func__);
         scanner->ExecuteScannerClientCallback(scanReq.GetRequestId(), errCode, fileUri, path);
     }
 
