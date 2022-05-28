@@ -779,8 +779,8 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = " + std::to_string(album->GetAlbumId()));
-    //predicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
-    //predicates.Limit(1);
+    predicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    predicates.Limit(1, 0);
     vector<string> columns;
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!context->networkId.empty()) {
@@ -854,7 +854,7 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
         if (albumData != nullptr) {
-             SetAlbumData(albumData.get(), resultSet , context->networkId);
+             SetAlbumData(albumData.get(), resultSet, context->networkId);
              SetAlbumCoverUri(context, albumData);
              context->albumNativeArray.push_back(move(albumData));
 	}

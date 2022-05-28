@@ -478,10 +478,8 @@ shared_ptr<ResultSetBridge> QueryAlbum(string strQueryCondition,
         if (!strQueryCondition.empty()) {
             strQueryCondition = ObtionCondition(strQueryCondition, predicates.GetWhereArgs());
         }
-        mediaLibAbsPredAlbum.SetWhereClause(strQueryCondition);
-        mediaLibAbsPredAlbum.SetWhereArgs(predicates.GetWhereArgs());
-        mediaLibAbsPredAlbum.SetOrder(predicates.GetOrder());
-        queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
+        string distributedAlbumSql = MediaLibraryDataManagerUtils::GetDistributedAlbumSql(strQueryCondition, tableName);
+        queryResultSet = rdbStore->QuerySql(distributedAlbumSql);
     } else {
         AbsRdbPredicates mediaLibAbsPredAlbum(ABLUM_VIEW_NAME);
         if (!strQueryCondition.empty()) {
