@@ -106,8 +106,8 @@ int32_t MediaScannerObj::ScanFile(string &path, const sptr<IRemoteObject> &remot
         return ERR_EMPTY_ARGS;
     }
 
-    if (ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS) {
-        MEDIA_ERR_LOG("Scanfile: Incorrect path or insufficient permission %{private}s", path.c_str());
+    if (ScannerUtils::GetRealPath(path) != ERR_SUCCESS) {
+        MEDIA_ERR_LOG("invalid path %{private}s", path.c_str());
         unique_ptr<Metadata> metaData = mediaScannerDb_->ReadMetadata(path);
         if (metaData != nullptr && !metaData->GetFilePath().empty()) {
             vector<string> idList = {to_string(metaData->GetFileId())};
@@ -155,7 +155,7 @@ int32_t MediaScannerObj::ScanDir(string &path, const sptr<IRemoteObject> &remote
     }
 
     // Get Absolute path
-    if (ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS) {
+    if (ScannerUtils::GetRealPath(path) != ERR_SUCCESS) {
         MEDIA_ERR_LOG("ScanDir: Incorrect path or insufficient permission %{private}s", path.c_str());
         // If the path is not available, clear the same from database too if present
         CleanupDirectory(path);
@@ -292,11 +292,7 @@ bool MediaScannerObj::IsFileScanned(Metadata &fileMetadata)
 int32_t MediaScannerObj::RetrieveMetadata(Metadata &fileMetadata)
 {
     // Stub impl. This will be implemented by the extractor
-    int32_t errCode = ERR_SUCCESS;
-    string path = fileMetadata.GetFilePath();
-    errCode = metadataExtract_.Extract(fileMetadata, path);
-
-    return errCode;
+    return metadataExtract_.Extract(fileMetadata, fileMetadata.GetFilePath());
 }
 
 // Visit the File

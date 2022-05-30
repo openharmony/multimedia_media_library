@@ -120,7 +120,7 @@ int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCa
         return ERR_EMPTY_ARGS;
     }
 
-    if (ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS) {
+    if (ScannerUtils::GetRealPath(path) != ERR_SUCCESS) {
         MEDIA_ERR_LOG("Scanfile: Incorrect path or insufficient permission %{private}s", path.c_str());
         unique_ptr<Metadata> metaData = mediaScannerDb_->ReadMetadata(path);
         if (metaData != nullptr && !metaData->GetFilePath().empty()) {
@@ -168,7 +168,7 @@ int32_t MediaScanner::ScanDir(string &path, const sptr<IRemoteObject> &remoteCal
     }
 
     // Get Absolute path
-    if (ScannerUtils::GetAbsolutePath(path) != ERR_SUCCESS) {
+    if (ScannerUtils::GetRealPath(path) != ERR_SUCCESS) {
         MEDIA_ERR_LOG("ScanDir: Incorrect path or insufficient permission %{private}s", path.c_str());
         // If the path is not available, clear the same from database too if present
         CleanupDirectory(path);
@@ -304,11 +304,7 @@ bool MediaScanner::IsFileScanned(Metadata &fileMetadata)
 int32_t MediaScanner::RetrieveMetadata(Metadata &fileMetadata)
 {
     // Stub impl. This will be implemented by the extractor
-    int32_t errCode = ERR_SUCCESS;
-    string path = fileMetadata.GetFilePath();
-    errCode = metadataExtract_.Extract(fileMetadata, path);
-
-    return errCode;
+    return metadataExtract_.Extract(fileMetadata, fileMetadata.GetFilePath());
 }
 
 // Visit the File
@@ -345,6 +341,7 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
     unique_ptr<Metadata> fileMetadata = make_unique<Metadata>();
     if (fileMetadata == nullptr) {
         MEDIA_ERR_LOG("File metadata is null");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
@@ -376,6 +373,7 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
     ScannerUtils::GetRootMediaDir(rootDir);
     if (rootDir.empty()) {
         MEDIA_ERR_LOG("Root dir path is empty!");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return fileMetadata;
     }
 

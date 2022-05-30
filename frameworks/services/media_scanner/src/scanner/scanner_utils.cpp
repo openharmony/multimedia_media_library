@@ -14,7 +14,11 @@
  */
 
 #include "scanner_utils.h"
+
 #include <cerrno>
+
+#include "directory_ex.h"
+
 #include "media_log.h"
 
 namespace OHOS {
@@ -149,27 +153,20 @@ string ScannerUtils::GetParentPath(const string &path)
 }
 
 // Get the absolute path from the given path
-int32_t ScannerUtils::GetAbsolutePath(string &path)
+int32_t ScannerUtils::GetRealPath(string &path)
 {
-    int32_t errCode = ERR_EMPTY_ARGS;
-
     if (path.empty() || path.length() > PATH_MAX) {
-        MEDIA_ERR_LOG("Src path is too long or empty");
+        MEDIA_ERR_LOG("src path is too long or empty");
         return ERR_INCORRECT_PATH;
     }
 
-    char actualPath[PATH_MAX] = { 0x00 };
-    auto ptr = realpath(path.c_str(), actualPath);
-    if (ptr != nullptr) {
-        path = ptr;
-        errCode = ERR_SUCCESS;
-    } else {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{private}s %{public}d",
-                      path.c_str(), errno);
-        errCode = ERR_INCORRECT_PATH;
+    string cur = path;
+    if (!PathToRealPath(cur, path)) {
+        MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", cur.c_str(), errno);
+        return ERR_INCORRECT_PATH;
     }
 
-    return errCode;
+    return ERR_SUCCESS;
 }
 
 void ScannerUtils::GetRootMediaDir(string &dir)
