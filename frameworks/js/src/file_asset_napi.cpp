@@ -198,6 +198,7 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         sFileAsset_ = nullptr;
         if (status == napi_ok && result != nullptr) {
+            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
             return result;
         } else {
             NAPI_ERR_LOG("Failed to create file asset instance, status: %{public}d", status);
