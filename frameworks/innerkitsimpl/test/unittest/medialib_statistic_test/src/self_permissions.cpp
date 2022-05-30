@@ -13,11 +13,10 @@
  * limitations under the License.
  */
 
-#include "selfpermissions.h"
+#include "self_permissions.h"
 #include <thread>
 #include "hilog/log.h"
 #include "media_log.h"
-
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -25,7 +24,9 @@ using OHOS::HiviewDFX::HiLogLabel;
 using namespace testing::ext;
 using namespace OHOS::Security::AccessToken;
 
-namespace {
+namespace OHOS {
+namespace Security {
+namespace AccessToken {
 constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "GetSelfPermissions"};
 
 PermissionDef g_infoManagerTestPermDef1 = {
@@ -81,9 +82,7 @@ HapPolicyParams g_infoManagerTestPolicyPrams = {
     .permStateList = {g_infoManagerTestState1, g_infoManagerTestState2}
 };
 
-}
-
-void GetSelfPermissions::SetUpTestCase()
+void SelfPermissions::SetUpTestCase()
 {
     // make test case clean
     AccessTokenID tokenID = AccessTokenKit::GetHapTokenID(g_infoManagerTestInfoParms.userID,
@@ -95,11 +94,11 @@ void GetSelfPermissions::SetUpTestCase()
     AccessTokenKit::DeleteToken(tokenID);
 }
 
-void GetSelfPermissions::TearDownTestCase()
+void SelfPermissions::TearDownTestCase()
 {
 }
 
-void GetSelfPermissions::SetUp()
+void SelfPermissions::SetUp()
 {
     HapInfoParams info = {
         .userID = TEST_USER_ID,
@@ -123,7 +122,7 @@ void GetSelfPermissions::SetUp()
     HiLog::Info(LABEL, "SetUp ok.");
 }
 
-void GetSelfPermissions::TearDown()
+void SelfPermissions::TearDown()
 {
 }
 
@@ -133,11 +132,13 @@ void GetSelfPermissions::TearDown()
  * @tc.type: FUNC
  * @tc.require:AR000GK6T6
  */
-HWTEST_F(GetSelfPermissions, GetSelfPermissionsState001, TestSize.Level1)
+HWTEST_F(SelfPermissions, GetSelfPermissionsState001, TestSize.Level1)
 {
     AccessTokenIDEx tokenIdEx = {0};
     tokenIdEx = AccessTokenKit::AllocHapToken(g_infoManagerTestInfoParms, g_infoManagerTestPolicyPrams);
     ASSERT_NE(0, tokenIdEx.tokenIdExStruct.tokenID);
     ASSERT_EQ(0, SetSelfTokenID(tokenIdEx.tokenIdExStruct.tokenID));
 }
-
+}
+}
+}

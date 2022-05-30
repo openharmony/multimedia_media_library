@@ -17,9 +17,6 @@
 #include "hilog/log.h"
 #include "media_log.h"
 
-using OHOS::HiviewDFX::HiLog;
-using OHOS::HiviewDFX::HiLogLabel;
-
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -27,7 +24,7 @@ using namespace testing::ext;
 using namespace OHOS::NativeRdb;
 
 /**
- * @FileName MediaSpaceStatistics_test
+ * @FileName MediaSpaceStatisticsTest
  * @Desc Media space statistics function test
  *
  */
@@ -35,23 +32,23 @@ namespace OHOS {
 namespace Media {
 std::shared_ptr<AppExecFwk::DataAbilityHelper> sMediaDataHelper_ = nullptr;
 
-void MediaSpaceStatistics_test::WaitForCallback()
+void MediaSpaceStatisticsTest::WaitForCallback()
 {
 }
 
-void MediaSpaceStatistics_test::SetUpTestCase(void)
+void MediaSpaceStatisticsTest::SetUpTestCase(void)
 {
 }
 
-void MediaSpaceStatistics_test::TearDownTestCase(void)
+void MediaSpaceStatisticsTest::TearDownTestCase(void)
 {
     sMediaDataHelper_ = nullptr;
 }
 
 // SetUp:Execute before each test case
-void MediaSpaceStatistics_test::SetUp() {}
+void MediaSpaceStatisticsTest::SetUp() {}
 
-void MediaSpaceStatistics_test::TearDown(void) {}
+void MediaSpaceStatisticsTest::TearDown(void) {}
 
 int uid = 5010;
 int64_t g_imageSize = 0;
@@ -93,8 +90,8 @@ std::shared_ptr<AppExecFwk::DataAbilityHelper> GetMediaDataHelper()
     return sMediaDataHelper_;
 }
 
-
-void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, std::string newName, int sleepSecond){
+void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, std::string newName, int sleepSecond)
+{
     MEDIA_INFO_LOG("CopyFile:: start Copy sleepSecond[%d] file: %s", sleepSecond, newName.c_str());
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
     Uri openFileUri(srcUri);
@@ -113,16 +110,14 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
     Uri openFileUriDest(destUri);
     int32_t destFd = helper->OpenFile(openFileUriDest, MEDIA_FILEMODE_READWRITE);
     EXPECT_NE(destFd <= 0, true);
-
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);
     char buf[srcLen];
     int32_t readRet = read(srcFd, buf, srcLen);
     int32_t resWrite = write(destFd, buf, readRet);
-    if (resWrite == -1){
+    if (resWrite == -1) {
         EXPECT_EQ(false, true);
     }
-
     mediaLibraryManager->CloseAsset(srcUri, srcFd);
     mediaLibraryManager->CloseAsset(destUri, destFd);
     sleep(sleepSecond);
@@ -137,31 +132,26 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
  *                 2.call the method to get media size
  *                 3.compare the size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_001, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_001::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 3 ";
     predicates.SetWhereClause(prefix);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     g_imageSize = objectSize;
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_001::QueryTotalSize image size = %{public}lld", (long long)mediaVolume.GetImagesSize());
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_001::QueryTotalSize image size = %{public}lld",
+        (long long)mediaVolume.GetImagesSize());
     EXPECT_EQ((mediaVolume.GetImagesSize() == objectSize), true);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_001::End");
 }
@@ -175,36 +165,28 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_001, TestSize.Leve
  *                 4.Compare the new total size
  *
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_002, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_002::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 3 ";
     predicates.SetWhereClause(prefix);
-
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_002::objectSize = %{public}lld", (long long)objectSize);
     EXPECT_NE((fileAsset == nullptr), true);
-
     CopyFile(fileAsset->GetUri(), MEDIALIBRARY_IMAGE_URI, "Pictures/", "copy_MediaSpaceStatistics_test.jpg", 10);
-
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_002 QueryTotalSize image size = %{public}lld", (long long)mediaVolume.GetImagesSize());
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_002 QueryTotalSize image size = %{public}lld",
+        (long long)mediaVolume.GetImagesSize());
     EXPECT_EQ((mediaVolume.GetImagesSize() == 2 * objectSize), true);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_002::End");
 }
@@ -217,25 +199,22 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_002, TestSize.Leve
  *                 3.get all images size
  *                 4.Compare the new total size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_003, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_003::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    int errorCode = DATA_ABILITY_FAIL;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 3 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() < 0), true);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetLastObject();
-    if(fileAsset != nullptr) {
+    if (fileAsset != nullptr) {
         Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
         NativeRdb::ValuesBucket valuesBucketDelete;
         MEDIA_INFO_LOG("MediaSpaceStatistics_test_003::uri :%{private}s", fileAsset->GetUri().c_str());
@@ -244,8 +223,9 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_003, TestSize.Leve
         EXPECT_NE((retVal < 0), true);
     }
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_003 QueryTotalSize image size = %{public}lld", (long long)mediaVolume.GetImagesSize());
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_003 QueryTotalSize image size = %{public}lld",
+        (long long)mediaVolume.GetImagesSize());
     EXPECT_EQ((mediaVolume.GetImagesSize() == g_imageSize), true);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_003::End");
 }
@@ -258,53 +238,45 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_003, TestSize.Leve
  *                 3.get all images size
  *                 4.Compare the new total size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_004, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 3 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004::objectSize = %{public}lld", (long long)objectSize);
     EXPECT_NE((fileAsset == nullptr), true);
 
-    for (int i = 0; i < 99; i++)
-    {
+    for (int i = 0; i < 99; i++) {
         string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".jpg";
         int sleepSecond = 0;
-        if(i + 1 == 99){
+        if (i + 1 == 99) {
             sleepSecond = 10;
         }
         CopyFile(fileAsset->GetUri(), MEDIALIBRARY_IMAGE_URI, "Pictures/", newName, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004:: Copy finish!!!");
-
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
     int64_t newImageSize = mediaVolume.GetImagesSize();
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_004 QueryTotalSize image newImageSize = %{public}lld", (long long)newImageSize);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_004 QueryTotalSize image newImageSize = %{public}lld",
+        (long long)newImageSize);
     int64_t targetSize = 100 * objectSize;
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_004 QueryTotalSize image targetSize = %{public}lld", (long long)targetSize);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_004 QueryTotalSize image targetSize = %{public}lld",
+        (long long)targetSize);
     EXPECT_EQ((newImageSize == targetSize), true);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004::End");
 }
-
-
 
 /**
  * @tc.number    : MediaSpaceStatistics_test_005
@@ -313,31 +285,25 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_004, TestSize.Leve
  *                 2.call the method to get media size
  *                 3.compare the size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_005, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_005::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 4 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     g_videoSize = objectSize;
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
     MEDIA_INFO_LOG("QueryTotalSize video size = %{public}lld", (long long)mediaVolume.GetVideosSize());
     EXPECT_EQ((mediaVolume.GetVideosSize() == objectSize), true);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_005::End");
@@ -351,38 +317,32 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_005, TestSize.Leve
  *                 3.get all videos size
  *                 4.Compare the new total size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_006, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_006, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_006::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 4 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
 
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
 
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_006::objectSize = %{public}lld", (long long)objectSize);
     EXPECT_NE((fileAsset == nullptr), true);
-
     CopyFile(fileAsset->GetUri(), MEDIALIBRARY_VIDEO_URI, "Videos/", "copy_MediaSpaceStatistics_test.mp4", 10);
-
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_006 QueryTotalSize video size = %{public}lld", (long long)mediaVolume.GetVideosSize());
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_006 QueryTotalSize video size = %{public}lld",
+        (long long)mediaVolume.GetVideosSize());
     EXPECT_EQ((mediaVolume.GetVideosSize() == 2 * objectSize), true);
-
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_006::End");
 }
 
@@ -394,25 +354,22 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_006, TestSize.Leve
  *                 3.get videos size
  *                 4.Compare the new total size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_007, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_007, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_007::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    int errorCode = DATA_ABILITY_FAIL;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 4 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() < 0), true);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetLastObject();
-    if(fileAsset != nullptr) {
+    if (fileAsset != nullptr) {
         Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
         NativeRdb::ValuesBucket valuesBucketDelete;
         MEDIA_INFO_LOG("MediaSpaceStatistics_test_007::uri :%{private}s", fileAsset->GetUri().c_str());
@@ -421,8 +378,9 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_007, TestSize.Leve
         EXPECT_NE((retVal < 0), true);
     }
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_007 QueryTotalSize video size = %{public}lld", (long long)mediaVolume.GetVideosSize());
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_007 QueryTotalSize video size = %{public}lld",
+        (long long)mediaVolume.GetVideosSize());
     EXPECT_EQ((mediaVolume.GetVideosSize() == g_videoSize), true);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_007::End");
 }
@@ -435,48 +393,45 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_007, TestSize.Leve
  *                 3.get all videos size
  *                 4.Compare the new total size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_008, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_008, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_008::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 4 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
 
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
 
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_008::objectSize = %{public}lld", (long long)objectSize);
     EXPECT_NE((fileAsset == nullptr), true);
 
-    for (int i = 0; i < 99; i++)
-    {
+    for (int i = 0; i < 99; i++) {
         string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".mp4";
         int sleepSecond = 0;
-        if(i + 1 == 99){
+        if (i + 1 == 99) {
             sleepSecond = 10;
         }
         CopyFile(fileAsset->GetUri(), MEDIALIBRARY_VIDEO_URI, "Videos/", newName, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_008:: Copy finish!!!");
 
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
     int64_t newVideosSize = mediaVolume.GetVideosSize();
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_008 QueryTotalSize video newVideosSize = %{public}lld", (long long)newVideosSize);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_008 QueryTotalSize video newVideosSize = %{public}lld",
+        (long long)newVideosSize);
     int64_t targetSize = 100 * objectSize;
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_008 QueryTotalSize image targetSize = %{public}lld", (long long)targetSize);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_008 QueryTotalSize image targetSize = %{public}lld",
+        (long long)targetSize);
     EXPECT_EQ((newVideosSize == targetSize), true);
 
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_008::End");
@@ -489,31 +444,27 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_008, TestSize.Leve
  *                 2.call the method to get media size
  *                 3.compare the size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_009, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_009, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_009::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 5 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
 
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
 
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     g_audioSize = objectSize;
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
     MEDIA_INFO_LOG("QueryTotalSize audio size = %{public}lld", (long long)mediaVolume.GetAudiosSize());
     EXPECT_EQ((mediaVolume.GetAudiosSize() == objectSize), true);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_009::End");
@@ -527,36 +478,29 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_009, TestSize.Leve
  *                 3.get all audios size
  *                 4.Compare the new total size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_010, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_010, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_010::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 5 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_010::objectSize = %{public}lld", (long long)objectSize);
     EXPECT_NE((fileAsset == nullptr), true);
-
     CopyFile(fileAsset->GetUri(), MEDIALIBRARY_AUDIO_URI, "Audios/", "copy_MediaSpaceStatistics_test.mp3", 10);
-
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_010 QueryTotalSize audio size = %{public}lld", (long long)mediaVolume.GetAudiosSize());
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_010 QueryTotalSize audio size = %{public}lld",
+        (long long)mediaVolume.GetAudiosSize());
     EXPECT_EQ((mediaVolume.GetAudiosSize() == 2 * objectSize), true);
 
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_010::End");
@@ -570,25 +514,22 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_010, TestSize.Leve
  *                 3.get audio size
  *                 4.Compare the new total size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_011, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_011, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_011::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    int errorCode = DATA_ABILITY_FAIL;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 5 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() < 0), true);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetLastObject();
-    if(fileAsset != nullptr) {
+    if (fileAsset != nullptr) {
         Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
         NativeRdb::ValuesBucket valuesBucketDelete;
         MEDIA_INFO_LOG("MediaSpaceStatistics_test_011::uri :%{private}s", fileAsset->GetUri().c_str());
@@ -597,8 +538,9 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_011, TestSize.Leve
         EXPECT_NE((retVal < 0), true);
     }
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_011 QueryTotalSize image size = %{public}lld", (long long)mediaVolume.GetAudiosSize());
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_011 QueryTotalSize image size = %{public}lld",
+        (long long)mediaVolume.GetAudiosSize());
     EXPECT_EQ((mediaVolume.GetAudiosSize() == g_audioSize), true);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_011::End");
 }
@@ -611,48 +553,41 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_011, TestSize.Leve
  *                 3.get all audios size
  *                 4.Compare the new total size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_012, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_012, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 5 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    vector<string> columns;
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012::objectSize = %{public}lld", (long long)objectSize);
     EXPECT_NE((fileAsset == nullptr), true);
-
-    for (int i = 0; i < 99; i++)
-    {
+    for (int i = 0; i < 99; i++) {
         string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".mp3";
         int sleepSecond = 0;
-        if(i + 1 == 99){
+        if (i + 1 == 99) {
             sleepSecond = 10;
         }
         CopyFile(fileAsset->GetUri(), MEDIALIBRARY_AUDIO_URI, "Audios/", newName, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012:: Copy finish!!!");
-
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
     int64_t newAudiosSize = mediaVolume.GetAudiosSize();
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_008 QueryTotalSize video newAudiosSize = %{public}lld", (long long)newAudiosSize);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_008 QueryTotalSize video newAudiosSize = %{public}lld",
+        (long long)newAudiosSize);
     int64_t targetSize = 100 * objectSize;
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_008 QueryTotalSize image targetSize = %{public}lld", (long long)targetSize);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_008 QueryTotalSize image targetSize = %{public}lld",
+        (long long)targetSize);
     EXPECT_EQ((newAudiosSize == targetSize), true);
 
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012::End");
@@ -665,31 +600,26 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_012, TestSize.Leve
  *                 2.call the method to get media size
  *                 3.compare the size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_013, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_013, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_013::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 1 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    vector<string> columns;
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
 
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     g_fileSize = objectSize;
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
     MEDIA_INFO_LOG("QueryTotalSize file size = %{public}lld", (long long)mediaVolume.GetFilesSize());
     EXPECT_EQ((mediaVolume.GetFilesSize() == objectSize), true);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_013::End");
@@ -703,36 +633,29 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_013, TestSize.Leve
  *                 3.get all files size
  *                 4.Compare the new total size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_014, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_014, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_014::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 1 ";
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    vector<string> columns;
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_014::objectSize = %{public}lld", (long long)objectSize);
     EXPECT_NE((fileAsset == nullptr), true);
-
     CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/", "copy_MediaSpaceStatistics_test.txt", 10);
-
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_014 QueryTotalSize files size = %{public}lld", (long long)mediaVolume.GetFilesSize());
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_014 QueryTotalSize files size = %{public}lld",
+        (long long)mediaVolume.GetFilesSize());
     EXPECT_EQ((mediaVolume.GetFilesSize() == 2 * objectSize), true);
 
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_014::End");
@@ -746,25 +669,22 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_014, TestSize.Leve
  *                 3.get files size
  *                 4.Compare the new total size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_015, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_015, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_015::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    int errorCode = DATA_ABILITY_FAIL;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 1 ";
     predicates.SetWhereClause(prefix);
-
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    vector<string> columns;
+
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() < 0), true);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetLastObject();
-    if(fileAsset != nullptr) {
+    if (fileAsset != nullptr) {
         Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
         NativeRdb::ValuesBucket valuesBucketDelete;
         MEDIA_INFO_LOG("MediaSpaceStatistics_test_015::uri :%{private}s", fileAsset->GetUri().c_str());
@@ -773,8 +693,9 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_015, TestSize.Leve
         EXPECT_NE((retVal < 0), true);
     }
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_015 QueryTotalSize files size = %{public}lld", (long long)mediaVolume.GetFilesSize());
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_015 QueryTotalSize files size = %{public}lld",
+        (long long)mediaVolume.GetFilesSize());
     EXPECT_EQ((mediaVolume.GetFilesSize() == g_fileSize), true);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_015::End");
 }
@@ -787,48 +708,42 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_015, TestSize.Leve
  *                 3.get all files size
  *                 4.Compare the new total size
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_016, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_016, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_016::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " = 1 ";
     predicates.SetWhereClause(prefix);
-
+    vector<string> columns;
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
 
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     int64_t objectSize = fileAsset->GetSize();
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_016::objectSize = %{public}lld", (long long)objectSize);
     EXPECT_NE((fileAsset == nullptr), true);
 
-    for (int i = 0; i < 99; i++)
-    {
+    for (int i = 0; i < 99; i++) {
         string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".txt";
         int sleepSecond = 0;
-        if(i + 1 == 99){
+        if (i + 1 == 99) {
             sleepSecond = 10;
         }
         CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/", newName, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012:: Copy finish!!!");
-
-    int errorCode = DATA_ABILITY_FAIL;
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
     int64_t newFilesSize = mediaVolume.GetFilesSize();
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_016 QueryTotalSize video newFilesSize = %{public}lld", (long long)newFilesSize);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_016 QueryTotalSize video newFilesSize = %{public}lld",
+        (long long)newFilesSize);
     int64_t targetSize = 100 * objectSize;
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_016 QueryTotalSize image targetSize = %{public}lld", (long long)targetSize);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_016 QueryTotalSize image targetSize = %{public}lld",
+        (long long)targetSize);
     EXPECT_EQ((newFilesSize == targetSize), true);
 
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_016::End");
@@ -841,22 +756,18 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_016, TestSize.Leve
  *                 2.query media size
  *                 3.make sure size is 0
  */
-HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_017, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_017, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_017::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = GetMediaDataHelper();
-    int errorCode = DATA_ABILITY_FAIL;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
     DataAbilityPredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
     predicates.SetWhereClause(prefix);
-
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, columns, predicates);
+    vector<string> columns;
+    shared_ptr<AbsSharedResultSet> resultSet = helper->Query(queryFileUri, columns, predicates);
     EXPECT_NE((resultSet == nullptr), true);
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() < 0), true);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     while (fileAsset != nullptr) {
@@ -870,13 +781,12 @@ HWTEST_F(MediaSpaceStatistics_test, MediaSpaceStatistics_test_017, TestSize.Leve
         fileAsset = fetchFileResult->GetNextObject();
     }
     MediaVolume mediaVolume;
-    errorCode = mediaLibraryManager->QueryTotalSize(mediaVolume);
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
     EXPECT_EQ((mediaVolume.GetImagesSize() == 0), true);
     EXPECT_EQ((mediaVolume.GetVideosSize() == 0), true);
     EXPECT_EQ((mediaVolume.GetAudiosSize() == 0), true);
     EXPECT_EQ((mediaVolume.GetFilesSize() == 0), true);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_017::End");
 }
-
 } // namespace Media
 } // namespace OHOS
