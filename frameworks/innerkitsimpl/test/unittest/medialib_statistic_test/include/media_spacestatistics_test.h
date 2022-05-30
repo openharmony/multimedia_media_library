@@ -16,24 +16,22 @@
 #ifndef MEDIASPACESTATISTICS_TEST_H
 #define MEDIASPACESTATISTICS_TEST_H
 
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include "gtest/gtest.h"
 #include <sstream>
 #include <string>
+#include <sys/sendfile.h>
+#include <sys/timeb.h>
+#include "gtest/gtest.h"
+
 #include "iservice_registry.h"
 #include "media_data_ability_const.h"
 #include "media_log.h"
 #include "media_volume.h"
 #include "media_library_manager.h"
 #include "system_ability_definition.h"
-#include <sys/sendfile.h>
-#include <sys/timeb.h>
 
 namespace OHOS {
 namespace Media {
-class MediaSpaceStatistics_test : public testing::Test {
+class MediaSpaceStatisticsTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -41,7 +39,6 @@ public:
     void TearDown();
     static void WaitForCallback();
 };
-
 } // namespace Media
 } // namespace OHOS
 #endif // MEDIASPACESTATISTICS_TEST_H

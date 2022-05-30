@@ -55,7 +55,7 @@ ohos_unittest("medialibrary_statistic_unittest") {
 
   sources = [
     "./src/media_spacestatistics_test.cpp",
-    "./src/selfpermissions.cpp",
+    "./src/self_permissions.cpp",
   ]
 
   deps = [

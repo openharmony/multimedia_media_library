@@ -28,7 +28,7 @@ namespace AccessToken {
 static const std::string TEST_BUNDLE_NAME = "ohos";
 static const int TEST_USER_ID = 0;
 static const int INVALID_DLP_TYPE = 4;
-class GetSelfPermissions : public testing::Test {
+class SelfPermissions : public testing::Test {
 public:
     static void SetUpTestCase();
 
