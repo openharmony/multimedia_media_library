@@ -103,7 +103,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
     std::vector<std::string> &devices, bool isLast)
 {
     MEDIA_ERR_LOG("SyncPullTable table = %{private}s, isLast = %{public}d", tableName.c_str(), isLast);
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "Rdb Store is not initialized");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Rdb Store is not initialized");
     // start sync
     DistributedRdb::SyncOption option;
     option.mode = DistributedRdb::SyncMode::PULL;
@@ -149,7 +149,7 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
                                           const std::string &tableName, std::vector<std::string> &devices, bool isBlock)
 {
     MEDIA_ERR_LOG("SyncPushTable table = %{private}s", tableName.c_str());
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "Rdb Store is not initialized");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Rdb Store is not initialized");
     // start sync
     DistributedRdb::SyncOption option;
     option.mode = DistributedRdb::SyncMode::PUSH;
