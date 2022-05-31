@@ -336,15 +336,13 @@ shared_ptr<FileAsset> MediaLibraryDataManagerUtils::GetFileAssetFromDb(const str
     shared_ptr<AbsSharedResultSet> resultSet = rdbStore->Query(absPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Failed to obtain path from database");
 
-    shared_ptr<ResultSetBridge> rsBridge = RdbUtils::ToResultSetBridge(resultSet);
-    shared_ptr<DataShareResultSet> dataShareRs = make_shared<DataShareResultSet>(rsBridge);
-    shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>(dataShareRs);
+    shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>();
     if (fetchFileResult == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain fetch file result");
         return nullptr;
     }
     fetchFileResult->networkId_ = networkId;
-    return fetchFileResult->GetFirstObject();
+    return fetchFileResult->GetObjectFromRdb(resultSet, 0);
 }
 
 bool MediaLibraryDataManagerUtils::checkFilePending(const shared_ptr<FileAsset> fileAsset)
