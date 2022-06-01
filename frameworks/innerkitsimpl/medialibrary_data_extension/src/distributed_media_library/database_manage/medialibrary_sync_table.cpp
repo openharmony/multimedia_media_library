@@ -65,14 +65,14 @@ bool MediaLibrarySyncTable::SyncPullTable(
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPullTable device = %{private}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPullTable device = %{public}s syncResult = %{public}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
             if (isLast) {
                 MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(iter->first, DEVICE_SYNCSTATUS_COMPLETE);
             }
-            MEDIA_ERR_LOG("SyncPullTable device = %{private}s success", iter->first.c_str());
+            MEDIA_ERR_LOG("SyncPullTable device = %{public}s success", iter->first.c_str());
         }
     };
 
@@ -108,11 +108,11 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPushTable device = %{private}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPushTable device = %{public}s syncResult = %{public}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
-            MEDIA_INFO_LOG("SyncPushTable device = %{private}s success", iter->first.c_str());
+            MEDIA_INFO_LOG("SyncPushTable device = %{public}s success", iter->first.c_str());
         }
     };
 
