@@ -92,16 +92,12 @@ sptr<IRemoteObject> MediaDataShareExtAbility::OnConnect(const AAFwk::Want &want)
         HILOG_ERROR("%{public}s No memory allocated for DataShareStubImpl", __func__);
         return nullptr;
     }
-    HILOG_INFO("%{public}s end. klh", __func__);
+    HILOG_INFO("%{public}s end.", __func__);
     return remoteObject->AsObject();
 }
 
 std::vector<std::string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter)
 {
-    HILOG_INFO("%{public}s begin.", __func__);
-    //auto ret = MediaLibraryDataManager::GetInstance()->GetFileTypes(uri, mimeTypeFilter);
-    HILOG_INFO("%{public}s end.", __func__);
-    //return ret;
     std::vector<std::string> ret;
     return ret; 
 }
@@ -116,10 +112,6 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
 
 int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const std::string &mode)
 {
-    HILOG_INFO("%{public}s begin.", __func__);
-    //auto ret = MediaLibraryDataManager::GetInstance()->OpenRawFile(uri, mode);
-    HILOG_INFO("%{public}s end.", __func__);
-    //return ret;
     return 0;
 }
 
@@ -193,7 +185,6 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<Data
         return ret;
     }
 
-    //ret = MediaLibraryDataManager::GetInstance()->BatchInsert(uri, values);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }
@@ -201,7 +192,6 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<Data
 bool MediaDataShareExtAbility::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    //MediaLibraryDataManager::GetInstance()->RegisterObserver(uri, dataObserver);
     auto obsMgrClient = DataObsMgrClient::GetInstance();
     if (obsMgrClient == nullptr) {
         HILOG_ERROR("%{public}s obsMgrClient is nullptr", __func__);
@@ -220,7 +210,6 @@ bool MediaDataShareExtAbility::RegisterObserver(const Uri &uri, const sptr<AAFwk
 bool MediaDataShareExtAbility::UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    //MediaLibraryDataManager::GetInstance()->UnregisterObserver(uri, dataObserver);
     auto obsMgrClient = DataObsMgrClient::GetInstance();
     if (obsMgrClient == nullptr) {
         HILOG_ERROR("%{public}s obsMgrClient is nullptr", __func__);
@@ -258,7 +247,6 @@ Uri MediaDataShareExtAbility::NormalizeUri(const Uri &uri)
 {
     HILOG_INFO("%{public}s begin.", __func__);
     auto ret = uri;
-    //auto ret = MediaLibraryDataManager::GetInstance()->NormalizeUri(uri);
     HILOG_INFO("%{public}s end.", __func__);
 
     return ret;
@@ -269,8 +257,6 @@ Uri MediaDataShareExtAbility::DenormalizeUri(const Uri &uri)
 {
     HILOG_INFO("%{public}s begin.", __func__);
     auto ret = uri;
-    //auto ret = MediaLibraryDataManager::GetInstance()->DenormalizeUri(uri);
-
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }
@@ -280,7 +266,6 @@ std::vector<std::shared_ptr<DataShareResult>> MediaDataShareExtAbility::ExecuteB
 {
     HILOG_INFO("%{public}s begin.", __func__);
     std::vector<std::shared_ptr<DataShareResult>> ret;
-    //auto ret = MediaLibraryDataManager::GetInstance()->ExecuteBatch(operations);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }
@@ -288,13 +273,6 @@ std::vector<std::shared_ptr<DataShareResult>> MediaDataShareExtAbility::ExecuteB
 bool MediaDataShareExtAbility::CheckCallingPermission(const std::string &permission)
 {
     HILOG_INFO("%{public}s begin, permission:%{public}s", __func__, permission.c_str());
-    /*
-    if (!permission.empty() && AccessTokenKit::VerifyAccessToken(IPCSkeleton::GetCallingTokenID(), permission)
-        != AppExecFwk::Constants::PERMISSION_GRANTED) {
-        HILOG_ERROR("%{public}s permission not granted.", __func__);
-        return false;
-    }
-    */
     HILOG_INFO("%{public}s end.", __func__);
     return true;
 }
