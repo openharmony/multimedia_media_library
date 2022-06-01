@@ -1084,7 +1084,7 @@ static void JSOpenCompleteCallback(napi_env env, napi_status status,
     jsContext->status = false;
 
     if (context->error == ERR_DEFAULT) {
-        NAPI_DEBUG_LOG("return fd = %{private}d", context->fd);
+        NAPI_DEBUG_LOG("return fd = %{public}d", context->fd);
         napi_create_int32(env, context->fd, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
@@ -1345,7 +1345,7 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
     }
 
     if (to_string(fileId) != id) {
-        NAPI_ERR_LOG("Query thumbnail id error as %{private}s", id.c_str());
+        NAPI_ERR_LOG("Query thumbnail id error as %{public}s", id.c_str());
         return nullptr;
     }
 
@@ -1354,7 +1354,7 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
         return nullptr;
     }
 
-    NAPI_DEBUG_LOG("Query thumbnail id %{private}s with key %{private}s", id.c_str(), thumbnailKey.c_str());
+    NAPI_DEBUG_LOG("Query thumbnail id %{public}s with key %{public}s", id.c_str(), thumbnailKey.c_str());
     StartTrace(HITRACE_TAG_OHOS, "thumbnailHelper->GetThumbnail");
     auto ret = thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
     FinishTrace(HITRACE_TAG_OHOS);
@@ -1529,7 +1529,7 @@ void* OHOS_MEDIA_NativeGetThumbnail(const char* uri, void* context) {
     auto runtimeContext = *reinterpret_cast<std::shared_ptr<OHOS::AbilityRuntime::Context>*>(context);
     auto ret = FileAssetNapi::NativeGetThumbnail(uriStr, runtimeContext);
     if (ret == nullptr) {
-        NAPI_INFO_LOG("return value from NativeGetThumbnail is nullptr, uri: %{private}s", uri);
+        NAPI_INFO_LOG("return value from NativeGetThumbnail is nullptr, uri: %{public}s", uri);
         return nullptr;
     }
     return ret.release();

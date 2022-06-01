@@ -648,7 +648,7 @@ static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
     NAPI_DEBUG_LOG("GetNetworkId is = %{private}s", context->objectInfo->GetNetworkId().c_str());
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         context->objectInfo->GetNetworkId() + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-    NAPI_DEBUG_LOG("queryUri is = %{private}s", queryUri.c_str());
+    NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
         context->objectInfo->GetMediaDataHelper()->Query(uri, predicates, columns);
