@@ -92,7 +92,6 @@ ohos_shared_library("medialibrary") {
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
     "//foundation/distributeddatamgr/appdatamgr/framework/native/data_share/common/include",
     "//foundation/distributeddatamgr/appdatamgr/framework/native/data_share/provider/include",
-
   ]
 
   sources = [
@@ -118,8 +117,8 @@ ohos_shared_library("medialibrary") {
     "${aafwk_inner_api_path}/dataobs_manager:dataobs_manager",
     "${aafwk_kits_path}/ability/native:abilitykit_native",
     "${aafwk_kits_path}/appkit:appkit_native",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//foundation/arkui/napi:ace_napi",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native:media_client",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
@@ -132,15 +131,15 @@ ohos_shared_library("medialibrary") {
     "ability_base:zuri",
     "ability_runtime:ability_manager",
     "ability_runtime:napi_base_context",
+    "data_share:datashare_common",
     "dataability:native_dataability",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
-    "data_share:datashare_common",
+    "ipc:ipc_core",
+    "ipc_js:rpc",
     "permission_standard:libpermissionsdk_standard",
     "relational_store:native_appdatafwk",
     "relational_store:native_rdb",
-    "ipc:ipc_core",
-    "ipc_js:rpc",
   ]
 
   relative_install_dir = "module/multimedia"
