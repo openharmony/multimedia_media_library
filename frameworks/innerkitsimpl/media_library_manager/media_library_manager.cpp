@@ -404,14 +404,14 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
             int mediatype = get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, queryResultSet));
             MEDIA_INFO_LOG("mediatype = %{public}d", mediatype);
             int64_t size = GetLongValFromColumn(MEDIA_DATA_DB_SIZE, queryResultSet);
-            MEDIA_INFO_LOG("size = %{public}lld", size);
+            MEDIA_INFO_LOG("size = %{public}lld", (long long)size);
             outMediaVolume.SetSize(mediatype, size);
         }
     }
-    MEDIA_INFO_LOG("GetFilesSize = %{public}lld", outMediaVolume.GetFilesSize());
-    MEDIA_INFO_LOG("GetVideosSize = %{public}lld", outMediaVolume.GetVideosSize());
-    MEDIA_INFO_LOG("GetImagesSize = %{public}lld", outMediaVolume.GetImagesSize());
-    MEDIA_INFO_LOG("GetAudiosSize = %{public}lld", outMediaVolume.GetAudiosSize());
+    MEDIA_INFO_LOG("GetFilesSize = %{public}lld", (long long)outMediaVolume.GetFilesSize());
+    MEDIA_INFO_LOG("GetVideosSize = %{public}lld", (long long)outMediaVolume.GetVideosSize());
+    MEDIA_INFO_LOG("GetImagesSize = %{public}lld", (long long)outMediaVolume.GetImagesSize());
+    MEDIA_INFO_LOG("GetAudiosSize = %{public}lld", (long long)outMediaVolume.GetAudiosSize());
     return DATA_ABILITY_SUCCESS;
 }
 } // namespace Media
