@@ -779,6 +779,10 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     fetchFileResult->networkId_ = context->networkId;
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
+    if (fileAsset == nullptr) {
+        NAPI_DEBUG_LOG("SetAlbumCoverUr:FileAsset is mullptr");
+        return;
+    }
     string coverUri = fileAsset->GetUri();
     album->SetCoverUri(coverUri);
     NAPI_DEBUG_LOG("coverUri is = %{private}s", album->GetCoverUri().c_str());
@@ -944,6 +948,10 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
         context->fetchFileResult->networkId_ = networkId;
         if (context->fetchFileResult != nullptr && context->fetchFileResult->GetCount() >= 1) {
             context->fileAsset = context->fetchFileResult->GetFirstObject();
+            if (context->fileAsset == nullptr) {
+                NAPI_DEBUG_LOG("getFileAssetById:FileAsset is mullptr");
+                return;
+            }
 
             Media::MediaType mediaType = context->fileAsset->GetMediaType();
             string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
