@@ -15,7 +15,8 @@ import("//build/ohos.gni")
 
 MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
 MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
-MEDIA_SCANNER_SOURCE_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_scanner"
+MEDIA_SCANNER_SOURCE_DIR =
+    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_scanner"
 
 config("media_data_extension_public_config") {
   include_scanner = [
@@ -70,7 +71,7 @@ config("media_data_extension_public_config") {
 
 ohos_hap("medialibrary_ext_hap") {
   hap_profile = "MediaLibraryExt/entry/src/main/module.json"
-    deps = [
+  deps = [
     ":MediaLibStage_js_assets",
     ":MediaLibStage_resources",
   ]
@@ -81,7 +82,6 @@ ohos_hap("medialibrary_ext_hap") {
   subsystem_name = "applications"
   module_install_dir = "app/com.ohos.medialibrary.MediaLibraryData"
 }
-
 
 ohos_js_assets("MediaLibStage_js_assets") {
   hap_profile = "MediaLibraryExt/entry/src/main/module.json"
@@ -95,12 +95,8 @@ ohos_app_scope("MediaLibStage_app_profile") {
 }
 
 ohos_resources("MediaLibStage_resources") {
-  sources = [
-    "MediaLibraryExt/entry/src/main/resources",
-  ]
-  deps = [
-    ":MediaLibStage_app_profile",
-  ]
+  sources = [ "MediaLibraryExt/entry/src/main/resources" ]
+  deps = [ ":MediaLibStage_app_profile" ]
   hap_profile = "MediaLibraryExt/entry/src/main/module.json"
 }
 
@@ -119,6 +115,8 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   sources = [
+    "src/media_datashare_ext_ability.cpp",
+    "src/media_datashare_stub_impl.cpp",
     "src/medialibrary_album_db.cpp",
     "src/medialibrary_album_operations.cpp",
     "src/medialibrary_data_manager.cpp",
@@ -129,16 +127,14 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_file_db.cpp",
     "src/medialibrary_file_operations.cpp",
     "src/medialibrary_kvstore_operations.cpp",
+    "src/medialibrary_query_db.cpp",
+    "src/medialibrary_query_operations.cpp",
     "src/medialibrary_smartalbum_db.cpp",
     "src/medialibrary_smartalbum_map_db.cpp",
     "src/medialibrary_smartalbum_map_operations.cpp",
     "src/medialibrary_smartalbum_operations.cpp",
     "src/medialibrary_sync_table.cpp",
     "src/medialibrary_thumbnail.cpp",
-    "src/media_datashare_ext_ability.cpp",
-    "src/media_datashare_stub_impl.cpp",
-    "src/medialibrary_query_operations.cpp",
-    "src/medialibrary_query_db.cpp",
     "src/uri_helper.cpp",
   ]
   sources += media_scan_source
@@ -153,12 +149,12 @@ ohos_shared_library("medialibrary_data_extension") {
     "//foundation/aafwk/standard/interfaces/innerkits/runtime:runtime",
     "//foundation/aafwk/standard/services/abilitymgr:abilityms",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_ext_ability_module",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_ext_ability_module",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb_data_share_adapter:rdb_data_share_adapter",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
     "//foundation/distributedhardware/devicemanager/interfaces/inner_kits/native_cpp:devicemanagersdk",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_ext_ability_module",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//utils/native/base:utils",
   ]
@@ -168,13 +164,13 @@ ohos_shared_library("medialibrary_data_extension") {
     "ability_base:want",
     "ability_base:zuri",
     "access_token:libaccesstoken_sdk",
+    "data_share:datashare_common",
+    "dataability:native_dataability",
+    "eventhandler:libeventhandler",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "multimedia_media_standard:media_client",
-    "data_share:datashare_common",
-    "eventhandler:libeventhandler",
-    "dataability:native_dataability",
     "relational_store:native_appdatafwk",
     "relational_store:native_rdb",
     "samgr_standard:samgr_proxy",

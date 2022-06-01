@@ -67,9 +67,7 @@ ohos_shared_library("medialibrary_data_ability") {
   install_enable = true
   public_configs = [ ":media_data_ability_public_config" ]
 
-  sources = [
-    "src/uri_helper.cpp",
-  ]
+  sources = [ "src/uri_helper.cpp" ]
 
   deps = [
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
