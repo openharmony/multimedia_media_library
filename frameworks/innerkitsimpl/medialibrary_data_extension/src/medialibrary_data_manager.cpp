@@ -78,14 +78,14 @@ std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::GetInstance()
 
 static DataShare::DataShareExtAbility * MediaDataShareCreator (const std::unique_ptr<Runtime>& runtime) 
 {
-        MEDIA_INFO_LOG("klh MediaLibraryCreator::%s", __func__);
-	return  MediaDataShareExtAbility::Create(runtime);
+    MEDIA_INFO_LOG("MediaLibraryCreator::%{public}s", __func__);
+    return  MediaDataShareExtAbility::Create(runtime);
 }
 
 __attribute__((constructor)) void RegisterDataShareCreator()
 {
-    MEDIA_INFO_LOG("klh MediaLibraryDataMgr::%{public}s", __func__);
-	DataShare::DataShareExtAbility::SetCreator(MediaDataShareCreator);
+    MEDIA_INFO_LOG("MediaLibraryDataMgr::%{public}s", __func__);
+    DataShare::DataShareExtAbility::SetCreator(MediaDataShareCreator);
 }
 
 const std::string MediaLibraryDataManager::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
@@ -304,13 +304,11 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
         result = DATA_ABILITY_FAIL;
         string operationType = MediaLibraryDataManagerUtils::GetOperationType(insertUri);
         MEDIA_INFO_LOG("MediaData Insert operationType = %{private}s", operationType.c_str());
-        MEDIA_INFO_LOG("MediaData Insert uri = %{public}s", insertUri.c_str());
         if ((operationType == MEDIA_FILEOPRN_CREATEASSET ||
             operationType == MEDIA_ALBUMOPRN_CREATEALBUM) && !CheckFileNameValid(dataShareValue)) {
             return DATA_ABILITY_FILE_NAME_INVALID;
         }
         if (insertUri.find(MEDIA_FILEOPRN) != string::npos) {
-            MEDIA_ERR_LOG("klh File %{public}s", insertUri.c_str());
             result = fileOprn.HandleFileOperation(operationType, value, rdbStore_, mediaThumbnail_);
             // After successful close asset operation, do a scan file
             if ((result >= 0) && (operationType == MEDIA_FILEOPRN_CLOSEASSET)) {
@@ -318,7 +316,6 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
             }
             syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
         } else if (insertUri.find(MEDIA_ALBUMOPRN) != string::npos) {
-            MEDIA_ERR_LOG("klh Album %{public}s", insertUri.c_str());
             result = albumOprn.HandleAlbumOperations(operationType, value, rdbStore_);
             syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_TABLE, devices);
         } else if (insertUri.find(MEDIA_SMARTALBUMOPRN) != string::npos) {
