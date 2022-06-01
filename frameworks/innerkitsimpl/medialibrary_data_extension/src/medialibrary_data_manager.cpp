@@ -386,7 +386,7 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
     return deletedRows;
 }
 
-shared_ptr<ResultSetBridge> QueryBySmartTableType(TableType tabletype,
+shared_ptr<AbsSharedResultSet> QueryBySmartTableType(TableType tabletype,
     string strQueryCondition,
     DataSharePredicates predicates,
     vector<string> columns,
@@ -412,10 +412,10 @@ shared_ptr<ResultSetBridge> QueryBySmartTableType(TableType tabletype,
         queryResultSet = rdbStore->Query(mediaLibSAMAbsPred, columns);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     }
-    return RdbUtils::ToResultSetBridge(queryResultSet);
+    return queryResultSet;
 }
 
-shared_ptr<ResultSetBridge> QueryFile(string strQueryCondition,
+shared_ptr<AbsSharedResultSet> QueryFile(string strQueryCondition,
     DataSharePredicates predicates,
     vector<string> columns,
     std::shared_ptr<NativeRdb::RdbStore> rdbStore,
@@ -447,7 +447,7 @@ shared_ptr<ResultSetBridge> QueryFile(string strQueryCondition,
     queryResultSet = rdbStore->Query(mediaLibAbsPredFile, columns);
     FinishTrace(HITRACE_TAG_OHOS);
 
-    return RdbUtils::ToResultSetBridge(queryResultSet);
+    return queryResultSet;
 }
 
 string ObtionCondition(string &strQueryCondition, const vector<string> &whereArgs)
@@ -464,7 +464,7 @@ string ObtionCondition(string &strQueryCondition, const vector<string> &whereArg
     return strQueryCondition;
 }
 
-shared_ptr<ResultSetBridge> QueryAlbum(string strQueryCondition,
+shared_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
     DataSharePredicates predicates,
     vector<string> columns,
     std::shared_ptr<NativeRdb::RdbStore> rdbStore,
@@ -491,10 +491,10 @@ shared_ptr<ResultSetBridge> QueryAlbum(string strQueryCondition,
 	    queryResultSet = rdbStore->QuerySql("SELECT * FROM " + ABLUM_VIEW_NAME);
 	}
     }
-    return RdbUtils::ToResultSetBridge(queryResultSet);
+    return queryResultSet;
 }
 
-shared_ptr<ResultSetBridge> QueryDeviceInfo(string strQueryCondition,
+shared_ptr<AbsSharedResultSet> QueryDeviceInfo(string strQueryCondition,
     DataSharePredicates predicates, vector<string> columns, std::shared_ptr<NativeRdb::RdbStore> rdbStore)
 {
     shared_ptr<AbsSharedResultSet> queryResultSet;
@@ -506,10 +506,10 @@ shared_ptr<ResultSetBridge> QueryDeviceInfo(string strQueryCondition,
 
     queryResultSet = rdbStore->Query(deviceDataSharePredicates, columns);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query All Device failed");
-    return RdbUtils::ToResultSetBridge(queryResultSet);
+    return queryResultSet;
 }
 
-shared_ptr<ResultSetBridge> QueryByViewType(TableType tabletype,
+shared_ptr<AbsSharedResultSet> QueryByViewType(TableType tabletype,
     string strQueryCondition,
     DataSharePredicates predicates,
     vector<string> columns,
@@ -538,7 +538,7 @@ shared_ptr<ResultSetBridge> QueryByViewType(TableType tabletype,
             queryResultSet = rdbStore->QuerySql("SELECT * FROM " + SMARTABLUMASSETS_VIEW_NAME);
 	}
     }
-    return RdbUtils::ToResultSetBridge(queryResultSet);
+    return queryResultSet;
 }
 
 void SplitKeyValue(const string& keyValue, string &key, string &value)
@@ -716,20 +716,11 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
 
     vector<int> space;
     bool thumbnailQuery = ParseThumbnailInfo(uriString, space);
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uriString);
     string::size_type pos = uriString.find_last_of('/');
     string type = uriString.substr(pos + 1);
+    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uriString);
     MEDIA_DEBUG_LOG("uriString = %{private}s, type = %{private}s, thumbnailQuery %{private}d, Rdb Verison %{private}d",
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
-    MEDIA_DEBUG_LOG("MediaData uriString = %{public}s, type = %{public}s, thumbnailQuery %{public}d, Rdb Verison %{public}d",
-        uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
-    if (uriString.find(MEDIA_QUERYOPRN_QUERYVOLUME) != string::npos) {
-        QueryData queryData;
-        auto absResult = MediaLibraryQueryOperations::HandleQueryOperations(MEDIA_QUERYOPRN_QUERYVOLUME, queryData,
-            rdbStore_);
-        queryResultSet = RdbUtils::ToResultSetBridge(absResult);
-        return queryResultSet;
-    }
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
     if (!networkId.empty() && (tabletype != TYPE_ASSETSMAP_TABLE) && (tabletype != TYPE_SMARTALBUMASSETS_TABLE)) {
         StartTrace(HITRACE_TAG_OHOS, "QuerySync");
@@ -742,7 +733,34 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         StartTrace(HITRACE_TAG_OHOS, "GenThumbnail");
         queryResultSet = GenThumbnail(rdbStore_, mediaThumbnail_, strRow, space, networkId);
         FinishTrace(HITRACE_TAG_OHOS);
-    } else if (tabletype == TYPE_SMARTALBUM || tabletype == TYPE_SMARTALBUM_MAP) {
+    } else {
+        auto absResultSet = QueryRdb(uri, columns, predicates);
+        queryResultSet = RdbUtils::ToResultSetBridge(absResultSet);
+    }
+
+    FinishTrace(HITRACE_TAG_OHOS);
+
+    return queryResultSet;
+}
+
+shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
+                                                              const vector<string> &columns,
+                                                              const DataSharePredicates &predicates)
+{
+    StartTrace(HITRACE_TAG_OHOS, "MediaLibraryDataManager::QueryRdb");
+    shared_ptr<AbsSharedResultSet> queryResultSet;
+    TableType tabletype = TYPE_DATA;
+    string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
+    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uriString);
+    string::size_type pos = uriString.find_last_of('/');
+    DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
+
+    if (uriString.find(MEDIA_QUERYOPRN_QUERYVOLUME) != string::npos) {
+        QueryData queryData;
+        return MediaLibraryQueryOperations::HandleQueryOperations(MEDIA_QUERYOPRN_QUERYVOLUME, queryData,
+            rdbStore_);
+    }
+    if (tabletype == TYPE_SMARTALBUM || tabletype == TYPE_SMARTALBUM_MAP) {
         queryResultSet = QueryBySmartTableType(tabletype, strQueryCondition, predicates, columns, rdbStore_);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     } else if (tabletype == TYPE_ASSETSMAP_TABLE || tabletype == TYPE_SMARTALBUMASSETS_TABLE) {
@@ -758,9 +776,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
         FinishTrace(HITRACE_TAG_OHOS);
     }
-
     FinishTrace(HITRACE_TAG_OHOS);
-
     return queryResultSet;
 }
 
