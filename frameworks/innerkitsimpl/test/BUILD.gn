@@ -14,5 +14,5 @@
 group("test") {
   testonly = true
 
-  deps = [ "unittest/mediascanner_test:unittest" ]
+  deps = []
 }
