@@ -32,7 +32,6 @@
 
 namespace OHOS {
 namespace Media {
-
 using namespace OHOS::DataShare;
 class MediaLibraryDataManagerUtils {
 public:

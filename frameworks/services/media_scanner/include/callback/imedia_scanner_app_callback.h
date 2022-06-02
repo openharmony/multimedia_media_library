@@ -33,6 +33,6 @@ public:
      */
     virtual void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) = 0;
 };
-} // namespace Media 
+} // namespace Media
 } // namespace OHOS
 #endif

@@ -68,7 +68,6 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
 
     Uri abilityUri(MEDIALIBRARY_DATA_URI);
     rowNum = MediaLibraryDataManager::GetInstance()->Insert(abilityUri, values);
-
     if (rowNum <= 0) {
         MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed, return %{private}d", rowNum);
         return "";
@@ -144,7 +143,6 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     updateCount = MediaLibraryDataManager::GetInstance()->Update(uri, values, predicates);
-
     if (updateCount <= 0) {
         MEDIA_ERR_LOG("RDBSTORE update failed");
         return "";
@@ -185,7 +183,6 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
     Uri deleteUri(MEDIALIBRARY_DATA_URI);
 
     deletedCount = MediaLibraryDataManager::GetInstance()->Delete(deleteUri, predicates);
-
     if (deletedCount > 0) {
         return true;
     }
@@ -413,12 +410,10 @@ string MediaScannerDb::GetMediaTypeUri(MediaType mediaType)
 
 void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)
 {
-//    CHECK_AND_RETURN_LOG(rdbhelper_ != nullptr, "RDB helper unavailable");
-
     string notifyUri = GetMediaTypeUri(mediaType);
     Uri uri(notifyUri);
     // fix me
-    //MediaLibraryDataManager::GetInstance()->NotifyChange(uri); 
+    // MediaLibraryDataManager::GetInstance()->NotifyChange(uri);
 }
 
 unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
@@ -482,7 +477,7 @@ unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::Ab
 
 string MediaScannerDb::FormatSqlPath(const string &path)
 {
-	return "\'" + path + "\'";
+    return "\'" + path + "\'";
 }
 } // namespace Media
 } // namespace OHOS

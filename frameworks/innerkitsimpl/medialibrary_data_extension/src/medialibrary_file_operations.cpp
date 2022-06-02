@@ -299,7 +299,7 @@ int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &v
     }
     MEDIA_ERR_LOG("HandleIsDirectoryAsset id = %{private}d", id);
     if (id != 0) {
-	string tableName = MEDIALIBRARY_TABLE;
+        string tableName = MEDIALIBRARY_TABLE;
         AbsRdbPredicates mediaLibAbsPredFile(tableName);
         mediaLibAbsPredFile.EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
         queryResultSet = rdbStore->Query(mediaLibAbsPredFile, columns);

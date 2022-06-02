@@ -76,7 +76,7 @@ std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::GetInstance()
     return instance_;
 }
 
-static DataShare::DataShareExtAbility * MediaDataShareCreator (const std::unique_ptr<Runtime>& runtime) 
+static DataShare::DataShareExtAbility* MediaDataShareCreator (const std::unique_ptr<Runtime>& runtime)
 {
     MEDIA_INFO_LOG("MediaLibraryCreator::%{public}s", __func__);
     return  MediaDataShareExtAbility::Create(runtime);
@@ -485,8 +485,8 @@ shared_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
             mediaLibAbsPredAlbum.SetOrder(predicates.GetOrder());
             queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
         } else {
-	    queryResultSet = rdbStore->QuerySql("SELECT * FROM " + ABLUM_VIEW_NAME);
-	}
+            queryResultSet = rdbStore->QuerySql("SELECT * FROM " + ABLUM_VIEW_NAME);
+        }
     }
     return queryResultSet;
 }
@@ -514,7 +514,7 @@ shared_ptr<AbsSharedResultSet> QueryByViewType(TableType tabletype,
 {
     shared_ptr<AbsSharedResultSet> queryResultSet;
     if (tabletype == TYPE_ASSETSMAP_TABLE) {
-	string tableName = ASSETMAP_VIEW_NAME;
+    string tableName = ASSETMAP_VIEW_NAME;
         AbsRdbPredicates mediaLibAbsPredAlbum(tableName);
         if (!strQueryCondition.empty()) {
             mediaLibAbsPredAlbum.SetWhereClause(strQueryCondition);
@@ -523,7 +523,7 @@ shared_ptr<AbsSharedResultSet> QueryByViewType(TableType tabletype,
             queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
         } else {
             queryResultSet = rdbStore->QuerySql("SELECT * FROM " + ASSETMAP_VIEW_NAME);
-	}
+        }
     } else if (tabletype == TYPE_SMARTALBUMASSETS_TABLE) {
         AbsRdbPredicates mediaLibAbsPredAlbum(SMARTABLUMASSETS_VIEW_NAME);
         if (!strQueryCondition.empty()) {
@@ -533,7 +533,7 @@ shared_ptr<AbsSharedResultSet> QueryByViewType(TableType tabletype,
             queryResultSet = rdbStore->Query(mediaLibAbsPredAlbum, columns);
         } else {
             queryResultSet = rdbStore->QuerySql("SELECT * FROM " + SMARTABLUMASSETS_VIEW_NAME);
-	}
+        }
     }
     return queryResultSet;
 }
@@ -691,8 +691,7 @@ static void DealWithUriString(string &uriString, TableType &tabletype,
 }
 
 shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
-                                                              const vector<string> &columns,
-                                                              const DataSharePredicates &predicates)
+    const vector<string> &columns, const DataSharePredicates &predicates)
 {
     StartTrace(HITRACE_TAG_OHOS, "MediaLibraryDataManager::Query");
 
@@ -740,9 +739,8 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     return queryResultSet;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
-                                                              const vector<string> &columns,
-                                                              const DataSharePredicates &predicates)
+shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
+    const DataSharePredicates &predicates)
 {
     StartTrace(HITRACE_TAG_OHOS, "MediaLibraryDataManager::QueryRdb");
     shared_ptr<AbsSharedResultSet> queryResultSet;
@@ -1036,7 +1034,7 @@ bool MediaLibraryDataManager::QuerySync()
     deviceDataSharePredicates.SetWhereClause(strQueryCondition);
 
     auto queryResultSet = rdbStore_->Query(deviceDataSharePredicates, columns);
-    if ( queryResultSet == nullptr) {
+    if (queryResultSet == nullptr) {
         return false;
     }
 

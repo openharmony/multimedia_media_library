@@ -132,9 +132,7 @@ shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::GetDataShareHelper(napi
 
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = nullptr;
     napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode_);
-
-    if (status != napi_ok){
-
+    if (status != napi_ok) {
     } else {
         if (isStageMode_) {
             auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
@@ -145,7 +143,7 @@ shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::GetDataShareHelper(napi
             AppExecFwk::Want want;
             want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
             dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
-	}
+        }
     }
     return dataShareHelper;
 }
@@ -165,7 +163,6 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
 
     unique_ptr<MediaLibraryNapi> obj = make_unique<MediaLibraryNapi>();
     if (obj != nullptr) {
-
         obj->env_ = env;
         if (g_isNewApi) {
             // Initialize the ChangeListener object
@@ -858,10 +855,10 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
         if (albumData != nullptr) {
-             SetAlbumData(albumData.get(), resultSet, context->networkId);
-             SetAlbumCoverUri(context, albumData);
-             context->albumNativeArray.push_back(move(albumData));
-	}
+            SetAlbumData(albumData.get(), resultSet, context->networkId);
+            SetAlbumCoverUri(context, albumData);
+            context->albumNativeArray.push_back(move(albumData));
+        }
     }
     FinishTrace(HITRACE_TAG_OHOS);
 }
@@ -2156,7 +2153,7 @@ void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, Cha
         case SMARTALBUM_LISTENER:
             listObj.smartAlbumDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_SMARTALBUM);
             sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
-                                              listObj.smartAlbumDataObserver_);
+                listObj.smartAlbumDataObserver_);
             break;
         case DEVICE_LISTENER:
             listObj.deviceDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_DEVICE);
@@ -2269,7 +2266,7 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
 
             mediaType = MEDIA_TYPE_SMARTALBUM;
             sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
-                                                listObj.smartAlbumDataObserver_);
+                listObj.smartAlbumDataObserver_);
 
             delete listObj.smartAlbumDataObserver_;
             listObj.smartAlbumDataObserver_ = nullptr;
@@ -3526,7 +3523,7 @@ napi_value MediaLibraryNapi::JSGetMediaRemoteStub(napi_env env, napi_callback_in
 	}
     }
     */
-     return remoteStub;
- }
+    return remoteStub;
+}
 } // namespace Media
 } // namespace OHOS

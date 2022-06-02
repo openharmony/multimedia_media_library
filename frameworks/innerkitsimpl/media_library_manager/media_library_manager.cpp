@@ -92,11 +92,11 @@ variant<int32_t, string> GetValFromColumn(string columnName,
     resultSet->GetColumnIndex(columnName, index);
     resultSet->GetDataType(index, type);
     switch (type) {
-	    case DataShare::DataType::TYPE_STRING:
+        case DataShare::DataType::TYPE_STRING:
             resultSet->GetString(index, stringVal);
             cellValue = stringVal;
             break;
-	    case DataShare::DataType::TYPE_INTEGER:
+        case DataShare::DataType::TYPE_INTEGER:
             resultSet->GetInt(index, integerVal);
             cellValue = integerVal;
             break;
@@ -140,7 +140,6 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
     Uri uri(MEDIALIBRARY_DATA_URI);
     auto resultSet = sAbilityHelper_->Query(
         uri, predicates, columns);
-
     if (resultSet != nullptr) {
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();

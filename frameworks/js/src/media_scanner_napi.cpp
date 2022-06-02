@@ -81,14 +81,11 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
         unique_ptr<MediaScannerNapi> obj = make_unique<MediaScannerNapi>();
         if (obj != nullptr) {
             obj->env_ = env;
-
-
             obj->sDataShareHelper_ = MediaLibraryNapi::GetDataShareHelper(env, info);
             if (obj->sDataShareHelper_ == nullptr) {
                 NAPI_ERR_LOG("[MediaScannerNapiConstructor] GetDataShareHelper failed!");
                 return result;
             }
-
 
             obj->mediaScannerNapiCallbackObj_ = std::make_shared<MediaScannerNapiCallback>(env);
             if (obj->mediaScannerNapiCallbackObj_ == nullptr) {
@@ -102,7 +99,7 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
                 obj.release();
                 return thisVar;
             } else {
-                NAPI_ERR_LOG("[MediaScannerNapiConstructor] Failed to wrap the native media scanner client, status: %{private}d", status);
+                NAPI_ERR_LOG("Failed to wrap the native media scanner client, status: %{private}d", status);
             }
         }
     }

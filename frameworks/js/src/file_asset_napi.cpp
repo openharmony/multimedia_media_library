@@ -1786,7 +1786,8 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
                         valueObject.GetBool(isFavorite);
                     }
                     valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, isFavorite);
-                    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetFileId()));
+                    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " +
+                        std::to_string(context->objectInfo->GetFileId()));
                     context->objectInfo->sDataShareHelper_->Update(uri, predicates, valuesBucket);
                     context->status = true;
                     context->objectInfo->SetFavorite(isFavorite);

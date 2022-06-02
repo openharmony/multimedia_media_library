@@ -35,7 +35,6 @@ using namespace OHOS::Media;
 
 namespace OHOS {
 namespace AbilityRuntime {
-
 using namespace OHOS::AppExecFwk;
 using OHOS::Security::AccessToken::AccessTokenKit;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
@@ -99,7 +98,7 @@ sptr<IRemoteObject> MediaDataShareExtAbility::OnConnect(const AAFwk::Want &want)
 std::vector<std::string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter)
 {
     std::vector<std::string> ret;
-    return ret; 
+    return ret;
 }
 
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
@@ -130,7 +129,7 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
 }
 
 int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &predicates,
-		const DataShareValuesBucket &value)
+    const DataShareValuesBucket &value)
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
@@ -248,9 +247,7 @@ Uri MediaDataShareExtAbility::NormalizeUri(const Uri &uri)
     HILOG_INFO("%{public}s begin.", __func__);
     auto ret = uri;
     HILOG_INFO("%{public}s end.", __func__);
-
     return ret;
-    
 }
 
 Uri MediaDataShareExtAbility::DenormalizeUri(const Uri &uri)
@@ -276,6 +273,5 @@ bool MediaDataShareExtAbility::CheckCallingPermission(const std::string &permiss
     HILOG_INFO("%{public}s end.", __func__);
     return true;
 }
-
 } // namespace AbilityRuntime
 } // namespace OHOS
