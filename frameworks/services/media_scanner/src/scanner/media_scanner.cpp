@@ -36,12 +36,6 @@ MediaScannerObj::MediaScannerObj()
 MediaScannerObj::~MediaScannerObj()
 {
     mediaScannerDb_ = nullptr;
-/*
-    if (rdbhelper_ != nullptr) {
-        rdbhelper_->Release();
-        rdbhelper_ = nullptr;
-    }
-*/
 }
 
 // Get Media Scanner Instance
@@ -60,11 +54,6 @@ void MediaScannerObj::ScanQueueCB(ScanRequest scanReq)
     MediaScannerObj *scanner = MediaScannerObj::GetMediaScannerInstance();
     if (scanner != nullptr) {
         if (!scanner->isScannerInitDone_) {
-/*
-            if (scanner->InitScanner(scanner->abilityContext_)) {
-                scanner->isScannerInitDone_ = true;
-            }
-*/
             scanner->isScannerInitDone_ = true;
         }
 
@@ -89,19 +78,6 @@ void MediaScannerObj::ScanQueueCB(ScanRequest scanReq)
 
 bool MediaScannerObj::InitScanner(void)
 {
-/*
-    auto contextUri = make_unique<Uri>(MEDIALIBRARY_DATA_URI);
-    if ((context != nullptr) && (contextUri != nullptr)) {
-        AppExecFwk::Want want;
-        want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
-        rdbhelper_ = DataShareHelper::Creator(context, want, std::make_shared<Uri>(MEDIALIBRARY_DATA_URI));
-        if (rdbhelper_ != nullptr) {
-            mediaScannerDb_->SetRdbHelper(rdbhelper_);
-            return true;
-        }
-    }
-*/
-
     MEDIA_ERR_LOG("Success to initialize scanner");
     return false;
 }
@@ -691,24 +667,15 @@ int32_t MediaScannerObj::GetAvailableRequestId()
 
 void MediaScannerObj::SetAbilityContext(void)
 {
-//    abilityContext_ = context;
 }
 
 void MediaScannerObj::ReleaseAbilityHelper()
 {
-/*
-    if (rdbhelper_ != nullptr) {
-        rdbhelper_->Release();
-        rdbhelper_ = nullptr;
-        mediaScannerDb_->SetRdbHelper();
-    }
-*/
     if (mediaScannerDb_ != nullptr) {
         mediaScannerDb_->SetRdbHelper();
     }
 
     isScannerInitDone_ = false;
-//    abilityContext_ = nullptr;
 }
 
 bool MediaScannerObj::IsScannerRunning()

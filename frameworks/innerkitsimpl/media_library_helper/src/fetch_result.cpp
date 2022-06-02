@@ -223,7 +223,8 @@ unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResu
 
     fileAsset->SetDisplayName(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_NAME, TYPE_STRING, resultSet)));
 
-    fileAsset->SetRelativePath(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_RELATIVE_PATH, TYPE_STRING, resultSet)));
+    fileAsset->SetRelativePath(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_RELATIVE_PATH,
+        TYPE_STRING, resultSet)));
 
     fileAsset->SetParent(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_PARENT_ID, TYPE_INT32, resultSet)));
 
@@ -231,7 +232,8 @@ unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResu
 
     fileAsset->SetDateAdded(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64, resultSet)));
 
-    fileAsset->SetDateModified(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_MODIFIED, TYPE_INT64, resultSet)));
+    fileAsset->SetDateModified(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_MODIFIED,
+        TYPE_INT64, resultSet)));
 
     fileAsset->SetDateTaken(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64, resultSet)));
 

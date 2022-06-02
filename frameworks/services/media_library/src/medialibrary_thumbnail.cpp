@@ -286,9 +286,8 @@ unique_ptr<PixelMap> MediaLibraryThumbnail::GetThumbnailByRdb(ThumbRdbOpt &opts,
                                                               Size &size, const std::string &uri)
 {
     int errorCode = E_OK;
-    //shared_ptr<AbsSharedResultSet> resultSet = GetThumbnailKey(opts, size);
+    // rdbData isnot available, if use this func, please implement it first
     ThumbnailRdbData rdbData;
-    //ParseQueryResult(resultSet, rdbData, errorCode);
 
     if (errorCode != E_OK) {
         MEDIA_ERR_LOG("Failed GetThumbnailKey errorCode : %{public}d", errorCode);

@@ -43,7 +43,6 @@ const string FILE_URI_PREX = "file://";
 
 const string THUMBNAIL_FORMAT = "image/jpeg";
 static constexpr uint8_t THUMBNAIL_QUALITY = 80;
-//static constexpr uint32_t THUMBNAIL_QUERY_MAX = 1000;
 static constexpr int64_t AV_FRAME_TIME = 0;
 
 static constexpr uint8_t NUM_0 = 0;
@@ -273,10 +272,9 @@ shared_ptr<ResultSetBridge> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &
 unique_ptr<PixelMap> MediaLibraryThumbnail::GetThumbnailByRdb(ThumbRdbOpt &opts,
                                                               Size &size, const std::string &uri)
 {
+    // rdbData havent be obtained, if use this func,please implement it first
     int errorCode = NativeRdb::E_OK;
-    //auto resultSet = GetThumbnailKey(opts, size);
     ThumbnailRdbData rdbData;
-    //ParseQueryResult(resultSet, rdbData, errorCode);
 
     if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed GetThumbnailKey errorCode : %{private}d", errorCode);
@@ -560,7 +558,7 @@ shared_ptr<ResultSetBridge> MediaLibraryThumbnail::QueryThumbnailSet(ThumbRdbOpt
 }
 
 shared_ptr<ResultSetBridge> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOpt &opts,
-                                                                         ThumbnailData &data, int &errorCode)
+    ThumbnailData &data, int &errorCode)
 {
     StartTrace(HITRACE_TAG_OHOS, "QueryThumbnailInfo");
 
@@ -640,7 +638,6 @@ bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
     };
     AbsRdbPredicates rdbPredicates(opts.table);
     rdbPredicates.IsNull(MEDIA_DATA_DB_THUMBNAIL);
-    //rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
 
     shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     int rowCount = 0;
@@ -651,7 +648,6 @@ bool MediaLibraryThumbnail::QueryThumbnailInfos(ThumbRdbOpt &opts,
     }
 
     if (rowCount <= 0) {
-        //MEDIA_ERR_LOG("No match! %{private}s", rdbPredicates.ToString().c_str());
         errorCode = NativeRdb::E_EMPTY_VALUES_BUCKET;
         return false;
     }
