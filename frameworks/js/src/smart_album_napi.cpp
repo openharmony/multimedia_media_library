@@ -25,7 +25,7 @@ namespace Media {
 using namespace std;
 thread_local napi_ref SmartAlbumNapi::sConstructor_ = nullptr;
 thread_local SmartAlbumAsset *SmartAlbumNapi::sAlbumData_ = nullptr;
-std::shared_ptr<AppExecFwk::DataAbilityHelper> SmartAlbumNapi::sAbilityHelper = nullptr;
+std::shared_ptr<DataShare::DataShareHelper> SmartAlbumNapi::sMediaDataHelper = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
 SmartAlbumNapi::SmartAlbumNapi()
@@ -123,7 +123,7 @@ napi_value SmartAlbumNapi::SmartAlbumNapiConstructor(napi_env env, napi_callback
         std::unique_ptr<SmartAlbumNapi> obj = std::make_unique<SmartAlbumNapi>();
         if (obj != nullptr) {
             obj->env_ = env;
-            obj->abilityHelper_ = sAbilityHelper;
+            obj->abilityHelper_ = sMediaDataHelper;
             if (sAlbumData_ != nullptr) {
                 obj->SetSmartAlbumNapiProperties(*sAlbumData_);
             }
@@ -142,7 +142,7 @@ napi_value SmartAlbumNapi::SmartAlbumNapiConstructor(napi_env env, napi_callback
 }
 
 napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, SmartAlbumAsset &albumData,
-    std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper)
+    std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -150,7 +150,7 @@ napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, SmartAlbumAsset &a
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (status == napi_ok) {
         sAlbumData_ = &albumData;
-        sAbilityHelper = abilityHelper;
+        sMediaDataHelper = abilityHelper;
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         sAlbumData_ = nullptr;
         if (status == napi_ok && result != nullptr) {
@@ -164,7 +164,7 @@ napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, SmartAlbumAsset &a
     return result;
 }
 
-std::shared_ptr<AppExecFwk::DataAbilityHelper> SmartAlbumNapi::GetDataAbilityHelper() const
+std::shared_ptr<DataShare::DataShareHelper> SmartAlbumNapi::GetMediaDataHelper() const
 {
     return abilityHelper_;
 }
@@ -439,16 +439,16 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
 {
     SmartAlbumNapiAsyncContext *context = const_cast<SmartAlbumNapiAsyncContext *>(&albumContext);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
-    NativeRdb::ValuesBucket valuesBucket;
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
     int32_t changedRows;
     NAPI_DEBUG_LOG("CommitModifyNative = %{private}s", context->objectInfo->GetSmartAlbumName().c_str());
     if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName())) {
         valuesBucket.PutString(SMARTALBUM_DB_NAME, context->objectInfo->GetSmartAlbumName());
-        predicates.EqualTo(SMARTALBUM_DB_ID, std::to_string(context->objectInfo->GetSmartAlbumId()));
+        predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectInfo->GetSmartAlbumId()));
         Uri CommitModifyuri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMOPRN +
                             "/" + MEDIA_SMARTALBUMOPRN_MODIFYALBUM);
-        changedRows = context->objectInfo->GetDataAbilityHelper()->Update(CommitModifyuri, valuesBucket, predicates);
+        changedRows = context->objectInfo->GetMediaDataHelper()->Update(CommitModifyuri, predicates, valuesBucket);
     } else {
         changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;
     }
@@ -459,19 +459,19 @@ static void SetFileFav(bool isFavourite, SmartAlbumNapiAsyncContext *context)
     NAPI_DEBUG_LOG("SetFileFav IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     string abilityUri = MEDIALIBRARY_DATA_URI;
-    NativeRdb::ValuesBucket values;
+    DataShare::DataShareValuesBucket values;
     int32_t changedRows;
     values.PutBool(MEDIA_DATA_DB_IS_FAV, isFavourite);
     Uri uri(abilityUri);
-    NativeRdb::ValueObject valueObject;
+    DataShare::DataShareValueObject valueObject;
     int32_t fileId = 0;
     context->valuesBucket.GetObject(SMARTALBUMMAP_DB_ASSET_ID, valueObject);
     valueObject.GetInt(fileId);
 
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
 
-    predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(fileId));
-    changedRows = context->objectInfo->GetDataAbilityHelper()->Update(uri, values, predicates);
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(fileId));
+    changedRows = context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, values);
     context->changedRows = changedRows;
     NAPI_DEBUG_LOG("SetFileFav OUT  = %{public}d", changedRows);
 }
@@ -481,7 +481,7 @@ static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
     NAPI_DEBUG_LOG("SetFileTrash IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     string abilityUri = MEDIALIBRARY_DATA_URI;
-    NativeRdb::ValuesBucket values;
+    DataShare::DataShareValuesBucket values;
     int32_t changedRows;
     if (isTrash) {
         int64_t timeNow = MediaFileUtils::UTCTimeSeconds();
@@ -491,15 +491,15 @@ static void SetFileTrash(bool isTrash, SmartAlbumNapiAsyncContext *context)
     }
 
     Uri uri(abilityUri);
-    NativeRdb::ValueObject valueObject;
+    DataShare::DataShareValueObject valueObject;
     int32_t fileId = 0;
     context->valuesBucket.GetObject(SMARTALBUMMAP_DB_ASSET_ID, valueObject);
     valueObject.GetInt(fileId);
 
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
 
-    predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(fileId));
-    changedRows = context->objectInfo->GetDataAbilityHelper()->Update(uri, values, predicates);
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(fileId));
+    changedRows = context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, values);
     context->changedRows = changedRows;
     NAPI_DEBUG_LOG("SetFileTrash OUT  = %{public}d", changedRows);
 }
@@ -512,7 +512,7 @@ static void AddAssetNative(SmartAlbumNapiAsyncContext *context)
     Uri AddAsseturi(MEDIALIBRARY_DATA_URI + "/"
     + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
     changedRows =
-        context->objectInfo->GetDataAbilityHelper()->Insert(AddAsseturi, context->valuesBucket);
+        context->objectInfo->GetMediaDataHelper()->Insert(AddAsseturi, context->valuesBucket);
     context->changedRows = changedRows;
 }
 static void RemoveAssetNative(SmartAlbumNapiAsyncContext *context)
@@ -523,7 +523,7 @@ static void RemoveAssetNative(SmartAlbumNapiAsyncContext *context)
     Uri RemoveAsseturi(MEDIALIBRARY_DATA_URI + "/"
     + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
     changedRows =
-        context->objectInfo->GetDataAbilityHelper()->Insert(RemoveAsseturi, context->valuesBucket);
+        context->objectInfo->GetMediaDataHelper()->Insert(RemoveAsseturi, context->valuesBucket);
     context->changedRows = changedRows;
 }
 static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, SmartAlbumNapiAsyncContext *context)
@@ -551,13 +551,13 @@ static void UpdateAlbumCapacity(SmartAlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     vector<string> columns;
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     Uri uri(MEDIALIBRARY_DATA_URI + "/"
         + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
         + SMARTABLUMASSETS_VIEW_NAME);
-    predicates.EqualTo(SMARTALBUM_DB_ID, std::to_string(context->objectInfo->GetSmartAlbumId()));
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->GetDataAbilityHelper()->Query(uri,
-        columns, predicates);
+    predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectInfo->GetSmartAlbumId()));
+    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->GetMediaDataHelper()->Query(uri,
+        predicates, columns);
     int32_t albumCapacityIndex = 0, albumCapacity = 1;
     resultSet->GetColumnIndex(SMARTABLUMASSETS_ALBUMCAPACITY, albumCapacityIndex);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -891,7 +891,7 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
 static void GetTrashFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " <> ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
     context->selectionArgs.insert(context->selectionArgs.begin(), std::to_string(MEDIA_TYPE_ALBUM));
@@ -902,8 +902,8 @@ static void GetTrashFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 
     std::vector<std::string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
-    std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
-        context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
+        context->objectInfo->GetMediaDataHelper()->Query(uri, predicates, columns);
 
     context->fetchResult = std::make_unique<FetchResult>(resultSet);
 }
@@ -911,7 +911,7 @@ static void GetTrashFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 static void GetFavFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? AND " + MEDIA_DATA_DB_IS_FAV + " = ? AND "
         + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
@@ -924,8 +924,8 @@ static void GetFavFileAssetsNative(SmartAlbumNapiAsyncContext *context)
     std::vector<std::string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
 
-    std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
-        context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
+        context->objectInfo->GetMediaDataHelper()->Query(uri, predicates, columns);
 
     context->fetchResult = std::make_unique<FetchResult>(resultSet);
 }
@@ -933,7 +933,7 @@ static void GetFavFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 static void GetFileAssetsNative(SmartAlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? AND " + SMARTALBUMMAP_DB_ALBUM_ID + " = ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
     context->selectionArgs.insert(context->selectionArgs.begin(),
@@ -947,8 +947,8 @@ static void GetFileAssetsNative(SmartAlbumNapiAsyncContext *context)
                + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
                + ASSETMAP_VIEW_NAME);
 
-    std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
-        context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
+        context->objectInfo->GetMediaDataHelper()->Query(uri, predicates, columns);
 
     context->fetchResult = std::make_unique<FetchResult>(move(resultSet));
 }
@@ -965,7 +965,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status,
 
     if (context->fetchResult != nullptr) {
         fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult),
-                                                              context->objectInfo->sAbilityHelper);
+                                                              context->objectInfo->sMediaDataHelper);
         if (fetchRes == nullptr) {
             NAPI_ERR_LOG("Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);

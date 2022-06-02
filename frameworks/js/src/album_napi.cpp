@@ -25,7 +25,7 @@ namespace Media {
 using namespace std;
 thread_local napi_ref AlbumNapi::sConstructor_ = nullptr;
 thread_local AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
-std::shared_ptr<AppExecFwk::DataAbilityHelper> AlbumNapi::sAbilityHelper = nullptr;
+std::shared_ptr<DataShare::DataShareHelper> AlbumNapi::sMediaDataHelper = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
 AlbumNapi::AlbumNapi()
@@ -123,7 +123,7 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
         std::unique_ptr<AlbumNapi> obj = std::make_unique<AlbumNapi>();
         if (obj != nullptr) {
             obj->env_ = env;
-            obj->abilityHelper_ = sAbilityHelper;
+            obj->abilityHelper_ = sMediaDataHelper;
             if (sAlbumData_ != nullptr) {
                 obj->SetAlbumNapiProperties(*sAlbumData_);
             }
@@ -143,7 +143,7 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
 }
 
 napi_value AlbumNapi::CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
-    std::shared_ptr<AppExecFwk::DataAbilityHelper> abilityHelper)
+    std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -152,7 +152,7 @@ napi_value AlbumNapi::CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (status == napi_ok) {
         sAlbumData_ = &albumData;
-        sAbilityHelper = abilityHelper;
+        sMediaDataHelper = abilityHelper;
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         sAlbumData_ = nullptr;
         if (status == napi_ok && result != nullptr) {
@@ -166,7 +166,7 @@ napi_value AlbumNapi::CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
     return result;
 }
 
-std::shared_ptr<AppExecFwk::DataAbilityHelper> AlbumNapi::GetDataAbilityHelper() const
+std::shared_ptr<DataShare::DataShareHelper> AlbumNapi::GetMediaDataHelper() const
 {
     return abilityHelper_;
 }
@@ -631,7 +631,7 @@ static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const n
 static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     string idPrefix = MEDIA_DATA_DB_BUCKET_ID + " = ? ";
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, idPrefix);
     context->selectionArgs.insert(context->selectionArgs.begin(), std::to_string(context->objectInfo->GetAlbumId()));
@@ -650,8 +650,8 @@ static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
         context->objectInfo->GetNetworkId() + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     NAPI_DEBUG_LOG("queryUri is = %{private}s", queryUri.c_str());
     Uri uri(queryUri);
-    std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultSet =
-        context->objectInfo->GetDataAbilityHelper()->Query(uri, columns, predicates);
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
+        context->objectInfo->GetMediaDataHelper()->Query(uri, predicates, columns);
     context->fetchResult = std::make_unique<FetchResult>(move(resultSet));
     context->fetchResult->networkId_ = context->objectInfo->GetNetworkId();
 }
@@ -665,7 +665,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
     jsContext->status = false;
     if (context->fetchResult != nullptr) {
         napi_value fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult),
-                                                                         context->objectInfo->GetDataAbilityHelper());
+                                                                         context->objectInfo->GetMediaDataHelper());
         if (context->fetchResult->GetCount() < 0) {
             napi_get_undefined(env, &jsContext->data);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
@@ -696,27 +696,28 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
 static void CommitModifyNative(AlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    NativeRdb::DataAbilityPredicates predicates;
-    NativeRdb::ValuesBucket valuesBucket;
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
     int32_t changedRows;
     context->selection += " AND ";
     if (MediaFileUtils::CheckTitle(context->objectInfo->GetAlbumName())) {
         valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
-        predicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(context->objectInfo->GetAlbumId()));
+        predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetAlbumId()));
         valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
         Uri uri(MEDIALIBRARY_DATA_URI);
         changedRows =
-            context->objectInfo->GetDataAbilityHelper()->Update(uri, valuesBucket, predicates);
+            context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, valuesBucket);
         if (changedRows > 0) {
-            NativeRdb::DataAbilityPredicates filePredicates;
-            NativeRdb::ValuesBucket fileValuesBucket;
+            DataShare::DataSharePredicates filePredicates;
+            DataShare::DataShareValuesBucket fileValuesBucket;
             fileValuesBucket.PutString(MEDIA_DATA_DB_BUCKET_NAME, context->objectInfo->GetAlbumName());
-            filePredicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(context->objectInfo->GetAlbumId()));
+            filePredicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = " +
+                std::to_string(context->objectInfo->GetAlbumId()));
             fileValuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
                 MediaFileUtils::UTCTimeSeconds());
             Uri fileUuri(MEDIALIBRARY_DATA_URI);
             changedRows =
-                context->objectInfo->GetDataAbilityHelper()->Update(fileUuri, fileValuesBucket, filePredicates);
+                context->objectInfo->GetMediaDataHelper()->Update(fileUuri, filePredicates, fileValuesBucket);
         }
     } else {
         changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;
@@ -734,7 +735,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Alb
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
         auto contextUri = make_unique<Uri>(MEDIALIBRARY_ALBUM_URI);
-        context->objectInfo->GetDataAbilityHelper()->NotifyChange(*contextUri);
+        context->objectInfo->GetMediaDataHelper()->NotifyChange(*contextUri);
     } else {
         napi_get_undefined(env, &jsContext->data);
         if (context->changedRows == DATA_ABILITY_VIOLATION_PARAMETERS) {

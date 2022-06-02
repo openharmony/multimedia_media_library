@@ -22,6 +22,7 @@
 #include "media_lib_service_const.h"
 #include "media_data_ability_const.h"
 #include "rdb_errno.h"
+#include "datashare_result_set.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,7 +40,7 @@ enum ResultSetDataType {
  */
 class FetchResult {
 public:
-    explicit FetchResult(const std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet>& resultset);
+    explicit FetchResult(const std::shared_ptr<DataShare::DataShareResultSet>& resultset);
     FetchResult();
     virtual ~FetchResult();
 
@@ -50,6 +51,7 @@ public:
     bool IsAtLastRow();
     std::unique_ptr<FileAsset> GetObjectAtPosition(int32_t index);
     std::unique_ptr<FileAsset> GetFirstObject();
+    std::unique_ptr<FileAsset> GetObjectFromRdb(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, int idx);
     std::unique_ptr<FileAsset> GetNextObject();
     std::unique_ptr<FileAsset> GetLastObject();
     std::unique_ptr<FileAsset> GetObject();
@@ -58,11 +60,12 @@ public:
     bool isClosed_;
     int32_t count_;
     std::string networkId_;
-    std::shared_ptr<OHOS::NativeRdb::AbsSharedResultSet> resultset_ = nullptr;
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultset_ = nullptr;
 
 private:
+    std::unique_ptr<FileAsset> GetObject(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     std::variant<int32_t, int64_t, std::string> GetRowValFromColumnn(std::string columnName,
-                                                                     ResultSetDataType dataType);
+        ResultSetDataType dataType, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
 };
 } // namespace Media
 } // namespace OHOS

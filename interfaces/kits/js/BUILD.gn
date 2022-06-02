@@ -76,6 +76,7 @@ ohos_shared_library("medialibrary") {
     "//drivers/peripheral/base",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native",
     "//foundation/multimedia/medialibrary_standard/interfaces/kits/js/include",
+    "//foundation/multimedia/medialibrary_standard/medialibrary_data_extension/include",
     "//third_party/node/src",
     "//foundation/arkui/napi/interfaces/kits",
     "//foundation/multimedia/medialibrary_standard/interfaces/innerkits/native/include",
@@ -86,6 +87,11 @@ ohos_shared_library("medialibrary") {
     "//foundation/multimedia/image_standard/interfaces/innerkits/include",
     "//foundation/multimedia/image_standard/interfaces/kits/js/common/include",
     "//foundation/distributedhardware/devicemanager/interfaces/inner_kits/native_cpp/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
+    "//foundation/distributeddatamgr/appdatamgr/framework/native/data_share/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/framework/native/data_share/provider/include",
   ]
 
   sources = [
@@ -112,10 +118,11 @@ ohos_shared_library("medialibrary") {
     "${aafwk_kits_path}/ability/native:abilitykit_native",
     "${aafwk_kits_path}/appkit:appkit_native",
     "//foundation/arkui/napi:ace_napi",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native:media_client",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
-    "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/client:media_scanner_client",
+    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
     "//utils/native/base:utils",
   ]
 
@@ -124,9 +131,12 @@ ohos_shared_library("medialibrary") {
     "ability_base:zuri",
     "ability_runtime:ability_manager",
     "ability_runtime:napi_base_context",
+    "data_share:datashare_common",
     "dataability:native_dataability",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+    "ipc_js:rpc",
     "permission_standard:libpermissionsdk_standard",
     "relational_store:native_appdatafwk",
     "relational_store:native_rdb",
