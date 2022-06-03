@@ -178,7 +178,20 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 {
     int32_t deletedCount(0);
     DataShare::DataSharePredicates predicates;
-    predicates.In(MEDIA_DATA_DB_ID, idList);
+
+    if (idList.size() == 0) {
+        MEDIA_ERR_LOG("to-deleted idList size equals to 0");
+        return false;
+    }
+
+    std::string builder = "IN (?";
+    for (std::size_t i = 0; i < idList.size() - 1; i++) {
+        builder += ",?";
+    }
+    builder += ")";
+
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + builder);
+    predicates.SetWhereArgs(idList);
 
     Uri deleteUri(MEDIALIBRARY_DATA_URI);
 
@@ -235,9 +248,9 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
 
     DataShare::DataSharePredicates predicates;
     // Append % to end of the path for using LIKE statement
-    auto modifiedPath = path;
-    modifiedPath = modifiedPath.back() != '/' ? modifiedPath + "/%" : modifiedPath + "%";
-    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " like " + FormatSqlPath(modifiedPath));
+    vector<string> args= { path.back() != '/' ? path + "/%" : path + "%" };
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " like ?");
+    predicates.SetWhereArgs(args);
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
     auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates);
@@ -331,9 +344,11 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
 void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap)
 {
     DataShare::DataSharePredicates predicates;
-    int32_t mediaType = static_cast<int>(MediaType::MEDIA_TYPE_ALBUM);
-    predicates.Contains(MEDIA_DATA_DB_FILE_PATH, path);
-    predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(mediaType));
+    string queryCmd = MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND " + MEDIA_DATA_DB_FILE_PATH + " like ? ";
+    string queryPath = path.back() != '/' ? path + "/%" : path + "%";
+    vector<string> args= { to_string(MediaType::MEDIA_TYPE_ALBUM), queryPath };
+    predicates.SetWhereClause(queryCmd);
+    predicates.SetWhereArgs(args);
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_DATE_MODIFIED};
