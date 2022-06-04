@@ -1,0 +1,180 @@
+# Copyright (C) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
+
+MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
+MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
+MEDIA_SCANNER_SOURCE_DIR =
+    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_scanner"
+
+config("media_data_extension_public_config") {
+  include_scanner = [
+    "${MEDIA_SCANNER_SOURCE_DIR}/include/callback",
+    "${MEDIA_SCANNER_SOURCE_DIR}/include/scanner",
+  ]
+
+  include_dirs = [
+    "$MEDIA_LIB_INNERKITS_DIR/medialibrary_data_extension/include",
+    "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
+    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
+    "$MEDIA_LIB_BASE_DIR/interfaces/inner_api/media_library_helper/include",
+    "${aafwk_inner_api_path}/ability_manager/include",
+    "${aafwk_kits_path}/ability/native/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/consumer/include",
+    "${aafwk_inner_api_path}/dataobs_manager/include",
+    "${aafwk_services_path}/common/include",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
+    "${aafwk_inner_api_path}/app_manager/include/appmgr",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/appmgr",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
+    "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/innerkits/native_rdb/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb_data_share_adapter/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/innerkitsimpl/native_rdb/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb_data_share_adapter/include/",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/innerkitsimpl/native_appdatafwk/include",
+    "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
+    "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler/include",
+    "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
+    "//foundation/communication/dsoftbus/interfaces/kits/bus_center",
+    "//foundation/communication/dsoftbus/interfaces/kits/common",
+    "//foundation/distributedschedule/safwk/services/safwk/include",
+    "//foundation/distributedhardware/devicemanager/interfaces/inner_kits/native_cpp/include",
+    "//foundation/multimedia/media_standard/interfaces/inner_api/native",
+    "//utils/native/base/include",
+    "//utils/system/safwk/native/include",
+    "//third_party/json/include",
+  ]
+  include_dirs += [ "//third_party/openssl/include/" ]
+  include_dirs += include_scanner
+
+  if (target_cpu == "arm") {
+    cflags = [ "-DBINDER_IPC_32BIT" ]
+  }
+}
+
+ohos_hap("medialibrary_ext_hap") {
+  hap_profile = "MediaLibraryExt/entry/src/main/module.json"
+  deps = [
+    ":MediaLibStage_js_assets",
+    ":MediaLibStage_resources",
+  ]
+  shared_libraries = [ "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension" ]
+  certificate_profile = "$MEDIA_LIB_INNERKITS_DIR/signature/medialib.p7b"
+  hap_name = "Media_Library_Ext"
+  part_name = "prebuilt_hap"
+  subsystem_name = "applications"
+  module_install_dir = "app/com.ohos.medialibrary.MediaLibraryData"
+}
+
+ohos_js_assets("MediaLibStage_js_assets") {
+  hap_profile = "MediaLibraryExt/entry/src/main/module.json"
+  ets2abc = true
+  source_dir = "MediaLibraryExt/entry/src/main/ets"
+}
+
+ohos_app_scope("MediaLibStage_app_profile") {
+  app_profile = "MediaLibraryExt/AppScope/app.json"
+  sources = [ "MediaLibraryExt/AppScope/resources" ]
+}
+
+ohos_resources("MediaLibStage_resources") {
+  sources = [ "MediaLibraryExt/entry/src/main/resources" ]
+  deps = [ ":MediaLibStage_app_profile" ]
+  hap_profile = "MediaLibraryExt/entry/src/main/module.json"
+}
+
+ohos_shared_library("medialibrary_data_extension") {
+  install_enable = true
+
+  media_scan_source = [
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/callback/media_scanner_operation_callback_proxy.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/callback/media_scanner_operation_callback_stub.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scan_executor.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scanner.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scanner_db.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/metadata.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/metadata_extractor.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/scanner_utils.cpp",
+  ]
+
+  sources = [
+    "src/media_datashare_ext_ability.cpp",
+    "src/media_datashare_stub_impl.cpp",
+    "src/medialibrary_album_db.cpp",
+    "src/medialibrary_album_operations.cpp",
+    "src/medialibrary_data_manager.cpp",
+    "src/medialibrary_data_manager_utils.cpp",
+    "src/medialibrary_device.cpp",
+    "src/medialibrary_device_db.cpp",
+    "src/medialibrary_device_operations.cpp",
+    "src/medialibrary_file_db.cpp",
+    "src/medialibrary_file_operations.cpp",
+    "src/medialibrary_kvstore_operations.cpp",
+    "src/medialibrary_query_db.cpp",
+    "src/medialibrary_query_operations.cpp",
+    "src/medialibrary_smartalbum_db.cpp",
+    "src/medialibrary_smartalbum_map_db.cpp",
+    "src/medialibrary_smartalbum_map_operations.cpp",
+    "src/medialibrary_smartalbum_operations.cpp",
+    "src/medialibrary_sync_table.cpp",
+    "src/medialibrary_thumbnail.cpp",
+    "src/uri_helper.cpp",
+  ]
+  sources += media_scan_source
+
+  public_configs = [ ":media_data_extension_public_config" ]
+
+  deps = [
+    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
+    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_thumbnail_helper",
+    "${aafwk_inner_api_path}/dataobs_manager:dataobs_manager",
+    "${aafwk_inner_api_path}/runtime:runtime",
+    "${aafwk_kits_path}/ability/native:abilitykit_native",
+    "${aafwk_services_path}/abilitymgr:abilityms",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_ext_ability_module",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_ext_ability_module",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb_data_share_adapter:rdb_data_share_adapter",
+    "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
+    "//foundation/distributedhardware/devicemanager/interfaces/inner_kits/native_cpp:devicemanagersdk",
+    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
+    "//utils/native/base:utils",
+  ]
+  deps += [ "//third_party/openssl:libcrypto_static" ]
+
+  external_deps = [
+    "ability_base:want",
+    "ability_base:zuri",
+    "access_token:libaccesstoken_sdk",
+    "data_share:datashare_common",
+    "dataability:native_dataability",
+    "eventhandler:libeventhandler",
+    "hitrace_native:hitrace_meter",
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+    "multimedia_media_standard:media_client",
+    "relational_store:native_appdatafwk",
+    "relational_store:native_rdb",
+    "samgr_standard:samgr_proxy",
+  ]
+
+  subsystem_name = "multimedia"
+  part_name = "multimedia_media_library_standard"
+}

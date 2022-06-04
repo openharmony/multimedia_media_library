@@ -31,6 +31,12 @@ config("media_library_config") {
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/appdatafwk/include",
+    "${aafwk_kits_path}/ability/native/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/provider/include",
   ]
 
   cflags = [
@@ -62,6 +68,8 @@ ohos_shared_library("media_library") {
 
   deps = [
     ":media_library_source",
+    "${aafwk_kits_path}/ability/native:abilitykit_native",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//utils/native/base:utils",
   ]
 
@@ -105,9 +113,15 @@ ohos_static_library("media_thumbnail_helper") {
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
+    "${aafwk_kits_path}/ability/native/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
     "//utils/native/base/include",
   ]
   deps = [
+    "${aafwk_kits_path}/ability/native:abilitykit_native",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//utils/native/base:utils",
