@@ -249,6 +249,9 @@ bool MediaFileUtils::RenameDir(const string &oldPath, const string &newPath)
 
     if (IsDirectory(oldPath)) {
         errRet = (rename(oldPath.c_str(), newPath.c_str()) == SUCCESS);
+        if (!errRet) {
+            MEDIA_ERR_LOG("Failed RenameDir errno %{public}d", errno);
+        }
     }
 
     return errRet;

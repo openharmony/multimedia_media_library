@@ -321,6 +321,26 @@ void FileAsset::SetSelfId(const string &selfId)
     selfId_ = selfId;
 }
 
+int32_t FileAsset::GetIsTrash() const
+{
+    return isTrash_;
+}
+
+void FileAsset::SetIsTrash(int32_t isTrash)
+{
+    isTrash_ = isTrash;
+}
+
+const string &FileAsset::GetRecyclePath() const
+{
+    return recyclePath_;
+}
+
+void FileAsset::SetRecyclePath(const string &recyclePath)
+{
+    recyclePath_ = recyclePath;
+}
+
 int32_t FileAsset::CreateAsset(const string &filePath)
 {
     MEDIA_ERR_LOG("CreateAsset in");
@@ -366,8 +386,10 @@ int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
         MediaFileUtils::IsFileExists(oldPath) &&
         !MediaFileUtils::IsFileExists(newPath)) {
         errRet = rename(oldPath.c_str(), newPath.c_str());
+        if (errRet < 0) {
+            MEDIA_ERR_LOG("Failed ModifyAsset errno %{public}d", errno);
+        }
     }
-
     return errRet;
 }
 

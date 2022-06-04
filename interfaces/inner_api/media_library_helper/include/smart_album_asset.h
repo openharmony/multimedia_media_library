@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "media_lib_service_const.h"
 namespace OHOS {
 namespace Media {
 using namespace std;
@@ -41,7 +42,7 @@ public:
     void SetCategoryId(const int32_t categoryId);
     void SetCategoryName(const string categoryName);
     void SetCoverUri(const string coverUri);
-    void SetAlbumPrivateType(const int32_t albumPrivateType);
+    void SetAlbumPrivateType(const PrivateAlbumType albumPrivateType);
 
     int32_t GetAlbumId() const;
     string GetAlbumName() const;
@@ -51,14 +52,14 @@ public:
     int32_t GetCategoryId() const;
     string GetCategoryName() const;
     string GetCoverUri() const;
-    int32_t GetAlbumPrivateType() const;
+    PrivateAlbumType GetAlbumPrivateType() const;
 
 private:
     int32_t albumId_;
     std::string albumName_;
     string albumUri_;
     string albumTag_;
-    int32_t albumPrivateType_;
+    PrivateAlbumType albumPrivateType_;
     int32_t albumCapacity_;
     int32_t categoryId_;
     string categoryName_;
