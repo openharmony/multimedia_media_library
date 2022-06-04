@@ -22,7 +22,7 @@
 
 #include "context.h"
 #include "mediadata_connection.h"
-#include "foundation/aafwk/standard/frameworks/kits/appkit/native/ability_runtime/context/context.h"
+#include "foundation/ability/ability_runtime/frameworks/kits/appkit/native/ability_runtime/context/context.h"
 #include "imediadata.h"
 #include "uri.h"
 #include "want.h"

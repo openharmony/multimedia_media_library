@@ -13,6 +13,7 @@
 
 import("//build/test.gni")
 import("//foundation/multimedia/medialibrary_standard/media_library.gni")
+import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
 
 group("unittest") {
   testonly = true
@@ -31,12 +32,9 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "//base/security/access_token/frameworks/common/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
-    "//foundation/aafwk/standard/interfaces/innerkits/uri/include",
-    "//foundation/aafwk/standard/interfaces/innerkits/want/include",
-    "//foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk/content",
-    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager/include",
-    "//foundation/aafwk/standard/interfaces/innerkits/app_manager/include/appmgr",
-    "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
+    "${aafwk_inner_api_path}/ability_manager/include",
+    "${aafwk_inner_api_path}/app_manager/include/appmgr",
+    "${aafwk_kits_path}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/common/include/",
@@ -59,11 +57,11 @@ ohos_unittest("medialibrary_statistic_unittest") {
   ]
 
   deps = [
+    "${aafwk_inner_api_path}/ability_manager:ability_manager",
+    "${aafwk_kits_path}/ability/native:abilitykit_native",
     "//base/security/access_token/interfaces/innerkits/accesstoken:libaccesstoken_sdk",
     "//base/security/access_token/interfaces/innerkits/nativetoken:libnativetoken",
     "//base/security/access_token/interfaces/innerkits/token_setproc:libtoken_setproc",
-    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
-    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager:ability_manager",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
     "//foundation/multimedia/medialibrary_standard/frameworks/services/media_library:medialibrary_data_ability",
@@ -76,7 +74,7 @@ ohos_unittest("medialibrary_statistic_unittest") {
   ]
 
   external_deps = [
-    "ability_base:zuri",
+    "ability_base:want",
     "ability_base:zuri",
     "dataability:native_dataability",
     "hiviewdfx_hilog_native:libhilog",

@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
 
 MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
 MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
@@ -29,17 +30,15 @@ config("media_data_extension_public_config") {
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/inner_api/media_library_helper/include",
-    "//foundation/aafwk/standard/interfaces/innerkits/want/include",
-    "//foundation/aafwk/standard/interfaces/innerkits/want/include/ohos/aafwk/content",
-    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager/include",
-    "//foundation/aafwk/standard/frameworks/kits/ability/native/include",
+    "${aafwk_inner_api_path}/ability_manager/include",
+    "${aafwk_kits_path}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/provider/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/common/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/consumer/include",
-    "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager/include",
-    "//foundation/aafwk/standard/services/common/include",
+    "${aafwk_inner_api_path}/dataobs_manager/include",
+    "${aafwk_services_path}/common/include",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
-    "//foundation/aafwk/standard/interfaces/innerkits/app_manager/include/appmgr",
+    "${aafwk_inner_api_path}/app_manager/include/appmgr",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/appmgr",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
@@ -146,10 +145,10 @@ ohos_shared_library("medialibrary_data_extension") {
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_thumbnail_helper",
-    "//foundation/aafwk/standard/frameworks/kits/ability/native:abilitykit_native",
-    "//foundation/aafwk/standard/interfaces/innerkits/dataobs_manager:dataobs_manager",
-    "//foundation/aafwk/standard/interfaces/innerkits/runtime:runtime",
-    "//foundation/aafwk/standard/services/abilitymgr:abilityms",
+    "${aafwk_inner_api_path}/dataobs_manager:dataobs_manager",
+    "${aafwk_inner_api_path}/runtime:runtime",
+    "${aafwk_kits_path}/ability/native:abilitykit_native",
+    "${aafwk_services_path}/abilitymgr:abilityms",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_ext_ability_module",
