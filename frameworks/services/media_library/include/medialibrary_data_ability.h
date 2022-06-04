@@ -82,6 +82,9 @@ namespace Media {
             const NativeRdb::DataAbilityPredicates &predicates) override;
         EXPORT int32_t OpenFile(const Uri &uri, const std::string &mode) override;
         EXPORT std::string GetType(const Uri &uri) override;
+
+        std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+
     protected:
         void OnStart(const AAFwk::Want &want) override;
         void OnStop() override;
@@ -128,7 +131,6 @@ namespace Media {
         std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
         DistributedKv::DistributedKvDataManager dataManager_;
         std::shared_ptr<IMediaScannerClient> scannerClient_;
-        std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
         std::shared_ptr<MediaLibraryThumbnail> mediaThumbnail_;
         std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
         bool isRdbStoreInitialized;
