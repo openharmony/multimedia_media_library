@@ -22,6 +22,7 @@
 #include <securec.h>
 #include <unistd.h>
 
+#include "dir_asset.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_smartalbum_map_db.h"
 #include "medialibrary_data_manager_utils.h"
@@ -30,11 +31,69 @@
 
 namespace OHOS {
 namespace Media {
+struct SmartAlbumMapQueryData {
+    NativeRdb::ValuesBucket values;
+    std::shared_ptr<NativeRdb::RdbStore> rdbStore;
+    MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
+    std::unordered_map<std::string, DirAsset> dirQuerySetMap;
+};
+
 class MediaLibrarySmartAlbumMapOperations {
 public:
     int32_t HandleSmartAlbumMapOperations(const std::string &uri,
                                           const NativeRdb::ValuesBucket &values,
-                                          const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+                                          const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                                          const std::unordered_map<std::string, DirAsset> &dirQuerySetMap);
+    int32_t HandleAddAssetOperations(const int32_t &albumId,
+                                     const int32_t &childFileAssetId,
+                                     SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t HandleRemoveAssetOperations(const int32_t &albumId,
+                                        const int32_t &childFileAssetId,
+                                        SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t HandleAgeingOperations(SmartAlbumMapQueryData &smartAlbumMapQueryData);
+private:
+    int32_t InsertAlbumAssetsInfoUtil(SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t InsertTrashAssetsInfoUtil(const int32_t &fileAssetId,
+                                      SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t RemoveTrashAssetsInfoUtil(const int32_t &fileAssetId,
+                                      SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t RemoveAlbumAssetsInfoUtil(const int32_t &albumId,
+                                      SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t TrashFileAssetsInfoUtil(const int32_t &assetId,
+                                    SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t TrashDirAssetsInfoUtil(const int32_t &assetId,
+                                   SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t TrashChildAssetsInfoUtil(const int32_t &assetId,
+                                     const int64_t &dateTrash,
+                                     SmartAlbumMapQueryData &smartAlbumMapQueryData);
+
+    int32_t RecycleFileAssetsInfoUtil(const std::shared_ptr<FileAsset> &fileAsset,
+                                      SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t RecycleDirAssetsInfoUtil(const std::shared_ptr<FileAsset> &fileAsset,
+                                     SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t RecycleFile(const std::shared_ptr<FileAsset> &fileAsset,
+                        const std::string &recyclePath,
+                        SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    std::string MakeSuffixPathName(std::string &assetPath);
+    int32_t RecycleDir(const std::shared_ptr<FileAsset> &fileAsset,
+                       const std::string &recyclePath,
+                       SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t RecycleChildAssetsInfoUtil(const int32_t &assetId,
+                                       const int64_t &newPath,
+                                       SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t RecycleChildSameNameInfoUtil(const int32_t &parentId,
+                                         const std::string &relativePath,
+                                         SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t DeleteFileAssetsInfoUtil(const std::unique_ptr<FileAsset> &fileAsset,
+                                     SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t DeleteDirAssetsInfoUtil(const std::unique_ptr<FileAsset> &fileAsset,
+                                    SmartAlbumMapQueryData &smartAlbumMapQueryData);
+    int32_t DeleteDir(const std::string &recyclePath);
+    int32_t DeleteFile(const std::unique_ptr<FileAsset> &fileAsset,
+                       const std::string &recyclePath);
+    int32_t UpdateFavoriteAssetsInfoUtil(const int32_t &fileAssetId,
+                                         const bool &isFavorites,
+                                         SmartAlbumMapQueryData &smartAlbumMapQueryData);
 };
 } // namespace Media
 } // namespace OHOS

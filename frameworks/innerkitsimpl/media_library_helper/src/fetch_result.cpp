@@ -269,6 +269,11 @@ unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResu
 
     fileAsset->SetSelfId(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_SELF_ID, TYPE_STRING, resultSet)));
 
+    fileAsset->SetRecyclePath(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_RECYCLE_PATH, TYPE_STRING,
+        resultSet)));
+
+    fileAsset->SetIsTrash(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_TRASH, TYPE_INT32, resultSet)));
+
     fileAsset->SetUri(GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_)
         + "/" + to_string(fileAsset->GetId()));
 

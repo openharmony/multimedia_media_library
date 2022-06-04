@@ -125,6 +125,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_device.cpp",
     "src/medialibrary_device_db.cpp",
     "src/medialibrary_device_operations.cpp",
+    "src/medialibrary_dir_db.cpp",
+    "src/medialibrary_dir_operations.cpp",
     "src/medialibrary_file_db.cpp",
     "src/medialibrary_file_operations.cpp",
     "src/medialibrary_kvstore_operations.cpp",
