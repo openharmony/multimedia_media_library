@@ -163,8 +163,7 @@ int32_t MediaLibraryDataCallBack::PrepareCameraDir(RdbStore &store)
     valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, CAMERA_EXTENSION_VALUES);
     int64_t outRowId = -1;
     int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
-    MEDIA_INFO_LOG("PrepareCameraDir outRowId = %{public}ld", (long)outRowId);
-    MEDIA_INFO_LOG("PrepareCameraDir insertResult = %{public}d", insertResult);
+    MEDIA_DEBUG_LOG("PrepareCameraDir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
     return insertResult;
 }
 
@@ -177,8 +176,7 @@ int32_t MediaLibraryDataCallBack::PrepareVideoDir(RdbStore &store)
     valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, VIDEO_EXTENSION_VALUES);
     int64_t outRowId = -1;
     int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
-    MEDIA_INFO_LOG("PrepareVideoDir outRowId = %{public}ld", (long)outRowId);
-    MEDIA_INFO_LOG("PrepareVideoDir insertResult = %{public}d", insertResult);
+    MEDIA_DEBUG_LOG("PrepareVideoDir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
     return insertResult;
 }
 
@@ -191,8 +189,7 @@ int32_t MediaLibraryDataCallBack::PreparePictureDir(RdbStore &store)
     valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, PIC_EXTENSION_VALUES);
     int64_t outRowId = -1;
     int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
-    MEDIA_INFO_LOG("PreparePictureDir outRowId = %{public}ld", (long)outRowId);
-    MEDIA_INFO_LOG("PreparePictureDir insertResult = %{public}d", insertResult);
+    MEDIA_DEBUG_LOG("PreparePictureDir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
     return insertResult;
 }
 
@@ -205,8 +202,7 @@ int32_t MediaLibraryDataCallBack::PrepareAudioDir(RdbStore &store)
     valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, AUDIO_EXTENSION_VALUES);
     int64_t outRowId = -1;
     int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
-    MEDIA_INFO_LOG("PrepareAudioDir outRowId = %{public}ld", (long)outRowId);
-    MEDIA_INFO_LOG("PrepareAudioDir insertResult = %{public}d", insertResult);
+    MEDIA_DEBUG_LOG("PrepareAudioDir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
     return insertResult;
 }
 
@@ -219,8 +215,7 @@ int32_t MediaLibraryDataCallBack::PrepareDocumentDir(RdbStore &store)
     valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, DOC_EXTENSION_VALUES);
     int64_t outRowId = -1;
     int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
-    MEDIA_INFO_LOG("PrepareDocumentDir outRowId = %{public}ld", (long)outRowId);
-    MEDIA_INFO_LOG("PrepareDocumentDir insertResult = %{public}d", insertResult);
+    MEDIA_DEBUG_LOG("PrepareDocumentDir outRowId: %{public}ld, insertResult: %{public}d", (long)outRowId, insertResult);
     return insertResult;
 }
 
@@ -233,8 +228,7 @@ int32_t MediaLibraryDataCallBack::PrepareDownloadDir(RdbStore &store)
     valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, DOWNLOAD_EXTENSION_VALUES);
     int64_t outRowId = -1;
     int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
-    MEDIA_INFO_LOG("PrepareDownloadDir outRowId = %{public}ld", (long)outRowId);
-    MEDIA_INFO_LOG("PrepareDownloadDir insertResult = %{public}d", insertResult);
+    MEDIA_DEBUG_LOG("PrepareDownloadDir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
     return insertResult;
 }
 
@@ -275,7 +269,6 @@ int32_t MediaLibraryDataCallBack::PrepareTrash(RdbStore &store)
     valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, TRASH_ALBUM_TYPE_VALUES);
     int64_t outRowId = -1;
     int32_t insertResult = store.Insert(outRowId, SMARTALBUM_TABLE, valuesBucket);
-    MEDIA_INFO_LOG("PrepareDownloadDir insertResult = %{public}d", insertResult);
     return insertResult;
 }
 
@@ -287,19 +280,23 @@ int32_t MediaLibraryDataCallBack::PrepareFavourite(RdbStore &store)
     valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, FAVOURITE_ALBUM_TYPE_VALUES);
     int64_t outRowId = -1;
     int32_t insertResult = store.Insert(outRowId, SMARTALBUM_TABLE, valuesBucket);
-    MEDIA_INFO_LOG("PrepareDownloadDir insertResult = %{public}d", insertResult);
     return insertResult;
 }
 
 int32_t MediaLibraryDataCallBack::PrepareSmartAlbum(RdbStore &store)
 {
-    if (PrepareTrash(store) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("PrepareTrash failed");
-        return NativeRdb::E_ERROR;
-    } else if (PrepareFavourite(store) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("PrepareFavourite failed");
+    int32_t err = NativeRdb::E_ERROR;
+    err = PrepareTrash(store);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("PrepareTrash failed, err: %{public}d", err);
         return NativeRdb::E_ERROR;
     }
+    err = PrepareFavourite(store);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("PrepareFavourite failed, err: %{public}d", err);
+        return NativeRdb::E_ERROR;
+    }
+
     return NativeRdb::E_OK;
 }
 
@@ -443,18 +440,20 @@ int32_t MediaLibraryDataManager::PreCheckInsert(const string &uri, const DataSha
 
 void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset> &outDirQuerySetMap)
 {
-    int32_t count = 1, columnIndexDir, columnIndexMedia, columnIndexEx, columnIndexDirType, dirTypeVal;
+    int32_t count = -1;
+    int32_t dirTypeVal = -1;
+    int32_t columnIndexDir, columnIndexMedia, columnIndexEx, columnIndexDirType;
     string dirVal, mediaVal, exVal;
     vector<string> columns, selectionArgs;
     shared_ptr<AbsSharedResultSet> queryResultSet;
-    AbsRdbPredicates mediaLibDirAbsPred(MEDIATYPE_DIRECTORY_TABLE);
-    queryResultSet = rdbStore_ -> Query(mediaLibDirAbsPred, columns);
+    AbsRdbPredicates dirAbsPred(MEDIATYPE_DIRECTORY_TABLE);
+    queryResultSet = rdbStore_->Query(dirAbsPred, columns);
     auto ret = queryResultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdb failed");
         return;
     }
-    MEDIA_ERR_LOG("MakeDirQuerySetMap count = %{public}d", count);
+    MEDIA_INFO_LOG("MakeDirQuerySetMap count = %{public}d", count);
     if (count == 0) {
         MEDIA_ERR_LOG("can not find any dirAsset");
         return;
@@ -473,13 +472,11 @@ void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset>
         dirAsset.SetDirectory(dirVal);
         dirAsset.SetMediaTypes(mediaVal);
         dirAsset.SetExtensions(exVal);
-        MEDIA_ERR_LOG("MakeDirQuerySetMap dirTypeVal = %{public}d", dirTypeVal);
-        MEDIA_ERR_LOG("MakeDirQuerySetMap dirVal = %{public}s", dirVal.c_str());
-        MEDIA_ERR_LOG("MakeDirQuerySetMap mediaVal = %{public}s", mediaVal.c_str());
-        MEDIA_ERR_LOG("MakeDirQuerySetMap exVal = %{public}s", exVal.c_str());
+        MEDIA_INFO_LOG("dirTypeVal: %{public}d dirVal: %{private}s mediaVal: %{public}s exVal: %{public}s",
+            dirTypeVal, dirVal.c_str(), mediaVal.c_str(), exVal.c_str());
         outDirQuerySetMap.insert(make_pair(dirVal, dirAsset));
     }
-    MEDIA_ERR_LOG("MakeDirQuerySetMap OUT");
+    MEDIA_DEBUG_LOG("MakeDirQuerySetMap OUT");
 }
 
 int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBucket &dataShareValue)
@@ -638,8 +635,8 @@ shared_ptr<AbsSharedResultSet> QueryFile(string strQueryCondition,
     MEDIA_INFO_LOG("StrQueryCondition %{public}s", strQueryCondition.c_str());
     mediaLibAbsPredFile.SetWhereClause(strQueryCondition);
     mediaLibAbsPredFile.SetWhereArgs(predicates.GetWhereArgs());
-    for (string laoxu : predicates.GetWhereArgs()) {
-        MEDIA_INFO_LOG("predicates.GetWhereArgs() %{public}s", laoxu.c_str());
+    for (string whereArgs : predicates.GetWhereArgs()) {
+        MEDIA_DEBUG_LOG("predicates.GetWhereArgs() %{public}s", whereArgs.c_str());
     }
     mediaLibAbsPredFile.SetOrder(predicates.GetOrder());
 
@@ -703,13 +700,13 @@ shared_ptr<AbsSharedResultSet> QueryDir(string strQueryCondition,
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "Rdb Store is not initialized");
     shared_ptr<AbsSharedResultSet> queryResultSet;
-    AbsRdbPredicates mediaLibAbsPredDir(MEDIATYPE_DIRECTORY_TABLE);
+    AbsRdbPredicates absPredDir(MEDIATYPE_DIRECTORY_TABLE);
     if (strQueryCondition.empty()) {
         MEDIA_ERR_LOG("QueryDir strQueryCondition = null");
     } else {
-        mediaLibAbsPredDir.SetWhereClause(strQueryCondition);
-        mediaLibAbsPredDir.SetWhereArgs(predicates.GetWhereArgs());
-        queryResultSet = rdbStore->Query(mediaLibAbsPredDir, columns);
+        absPredDir.SetWhereClause(strQueryCondition);
+        absPredDir.SetWhereArgs(predicates.GetWhereArgs());
+        queryResultSet = rdbStore->Query(absPredDir, columns);
     }
     return queryResultSet;
 }
@@ -885,7 +882,7 @@ static void DealWithUriString(string &uriString, TableType &tabletype,
     string &strQueryCondition, string::size_type &pos, string &strRow)
 {
     string type = uriString.substr(pos + 1);
-    MEDIA_INFO_LOG("MediaLibraryDataManager uriString type = %{private}s", type.c_str());
+    MEDIA_INFO_LOG("MediaLibraryDataManager uriString: %{public}s type: %{public}s", uriString.c_str(), type.c_str());
     if (type == MEDIA_ALBUMOPRN_QUERYALBUM) {
         tabletype = TYPE_ALBUM_TABLE;
         uriString = MEDIALIBRARY_DATA_URI;

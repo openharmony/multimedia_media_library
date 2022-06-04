@@ -2475,7 +2475,7 @@ static void SetSmartAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<
         trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? AND " + SMARTALBUMMAP_DB_ALBUM_ID + " = ? ";
     }
     MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
-    predicates.OrderByDesc(SMARTALBUMMAP_DB_ID);
+    predicates.SetOrder(SMARTALBUMMAP_DB_ID + " DESC");
     context->selectionArgs.insert(context->selectionArgs.begin(),
                                   std::to_string(smartAlbum->GetAlbumId()));
     context->selectionArgs.insert(context->selectionArgs.begin(), "0");
@@ -2644,6 +2644,7 @@ napi_value MediaLibraryNapi::JSGetSmartAlbums(napi_env env, napi_callback_info i
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "Async context is null");
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
