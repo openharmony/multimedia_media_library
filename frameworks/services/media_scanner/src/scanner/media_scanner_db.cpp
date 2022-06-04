@@ -184,7 +184,7 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
         return false;
     }
 
-    std::string builder = "IN (?";
+    std::string builder = " IN (?";
     for (std::size_t i = 0; i < idList.size() - 1; i++) {
         builder += ",?";
     }
