@@ -60,6 +60,7 @@ config("media_data_extension_public_config") {
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
     "//third_party/json/include",
+    "//base/notification/common_event_service/interfaces/innerkits/native/include",
   ]
   include_dirs += [ "//third_party/openssl/include/" ]
   include_dirs += include_scanner
@@ -133,6 +134,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_smartalbum_map_db.cpp",
     "src/medialibrary_smartalbum_map_operations.cpp",
     "src/medialibrary_smartalbum_operations.cpp",
+    "src/medialibrary_subscriber.cpp",
     "src/medialibrary_sync_table.cpp",
     "src/medialibrary_thumbnail.cpp",
     "src/uri_helper.cpp",
@@ -164,6 +166,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "ability_base:want",
     "ability_base:zuri",
     "access_token:libaccesstoken_sdk",
+    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "dataability:native_dataability",
     "eventhandler:libeventhandler",

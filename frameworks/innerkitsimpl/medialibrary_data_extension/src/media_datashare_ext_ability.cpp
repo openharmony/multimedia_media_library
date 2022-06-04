@@ -26,6 +26,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_subscriber.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -70,6 +71,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
     HILOG_INFO("%{public}s begin.", __func__);
     Extension::OnStart(want);
+    MEDIA::MedialibrarySubscriber::Subscribe();
     HILOG_INFO("%{public}s end.", __func__);
 }
 
