@@ -326,11 +326,8 @@ string MediaLibraryDataManagerUtils::GetRecyclePathFromDb(const string &id, cons
         return filePath;
     }
 
-    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + id;
-
     AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
-    absPredicates.SetWhereClause(strQueryCondition);
-    absPredicates.SetWhereArgs(selectionArgs);
+    absPredicates.EqualTo(MEDIA_DATA_DB_ID, id);
 
     vector<string> columns;
     columns.push_back(MEDIA_DATA_DB_RECYCLE_PATH);
@@ -341,11 +338,11 @@ string MediaLibraryDataManagerUtils::GetRecyclePathFromDb(const string &id, cons
     auto ret = queryResultSet->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == 0, filePath, "Failed to shift at first row");
 
-    ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, columnIndex);
+    ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_RECYCLE_PATH, columnIndex);
     CHECK_AND_RETURN_RET_LOG(ret == 0, filePath, "Failed to obtain column index");
 
     ret = queryResultSet->GetString(columnIndex, filePath);
-    CHECK_AND_RETURN_RET_LOG(ret == 0, filePath, "Failed to obtain file path");
+    CHECK_AND_RETURN_RET_LOG(ret == 0, filePath, "Failed to obtain recycle path");
 
     return filePath;
 }
@@ -621,7 +618,7 @@ int32_t MediaLibraryDataManagerUtils::MakeHashDispalyName(const std::string &inp
             outRes.push_back('a' + hex - HEX_A);
         }
     }
-    MEDIA_INFO_LOG("MakeHashDispalyName OUT [%{private}s]", outRes.c_str());
+    MEDIA_DEBUG_LOG("MakeHashDispalyName OUT [%{private}s]", outRes.c_str());
     return DATA_ABILITY_SUCCESS;
 }
 
@@ -634,17 +631,14 @@ bool MediaLibraryDataManagerUtils::IsColumnValueExist(const string &value,
         MEDIA_ERR_LOG("path is incorrect or rdbStore is null");
         return false;
     }
-    string strQueryCondition = column + " = ?";
-    selectionArgs.insert(selectionArgs.begin(), value);
     AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
-    absPredicates.SetWhereClause(strQueryCondition);
-    absPredicates.SetWhereArgs(selectionArgs);
+    absPredicates.EqualTo(column, value);
     vector<string> columns;
     columns.push_back(column);
     unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     if (queryResultSet != nullptr) {
         queryResultSet->GetRowCount(count);
-        MEDIA_INFO_LOG("count is %{private}d", count);
+        MEDIA_DEBUG_LOG("count is %{private}d", count);
         if (count > 0) {
             return true;
         }
@@ -660,11 +654,14 @@ int32_t MediaLibraryDataManagerUtils::MakeRecycleDisplayName(const int32_t &asse
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(assetId);
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(uri, rdbStore);
-    string extension, hashDisplayName, name;
-    int32_t errorCode;
-    name = to_string(fileAsset->GetId()) +
+    if (fileAsset == nullptr) {
+        return -1;
+    }
+    string extension = "";
+    string hashDisplayName = "";
+    string name = to_string(fileAsset->GetId()) +
         fileAsset->GetRelativePath() + fileAsset->GetDisplayName();
-    errorCode = MakeHashDispalyName(name, hashDisplayName);
+    int32_t errorCode = MakeHashDispalyName(name, hashDisplayName);
     MEDIA_INFO_LOG("hashDisplayName = %{public}s", hashDisplayName.c_str());
     outRecyclePath = trashDirPath + hashDisplayName;
     if (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {

@@ -452,9 +452,9 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
     if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName())) {
         valuesBucket.PutString(SMARTALBUM_DB_NAME, context->objectInfo->GetSmartAlbumName());
         predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectInfo->GetSmartAlbumId()));
-        Uri CommitModifyuri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMOPRN +
+        Uri commitModifyUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMOPRN +
                             "/" + MEDIA_SMARTALBUMOPRN_MODIFYALBUM);
-        changedRows = context->objectInfo->GetMediaDataHelper()->Update(CommitModifyuri, predicates, valuesBucket);
+        changedRows = context->objectInfo->GetMediaDataHelper()->Update(commitModifyUri, predicates, valuesBucket);
     } else {
         changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;
     }
@@ -463,31 +463,26 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
 static void JSAddAssetExecute(SmartAlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    Uri addAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
     for (int32_t id : context->assetIds) {
         DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
         valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
-        int32_t changedRows;
-        Uri AddAsseturi(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
-            MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
-        changedRows = context->objectInfo->GetMediaDataHelper()->Insert(AddAsseturi, valuesBucket);
-        context->changedRows = changedRows;
+        context->changedRows = context->objectInfo->GetMediaDataHelper()->Insert(addAssetUri, valuesBucket);
     }
 }
 
 static void JSRemoveAssetExecute(SmartAlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    Uri removeAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
     for (int32_t id : context->assetIds) {
         DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
         valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
-        int32_t changedRows;
-        Uri RemoveAsseturi(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
-            MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
-        changedRows = context->objectInfo->GetMediaDataHelper()->Insert(RemoveAsseturi, context->valuesBucket);
-        context->changedRows = changedRows;
+        context->changedRows = context->objectInfo->GetMediaDataHelper()->Insert(removeAssetUri, context->valuesBucket);
     }
 }
 

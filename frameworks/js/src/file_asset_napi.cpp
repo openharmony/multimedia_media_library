@@ -1063,7 +1063,6 @@ static void JSOpenExecute(FileAssetAsyncContext *context)
         }
 
         Uri openFileUri(fileUri);
-        NAPI_ERR_LOG("gdh OpenFile");
         int32_t retVal = context->objectInfo->sDataShareHelper_->OpenFile(openFileUri, mode);
         if (retVal <= 0) {
             context->error = retVal;
@@ -2063,8 +2062,16 @@ static void MakeIsTrash(shared_ptr<DataShare::DataShareResultSet> resultSet, Fil
     if (resultSet != nullptr) {
         // Create FetchResult object using the contents of resultSet
         unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+        if (fetchFileResult == nullptr) {
+            context->error = ERR_INVALID_OUTPUT;
+            NAPI_ERR_LOG("fetchFileResult == nullptr");
+        }
         if (fetchFileResult->GetCount() != 0) {
             unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
+            if (fileAsset == nullptr) {
+                context->error = ERR_INVALID_OUTPUT;
+                NAPI_ERR_LOG("fileAsset == nullptr");
+            }
             if (fileAsset->GetIsTrash() == 0) {
                 context->isTrash = false;
             } else {
