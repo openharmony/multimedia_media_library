@@ -505,9 +505,8 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleAgeingOperations(SmartAlbumMa
     shared_ptr<ResultSetBridge> rsBridge = RdbUtils::ToResultSetBridge(resultSet);
     shared_ptr<DataShareResultSet> dataShareRs = make_shared<DataShareResultSet>(rsBridge);
     shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>(dataShareRs);
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
-    int32_t errorCode = DATA_ABILITY_SUCCESS;
+    int32_t errorCode = DATA_ABILITY_FAIL;
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     while (fileAsset != nullptr) {
         MEDIA_INFO_LOG("fileAsset->GetIsTrash() = %{public}d", fileAsset->GetIsTrash());
         if (fileAsset->GetIsTrash() == ASSET_ISTRASH) {

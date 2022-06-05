@@ -1728,6 +1728,11 @@ static void MakeIsFavorite(shared_ptr<DataShare::DataShareResultSet> resultSet, 
         unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
         if (fetchFileResult->GetCount() != 0) {
             unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
+            if (fileAsset == nullptr) {
+                context->error = ERR_INVALID_OUTPUT;
+                NAPI_ERR_LOG("MakeIsFavorite fileAsset is nullptr");
+                return;
+            }
             context->isFavorite = fileAsset->IsFavorite();
         } else {
             NAPI_ERR_LOG("have no fileAssets");
@@ -2071,6 +2076,7 @@ static void MakeIsTrash(shared_ptr<DataShare::DataShareResultSet> resultSet, Fil
             if (fileAsset == nullptr) {
                 context->error = ERR_INVALID_OUTPUT;
                 NAPI_ERR_LOG("fileAsset == nullptr");
+                return;
             }
             if (fileAsset->GetIsTrash() == 0) {
                 context->isTrash = false;
