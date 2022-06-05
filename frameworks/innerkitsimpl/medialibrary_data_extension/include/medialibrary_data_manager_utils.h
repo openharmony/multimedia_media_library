@@ -18,7 +18,9 @@
 
 #include <string>
 #include <sys/stat.h>
+#include <unordered_map>
 
+#include "dir_asset.h"
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
 #include "rdb_store.h"
@@ -47,8 +49,10 @@ public:
     static std::string GetIdFromUri(const std::string &uri);
     static std::string GetMediaTypeUri(MediaType mediaType);
     static bool isFileExistInDb(const std::string &relativePath,
-                                     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+                                const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::string GetPathFromDb(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static std::string GetRecyclePathFromDb(const std::string &id,
+                                            const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &id,
                                                     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static bool checkFilePending(const std::shared_ptr<FileAsset> fileAsset);
@@ -58,23 +62,44 @@ public:
                                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                                              vector<int32_t> &outIds);
     static int32_t DeleteDirectorys(vector<int32_t> &outIds,
-                                        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+                                    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static NativeAlbumAsset GetAlbumAsset(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::string GetFileTitle(const std::string& displayName);
-    static bool isAlbumExistInDb(const std::string &relativePath,
+    static bool isAlbumExistInDb(const std::string &path,
                                  const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                                  int32_t &outRow);
-    static NativeAlbumAsset GetLastAlbumExistInDb(const std::string &relativePath,
+    static NativeAlbumAsset GetLastAlbumExistInDb(const std::string &path,
                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static int64_t UTCTimeSeconds();
     static bool CheckDisplayName(std::string displayName);
-    static std::unique_ptr<AbsSharedResultSet> QueryFiles(const std::string &strQueryCondition,
+    static std::shared_ptr<AbsSharedResultSet> QueryFiles(const std::string &strQueryCondition,
         const std::shared_ptr<RdbStore> &rdbStore);
-    static std::unique_ptr<AbsSharedResultSet> QueryFavFiles(const std::shared_ptr<RdbStore> &rdbStore);
-    static std::unique_ptr<AbsSharedResultSet> QueryTrashFiles(const std::shared_ptr<RdbStore> &rdbStore);
+    static std::shared_ptr<AbsSharedResultSet> QueryFavFiles(const std::shared_ptr<RdbStore> &rdbStore);
+    static std::shared_ptr<AbsSharedResultSet> QueryTrashFiles(const std::shared_ptr<RdbStore> &rdbStore);
     static string GetParentDisplayNameFromDb(const int &id, const shared_ptr<RdbStore> &rdbStore);
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);
+    static int32_t GetAssetRecycle(const int32_t &assetId,
+                                   std::string &outOldPath,
+                                   std::string &outTrashDirPath,
+                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                                   const std::unordered_map <std::string, DirAsset> &dirQuerySetMap);
+    static int32_t MakeRecycleDisplayName(const int32_t &assetId,
+                                          std::string &outDisplayName,
+                                          const std::string &trashDirPath,
+                                          const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+
+    static bool IsColumnValueExist(const std::string &value,
+                                   const std::string &column,
+                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+
+    static int32_t MakeHashDispalyName(const std::string &input, std::string &outRes);
+
+    static bool isRecycleAssetExist(const int32_t &assetId,
+        std::string &outRecyclePath,
+        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static std::shared_ptr<AbsSharedResultSet> QueryAgeingTrashFiles(const std::shared_ptr<RdbStore> &rdbStore);
+    static std::string GetDisPlayNameFromPath(std::string &path);
 };
 } // namespace Media
 } // namespace OHOS

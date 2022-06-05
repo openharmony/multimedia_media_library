@@ -105,6 +105,7 @@ struct SmartAlbumNapiAsyncContext {
     std::vector<std::string> selectionArgs;
     std::string order;
     std::unique_ptr<FetchResult> fetchResult;
+    std::vector<int32_t> assetIds;
 };
 } // namespace Media
 } // namespace OHOS
