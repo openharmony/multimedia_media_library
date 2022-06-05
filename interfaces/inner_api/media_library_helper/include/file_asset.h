@@ -108,6 +108,11 @@ public:
 
     const std::string &GetSelfId() const;
     void SetSelfId(const std::string &selfId);
+    int32_t GetIsTrash() const;
+    void SetIsTrash(int32_t isTrash);
+
+    const std::string &GetRecyclePath() const;
+    void SetRecyclePath(const std::string &recyclePath);
 
     int32_t CreateAsset(const std::string &filePath);
     int32_t ModifyAsset(const std::string& oldPath, const std::string &newPath);
@@ -153,6 +158,8 @@ private:
     int64_t dateTrashed_;
 
     std::string selfId_;
+    int32_t isTrash_;
+    std::string recyclePath_;
 };
 } // namespace Media
 } // namespace OHOS

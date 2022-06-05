@@ -29,7 +29,10 @@ namespace Media {
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 using namespace std;
-
+const int32_t NOT_ISTRASH = 0;
+const int32_t ASSET_ISTRASH = 1;
+const int32_t DIR_ISTRASH = 2;
+const int32_t CHILD_ISTRASH = 3;
 class MediaLibrarySmartAlbumMapDb {
 public:
     MediaLibrarySmartAlbumMapDb() = default;
@@ -39,6 +42,19 @@ public:
     int32_t DeleteAllAssetsMapInfo(const int32_t assetId, const shared_ptr<RdbStore> &rdbStore);
     int32_t UpdateSmartAlbumMapInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
     int64_t InsertSmartAlbumMapInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int32_t UpdateTrashInfo(const int32_t &assetId,
+        const int32_t &isTrash, const shared_ptr<RdbStore> &rdbStore, string &recycleName, const int64_t &date);
+    int32_t UpdateSameNameInfo(const int32_t &assetId,
+        const string &displayName, const string &path, const shared_ptr<RdbStore> &rdbStore);
+    int32_t UpdateParentDirRecycleInfo(const int32_t &assetId, const int32_t &parentId,
+        const string &parentName, const shared_ptr<RdbStore> &rdbStore);
+    int32_t UpdateChildFileRecycleInfo(const int32_t &assetId,
+        const string &parentName, const shared_ptr<RdbStore> &rdbStore);
+    int32_t UpdateChildPathInfo(const int32_t &assetId,
+        const string &path, const string &relativePath, const shared_ptr<RdbStore> &rdbStore);
+    int32_t DeleteTrashInfo(const int32_t &assetId, const shared_ptr<RdbStore> &rdbStore);
+    int32_t UpdateFavoriteInfo(const int32_t &assetId,
+        const OHOS::NativeRdb::ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS
