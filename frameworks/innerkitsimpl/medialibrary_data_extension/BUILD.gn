@@ -26,6 +26,9 @@ config("media_data_extension_public_config") {
   ]
 
   include_dirs = [
+    "./include/distributed_media_library/device_manage",
+    "./include/distributed_media_library/database_manage",
+    "./include/distributed_media_library/devices_info_interact",
     "$MEDIA_LIB_INNERKITS_DIR/medialibrary_data_extension/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
@@ -39,6 +42,7 @@ config("media_data_extension_public_config") {
     "${aafwk_services_path}/common/include",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
     "${aafwk_inner_api_path}/app_manager/include/appmgr",
+    "//base/security/deviceauth/interfaces/innerkits",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/appmgr",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
@@ -115,15 +119,18 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   sources = [
+    "src/distributed_media_library/database_manage/medialibrary_device_db.cpp",
+    "src/distributed_media_library/database_manage/medialibrary_device_operations.cpp",
+    "src/distributed_media_library/database_manage/medialibrary_sync_table.cpp",
+    "src/distributed_media_library/device_manage/device_permission_verification.cpp",
+    "src/distributed_media_library/device_manage/medialibrary_device.cpp",
+    "src/distributed_media_library/devices_info_interact/devices_info_interact.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
     "src/medialibrary_album_db.cpp",
     "src/medialibrary_album_operations.cpp",
     "src/medialibrary_data_manager.cpp",
     "src/medialibrary_data_manager_utils.cpp",
-    "src/medialibrary_device.cpp",
-    "src/medialibrary_device_db.cpp",
-    "src/medialibrary_device_operations.cpp",
     "src/medialibrary_dir_db.cpp",
     "src/medialibrary_dir_operations.cpp",
     "src/medialibrary_file_db.cpp",
@@ -136,7 +143,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_smartalbum_map_operations.cpp",
     "src/medialibrary_smartalbum_operations.cpp",
     "src/medialibrary_subscriber.cpp",
-    "src/medialibrary_sync_table.cpp",
     "src/medialibrary_thumbnail.cpp",
     "src/uri_helper.cpp",
   ]
@@ -151,6 +157,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${aafwk_inner_api_path}/runtime:runtime",
     "${aafwk_kits_path}/ability/native:abilitykit_native",
     "${aafwk_services_path}/abilitymgr:abilityms",
+    "//base/security/deviceauth/services:deviceauth_sdk",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_ext_ability_module",
@@ -178,6 +185,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "relational_store:native_appdatafwk",
     "relational_store:native_rdb",
     "samgr_standard:samgr_proxy",
+    "startup_l2:syspara",
   ]
 
   subsystem_name = "multimedia"
