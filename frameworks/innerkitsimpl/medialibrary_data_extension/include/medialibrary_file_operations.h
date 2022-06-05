@@ -17,7 +17,9 @@
 #define OHOS_MEDIALIBRARY_FILE_OPERATIONS_H
 
 #include <string>
+#include <unordered_map>
 
+#include "dir_asset.h"
 #include "file_asset.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_data_manager_utils.h"
@@ -35,19 +37,28 @@ namespace Media {
 class MediaLibraryFileOperations {
 public:
     int32_t HandleCreateAsset(const NativeRdb::ValuesBucket &values,
-                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                              const std::unordered_map
+                              <std::string, DirAsset> &dirQuerySetMap);
     int32_t HandleCloseAsset(std::string &actualUri, std::string &srcPath, const NativeRdb::ValuesBucket &values,
                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t HandleGetAlbumCapacity(const NativeRdb::ValuesBucket &values,
                                 const std::shared_ptr<RdbStore> &rdbStore);
     int32_t HandleFileOperation(const std::string &oprn, const NativeRdb::ValuesBucket &values,
                                 const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                                const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail);
+                                const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail,
+                                const std::unordered_map
+                                <std::string, DirAsset> &dirQuerySetMap);
     int32_t HandleModifyAsset(const std::string &rowNum, const std::string &srcPath,
                               const NativeRdb::ValuesBucket &values,
-                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                              const std::unordered_map
+                              <std::string, DirAsset> &dirQuerySetMap);
     int32_t HandleDeleteAsset(const std::string &rowNum, const std::string &srcPath,
-                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+                              const std::string &recyclePath,
+                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                              const std::unordered_map
+                              <std::string, DirAsset> &dirQuerySetMap);
     int32_t HandleIsDirectoryAsset(const NativeRdb::ValuesBucket &values,
                                    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     NativeRdb::ValuesBucket UpdateBasicAssetDetails(int32_t mediaType,

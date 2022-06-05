@@ -17,6 +17,7 @@
 #define OHOS_MEDIALIBRARY_DATA_MANAGER_H
 
 #include <string>
+#include <unordered_map>
 
 #include "ability.h"
 #include "ability_loader.h"
@@ -24,6 +25,7 @@
 #include "data_ability_predicates.h"
 #include "device_manager.h"
 #include "device_manager_callback.h"
+#include "dir_asset.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
@@ -32,8 +34,8 @@
 #include "medialibrary_device.h"
 #include "medialibrary_device_info.h"
 #include "medialibrary_file_operations.h"
+#include "medialibrary_dir_operations.h"
 #include "medialibrary_kvstore_operations.h"
-#include "medialibrary_query_operations.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 #include "rdb_open_callback.h"
@@ -66,7 +68,8 @@ namespace Media {
         TYPE_SMARTALBUMASSETS_TABLE,
         TYPE_ACTIVE_DEVICE,
         TYPE_ALL_DEVICE,
-        TYPE_ASSETSMAP_TABLE
+        TYPE_ASSETSMAP_TABLE,
+        TYPE_DIR_TABLE
     };
     class MediaLibraryRdbStoreObserver;
     class MediaLibraryDataManager {
@@ -111,8 +114,9 @@ namespace Media {
         std::string GetClientBundleName();
         bool CheckClientPermission(const std::string& permissionStr);
         std::string GetClientBundle(int uid);
-
+        void NeedQuerySync(const std::string &networkId, TableType tabletype);
         int32_t PreCheckInsert(const std::string &uri, const DataShare::DataShareValuesBucket &value);
+        void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
 
         static const std::string PERMISSION_NAME_READ_MEDIA;
         static const std::string PERMISSION_NAME_WRITE_MEDIA;
@@ -126,6 +130,7 @@ namespace Media {
         OHOS::sptr<AppExecFwk::IBundleMgr> bundleMgr_;
         static std::mutex mutex_;
         static std::shared_ptr<MediaLibraryDataManager> instance_;
+        std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
 };
 
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
@@ -133,6 +138,16 @@ public:
     int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
     int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
     bool GetDistributedTables();
+    int32_t PrepareDir(NativeRdb::RdbStore &store);
+    int32_t PrepareCameraDir(NativeRdb::RdbStore &store);
+    int32_t PrepareVideoDir(NativeRdb::RdbStore &store);
+    int32_t PreparePictureDir(NativeRdb::RdbStore &store);
+    int32_t PrepareAudioDir(NativeRdb::RdbStore &store);
+    int32_t PrepareDocumentDir(NativeRdb::RdbStore &store);
+    int32_t PrepareDownloadDir(NativeRdb::RdbStore &store);
+    int32_t PrepareSmartAlbum(NativeRdb::RdbStore &store);
+    int32_t PrepareFavourite(NativeRdb::RdbStore &store);
+    int32_t PrepareTrash(NativeRdb::RdbStore &store);
 private:
     bool isDistributedTables = false;
 };

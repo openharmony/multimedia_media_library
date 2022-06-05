@@ -50,6 +50,7 @@ static constexpr uint8_t NUM_1 = 1;
 static constexpr uint8_t NUM_2 = 2;
 static constexpr uint8_t NUM_3 = 3;
 static constexpr uint8_t NUM_4 = 4;
+static constexpr uint8_t NUM_5 = 5;
 
 void ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData)
 {
@@ -58,6 +59,7 @@ void ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData)
     data.thumbnailKey = rdbData.thumbnailKey;
     data.lcdKey = rdbData.lcdKey;
     data.mediaType = rdbData.mediaType;
+    data.recycle_path = rdbData.recycle_path;
 }
 
 MediaLibraryThumbnail::MediaLibraryThumbnail()
@@ -93,7 +95,7 @@ void ParseQueryResult(shared_ptr<AbsSharedResultSet> resultSet,
     ParseStringResult(resultSet, NUM_3, data.lcdKey, errorCode);
     data.mediaType = MediaType::MEDIA_TYPE_DEFAULT;
     errorCode = resultSet->GetInt(NUM_4, data.mediaType);
-    MEDIA_INFO_LOG("id %{public}s path %{public}s", data.id.c_str(), data.path.c_str());
+    ParseStringResult(resultSet, NUM_5, data.recycle_path, errorCode);
 }
 
 bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,
@@ -526,10 +528,10 @@ bool MediaLibraryThumbnail::SaveImage(string &key, vector<uint8_t> &image)
 
     StartTrace(HITRACE_TAG_OHOS, "SaveImage singleKvStorePtr_->Put");
     Value val(image);
-    singleKvStorePtr_->Put(key, val);
+    Status status = singleKvStorePtr_->Put(key, val);
     FinishTrace(HITRACE_TAG_OHOS);
 
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveImage OUT");
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveImage OUT status: %{public}d", (int)status);
     return true;
 }
 
@@ -569,7 +571,8 @@ shared_ptr<ResultSetBridge> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOp
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_THUMBNAIL,
         MEDIA_DATA_DB_LCD,
-        MEDIA_DATA_DB_MEDIA_TYPE
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_RECYCLE_PATH
     };
 
     vector<string> selectionArgs;
@@ -726,13 +729,21 @@ bool MediaLibraryThumbnail::LoadSourceImage(ThumbnailData &data)
     StartTrace(HITRACE_TAG_OHOS, "LoadSourceImage");
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadSourceImage IN");
 
+    string realPath = "";
+    if (!data.recycle_path.empty()) {
+        realPath = data.recycle_path;
+    } else {
+        realPath = data.path;
+    }
+    MEDIA_INFO_LOG("MYLOG: realPath: %{public}s", realPath.c_str());
+
     bool ret = false;
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
-        ret = LoadVideoFile(data.path, data.source);
+        ret = LoadVideoFile(realPath, data.source);
     } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
-        ret = LoadAudioFile(data.path, data.source);
+        ret = LoadAudioFile(realPath, data.source);
     } else {
-        ret = LoadImageFile(data.path, data.source);
+        ret = LoadImageFile(realPath, data.source);
     }
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadSourceImage OUT");
@@ -797,7 +808,7 @@ bool MediaLibraryThumbnail::CreateLcdData(ThumbnailData &data)
 
     bool ret = CompressImage(data.source, size, data.lcd);
 
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcdData OUT");
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcdData OUT %{public}d", (int)ret);
     return ret;
 }
 

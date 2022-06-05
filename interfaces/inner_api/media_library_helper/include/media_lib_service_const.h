@@ -49,7 +49,8 @@ enum MediaType {
     MEDIA_TYPE_SMARTALBUM,
     MEDIA_TYPE_DEVICE,
     MEDIA_TYPE_REMOTEFILE,
-    MEDIA_TYPE_ALL
+    MEDIA_TYPE_ALL,
+    MEDIA_TYPE_NOFILE
 };
 
 /* ENUM Asset types */
@@ -62,6 +63,23 @@ enum AssetType {
     ASSET_IMAGEALBUM,
     ASSET_VIDEOALBUM,
     ASSET_NONE
+};
+
+enum DirType {
+    DIR_CAMERA = 0,
+    DIR_VIDEO,
+    DIR_PICTURE,
+    DIR_AUDIOS,
+    DIR_DOCUMENTS,
+    DIR_DOWNLOAD
+};
+
+enum PrivateAlbumType {
+    TYPE_FAVORITE = 0,
+    TYPE_TRASH,
+    TYPE_HIDE,
+    TYPE_SMART,
+    TYPE_SEARCH
 };
 
 enum class DataType : int32_t {
@@ -119,7 +137,7 @@ const std::string DEFAULT_ALBUM_NAME = "Unknown";
 const std::string DEFAULT_ALBUM_PATH = "";
 const std::string DEFAULT_ALBUM_URI = "";
 const std::string DEFAULT_SMART_ALBUM_TAG = "";
-const int32_t DEFAULT_SMART_ALBUM_PRIVATE_TYPE = 2;
+const PrivateAlbumType DEFAULT_SMART_ALBUM_PRIVATE_TYPE = TYPE_SMART;
 const int32_t DEFAULT_SMART_ALBUM_ALBUMCAPACITY = 0;
 const int32_t DEFAULT_SMART_ALBUM_CATEGORYID = 0;
 const std::string DEFAULT_SMART_ALBUM_CATEGORYNAME = "";
@@ -132,8 +150,13 @@ const bool DEFAULT_ALBUM_VIRTUAL = false;
 const uint64_t DEFAULT_MEDIA_DATE_TAKEN = 0;
 const std::string DEFAULT_MEDIA_ALBUM_URI = "";
 const bool DEFAULT_MEDIA_IS_PENDING = false;
+const int32_t DEFAULT_DIR_TYPE = -1;
+const std::string DEFAULT_DIRECTORY = "";
+const std::string DEFAULT_STRING_MEDIA_TYPE = "";
+const std::string DEFAULT_EXTENSION = "";
 const int32_t DEFAULT_MEDIAVOLUME = 0;
 const std::string ROOT_MEDIA_DIR = "/storage/media/local/files/";
+const std::string RECYCLE_DIR = ".recycle/";
 const char SLASH_CHAR = '/';
 const int32_t OPEN_FDS = 64;
 const int32_t MILLISECONDS = 1000;
@@ -150,6 +173,11 @@ const std::string AUDIO_CONTAINER_TYPE_FLAC = "flac";
 const std::string AUDIO_CONTAINER_TYPE_WAV = "wav";
 const std::string AUDIO_CONTAINER_TYPE_OGG = "ogg";
 
+const std::string DIR_ALL_AUDIO_CONTAINER_TYPE = "." + AUDIO_CONTAINER_TYPE_AAC + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_MP3 + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_FLAC + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_WAV + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_OGG + "?";
 /** Supported video container types */
 const std::string VIDEO_CONTAINER_TYPE_MP4 = "mp4";
 const std::string VIDEO_CONTAINER_TYPE_3GP = "3gp";
@@ -157,6 +185,12 @@ const std::string VIDEO_CONTAINER_TYPE_MPG = "mpg";
 const std::string VIDEO_CONTAINER_TYPE_MOV = "mov";
 const std::string VIDEO_CONTAINER_TYPE_WEBM = "webm";
 const std::string VIDEO_CONTAINER_TYPE_MKV = "mkv";
+const std::string DIR_ALL_VIDEO_CONTAINER_TYPE = "." + VIDEO_CONTAINER_TYPE_MP4 + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_3GP + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MPG + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MOV + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_WEBM + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MKV + "?";
 
 /** Supported image types */
 const std::string IMAGE_CONTAINER_TYPE_BMP = "bmp";
@@ -170,6 +204,52 @@ const std::string IMAGE_CONTAINER_TYPE_WEBP = "webp";
 const std::string IMAGE_CONTAINER_TYPE_RAW = "raw";
 const std::string IMAGE_CONTAINER_TYPE_SVG = "svg";
 const std::string IMAGE_CONTAINER_TYPE_HEIF = "heif";
+const std::string DIR_ALL_CONTAINER_TYPE = ".ALLTYPE";
+const std::string DIR_ALL_TYPE_VALUES = "ALLTYPE";
+const std::string DIR_ALL_IMAGE_CONTAINER_TYPE = "." + IMAGE_CONTAINER_TYPE_BMP + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_BM + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_GIF + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPEG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPE + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_PNG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_WEBP + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_RAW + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_SVG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_HEIF + "?";
+
+    const int CAMERA_DIRECTORY_TYPE_VALUES = DIR_CAMERA;
+    const std::string CAMERA_DIR_VALUES = "Camera/";
+    const std::string CAMERA_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE + DIR_ALL_VIDEO_CONTAINER_TYPE;
+    const std::string CAMERA_TYPE_VALUES = std::to_string(MEDIA_TYPE_IMAGE) + "?" + std::to_string(MEDIA_TYPE_VIDEO);
+    const int VIDEO_DIRECTORY_TYPE_VALUES = DIR_VIDEO;
+    const std::string VIDEO_DIR_VALUES = "Videos/";
+    const std::string VIDEO_EXTENSION_VALUES = DIR_ALL_VIDEO_CONTAINER_TYPE;
+    const std::string VIDEO_TYPE_VALUES = std::to_string(MEDIA_TYPE_VIDEO);
+    const int PIC_DIRECTORY_TYPE_VALUES = DIR_PICTURE;
+    const std::string PIC_DIR_VALUES = "Pictures/";
+    const std::string PIC_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE;
+    const std::string PIC_TYPE_VALUES = std::to_string(MEDIA_TYPE_IMAGE);
+    const int AUDIO_DIRECTORY_TYPE_VALUES = DIR_AUDIOS;
+    const std::string AUDIO_DIR_VALUES = "Audios/";
+    const std::string AUDIO_EXTENSION_VALUES = DIR_ALL_AUDIO_CONTAINER_TYPE;
+    const std::string AUDIO_TYPE_VALUES = std::to_string(MEDIA_TYPE_AUDIO);
+    const int DOC_DIRECTORY_TYPE_VALUES = DIR_DOCUMENTS;
+    const std::string DOC_DIR_VALUES = "Documents/";
+    const std::string DOC_EXTENSION_VALUES = DIR_ALL_CONTAINER_TYPE;
+    const std::string DOC_TYPE_VALUES = std::to_string(MEDIA_TYPE_FILE);
+    const int DOWNLOAD_DIRECTORY_TYPE_VALUES = DIR_DOWNLOAD;
+    const std::string DOWNLOAD_DIR_VALUES = "Download/";
+    const std::string DOWNLOAD_EXTENSION_VALUES = DIR_ALL_CONTAINER_TYPE;
+    const std::string DOWNLOAD_TYPE_VALUES = DIR_ALL_TYPE_VALUES;
+
+    const int TRASH_ALBUM_ID_VALUES = 2;
+    const int FAVOURITE_ALBUM_ID_VALUES = 1;
+    const int TRASH_ALBUM_TYPE_VALUES = 2;
+    const int FAVOURITE_ALBUM_TYPE_VALUES = 1;
+    const std::string TRASH_ALBUM_NAME_VALUES = "TrashAlbum";
+    const std::string FAVOURTIE_ALBUM_NAME_VALUES = "FavoritAlbum";
+
 
 // Unordered set contains list supported audio formats
 const std::unordered_set<std::string> SUPPORTED_AUDIO_FORMATS_SET {

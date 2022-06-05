@@ -63,7 +63,8 @@
                     "media_lib_service_const.h",
                     "media_library_manager.h",
                     "media_scanner_const.h",
-                    "native_album_asset.h"
+                    "native_album_asset.h",
+                    "dir_asset.h"
                   ]
                 },
                 "name": "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library"

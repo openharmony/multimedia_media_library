@@ -117,10 +117,10 @@ const int32_t ERR_PERMISSION_DENIED = 4;
 const int32_t ERR_DISPLAY_NAME_INVALID = 5;
 const int32_t ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID = 6;
 
-const int32_t FAVORIT_SMART_ALBUM_ID = -1;
-const std::string FAVORIT_SMART_ALBUM_NAME = "FavoritAlbum";
-const int32_t TRASH_SMART_ALBUM_ID = -10;
+const int32_t TRASH_SMART_ALBUM_ID = 1;
 const std::string TRASH_SMART_ALBUM_NAME = "TrashAlbum";
+const int32_t FAVORIT_SMART_ALBUM_ID = 2;
+const std::string FAVORIT_SMART_ALBUM_NAME = "FavoritAlbum";
 
 enum NapiAssetType {
     TYPE_AUDIO = 0,
@@ -135,14 +135,8 @@ enum AlbumType {
     TYPE_NONE = 2,
 };
 
-enum PrivateAlbumType {
-    TYPE_FAVORITE = 0,
-    TYPE_TRASH,
-    TYPE_USER
-};
-
 const std::vector<std::string> privateAlbumTypeNameEnum {
-    "TYPE_FAVORITE", "TYPE_TRASH", "TYPE_USER"
+    "TYPE_FAVORITE", "TYPE_TRASH", "TYPE_HIDE", "TYPE_SMART", "TYPE_SEARCH"
 };
 
 const std::vector<std::string> mediaTypesEnum {

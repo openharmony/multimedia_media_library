@@ -161,9 +161,10 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
                 status = resultset_->GetString(index, stringVal);
             }
             if (status != NativeRdb::E_OK) {
-                ReturnDefaultOnError("failed to obtain string value from resultset", dataType);
+                cellValue = "";
+            } else {
+                cellValue = stringVal;
             }
-            cellValue = stringVal;
             break;
         case TYPE_INT32:
             if (resultSet) {
@@ -172,9 +173,10 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
                 status = resultset_->GetInt(index, integerVal);
             }
             if (status != NativeRdb::E_OK) {
-                ReturnDefaultOnError("failed to obtain int value from resultset", dataType);
+                cellValue = -1;
+            } else {
+                cellValue = integerVal;
             }
-            cellValue = integerVal;
             break;
         case TYPE_INT64:
             if (resultSet) {
@@ -183,10 +185,10 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
                 status = resultset_->GetLong(index, longVal);
             }
             if (status != NativeRdb::E_OK) {
-                ReturnDefaultOnError("failed to obtain long value from resultset", dataType);
+                cellValue = -1;
+            } else {
+                cellValue = longVal;
             }
-
-            cellValue = longVal;
             break;
         default:
             MEDIA_ERR_LOG("not match  dataType %{public}d!!!!!", dataType);
@@ -268,6 +270,11 @@ unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResu
     fileAsset->SetDateTrashed(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64, resultSet)));
 
     fileAsset->SetSelfId(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_SELF_ID, TYPE_STRING, resultSet)));
+
+    fileAsset->SetRecyclePath(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_RECYCLE_PATH, TYPE_STRING,
+        resultSet)));
+
+    fileAsset->SetIsTrash(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_TRASH, TYPE_INT32, resultSet)));
 
     fileAsset->SetUri(GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_)
         + "/" + to_string(fileAsset->GetId()));

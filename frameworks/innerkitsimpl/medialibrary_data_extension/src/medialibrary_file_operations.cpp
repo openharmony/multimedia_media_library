@@ -17,6 +17,7 @@
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "medialibrary_smartalbum_map_db.h"
+#include "medialibrary_dir_operations.h"
 #include "datashare_predicates.h"
 #include "datashare_result_set.h"
 #include "rdb_utils.h"
@@ -45,7 +46,8 @@ void UpdateDateModifiedForAlbum(const shared_ptr<RdbStore> &rdbStore, const stri
 }
 
 int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values,
-                                                      const shared_ptr<RdbStore> &rdbStore)
+    const shared_ptr<RdbStore> &rdbStore,
+    const unordered_map<string, DirAsset> &dirQuerySetMap)
 {
     string relativePath(""), path(""), displayName("");
     int32_t errCode = DATA_ABILITY_FAIL;
@@ -54,6 +56,7 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
     MediaLibraryFileDb fileDbOprn;
     ValueObject valueObject;
     NativeAlbumAsset  nativeAlbumAsset;
+    MediaLibraryDirOperations dirOprn;
     // Obtain file displayName
     if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
         valueObject.GetString(displayName);
@@ -70,7 +73,10 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
         valueObject.GetInt(mediaType);
         fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
     }
-
+    errCode = dirOprn.HandleDirOperations(MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION, values, rdbStore, dirQuerySetMap);
+    if (errCode != DATA_ABILITY_SUCCESS) {
+        return errCode;
+    }
     vector<int32_t> outIds;
     nativeAlbumAsset = MediaLibraryDataManagerUtils::CreateDirectorys(relativePath, rdbStore, outIds);
     if (nativeAlbumAsset.GetAlbumId() < 0) {
@@ -127,7 +133,7 @@ int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(const ValuesBucket &v
 {
     MEDIA_INFO_LOG("HandleGetAlbumCapacity IN");
     int32_t errorCode = DATA_ABILITY_FAIL;
-    unique_ptr<AbsSharedResultSet> resultSet = nullptr;
+    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
     ValueObject valueObject;
     bool isFavourite = false;
     if (values.GetObject(MEDIA_DATA_DB_IS_FAV, valueObject)) {
@@ -135,10 +141,6 @@ int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(const ValuesBucket &v
     }
 
     bool isTrash = false;
-    if (values.GetObject(MEDIA_DATA_DB_IS_TRASH, valueObject)) {
-        valueObject.GetBool(isTrash);
-    }
-
     if (isFavourite) {
         MEDIA_INFO_LOG("HandleGetAlbumCapacity isFavourite");
         resultSet= MediaLibraryDataManagerUtils::QueryFavFiles(rdbStore);
@@ -192,7 +194,8 @@ int ModifyDisName(const string &dstFileName,
     return errCode;
 }
 int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, const string &srcPath,
-    const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
+    const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore,
+    const unordered_map<string, DirAsset> &dirQuerySetMap)
 {
     string dstFilePath, dstReFilePath, dstFileName, destAlbumPath, bucketName;
     int32_t errCode = DATA_ABILITY_SUCCESS;
@@ -200,18 +203,22 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     ValueObject valueObject;
     FileAsset fileAsset;
     MediaLibraryFileDb fileDbOprn;
+    MediaLibraryDirOperations dirOprn;
     if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
         valueObject.GetString(dstFileName);
     }
     if (values.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
         valueObject.GetString(dstReFilePath);
     }
+    errCode = dirOprn.HandleDirOperations(MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION, values, rdbStore, dirQuerySetMap);
+    if (errCode != DATA_ABILITY_SUCCESS) {
+        return errCode;
+    }
     dstFilePath = ROOT_MEDIA_DIR + dstReFilePath + dstFileName;
     destAlbumPath = ROOT_MEDIA_DIR + dstReFilePath;
     if (destAlbumPath.back() == '/') {
         destAlbumPath = destAlbumPath.substr(0, destAlbumPath.length() - 1);
     }
-    MEDIA_ERR_LOG("HandleModifyAsset destAlbumPath = %{private}s", destAlbumPath.c_str());
     bucketId = MediaLibraryDataManagerUtils::GetParentIdFromDb(destAlbumPath, rdbStore);
     if ((!dstReFilePath.empty()) && (bucketId == 0)) {
         vector<int32_t> outIds;
@@ -223,13 +230,10 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
         }
         bucketId = nativeAlbumAsset.GetAlbumId();
     }
-
     bucketName = MediaLibraryDataManagerUtils::GetParentDisplayNameFromDb(bucketId, rdbStore);
-    MEDIA_ERR_LOG("HandleModifyAsset bucketId = %{private}d bucketName = %{private}s", bucketId, bucketName.c_str());
     if (srcPath.compare(dstFilePath) != 0) {
         errCode = fileAsset.ModifyAsset(srcPath, dstFilePath);
         if (errCode == DATA_ABILITY_MODIFY_DATA_FAIL) {
-            MEDIA_ERR_LOG("Failed to modify the file in the device");
             return errCode;
         }
         errCode = ModifyDisName(dstFileName, destAlbumPath, srcPath, rdbStore);
@@ -245,22 +249,44 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     return errCode;
 }
 
-int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, const string &srcPath,
-    const shared_ptr<RdbStore> &rdbStore)
+int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum,
+    const string &srcPath, const string &recyclePath,
+    const shared_ptr<RdbStore> &rdbStore, const unordered_map<string, DirAsset> &dirQuerySetMap)
 {
     int32_t errCode = DATA_ABILITY_FAIL;
     FileAsset fileAsset;
     MediaLibraryFileDb fileDbOprn;
     MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
-    if (!srcPath.empty()) {
-        errCode = fileAsset.DeleteAsset(srcPath);
+    MediaLibraryDirOperations dirOprn;
+    ValuesBucket values;
+    if (!recyclePath.empty()) {
+        errCode = fileAsset.DeleteAsset(recyclePath);
+    } else {
+        if (!srcPath.empty()) {
+            errCode = fileAsset.DeleteAsset(srcPath);
+        }
     }
 
     if (errCode == DATA_ABILITY_SUCCESS) {
+        ValueObject valueObject;
+        shared_ptr<AbsSharedResultSet> queryResultSet;
+        vector<string> columns, selectionArgs;
+        selectionArgs.push_back(rowNum);
+        AbsRdbPredicates mediaLibAbsPred(MEDIALIBRARY_TABLE);
+        mediaLibAbsPred.SetWhereClause(MEDIA_DATA_DB_ID + " = ?");
+        mediaLibAbsPred.SetWhereArgs(selectionArgs);
+        queryResultSet = rdbStore -> Query(mediaLibAbsPred, columns);
+        if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+            int32_t columnIndexParentId, parentIdVal;
+            queryResultSet->GetColumnIndex(MEDIA_DATA_DB_PARENT_ID, columnIndexParentId);
+            queryResultSet->GetInt(columnIndexParentId, parentIdVal);
+            values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentIdVal);
+        }
         errCode = fileDbOprn.Delete(rowNum, rdbStore);
         if (errCode > 0) {
             string albumPath = MediaLibraryDataManagerUtils::GetParentPath(srcPath);
             UpdateDateModifiedForAlbum(rdbStore, albumPath);
+            dirOprn.HandleDirOperations(MEDIA_DIROPRN_DELETEDIR, values, rdbStore, dirQuerySetMap);
             smartAlbumMapDbOprn.DeleteAllAssetsMapInfo(std::stoi(rowNum), rdbStore);
         }
     }
@@ -315,12 +341,13 @@ int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(const ValuesBucket &v
     return errCode;
 }
 int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, const ValuesBucket &values,
-    const shared_ptr<RdbStore> &rdbStore, const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail)
+    const shared_ptr<RdbStore> &rdbStore, const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail,
+    const unordered_map<string, DirAsset> &dirQuerySetMap)
 {
     int32_t errCode = DATA_ABILITY_FAIL;
 
     if (oprn == MEDIA_FILEOPRN_CREATEASSET) {
-        return HandleCreateAsset(values, rdbStore);
+        return HandleCreateAsset(values, rdbStore, dirQuerySetMap);
     } else if (oprn == MEDIA_FILEOPRN_ISDIRECTORY) {
         return HandleIsDirectoryAsset(values, rdbStore);
     } else if (oprn == MEDIA_FILEOPRN_GETALBUMCAPACITY) {
@@ -345,12 +372,13 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
 
     string id = MediaLibraryDataManagerUtils::GetIdFromUri(actualUri);
     srcPath = MediaLibraryDataManagerUtils::GetPathFromDb(id, rdbStore);
+    string recyclePath = MediaLibraryDataManagerUtils::GetRecyclePathFromDb(id, rdbStore);
     CHECK_AND_RETURN_RET_LOG(!srcPath.empty(), DATA_ABILITY_FAIL, "Failed to obtain path from Database");
 
     if (oprn == MEDIA_FILEOPRN_MODIFYASSET) {
-        errCode = HandleModifyAsset(id, srcPath, values, rdbStore);
+        errCode = HandleModifyAsset(id, srcPath, values, rdbStore, dirQuerySetMap);
     } else if (oprn == MEDIA_FILEOPRN_DELETEASSET) {
-        errCode = HandleDeleteAsset(id, srcPath, rdbStore);
+        errCode = HandleDeleteAsset(id, srcPath, recyclePath, rdbStore, dirQuerySetMap);
     } else if (oprn == MEDIA_FILEOPRN_CLOSEASSET) {
         errCode = HandleCloseAsset(actualUri, srcPath, values, rdbStore);
     }
