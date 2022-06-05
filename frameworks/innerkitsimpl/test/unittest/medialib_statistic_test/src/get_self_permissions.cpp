@@ -12,8 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "self_permissions.h"
+#include "get_self_permissions.h"
 #include <thread>
 #include "hilog/log.h"
 #include "media_log.h"
@@ -24,9 +23,7 @@ using OHOS::HiviewDFX::HiLogLabel;
 using namespace testing::ext;
 using namespace OHOS::Security::AccessToken;
 
-namespace OHOS {
-namespace Security {
-namespace AccessToken {
+namespace {
 constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "GetSelfPermissions"};
 
 PermissionDef g_infoManagerTestPermDef1 = {
@@ -81,8 +78,9 @@ HapPolicyParams g_infoManagerTestPolicyPrams = {
     .permList = {g_infoManagerTestPermDef1, g_infoManagerTestPermDef2},
     .permStateList = {g_infoManagerTestState1, g_infoManagerTestState2}
 };
+}
 
-void SelfPermissions::SetUpTestCase()
+void GetSelfPermissions::SetUpTestCase()
 {
     // make test case clean
     AccessTokenID tokenID = AccessTokenKit::GetHapTokenID(g_infoManagerTestInfoParms.userID,
@@ -94,11 +92,11 @@ void SelfPermissions::SetUpTestCase()
     AccessTokenKit::DeleteToken(tokenID);
 }
 
-void SelfPermissions::TearDownTestCase()
+void GetSelfPermissions::TearDownTestCase()
 {
 }
 
-void SelfPermissions::SetUp()
+void GetSelfPermissions::SetUp()
 {
     HapInfoParams info = {
         .userID = TEST_USER_ID,
@@ -122,9 +120,10 @@ void SelfPermissions::SetUp()
     HiLog::Info(LABEL, "SetUp ok.");
 }
 
-void SelfPermissions::TearDown()
+void GetSelfPermissions::TearDown()
 {
 }
+
 
 /**
  * @tc.name: GetSelfPermissionsState001
@@ -132,13 +131,11 @@ void SelfPermissions::TearDown()
  * @tc.type: FUNC
  * @tc.require:AR000GK6T6
  */
-HWTEST_F(SelfPermissions, GetSelfPermissionsState001, TestSize.Level1)
+HWTEST_F(GetSelfPermissions, GetSelfPermissionsState001, TestSize.Level1)
 {
     AccessTokenIDEx tokenIdEx = {0};
     tokenIdEx = AccessTokenKit::AllocHapToken(g_infoManagerTestInfoParms, g_infoManagerTestPolicyPrams);
     ASSERT_NE(0, tokenIdEx.tokenIdExStruct.tokenID);
     ASSERT_EQ(0, SetSelfTokenID(tokenIdEx.tokenIdExStruct.tokenID));
 }
-}
-}
-}
+
