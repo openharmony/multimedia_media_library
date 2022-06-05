@@ -380,17 +380,28 @@ int32_t FileAsset::CreateAsset(const string &filePath)
 
 int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
 {
-    int32_t errRet = DATA_ABILITY_MODIFY_DATA_FAIL;
+    int32_t err = DATA_ABILITY_MODIFY_DATA_FAIL;
 
-    if (!oldPath.empty() && !newPath.empty() &&
-        MediaFileUtils::IsFileExists(oldPath) &&
-        !MediaFileUtils::IsFileExists(newPath)) {
-        errRet = rename(oldPath.c_str(), newPath.c_str());
-        if (errRet < 0) {
-            MEDIA_ERR_LOG("Failed ModifyAsset errno %{public}d", errno);
-        }
+    if (oldPath.empty() || newPath.empty()) {
+        MEDIA_ERR_LOG("Failed to modify asset, oldPath: %{private}s or newPath: %{private}s is empty!",
+            oldPath.c_str(), newPath.c_str());
+        return err;
     }
-    return errRet;
+    if (!MediaFileUtils::IsFileExists(oldPath)) {
+        MEDIA_ERR_LOG("Failed to modify asset, oldPath: %{private}s does not exist!", oldPath.c_str());
+        return err;
+    }
+    if (MediaFileUtils::IsFileExists(newPath)) {
+        MEDIA_ERR_LOG("Failed to modify asset, newPath: %{private}s is already exist!", newPath.c_str());
+        return err;
+    }
+    err = rename(oldPath.c_str(), newPath.c_str());
+    if (err < 0) {
+        MEDIA_ERR_LOG("Failed ModifyAsset errno %{public}d", errno);
+        return errno;
+    }
+
+    return DATA_ABILITY_SUCCESS;
 }
 
 bool FileAsset::IsFileExists(const string &filePath)

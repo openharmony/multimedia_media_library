@@ -820,10 +820,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     fetchFileResult->networkId_ = context->networkId;
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
-    if (fileAsset == nullptr) {
-        NAPI_DEBUG_LOG("SetAlbumCoverUr:FileAsset is mullptr");
-        return;
-    }
+    CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetAlbumCoverUr:FileAsset is nullptr");
     string coverUri = fileAsset->GetUri();
     album->SetCoverUri(coverUri);
     NAPI_DEBUG_LOG("coverUri is = %{private}s", album->GetCoverUri().c_str());
@@ -993,12 +990,9 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
         context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
         context->fetchFileResult->networkId_ = networkId;
         if (context->fetchFileResult != nullptr && context->fetchFileResult->GetCount() >= 1) {
-            context->fileAsset = context->fetchFileResult->GetFirstObject();
-            if (context->fileAsset == nullptr) {
-                NAPI_DEBUG_LOG("getFileAssetById:FileAsset is mullptr");
-                return;
-            }
-
+            unique_ptr<FileAsset> fileAsset = context->fetchFileResult->GetFirstObject();
+            CHECK_NULL_PTR_RETURN_VOID(fileAsset, "getFileAssetById: fileAsset is nullptr");
+            context->fileAsset = std::move(fileAsset);
             Media::MediaType mediaType = context->fileAsset->GetMediaType();
             string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
             Uri modifyNotify(notifyUri);
@@ -2490,6 +2484,7 @@ static void SetSmartAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<
        context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
     unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
+    CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetSmartAlbumCoverUri fileAsset is nullptr");
     string coverUri = fileAsset->GetUri();
     smartAlbum->SetCoverUri(coverUri);
     NAPI_DEBUG_LOG("coverUri is = %{private}s", smartAlbum->GetCoverUri().c_str());
