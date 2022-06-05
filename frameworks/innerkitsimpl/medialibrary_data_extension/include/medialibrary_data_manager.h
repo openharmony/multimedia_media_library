@@ -68,8 +68,6 @@ namespace Media {
         TYPE_ALL_DEVICE,
         TYPE_ASSETSMAP_TABLE
     };
-    class MediaLibraryInitCallback;
-    class MediaLibraryDeviceStateCallback;
     class MediaLibraryRdbStoreObserver;
     class MediaLibraryDataManager {
     public:
@@ -121,8 +119,6 @@ namespace Media {
         std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
         DistributedKv::DistributedKvDataManager dataManager_;
         std::shared_ptr<MediaLibraryThumbnail> mediaThumbnail_;
-        std::shared_ptr<MediaLibraryDeviceStateCallback> deviceStateCallback_;
-        std::shared_ptr<MediaLibraryInitCallback> deviceInitCallback_;
         std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
         bool isRdbStoreInitialized;
         std::shared_ptr<OHOS::AbilityRuntime::Context> context_ = nullptr;
@@ -147,26 +143,6 @@ public:
     ScanFileCallback() = default;
     ~ScanFileCallback() = default;
     void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
-};
-
-class MediaLibraryInitCallback : public OHOS::DistributedHardware::DmInitCallback {
-public:
-    virtual ~MediaLibraryInitCallback() {}
-    void OnRemoteDied() override;
-};
-
-class MediaLibraryDeviceStateCallback : public OHOS::DistributedHardware::DeviceStateCallback {
-public:
-    explicit MediaLibraryDeviceStateCallback(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::string &bundleName)
-        : bundleName_(bundleName), rdbStore_(rdbStore) {}
-    virtual ~MediaLibraryDeviceStateCallback() {};
-    void OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
-    void OnDeviceReady(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
-    void OnDeviceOffline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
-    void OnDeviceChanged(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
-private:
-    std::string bundleName_;
-    std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 };
 
 class MediaLibraryRdbStoreObserver : public NativeRdb::RdbStore::RdbStoreObserver {

@@ -55,7 +55,7 @@ public:
     void OnDeviceChanged(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
     void OnRemoteDied() override;
 
-    void SetAbilityContext(const std::shared_ptr<OHOS::AppExecFwk::Context> &context);
+    void SetAbilityContext(const std::shared_ptr<AbilityRuntime::Context> &context);
     void GetAllDeviceId(std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList);
     bool InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void NotifyDeviceChange();
@@ -82,7 +82,7 @@ private:
 
     static std::shared_ptr<MediaLibraryDevice> mlDMInstance_;
     std::unique_ptr<MediaLibraryDeviceOperations> mediaLibraryDeviceOperations_;
-    std::shared_ptr<AppExecFwk::DataAbilityHelper> dataAbilityhelper_;
+    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
     std::shared_ptr<AppExecFwk::EventHandler> mediaLibraryDeviceHandler_;
     std::mutex deviceLock_;
     std::unordered_map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
