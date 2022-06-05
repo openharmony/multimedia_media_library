@@ -54,14 +54,10 @@ namespace {
 const std::unordered_set<int32_t> UID_FREE_CHECK {
     1006        // file_manager:x:1006:
 };
-const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
-    "com.ohos.medialibrary.MediaScannerAbilityA"
-};
-const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {
-    "com.ohos.screenshot"
-};
 std::mutex bundleMgrMutex;
 }
+const std::string MediaLibraryDataManager::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
+const std::string MediaLibraryDataManager::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 
 std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 std::mutex MediaLibraryDataManager::mutex_;
@@ -77,27 +73,22 @@ std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::GetInstance()
     return instance_;
 }
 
-static DataShare::DataShareExtAbility* MediaDataShareCreator (const std::unique_ptr<Runtime>& runtime)
+static DataShare::DataShareExtAbility* MediaDataShareCreator(const std::unique_ptr<Runtime>& runtime)
 {
-    MEDIA_INFO_LOG("MediaLibraryCreator::%{public}s", __func__);
-    return  MediaDataShareExtAbility::Create(runtime);
+    MEDIA_DEBUG_LOG("MediaLibraryCreator::%{public}s", __func__);
+    return MediaDataShareExtAbility::Create(runtime);
 }
 
 __attribute__((constructor)) void RegisterDataShareCreator()
 {
-    MEDIA_INFO_LOG("MediaLibraryDataMgr::%{public}s", __func__);
+    MEDIA_DEBUG_LOG("MediaLibraryDataMgr::%{public}s", __func__);
     DataShare::DataShareExtAbility::SetCreator(MediaDataShareCreator);
 }
 
-const std::string MediaLibraryDataManager::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
-const std::string MediaLibraryDataManager::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
-
 void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
-    MEDIA_INFO_LOG("MediaLibraryDataMgr::%{public}s", __func__);
     context_ = context;
     InitMediaLibraryRdbStore();
-    MEDIA_INFO_LOG("bundleName = %{private}s", bundleName_.c_str());
     MediaLibraryDevice::GetInstance()->SetAbilityContext(move(context));
     SubscribeRdbStoreObserver();
     InitDeviceData();
@@ -114,15 +105,14 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
     InitialiseKvStore();
 
     // scan the media dir
-    std::string srcPath = "/storage/media/local/files";
+    std::string srcPath = ROOT_MEDIA_DIR;
     MediaScannerObj::GetMediaScannerInstance()->ScanDir(srcPath, nullptr);
 }
 
 void MediaLibraryDataManager::ClearMediaLibraryMgr()
 {
-    MEDIA_INFO_LOG("MediaLibraryDataManager::OnStop");
-    rdbStore_ = nullptr;
     isRdbStoreInitialized = false;
+    rdbStore_ = nullptr;
     if (kvStorePtr_ != nullptr) {
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
         kvStorePtr_ = nullptr;
@@ -371,7 +361,6 @@ bool MediaLibraryDataCallBack::GetDistributedTables()
 
 int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
 {
-    MEDIA_INFO_LOG("InitMediaLibraryRdbStore IN |Rdb Verison %{private}d", MEDIA_RDB_VERSION);
     if (isRdbStoreInitialized) {
         return DATA_ABILITY_SUCCESS;
     }
@@ -397,12 +386,13 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
     if (rdbDataCallBack.GetDistributedTables()) {
         auto ret = rdbStore_->SetDistributedTables(
             {MEDIALIBRARY_TABLE, SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE});
-        MEDIA_INFO_LOG("InitMediaLibraryRdbStore ret = %{private}d", ret);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_INFO_LOG("InitMediaLibraryRdbStore ret = %{private}d", ret);
+        }
     }
 
     isRdbStoreInitialized = true;
     mediaThumbnail_ = std::make_shared<MediaLibraryThumbnail>();
-    MEDIA_INFO_LOG("InitMediaLibraryRdbStore SUCCESS");
     return DATA_ABILITY_SUCCESS;
 }
 
@@ -618,7 +608,6 @@ shared_ptr<AbsSharedResultSet> QueryFile(string strQueryCondition,
     shared_ptr<AbsSharedResultSet> queryResultSet;
     string tableName = MEDIALIBRARY_TABLE;
     if (!networkId.empty()) {
-        MEDIA_DEBUG_LOG("ObtainDistributedTableName start");
         StartTrace(HITRACE_TAG_OHOS, "QueryFile rdbStore->ObtainDistributedTableName");
         tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
         MEDIA_DEBUG_LOG("tableName in %{private}s", tableName.c_str());
@@ -627,7 +616,6 @@ shared_ptr<AbsSharedResultSet> QueryFile(string strQueryCondition,
     AbsRdbPredicates mediaLibAbsPredFile(tableName);
 
     if (!networkId.empty()) {
-        MEDIA_INFO_LOG("Not empty networkId %{private}s", networkId.c_str());
         std::vector<string> devices = std::vector<string>();
         devices.push_back(networkId);
         mediaLibAbsPredFile.InDevices(devices);
@@ -653,11 +641,8 @@ string ObtionCondition(string &strQueryCondition, const vector<string> &whereArg
 {
     for (string args : whereArgs) {
         size_t pos = strQueryCondition.find('?');
-        MEDIA_INFO_LOG("obtionCondition pos = %{private}d", (int)pos);
         if (pos != string::npos) {
-            MEDIA_INFO_LOG("ObtionCondition before = %{private}s", strQueryCondition.c_str());
             strQueryCondition.replace(pos, 1, "'" + args + "'");
-            MEDIA_INFO_LOG("ObtionCondition end = %{private}s", strQueryCondition.c_str());
         }
     }
     return strQueryCondition;
@@ -849,7 +834,6 @@ shared_ptr<ResultSetBridge> GenThumbnail(shared_ptr<RdbStore> rdb,
         FinishTrace(HITRACE_TAG_OHOS);
     }
 
-    MEDIA_INFO_LOG("Get filesTableName [ %{private}s ]", filesTableName.c_str());
     ThumbRdbOpt opts = {
         .store = rdb,
         .table = filesTableName,
@@ -1138,7 +1122,7 @@ int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const std::string &mod
             return DATA_ABILITY_HAS_DB_ERROR;
         }
     }
-    MEDIA_INFO_LOG("MediaLibraryDataManager OpenFile: Success");
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager OpenFile: Success");
     return fd;
 }
 
@@ -1157,14 +1141,12 @@ void MediaLibraryDataManager::InitDeviceData()
     }
     deviceManager.InitDeviceManager(bundleName_, deviceInitCallback_);
 
-    MEDIA_DEBUG_LOG("Distribute StartTrace:InitDeviceRdbStoreTrace");
     StartTrace(HITRACE_TAG_OHOS, "InitDeviceRdbStoreTrace", -1);
     if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_, bundleName_)) {
         MEDIA_ERR_LOG("MediaLibraryDataManager InitDeviceData failed!");
         return;
     }
     FinishTrace(HITRACE_TAG_OHOS);
-    MEDIA_DEBUG_LOG("Distribute FinishTrace:InitDeviceRdbStoreTrace");
 
     deviceStateCallback_ = std::make_shared<MediaLibraryDeviceStateCallback>(rdbStore_, bundleName_);
     if (deviceStateCallback_ == nullptr) {
