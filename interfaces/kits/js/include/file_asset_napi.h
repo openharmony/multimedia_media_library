@@ -16,7 +16,6 @@
 #ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FILE_ASSET_NAPI_H_
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FILE_ASSET_NAPI_H_
 
-#include "data_ability_helper.h"
 #include "file_asset.h"
 #include "media_lib_service_const.h"
 #include "media_thumbnail_helper.h"
@@ -82,7 +81,7 @@ private:
     static napi_value JSGetHeight(napi_env env, napi_callback_info info);
     static napi_value JSGetDuration(napi_env env, napi_callback_info info);
     static napi_value JSGetRelativePath(napi_env env, napi_callback_info info);
-
+    static napi_value JSGetDateTrashed(napi_env env, napi_callback_info info);
     static napi_value JSSetFileDisplayName(napi_env env, napi_callback_info info);
     static napi_value JSSetRelativePath(napi_env env, napi_callback_info info);
     static napi_value JSSetTitle(napi_env env, napi_callback_info info);
@@ -112,6 +111,7 @@ private:
 
     int64_t size_;
     int64_t dateAdded_;
+    int64_t dateTrashed_;
     int64_t dateModified_;
     int64_t dateTaken_;
     std::string mimeType_;

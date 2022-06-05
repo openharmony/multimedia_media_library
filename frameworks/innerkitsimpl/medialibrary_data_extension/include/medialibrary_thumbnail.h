@@ -44,6 +44,7 @@ struct ThumbnailData {
     std::string thumbnailKey;
     std::string lcdKey;
     int mediaType;
+    std::string recycle_path;
     std::shared_ptr<PixelMap> source;
     std::vector<uint8_t> thumbnail;
     std::vector<uint8_t> lcd;
@@ -55,6 +56,7 @@ struct ThumbnailRdbData {
     std::string thumbnailKey;
     std::string lcdKey;
     int mediaType;
+    std::string recycle_path;
 };
 
 class MediaLibraryThumbnail : public MediaThumbnailHelper {

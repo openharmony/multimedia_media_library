@@ -89,6 +89,7 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("on", JSOnCallback),
         DECLARE_NAPI_FUNCTION("off", JSOffCallback),
         DECLARE_NAPI_FUNCTION("release", JSRelease),
+        DECLARE_NAPI_FUNCTION("getSmartAlbums", JSGetSmartAlbums),
         DECLARE_NAPI_FUNCTION("getPrivateAlbum", JSGetPrivateAlbum),
         DECLARE_NAPI_FUNCTION("createSmartAlbum", JSCreateSmartAlbum),
         DECLARE_NAPI_FUNCTION("deleteSmartAlbum", JSDeleteSmartAlbum),
@@ -484,6 +485,78 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
     return result;
 }
 
+using ValVariant = variant<int, int64_t, string>;
+ValVariant GetValFromColumn(string columnName, shared_ptr<DataShare::DataShareResultSet> &resultSet,
+    ResultSetDataType type)
+{
+    int index;
+    ValVariant cellValue;
+    int integerVal;
+    string stringVal;
+    int64_t longVaL;
+
+    resultSet->GetColumnIndex(columnName, index);
+    switch (type) {
+        case TYPE_STRING:
+            resultSet->GetString(index, stringVal);
+            cellValue = stringVal;
+            break;
+        case TYPE_INT32:
+            resultSet->GetInt(index, integerVal);
+            cellValue = integerVal;
+            break;
+        case TYPE_INT64:
+            resultSet->GetLong(index, longVaL);
+            cellValue = longVaL;
+            break;
+        default:
+            NAPI_ERR_LOG("No type: type %{private}d", type);
+            cellValue = "Notype";
+            break;
+    }
+    return cellValue;
+}
+
+static void GetPublicDirectoryExecute(MediaLibraryAsyncContext *context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    vector<string> selectionArgs, columns;
+    DataShare::DataSharePredicates predicates;
+    NAPI_ERR_LOG("context->dirType is = %{public}d", context->dirType);
+    selectionArgs.push_back(to_string(context->dirType));
+    predicates.SetWhereClause(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE + " = ?");
+    predicates.SetWhereArgs(selectionArgs);
+    string queryUri = MEDIALIBRARY_DIRECTORY_URI;
+    NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
+    Uri uri(queryUri);
+    shared_ptr<DataShare::DataShareResultSet> resultSet;
+    if (context->objectInfo->sDataShareHelper_ != nullptr) {
+        resultSet = context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
+        if (resultSet != nullptr) {
+            auto count = 0;
+            auto ret = resultSet->GetRowCount(count);
+            if (ret != NativeRdb::E_OK) {
+                NAPI_ERR_LOG("get rdbstore failed");
+                context->error = DATA_ABILITY_HAS_DB_ERROR;
+                return;
+            }
+            if (count == 0) {
+                NAPI_ERR_LOG("Query for get publicDirectory form db failed");
+                context->error = ERR_INVALID_OUTPUT;
+                return;
+            }
+            NAPI_ERR_LOG("Query for get publicDirectory count = %{private}d", count);
+            if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+                context->directoryRelativePath = get<string>(
+                    GetValFromColumn(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, resultSet, TYPE_STRING));
+            }
+            return;
+        } else {
+            NAPI_ERR_LOG("Query for get publicDirectory failed");
+        }
+    }
+    context->error = ERR_INVALID_OUTPUT;
+}
 static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status,
                                                MediaLibraryAsyncContext *context)
 {
@@ -491,9 +564,8 @@ static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status,
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    unsigned int dirIndex = context->dirType;
     if (context->error == ERR_DEFAULT) {
-        napi_create_string_utf8(env, directoryEnumValues[dirIndex].c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
+        napi_create_string_utf8(env, context->directoryRelativePath.c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
@@ -545,12 +617,7 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
             env, nullptr, resource,
             [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext*>(data);
-                unsigned int dirIndex = context->dirType;
-                if (dirIndex < directoryEnumValues.size()) {
-                    context->directoryRelativePath = directoryEnumValues[dirIndex];
-                } else {
-                    context->error = ERR_INVALID_OUTPUT;
-                }
+                GetPublicDirectoryExecute(context);
             },
             reinterpret_cast<CompleteCallback>(GetPublicDirectoryCallbackComplete),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
@@ -708,10 +775,6 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
     FinishTrace(HITRACE_TAG_OHOS);
     return result;
 }
-static string getNetworkId(const string& selfId)
-{
-    return "";
-}
 
 static string GetFileMediaTypeUri(MediaType mediaType, const string &networkId)
 {
@@ -739,38 +802,6 @@ static string GetFileMediaTypeUri(MediaType mediaType, const string &networkId)
     }
 }
 
-using ValVariant = variant<int, int64_t, string>;
-ValVariant GetValFromColumn(string columnName, shared_ptr<DataShare::DataShareResultSet> &resultSet,
-    ResultSetDataType type)
-{
-    int index;
-    ValVariant cellValue;
-    int integerVal;
-    string stringVal;
-    int64_t longVaL;
-
-    resultSet->GetColumnIndex(columnName, index);
-    switch (type) {
-        case TYPE_STRING:
-            resultSet->GetString(index, stringVal);
-            cellValue = stringVal;
-            break;
-        case TYPE_INT32:
-            resultSet->GetInt(index, integerVal);
-            cellValue = integerVal;
-            break;
-        case TYPE_INT64:
-            resultSet->GetLong(index, longVaL);
-            cellValue = longVaL;
-            break;
-        default:
-            NAPI_ERR_LOG("No type: type %{public}d", type);
-            cellValue = "Notype";
-            break;
-    }
-    return cellValue;
-}
-
 static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -789,10 +820,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     fetchFileResult->networkId_ = context->networkId;
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
-    if (fileAsset == nullptr) {
-        NAPI_DEBUG_LOG("SetAlbumCoverUr:FileAsset is mullptr");
-        return;
-    }
+    CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetAlbumCoverUr:FileAsset is nullptr");
     string coverUri = fileAsset->GetUri();
     album->SetCoverUri(coverUri);
     NAPI_DEBUG_LOG("coverUri is = %{private}s", album->GetCoverUri().c_str());
@@ -962,12 +990,9 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
         context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
         context->fetchFileResult->networkId_ = networkId;
         if (context->fetchFileResult != nullptr && context->fetchFileResult->GetCount() >= 1) {
-            context->fileAsset = context->fetchFileResult->GetFirstObject();
-            if (context->fileAsset == nullptr) {
-                NAPI_DEBUG_LOG("getFileAssetById:FileAsset is mullptr");
-                return;
-            }
-
+            unique_ptr<FileAsset> fileAsset = context->fetchFileResult->GetFirstObject();
+            CHECK_NULL_PTR_RETURN_VOID(fileAsset, "getFileAssetById: fileAsset is nullptr");
+            context->fileAsset = std::move(fileAsset);
             Media::MediaType mediaType = context->fileAsset->GetMediaType();
             string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
             Uri modifyNotify(notifyUri);
@@ -2430,113 +2455,91 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     return result;
 }
 
-static int32_t GetAlbumCapacity(MediaLibraryAsyncContext *context)
+static void SetSmartAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<SmartAlbumAsset> &smartAlbum)
 {
-    if (context == nullptr) {
-        NAPI_ERR_LOG("Async context is null");
-        return -1;
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    if (smartAlbum->GetAlbumCapacity() == 0) {
+        return;
     }
-    string abilityUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_GETALBUMCAPACITY;
-    Uri getAlbumCapacityUri(abilityUri);
+    DataShare::DataSharePredicates predicates;
+    string trashPrefix;
+    if (smartAlbum->GetAlbumId() == TRASH_ALBUM_ID_VALUES) {
+        trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " <> ? AND " + SMARTALBUMMAP_DB_ALBUM_ID + " = ? ";
+    } else {
+        trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? AND " + SMARTALBUMMAP_DB_ALBUM_ID + " = ? ";
+    }
+    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
+    predicates.SetOrder(SMARTALBUMMAP_DB_ID + " DESC");
+    context->selectionArgs.insert(context->selectionArgs.begin(),
+                                  std::to_string(smartAlbum->GetAlbumId()));
+    context->selectionArgs.insert(context->selectionArgs.begin(), "0");
+    predicates.SetWhereClause(context->selection);
+    predicates.SetWhereArgs(context->selectionArgs);
+    std::vector<std::string> columns;
+    Uri uri(MEDIALIBRARY_DATA_URI + "/"
+               + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
+               + ASSETMAP_VIEW_NAME);
 
-    return context->objectInfo->sDataShareHelper_->Insert(getAlbumCapacityUri, context->valuesBucket);
+    shared_ptr<DataShare::DataShareResultSet> resultSet =
+       context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
+    CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetSmartAlbumCoverUri fileAsset is nullptr");
+    string coverUri = fileAsset->GetUri();
+    smartAlbum->SetCoverUri(coverUri);
+    NAPI_DEBUG_LOG("coverUri is = %{private}s", smartAlbum->GetCoverUri().c_str());
 }
 
-static void GetFavSmartAlbumExecute(MediaLibraryAsyncContext *context)
+static void SetSmartAlbumData(SmartAlbumAsset* smartAlbumData, shared_ptr<DataShare::DataShareResultSet> resultSet,
+    const string &networkId)
 {
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    context->smartAlbumData = make_unique<SmartAlbumAsset>();
-
-    context->smartAlbumData->SetAlbumId(FAVORIT_SMART_ALBUM_ID);
-    context->smartAlbumData->SetAlbumName(FAVORIT_SMART_ALBUM_NAME);
-    context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, true);
-    context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_TRASH, false);
-    context->smartAlbumData->SetAlbumCapacity(GetAlbumCapacity(context));
-    context->smartAlbumData->SetAlbumPrivateType(TYPE_FAVORITE);
-}
-
-static void GetTrashSmartAlbumExecute(MediaLibraryAsyncContext *context)
-{
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    context->smartAlbumData = make_unique<SmartAlbumAsset>();
-
-    context->smartAlbumData->SetAlbumId(TRASH_SMART_ALBUM_ID);
-    context->smartAlbumData->SetAlbumName(TRASH_SMART_ALBUM_NAME);
-    context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_FAV, false);
-    context->valuesBucket.PutBool(MEDIA_DATA_DB_IS_TRASH, true);
-    context->smartAlbumData->SetAlbumCapacity(GetAlbumCapacity(context));
-    context->smartAlbumData->SetAlbumPrivateType(TYPE_TRASH);
+    CHECK_NULL_PTR_RETURN_VOID(smartAlbumData, "albumData is null");
+    smartAlbumData->SetAlbumId(get<int32_t>(GetValFromColumn(SMARTALBUM_DB_ID, resultSet, TYPE_INT32)));
+    smartAlbumData->SetAlbumName(get<string>(GetValFromColumn(SMARTALBUM_DB_NAME, resultSet, TYPE_STRING)));
+    smartAlbumData->SetAlbumCapacity(get<int32_t>(GetValFromColumn(SMARTABLUMASSETS_ALBUMCAPACITY,
+        resultSet, TYPE_INT32)));
+    smartAlbumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_SMARTALBUM, networkId) +
+        "/" + to_string(smartAlbumData->GetAlbumId()));
 }
 
 static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    NAPI_INFO_LOG("context->privateAlbumType = %{public}d", context->privateAlbumType);
     DataShare::DataSharePredicates predicates;
     if (context->objectInfo->sDataShareHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
     }
-    if (context->privateAlbumType == TYPE_FAVORITE) {
-        GetFavSmartAlbumExecute(context);
-        return;
-    }
     if (context->privateAlbumType == TYPE_TRASH) {
-        GetTrashSmartAlbumExecute(context);
-        return;
+        predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + to_string(TRASH_ALBUM_ID_VALUES));
+        NAPI_INFO_LOG("context->privateAlbumType == TYPE_TRASH");
+    }
+    if (context->privateAlbumType == TYPE_FAVORITE) {
+        predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + to_string(FAVOURITE_ALBUM_ID_VALUES));
+        NAPI_INFO_LOG("context->privateAlbumType == TYPE_FAVORITE");
     }
 
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/"
-            + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
-            + SMARTABLUMASSETS_VIEW_NAME);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
+               + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTABLUMASSETS_VIEW_NAME);
+    shared_ptr<DataShare::DataShareResultSet> resultSet =context->objectInfo->sDataShareHelper_->Query(
         uri, predicates, columns);
-    if (resultSet != nullptr) {
-        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            unique_ptr<SmartAlbumAsset> albumData = make_unique<SmartAlbumAsset>();
-            if (albumData != nullptr) {
-                albumData->SetAlbumId(get<int32_t>(GetValFromColumn(SMARTALBUM_DB_ID, resultSet, TYPE_INT32)));
-                albumData->SetAlbumName(get<string>(GetValFromColumn(SMARTALBUM_DB_NAME, resultSet, TYPE_STRING)));
-                albumData->SetAlbumCapacity(get<int32_t>(GetValFromColumn(SMARTABLUMASSETS_ALBUMCAPACITY,
-                                                                          resultSet, TYPE_INT32)));
-
-                context->privateSmartAlbumNativeArray.push_back(move(albumData));
-            }
-        }
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet == nullptr");
+        return;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        unique_ptr<SmartAlbumAsset> albumData = make_unique<SmartAlbumAsset>();
+        SetSmartAlbumData(albumData.get(), resultSet, context->networkId);
+        SetSmartAlbumCoverUri(context, albumData);
+        context->privateSmartAlbumNativeArray.push_back(move(albumData));
     }
 }
 
 static void GetSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
 {
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    DataShare::DataSharePredicates predicates;
-    if (context->objectInfo->sDataShareHelper_ == nullptr) {
-        context->error = ERR_INVALID_OUTPUT;
-    }
-    predicates.SetWhereClause(context->selection);
-    predicates.SetWhereArgs(context->selectionArgs);
-    if (!context->order.empty()) {
-        predicates.SetOrder(context->order);
-    }
-    vector<string> columns;
-    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTABLUMASSETS_VIEW_NAME);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
-        uri, predicates, columns);
-    if (resultSet != nullptr) {
-        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            unique_ptr<SmartAlbumAsset> albumData = make_unique<SmartAlbumAsset>();
-            if (albumData != nullptr) {
-                albumData->SetAlbumId(get<int32_t>(GetValFromColumn(SMARTALBUM_DB_ID, resultSet, TYPE_INT32)));
-                albumData->SetAlbumName(get<string>(GetValFromColumn(SMARTALBUM_DB_NAME, resultSet, TYPE_STRING)));
-                albumData->SetAlbumCapacity(get<int32_t>(GetValFromColumn(SMARTABLUMASSETS_ALBUMCAPACITY,
-                                                                          resultSet, TYPE_INT32)));
-                albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_SMARTALBUM,
-                    getNetworkId(get<string>(GetValFromColumn(SMARTALBUM_DB_SELF_ID, resultSet, TYPE_STRING))))
-                    + "/" + to_string(albumData->GetAlbumId()));
-
-                context->smartAlbumNativeArray.push_back(move(albumData));
-            }
-        }
-    }
+    NAPI_ERR_LOG("GetSmartAlbumResultDataExecute IN");
+    NAPI_ERR_LOG("GetSmartAlbumResultDataExecute OUT");
 }
 
 static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status,
@@ -2552,15 +2555,14 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status,
             "Query for get fileAssets failed");
     } else {
         if (context->smartAlbumData != nullptr) {
+            NAPI_ERR_LOG("context->smartAlbumData != nullptr");
             jsContext->status = true;
-            napi_value albumArray = nullptr;
-            napi_create_array(env, &albumArray);
             napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumData),
                 context->objectInfo->sDataShareHelper_);
-            napi_set_element(env, albumArray, 0, albumNapiObj);
             napi_get_undefined(env, &jsContext->error);
-            jsContext->data = albumArray;
+            jsContext->data = albumNapiObj;
         } else if (!context->privateSmartAlbumNativeArray.empty()) {
+            NAPI_ERR_LOG("context->privateSmartAlbumNativeArray.empty()");
             jsContext->status = true;
             napi_value albumArray = nullptr;
             napi_create_array(env, &albumArray);
@@ -2584,6 +2586,84 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status,
                                                    context->work, *jsContext);
     }
     delete context;
+}
+
+static void SmartAlbumsAsyncCallbackComplete(napi_env env, napi_status status,
+    MediaLibraryAsyncContext *context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->error);
+    if (context->error != ERR_DEFAULT) {
+        napi_get_undefined(env, &jsContext->data);
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
+            "Query for get smartAlbums failed");
+    } else {
+        if (!context->smartAlbumNativeArray.empty()) {
+            jsContext->status = true;
+            napi_value albumArray = nullptr;
+            napi_create_array(env, &albumArray);
+            for (size_t i = 0; i < context->smartAlbumNativeArray.size(); i++) {
+                napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env,
+                    *(context->smartAlbumNativeArray[i]),
+                    context->objectInfo->sDataShareHelper_);
+                napi_set_element(env, albumArray, i, albumNapiObj);
+            }
+            napi_get_undefined(env, &jsContext->error);
+            jsContext->data = albumArray;
+        } else {
+            NAPI_ERR_LOG("No SmartAlbums result found!");
+            napi_get_undefined(env, &jsContext->data);
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+                "Failed to obtain SmartAlbums Result");
+        }
+    }
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::JSGetSmartAlbums(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value result = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
+    napi_value resource = nullptr;
+
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+    napi_get_undefined(env, &result);
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "Async context is null");
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+        result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
+
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAlbums");
+
+        status = napi_create_async_work(
+            env, nullptr, resource, [](napi_env env, void* data) {
+                auto context = static_cast<MediaLibraryAsyncContext*>(data);
+                GetSmartAlbumResultDataExecute(context);
+            },
+            reinterpret_cast<CompleteCallback>(SmartAlbumsAsyncCallbackComplete),
+            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+        if (status != napi_ok) {
+            napi_get_undefined(env, &result);
+        } else {
+            napi_queue_async_work(env, asyncContext->work);
+            asyncContext.release();
+        }
+    }
+
+    return result;
 }
 
 napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info info)

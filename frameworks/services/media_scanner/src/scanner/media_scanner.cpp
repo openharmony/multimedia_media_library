@@ -582,6 +582,13 @@ bool MediaScannerObj::IsDirHidden(const string &path)
             return true;
         }
 
+        // no scan required for the recycle path
+        string recyclePath = path;
+        recyclePath.append("/.recycle");
+        if (ScannerUtils::IsExists(recyclePath)) {
+            return true;
+        }
+
         // Check is the dir is part of skiplist
         if (CheckSkipScanList(path)) {
             return true;
