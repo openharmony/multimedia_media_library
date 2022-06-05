@@ -14,6 +14,7 @@
  */
 
 #include "medialibrary_device.h"
+#include "datashare_helper.h"
 #include "device_permission_verification.h"
 #include "device_auth.h"
 #include "media_log.h"
@@ -64,7 +65,7 @@ void MediaLibraryDevice::Stop()
     UnRegisterFromDM();
     ClearAllDevices();
     mediaLibraryDeviceOperations_ = nullptr;
-    dataAbilityhelper_ = nullptr;
+    dataShareHelper_ = nullptr;
     devsInfoInter_ = nullptr;
 }
 
@@ -80,11 +81,13 @@ std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::GetInstance()
     return mlDMInstance_;
 }
 
-void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<Context> &context)
+void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<AbilityRuntime::Context> &context)
 {
-    dataAbilityhelper_ = OHOS::AppExecFwk::DataAbilityHelper::Creator(context);
-    MEDIA_INFO_LOG("MediaLibraryDevice::SetAbilityContext create dataAbilityhelper %{public}d",
-        (dataAbilityhelper_ != nullptr));
+    AppExecFwk::Want want;
+    want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
+    dataShareHelper_ = DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
+    MEDIA_INFO_LOG("MediaLibraryDevice::SetAbilityContext create dataAbilityhelper %{private}d",
+        (dataShareHelper_ != nullptr));
 }
 
 void MediaLibraryDevice::GetAllDeviceId(
@@ -201,8 +204,8 @@ void MediaLibraryDevice::ClearAllDevices()
 void MediaLibraryDevice::NotifyDeviceChange()
 {
     auto contextUri = make_unique<Uri>(MEDIALIBRARY_DEVICE_URI);
-    if (dataAbilityhelper_ != nullptr) {
-        dataAbilityhelper_->NotifyChange(*contextUri);
+    if (dataShareHelper_ != nullptr) {
+        dataShareHelper_->NotifyChange(*contextUri);
         MEDIA_INFO_LOG("MediaLibraryDevice NotifyDeviceChange complete");
     }
 }
@@ -210,8 +213,8 @@ void MediaLibraryDevice::NotifyDeviceChange()
 void MediaLibraryDevice::NotifyRemoteFileChange()
 {
     auto contextUri = make_unique<Uri>(MEDIALIBRARY_REMOTEFILE_URI);
-    if (dataAbilityhelper_ != nullptr) {
-        dataAbilityhelper_->NotifyChange(*contextUri);
+    if (dataShareHelper_ != nullptr) {
+        dataShareHelper_->NotifyChange(*contextUri);
         MEDIA_INFO_LOG("MediaLibraryDevice NotifyRemoteFileChange complete");
     }
 }

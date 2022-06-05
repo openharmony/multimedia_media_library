@@ -18,9 +18,6 @@ import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
 config("media_data_ability_public_config") {
   include_dirs = [
     "./include",
-    "./include/distributed_media_library/device_manage",
-    "./include/distributed_media_library/database_manage",
-    "./include/distributed_media_library/devices_info_interact",
     "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include",
     "${aafwk_inner_api_path}/ability_manager/include",

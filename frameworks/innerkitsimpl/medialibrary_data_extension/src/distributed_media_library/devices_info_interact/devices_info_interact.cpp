@@ -17,7 +17,6 @@
 #include "medialibrary_device.h"
 #include "media_data_ability_const.h"
 #include "media_log.h"
-#include "sync_options.h"
 
 namespace OHOS {
 namespace Media {
