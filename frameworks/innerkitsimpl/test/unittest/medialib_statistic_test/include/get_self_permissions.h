@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef GETSELFPERMISSIONS_H
-#define GETSELFPERMISSIONS_H
+#ifndef GET_SELF_PERMISSIONS_H
+#define GET_SELF_PERMISSIONS_H
 
 #include <gtest/gtest.h>
 #include "accesstoken_kit.h"
@@ -28,7 +28,7 @@ namespace AccessToken {
 static const std::string TEST_BUNDLE_NAME = "ohos";
 static const int TEST_USER_ID = 0;
 static const int INVALID_DLP_TYPE = 4;
-class SelfPermissions : public testing::Test {
+class GetSelfPermissions : public testing::Test {
 public:
     static void SetUpTestCase();
 
@@ -41,4 +41,4 @@ public:
 } // namespace AccessToken
 } // namespace Security
 } // namespace OHOS
-#endif // GETSELFPERMISSIONS_H
+#endif // GET_SELF_PERMISSIONS_H
