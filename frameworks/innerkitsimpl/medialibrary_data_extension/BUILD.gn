@@ -183,10 +183,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "relational_store:native_appdatafwk",
     "relational_store:native_rdb",
     "samgr_standard:samgr_proxy",
-
-
-
-
     "startup_l2:syspara",
   ]
 

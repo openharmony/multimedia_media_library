@@ -30,6 +30,12 @@ DevicesInfoInteract::DevicesInfoInteract() : bundleName_(BUNDLE_NAME)
 
 DevicesInfoInteract::~DevicesInfoInteract()
 {
+    DistributedKv::DistributedKvDataManager kvManager;
+    DistributedKv::AppId appId = { BUNDLE_NAME };
+    if (kvStorePtr_ != nullptr) {
+        kvManager.CloseKvStore(appId, kvStorePtr_);
+        kvStorePtr_ = nullptr;
+    }
     MEDIA_DEBUG_LOG("DevicesInfoInteract::deconstructor");
 }
 
