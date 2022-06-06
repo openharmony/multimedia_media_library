@@ -92,6 +92,9 @@ public:
     void SetAlbumName(const VariantData &album);
     std::string GetAlbumName() const;
 
+    void SetRecyclePath(const VariantData &recyclePath);
+    std::string GetRecyclePath() const;
+
     void Init();
 
     using MetadataFnPtr = void (Metadata::*)(const VariantData &);
@@ -128,6 +131,9 @@ private:
     // album
     int32_t albumId_;
     std::string albumName_;
+
+    // recycle
+    std::string recyclePath_;
 };
 } // namespace Media
 } // namespace OHOS

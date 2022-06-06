@@ -41,7 +41,9 @@ Metadata::Metadata()
     duration_(FILE_DURATION_DEFAULT),
     orientation_(FILE_ORIENTATION_DEFAULT),
     albumId_(FILE_ALBUM_ID_DEFAULT),
-    albumName_(FILE_ALBUM_NAME_DEFAULT)
+    albumName_(FILE_ALBUM_NAME_DEFAULT),
+    albumName_(FILE_ALBUM_NAME_DEFAULT),
+    recycle_path_(FILE_RECYCLE_PATH_DEFAULT)
 {
     Init();
 }
@@ -67,6 +69,7 @@ void Metadata::Init()
     memberFuncMap_[MEDIA_DATA_DB_DURATION] = make_pair(DataType::TYPE_INT, &Metadata::SetFileDuration);
     memberFuncMap_[MEDIA_DATA_DB_BUCKET_NAME] = make_pair(DataType::TYPE_STRING, &Metadata::SetAlbumName);
     memberFuncMap_[MEDIA_DATA_DB_PARENT_ID] = make_pair(DataType::TYPE_INT, &Metadata::SetParentId);
+    memberFuncMap_[MEDIA_DATA_DB_RECYCLE_PATH] = make_pair(DataType::TYPE_STRING, &Metadata::SetRecyclePath);
 }
 
 void Metadata::SetFileId(const VariantData &id)
