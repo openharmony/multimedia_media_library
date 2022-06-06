@@ -758,13 +758,12 @@ string MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(std::string &path)
     return displayName;
 }
 
-bool MediaLibraryDataManagerUtils::isAssetExistInDb(const int &id,
+bool MediaLibraryDataManagerUtils::IsAssetExistInDb(const int &id,
     const shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
     vector<string> columns;
     AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
-    string strQueryCondition = MEDIA_DATA_DB_ID + " = '" + to_string(id) + "'";
-    absPredicates.SetWhereClause(strQueryCondition);
+    absPredicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
     unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     if (queryResultSet != nullptr) {
         if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {

@@ -218,9 +218,9 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateRecycleInfo(const int32_t &assetId,
                                                        string &recyclePath,
                                                        const string &realPath)
 {
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
     vector<string> whereArgs;
     int32_t changedRows = -1;
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
     ValuesBucket values;
     values.PutString(MEDIA_DATA_DB_FILE_PATH, realPath);
@@ -240,9 +240,9 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateChildRecycleInfo(const int32_t &asset
                                                             const shared_ptr<RdbStore> &rdbStore,
                                                             const int64_t &recycleDate)
 {
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
     vector<string> whereArgs;
     int32_t changedRows = -1;
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
     ValuesBucket values;
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, recycleDate);
@@ -262,9 +262,9 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateDirTrashInfo(const int32_t &assetId,
                                                         string &recyclePath,
                                                         const string &oldPath)
 {
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
     vector<string> whereArgs;
     int32_t changedRows = -1;
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
     ValuesBucket values;
     values.PutString(MEDIA_DATA_DB_FILE_PATH, recyclePath);
@@ -285,9 +285,9 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateChildTrashInfo(const int32_t &assetId
                                                           const shared_ptr<RdbStore> &rdbStore,
                                                           const int64_t &trashDate)
 {
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
     vector<string> whereArgs;
     int32_t changedRows = -1;
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
     ValuesBucket values;
     values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, trashDate);
