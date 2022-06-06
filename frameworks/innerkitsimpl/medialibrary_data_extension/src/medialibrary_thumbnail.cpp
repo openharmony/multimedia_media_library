@@ -735,7 +735,6 @@ bool MediaLibraryThumbnail::LoadSourceImage(ThumbnailData &data)
     } else {
         realPath = data.path;
     }
-    MEDIA_INFO_LOG("MYLOG: realPath: %{public}s", realPath.c_str());
 
     bool ret = false;
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
