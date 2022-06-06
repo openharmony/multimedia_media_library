@@ -582,10 +582,12 @@ bool MediaScannerObj::IsDirHidden(const string &path)
             return true;
         }
 
-        // no scan required for the recycle path
-        string recyclePath = path;
-        recyclePath.append("/.recycle");
-        if (ScannerUtils::IsExists(recyclePath)) {
+        string lastDentry = "";
+        size_t posLastDentry = path.rfind('/');
+        if (posLastDentry != string::npos) {
+            lastDentry = path.substr(posLastDentry + 1);
+        }
+        if (lastDentry == ".recycle") {
             return true;
         }
 
