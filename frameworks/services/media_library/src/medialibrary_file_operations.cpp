@@ -261,7 +261,6 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum, cons
     if (!srcPath.empty()) {
         errCode = fileAsset.DeleteAsset(srcPath);
     }
-
     if (errCode == DATA_ABILITY_SUCCESS) {
         errCode = fileDbOprn.Delete(rowNum, rdbStore);
         if (errCode > 0) {

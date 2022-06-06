@@ -250,7 +250,7 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
 }
 
 int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum,
-    const string &srcPath, const string &recyclePath,
+    const string &srcPath,
     const shared_ptr<RdbStore> &rdbStore, const unordered_map<string, DirAsset> &dirQuerySetMap)
 {
     int32_t errCode = DATA_ABILITY_FAIL;
@@ -259,14 +259,9 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(const string &rowNum,
     MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
     MediaLibraryDirOperations dirOprn;
     ValuesBucket values;
-    if (!recyclePath.empty()) {
-        errCode = fileAsset.DeleteAsset(recyclePath);
-    } else {
-        if (!srcPath.empty()) {
-            errCode = fileAsset.DeleteAsset(srcPath);
-        }
+    if (!srcPath.empty()) {
+        errCode = fileAsset.DeleteAsset(srcPath);
     }
-
     if (errCode == DATA_ABILITY_SUCCESS) {
         ValueObject valueObject;
         shared_ptr<AbsSharedResultSet> queryResultSet;
@@ -378,7 +373,7 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(const string &oprn, cons
     if (oprn == MEDIA_FILEOPRN_MODIFYASSET) {
         errCode = HandleModifyAsset(id, srcPath, values, rdbStore, dirQuerySetMap);
     } else if (oprn == MEDIA_FILEOPRN_DELETEASSET) {
-        errCode = HandleDeleteAsset(id, srcPath, recyclePath, rdbStore, dirQuerySetMap);
+        errCode = HandleDeleteAsset(id, srcPath, rdbStore, dirQuerySetMap);
     } else if (oprn == MEDIA_FILEOPRN_CLOSEASSET) {
         errCode = HandleCloseAsset(actualUri, srcPath, values, rdbStore);
     }

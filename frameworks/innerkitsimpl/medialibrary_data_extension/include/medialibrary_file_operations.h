@@ -55,7 +55,6 @@ public:
                               const std::unordered_map
                               <std::string, DirAsset> &dirQuerySetMap);
     int32_t HandleDeleteAsset(const std::string &rowNum, const std::string &srcPath,
-                              const std::string &recyclePath,
                               const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                               const std::unordered_map
                               <std::string, DirAsset> &dirQuerySetMap);
