@@ -748,13 +748,12 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
     string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uriString);
     string::size_type pos = uriString.find_last_of('/');
-    DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
-
     if (uriString.find(MEDIA_QUERYOPRN_QUERYVOLUME) != string::npos) {
         QueryData queryData;
         return MediaLibraryQueryOperations::HandleQueryOperations(MEDIA_QUERYOPRN_QUERYVOLUME, queryData,
             rdbStore_);
     }
+    DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
     if (tabletype == TYPE_SMARTALBUM || tabletype == TYPE_SMARTALBUM_MAP) {
         queryResultSet = QueryBySmartTableType(tabletype, strQueryCondition, predicates, columns, rdbStore_);
         CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");

@@ -40,6 +40,7 @@ void CreateDataAHelper(int32_t systemAbilityId);
 
 int uid = 5003;
 const int COPY_TIME = 99;
+const int SCAN_WAIT_TIME = 10;
 int64_t g_oneImageSize = 0;
 int64_t g_oneVideoSize = 0;
 int64_t g_oneAudioSize = 0;
@@ -120,7 +121,7 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
         FILE_CONTENT_MP3, sizeof(FILE_CONTENT_MP3));
     CreateFile(MEDIALIBRARY_FILE_URI, "Documents/", "MediaSpaceStatisticsTest.txt", MEDIA_TYPE_FILE,
         FILE_CONTENT_TXT, sizeof(FILE_CONTENT_TXT));
-    sleep(10);
+    sleep(SCAN_WAIT_TIME);
     // get base size
     g_oneImageSize = GetFile(MEDIA_TYPE_IMAGE)->GetSize();
     g_oneVideoSize = GetFile(MEDIA_TYPE_VIDEO)->GetSize();
@@ -134,7 +135,6 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
         (long long)g_oneAudioSize);
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: g_oneFileSize = %{public}lld",
         (long long)g_oneFileSize);
-
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: Finish");
 }
 
@@ -202,7 +202,6 @@ std::unique_ptr<FileAsset> GetFile(int mediaTypeId)
     EXPECT_NE((fileAsset == nullptr), true);
     return fileAsset;
 }
-
 
 void DeleteFile(std::string fileUri)
 {
@@ -321,8 +320,8 @@ void CheckQuerySize(std::string testNo, int mediaTypeId,int targetFileNumber)
     }
     MEDIA_INFO_LOG("%s QueryTotalSize querySize = %{public}lld", testNo.c_str(), (long long)querySize);
     MEDIA_INFO_LOG("%s QueryTotalSize targetSize = %{public}lld", testNo.c_str(), (long long)targetSize);
-
-    EXPECT_EQ((querySize > 0 && querySize == targetSize), true);
+    EXPECT_EQ(querySize > 0, true);
+    EXPECT_EQ(querySize, targetSize);
 }
 
 /**
@@ -644,10 +643,10 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_017, TestSize.Level
     ClearFile();
     MediaVolume mediaVolume;
     mediaLibraryManager->QueryTotalSize(mediaVolume);
-    EXPECT_EQ((mediaVolume.GetImagesSize() == 0), true);
-    EXPECT_EQ((mediaVolume.GetVideosSize() == 0), true);
-    EXPECT_EQ((mediaVolume.GetAudiosSize() == 0), true);
-    EXPECT_EQ((mediaVolume.GetFilesSize() == 0), true);
+    EXPECT_EQ(mediaVolume.GetImagesSize(), 0);
+    EXPECT_EQ(mediaVolume.GetVideosSize(), 0);
+    EXPECT_EQ(mediaVolume.GetAudiosSize(), 0);
+    EXPECT_EQ(mediaVolume.GetFilesSize(), 0);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_017::End");
 }
 } // namespace Media
