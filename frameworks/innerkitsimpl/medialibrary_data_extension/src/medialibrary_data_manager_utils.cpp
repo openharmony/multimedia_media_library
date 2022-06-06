@@ -716,7 +716,7 @@ bool MediaLibraryDataManagerUtils::isRecycleAssetExist(const int32_t &assetId,
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(assetId);
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(uri, rdbStore);
-    outRecyclePath = fileAsset->GetRecyclePath();
+    outRecyclePath = fileAsset->GetPath();
     if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
         MEDIA_INFO_LOG("assetRescyclePath = %{public}s", outRecyclePath.c_str());
         return MediaFileUtils::IsDirectory(outRecyclePath);
@@ -756,6 +756,21 @@ string MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(std::string &path)
         displayName = path.substr(lastSlashPosition + 1);
     }
     return displayName;
+}
+
+bool MediaLibraryDataManagerUtils::IsAssetExistInDb(const int &id,
+    const shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    vector<string> columns;
+    AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+    absPredicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
+    unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
+    if (queryResultSet != nullptr) {
+        if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+            return true;
+        }
+    }
+    return false;
 }
 } // namespace Media
 } // namespace OHOS
