@@ -60,6 +60,7 @@ const int32_t FILE_ALBUM_ID_DEFAULT = 0;
 const std::string FILE_ALBUM_NAME_DEFAULT = "";
 const int32_t FILE_ORIENTATION_DEFAULT = 0;
 const std::string FILE_RELATIVE_PATH_DEFAULT = "";
+const std::string FILE_RECYCLE_PATH_DEFAULT = "";
 
 const std::string DEFAULT_AUDIO_MIME_TYPE = "audio/*";
 const std::string DEFAULT_VIDEO_MIME_TYPE = "video/*";

@@ -422,7 +422,7 @@ int32_t MediaScannerObj::ScanFileInternal(const string &path)
     return errCode;
 }
 
-int32_t MediaScannerObj::InsertAlbumInfo(string &albumPath, int32_t parentId, string &albumName)
+int32_t MediaScannerObj::InsertAlbumInfo(string &albumPath, int32_t parentId, string albumName)
 {
     int32_t albumId = ERR_FAIL;
 
@@ -505,15 +505,17 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
 
         string currentPath = fName;
         if (S_ISDIR(statInfo.st_mode)) {
-            string albumName = ent->d_name;
-            int32_t albumId = InsertAlbumInfo(currentPath, parentId, albumName);
+            if (IsDirHidden(currentPath)) {
+                continue;
+            }
+
+            int32_t albumId = InsertAlbumInfo(currentPath, parentId, ent->d_name);
             if (albumId == ERR_FAIL) {
                 errCode = ERR_FAIL;
                 break;
             }
-            if (!IsDirHidden(currentPath)) {
-                errCode = WalkFileTree(currentPath, albumId);
-            }
+
+            errCode = WalkFileTree(currentPath, albumId);
         } else if (!ScannerUtils::IsFileHidden(currentPath)) {
             errCode = ScanFileContent(currentPath, parentId);
         }
@@ -579,15 +581,6 @@ bool MediaScannerObj::IsDirHidden(const string &path)
         string excludePath = curPath.append("/.nomedia");
         // Check is the folder consist of .nomedia file
         if (ScannerUtils::IsExists(excludePath)) {
-            return true;
-        }
-
-        string lastDentry = "";
-        size_t posLastDentry = path.rfind('/');
-        if (posLastDentry != string::npos) {
-            lastDentry = path.substr(posLastDentry + 1);
-        }
-        if (lastDentry == ".recycle") {
             return true;
         }
 
