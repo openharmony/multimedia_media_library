@@ -218,6 +218,7 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
     columns.push_back(MEDIA_DATA_DB_SIZE);
     columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
     columns.push_back(MEDIA_DATA_DB_NAME);
+    columns.push_back(MEDIA_DATA_DB_RECYCLE_PATH);
 
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + FormatSqlPath(path));
@@ -245,6 +246,7 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
     vector<string> columns = {};
     columns.push_back(MEDIA_DATA_DB_ID);
     columns.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
+    columns.push_back(MEDIA_DATA_DB_RECYCLE_PATH);
 
     DataShare::DataSharePredicates predicates;
     // Append % to end of the path for using LIKE statement
@@ -260,11 +262,19 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
     int32_t idIndex(0);
     int32_t mediaType(0);
     int32_t mediaTypeIndex(0);
+    std::string recyclePath;
+    int32_t recyclePathIndex(0);
 
     resultSet->GetColumnIndex(MEDIA_DATA_DB_ID, idIndex);
     resultSet->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, mediaTypeIndex);
+    resultSet->GetColumnIndex(MEDIA_DATA_DB_RECYCLE_PATH, recyclePathIndex);
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        resultSet->GetString(recyclePathIndex, recyclePath);
+        if (!recyclePath.empty()) {
+            continue;
+        }
+
         resultSet->GetInt(idIndex, id);
         resultSet->GetInt(mediaTypeIndex, mediaType);
         idMap.emplace(make_pair(id, static_cast<MediaType>(mediaType)));
