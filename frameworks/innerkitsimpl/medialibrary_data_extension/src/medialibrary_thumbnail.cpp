@@ -93,7 +93,6 @@ void ParseQueryResult(shared_ptr<AbsSharedResultSet> resultSet,
     ParseStringResult(resultSet, NUM_3, data.lcdKey, errorCode);
     data.mediaType = MediaType::MEDIA_TYPE_DEFAULT;
     errorCode = resultSet->GetInt(NUM_4, data.mediaType);
-    MEDIA_INFO_LOG("id %{public}s path %{public}s", data.id.c_str(), data.path.c_str());
 }
 
 bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts,

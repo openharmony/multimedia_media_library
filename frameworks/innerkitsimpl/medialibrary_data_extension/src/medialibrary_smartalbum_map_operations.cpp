@@ -125,14 +125,12 @@ int32_t MediaLibrarySmartAlbumMapOperations::TrashDirAssetsInfoUtil(const int32_
 int32_t MediaLibrarySmartAlbumMapOperations::TrashChildAssetsInfoUtil(const int32_t &parentId,
     const int64_t &trashDate, SmartAlbumMapQueryData &smartAlbumMapQueryData)
 {
-    vector<string> columns, selectionArgs;
-    selectionArgs.push_back(to_string(parentId));
-    selectionArgs.push_back(to_string(CHILD_ISTRASH));
-    AbsRdbPredicates mediaLibDirAbsPred(MEDIALIBRARY_TABLE);
-    mediaLibDirAbsPred.SetWhereClause(MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ?");
-    mediaLibDirAbsPred.SetWhereArgs(selectionArgs);
+    vector<string> columns;
+    AbsRdbPredicates dirAbsPred(MEDIALIBRARY_TABLE);
+    dirAbsPred.EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId));
+    dirAbsPred.EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(CHILD_ISTRASH));
     shared_ptr<AbsSharedResultSet> queryResultSet = smartAlbumMapQueryData.rdbStore->Query(
-        mediaLibDirAbsPred, columns);
+        dirAbsPred, columns);
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
@@ -207,7 +205,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleFile(const shared_ptr<FileAs
     int32_t errorCode = DATA_ABILITY_FAIL;
     NativeAlbumAsset nativeAlbumAsset;
     string assetPath = fileAsset->GetRecyclePath();
-    if (!MediaLibraryDataManagerUtils::isAssetExistInDb(fileAsset->GetParent(), smartAlbumMapQueryData.rdbStore)) {
+    if (!MediaLibraryDataManagerUtils::IsAssetExistInDb(fileAsset->GetParent(), smartAlbumMapQueryData.rdbStore)) {
         vector<int32_t> outIds;
         MEDIA_INFO_LOG("RecycleFile GetRelativePath() = %{private}s", fileAsset->GetRelativePath().c_str());
         nativeAlbumAsset = MediaLibraryDataManagerUtils::CreateDirectorys(
@@ -244,14 +242,11 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleFile(const shared_ptr<FileAs
 int32_t MediaLibrarySmartAlbumMapOperations::RecycleChildSameNameInfoUtil(
     const int32_t &parentId, const string &relativePath, SmartAlbumMapQueryData &smartAlbumMapQueryData)
 {
-    vector<string> selectionArgs;
     vector<string> columns = {MEDIA_DATA_DB_ID, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_RELATIVE_PATH};
-    selectionArgs.push_back(to_string(parentId));
-    AbsRdbPredicates mediaLibDirAbsPred(MEDIALIBRARY_TABLE);
-    mediaLibDirAbsPred.SetWhereClause(MEDIA_DATA_DB_PARENT_ID + " = ?");
-    mediaLibDirAbsPred.SetWhereArgs(selectionArgs);
+    AbsRdbPredicates dirAbsPred(MEDIALIBRARY_TABLE);
+    dirAbsPred.EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId));
     shared_ptr<AbsSharedResultSet> queryResultSet = smartAlbumMapQueryData.rdbStore->Query(
-        mediaLibDirAbsPred, columns);
+        dirAbsPred, columns);
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
@@ -290,7 +285,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleDir(const shared_ptr<FileAss
     NativeAlbumAsset nativeAlbumAsset;
     string assetPath = fileAsset->GetRecyclePath();
     MEDIA_INFO_LOG("RecycleDir assetPath = %{private}s", assetPath.c_str());
-    if (!MediaLibraryDataManagerUtils::isAssetExistInDb(fileAsset->GetParent(), smartAlbumMapQueryData.rdbStore)) {
+    if (!MediaLibraryDataManagerUtils::IsAssetExistInDb(fileAsset->GetParent(), smartAlbumMapQueryData.rdbStore)) {
         vector<int32_t> outIds;
         MEDIA_INFO_LOG("RecycleDir GetRelativePath() = %{private}s", fileAsset->GetRelativePath().c_str());
         nativeAlbumAsset = MediaLibraryDataManagerUtils::CreateDirectorys(
@@ -364,14 +359,12 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleFileAssetsInfoUtil(const sha
 int32_t MediaLibrarySmartAlbumMapOperations::RecycleChildAssetsInfoUtil(const int32_t &parentId,
     const int64_t &recycleDate, SmartAlbumMapQueryData &smartAlbumMapQueryData)
 {
-    vector<string> columns, selectionArgs;
-    selectionArgs.push_back(to_string(parentId));
-    selectionArgs.push_back(to_string(CHILD_ISTRASH));
-    AbsRdbPredicates mediaLibDirAbsPred(MEDIALIBRARY_TABLE);
-    mediaLibDirAbsPred.SetWhereClause(MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ?");
-    mediaLibDirAbsPred.SetWhereArgs(selectionArgs);
+    vector<string> columns;
+    AbsRdbPredicates dirAbsPred(MEDIALIBRARY_TABLE);
+    dirAbsPred.EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId));
+    dirAbsPred.EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(CHILD_ISTRASH));
     shared_ptr<AbsSharedResultSet> queryResultSet = smartAlbumMapQueryData.rdbStore->Query(
-        mediaLibDirAbsPred, columns);
+        dirAbsPred, columns);
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
@@ -382,7 +375,6 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleChildAssetsInfoUtil(const in
     if (count != 0) {
         while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t columnIndexId, idVal;
-            string recyclePath, realpath;
             queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
             queryResultSet->GetInt(columnIndexId, idVal);
             (smartAlbumMapQueryData.smartAlbumMapDbOprn).UpdateChildRecycleInfo(idVal,
