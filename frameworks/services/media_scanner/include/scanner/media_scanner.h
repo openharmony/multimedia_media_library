@@ -98,7 +98,7 @@ private:
     int32_t BatchUpdateRequest(Metadata &fileMetadata);
     int32_t RetrieveMetadata(Metadata &fileMetadata);
     int32_t GetAvailableRequestId();
-    int32_t InsertAlbumInfo(std::string &albumPath, int32_t parentId, string &albumName);
+    int32_t InsertAlbumInfo(std::string &albumPath, int32_t parentId, string albumName);
 
     bool isScannerInitDone_;
     MediaScanExecutor scanExector_;
