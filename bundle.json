@@ -1,5 +1,5 @@
 {
-    "name": "@ohos/multimedia_media_library_standard",
+    "name": "@ohos/media_library",
     "description": "provides a set of easy-to-use APIs for getting media file metadata information",
     "version": "3.1",
     "license": "Apache License 2.0",
@@ -8,7 +8,7 @@
         "destPath": "foundation/multimedia/medialibrary_standard"
     },
     "component": {
-      "name": "multimedia_media_library_standard",
+      "name": "media_library",
       "subsystem": "multimedia",
       "syscap": [ "SystemCapability.Multimedia.MediaLibrary" ],
       "features": [],

@@ -60,7 +60,7 @@ ohos_source_set("media_library_source") {
 
   configs = [ ":media_library_config" ]
 
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
   subsystem_name = "multimedia"
 }
 
@@ -82,7 +82,7 @@ ohos_shared_library("media_library") {
     "relational_store:native_rdb",
   ]
 
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
   subsystem_name = "multimedia"
 }
 
@@ -91,7 +91,7 @@ ohos_source_set("media_library_test_source") {
 
   configs = [ ":media_library_config" ]
 
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
   subsystem_name = "multimedia"
 }
 
@@ -104,7 +104,7 @@ ohos_executable("media_library_test") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
   ]
 
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
   subsystem_name = "multimedia"
 }
 ohos_static_library("media_thumbnail_helper") {
@@ -137,5 +137,5 @@ ohos_static_library("media_thumbnail_helper") {
     "relational_store:native_rdb",
   ]
   subsystem_name = "multimedia"
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
 }
