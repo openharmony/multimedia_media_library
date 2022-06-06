@@ -69,30 +69,23 @@ int32_t MediaLibrarySmartAlbumMapDb::DeleteAllAssetsMapInfo(const int32_t assetI
     return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
 
-int32_t MediaLibrarySmartAlbumMapDb::UpdateTrashInfo(const int32_t &assetId,
-                                                     const int32_t &isTrash,
-                                                     const shared_ptr<RdbStore> &rdbStore,
-                                                     string &recyclePath,
-                                                     const int64_t &date)
+int32_t MediaLibrarySmartAlbumMapDb::UpdateAssetTrashInfo(const int32_t &assetId,
+                                                          const int64_t &trashDate,
+                                                          const shared_ptr<RdbStore> &rdbStore,
+                                                          string &recyclePath,
+                                                          const string &oldPath)
 {
     vector<string> whereArgs;
     int32_t changedRows = -1;
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
     ValuesBucket values;
-    if (isTrash == 0) {
-        MEDIA_INFO_LOG("UpdateTrashInfo isTrash == 0");
-        values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, date);
-        values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, 0);
-    } else {
-        MEDIA_INFO_LOG("UpdateTrashInfo isTrash != 0");
-        if (isTrash == ASSET_ISTRASH || isTrash == DIR_ISTRASH) {
-            values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, recyclePath);
-            values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, date);
-        }
-        values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, date);
-    }
-    values.PutInt(MEDIA_DATA_DB_IS_TRASH, isTrash);
+    MEDIA_DEBUG_LOG("UpdateAssetTrashInfo isTrash != 0");
+    values.PutString(MEDIA_DATA_DB_FILE_PATH, recyclePath);
+    values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, oldPath);
+    values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, trashDate);
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, trashDate);
+    values.PutInt(MEDIA_DATA_DB_IS_TRASH, ASSET_ISTRASH);
     int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
     if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
         MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
@@ -110,7 +103,7 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateSameNameInfo(const int32_t &assetId,
         string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
         ValuesBucket values;
         values.PutString(MEDIA_DATA_DB_NAME, displayName);
-        values.PutString(MEDIA_DATA_DB_FILE_PATH, path);
+        values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, path);
         int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
         if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
             MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
@@ -165,7 +158,7 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateChildFileRecycleInfo(const int32_t &a
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateChildPathInfo(const int32_t &assetId,
-    const string &path, const string &relativePath, const shared_ptr<RdbStore> &rdbStore)
+    const string &path, const string &relativePath, const int32_t isTrash, const shared_ptr<RdbStore> &rdbStore)
 {
     vector<string> whereArgs;
     int32_t changedRows = -1;
@@ -173,10 +166,12 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateChildPathInfo(const int32_t &assetId,
     if ((rdbStore != nullptr) && (assetId > 0)) {
         string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
         ValuesBucket values;
-        if (!path.empty()) {
+        if (isTrash == CHILD_ISTRASH) {
             values.PutString(MEDIA_DATA_DB_FILE_PATH, path);
-            values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+        } else {
+            values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, path);
         }
+        values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
         int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
         if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
             MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
@@ -213,6 +208,95 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateFavoriteInfo(const int32_t &assetId,
             MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
             return DATA_ABILITY_FAIL;
         }
+    }
+    return DATA_ABILITY_SUCCESS;
+}
+
+int32_t MediaLibrarySmartAlbumMapDb::UpdateRecycleInfo(const int32_t &assetId,
+                                                       const int64_t &recycleDate,
+                                                       const shared_ptr<RdbStore> &rdbStore,
+                                                       string &recyclePath,
+                                                       const string &realPath)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
+    vector<string> whereArgs;
+    int32_t changedRows = -1;
+    string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
+    ValuesBucket values;
+    values.PutString(MEDIA_DATA_DB_FILE_PATH, realPath);
+    values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, recyclePath);
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, recycleDate);
+    values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, 0);
+    values.PutInt(MEDIA_DATA_DB_IS_TRASH, 0);
+    int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
+    if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
+        MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
+        return DATA_ABILITY_FAIL;
+    }
+    return DATA_ABILITY_SUCCESS;
+}
+
+int32_t MediaLibrarySmartAlbumMapDb::UpdateChildRecycleInfo(const int32_t &assetId,
+                                                            const shared_ptr<RdbStore> &rdbStore,
+                                                            const int64_t &recycleDate)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
+    vector<string> whereArgs;
+    int32_t changedRows = -1;
+    string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
+    ValuesBucket values;
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, recycleDate);
+    values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, 0);
+    values.PutInt(MEDIA_DATA_DB_IS_TRASH, 0);
+    int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
+    if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
+        MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
+        return DATA_ABILITY_FAIL;
+    }
+    return DATA_ABILITY_SUCCESS;
+}
+
+int32_t MediaLibrarySmartAlbumMapDb::UpdateDirTrashInfo(const int32_t &assetId,
+                                                        const int64_t &trashDate,
+                                                        const shared_ptr<RdbStore> &rdbStore,
+                                                        string &recyclePath,
+                                                        const string &oldPath)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
+    vector<string> whereArgs;
+    int32_t changedRows = -1;
+    string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
+    ValuesBucket values;
+    values.PutString(MEDIA_DATA_DB_FILE_PATH, recyclePath);
+    values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, oldPath);
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, trashDate);
+    values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, trashDate);
+    values.PutInt(MEDIA_DATA_DB_IS_TRASH, DIR_ISTRASH);
+
+    int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
+    if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
+        MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
+        return DATA_ABILITY_FAIL;
+    }
+    return DATA_ABILITY_SUCCESS;
+}
+
+int32_t MediaLibrarySmartAlbumMapDb::UpdateChildTrashInfo(const int32_t &assetId,
+                                                          const shared_ptr<RdbStore> &rdbStore,
+                                                          const int64_t &trashDate)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
+    vector<string> whereArgs;
+    int32_t changedRows = -1;
+    string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
+    ValuesBucket values;
+    values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, trashDate);
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, trashDate);
+    values.PutInt(MEDIA_DATA_DB_IS_TRASH, CHILD_ISTRASH);
+    int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
+    if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
+        MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
+        return DATA_ABILITY_FAIL;
     }
     return DATA_ABILITY_SUCCESS;
 }

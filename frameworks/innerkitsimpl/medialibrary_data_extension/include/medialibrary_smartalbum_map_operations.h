@@ -64,7 +64,7 @@ private:
     int32_t TrashDirAssetsInfoUtil(const int32_t &assetId,
                                    SmartAlbumMapQueryData &smartAlbumMapQueryData);
     int32_t TrashChildAssetsInfoUtil(const int32_t &assetId,
-                                     const int64_t &dateTrash,
+                                     const int64_t &trashDate,
                                      SmartAlbumMapQueryData &smartAlbumMapQueryData);
 
     int32_t RecycleFileAssetsInfoUtil(const std::shared_ptr<FileAsset> &fileAsset,
@@ -73,10 +73,12 @@ private:
                                      SmartAlbumMapQueryData &smartAlbumMapQueryData);
     int32_t RecycleFile(const std::shared_ptr<FileAsset> &fileAsset,
                         const std::string &recyclePath,
+                        std::string &outSameNamePath,
                         SmartAlbumMapQueryData &smartAlbumMapQueryData);
     std::string MakeSuffixPathName(std::string &assetPath);
     int32_t RecycleDir(const std::shared_ptr<FileAsset> &fileAsset,
                        const std::string &recyclePath,
+                       std::string &outSameNamePath,
                        SmartAlbumMapQueryData &smartAlbumMapQueryData);
     int32_t RecycleChildAssetsInfoUtil(const int32_t &assetId,
                                        const int64_t &newPath,

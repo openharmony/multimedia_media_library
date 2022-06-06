@@ -42,8 +42,8 @@ public:
     int32_t DeleteAllAssetsMapInfo(const int32_t assetId, const shared_ptr<RdbStore> &rdbStore);
     int32_t UpdateSmartAlbumMapInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
     int64_t InsertSmartAlbumMapInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
-    int32_t UpdateTrashInfo(const int32_t &assetId,
-        const int32_t &isTrash, const shared_ptr<RdbStore> &rdbStore, string &recycleName, const int64_t &date);
+    int32_t UpdateAssetTrashInfo(const int32_t &assetId,
+        const int64_t &trashDate, const shared_ptr<RdbStore> &rdbStore, string &recyclePath, const string &oldPath);
     int32_t UpdateSameNameInfo(const int32_t &assetId,
         const string &displayName, const string &path, const shared_ptr<RdbStore> &rdbStore);
     int32_t UpdateParentDirRecycleInfo(const int32_t &assetId, const int32_t &parentId,
@@ -51,10 +51,20 @@ public:
     int32_t UpdateChildFileRecycleInfo(const int32_t &assetId,
         const string &parentName, const shared_ptr<RdbStore> &rdbStore);
     int32_t UpdateChildPathInfo(const int32_t &assetId,
-        const string &path, const string &relativePath, const shared_ptr<RdbStore> &rdbStore);
+        const string &path, const string &relativePath, const int32_t isTrash, const shared_ptr<RdbStore> &rdbStore);
     int32_t DeleteTrashInfo(const int32_t &assetId, const shared_ptr<RdbStore> &rdbStore);
     int32_t UpdateFavoriteInfo(const int32_t &assetId,
         const OHOS::NativeRdb::ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
+    int32_t UpdateRecycleInfo(const int32_t &assetId,
+        const int64_t &recycleDate, const shared_ptr<RdbStore> &rdbStore, string &recyclePath, const string &realPath);
+    int32_t UpdateDirTrashInfo(const int32_t &assetId,
+        const int64_t &trashDate, const shared_ptr<RdbStore> &rdbStore, string &recyclePath, const string &oldPath);
+    int32_t UpdateChildTrashInfo(const int32_t &assetId,
+                                 const shared_ptr<RdbStore> &rdbStore,
+                                 const int64_t &trashDate);
+    int32_t UpdateChildRecycleInfo(const int32_t &assetId,
+                                   const shared_ptr<RdbStore> &rdbStore,
+                                   const int64_t &recycleDate);
 };
 } // namespace Media
 } // namespace OHOS

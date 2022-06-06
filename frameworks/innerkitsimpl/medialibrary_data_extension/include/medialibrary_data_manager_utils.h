@@ -100,6 +100,8 @@ public:
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::shared_ptr<AbsSharedResultSet> QueryAgeingTrashFiles(const std::shared_ptr<RdbStore> &rdbStore);
     static std::string GetDisPlayNameFromPath(std::string &path);
+    static bool IsAssetExistInDb(const int &id,
+                                 const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS
