@@ -18,7 +18,7 @@
 #include "media_log.h"
 
 namespace OHOS {
-namespace Media {   
+namespace Media {
 using namespace std;
 // Check if file exists or not
 bool ScannerUtils::IsExists(const string &path)

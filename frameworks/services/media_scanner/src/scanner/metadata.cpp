@@ -42,8 +42,7 @@ Metadata::Metadata()
     orientation_(FILE_ORIENTATION_DEFAULT),
     albumId_(FILE_ALBUM_ID_DEFAULT),
     albumName_(FILE_ALBUM_NAME_DEFAULT),
-    albumName_(FILE_ALBUM_NAME_DEFAULT),
-    recycle_path_(FILE_RECYCLE_PATH_DEFAULT)
+    recyclePath_(FILE_RECYCLE_PATH_DEFAULT)
 {
     Init();
 }
@@ -280,6 +279,16 @@ void Metadata::SetParentId(const VariantData &parentId)
 int32_t Metadata::GetParentId() const
 {
     return parentId_;
+}
+
+void Metadata::SetRecyclePath(const VariantData &recyclePath)
+{
+    recyclePath_ = std::get<string>(recyclePath);
+}
+
+std::string Metadata::GetRecyclePath() const
+{
+    return recyclePath_;
 }
 } // namespace Media
 } // namespace OHOS
