@@ -299,7 +299,7 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
     MEDIA_INFO_LOG("CopyFile:: end Copy file: %s", newName.c_str());
 }
 
-void CheckQuerySize(std::string testNo, int mediaTypeId,int targetFileNumber)
+void CheckQuerySize(std::string testNo, int mediaTypeId, int targetFileNumber)
 {
     MediaVolume mediaVolume;
     mediaLibraryManager->QueryTotalSize(mediaVolume);
