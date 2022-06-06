@@ -59,6 +59,6 @@ ohos_shared_library("media_library_manager") {
     "relational_store:native_rdb",
   ]
 
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
   subsystem_name = "multimedia"
 }
