@@ -56,7 +56,6 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
     MediaLibraryFileDb fileDbOprn;
     ValueObject valueObject;
     NativeAlbumAsset  nativeAlbumAsset;
-    MediaLibraryDirOperations dirOprn;
     // Obtain file displayName
     if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
         valueObject.GetString(displayName);
@@ -72,10 +71,6 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
     if (values.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject)) {
         valueObject.GetInt(mediaType);
         fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
-    }
-    errCode = dirOprn.HandleDirOperations(MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION, values, rdbStore, dirQuerySetMap);
-    if (errCode != DATA_ABILITY_SUCCESS) {
-        return errCode;
     }
     vector<int32_t> outIds;
     nativeAlbumAsset = MediaLibraryDataManagerUtils::CreateDirectorys(relativePath, rdbStore, outIds);
@@ -203,16 +198,11 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     ValueObject valueObject;
     FileAsset fileAsset;
     MediaLibraryFileDb fileDbOprn;
-    MediaLibraryDirOperations dirOprn;
     if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
         valueObject.GetString(dstFileName);
     }
     if (values.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
         valueObject.GetString(dstReFilePath);
-    }
-    errCode = dirOprn.HandleDirOperations(MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION, values, rdbStore, dirQuerySetMap);
-    if (errCode != DATA_ABILITY_SUCCESS) {
-        return errCode;
     }
     dstFilePath = ROOT_MEDIA_DIR + dstReFilePath + dstFileName;
     destAlbumPath = ROOT_MEDIA_DIR + dstReFilePath;
