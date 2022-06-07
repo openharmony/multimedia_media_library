@@ -34,7 +34,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
+thread_local unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 bool g_isNewApi = false;
 const int32_t NUM_2 = 2;
 const int32_t NUM_3 = 3;
