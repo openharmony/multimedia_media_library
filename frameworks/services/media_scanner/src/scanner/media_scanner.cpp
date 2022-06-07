@@ -280,9 +280,10 @@ bool MediaScannerObj::IsFileScanned(Metadata &fileMetadata)
     if (md != nullptr) {
         int32_t fileId = md->GetFileId();
         fileMetadata.SetFileId(fileId);
+        fileMetadata.SetOrientation(md->GetOrientation());
     }
 
-    MEDIA_INFO_LOG("File is not scanned already");
+    MEDIA_INFO_LOG("the file hasn't been scanned yet");
     return false;
 }
 
@@ -561,7 +562,6 @@ bool MediaScannerObj::CheckSkipScanList(const string &path)
         return true;
     }
 
-    MEDIA_INFO_LOG("The skip list does not contain the given path");
     return false;
 }
 
