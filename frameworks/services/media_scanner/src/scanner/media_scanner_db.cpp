@@ -128,7 +128,6 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     values.PutLong(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
 
-    values.PutString(MEDIA_DATA_DB_TITLE, ScannerUtils::GetFileTitle(metadata.GetFileName()));
     values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
     values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
 
@@ -219,6 +218,7 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
     columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
     columns.push_back(MEDIA_DATA_DB_NAME);
     columns.push_back(MEDIA_DATA_DB_RECYCLE_PATH);
+    columns.push_back(MEDIA_DATA_DB_ORIENTATION);
 
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + FormatSqlPath(path));
