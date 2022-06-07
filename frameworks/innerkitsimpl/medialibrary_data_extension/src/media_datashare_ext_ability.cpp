@@ -42,13 +42,9 @@ using namespace OHOS::AppExecFwk;
 using OHOS::Security::AccessToken::AccessTokenKit;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
 constexpr int INVALID_VALUE = -1;
-constexpr int UID_ROOT = 0;
-constexpr int UID_STORAGEMANAGER = 1090;
 constexpr int UID_FILEMANAGER = 1006;
 namespace {
 const std::unordered_set<int32_t> UID_FREE_CHECK {
-    UID_ROOT,
-    UID_STORAGEMANAGER,
     UID_FILEMANAGER
 };
 const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
