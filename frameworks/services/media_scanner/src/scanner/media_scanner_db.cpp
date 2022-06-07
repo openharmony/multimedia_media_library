@@ -128,7 +128,6 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     values.PutLong(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
 
-    values.PutString(MEDIA_DATA_DB_TITLE, ScannerUtils::GetFileTitle(metadata.GetFileName()));
     values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
     values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
 
