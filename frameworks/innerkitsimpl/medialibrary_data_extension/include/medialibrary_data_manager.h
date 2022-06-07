@@ -93,6 +93,7 @@ namespace Media {
             const DataShare::DataSharePredicates &predicates);
         EXPORT int32_t OpenFile(const Uri &uri, const std::string &mode);
         EXPORT std::string GetType(const Uri &uri);
+        EXPORT void NotifyChange(const Uri &uri);
 
         std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 

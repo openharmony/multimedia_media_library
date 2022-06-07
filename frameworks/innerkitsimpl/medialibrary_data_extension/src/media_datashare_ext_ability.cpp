@@ -21,12 +21,14 @@
 #include "media_datashare_stub_impl.h"
 #include "hilog_wrapper.h"
 #include "ipc_skeleton.h"
+#include "sa_mgr_client.h"
 #include "datashare_ext_ability_context.h"
 #include "runtime.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_subscriber.h"
+#include "system_ability_definition.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -40,6 +42,21 @@ using namespace OHOS::AppExecFwk;
 using OHOS::Security::AccessToken::AccessTokenKit;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
 constexpr int INVALID_VALUE = -1;
+constexpr int UID_ROOT = 0;
+constexpr int UID_STORAGEMANAGER = 1090;
+constexpr int UID_FILEMANAGER = 1006;
+namespace {
+const std::unordered_set<int32_t> UID_FREE_CHECK {
+    UID_ROOT,
+    UID_STORAGEMANAGER,
+    UID_FILEMANAGER
+};
+const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
+    "com.ohos.medialibrary.MediaScannerAbilityA"
+};
+const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {};
+std::mutex bundleMgrMutex;
+}
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const std::unique_ptr<Runtime>& runtime)
 {
@@ -271,9 +288,76 @@ std::vector<std::shared_ptr<DataShareResult>> MediaDataShareExtAbility::ExecuteB
 
 bool MediaDataShareExtAbility::CheckCallingPermission(const std::string &permission)
 {
-    HILOG_INFO("%{public}s begin, permission:%{public}s", __func__, permission.c_str());
-    HILOG_INFO("%{public}s end.", __func__);
+    int uid = IPCSkeleton::GetCallingUid();
+    if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
+        HILOG_INFO("CheckClientPermission: Pass the uid check list");
+        return true;
+    }
+
+    std::string bundleName = GetClientBundle(uid);
+    HILOG_INFO("CheckClientPermission: bundle name: %{private}s", bundleName.c_str());
+    if (BUNDLE_FREE_CHECK.find(bundleName) != BUNDLE_FREE_CHECK.end()) {
+        HILOG_INFO("CheckClientPermission: Pass the bundle name check list");
+        return true;
+    }
+
+    auto bundleMgr = GetSysBundleManager();
+    if ((bundleMgr != nullptr) && bundleMgr->CheckIsSystemAppByUid(uid) &&
+        (SYSTEM_BUNDLE_FREE_CHECK.find(bundleName) != SYSTEM_BUNDLE_FREE_CHECK.end())) {
+        HILOG_INFO("CheckClientPermission: Pass the system bundle name check list");
+        return true;
+    }
+
+    Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+    int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+        HILOG_ERROR("MediaLibraryDataManager Query: Have no media permission");
+        return false;
+    }
+
     return true;
+}
+
+std::string MediaDataShareExtAbility::GetClientBundle(int uid)
+{
+    auto bms = GetSysBundleManager();
+    std::string bundleName = "";
+    if (bms == nullptr) {
+        HILOG_INFO("GetClientBundleName bms failed");
+        return bundleName;
+    }
+    auto result = bms->GetBundleNameForUid(uid, bundleName);
+    if (!result) {
+        HILOG_ERROR("GetBundleNameForUid fail");
+        return "";
+    }
+    return bundleName;
+}
+
+sptr<AppExecFwk::IBundleMgr> MediaDataShareExtAbility::GetSysBundleManager()
+{
+    if (bundleMgr_ == nullptr) {
+        std::lock_guard<std::mutex> lock(bundleMgrMutex);
+        if (bundleMgr_ == nullptr) {
+            auto saMgr = OHOS::DelayedSingleton<SaMgrClient>::GetInstance();
+            if (saMgr == nullptr) {
+                HILOG_ERROR("failed to get SaMgrClient::GetInstance");
+                return nullptr;
+            }
+            auto bundleObj = saMgr->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+            if (bundleObj == nullptr) {
+                HILOG_ERROR("failed to get GetSystemAbility");
+                return nullptr;
+            }
+            auto bundleMgr = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
+            if (bundleMgr == nullptr) {
+                HILOG_ERROR("failed to iface_cast");
+                return nullptr;
+            }
+            bundleMgr_ = bundleMgr;
+        }
+    }
+    return bundleMgr_;
 }
 } // namespace AbilityRuntime
 } // namespace OHOS
