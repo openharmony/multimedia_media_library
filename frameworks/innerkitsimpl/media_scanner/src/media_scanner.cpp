@@ -574,7 +574,6 @@ bool MediaScanner::CheckSkipScanList(const string &path)
         return true;
     }
 
-    MEDIA_INFO_LOG("The skip list does not contain the given path");
     return false;
 }
 

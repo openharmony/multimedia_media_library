@@ -219,6 +219,7 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
     columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
     columns.push_back(MEDIA_DATA_DB_NAME);
     columns.push_back(MEDIA_DATA_DB_RECYCLE_PATH);
+    columns.push_back(MEDIA_DATA_DB_ORIENTATION);
 
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = " + FormatSqlPath(path));
