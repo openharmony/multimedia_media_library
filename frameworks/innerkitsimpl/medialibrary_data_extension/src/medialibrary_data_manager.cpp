@@ -50,11 +50,9 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
-namespace{
+namespace {
 std::mutex bundleMgrMutex;
 }
-const std::string MediaLibraryDataManager::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
-const std::string MediaLibraryDataManager::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 
 std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 std::mutex MediaLibraryDataManager::mutex_;
@@ -411,14 +409,6 @@ int32_t MediaLibraryDataManager::PreCheckInsert(const string &uri, const DataSha
         return DATA_ABILITY_FAIL;
     }
 
-    string tmpUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
-    if (uri == tmpUri) {
-        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
-            return DATA_ABILITY_PERMISSION_DENIED;
-        }
-    } else if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-        return DATA_ABILITY_PERMISSION_DENIED;
-    }
     return DATA_ABILITY_SUCCESS;
 }
 
@@ -537,9 +527,6 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
         return DATA_ABILITY_FAIL;
     }
 
-    if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-        return DATA_ABILITY_PERMISSION_DENIED;
-    }
     string uriString = uri.ToString();
     string strDeleteCondition = predicates.GetWhereClause();
     if (strDeleteCondition.empty()) {
@@ -909,11 +896,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         FinishTrace(HITRACE_TAG_OHOS);
         return nullptr;
     }
-    StartTrace(HITRACE_TAG_OHOS, "CheckClientPermission");
-    if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
-        return nullptr;
-    }
-    FinishTrace(HITRACE_TAG_OHOS);
+
     shared_ptr<ResultSetBridge> queryResultSet;
     TableType tabletype = TYPE_DATA;
     string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
@@ -988,9 +971,6 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     if ((!isRdbStoreInitialized) || (rdbStore_ == nullptr) || (value.IsEmpty())) {
         MEDIA_ERR_LOG("MediaLibraryDataManager Update:Input parameter is invalid ");
         return DATA_ABILITY_FAIL;
-    }
-    if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-        return DATA_ABILITY_PERMISSION_DENIED;
     }
     MediaLibraryFileOperations fileOprn;
     int32_t changedRows = DATA_ABILITY_FAIL;
@@ -1090,21 +1070,6 @@ int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const std::string &mod
         if (MediaLibraryDataManagerUtils::checkFilePending(fileAsset)) {
             MEDIA_ERR_LOG("MediaLibraryDataManager OpenFile: File is pending");
             return DATA_ABILITY_HAS_OPENED_FAIL;
-        }
-    }
-    if (mode == MEDIA_FILEMODE_READONLY) {
-        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
-            return DATA_ABILITY_PERMISSION_DENIED;
-        }
-    } else if (mode == MEDIA_FILEMODE_WRITEONLY || mode == MEDIA_FILEMODE_WRITETRUNCATE ||
-        mode == MEDIA_FILEMODE_WRITEAPPEND) {
-        if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-            return DATA_ABILITY_PERMISSION_DENIED;
-        }
-    } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE || mode == MEDIA_FILEMODE_READWRITE) {
-        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA) ||
-            !CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-            return DATA_ABILITY_PERMISSION_DENIED;
         }
     }
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
@@ -1313,11 +1278,6 @@ std::string MediaLibraryDataManager::GetClientBundleName()
     return GetClientBundle(uid);
 }
 
-bool MediaLibraryDataManager::CheckClientPermission(const std::string& permissionStr)
-{
-    return true;
-}
-
 void MediaLibraryDataManager::InitialiseKvStore()
 {
     MEDIA_INFO_LOG("MediaLibraryDataManager::InitialiseKvStore");
@@ -1340,7 +1300,6 @@ void MediaLibraryDataManager::InitialiseKvStore()
 
 void MediaLibraryDataManager::NotifyChange(const Uri &uri)
 {
-    MEDIA_INFO_LOG("MediaLibraryDataManager::NotifyChange, %{private}s", uri.ToString().c_str());
     if (mediaDataShare_ != nullptr) {
         mediaDataShare_->NotifyChange(uri);
     }
