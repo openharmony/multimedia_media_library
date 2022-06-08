@@ -11,6 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
+MEDIA_LIB_BASE_DIR = "//foundation/multimedia/media_library"
 MEDIA_LIB_INNERKITS_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl"
 MEDIA_LIB_SERVICES_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/services"

@@ -26,7 +26,7 @@
 using namespace OHOS::AAFwk;
 
 namespace OHOS {
-namespace MEDIA {
+namespace Media {
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED,
     EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED,
@@ -63,5 +63,5 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     std::string srcPath = "/storage/media/local/files";
     Media::MediaScannerObj::GetMediaScannerInstance()->ScanDir(srcPath, nullptr);
 }
-}  // namespace MEDIA
+}  // namespace Media
 }  // namespace OHOS

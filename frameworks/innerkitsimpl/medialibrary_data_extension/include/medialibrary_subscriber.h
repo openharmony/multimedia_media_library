@@ -22,7 +22,7 @@
 #include "matching_skills.h"
 
 namespace OHOS {
-namespace MEDIA {
+namespace Media {
 class MedialibrarySubscriber : public EventFwk::CommonEventSubscriber {
 public:
     MedialibrarySubscriber() = default;
@@ -35,7 +35,7 @@ public:
 private:
     static const std::vector<std::string> events_;
 };
-}  // namespace MEDIA
+}  // namespace Media
 }  // namespace OHOS
 
 #endif // MEDIALIBRARY_SUBSCRIBER_H
