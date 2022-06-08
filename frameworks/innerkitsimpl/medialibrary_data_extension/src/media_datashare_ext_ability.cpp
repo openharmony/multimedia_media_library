@@ -123,19 +123,19 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
     if (mode == MEDIA_FILEMODE_READONLY) {
-        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
+        if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
             return ret;
         }
     } else if (mode == MEDIA_FILEMODE_WRITEONLY ||
                mode == MEDIA_FILEMODE_WRITETRUNCATE ||
                mode == MEDIA_FILEMODE_WRITEAPPEND) {
-        if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+        if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
             return ret;
         }
     } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE ||
                mode == MEDIA_FILEMODE_READWRITE) {
-        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA) ||
-            !CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+        if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA) ||
+            !CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
             return ret;
         }
     }
@@ -154,11 +154,11 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
     string tmpUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
-    if (uri == tmpUri) {
-        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
+    if (uri.ToString() == tmpUri) {
+        if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
             return ret;
         }
-    } else if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+    } else if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         return ret;
     }
     ret = MediaLibraryDataManager::GetInstance()->Insert(uri, value);
@@ -198,12 +198,11 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
-    std::shared_ptr<DataShare::ResultSetBridge> queryResultSet = nullptr;
     if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
         HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
-        return queryResultSet;
+        return nullptr;
     }
-    queryResultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
     std::shared_ptr<DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(queryResultSet);
     return resultSet;
 }
