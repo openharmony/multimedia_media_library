@@ -13,21 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef MEDIASPACESTATISTICS_TEST_H
-#define MEDIASPACESTATISTICS_TEST_H
+#ifndef MEDIA_SPACE_STATISTICS_TEST_H
+#define MEDIA_SPACE_STATISTICS_TEST_H
 
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <sys/sendfile.h>
 #include <sys/timeb.h>
 #include "gtest/gtest.h"
-
 #include "iservice_registry.h"
 #include "media_data_ability_const.h"
 #include "media_log.h"
 #include "media_volume.h"
 #include "media_library_manager.h"
 #include "system_ability_definition.h"
+#include "datashare_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -37,8 +40,7 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
-    static void WaitForCallback();
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIASPACESTATISTICS_TEST_H
+#endif // MEDIA_SPACE_STATISTICS_TEST_H
