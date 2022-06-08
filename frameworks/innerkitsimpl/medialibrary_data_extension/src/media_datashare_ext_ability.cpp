@@ -47,9 +47,6 @@ namespace {
 const std::unordered_set<int32_t> UID_FREE_CHECK {
     UID_FILEMANAGER
 };
-const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
-    "com.ohos.medialibrary.MediaScannerAbilityA"
-};
 const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {};
 std::mutex bundleMgrMutex;
 const std::string PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
@@ -311,21 +308,15 @@ bool MediaDataShareExtAbility::CheckCallingPermission(const std::string &permiss
 {
     int uid = IPCSkeleton::GetCallingUid();
     if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
-        HILOG_INFO("CheckClientPermission: Pass the uid check list");
+        HILOG_INFO("CheckCallingPermission: Pass the uid check list");
         return true;
     }
 
     std::string bundleName = GetClientBundle(uid);
-    HILOG_INFO("CheckClientPermission: bundle name: %{private}s", bundleName.c_str());
-    if (BUNDLE_FREE_CHECK.find(bundleName) != BUNDLE_FREE_CHECK.end()) {
-        HILOG_INFO("CheckClientPermission: Pass the bundle name check list");
-        return true;
-    }
-
     auto bundleMgr = GetSysBundleManager();
     if ((bundleMgr != nullptr) && bundleMgr->CheckIsSystemAppByUid(uid) &&
         (SYSTEM_BUNDLE_FREE_CHECK.find(bundleName) != SYSTEM_BUNDLE_FREE_CHECK.end())) {
-        HILOG_INFO("CheckClientPermission: Pass the system bundle name check list");
+        HILOG_INFO("CheckCallingPermission: Pass the system bundle name check list");
         return true;
     }
 
