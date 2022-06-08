@@ -32,12 +32,14 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "//base/security/access_token/frameworks/common/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
+    "//foundation/aafwk/standard/interfaces/innerkits/uri/include",
     "${aafwk_inner_api_path}/ability_manager/include",
     "${aafwk_inner_api_path}/app_manager/include/appmgr",
     "${aafwk_kits_path}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/common/include/",
+    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/consumer/include/",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include/",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include/",
@@ -47,13 +49,14 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
+    "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl/medialibrary_data_extension/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/inner_api/media_library_helper/include",
     "//third_party/json/include",
   ]
 
   sources = [
-    "./src/media_spacestatistics_test.cpp",
-    "./src/self_permissions.cpp",
+    "./src/get_self_permissions.cpp",
+    "./src/media_space_statistics_test.cpp",
   ]
 
   deps = [
@@ -62,20 +65,20 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "//base/security/access_token/interfaces/innerkits/accesstoken:libaccesstoken_sdk",
     "//base/security/access_token/interfaces/innerkits/nativetoken:libnativetoken",
     "//base/security/access_token/interfaces/innerkits/token_setproc:libtoken_setproc",
+    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
     "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
     "//foundation/multimedia/medialibrary_standard/frameworks/services/media_library:medialibrary_data_ability",
     "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary",
     "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary_js",
     "//foundation/multimedia/medialibrary_standard/sa_profile:medialibrary_service_sa_profile",
-    "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/client:media_scanner_client",
-    "//foundation/multimedia/medialibrary_standard/services/media_scanner_service/media_scanner_ability:media_scanner_service",
     "//utils/native/base:utils",
   ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
+    "data_share:datashare_common",
     "dataability:native_dataability",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
@@ -83,7 +86,6 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "relational_store:native_appdatafwk",
     "relational_store:native_rdb",
     "safwk:system_ability_fwk",
-    "samgr_standard:samgr_proxy",
     "samgr_standard:samgr_proxy",
   ]
 }
