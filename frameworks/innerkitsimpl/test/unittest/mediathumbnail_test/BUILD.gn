@@ -12,10 +12,10 @@
 # limitations under the License.
 
 import("//build/test.gni")
-import("//foundation/multimedia/medialibrary_standard/media_library.gni")
-import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
+import("//foundation/multimedia/media_library/multimedia_aafwk.gni")
 
-module_output_path = "medialibrary_standard/mediathumbnail"
+module_output_path = "media_library/mediathumbnail"
 
 group("unittest") {
   testonly = true

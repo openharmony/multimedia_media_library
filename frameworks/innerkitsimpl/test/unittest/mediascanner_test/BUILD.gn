@@ -12,8 +12,8 @@
 # limitations under the License.
 
 import("//build/test.gni")
-import("//foundation/multimedia/medialibrary_standard/media_library.gni")
-import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
+import("//foundation/multimedia/media_library/multimedia_aafwk.gni")
 
 group("unittest") {
   testonly = true
@@ -22,7 +22,7 @@ group("unittest") {
 }
 
 ohos_unittest("mediascanner_unittest") {
-  module_out_path = "medialibrary_standard/mediascanner"
+  module_out_path = "media_library/mediascanner"
 
   include_dirs = [
     "./include",

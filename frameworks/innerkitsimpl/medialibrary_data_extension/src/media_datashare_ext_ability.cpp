@@ -71,7 +71,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
     HILOG_INFO("%{public}s begin.", __func__);
     Extension::OnStart(want);
-    MEDIA::MedialibrarySubscriber::Subscribe();
+    Media::MedialibrarySubscriber::Subscribe();
     HILOG_INFO("%{public}s end.", __func__);
 }
 

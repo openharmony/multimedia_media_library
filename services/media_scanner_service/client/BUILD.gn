@@ -13,8 +13,8 @@
 
 import("//build/ohos.gni")
 import("//build/test.gni")
-import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
-MEDIA_LIB_BASE_DIR = "//foundation/multimedia/medialibrary_standard"
+import("//foundation/multimedia/media_library/multimedia_aafwk.gni")
+MEDIA_LIB_BASE_DIR = "//foundation/multimedia/media_library"
 
 config("media_data_ability_public_config") {
   include_dirs = [
