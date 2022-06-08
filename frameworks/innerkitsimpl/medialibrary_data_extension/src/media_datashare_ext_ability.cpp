@@ -52,6 +52,8 @@ const std::unordered_set<std::string> BUNDLE_FREE_CHECK {
 };
 const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {};
 std::mutex bundleMgrMutex;
+const std::string PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
+const std::string PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 }
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const std::unique_ptr<Runtime>& runtime)
@@ -119,7 +121,25 @@ std::vector<std::string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, 
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    auto ret = MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
+    int ret = INVALID_VALUE;
+    if (mode == MEDIA_FILEMODE_READONLY) {
+        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
+            return ret;
+        }
+    } else if (mode == MEDIA_FILEMODE_WRITEONLY ||
+               mode == MEDIA_FILEMODE_WRITETRUNCATE ||
+               mode == MEDIA_FILEMODE_WRITEAPPEND) {
+        if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+            return ret;
+        }
+    } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE ||
+               mode == MEDIA_FILEMODE_READWRITE) {
+        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA) ||
+            !CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+            return ret;
+        }
+    }
+    ret = MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }
@@ -133,11 +153,14 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
-    if (!CheckCallingPermission(abilityInfo_->writePermission)) {
-        HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
+    string tmpUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
+    if (uri == tmpUri) {
+        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
+            return ret;
+        }
+    } else if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         return ret;
     }
-
     ret = MediaLibraryDataManager::GetInstance()->Insert(uri, value);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
@@ -148,7 +171,7 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
-    if (!CheckCallingPermission(abilityInfo_->writePermission)) {
+    if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
         return ret;
     }
@@ -162,7 +185,7 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
-    if (!CheckCallingPermission(abilityInfo_->writePermission)) {
+    if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
         return ret;
     }
@@ -175,8 +198,11 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
-    std::shared_ptr<DataShare::ResultSetBridge> queryResultSet;
-
+    std::shared_ptr<DataShare::ResultSetBridge> queryResultSet = nullptr;
+    if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
+        HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
+        return queryResultSet;
+    }
     queryResultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
     std::shared_ptr<DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(queryResultSet);
     return resultSet;
@@ -194,7 +220,7 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<Data
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
-    if (!CheckCallingPermission(abilityInfo_->writePermission)) {
+    if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
         return ret;
     }
