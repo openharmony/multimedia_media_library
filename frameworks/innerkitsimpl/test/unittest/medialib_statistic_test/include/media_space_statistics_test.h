@@ -16,13 +16,6 @@
 #ifndef MEDIA_SPACE_STATISTICS_TEST_H
 #define MEDIA_SPACE_STATISTICS_TEST_H
 
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <sys/sendfile.h>
-#include <sys/timeb.h>
 #include "gtest/gtest.h"
 #include "iservice_registry.h"
 #include "media_data_ability_const.h"
