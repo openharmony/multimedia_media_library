@@ -19,7 +19,7 @@
 #include <memory>
 
 #include "medialibrary_unistore.h"
-#include "medialibrary_rdbstore_operations.h"
+#include "medialibrary_rdbstore.h"
 
 namespace OHOS {
 namespace Media {
@@ -33,28 +33,24 @@ public:
     }
     void Init(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
     {
-        rdbStorePtr_ = std::make_shared<MediaLibraryRdbStore>(context);
-
         if (rdbStorePtr_) {
-            rdbStorePtr_->Init();
+            return;
         }
+
+        rdbStorePtr_ = std::make_shared<MediaLibraryRdbStore>(context);
+        rdbStorePtr_->Init();
     }
     void Stop()
     {
         if (rdbStorePtr_) {
             rdbStorePtr_->Stop();
         }
+        rdbStorePtr_ = nullptr;
     }
-    std::shared_ptr<MediaLibraryUnistore> GetRdbStore() const
+    // MediaLibraryUnistore ?
+    std::shared_ptr<MediaLibraryRdbStore> GetRdbStore() const
     {
         return rdbStorePtr_;
-    }
-    std::shared_ptr<NativeRdb::RdbStore> GetRdbStoreRaw() const
-    {
-        if (rdbStorePtr_) {
-            return rdbStorePtr_->GetRaw();
-        }
-        return nullptr;
     }
 
 private:

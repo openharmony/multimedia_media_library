@@ -79,7 +79,7 @@ void MediaLibraryRdbStore::Stop()
         return;
     }
 
-    SubscribeRdbStoreObserver();
+    UnSubscribeRdbStoreObserver();
 }
 
 bool MediaLibraryRdbStore::SubscribeRdbStoreObserver()
@@ -303,6 +303,152 @@ bool MediaLibraryRdbStore::SyncPushTable(const std::string &bundleName, const st
     return syncTable.SyncPushTable(rdbStore_, bundleName, tableName, devices, isLast);
 }
 
+int32_t MediaLibraryDataCallBack::PrepareCameraDir(RdbStore &store)
+{
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE, CAMERA_DIRECTORY_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, CAMERA_DIR_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE, CAMERA_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, CAMERA_EXTENSION_VALUES);
+    int64_t outRowId = -1;
+    int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
+    MEDIA_DEBUG_LOG("PrepareCameraDir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
+    return insertResult;
+}
+
+int32_t MediaLibraryDataCallBack::PrepareVideoDir(RdbStore &store)
+{
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE, VIDEO_DIRECTORY_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, VIDEO_DIR_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE, VIDEO_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, VIDEO_EXTENSION_VALUES);
+    int64_t outRowId = -1;
+    int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
+    MEDIA_DEBUG_LOG("PrepareVideoDir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
+    return insertResult;
+}
+
+int32_t MediaLibraryDataCallBack::PreparePictureDir(RdbStore &store)
+{
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE, PIC_DIRECTORY_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, PIC_DIR_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE, PIC_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, PIC_EXTENSION_VALUES);
+    int64_t outRowId = -1;
+    int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
+    MEDIA_DEBUG_LOG("PreparePictureDir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
+    return insertResult;
+}
+
+int32_t MediaLibraryDataCallBack::PrepareAudioDir(RdbStore &store)
+{
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE, AUDIO_DIRECTORY_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, AUDIO_DIR_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE, AUDIO_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, AUDIO_EXTENSION_VALUES);
+    int64_t outRowId = -1;
+    int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
+    MEDIA_DEBUG_LOG("PrepareAudioDir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
+    return insertResult;
+}
+
+int32_t MediaLibraryDataCallBack::PrepareDocumentDir(RdbStore &store)
+{
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE, DOC_DIRECTORY_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, DOC_DIR_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE, DOC_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, DOC_EXTENSION_VALUES);
+    int64_t outRowId = -1;
+    int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
+    MEDIA_DEBUG_LOG("PrepareDocumentDir outRowId: %{public}ld, insertResult: %{public}d", (long)outRowId, insertResult);
+    return insertResult;
+}
+
+int32_t MediaLibraryDataCallBack::PrepareDownloadDir(RdbStore &store)
+{
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE, DOWNLOAD_DIRECTORY_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, DOWNLOAD_DIR_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE, DOWNLOAD_TYPE_VALUES);
+    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, DOWNLOAD_EXTENSION_VALUES);
+    int64_t outRowId = -1;
+    int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
+    MEDIA_DEBUG_LOG("PrepareDownloadDir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
+    return insertResult;
+}
+
+int32_t MediaLibraryDataCallBack::PrepareDir(RdbStore &store)
+{
+    if (PrepareCameraDir(store) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("PrepareCameraDir failed");
+        return NativeRdb::E_ERROR;
+    }
+    if (PrepareVideoDir(store) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("PrepareVideoDir failed");
+        return NativeRdb::E_ERROR;
+    }
+    if (PreparePictureDir(store) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("PreparePictureDir failed");
+        return NativeRdb::E_ERROR;
+    }
+    if (PrepareAudioDir(store) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("PrepareAudioDir failed");
+        return NativeRdb::E_ERROR;
+    }
+    if (PrepareDocumentDir(store) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("PrepareDocumentDir failed");
+        return NativeRdb::E_ERROR;
+    }
+    if (PrepareDownloadDir(store) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("PrepareDownloadDir failed");
+        return NativeRdb::E_ERROR;
+    }
+    return NativeRdb::E_OK;
+}
+
+int32_t MediaLibraryDataCallBack::PrepareTrash(RdbStore &store)
+{
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(SMARTALBUM_DB_ID, TRASH_ALBUM_ID_VALUES);
+    valuesBucket.PutString(SMARTALBUM_DB_NAME, TRASH_ALBUM_NAME_VALUES);
+    valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, TRASH_ALBUM_TYPE_VALUES);
+    int64_t outRowId = -1;
+    int32_t insertResult = store.Insert(outRowId, SMARTALBUM_TABLE, valuesBucket);
+    return insertResult;
+}
+
+int32_t MediaLibraryDataCallBack::PrepareFavourite(RdbStore &store)
+{
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(SMARTALBUM_DB_ID, FAVOURITE_ALBUM_ID_VALUES);
+    valuesBucket.PutString(SMARTALBUM_DB_NAME, FAVOURTIE_ALBUM_NAME_VALUES);
+    valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, FAVOURITE_ALBUM_TYPE_VALUES);
+    int64_t outRowId = -1;
+    int32_t insertResult = store.Insert(outRowId, SMARTALBUM_TABLE, valuesBucket);
+    return insertResult;
+}
+
+int32_t MediaLibraryDataCallBack::PrepareSmartAlbum(RdbStore &store)
+{
+    int32_t err = NativeRdb::E_ERROR;
+    err = PrepareTrash(store);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("PrepareTrash failed, err: %{public}d", err);
+        return NativeRdb::E_ERROR;
+    }
+    err = PrepareFavourite(store);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("PrepareFavourite failed, err: %{public}d", err);
+        return NativeRdb::E_ERROR;
+    }
+
+    return NativeRdb::E_OK;
+}
+
 int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 {
     int32_t error_code = NativeRdb::E_ERROR;
@@ -329,13 +475,22 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         error_code = store.ExecuteSql(CREATE_AUDIO_VIEW);
     }
     if (error_code == NativeRdb::E_OK) {
-        error_code = store.ExecuteSql(CREATE_ABLUM_VIEW);
+        error_code= store.ExecuteSql(CREATE_ABLUM_VIEW);
     }
     if (error_code == NativeRdb::E_OK) {
-        error_code = store.ExecuteSql(CREATE_SMARTABLUMASSETS_VIEW);
+        error_code= store.ExecuteSql(CREATE_SMARTABLUMASSETS_VIEW);
     }
     if (error_code == NativeRdb::E_OK) {
-        error_code = store.ExecuteSql(CREATE_ASSETMAP_VIEW);
+        error_code= store.ExecuteSql(CREATE_ASSETMAP_VIEW);
+    }
+    if (error_code == NativeRdb::E_OK) {
+        error_code = store.ExecuteSql(CREATE_MEDIATYPE_DIRECTORY_TABLE);
+    }
+    if (error_code == NativeRdb::E_OK) {
+        error_code = PrepareDir(store);
+    }
+    if (error_code == NativeRdb::E_OK) {
+        error_code = PrepareSmartAlbum(store);
     }
     if (error_code == NativeRdb::E_OK) {
         isDistributedTables = true;
@@ -346,9 +501,9 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
 #ifdef RDB_UPGRADE_MOCK
-    const std::string ALTER_MOCK_COLUMN =
-        "ALTER TABLE " + MEDIALIBRARY_TABLE + " ADD COLUMN upgrade_test_column INT DEFAULT 0";
-    MEDIA_INFO_LOG("OnUpgrade |Rdb Version %{private}d => %{private}d", oldVersion, newVersion);
+    const std::string ALTER_MOCK_COLUMN = "ALTER TABLE " + MEDIALIBRARY_TABLE +
+                                          " ADD COLUMN upgrade_test_column INT DEFAULT 0";
+    MEDIA_INFO_LOG("OnUpgrade |Rdb Verison %{private}d => %{private}d", oldVersion, newVersion);
     int32_t error_code = NativeRdb::E_ERROR;
     error_code = store.ExecuteSql(ALTER_MOCK_COLUMN);
     if (error_code != NativeRdb::E_OK) {
@@ -358,7 +513,11 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     return NativeRdb::E_OK;
 }
 
-bool MediaLibraryDataCallBack::GetDistributedTables() { return isDistributedTables; }
+bool MediaLibraryDataCallBack::GetDistributedTables()
+{
+    return isDistributedTables;
+}
+
 
 MediaLibraryRdbStoreObserver::MediaLibraryRdbStoreObserver(string &bundleName)
 {

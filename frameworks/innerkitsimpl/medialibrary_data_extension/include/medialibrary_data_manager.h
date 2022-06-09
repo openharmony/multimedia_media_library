@@ -71,7 +71,6 @@ namespace Media {
         TYPE_ASSETSMAP_TABLE,
         TYPE_DIR_TABLE
     };
-    class MediaLibraryRdbStoreObserver;
     class MediaLibraryDataManager {
     public:
         EXPORT MediaLibraryDataManager();
@@ -123,7 +122,6 @@ namespace Media {
         std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
         DistributedKv::DistributedKvDataManager dataManager_;
         std::shared_ptr<MediaLibraryThumbnail> mediaThumbnail_;
-        std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
         bool isRdbStoreInitialized;
         std::shared_ptr<OHOS::AbilityRuntime::Context> context_ = nullptr;
         std::string bundleName_;
@@ -133,24 +131,7 @@ namespace Media {
         std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
 };
 
-class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
-public:
-    int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
-    int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
-    bool GetDistributedTables();
-    int32_t PrepareDir(NativeRdb::RdbStore &store);
-    int32_t PrepareCameraDir(NativeRdb::RdbStore &store);
-    int32_t PrepareVideoDir(NativeRdb::RdbStore &store);
-    int32_t PreparePictureDir(NativeRdb::RdbStore &store);
-    int32_t PrepareAudioDir(NativeRdb::RdbStore &store);
-    int32_t PrepareDocumentDir(NativeRdb::RdbStore &store);
-    int32_t PrepareDownloadDir(NativeRdb::RdbStore &store);
-    int32_t PrepareSmartAlbum(NativeRdb::RdbStore &store);
-    int32_t PrepareFavourite(NativeRdb::RdbStore &store);
-    int32_t PrepareTrash(NativeRdb::RdbStore &store);
-private:
-    bool isDistributedTables = false;
-};
+
 
 // Scanner callback objects
 class ScanFileCallback : public IMediaScannerAppCallback {
@@ -160,20 +141,6 @@ public:
     void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
 };
 
-class MediaLibraryRdbStoreObserver : public NativeRdb::RdbStore::RdbStoreObserver {
-public:
-    explicit MediaLibraryRdbStoreObserver(std::string &bundleName);
-    virtual ~MediaLibraryRdbStoreObserver();
-    void OnChange(const std::vector<std::string>& devices) override;
-private:
-    void NotifyDeviceChange();
-private:
-    static constexpr int NOTIFY_TIME_INTERVAL = 10000;
-    std::unique_ptr<OHOS::Utils::Timer> timer_ {nullptr};
-    uint32_t timerId_ {0};
-    std::string bundleName_;
-    bool isNotifyDeviceChange_;
-};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIALIBRARY_DATA_ABILITY_H
