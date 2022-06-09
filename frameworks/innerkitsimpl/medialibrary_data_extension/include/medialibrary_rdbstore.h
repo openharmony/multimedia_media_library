@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIALIBRARY_RDBSTORE_OPERATIONS_H
-#define OHOS_MEDIALIBRARY_RDBSTORE_OPERATIONS_H
+#ifndef OHOS_MEDIALIBRARY_RDBSTORE_H
+#define OHOS_MEDIALIBRARY_RDBSTORE_H
 
 #include "medialibrary_unistore.h"
 #include "timer.h"
@@ -24,10 +24,10 @@ namespace Media {
 class MediaLibraryRdbStoreObserver;
 class MediaLibraryDataCallBack;
 
-class MediaLibraryRdbStoreOperations : public MediaLibraryUnistore {
+class MediaLibraryRdbStore : public MediaLibraryUnistore {
 public:
-    MediaLibraryRdbStoreOperations(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
-    virtual ~MediaLibraryRdbStoreOperations();
+    MediaLibraryRdbStore(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
+    virtual ~MediaLibraryRdbStore();
 
     virtual void Init() override;
     virtual void Stop() override;
@@ -46,7 +46,7 @@ public:
                        bool isLast = false) override;
     virtual int32_t ExecuteSql(const std::string &sql) override;
     // temp
-    std::shared_ptr<NativeRdb::RdbStore> &GetRaw() { return rdbStore_; }
+    std::shared_ptr<NativeRdb::RdbStore> GetRaw() const { return rdbStore_; }
 
 private:
     bool SubscribeRdbStoreObserver();

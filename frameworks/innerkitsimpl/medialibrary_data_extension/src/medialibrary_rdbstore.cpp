@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "medialibrary_rdbstore_operations.h"
+#include "medialibrary_rdbstore.h"
 
 #include "media_log.h"
 #include "medialibrary_sync_table.h"
@@ -24,7 +24,7 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
-MediaLibraryRdbStoreOperations::MediaLibraryRdbStoreOperations(const shared_ptr<OHOS::AbilityRuntime::Context> &context)
+MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
     string databaseDir = context->GetDatabaseDir();
     string relativePath = MEDIA_DATA_ABILITY_DB_NAME;
@@ -38,9 +38,9 @@ MediaLibraryRdbStoreOperations::MediaLibraryRdbStoreOperations(const shared_ptr<
     Init();
 }
 
-void MediaLibraryRdbStoreOperations::Init()
+void MediaLibraryRdbStore::Init()
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStoreOperations::Init");
+    MEDIA_INFO_LOG("MediaLibraryRdbStore::Init");
 
     if (rdbStore_ != nullptr) {
         return;
@@ -68,12 +68,12 @@ void MediaLibraryRdbStoreOperations::Init()
     MEDIA_INFO_LOG("InitMediaLibraryRdbStore SUCCESS");
 }
 
-MediaLibraryRdbStoreOperations::~MediaLibraryRdbStoreOperations()
+MediaLibraryRdbStore::~MediaLibraryRdbStore()
 {
     Stop();
 }
 
-void MediaLibraryRdbStoreOperations::Stop()
+void MediaLibraryRdbStore::Stop()
 {
     if (rdbStore_ == nullptr) {
         return;
@@ -82,10 +82,10 @@ void MediaLibraryRdbStoreOperations::Stop()
     SubscribeRdbStoreObserver();
 }
 
-bool MediaLibraryRdbStoreOperations::SubscribeRdbStoreObserver()
+bool MediaLibraryRdbStore::SubscribeRdbStoreObserver()
 {
     if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryRdbStoreOperations SubscribeRdbStoreObserver rdbStore is null");
+        MEDIA_ERR_LOG("MediaLibraryRdbStore SubscribeRdbStoreObserver rdbStore is null");
         return false;
     }
     rdbStoreObs_ = make_shared<MediaLibraryRdbStoreObserver>(bundleName_);
@@ -96,22 +96,22 @@ bool MediaLibraryRdbStoreOperations::SubscribeRdbStoreObserver()
     DistributedRdb::SubscribeOption option;
     option.mode = DistributedRdb::SubscribeMode::REMOTE;
     bool ret = rdbStore_->Subscribe(option, rdbStoreObs_.get());
-    MEDIA_INFO_LOG("MediaLibraryRdbStoreOperations Subscribe ret = %d", ret);
+    MEDIA_INFO_LOG("MediaLibraryRdbStore Subscribe ret = %d", ret);
 
     return ret;
 }
 
-bool MediaLibraryRdbStoreOperations::UnSubscribeRdbStoreObserver()
+bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
 {
     if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryRdbStoreOperations UnSubscribeRdbStoreObserver rdbStore is null");
+        MEDIA_ERR_LOG("MediaLibraryRdbStore UnSubscribeRdbStoreObserver rdbStore is null");
         return false;
     }
 
     DistributedRdb::SubscribeOption option;
     option.mode = DistributedRdb::SubscribeMode::REMOTE;
     bool ret = rdbStore_->UnSubscribe(option, rdbStoreObs_.get());
-    MEDIA_INFO_LOG("MediaLibraryRdbStoreOperations UnSubscribe ret = %d", ret);
+    MEDIA_INFO_LOG("MediaLibraryRdbStore UnSubscribe ret = %d", ret);
     if (ret) {
         rdbStoreObs_ = nullptr;
     }
@@ -119,16 +119,16 @@ bool MediaLibraryRdbStoreOperations::UnSubscribeRdbStoreObserver()
     return ret;
 }
 
-int32_t MediaLibraryRdbStoreOperations::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
+int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStoreOperations::Insert");
+    MEDIA_INFO_LOG("MediaLibraryRdbStore::Insert");
 
     if (rdbStore_ == nullptr) {
         return DATA_ABILITY_FAIL;
     }
 
     int32_t ret = rdbStore_->Insert(rowId, cmd.GetTableName(), cmd.GetValueBucket());
-    if (ret != E_OK) {
+    if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Insert failed, ret = %{public}d", ret);
         return DATA_ABILITY_FAIL;
     }
@@ -141,9 +141,9 @@ int32_t MediaLibraryRdbStoreOperations::Insert(MediaLibraryCommand &cmd, int64_t
     return ret;
 }
 
-int32_t MediaLibraryRdbStoreOperations::Delete(MediaLibraryCommand &cmd, int32_t &rowId)
+int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &rowId)
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStoreOperations::Delete");
+    MEDIA_INFO_LOG("MediaLibraryRdbStore::Delete");
 
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
@@ -160,7 +160,7 @@ int32_t MediaLibraryRdbStoreOperations::Delete(MediaLibraryCommand &cmd, int32_t
     // return rdbStore_->Delete(rowId, *(cmd.GetAbsRdbPredicates()))
     int32_t ret = rdbStore_->Delete(rowId, cmd.GetTableName(), cmd.GetAbsRdbPredicates()->GetWhereClause(),
                                     cmd.GetAbsRdbPredicates()->GetWhereArgs());
-    if (ret != E_OK) {
+    if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Delete failed, ret = %{public}d", ret);
         return DATA_ABILITY_FAIL;
     }
@@ -173,9 +173,9 @@ int32_t MediaLibraryRdbStoreOperations::Delete(MediaLibraryCommand &cmd, int32_t
     return ret;
 }
 
-int32_t MediaLibraryRdbStoreOperations::Update(MediaLibraryCommand &cmd, int32_t &rowId)
+int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStoreOperations::Update");
+    MEDIA_INFO_LOG("MediaLibraryRdbStore::Update");
     if (rdbStore_ == nullptr) {
         return DATA_ABILITY_FAIL;
     }
@@ -191,7 +191,7 @@ int32_t MediaLibraryRdbStoreOperations::Update(MediaLibraryCommand &cmd, int32_t
     int32_t ret = rdbStore_->Update(rowId, cmd.GetTableName(), cmd.GetValueBucket(),
                                     cmd.GetAbsRdbPredicates()->GetWhereClause(),
                                     cmd.GetAbsRdbPredicates()->GetWhereArgs());
-    if (ret != E_OK) {
+    if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Update failed, ret = %{public}d", ret);
         return DATA_ABILITY_FAIL;
     }
@@ -204,10 +204,10 @@ int32_t MediaLibraryRdbStoreOperations::Update(MediaLibraryCommand &cmd, int32_t
     return ret;
 }
 
-std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStoreOperations::Query(MediaLibraryCommand &cmd,
+std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
                                                                                      const vector<string> &columns)
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStoreOperations::Query");
+    MEDIA_INFO_LOG("MediaLibraryRdbStore::Query");
 
     if (rdbStore_ == nullptr) {
         return nullptr;
@@ -248,9 +248,9 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStoreOperations::Q
     return ret;
 }
 
-int32_t MediaLibraryRdbStoreOperations::ExecuteSql(const std::string &sql)
+int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStoreOperations::ExecuteSql");
+    MEDIA_INFO_LOG("MediaLibraryRdbStore::ExecuteSql");
 
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
@@ -258,7 +258,7 @@ int32_t MediaLibraryRdbStoreOperations::ExecuteSql(const std::string &sql)
     }
 
     int32_t ret = rdbStore_->ExecuteSql(sql);
-    if (ret != E_OK) {
+    if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->ExecuteSql failed, ret = %{public}d", ret);
         return DATA_ABILITY_FAIL;
     }
@@ -266,7 +266,7 @@ int32_t MediaLibraryRdbStoreOperations::ExecuteSql(const std::string &sql)
     return ret;
 }
 
-std::string MediaLibraryRdbStoreOperations::ObtainTableName(MediaLibraryCommand &cmd)
+std::string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
 {
     const std::string &deviceId = cmd.GetOprnDevice();
     if (!deviceId.empty()) {
@@ -276,27 +276,31 @@ std::string MediaLibraryRdbStoreOperations::ObtainTableName(MediaLibraryCommand 
     return cmd.GetTableName();
 }
 
-bool MediaLibraryRdbStoreOperations::SyncPullAllTable(const std::string &bundleName)
+bool MediaLibraryRdbStore::SyncPullAllTable(const std::string &bundleName)
 {
-    return MediaLibrarySyncTable::SyncPullAllTable(rdbStore_, bundleName);
+    MediaLibrarySyncTable syncTable;
+    return syncTable.SyncPullAllTable(rdbStore_, bundleName);
 }
 
-bool MediaLibraryRdbStoreOperations::SyncPullAllTableByDeviceId(const std::string &bundleName,
+bool MediaLibraryRdbStore::SyncPullAllTableByDeviceId(const std::string &bundleName,
                                                                 std::vector<std::string> &devices)
 {
-    return MediaLibrarySyncTable::SyncPullAllTableByDeviceId(rdbStore_, bundleName, devices);
+    MediaLibrarySyncTable syncTable;
+    return syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName, devices);
 }
 
-bool MediaLibraryRdbStoreOperations::SyncPullTable(const std::string &bundleName, const std::string &tableName,
+bool MediaLibraryRdbStore::SyncPullTable(const std::string &bundleName, const std::string &tableName,
                                                    std::vector<std::string> &devices, bool isLast)
 {
-    return MediaLibrarySyncTable::SyncPullTable(rdbStore_, bundleName, tableName, devices, isLast);
+    MediaLibrarySyncTable syncTable;
+    return syncTable.SyncPullTable(rdbStore_, bundleName, tableName, devices, isLast);
 }
 
-bool MediaLibraryRdbStoreOperations::SyncPushTable(const std::string &bundleName, const std::string &tableName,
+bool MediaLibraryRdbStore::SyncPushTable(const std::string &bundleName, const std::string &tableName,
                                                    std::vector<std::string> &devices, bool isLast)
 {
-    return MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName, tableName, devices, isLast);
+    MediaLibrarySyncTable syncTable;
+    return syncTable.SyncPushTable(rdbStore_, bundleName, tableName, devices, isLast);
 }
 
 int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
@@ -351,7 +355,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
         MEDIA_INFO_LOG("Upgrade rdb error %{private}d", error_code);
     }
 #endif
-    return E_OK;
+    return NativeRdb::E_OK;
 }
 
 bool MediaLibraryDataCallBack::GetDistributedTables() { return isDistributedTables; }
