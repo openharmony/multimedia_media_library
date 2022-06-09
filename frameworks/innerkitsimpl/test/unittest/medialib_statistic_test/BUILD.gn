@@ -12,8 +12,8 @@
 # limitations under the License.
 
 import("//build/test.gni")
-import("//foundation/multimedia/medialibrary_standard/media_library.gni")
-import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
+import("//foundation/multimedia/media_library/multimedia_aafwk.gni")
 
 group("unittest") {
   testonly = true
@@ -22,7 +22,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_statistic_unittest") {
-  module_out_path = "medialibrary_standard/medialibraryextention"
+  module_out_path = "media_library/medialibraryextention"
 
   include_dirs = [
     "./include",
@@ -66,12 +66,12 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "//base/security/access_token/interfaces/innerkits/nativetoken:libnativetoken",
     "//base/security/access_token/interfaces/innerkits/token_setproc:libtoken_setproc",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
-    "//foundation/multimedia/medialibrary_standard/frameworks/services/media_library:medialibrary_data_ability",
-    "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary",
-    "//foundation/multimedia/medialibrary_standard/interfaces/kits/js:medialibrary_js",
-    "//foundation/multimedia/medialibrary_standard/sa_profile:medialibrary_service_sa_profile",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
+    "//foundation/multimedia/media_library/frameworks/services/media_library:medialibrary_data_ability",
+    "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary",
+    "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_js",
+    "//foundation/multimedia/media_library/sa_profile:medialibrary_service_sa_profile",
     "//utils/native/base:utils",
   ]
 
