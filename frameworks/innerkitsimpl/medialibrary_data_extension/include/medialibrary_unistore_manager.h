@@ -16,18 +16,13 @@
 #ifndef OHOS_MEDIALIBRARY_UNISTORE_MANAGER_H
 #define OHOS_MEDIALIBRARY_UNISTORE_MANAGER_H
 
-#include <map>
+#include <memory>
 
-#include "medialibrary_kvstore_operations.h"
-#include "medialibrary_rdbstore_operations.h"
 #include "medialibrary_unistore.h"
+#include "medialibrary_rdbstore_operations.h"
 
 namespace OHOS {
 namespace Media {
-
-enum class MediaLibraryUnistoreType {
-    RDB,
-};
 
 class MediaLibraryUnistoreManager {
 public:
@@ -38,43 +33,35 @@ public:
     }
     void Init(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
     {
-        unistoreMap_.clear();
-        // unistoreMap_[MediaLibraryUnistoreType::KV] = std::make_shared<MediaLibraryKvStoreOperations>();
-        unistoreMap_[MediaLibraryUnistoreType::RDB] = std::make_shared<MediaLibraryRdbStoreOperations>(context);
+        rdbStorePtr_ = std::make_shared<MediaLibraryRdbStore>(context);
 
-        for (auto &it : unistoreMap_) {
-            it.second->Init();
+        if (rdbStorePtr_) {
+            rdbStorePtr_->Init();
         }
-        kvStorePtr_ = std::make_shared<MediaLibraryKvStoreOperations>();
-        kvStorePtr_->Init();
     }
     void Stop()
     {
-        for (auto &it : unistoreMap_) {
-            it.second->Stop();
-        }
-        unistoreMap_.clear();
-
-        if (!kvStorePtr_) {
-            kvStorePtr_->Stop();
-            kvStorePtr_ = nullptr;
+        if (rdbStorePtr_) {
+            rdbStorePtr_->Stop();
         }
     }
-    std::shared_ptr<MediaLibraryUnistore> GetUnistore(MediaLibraryUnistoreType type)
+    std::shared_ptr<MediaLibraryUnistore> GetRdbStore() const
     {
-        if (unistoreMap_.find(type) != unistoreMap_.end()) {
-            return unistoreMap_[type];
+        return rdbStorePtr_;
+    }
+    std::shared_ptr<NativeRdb::RdbStore> GetRdbStoreRaw() const
+    {
+        if (rdbStorePtr_) {
+            return rdbStorePtr_->GetRaw();
         }
         return nullptr;
     }
-    std::shared_ptr<MediaLibraryKvStoreOperations> GetKvStore() { return kvStorePtr_; }
 
 private:
     MediaLibraryUnistoreManager() = default;
     virtual ~MediaLibraryUnistoreManager() = default;
 
-    std::map<MediaLibraryUnistoreType, std::shared_ptr<MediaLibraryUnistore>> unistoreMap_;
-    std::shared_ptr<MediaLibraryKvStoreOperations> kvStorePtr_{nullptr};
+    std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_{nullptr};
 };
 } // namespace Media
 } // namespace OHOS
