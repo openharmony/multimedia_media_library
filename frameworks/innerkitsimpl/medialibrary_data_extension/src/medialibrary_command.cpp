@@ -259,7 +259,7 @@ void MediaLibraryCommand::ParseFileId()
         uriInValue = uri_.ToString();
     }
     MEDIA_INFO_LOG("ParseFileId: uriInValue is %{public}s", uriInValue.c_str());
-    oprnFileId_ = MediaFileUtils::GetIdFromUri(uriInValue);
+    oprnFileId_ = MediaLibraryDataManagerUtils::GetIdFromUri(uriInValue);
 }
 
 } // namespace Media

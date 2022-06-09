@@ -273,7 +273,7 @@ int32_t MediaLibraryFileManager::ModifyInfoInDbWithPath(MediaLibraryCommand &cmd
 
     int32_t updatedRows = DATA_ABILITY_FAIL;
     int32_t result = uniStore_->Update(cmd, updatedRows);
-    if (result != E_OK || updatedRows <= 0) {
+    if (result != NativeRdb::E_OK || updatedRows <= 0) {
         MEDIA_ERR_LOG("Update operation failed. Result %{private}d. Deleted %{private}d", result, updatedRows);
     }
 
@@ -299,7 +299,7 @@ int32_t MediaLibraryFileManager::ModifyInfoInDbWithId(MediaLibraryCommand &cmd, 
 
     int32_t updatedRows = DATA_ABILITY_FAIL;
     int32_t result = uniStore_->Update(cmd, updatedRows);
-    if (result != E_OK || updatedRows <= 0) {
+    if (result != NativeRdb::E_OK || updatedRows <= 0) {
         MEDIA_ERR_LOG("Update operation failed. Result %{private}d. Deleted %{private}d", result, updatedRows);
     }
 
@@ -316,7 +316,7 @@ int32_t MediaLibraryFileManager::DeleteInfoInDbWithPath(MediaLibraryCommand &cmd
 
     int32_t deletedRows = DATA_ABILITY_FAIL;
     int32_t result = uniStore_->Delete(cmd, deletedRows);
-    if (result != E_OK) {
+    if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete operation failed. Result %{private}d. Deleted %{private}d", result, deletedRows);
     }
 
@@ -343,7 +343,7 @@ int32_t MediaLibraryFileManager::DeleteInfoInDbWithId(MediaLibraryCommand &cmd, 
 
     int32_t deletedRows = DATA_ABILITY_FAIL;
     int32_t result = uniStore_->Delete(cmd, deletedRows);
-    if (result != E_OK) {
+    if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete operation failed. Result %{private}d. Deleted %{private}d", result, deletedRows);
     }
 

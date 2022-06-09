@@ -106,7 +106,7 @@ void MediaLibraryRealFileManager::UpdateDateModifiedForAlbum(const string &album
     cmd.SetValueBucket(valuesBucket);
 
     int32_t updateResult = ModifyInfoInDbWithPath(cmd, albumPath);
-    if (updateResult != E_OK) {
+    if (updateResult != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Update failed for album");
     }
 }
@@ -259,7 +259,7 @@ int32_t MediaLibraryRealFileManager::InsertAlbumToDb(const std::string &albumPat
         MediaLibraryCommand cmd(FILESYSTEM_ALBUM, CREATE);
         cmd.SetValueBucket(values);
         int64_t rowId = 0;
-        if (uniStore_->Insert(cmd, rowId) != E_OK) {
+        if (uniStore_->Insert(cmd, rowId) != NativeRdb::E_OK) {
             parentId = DATA_ABILITY_FAIL;
             break;
         }
@@ -373,7 +373,7 @@ int32_t MediaLibraryRealFileManager::DeleteAlbum(MediaLibraryCommand &cmd, const
 
     int32_t deletedRows = ALBUM_OPERATION_ERR;
     int32_t deleteResult = uniStore_->Delete(deleteSubfilesCmd, deletedRows);
-    if (deleteResult != E_OK) {
+    if (deleteResult != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete subfiles in album %{private}s failed", albumPath.c_str());
     }
     return deleteRows;
@@ -581,7 +581,7 @@ bool MediaLibraryRealFileManager::IsNoMediaFile(const string &dstFileName, const
 
     int32_t deletedRows = ALBUM_OPERATION_ERR;
     int32_t deleteResult = uniStore_->Delete(cmd, deletedRows);
-    if (deleteResult != E_OK) {
+    if (deleteResult != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete rows for the hidden album failed");
     }
     return true;
