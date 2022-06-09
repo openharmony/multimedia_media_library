@@ -19,6 +19,7 @@
 #include <string>
 #include <iostream>
 #include <queue>
+#include <mutex>
 
 namespace OHOS {
 namespace Media {
@@ -71,13 +72,13 @@ public:
     void SetCallbackFunction(callback_func cb_function);
 
 private:
+    void HandleScanExecution();
+
+    std::queue<unique_ptr<ScanRequest>> requestQueue_;
+    callback_func cb_function_ = nullptr;
+    std::mutex mutex_;
     const size_t MAX_THREAD = 1;
     size_t activeThread_ = 0;
-    std::queue<unique_ptr<ScanRequest>> scanRequestQueue_;
-    callback_func cb_function_ = nullptr;
-
-    void HandleScanExecution();
-    void PrepareScanExecution();
 };
 } // namespace Media
 } // namespace OHOS

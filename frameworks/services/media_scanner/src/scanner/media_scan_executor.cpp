@@ -27,29 +27,32 @@ void MediaScanExecutor::SetCallbackFunction(callback_func cb_function)
 
 void MediaScanExecutor::ExecuteScan(unique_ptr<ScanRequest> request)
 {
-    scanRequestQueue_.push(move(request));
-    PrepareScanExecution();
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    requestQueue_.push(move(request));
+
+    if (activeThread_ < MAX_THREAD) {
+        std::thread(&MediaScanExecutor::HandleScanExecution, this).detach();
+        activeThread_++;
+    }
 }
 
 void MediaScanExecutor::HandleScanExecution()
 {
-    while (!scanRequestQueue_.empty()) {
-        unique_ptr<ScanRequest> sr = std::move(scanRequestQueue_.front());
-        scanRequestQueue_.pop();
-        cb_function_(*sr);
-    }
-    activeThread_--;
-    return;
-}
+    unique_ptr<ScanRequest> request;
+    while (true) {
+            {
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (requestQueue_.empty()) {
+                    activeThread_--;
+                    break;
+                }
 
-void MediaScanExecutor::PrepareScanExecution()
-{
-    size_t c = MAX_THREAD - activeThread_;
-    for (size_t i = 0; i < c; i++) {
-        if (!scanRequestQueue_.empty() && (activeThread_ < scanRequestQueue_.size())) {
-            std::thread(&MediaScanExecutor::HandleScanExecution, this).detach();
-            activeThread_++;
-        }
+                request = std::move(requestQueue_.front());
+                requestQueue_.pop();
+            }
+
+            cb_function_(*request);
     }
 }
 } // namespace Media
