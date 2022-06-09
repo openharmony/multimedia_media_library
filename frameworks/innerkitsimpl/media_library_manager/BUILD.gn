@@ -12,7 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
+import("//foundation/multimedia/media_library/multimedia_aafwk.gni")
 
 ohos_shared_library("media_library_manager") {
   install_enable = true
@@ -28,8 +28,8 @@ ohos_shared_library("media_library_manager") {
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/appdatafwk/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper/include",
-    "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/include",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
+    "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/provider/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
@@ -43,7 +43,7 @@ ohos_shared_library("media_library_manager") {
     "${aafwk_kits_path}/ability/native:abilitykit_native",
     "${aafwk_kits_path}/appkit:appkit_native",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper:media_library",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//utils/native/base:utils",
   ]
 
@@ -59,6 +59,6 @@ ohos_shared_library("media_library_manager") {
     "relational_store:native_rdb",
   ]
 
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
   subsystem_name = "multimedia"
 }

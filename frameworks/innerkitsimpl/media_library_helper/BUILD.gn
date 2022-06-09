@@ -12,7 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/multimedia/medialibrary_standard/multimedia_aafwk.gni")
+import("//foundation/multimedia/media_library/multimedia_aafwk.gni")
 
 group("media_library_packages") {
   deps = [ ":media_library" ]
@@ -24,7 +24,7 @@ config("media_library_config") {
   include_dirs = [
     "./",
     "./include",
-    "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/include",
+    "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//utils/native/base/include",
     "${aafwk_kits_path}/ability/native/include",
@@ -60,7 +60,7 @@ ohos_source_set("media_library_source") {
 
   configs = [ ":media_library_config" ]
 
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
   subsystem_name = "multimedia"
 }
 
@@ -82,16 +82,16 @@ ohos_shared_library("media_library") {
     "relational_store:native_rdb",
   ]
 
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
   subsystem_name = "multimedia"
 }
 
 ohos_source_set("media_library_test_source") {
-  sources = [ "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/test/media_library_test.cpp" ]
+  sources = [ "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/test/media_library_test.cpp" ]
 
   configs = [ ":media_library_config" ]
 
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
   subsystem_name = "multimedia"
 }
 
@@ -104,14 +104,14 @@ ohos_executable("media_library_test") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
   ]
 
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
   subsystem_name = "multimedia"
 }
 ohos_static_library("media_thumbnail_helper") {
   sources = [ "src/media_thumbnail_helper.cpp" ]
   include_dirs = [
-    "//foundation/multimedia/medialibrary_standard/interfaces/inner_api/media_library_helper/include",
-    "//foundation/multimedia/medialibrary_standard/frameworks/innerkitsimpl/media_library_helper/include",
+    "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
     "${aafwk_kits_path}/ability/native/include",
@@ -137,5 +137,5 @@ ohos_static_library("media_thumbnail_helper") {
     "relational_store:native_rdb",
   ]
   subsystem_name = "multimedia"
-  part_name = "multimedia_media_library_standard"
+  part_name = "media_library"
 }
