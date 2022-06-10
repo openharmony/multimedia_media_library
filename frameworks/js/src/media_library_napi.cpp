@@ -133,18 +133,25 @@ shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::GetDataShareHelper(napi
 
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = nullptr;
     napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode_);
-    if (status != napi_ok) {
-    } else {
-        if (isStageMode_) {
-            auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
-            if (context == nullptr) {
-                NAPI_ERR_LOG("Failed to get native context instance");
-                return nullptr;
-            }
-            AppExecFwk::Want want;
-            want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
-            dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
+    if (status != napi_ok || !isStageMode_) {
+        auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
+        if (ability == nullptr) {
+            NAPI_ERR_LOG("Failed to get native ability instance");
+            return nullptr;
         }
+        auto context = ability->GetContext();
+        if (context == nullptr) {
+            NAPI_ERR_LOG("Failed to get native context instance");
+            return nullptr;
+        }
+        dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
+    } else {
+        auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
+        if (context == nullptr) {
+            NAPI_ERR_LOG("Failed to get native context instance");
+            return nullptr;
+        }
+        dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
     }
     return dataShareHelper;
 }
