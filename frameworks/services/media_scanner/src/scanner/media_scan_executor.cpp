@@ -41,18 +41,18 @@ void MediaScanExecutor::HandleScanExecution()
 {
     unique_ptr<ScanRequest> request;
     while (true) {
-            {
-                std::lock_guard<std::mutex> lock(mutex_);
-                if (requestQueue_.empty()) {
-                    activeThread_--;
-                    break;
-                }
-
-                request = std::move(requestQueue_.front());
-                requestQueue_.pop();
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (requestQueue_.empty()) {
+                activeThread_--;
+                break;
             }
 
-            cb_function_(*request);
+            request = std::move(requestQueue_.front());
+            requestQueue_.pop();
+        }
+
+        cb_function_(*request);
     }
 }
 } // namespace Media
