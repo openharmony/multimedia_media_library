@@ -19,7 +19,6 @@
 #include <string>
 #include <iostream>
 #include <queue>
-#include <mutex>
 
 namespace OHOS {
 namespace Media {
