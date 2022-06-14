@@ -2220,6 +2220,7 @@ void FileAssetNapi::UpdateFileAssetInfo()
     artist_ = sFileAsset_->GetArtist();
     duration_ = sFileAsset_->GetDuration();
 
+    dateTrashed_ = sFileAsset_->GetDateTrashed();
     parent_ = sFileAsset_->GetParent();
     albumUri_ = sFileAsset_->GetAlbumUri();
     dateTaken_ = sFileAsset_->GetDateTaken();
