@@ -54,7 +54,7 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
                 relativePath = "";
             }
         }
-        if (!MediaLibraryDataManagerUtils::CheckDisplayName(title)) {
+        if (!MediaFileUtils::CheckDisplayName(title)) {
             parentId = DATA_ABILITY_VIOLATION_PARAMETERS;
             MediaLibraryDataManagerUtils::DeleteDirectorys(outIds, rdbStore);
             break;
@@ -65,9 +65,9 @@ int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
         values.PutInt(Media::MEDIA_DATA_DB_MEDIA_TYPE, MediaType::MEDIA_TYPE_ALBUM);
         values.PutInt(Media::MEDIA_DATA_DB_PARENT_ID, parentId);
         values.PutLong(MEDIA_DATA_DB_DATE_ADDED,
-                       MediaLibraryDataManagerUtils::GetAlbumDateModified(path));
+                       MediaFileUtils::GetAlbumDateModified(path));
         values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
-                       MediaLibraryDataManagerUtils::GetAlbumDateModified(path));
+                       MediaFileUtils::GetAlbumDateModified(path));
         parentId = const_cast<MediaLibraryAlbumDb &>(albumDbOprn).InsertAlbumInfo(values, rdbStore);
         outIds.push_back(parentId);
         if (index == string::npos) {
@@ -112,7 +112,7 @@ int32_t UpdateAlbumInfoUtil(const ValuesBucket &valuesBucket,
 
     values.PutString(Media::MEDIA_DATA_DB_FILE_PATH, newAlbumPath);
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
-                   MediaLibraryDataManagerUtils::GetAlbumDateModified(newAlbumPath));
+                   MediaFileUtils::GetAlbumDateModified(newAlbumPath));
 
     retVal = const_cast<MediaLibraryAlbumDb &>(albumDbOprn).UpdateAlbumInfo(values, rdbStore);
     if ((retVal == DATA_ABILITY_SUCCESS) && (!newAlbumPath.empty())) {

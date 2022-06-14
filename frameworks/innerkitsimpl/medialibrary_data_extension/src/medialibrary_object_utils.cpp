@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#include "medialibrary_real_file_manager.h"
+#include "medialibrary_object_utils.h"
 
 #include "album_asset.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_thumbnail_manager.h"
+#include "medialibrary_thumbnail.h"
 #include "value_object.h"
 
 using namespace std;
@@ -32,10 +32,9 @@ namespace Media {
 // return: dir id in database
 int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
 {
-    int32_t rowId = -1;
-    if (!path.empty()) {
+    int64_t rowId = -1;
+    if (!dirPath.empty()) {
         ValuesBucket values;
-        // string dirPath = ROOT_MEDIA_DIR + path;
         values.PutString(MEDIA_DATA_DB_FILE_PATH, dirPath);
         MediaLibraryCommand cmd(FILESYSTEM_ALBUM, CREATE, values);
         (void)CreateDirObj(cmd, rowId);
@@ -52,6 +51,12 @@ NativeAlbumAsset MediaLibraryObjectUtils::GetDirAsset(const string &path)
         return dirAsset;
     }
 
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        dirAsset.SetAlbumId(DATA_ABILITY_FAIL);
+        return dirAsset;
+    }
+
     int32_t dirId = CreateDirWithPath(path);
     MEDIA_WARNING_LOG("After CreateDirWithPath, get dirId = %{private}d!", dirId);
     dirAsset.SetAlbumId(dirId);
@@ -59,11 +64,9 @@ NativeAlbumAsset MediaLibraryObjectUtils::GetDirAsset(const string &path)
         return dirAsset;
     }
 
-    vector<string> columns;
     MediaLibraryCommand cmd(FILESYSTEM_ALBUM, QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(dirId));
-
-    auto queryResultSet = uniStore_->Query(cmd, columns);
+    auto queryResultSet = uniStore_->Query(cmd, {});
     if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t columnIndexName;
         string nameVal;
@@ -100,6 +103,11 @@ int32_t MediaLibraryObjectUtils::DeleteInvalidRowInDb(const string &path)
 // create
 int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
 {
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+
     string relativePath(""), path(""), displayName("");
     int32_t mediaType = static_cast<int32_t>(MEDIA_TYPE_FILE);
     FileAsset fileAsset;
@@ -156,7 +164,7 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
     int64_t outRowId = -1;
     errCode = uniStore_->Insert(cmd, outRowId);
     MEDIA_INFO_LOG("Insert errCode = %d, outRowId = %lld", errCode, outRowId);
-    return (errCode == E_OK) ? outRowId : errCode;
+    return (errCode == NativeRdb::E_OK) ? outRowId : errCode;
 }
 
 NativeAlbumAsset MediaLibraryObjectUtils::GetLastDirExistInDb(const std::string &dirPath)
@@ -200,6 +208,11 @@ int32_t MediaLibraryObjectUtils::DeleteRows(const std::vector<int64_t> &rowIds)
 
 int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dirPath, int64_t &rowId)
 {
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+
     NativeAlbumAsset dirAsset = GetLastDirExistInDb(dirPath);
     string parentPath = dirAsset.GetAlbumPath();
     int64_t parentId = dirAsset.GetAlbumId();
@@ -227,7 +240,7 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
         }
         if (!MediaFileUtils::CheckDisplayName(title)) {
             DeleteRows(outIds);
-            MEDIA_WARNING_LOG("Check display name failed!")
+            MEDIA_WARNING_LOG("Check display name failed!");
             return DATA_ABILITY_VIOLATION_PARAMETERS;
         }
         values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
@@ -247,11 +260,11 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
         parentId = rowId;
         outIds.push_back(rowId);
     }
-    MEDIA_INFO_LOG("parentId = %{private}d", parentId);
+    MEDIA_INFO_LOG("parentId = %{private}lld", parentId);
     return DATA_ABILITY_SUCCESS;
 }
 
-int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int32_t &rowId)
+int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t &rowId)
 {
     MEDIA_INFO_LOG("[lqh] enter");
     AlbumAsset dirAsset;
@@ -267,7 +280,7 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int32_t 
     }
     dirAsset.SetAlbumPath(dirPath);
     rowId = GetIdByPathFromDb(dirPath);
-    MEDIA_INFO_LOG("dirPath %{private}s id in database is %{private}d", dirPath.c_str(), rowId);
+    MEDIA_INFO_LOG("dirPath %{private}s id in database is %{private}lld", dirPath.c_str(), rowId);
     if (rowId < 0) {
         dirAsset.CreateAlbumAsset();
         return InsertDirToDbRecursively(dirPath, rowId);
@@ -279,10 +292,6 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int32_t 
     }
     return DATA_ABILITY_DUPLICATE_CREATE;
 }
-
-
-
-
 
 int32_t DeleteEmptyDirsRecursively(const int32_t dirId)
 {
@@ -328,6 +337,11 @@ int32_t MediaLibraryObjectUtils::DeleteFileObj(MediaLibraryCommand &cmd, const s
 int32_t MediaLibraryObjectUtils::DeleteDirObj(MediaLibraryCommand &cmd, const string &dirPath)
 {
     MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+
     AlbumAsset dirAsset;
     if (!dirAsset.DeleteAlbumAsset(dirPath)) {
         MEDIA_ERR_LOG("Delete album asset failed!");
@@ -359,14 +373,9 @@ int32_t MediaLibraryObjectUtils::DeleteDirObj(MediaLibraryCommand &cmd, const st
     return deleteRows;
 }
 
-
-
-
-
-
 // Restriction: input param cmd MUST have id in uri
-int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd, const string &srcFilePath
-    const string &dstFilePath)
+int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd, const string &srcFilePath,
+                                               const string &dstFilePath)
 {
     MEDIA_INFO_LOG("[lqh] enter");
     // string dstFileName, dstReFilePath;
@@ -399,7 +408,7 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd, const s
         MEDIA_ERR_LOG("Failed to modify the file in the device");
         return errCode;
     }
-
+    string dstFileName = MediaLibraryDataManagerUtils::GetFileName(dstFilePath);
     if (ProcessNoMediaFile(dstFileName, dstAlbumPath) || ProcessHiddenFile(dstFileName, srcFilePath)) {
         MEDIA_ERR_LOG("New file is a .nomedia file or hidden file.");
         // why: return fail insteal of success
@@ -417,8 +426,14 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd, const s
 // only support rename in the same parent folder, like: a/b/c --> a/b/d
 // Restriction: input param cmd MUST have id in uri
 int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd, const string &srcDirPath,
-    const string &dstDirPath)
+                                              const string &dstDirPath)
 {
+    MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+
     // string dstDirName = "";
     // ValueObject valueObject;
     // if (values.GetObject(MEDIA_DATA_DB_ALBUM_NAME, valueObject)) {
@@ -445,7 +460,7 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd, const st
     ValuesBucket values = cmd.GetValueBucket();
     values.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, MediaLibraryDataManagerUtils::GetParentPath(srcDirPath));
     values.PutString(Media::MEDIA_DATA_DB_FILE_PATH, dstDirPath);
-    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaLibraryDataManagerUtils::GetPathDateModified(dstDirPath));
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::GetAlbumDateModified(dstDirPath));
 
     cmd.SetValueBucket(values);
     int32_t retVal = ModifyInfoInDbWithId(cmd);
@@ -468,7 +483,7 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd, const st
     return retVal;
 }
 
-int32_t MediaLibraryFileManager::OpenFile(MediaLibraryCommand &cmd, const string &mode)
+int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
     MEDIA_INFO_LOG("[lqh] enter");
     string uriString = cmd.GetUri().ToString();
@@ -530,9 +545,12 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
         UpdateDateModifiedForAlbum(dirPath);
     }
 
-    MediaLibraryThumbnailManager thumbnail;
+    MediaLibraryThumbnail thumbnail;
+    ThumbRdbOpt opt{.store = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+                    .table = MEDIALIBRARY_TABLE,
+                    .row = strFileId};
     string kvId;
-    thumbnail.CreateThumbnail(strFileId, kvId);
+    thumbnail.CreateThumbnail(opt, kvId);
     ScanFile(srcPath);
     return DATA_ABILITY_SUCCESS;
 }
@@ -549,6 +567,12 @@ void MediaLibraryObjectUtils::ScanFile(const string &srcPath)
 
 bool MediaLibraryObjectUtils::ProcessNoMediaFile(const string &dstFileName, const string &dstAlbumPath)
 {
+    MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return false;
+    }
+
     if (dstFileName.empty() || dstFileName != ".nomedia") {
         MEDIA_INFO_LOG("Not a .nomedia file, no need to do anything.");
         return false;
@@ -601,13 +625,31 @@ void MediaLibraryObjectUtils::UpdateDateModifiedForAlbum(const string &dirPath)
     }
 }
 
-shared_ptr<FileAsset> MediaLibraryFileManager::GetFileAssetFromDb(const string &uriStr)
+// Query with the WhereClause
+shared_ptr<AbsSharedResultSet> MediaLibraryObjectUtils::QueryFiles(MediaLibraryCommand &cmd)
 {
     MEDIA_INFO_LOG("[lqh] enter");
-    string id = MediaFileUtils::GetIdFromUri(uriStr);
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return nullptr;
+    }
+
+    vector<string> selectionArgs = {};
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(selectionArgs);
+    vector<string> columns;
+
+    shared_ptr<AbsSharedResultSet> resultSet = uniStore_->Query(cmd, columns);
+    return resultSet;
+}
+
+shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &uriStr)
+{
+    MEDIA_INFO_LOG("[lqh] enter");
+
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriStr);
     string networkId = MediaFileUtils::GetNetworkIdFromUri(uriStr);
 
-    if ((id.empty()) || (!MediaFileUtils::IsNumber(id)) || (stoi(id) == -1)) {
+    if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) || (stoi(id) == -1)) {
         MEDIA_ERR_LOG("Id for the path is incorrect");
         return nullptr;
     }
@@ -622,7 +664,7 @@ shared_ptr<FileAsset> MediaLibraryFileManager::GetFileAssetFromDb(const string &
         return nullptr;
     }
 
-    shared_ptr<DataShare::ResultSetBridge> rsBridge = RdbUtils::ToResultSetBridge(resultSet);
+    shared_ptr<DataShare::ResultSetBridge> rsBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
     shared_ptr<DataShare::DataShareResultSet> dataShareRs = make_shared<DataShare::DataShareResultSet>(rsBridge);
     shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>(dataShareRs);
     if (fetchFileResult == nullptr) {
@@ -636,6 +678,11 @@ shared_ptr<FileAsset> MediaLibraryFileManager::GetFileAssetFromDb(const string &
 int32_t MediaLibraryObjectUtils::SetFilePending(string &uriStr, bool isPending)
 {
     MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+
     // string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriStr);
     // string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uriStr);
     // MEDIA_INFO_LOG("setFilePending id = %{private}s, networkId = %{private}s, isPending = %{private}d",
@@ -671,10 +718,8 @@ int32_t MediaLibraryObjectUtils::SetFilePending(string &uriStr, bool isPending)
     return DATA_ABILITY_SUCCESS;
 }
 
-
-
 int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, const string &dstPath,
-    const int &bucketId, const string &bucketName)
+                                                    const int &bucketId, const string &bucketName)
 {
     if (dstPath.empty()) {
         MEDIA_ERR_LOG("Input argument is empty.");
@@ -688,7 +733,7 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
         dispName = dstPath.substr(found + 1);
     }
 
-    stat statInfo;
+    struct stat statInfo;
     if (stat(dstPath.c_str(), &statInfo) != 0) {
         MEDIA_ERR_LOG("dstPath %{private}s is invalid. Modify failed!", dstPath.c_str());
         return DATA_ABILITY_FAIL;
@@ -707,13 +752,19 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
 
 string MediaLibraryObjectUtils::GetPathByIdFromDb(const string &id)
 {
+    MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return "";
+    }
+
     string filePath("");
     vector<string> selectionArgs = {};
     int32_t columnIndex(0);
 
-    if ((id.empty()) || (!MediaFileUtils::IsNumber(id)) || (stoi(id) == -1)) {
+    if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) || (stoi(id) == -1)) {
         MEDIA_ERR_LOG("Id for the path is incorrect or rdbStore is null");
-        return filePath;
+        return "";
     }
 
     MediaLibraryCommand cmd(FILESYSTEM_ASSET, QUERY);
@@ -724,7 +775,7 @@ string MediaLibraryObjectUtils::GetPathByIdFromDb(const string &id)
     vector<string> columns;
     columns.push_back(MEDIA_DATA_DB_FILE_PATH);
 
-    shared_ptr<ResultSet> queryResultSet = uniStore_->Query(cmd, columns);
+    auto queryResultSet = uniStore_->Query(cmd, columns);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, filePath, "Failed to obtain path from database");
 
     auto ret = queryResultSet->GoToFirstRow();
@@ -741,6 +792,12 @@ string MediaLibraryObjectUtils::GetPathByIdFromDb(const string &id)
 
 int32_t MediaLibraryObjectUtils::GetIdByPathFromDb(const string &path)
 {
+    MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+
     int32_t fileId = -1;
     int32_t columnIndex = 0;
 
@@ -756,7 +813,7 @@ int32_t MediaLibraryObjectUtils::GetIdByPathFromDb(const string &path)
     MediaLibraryCommand cmd(FILESYSTEM_ASSET, QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_FILE_PATH, newPath);
 
-    shared_ptr<ResultSet> queryResultSet = uniStore_->Query(cmd, {MEDIA_DATA_DB_ID});
+    shared_ptr<NativeRdb::ResultSet> queryResultSet = uniStore_->Query(cmd, {MEDIA_DATA_DB_ID});
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, fileId, "Failed to obtain path from database");
 
     auto ret = queryResultSet->GoToFirstRow();
@@ -773,19 +830,24 @@ int32_t MediaLibraryObjectUtils::GetIdByPathFromDb(const string &path)
 
 int32_t MediaLibraryObjectUtils::GetParentIdWithId(const string &fileId)
 {
+    MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+
     int32_t parentIdVal = -1;
     if (fileId.empty()) {
         MEDIA_WARNING_LOG("Input id is empty, cannot get parent path");
         return parentIdVal;
-    }z
+    }
 
     MediaLibraryCommand cmd(FILESYSTEM_ASSET, QUERY);
-    strDeleteCondition = MEDIA_DATA_DB_ID + " = ? ";
+    string strDeleteCondition = MEDIA_DATA_DB_ID + " = ? ";
     vector<string> whereArgs = {fileId};
     cmd.GetAbsRdbPredicates()->SetWhereClause(strDeleteCondition);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-    vector<string> columns;
-    shared_ptr<AbsSharedResultSet> queryResultSet = uniStore_->Query(cmd, columns);
+    shared_ptr<AbsSharedResultSet> queryResultSet = uniStore_->Query(cmd, {});
     if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t columnIndexParentId;
         queryResultSet->GetColumnIndex(MEDIA_DATA_DB_PARENT_ID, columnIndexParentId);
@@ -797,6 +859,11 @@ int32_t MediaLibraryObjectUtils::GetParentIdWithId(const string &fileId)
 int32_t MediaLibraryObjectUtils::DeleteInfoInDbWithPath(MediaLibraryCommand &cmd, const string &path)
 {
     MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+
     vector<string> whereArgs = {path};
     string strQueryCondition = MEDIA_DATA_DB_FILE_PATH + " = ?";
     cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
@@ -814,10 +881,15 @@ int32_t MediaLibraryObjectUtils::DeleteInfoInDbWithPath(MediaLibraryCommand &cmd
 int32_t MediaLibraryObjectUtils::DeleteInfoInDbWithId(MediaLibraryCommand &cmd, const string &fileId)
 {
     MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+
     string strDeleteCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
     if (strDeleteCondition.empty()) {
         string strRow = fileId.empty() ? cmd.GetOprnFileId() : fileId;
-        if (strRow.empty() || stoi(strRow) == -1 || !MediaFileUtils::IsNumber(strRow)) {
+        if (strRow.empty() || stoi(strRow) == -1 || !MediaLibraryDataManagerUtils::IsNumber(strRow)) {
             MEDIA_ERR_LOG("MediaLibraryObjectUtils DeleteFile: Index not digit");
             return DATA_ABILITY_FAIL;
         }
@@ -838,8 +910,12 @@ int32_t MediaLibraryObjectUtils::DeleteInfoInDbWithId(MediaLibraryCommand &cmd, 
 
 int32_t MediaLibraryObjectUtils::ModifyInfoInDbWithPath(MediaLibraryCommand &cmd, const string &path)
 {
-
     MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+
     vector<string> whereArgs = {path};
     string strQueryCondition = MEDIA_DATA_DB_FILE_PATH + " = ?";
     cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
@@ -857,11 +933,16 @@ int32_t MediaLibraryObjectUtils::ModifyInfoInDbWithPath(MediaLibraryCommand &cmd
 int32_t MediaLibraryObjectUtils::ModifyInfoInDbWithId(MediaLibraryCommand &cmd, const string &fileId)
 {
     MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+
     string strRow = fileId.empty() ? cmd.GetOprnFileId() : fileId;
     // update file
     string strDeleteCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
     if (strDeleteCondition.empty()) {
-        if (strRow.empty() || stoi(strRow) == -1 || !MediaFileUtils::IsNumber(strRow)) {
+        if (strRow.empty() || stoi(strRow) == -1 || !MediaLibraryDataManagerUtils::IsNumber(strRow)) {
             MEDIA_ERR_LOG("MediaLibraryObjectUtils DeleteFile: Index not digit");
             return DATA_ABILITY_FAIL;
         }

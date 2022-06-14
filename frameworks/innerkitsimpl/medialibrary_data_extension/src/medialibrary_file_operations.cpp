@@ -35,7 +35,7 @@ void UpdateDateModifiedForAlbum(const shared_ptr<RdbStore> &rdbStore, const stri
         vector<string> whereArgs = { albumPath };
         DataShareValuesBucket valuesBucket;
         valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
-            MediaLibraryDataManagerUtils::GetAlbumDateModified(albumPath));
+            MediaFileUtils::GetAlbumDateModified(albumPath));
 
         int32_t updateResult = rdbStore->Update(count, MEDIALIBRARY_TABLE, RdbUtils::ToValuesBucket(valuesBucket),
                                                 MEDIA_DATA_DB_FILE_PATH + " = ?", whereArgs);

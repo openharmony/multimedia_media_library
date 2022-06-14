@@ -47,8 +47,13 @@ public:
         }
         rdbStorePtr_ = nullptr;
     }
-    // MediaLibraryUnistore ?
-    std::shared_ptr<MediaLibraryRdbStore> GetRdbStore() const
+
+    std::shared_ptr<MediaLibraryUnistore> GetRdbStore() const
+    {
+        return rdbStorePtr_;
+    }
+    // need remove later
+    std::shared_ptr<MediaLibraryRdbStore> GetRdbStoreRaw() const
     {
         return rdbStorePtr_;
     }
