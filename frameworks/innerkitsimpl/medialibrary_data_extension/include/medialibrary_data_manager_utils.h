@@ -44,7 +44,6 @@ public:
     static std::string GetParentPath(const std::string &path);
     static int32_t GetParentIdFromDb(const std::string &path, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static bool IsNumber(const std::string &str);
-    static int64_t GetAlbumDateModified(const std::string &albumPath);
     static std::string GetOperationType(const std::string &uri);
     static std::string GetIdFromUri(const std::string &uri);
     static std::string GetMediaTypeUri(MediaType mediaType);
@@ -71,7 +70,6 @@ public:
     static NativeAlbumAsset GetLastAlbumExistInDb(const std::string &path,
                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static int64_t UTCTimeSeconds();
-    static bool CheckDisplayName(std::string displayName);
     static std::shared_ptr<AbsSharedResultSet> QueryFiles(const std::string &strQueryCondition,
         const std::shared_ptr<RdbStore> &rdbStore);
     static std::shared_ptr<AbsSharedResultSet> QueryFavFiles(const std::shared_ptr<RdbStore> &rdbStore);
@@ -102,6 +100,10 @@ public:
     static std::string GetDisPlayNameFromPath(std::string &path);
     static bool IsAssetExistInDb(const int &id,
                                  const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+
+
+    static bool CheckOpenMode(const std::string &mode);
+    static bool CheckFilePending(const std::shared_ptr<FileAsset> fileAsset);
 };
 } // namespace Media
 } // namespace OHOS
