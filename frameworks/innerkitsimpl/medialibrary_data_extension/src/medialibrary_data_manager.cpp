@@ -111,6 +111,7 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
 
 void MediaLibraryDataManager::ClearMediaLibraryMgr()
 {
+    UnSubscribeRdbStoreObserver();
     isRdbStoreInitialized = false;
     rdbStore_ = nullptr;
     if (kvStorePtr_ != nullptr) {
@@ -120,7 +121,6 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     if (MediaLibraryDevice::GetInstance()) {
         MediaLibraryDevice::GetInstance()->Stop();
     };
-    UnSubscribeRdbStoreObserver();
 }
 
 MediaLibraryDataManager::MediaLibraryDataManager(void)
@@ -907,6 +907,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     StartTrace(HITRACE_TAG_OHOS, "MediaLibraryDataManager::Query");
     if ((!isRdbStoreInitialized) || (rdbStore_ == nullptr)) {
         MEDIA_ERR_LOG("Rdb Store is not initialized");
+        FinishTrace(HITRACE_TAG_OHOS);
         return nullptr;
     }
     StartTrace(HITRACE_TAG_OHOS, "CheckClientPermission");
@@ -944,6 +945,11 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
     const DataSharePredicates &predicates)
 {
     StartTrace(HITRACE_TAG_OHOS, "MediaLibraryDataManager::QueryRdb");
+    if ((!isRdbStoreInitialized) || (rdbStore_ == nullptr)) {
+        MEDIA_ERR_LOG("Rdb Store is not initialized");
+        FinishTrace(HITRACE_TAG_OHOS);
+        return nullptr;
+    }
     shared_ptr<AbsSharedResultSet> queryResultSet;
     TableType tabletype = TYPE_DATA;
     string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
