@@ -1034,8 +1034,6 @@ declare namespace mediaLibrary {
      * @syscap SystemCapability.Multimedia.MediaLibrary.Core
      * @param callback no value returned
      */
-    getMediaRemoteStub(context: Context): rpc.RemoteObject;
-
     release(callback: AsyncCallback<void>): void;
     /**
      * Release MediaLibrary instance

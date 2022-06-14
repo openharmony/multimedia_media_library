@@ -97,7 +97,6 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers),
         DECLARE_NAPI_FUNCTION("storeMediaAsset", JSStoreMediaAsset),
         DECLARE_NAPI_FUNCTION("startImagePreview", JSStartImagePreview),
-        DECLARE_NAPI_FUNCTION("getMediaRemoteStub", JSGetMediaRemoteStub)
     };
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("getMediaLibrary", GetMediaLibraryNewInstance),
@@ -133,18 +132,25 @@ shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::GetDataShareHelper(napi
 
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = nullptr;
     napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode_);
-    if (status != napi_ok) {
-    } else {
-        if (isStageMode_) {
-            auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
-            if (context == nullptr) {
-                NAPI_ERR_LOG("Failed to get native context instance");
-                return nullptr;
-            }
-            AppExecFwk::Want want;
-            want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
-            dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
+    if (status != napi_ok || !isStageMode_) {
+        auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
+        if (ability == nullptr) {
+            NAPI_ERR_LOG("Failed to get native ability instance");
+            return nullptr;
         }
+        auto context = ability->GetContext();
+        if (context == nullptr) {
+            NAPI_ERR_LOG("Failed to get native context instance");
+            return nullptr;
+        }
+        dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
+    } else {
+        auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
+        if (context == nullptr) {
+            NAPI_ERR_LOG("Failed to get native context instance");
+            return nullptr;
+        }
+        dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
     }
     return dataShareHelper;
 }
@@ -3572,37 +3578,6 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
         }
     }
     return result;
-}
-napi_value MediaLibraryNapi::JSGetMediaRemoteStub(napi_env env, napi_callback_info info)
-{
-    napi_value remoteStub = nullptr;
-    /*
-    size_t argc = ARGS_ONE;
-    napi_value argv[ARGS_ONE] = {0};
-    napi_value thisVar = nullptr;
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-    napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode_);
-
-    if (status != napi_ok){
-
-    } else {
-        if (isStageMode_) {
-            auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
-            if (context == nullptr) {
-                NAPI_ERR_LOG("Failed to get native context instance");
-                return nullptr;
-            }
-            sptr<MediaDataStubImpl> remoteObject = new (std::nothrow) MediaDataStubImpl(env, context);
-            if (remoteObject == nullptr) {
-                return nullptr;
-	    }
-	    remoteObject->InitMediaLibraryRdbStore();
-
-            remoteStub = NAPI_ohos_rpc_CreateJsRemoteObject(env, remoteObject);
-	}
-    }
-    */
-    return remoteStub;
 }
 } // namespace Media
 } // namespace OHOS
