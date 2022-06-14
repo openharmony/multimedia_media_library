@@ -232,16 +232,6 @@ bool MediaLibraryDataManagerUtils::isAlbumExistInDb(const std::string &path,
     return false;
 }
 
-int64_t MediaLibraryDataManagerUtils::GetAlbumDateModified(const string &albumPath)
-{
-    struct stat statInfo {};
-    if (!albumPath.empty() && stat(albumPath.c_str(), &statInfo) == 0) {
-        return (statInfo.st_mtime);
-    }
-
-    return 0;
-}
-
 string MediaLibraryDataManagerUtils::GetOperationType(const string &uri)
 {
     string oprn("");
@@ -388,36 +378,6 @@ shared_ptr<FileAsset> MediaLibraryDataManagerUtils::GetFileAssetFromDb(const str
     return fetchFileResult->GetObjectFromRdb(resultSet, 0);
 }
 
-bool MediaLibraryDataManagerUtils::checkFilePending(const shared_ptr<FileAsset> fileAsset)
-{
-    MEDIA_INFO_LOG("checkFilePending in");
-    if (fileAsset->IsPending()) {
-        MEDIA_INFO_LOG("checkFilePending IsPending true");
-        return true;
-    } else if (fileAsset->GetTimePending() > 0 &&
-        (UTCTimeSeconds() - fileAsset->GetTimePending()) > TIMEPENDING_MIN) {
-        return true;
-    }
-    MEDIA_INFO_LOG("checkFilePending IsPending false");
-    return false;
-}
-
-bool MediaLibraryDataManagerUtils::checkOpenMode(const string &mode)
-{
-    MEDIA_INFO_LOG("checkOpenMode in mode %{private}s", mode.c_str());
-
-    std::string lowModeStr = mode;
-    std::transform(lowModeStr.begin(), lowModeStr.end(), lowModeStr.begin(), [](unsigned char c) {
-        return std::tolower(c);
-    });
-
-    size_t wIndex = lowModeStr.rfind('w');
-    if (wIndex != string::npos) {
-        return true;
-    }
-    return false;
-}
-
 int32_t MediaLibraryDataManagerUtils::setFilePending(string &uriStr,
     bool isPending, const shared_ptr<RdbStore> &rdbStore)
 {
@@ -493,20 +453,6 @@ int64_t MediaLibraryDataManagerUtils::UTCTimeSeconds()
     t.tv_nsec = 0;
     clock_gettime(CLOCK_REALTIME, &t);
     return (int64_t)(t.tv_sec);
-}
-
-bool MediaLibraryDataManagerUtils::CheckDisplayName(std::string displayName)
-{
-    auto size = displayName.length();
-    if (size <= 0 || size > DISPLAYNAME_MAX) {
-        return false;
-    }
-    std::regex express("[\\.\\\\/:*?\"<>|{}\\[\\]]");
-    bool bValid = std::regex_search(displayName, express);
-    if (bValid) {
-        MEDIA_ERR_LOG("CheckDisplayName fail %{private}s", displayName.c_str());
-    }
-    return !bValid;
 }
 
 shared_ptr<AbsSharedResultSet> MediaLibraryDataManagerUtils::QueryFiles(const string &strQueryCondition,
@@ -772,5 +718,38 @@ bool MediaLibraryDataManagerUtils::IsAssetExistInDb(const int &id,
     }
     return false;
 }
+
+bool MediaLibraryDataManagerUtils::CheckOpenMode(const string &mode)
+{
+    MEDIA_INFO_LOG("checkOpenMode in mode %{private}s", mode.c_str());
+
+    string lowModeStr = mode;
+    transform(lowModeStr.begin(), lowModeStr.end(), lowModeStr.begin(), [](unsigned char c) {
+        return tolower(c);
+    });
+
+    size_t wIndex = lowModeStr.rfind('w');
+    if (wIndex != string::npos) {
+        return true;
+    }
+    return false;
+}
+
+bool MediaLibraryDataManagerUtils::CheckFilePending(const shared_ptr<FileAsset> fileAsset)
+{
+    MEDIA_INFO_LOG("checkFilePending in");
+    if (fileAsset->IsPending()) {
+        MEDIA_INFO_LOG("checkFilePending IsPending true");
+        return true;
+    } else if (fileAsset->GetTimePending() > 0 &&
+        (MediaFileUtils::UTCTimeSeconds() - fileAsset->GetTimePending()) > TIMEPENDING_MIN) {
+        return true;
+    }
+    MEDIA_INFO_LOG("checkFilePending IsPending false");
+    return false;
+}
+
+
+
 } // namespace Media
 } // namespace OHOS

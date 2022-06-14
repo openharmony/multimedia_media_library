@@ -59,16 +59,11 @@ public:
     virtual int32_t GetCapatity(MediaLibraryCommand &cmd);
 
 protected:
-    std::string GetPathFromDb(const std::string &id);
-    int32_t GetIdByPathFromDb(const std::string &path);
-    int32_t ModifyInfoInDbWithPath(MediaLibraryCommand &cmd, const std::string &path);
-    int32_t ModifyInfoInDbWithId(MediaLibraryCommand &cmd, const std::string &fileId = "");
-    int32_t DeleteInfoInDbWithPath(MediaLibraryCommand &cmd, const std::string &path);
-    int32_t DeleteInfoInDbWithId(MediaLibraryCommand &cmd, const std::string &fileId = "");
+
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFiles(MediaLibraryCommand &cmd);
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFavFiles(MediaLibraryCommand &cmd);
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryTrashFiles(MediaLibraryCommand &cmd);
-    int32_t SetFilePending(string &uriStr, bool isPending);
+
     // void CreateThumbnail(const shared_ptr<MediaLibraryThumbnail> &mediaThumbnail,
     // string id);
     shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &uriStr);
