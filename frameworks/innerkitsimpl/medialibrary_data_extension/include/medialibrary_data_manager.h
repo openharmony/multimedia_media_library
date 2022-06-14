@@ -103,11 +103,9 @@ namespace Media {
         std::string GetOperationType(const std::string &uri);
         void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
         void InitDeviceData();
-        bool SubscribeRdbStoreObserver();
-        bool UnSubscribeRdbStoreObserver();
         bool QuerySync(const std::string &deviceId, const std::string &tableName);
         bool QuerySync();
-		
+
         bool CheckFileNameValid(const DataShareValuesBucket &value);
         sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
         std::string GetClientBundleName();

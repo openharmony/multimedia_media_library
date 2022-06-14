@@ -146,7 +146,7 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
     }
 
     MediaLibraryUnistoreManager::GetInstance().Init(context_);
-    rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->GetRaw();
+    rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
 
     isRdbStoreInitialized = true;
     mediaThumbnail_ = std::make_shared<MediaLibraryThumbnail>();

@@ -162,11 +162,6 @@ int32_t MediaLibraryFileManager::GetCapatity(MediaLibraryCommand &cmd)
     return albumCapatity;
 }
 
-
-
-
-
-
 shared_ptr<AbsSharedResultSet> MediaLibraryFileManager::QueryFiles(MediaLibraryCommand &cmd)
 {
     MEDIA_INFO_LOG("[lqh] enter");
