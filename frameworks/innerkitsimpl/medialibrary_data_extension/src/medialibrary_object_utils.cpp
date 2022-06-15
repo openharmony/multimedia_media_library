@@ -413,7 +413,6 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd, const s
     return errCode;
 }
 
-// only support rename in the same parent folder, like: a/b/c --> a/b/d
 // Restriction: input param cmd MUST have id in uri
 int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd, const string &srcDirPath,
                                               const string &dstDirPath)
@@ -424,13 +423,6 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd, const st
         return DATA_ABILITY_FAIL;
     }
 
-    // string dstDirName = "";
-    // ValueObject valueObject;
-    // if (values.GetObject(MEDIA_DATA_DB_ALBUM_NAME, valueObject)) {
-    //     valueObject.GetString(dstDirName);
-    // }
-    // string dstDirPath = MediaLibraryDataManagerUtils::GetParentPath(srcDirPath) + "/" + dstDirName;
-
     if (srcDirPath.empty() || dstDirPath.empty()) {
         MEDIA_ERR_LOG("srcDirPath or dstDirPath is empty, rename failed!");
         return DATA_ABILITY_FAIL;
@@ -440,15 +432,14 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd, const st
         MEDIA_ERR_LOG("Rename directory failed!");
         return DATA_ABILITY_FAIL;
     }
-    // todo: get name from path
     string dstDirName = MediaLibraryDataManagerUtils::GetFileName(dstDirPath);
-    if (ProcessHiddenFile(dstDirName, srcDirPath)) {
+    if (ProcessHiddenDir(dstDirName, srcDirPath) == DATA_ABILITY_SUCCESS) {
         MEDIA_ERR_LOG("New album is a hidden album.");
         return DATA_ABILITY_SUCCESS;
     }
 
     ValuesBucket values = cmd.GetValueBucket();
-    values.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, MediaLibraryDataManagerUtils::GetParentPath(srcDirPath));
+    values.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, MediaLibraryDataManagerUtils::GetParentPath(dstDirPath));
     values.PutString(Media::MEDIA_DATA_DB_FILE_PATH, dstDirPath);
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::GetAlbumDateModified(dstDirPath));
 
@@ -577,8 +568,7 @@ bool MediaLibraryObjectUtils::ProcessNoMediaFile(const string &dstFileName, cons
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
 
     int32_t deletedRows = ALBUM_OPERATION_ERR;
-    int32_t deleteResult = uniStore_->Delete(cmd, deletedRows);
-    if (deleteResult != NativeRdb::E_OK) {
+    if (uniStore_->Delete(cmd, deletedRows) != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete rows for the hidden album failed");
     }
     return true;
@@ -595,6 +585,27 @@ bool MediaLibraryObjectUtils::ProcessHiddenFile(const string &dstFileName, const
         MEDIA_ERR_LOG("Delete rows for the old path failed");
     }
     return true;
+}
+
+int32_t MediaLibraryObjectUtils::ProcessHiddenDir(const string &dstDirName, const string &srcDirPath)
+{
+    if (dstDirName.empty() || dstDirName.at(0) != '.') {
+        MEDIA_INFO_LOG("Not a hidden dir(name begin with \'.\'), no need to do anything.");
+        return DATA_ABILITY_FAIL;
+    }
+
+    MediaLibraryCommand deleteCmd(FILESYSTEM_ASSET, DELETE);
+    string strCondition = MEDIA_DATA_DB_FILE_PATH + " LIKE ? OR " + MEDIA_DATA_DB_FILE_PATH + " = ?";
+    vector<string> whereArgs = {(srcDirPath.back() != '/' ? (srcDirPath + "/%") : (srcDirPath + "%")), srcDirPath};
+    deleteCmd.GetAbsRdbPredicates()->SetWhereClause(strCondition);
+    deleteCmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+
+    int32_t deletedRows = ALBUM_OPERATION_ERR;
+    if (uniStore_->Delete(deleteCmd, deletedRows) != NativeRdb::E_OK) {
+        MEDIA_WARNING_LOG("Delete src dir in database failed!");
+        return DATA_ABILITY_FAIL;
+    }
+    return DATA_ABILITY_SUCCESS;
 }
 
 void MediaLibraryObjectUtils::UpdateDateModifiedForAlbum(const string &dirPath)
