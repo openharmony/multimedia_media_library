@@ -195,8 +195,7 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
-    if ((uri.ToString() != MEDIALIBRARY_DIRECTORY_URI) &&
-	!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
+    if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
         HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
         return nullptr;
     }
