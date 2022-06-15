@@ -64,6 +64,7 @@ public:
     int32_t ModifyInfoInDbWithId(MediaLibraryCommand &cmd, const std::string &fileId = "");
     int32_t DeleteInfoInDbWithPath(MediaLibraryCommand &cmd, const std::string &path);
     int32_t DeleteInfoInDbWithId(MediaLibraryCommand &cmd, const std::string &fileId = "");
+    std::shared_ptr<AbsSharedResultSet> QueryFiles(MediaLibraryCommand &cmd);
 
 private:
     NativeAlbumAsset GetDirAsset(const std::string &relativePath);
@@ -79,7 +80,6 @@ private:
                                const std::string &bucketName);
     void UpdateDateModifiedForAlbum(const std::string &dirPath);
     void ScanFile(const std::string &srcPath);
-    std::shared_ptr<AbsSharedResultSet> QueryFiles(MediaLibraryCommand &cmd);
 
     std::shared_ptr<MediaLibraryUnistore> uniStore_{nullptr};
 };

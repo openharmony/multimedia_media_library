@@ -430,7 +430,9 @@ int32_t MediaLibraryDirOperations::HandleDirOperations(const string &oprn,
     } else if (oprn == MEDIA_DIROPRN_FMS_CREATEDIR) {
         values.PutString(MEDIA_DATA_DB_NAME, ".nofile");
         values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_NOFILE);
-        errCode = fileOprn.HandleCreateAsset(values, rdbStore, dirQuerySetMap);
+        MediaLibraryCommand cmd(FILESYSTEM_ASSET, CREATE);
+        cmd.SetValueBucket(values);
+        errCode = fileOprn.HandleCreateAsset(cmd);
     } else if (oprn == MEDIA_DIROPRN_FMS_DELETEDIR) {
         errCode = HandleFMSDeleteDir(values, rdbStore);
     } else if (oprn == MEDIA_DIROPRN_FMS_TRASHDIR) {

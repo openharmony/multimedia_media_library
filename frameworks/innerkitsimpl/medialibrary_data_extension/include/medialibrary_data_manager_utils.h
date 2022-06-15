@@ -72,8 +72,6 @@ public:
     static int64_t UTCTimeSeconds();
     static std::shared_ptr<AbsSharedResultSet> QueryFiles(const std::string &strQueryCondition,
         const std::shared_ptr<RdbStore> &rdbStore);
-    static std::shared_ptr<AbsSharedResultSet> QueryFavFiles(const std::shared_ptr<RdbStore> &rdbStore);
-    static std::shared_ptr<AbsSharedResultSet> QueryTrashFiles(const std::shared_ptr<RdbStore> &rdbStore);
     static string GetParentDisplayNameFromDb(const int &id, const shared_ptr<RdbStore> &rdbStore);
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);

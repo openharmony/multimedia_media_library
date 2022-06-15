@@ -174,21 +174,6 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileManager::QueryFiles(MediaLibraryC
     return resultSet;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryFileManager::QueryFavFiles(MediaLibraryCommand &cmd)
-{
-    MEDIA_INFO_LOG("[lqh] enter");
-    string strQueryCondition = MEDIA_DATA_DB_IS_FAV + " = 1 AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> 8";
-    cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
-    return QueryFiles(cmd);
-}
-
-shared_ptr<AbsSharedResultSet> MediaLibraryFileManager::QueryTrashFiles(MediaLibraryCommand &cmd)
-{
-    MEDIA_INFO_LOG("[lqh] enter");
-    string strQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + " > 0 AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> 8";
-    cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
-    return QueryFiles(cmd);
-}
 
 
 

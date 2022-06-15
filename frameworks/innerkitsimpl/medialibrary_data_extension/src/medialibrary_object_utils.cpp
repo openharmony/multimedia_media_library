@@ -378,16 +378,6 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd, const s
                                                const string &dstFilePath)
 {
     MEDIA_INFO_LOG("[lqh] enter");
-    // string dstFileName, dstReFilePath;
-    // ValueObject valueObject;
-    // const ValuesBucket values = cmd.GetValueBucket();
-    // if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
-    //     valueObject.GetString(dstFileName);
-    // }
-    // if (values.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
-    //     valueObject.GetString(dstReFilePath);
-    // }
-    // string dstFilePath = ROOT_MEDIA_DIR + dstReFilePath + dstFileName;
     if (srcFilePath.compare(dstFilePath) == 0) {
         // why: 如果不改名字，只改相关信息？
         MEDIA_ERR_LOG("Failed to modify the file, the path of new file is the same as old");
@@ -395,7 +385,7 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd, const s
     }
 
     string dstAlbumPath = MediaLibraryDataManagerUtils::GetParentPath(dstFilePath);
-    MEDIA_ERR_LOG("HandleModifyAsset dstAlbumPath = %{private}s", dstAlbumPath.c_str());
+    MEDIA_INFO_LOG("dstAlbumPath = %{private}s", dstAlbumPath.c_str());
     NativeAlbumAsset dirAsset = GetDirAsset(dstAlbumPath);
     if (dirAsset.GetAlbumId() <= 0) {
         MEDIA_WARNING_LOG("Failed to get or create directory");
