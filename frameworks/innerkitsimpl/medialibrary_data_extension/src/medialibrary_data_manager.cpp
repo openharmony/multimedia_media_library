@@ -236,6 +236,8 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
     MediaLibrarySyncTable syncTable;
     std::vector<std::string> devices = std::vector<std::string>();
+
+    MediaLibraryCommand cmd(uri, value);
     if (insertUri.find(MEDIA_OPERN_KEYWORD) != string::npos) {
         MediaLibraryFileOperations fileOprn;
         MediaLibraryAlbumOperations albumOprn;
@@ -251,7 +253,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
             return DATA_ABILITY_FILE_NAME_INVALID;
         }
         if (insertUri.find(MEDIA_FILEOPRN) != string::npos) {
-            result = fileOprn.HandleFileOperation(operationType, value, rdbStore_, mediaThumbnail_, dirQuerySetMap_);
+            result = fileOprn.HandleFileOperation(cmd, dirQuerySetMap_);
             if ((result >= 0) && (operationType == MEDIA_FILEOPRN_CLOSEASSET)) {
                 ScanFile(value, rdbStore_);
             }
@@ -749,7 +751,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         return DATA_ABILITY_PERMISSION_DENIED;
     }
-    MediaLibraryFileOperations fileOprn;
+    MediaLibraryCommand cmd(uri, value);
     int32_t changedRows = DATA_ABILITY_FAIL;
     string uriString = uri.ToString();
     vector<string> devices = vector<string>();
@@ -774,15 +776,15 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     } else if (uriString.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
         (void)rdbStore_->Update(changedRows, SMARTALBUM_MAP_TABLE, value, strUpdateCondition, whereArgs);
     } else {
-        if (uriString == MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN
-                + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET) {
-        int result = fileOprn.HandleFileOperation(MEDIA_FILEOPRN_MODIFYASSET,
-            value, rdbStore_, mediaThumbnail_, dirQuerySetMap_);
-        if (result < 0) {
-            return result;
+        if (uriString ==
+            MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET) {
+            MediaLibraryFileOperations fileOprn;
+            int result = fileOprn.HandleModifyAsset(cmd);
+            if (result < 0) {
+                return result;
             }
         }
-    (void)rdbStore_->Update(changedRows, MEDIALIBRARY_TABLE, value, strUpdateCondition, whereArgs);
+        (void)rdbStore_->Update(changedRows, MEDIALIBRARY_TABLE, value, strUpdateCondition, whereArgs);
     }
     if (changedRows >= 0) {
         MediaLibrarySyncTable syncTable;

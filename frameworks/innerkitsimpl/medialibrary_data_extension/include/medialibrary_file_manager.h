@@ -60,15 +60,12 @@ public:
 
 protected:
 
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFiles(MediaLibraryCommand &cmd);
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFavFiles(MediaLibraryCommand &cmd);
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryTrashFiles(MediaLibraryCommand &cmd);
 
     // void CreateThumbnail(const shared_ptr<MediaLibraryThumbnail> &mediaThumbnail,
     // string id);
     shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &uriStr);
 
-    std::shared_ptr<MediaLibraryUnistore> uniStore_;
+    std::shared_ptr<MediaLibraryUnistore> uniStore_{nullptr};
 };
 
 } // namespace Media

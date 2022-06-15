@@ -476,20 +476,6 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManagerUtils::QueryFiles(const st
     return resultSet;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryDataManagerUtils::QueryFavFiles(const shared_ptr<RdbStore> &rdbStore)
-{
-    string strQueryCondition = MEDIA_DATA_DB_IS_FAV + " = 1 AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> " +
-        to_string(MEDIA_TYPE_ALBUM);
-    return QueryFiles(strQueryCondition, rdbStore);
-}
-
-shared_ptr<AbsSharedResultSet> MediaLibraryDataManagerUtils::QueryTrashFiles(const shared_ptr<RdbStore> &rdbStore)
-{
-    string strQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + " > 0 AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> " +
-        to_string(MEDIA_TYPE_ALBUM);
-    return QueryFiles(strQueryCondition, rdbStore);
-}
-
 string MediaLibraryDataManagerUtils::GetNetworkIdFromUri(const string &uri)
 {
     string deviceId;
