@@ -35,6 +35,7 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::DataShare;
+using namespace OHOS::NativeRdb;
 class MediaLibraryDataManagerUtils {
 public:
     MediaLibraryDataManagerUtils();
@@ -60,19 +61,18 @@ public:
     static NativeAlbumAsset CreateDirectorys(const std::string relativePath,
                                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                                              vector<int32_t> &outIds);
-    static int32_t DeleteDirectorys(vector<int32_t> &outIds,
-                                    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static NativeAlbumAsset GetAlbumAsset(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::string GetFileTitle(const std::string& displayName);
     static bool isAlbumExistInDb(const std::string &path,
                                  const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                                  int32_t &outRow);
-    static NativeAlbumAsset GetLastAlbumExistInDb(const std::string &path,
-                                      const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static int64_t UTCTimeSeconds();
     static std::shared_ptr<AbsSharedResultSet> QueryFiles(const std::string &strQueryCondition,
-        const std::shared_ptr<RdbStore> &rdbStore);
-    static string GetParentDisplayNameFromDb(const int &id, const shared_ptr<RdbStore> &rdbStore);
+        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static std::shared_ptr<AbsSharedResultSet> QueryFavFiles(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static std::shared_ptr<AbsSharedResultSet> QueryTrashFiles(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static string GetParentDisplayNameFromDb(const int &id, const shared_ptr<NativeRdb::RdbStore> &rdbStore);
+
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);
     static int32_t GetAssetRecycle(const int32_t &assetId,

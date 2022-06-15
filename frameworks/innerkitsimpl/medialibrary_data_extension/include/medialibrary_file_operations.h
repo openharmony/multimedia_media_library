@@ -25,7 +25,6 @@
 #include "imedia_scanner_client.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_file_db.h"
 #include "medialibrary_thumbnail.h"
 #include "medialibrary_command.h"
 #include "medialibrary_unistore_manager.h"

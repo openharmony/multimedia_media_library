@@ -118,26 +118,11 @@ NativeAlbumAsset MediaLibraryDataManagerUtils::CreateDirectorys(const string rel
         ValuesBucket values;
         values.PutString(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR + path);
         MediaLibraryAlbumOperations albumOprn;
-        int32_t errorcode = albumOprn.HandleAlbumOperations(MEDIA_ALBUMOPRN_CREATEALBUM, values, rdbStore, outIds);
+        MediaLibraryCommand cmd(FILESYSTEM_ALBUM, CREATE, values);
+        int32_t errorcode = albumOprn.HandleAlbumOperations(cmd);
         albumAsset.SetAlbumId(errorcode);
     }
     return albumAsset;
-}
-
-int32_t MediaLibraryDataManagerUtils::DeleteDirectorys(vector<int32_t> &outIds,
-                                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
-{
-    int32_t errorCode = -1;
-    if (!outIds.empty()) {
-        MediaLibraryAlbumOperations albumOprn;
-        for (vector<int32_t>::reverse_iterator it = outIds.rbegin(); it != outIds.rend(); ++it) {
-            ValuesBucket values;
-            int32_t id = *it;
-            values.PutInt(MEDIA_DATA_DB_ID, id);
-            errorCode = albumOprn.HandleAlbumOperations(MEDIA_ALBUMOPRN_DELETEALBUM, values, rdbStore, outIds);
-        }
-    }
-    return errorCode;
 }
 
 NativeAlbumAsset MediaLibraryDataManagerUtils::GetAlbumAsset(const std::string &id,
@@ -177,29 +162,6 @@ std::string MediaLibraryDataManagerUtils::GetFileTitle(const std::string& displa
         MEDIA_DEBUG_LOG("title substr = %{private}s", title.c_str());
     }
     return title;
-}
-
-NativeAlbumAsset MediaLibraryDataManagerUtils::GetLastAlbumExistInDb(const std::string &path,
-    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
-{
-    NativeAlbumAsset nativeAlbumAsset;
-    int32_t albumId;
-    string lastPath = path;
-    if (lastPath.substr(lastPath.length() - 1) == "/") {
-        lastPath = lastPath.substr(0, lastPath.length() - 1);
-    }
-    do {
-        size_t slashIndex = lastPath.rfind(SLASH_CHAR);
-        if (slashIndex != string::npos && lastPath.length() > ROOT_MEDIA_DIR.length()) {
-            lastPath = lastPath.substr(0, slashIndex);
-            MEDIA_INFO_LOG("GetLastAlbumExistInDb lastPath = %{private}s", lastPath.c_str());
-        } else {
-            break;
-        }
-    } while (!isAlbumExistInDb(lastPath, rdbStore, albumId));
-    nativeAlbumAsset.SetAlbumId(albumId);
-    nativeAlbumAsset.SetAlbumPath(lastPath);
-    return nativeAlbumAsset;
 }
 
 bool MediaLibraryDataManagerUtils::isAlbumExistInDb(const std::string &path,

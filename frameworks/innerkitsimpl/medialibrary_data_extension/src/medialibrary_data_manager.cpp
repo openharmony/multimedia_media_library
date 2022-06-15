@@ -262,8 +262,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
             result = dirOprn.HandleDirOperations(operationType, value, rdbStore_, dirQuerySetMap_);
             syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
         } else if (insertUri.find(MEDIA_ALBUMOPRN) != string::npos) {
-            result = albumOprn.HandleAlbumOperations(operationType, value, rdbStore_);
-            syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_TABLE, devices);
+            result = albumOprn.HandleAlbumOperations(cmd);
         } else if (insertUri.find(MEDIA_SMARTALBUMOPRN) != string::npos) {
             result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore_);
             syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
