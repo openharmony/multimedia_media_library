@@ -1301,7 +1301,7 @@ void MediaLibraryDataManager::InitialiseKvStore()
 void MediaLibraryDataManager::NotifyChange(const Uri &uri)
 {
     if (mediaDataShare_ != nullptr) {
-        mediaDataShare_->NotifyChange(uri);
+        // Fix notify
     }
 }
 
