@@ -437,8 +437,8 @@ void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)
 {
     string notifyUri = GetMediaTypeUri(mediaType);
     Uri uri(notifyUri);
-    // fix me
-    // MediaLibraryDataManager::GetInstance()->NotifyChange(uri);
+
+    MediaLibraryDataManager::GetInstance()->NotifyChange(uri);
 }
 
 unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
