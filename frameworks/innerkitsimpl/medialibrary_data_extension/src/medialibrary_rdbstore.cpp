@@ -208,7 +208,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
 }
 
 std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
-                                                                                     const vector<string> &columns)
+                                                                           const vector<string> &columns)
 {
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Query");
 
