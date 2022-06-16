@@ -25,6 +25,7 @@ typedef struct MediaLibraryDeviceInfo {
     std::string selfId;
     uint16_t deviceTypeId;
     std::string versionId { MEDIA_LIBRARY_VERSION };
+    int32_t devSecLevel;
 } MediaLibraryDeviceInfo;
 } // namespace Media
 } // namespace OHOS
