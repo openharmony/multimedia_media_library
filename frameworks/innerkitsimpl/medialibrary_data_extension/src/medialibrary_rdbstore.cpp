@@ -188,6 +188,9 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
     // "Update" function the code before refactoring uses
     // a more simple "Detele" function in rdb_store.h
     // return rdbStore_->Update(rowId, cmd.GetValueBucket(), *(cmd.GetAbsRdbPredicates()))
+
+    // for distributed rdb
+    // tablename = ObtainTableName(cmd);
     int32_t ret = rdbStore_->Update(rowId, cmd.GetTableName(), cmd.GetValueBucket(),
                                     cmd.GetAbsRdbPredicates()->GetWhereClause(),
                                     cmd.GetAbsRdbPredicates()->GetWhereArgs());

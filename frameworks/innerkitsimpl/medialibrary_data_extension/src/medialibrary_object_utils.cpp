@@ -298,6 +298,16 @@ int32_t DeleteEmptyDirsRecursively(const int32_t dirId)
     if (dirId == -1) {
         return DATA_ABILITY_FAIL;
     }
+
+
+
+
+
+
+
+
+
+    /////
     // todo: MediaLibraryDirOperations::DeleteDirInfoUtil
     return DATA_ABILITY_SUCCESS;
 }
@@ -684,39 +694,19 @@ int32_t MediaLibraryObjectUtils::SetFilePending(string &uriStr, bool isPending)
         return DATA_ABILITY_FAIL;
     }
 
-    // string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriStr);
-    // string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uriStr);
-    // MEDIA_INFO_LOG("setFilePending id = %{private}s, networkId = %{private}s, isPending = %{private}d",
-    //     id.c_str(), networkId.c_str(), isPending);
-    // vector<string> selectionArgs = {};
-    // string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + id;
+    ValuesBucket values;
+    int64_t timeNow = MediaFileUtils::UTCTimeSeconds();
+    values.PutBool(MEDIA_DATA_DB_IS_PENDING, isPending);
+    values.PutLong(MEDIA_DATA_DB_TIME_PENDING, isPending ? timeNow : 0);
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, timeNow);
 
-    // ValuesBucket values;
-    // values.PutBool(MEDIA_DATA_DB_IS_PENDING, isPending);
-    // int64_t timeNow = UTCTimeSeconds();
-    // if (isPending) {
-    //     values.PutLong(MEDIA_DATA_DB_TIME_PENDING, timeNow);
-    // } else {
-    //     values.PutLong(MEDIA_DATA_DB_TIME_PENDING, 0);
-    // }
-
-    // values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, timeNow);
-
-    // int32_t changedRows = DATA_ABILITY_FAIL;
-    // string tableName = MEDIALIBRARY_TABLE;
-    // if (!networkId.empty()) {
-    //     tableName = rdbStore->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
-    //     MEDIA_INFO_LOG("tableName is %{private}s", tableName.c_str());
-    // }
-
-    // if (tableName.empty()) {
-    //     MEDIA_ERR_LOG("Get tableName fail, networkId is %{private}s", networkId.c_str());
-    //     return DATA_ABILITY_FAIL;
-    // }
-    // (void)rdbStore->Update(changedRows, tableName, values, strUpdateCondition, selectionArgs);
-    // MEDIA_INFO_LOG("setFilePending out");
-    // return changedRows;
-    return DATA_ABILITY_SUCCESS;
+    int32_t rowId = DATA_ABILITY_FAIL;
+    MediaLibraryCommand cmd(Uri(uriStr), values);
+    if (uniStore_->Update(cmd, rowId) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update failed for file");
+        return DATA_ABILITY_FAIL;
+    }
+    return rowId;
 }
 
 int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, const string &dstPath,
