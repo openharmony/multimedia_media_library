@@ -22,6 +22,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_thumbnail.h"
 #include "value_object.h"
+#include "medialibrary_dir_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -293,23 +294,56 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
     return DATA_ABILITY_DUPLICATE_CREATE;
 }
 
-int32_t DeleteEmptyDirsRecursively(const int32_t dirId)
+int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
 {
+    int32_t deleteErrorCode = DATA_ABILITY_SUCCESS;
     if (dirId == -1) {
         return DATA_ABILITY_FAIL;
     }
 
+    MediaLibraryCommand cmd(FILESYSTEM_ASSET, QUERY);
+    auto mediaLibDirAbsPred = cmd.GetAbsRdbPredicates();
+    mediaLibDirAbsPred->SetWhereClause(DIR_PARENT_WHERECLAUSE);
+    mediaLibDirAbsPred->SetWhereArgs({to_string(dirId)});
+    auto resultSet = uniStore_->Query(cmd, {});
+    int32_t asParentCount = 0;
+    resultSet->GetRowCount(asParentCount);
+    MEDIA_INFO_LOG("asParentCount = %{public}d", asParentCount);
 
+    if (asParentCount == 0) {
+        mediaLibDirAbsPred->SetWhereClause(DIR_FILE_WHERECLAUSE);
+        mediaLibDirAbsPred->SetWhereArgs({to_string(dirId)});
+        auto queryParentResultSet = uniStore_->Query(cmd, {});
+        if (queryParentResultSet->GoToNextRow() == NativeRdb::E_OK) {
+            int32_t columnIndexParentId, columnIndexDir;
+            int32_t parentIdVal = 0;
+            string dirVal;
+            queryParentResultSet->GetColumnIndex(MEDIA_DATA_DB_PARENT_ID, columnIndexParentId);
+            queryParentResultSet->GetInt(columnIndexParentId, parentIdVal);
+            queryParentResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, columnIndexDir);
+            queryParentResultSet->GetString(columnIndexDir, dirVal);
+            if (parentIdVal == 0) {
+                return DATA_ABILITY_SUCCESS;
+            }
+            MEDIA_INFO_LOG("dirVal = %{private}s", dirVal.c_str());
+            MEDIA_INFO_LOG("parentIdVal = %{public}d", parentIdVal);
 
+            MediaLibraryDirDb dirDbOprn;
+            deleteErrorCode =
+                dirDbOprn.DeleteDirInfo(dirId, MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+            if (deleteErrorCode != DATA_ABILITY_SUCCESS) {
+                MEDIA_ERR_LOG("DeleteDirInfo failed");
+                return deleteErrorCode;
+            }
+            if (!MediaFileUtils::DeleteDir(dirVal)) {
+                MEDIA_ERR_LOG("deleteDir failed");
+                return DATA_ABILITY_DELETE_DIR_FAIL;
+            }
+            DeleteEmptyDirsRecursively(parentIdVal);
+        }
+    }
 
-
-
-
-
-
-    /////
-    // todo: MediaLibraryDirOperations::DeleteDirInfoUtil
-    return DATA_ABILITY_SUCCESS;
+    return deleteErrorCode;
 }
 
 // Restriction: input param cmd MUST have file id in either uri or valuebucket
