@@ -65,6 +65,7 @@ public:
     std::string GetNetworkIdBySelfId(const std::string &selfId);
     std::string GetUdidByNetworkId(const std::string &deviceId);
     void OnSyncCompleted(const std::string &devId, const DistributedKv::Status staus);
+    void OnGetDevSecLevel(const std::string &udid, const int32_t level);
 private:
     MediaLibraryDevice();
 
@@ -84,7 +85,7 @@ private:
     std::unique_ptr<MediaLibraryDeviceOperations> mediaLibraryDeviceOperations_;
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
     std::shared_ptr<AppExecFwk::EventHandler> mediaLibraryDeviceHandler_;
-    std::mutex deviceLock_;
+    std::mutex devMtx_;
     std::unordered_map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
     std::map<std::string, std::set<int>> excludeMap_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
@@ -92,6 +93,8 @@ private:
     std::string bundleName_;
     std::mutex cvMtx_;
     std::condition_variable kvSyncDoneCv_;
+    std::string localUdid_;
+    int32_t localDevLev_;
 };
 } // namespace Media
 } // namespace OHOS
