@@ -918,7 +918,7 @@ int32_t MediaLibraryObjectUtils::DeleteInfoInDbWithId(MediaLibraryCommand &cmd, 
     string strDeleteCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
     if (strDeleteCondition.empty()) {
         string strRow = fileId.empty() ? cmd.GetOprnFileId() : fileId;
-        if (strRow.empty() || stoi(strRow) == -1 || !MediaLibraryDataManagerUtils::IsNumber(strRow)) {
+        if (strRow.empty() || !MediaLibraryDataManagerUtils::IsNumber(strRow) || (stoi(strRow) == -1)) {
             MEDIA_ERR_LOG("MediaLibraryObjectUtils DeleteFile: Index not digit");
             return DATA_ABILITY_FAIL;
         }
@@ -971,7 +971,7 @@ int32_t MediaLibraryObjectUtils::ModifyInfoInDbWithId(MediaLibraryCommand &cmd, 
     // update file
     string strDeleteCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
     if (strDeleteCondition.empty()) {
-        if (strRow.empty() || stoi(strRow) == -1 || !MediaLibraryDataManagerUtils::IsNumber(strRow)) {
+        if (strRow.empty() || !MediaLibraryDataManagerUtils::IsNumber(strRow) || (stoi(strRow) == -1)) {
             MEDIA_ERR_LOG("MediaLibraryObjectUtils DeleteFile: Index not digit");
             return DATA_ABILITY_FAIL;
         }

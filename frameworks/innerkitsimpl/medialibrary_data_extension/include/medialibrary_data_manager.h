@@ -111,7 +111,6 @@ namespace Media {
         bool CheckClientPermission(const std::string& permissionStr);
         std::string GetClientBundle(int uid);
         void NeedQuerySync(const std::string &networkId, TableType tabletype);
-        int32_t PreCheckInsert(const std::string &uri, const DataShare::DataShareValuesBucket &value);
         void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
 
         static const std::string PERMISSION_NAME_READ_MEDIA;
