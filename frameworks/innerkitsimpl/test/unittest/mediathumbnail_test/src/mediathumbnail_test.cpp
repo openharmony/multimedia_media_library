@@ -25,7 +25,6 @@
 #include "media_data_ability_const.h"
 #include "medialibrary_data_ability.h"
 #include "media_log.h"
-#include "permission/permission_kit.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
