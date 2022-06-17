@@ -713,15 +713,13 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
         return nullptr;
     }
 
-    shared_ptr<DataShare::ResultSetBridge> rsBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
-    shared_ptr<DataShare::DataShareResultSet> dataShareRs = make_shared<DataShare::DataShareResultSet>(rsBridge);
-    shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>(dataShareRs);
+    shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>();
     if (fetchFileResult == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain fetch file result");
         return nullptr;
     }
     fetchFileResult->networkId_ = networkId;
-    return fetchFileResult->GetFirstObject();
+    return fetchFileResult->GetObjectFromRdb(resultSet, 0);
 }
 
 int32_t MediaLibraryObjectUtils::SetFilePending(string &uriStr, bool isPending)
