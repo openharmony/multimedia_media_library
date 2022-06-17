@@ -32,8 +32,9 @@ namespace Media {
 enum OperationObject {
     UNKNOWN_OBJECT = 0,
     FILESYSTEM_ASSET = 1, // real file
-    FILESYSTEM_ALBUM,     // real dictionary = real album
-    SMART_ALBUM,          // virtual dictionary = smart album
+    FILESYSTEM_DIR,       // real dictionary
+    FILESYSTEM_ALBUM,     // real album
+    SMART_ALBUM,          // virtual album = smart album
     SMART_ALBUM_MAP,
     THUMBNAIL,
     KVSTORE,
@@ -52,7 +53,8 @@ enum OperationType {
     UPDATE,
     QUERY,
     ISDICTIONARY,
-    GETCAPACITY
+    GETCAPACITY,
+    SCAN
 };
 
 class MediaLibraryCommand {

@@ -580,10 +580,14 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     return DATA_ABILITY_SUCCESS;
 }
 
-void MediaLibraryObjectUtils::ScanFile(const string &srcPath)
+void MediaLibraryObjectUtils::ScanFile(string &path)
 {
     MEDIA_INFO_LOG("[lqh] enter");
-    string path = srcPath;
+    std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
+    if (scanFileCb == nullptr) {
+        MEDIA_WARNING_LOG("Failed to create scan file callback object");
+        return ;
+    }
     int ret = MediaScannerObj::GetMediaScannerInstance()->ScanFile(path, nullptr);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
@@ -985,6 +989,9 @@ int32_t MediaLibraryObjectUtils::ModifyInfoInDbWithId(MediaLibraryCommand &cmd, 
 
     return updatedRows;
 }
+
+void ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) {}
+
 
 } // namespace Media
 } // namespace OHOS

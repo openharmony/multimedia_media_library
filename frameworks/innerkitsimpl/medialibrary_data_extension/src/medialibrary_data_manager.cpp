@@ -39,7 +39,7 @@
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "medialibrary_unistore_manager.h"
-
+#include "medialibrary_object_utils.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -238,94 +238,153 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
     std::vector<std::string> devices = std::vector<std::string>();
 
     MediaLibraryCommand cmd(uri, value);
-    if (insertUri.find(MEDIA_OPERN_KEYWORD) != string::npos) {
-        MediaLibraryFileOperations fileOprn;
-        MediaLibraryAlbumOperations albumOprn;
-        MediaLibrarySmartAlbumOperations smartalbumOprn;
-        MediaLibrarySmartAlbumMapOperations smartalbumMapOprn;
-        MediaLibraryKvStoreOperations kvStoreOprn;
-        MediaLibraryDirOperations dirOprn;
-        result = DATA_ABILITY_FAIL;
-        string operationType = MediaLibraryDataManagerUtils::GetOperationType(insertUri);
-        MEDIA_INFO_LOG("MediaData Insert uri = %{public}s", insertUri.c_str());
-        if ((operationType == MEDIA_FILEOPRN_CREATEASSET ||
-            operationType == MEDIA_ALBUMOPRN_CREATEALBUM) && !CheckFileNameValid(dataShareValue)) {
+    // boardcast operation
+    if (cmd.GetOprnType() == OperationType::SCAN) {
+        std::string path = "/storage/media/local/files";
+        MediaScannerObj::GetMediaScannerInstance()->ScanDir(path, nullptr);
+        return DATA_ABILITY_SUCCESS;
+    } else if (cmd.GetOprnType() == OperationType::CREATE) {
+        if (!CheckFileNameValid(dataShareValue)) {
             return DATA_ABILITY_FILE_NAME_INVALID;
         }
-        if (insertUri.find(MEDIA_FILEOPRN) != string::npos) {
-            result = fileOprn.HandleFileOperation(cmd, dirQuerySetMap_);
-            if ((result >= 0) && (operationType == MEDIA_FILEOPRN_CLOSEASSET)) {
-                ScanFile(value, rdbStore_);
-            }
-            syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-        } else if (insertUri.find(MEDIA_DIROPRN) != string::npos) {
-            result = dirOprn.HandleDirOperations(operationType, value, rdbStore_, dirQuerySetMap_);
-            syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-        } else if (insertUri.find(MEDIA_ALBUMOPRN) != string::npos) {
-            result = albumOprn.HandleAlbumOperations(cmd);
-        } else if (insertUri.find(MEDIA_SMARTALBUMOPRN) != string::npos) {
-            result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore_);
-            syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
-        } else if (insertUri.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
-            result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType,
-                value, rdbStore_, dirQuerySetMap_);
-            syncTable.SyncPushTable(rdbStore_, bundleName_, CATEGORY_SMARTALBUM_MAP_TABLE, devices);
-        } else if (insertUri.find(MEDIA_KVSTOREOPRN) != string::npos) {
-            result = kvStoreOprn.HandleKvStoreInsertOperations(operationType, value, kvStorePtr_);
-        }
-        return result;
     }
 
-    // boardcast operation
-    if (insertUri.find(MEDIA_BOARDCASTOPRN) != string::npos) {
-        std::string operationType = MediaLibraryDataManagerUtils::GetOperationType(insertUri);
-        MEDIA_INFO_LOG("MediaData Insert operationType = %{private}s", operationType.c_str());
-        if (operationType == MEDIA_SCAN_OPERATION) {
-            std::string path = "/storage/media/local/files";
-            MediaScannerObj::GetMediaScannerInstance()->ScanDir(path, nullptr);
-        }
-        return DATA_ABILITY_SUCCESS;
+    string operationType = MediaLibraryDataManagerUtils::GetOperationType(insertUri);
+    // for Neusoft:
+    // need to do: align operations with function names,
+    // like: move 'delete' operations in smartalbum into Delete FUNCTION
+    switch(cmd.GetOprnObject()) {
+    case OperationObject::FILESYSTEM_ASSET:
+    {
+        MediaLibraryFileOperations fileOprn;
+        return fileOprn.HandleFileOperation(cmd, dirQuerySetMap_);
     }
-
-    // Normal URI scenario
-    int64_t outRowId = DATA_ABILITY_FAIL;
-    (void)rdbStore_->Insert(outRowId, MEDIALIBRARY_TABLE, value);
-    syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-    return outRowId;
+    case OperationObject::FILESYSTEM_DIR:
+    {
+        MediaLibraryDirOperations dirOprn;
+        result = dirOprn.HandleDirOperations(operationType, value, rdbStore_, dirQuerySetMap_);
+        syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
+        break;
+    }
+    case OperationObject::FILESYSTEM_ALBUM:
+    {
+        MediaLibraryAlbumOperations albumOprn;
+        return albumOprn.CreateAlbumOperation(cmd);
+    }
+    case OperationObject::SMART_ALBUM:
+    {
+        MediaLibrarySmartAlbumOperations smartalbumOprn;
+        result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore_);
+        syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
+        break;
+    }
+    case OperationObject::SMART_ALBUM_MAP:
+    {
+        MediaLibrarySmartAlbumMapOperations smartalbumMapOprn;
+        result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType,
+            value, rdbStore_, dirQuerySetMap_);
+        syncTable.SyncPushTable(rdbStore_, bundleName_, CATEGORY_SMARTALBUM_MAP_TABLE, devices);
+        break;
+    }
+    case OperationObject::KVSTORE:
+    {
+        MediaLibraryKvStoreOperations kvStoreOprn;
+        result = kvStoreOprn.HandleKvStoreInsertOperations(operationType, value, kvStorePtr_);
+        break;
+    }
+    default:
+    {
+        // Normal URI scenario
+        int64_t outRowId = DATA_ABILITY_FAIL;
+        (void)rdbStore_->Insert(outRowId, MEDIALIBRARY_TABLE, value);
+        syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
+        return outRowId;
+    }
+    }
+    return result;
 }
 
 int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
-    if (!isRdbStoreInitialized || (rdbStore_ == nullptr)) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager Delete:Rdb Store is not initialized");
-        return DATA_ABILITY_FAIL;
-    }
-
+    MEDIA_INFO_LOG("Delete");
     if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         return DATA_ABILITY_PERMISSION_DENIED;
     }
-    string uriString = uri.ToString();
-    string strDeleteCondition = predicates.GetWhereClause();
-    if (strDeleteCondition.empty()) {
-        string::size_type pos = uriString.find_last_of('/');
-        CHECK_AND_RETURN_RET_LOG((pos != string::npos) && (pos == MEDIALIBRARY_DATA_URI.length()), DATA_ABILITY_FAIL,
-            "Invalid index position");
 
-        string strRow = uriString.substr(pos + 1);
-        CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(strRow), DATA_ABILITY_FAIL, "Index not digit");
-
-        strDeleteCondition = MEDIA_DATA_DB_ID + " = " + strRow;
-        uriString = uriString.substr(0, pos);
+    if (uri.ToString().find(MEDIALIBRARY_DATA_URI) != 0) {
+        // uri begin with MEDIALIBRARY_DATA_URI
+        MEDIA_ERR_LOG("MediaLibraryDataManager Delete: Not Data ability Uri");
+        return DATA_ABILITY_FAIL;
     }
 
-    // After removing the index values, check whether URI is correct
-    CHECK_AND_RETURN_RET_LOG(uriString == MEDIALIBRARY_DATA_URI, DATA_ABILITY_FAIL, "Not Data ability Uri");
+    MediaLibraryCommand cmd(uri, DELETE);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
 
-    vector<string> whereArgs = predicates.GetWhereArgs();
-    int32_t deletedRows = DATA_ABILITY_FAIL;
-    (void)rdbStore_->Delete(deletedRows, MEDIALIBRARY_TABLE, strDeleteCondition, whereArgs);
+    switch (cmd.GetOprnObject()) {
+    case OperationObject::FILESYSTEM_ASSET:
+    {
+        MediaLibraryFileOperations fileOprn;
+        return fileOprn.DeleteFileOperation(cmd, dirQuerySetMap_);
+    }
+    case OperationObject::FILESYSTEM_DIR:
+        // for Neusoft:
+        // todo: supply a DeleteDirOperation here to replace
+        // delete in the HandleDirOperations in Insert function, if need
+        break;
+    case OperationObject::FILESYSTEM_ALBUM:
+    {
+        MediaLibraryAlbumOperations albumOprn;
+        return albumOprn.DeleteAlbumOperation(cmd);
+    }
+    default:
+        break;
+    }
 
-    return deletedRows;
+    // for Neusoft:
+    // DeleteInfoInDbWithId can finish the default delete of smartalbum and smartmap,
+    // so no need to distinct them in switch-case deliberately
+    MediaLibraryObjectUtils assetUtils;
+    return assetUtils.DeleteInfoInDbWithId(cmd);
+}
+
+int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBucket &dataShareValue,
+    const DataSharePredicates &predicates)
+{
+    MEDIA_INFO_LOG("Update");
+    ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
+    if (value.IsEmpty()) {
+        MEDIA_ERR_LOG("MediaLibraryDataManager Update:Input parameter is invalid ");
+        return DATA_ABILITY_FAIL;
+    }
+    if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+        return DATA_ABILITY_PERMISSION_DENIED;
+    }
+    MediaLibraryCommand cmd(uri, value);
+    switch (cmd.GetOprnObject()) {
+    case OperationObject::FILESYSTEM_ASSET:
+    {
+        MediaLibraryFileOperations fileOprn;
+        return fileOprn.ModifyFileOperation(cmd);
+    }
+    case OperationObject::FILESYSTEM_DIR:
+        // for Neusoft:
+        // todo: supply a ModifyDirOperation here to replace
+        // modify in the HandleDirOperations in Insert function, if need
+        break;
+    case OperationObject::FILESYSTEM_ALBUM:
+    {
+        MediaLibraryAlbumOperations albumOprn;
+        return albumOprn.ModifyAlbumOperation(cmd);
+    }
+    default:
+        break;
+    }
+    // for Neusoft:
+    // ModifyInfoInDbWithId can finish the default update of smartalbum and smartmap,
+    // so no need to distinct them in switch-case deliberately
+    MediaLibraryObjectUtils assetUtils;
+    return assetUtils.ModifyInfoInDbWithId(cmd);
 }
 
 shared_ptr<AbsSharedResultSet> QueryBySmartTableType(TableType tabletype,
@@ -395,17 +454,6 @@ shared_ptr<AbsSharedResultSet> QueryFile(string strQueryCondition,
     return queryResultSet;
 }
 
-string ObtionCondition(string &strQueryCondition, const vector<string> &whereArgs)
-{
-    for (string args : whereArgs) {
-        size_t pos = strQueryCondition.find('?');
-        if (pos != string::npos) {
-            strQueryCondition.replace(pos, 1, "'" + args + "'");
-        }
-    }
-    return strQueryCondition;
-}
-
 shared_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
     DataSharePredicates predicates,
     vector<string> columns,
@@ -418,7 +466,7 @@ shared_ptr<AbsSharedResultSet> QueryAlbum(string strQueryCondition,
         MEDIA_INFO_LOG("tableName is %{private}s", tableName.c_str());
         AbsRdbPredicates mediaLibAbsPredAlbum(tableName);
         if (!strQueryCondition.empty()) {
-            strQueryCondition = ObtionCondition(strQueryCondition, predicates.GetWhereArgs());
+            strQueryCondition = MediaLibraryDataManagerUtils::ObtionCondition(strQueryCondition, predicates.GetWhereArgs());
         }
         string distributedAlbumSql = MediaLibraryDataManagerUtils::GetDistributedAlbumSql(strQueryCondition, tableName);
         queryResultSet = rdbStore->QuerySql(distributedAlbumSql);
@@ -501,29 +549,6 @@ shared_ptr<AbsSharedResultSet> QueryByViewType(TableType tabletype,
     return queryResultSet;
 }
 
-void SplitKeyValue(const string& keyValue, string &key, string &value)
-{
-    string::size_type pos = keyValue.find('=');
-    if (string::npos != pos) {
-        key = keyValue.substr(0, pos);
-        value = keyValue.substr(pos + 1);
-    }
-}
-
-void SplitKeys(const string& query, vector<string>& keys)
-{
-    string::size_type pos1 = 0;
-    string::size_type pos2 = query.find('&');
-    while (string::npos != pos2) {
-        keys.push_back(query.substr(pos1, pos2-pos1));
-        pos1 = pos2 + 1;
-        pos2 = query.find('&', pos1);
-    }
-    if (pos1 != query.length()) {
-        keys.push_back(query.substr(pos1));
-    }
-}
-
 bool ParseThumbnailInfo(string &uriString, vector<int> &space)
 {
     string::size_type pos = uriString.find_last_of('?');
@@ -539,7 +564,7 @@ bool ParseThumbnailInfo(string &uriString, vector<int> &space)
     queryKeys = uriString.substr(pos + 1);
     uriString = uriString.substr(0, pos);
     vector<string> vectorKeys;
-    SplitKeys(queryKeys, vectorKeys);
+    MediaLibraryDataManagerUtils::SplitKeys(queryKeys, vectorKeys);
     if (vectorKeys.size() != keyWords.size()) {
         MEDIA_ERR_LOG("Parse error keys count %{private}d", (int)vectorKeys.size());
         return false;
@@ -549,7 +574,7 @@ bool ParseThumbnailInfo(string &uriString, vector<int> &space)
     int height = 0;
     for (uint32_t i = 0; i < vectorKeys.size(); i++) {
         string subKey, subVal;
-        SplitKeyValue(vectorKeys[i], subKey, subVal);
+        MediaLibraryDataManagerUtils::SplitKeyValue(vectorKeys[i], subKey, subVal);
         if (subKey.empty()) {
             MEDIA_ERR_LOG("Parse key error [ %{private}s ]", vectorKeys[i].c_str());
             return false;
@@ -738,60 +763,6 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
     return queryResultSet;
 }
 
-int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBucket &dataShareValue,
-    const DataSharePredicates &predicates)
-{
-    MEDIA_INFO_LOG("Update");
-    ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
-    if ((!isRdbStoreInitialized) || (rdbStore_ == nullptr) || (value.IsEmpty())) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager Update:Input parameter is invalid ");
-        return DATA_ABILITY_FAIL;
-    }
-    if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-        return DATA_ABILITY_PERMISSION_DENIED;
-    }
-    MediaLibraryCommand cmd(uri, value);
-    int32_t changedRows = DATA_ABILITY_FAIL;
-    string uriString = uri.ToString();
-    vector<string> devices = vector<string>();
-    MEDIA_INFO_LOG("Update uriString = %{private}s", uriString.c_str());
-    string strUpdateCondition = predicates.GetWhereClause();
-    if (strUpdateCondition.empty()) {
-        string::size_type pos = uriString.find_last_of('/');
-        CHECK_AND_RETURN_RET_LOG((pos != string::npos) && (pos == MEDIALIBRARY_DATA_URI.length()), DATA_ABILITY_FAIL,
-            "Invalid index position");
-
-        string strRow = uriString.substr(pos + 1);
-        CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(strRow), DATA_ABILITY_FAIL, "Index not digit");
-
-        uriString = uriString.substr(0, pos);
-        strUpdateCondition = MEDIA_DATA_DB_ID + " = " + strRow;
-    }
-    // After removing the index values, check whether URI is correct
-
-    vector<string> whereArgs = predicates.GetWhereArgs();
-    if (uriString.find(MEDIA_SMARTALBUMOPRN) != string::npos) {
-        (void)rdbStore_->Update(changedRows, SMARTALBUM_TABLE, value, strUpdateCondition, whereArgs);
-    } else if (uriString.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
-        (void)rdbStore_->Update(changedRows, SMARTALBUM_MAP_TABLE, value, strUpdateCondition, whereArgs);
-    } else {
-        if (uriString ==
-            MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET) {
-            MediaLibraryFileOperations fileOprn;
-            int result = fileOprn.HandleModifyAsset(cmd);
-            if (result < 0) {
-                return result;
-            }
-        }
-        (void)rdbStore_->Update(changedRows, MEDIALIBRARY_TABLE, value, strUpdateCondition, whereArgs);
-    }
-    if (changedRows >= 0) {
-        MediaLibrarySyncTable syncTable;
-        syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-    }
-    return changedRows;
-}
-
 int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)
 {
     string uriString = uri.ToString();
@@ -809,25 +780,6 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
     return rowCount;
 }
 
-void MediaLibraryDataManager::ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1)
-{
-    string actualUri;
-    ValueObject valueObject;
-
-    if (values.GetObject(MEDIA_DATA_DB_URI, valueObject)) {
-        valueObject.GetString(actualUri);
-    }
-
-    string id = MediaLibraryDataManagerUtils::GetIdFromUri(actualUri);
-    string srcPath = MediaLibraryDataManagerUtils::GetPathFromDb(id, rdbStore1);
-    if (!srcPath.empty()) {
-        std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
-        CHECK_AND_RETURN_LOG(scanFileCb != nullptr, "Failed to create scan file callback object");
-        auto ret = MediaScannerObj::GetMediaScannerInstance()->ScanFile(srcPath, nullptr);
-        CHECK_AND_RETURN_LOG(ret == 0, "Failed to initiate scan request");
-    }
-}
-
 /**
  * @brief
  * @param uri
@@ -840,32 +792,9 @@ void MediaLibraryDataManager::ScanFile(const ValuesBucket &values, const shared_
  */
 int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const std::string &mode)
 {
-    string uriString = uri.ToString();
-    shared_ptr<FileAsset> fileAsset = MediaLibraryDataManagerUtils::GetFileAssetFromDb(uriString, rdbStore_);
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, DATA_ABILITY_FAIL, "Failed to obtain path from Database");
-    if (mode == MEDIA_FILEMODE_READONLY) {
-        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
-            return DATA_ABILITY_PERMISSION_DENIED;
-        }
-    } else if (mode == MEDIA_FILEMODE_WRITEONLY || mode == MEDIA_FILEMODE_WRITETRUNCATE ||
-        mode == MEDIA_FILEMODE_WRITEAPPEND) {
-        if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-            return DATA_ABILITY_PERMISSION_DENIED;
-        }
-    } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE || mode == MEDIA_FILEMODE_READWRITE) {
-        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA) ||
-            !CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-            return DATA_ABILITY_PERMISSION_DENIED;
-        }
-    }
-    string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
-    int32_t fd = fileAsset->OpenAsset(path, mode);
-    if (fd < 0) {
-        MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
-        return DATA_ABILITY_HAS_FD_ERROR;
-    }
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager OpenFile: Success");
-    return fd;
+    MediaLibraryCommand cmd(uri, OPEN);
+    MediaLibraryObjectUtils assetUtils;
+    return assetUtils.OpenFile(cmd, mode);
 }
 
 void MediaLibraryDataManager::InitDeviceData()
@@ -1072,6 +1001,5 @@ void MediaLibraryDataManager::InitialiseKvStore()
     }
 }
 
-void ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) {}
 }  // namespace Media
 }  // namespace OHOS

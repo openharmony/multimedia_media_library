@@ -101,7 +101,6 @@ namespace Media {
     private:
         static constexpr const char DEVICE_BUNDLENAME[] = "com.ohos.medialibrary.MediaLibraryDataA";
         std::string GetOperationType(const std::string &uri);
-        void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
         void InitDeviceData();
         bool QuerySync(const std::string &deviceId, const std::string &tableName);
         bool QuerySync();
@@ -127,16 +126,6 @@ namespace Media {
         static std::mutex mutex_;
         static std::shared_ptr<MediaLibraryDataManager> instance_;
         std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
-};
-
-
-
-// Scanner callback objects
-class ScanFileCallback : public IMediaScannerAppCallback {
-public:
-    ScanFileCallback() = default;
-    ~ScanFileCallback() = default;
-    void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
 };
 
 } // namespace Media

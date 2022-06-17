@@ -43,7 +43,6 @@ public:
 
     static std::string GetFileName(const std::string &path);
     static std::string GetParentPath(const std::string &path);
-    static int32_t GetParentIdFromDb(const std::string &path, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static bool IsNumber(const std::string &str);
     static std::string GetOperationType(const std::string &uri);
     static std::string GetIdFromUri(const std::string &uri);
@@ -55,8 +54,6 @@ public:
                                             const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &id,
                                                     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    static bool checkFilePending(const std::shared_ptr<FileAsset> fileAsset);
-    static bool checkOpenMode(const std::string &mode);
     static int32_t setFilePending(string &id, bool isPending, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static NativeAlbumAsset CreateDirectorys(const std::string relativePath,
                                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
@@ -71,8 +68,6 @@ public:
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::shared_ptr<AbsSharedResultSet> QueryFavFiles(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::shared_ptr<AbsSharedResultSet> QueryTrashFiles(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    static string GetParentDisplayNameFromDb(const int &id, const shared_ptr<NativeRdb::RdbStore> &rdbStore);
-
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);
     static int32_t GetAssetRecycle(const int32_t &assetId,
@@ -102,6 +97,10 @@ public:
 
     static bool CheckOpenMode(const std::string &mode);
     static bool CheckFilePending(const std::shared_ptr<FileAsset> fileAsset);
+    static void SplitKeyValue(const string& keyValue, string &key, string &value);
+    static void SplitKeys(const string& query, vector<string>& keys);
+    static string ObtionCondition(string &strQueryCondition, const vector<string> &whereArgs);
+
 };
 } // namespace Media
 } // namespace OHOS

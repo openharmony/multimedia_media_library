@@ -35,14 +35,14 @@ MediaLibraryFileOperations::MediaLibraryFileOperations()
     uniStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
 }
 
-int32_t MediaLibraryFileOperations::HandleCreateAsset(MediaLibraryCommand &cmd)
+int32_t MediaLibraryFileOperations::CreateFileOperation(MediaLibraryCommand &cmd)
 {
     MEDIA_INFO_LOG("[lqh] enter");
     MediaLibraryObjectUtils objectUtils;
     return objectUtils.CreateFileObj(cmd);
 }
 
-int32_t MediaLibraryFileOperations::HandleCloseAsset(MediaLibraryCommand &cmd)
+int32_t MediaLibraryFileOperations::CloseFileOperation(MediaLibraryCommand &cmd)
 {
     MEDIA_INFO_LOG("[lqh] enter");
     MediaLibraryObjectUtils objectUtils;
@@ -69,7 +69,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryTrashFiles(Media
     return objectUtils.QueryFiles(cmd);
 }
 
-int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(MediaLibraryCommand &cmd)
+int32_t MediaLibraryFileOperations::GetAlbumCapacityOperation(MediaLibraryCommand &cmd)
 {
     MEDIA_INFO_LOG("[lqh] enter");
     int32_t errorCode = DATA_ABILITY_FAIL;
@@ -102,7 +102,7 @@ int32_t MediaLibraryFileOperations::HandleGetAlbumCapacity(MediaLibraryCommand &
     return errorCode;
 }
 
-int32_t MediaLibraryFileOperations::HandleModifyAsset(MediaLibraryCommand &cmd)
+int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd)
 {
     MEDIA_INFO_LOG("[lqh] enter");
     int32_t errCode = DATA_ABILITY_FAIL;
@@ -134,7 +134,7 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(MediaLibraryCommand &cmd)
     return objectUtils.RenameFileObj(cmd, srcPath, dstFilePath);
 }
 
-int32_t MediaLibraryFileOperations::HandleDeleteAsset(MediaLibraryCommand &cmd,
+int32_t MediaLibraryFileOperations::DeleteFileOperation(MediaLibraryCommand &cmd,
                                                       const unordered_map<string, DirAsset> &dirQuerySetMap)
 {
     int32_t errCode = DATA_ABILITY_FAIL;
@@ -163,7 +163,7 @@ int32_t MediaLibraryFileOperations::HandleDeleteAsset(MediaLibraryCommand &cmd,
     return errCode;
 }
 
-int32_t MediaLibraryFileOperations::HandleIsDirectoryAsset(MediaLibraryCommand &cmd)
+int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cmd)
 {
     MEDIA_INFO_LOG("[lqh] enter");
     if (uniStore_ == nullptr) {
@@ -217,28 +217,28 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd
     // only support CloseAsset when networkId is not empty
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(actualUri);
     if (!networkId.empty() && cmd.GetOprnType() != CLOSE) {
-        return HandleCloseAsset(cmd);
+        return DATA_ABILITY_FAIL;
     }
 
     switch (cmd.GetOprnType()) {
     case CREATE:
-        errCode = HandleCreateAsset(cmd);
+        errCode = CreateFileOperation(cmd);
         break;
     case CLOSE:
-        errCode = HandleCloseAsset(cmd);
+        errCode = CloseFileOperation(cmd);
         break;
     case ISDICTIONARY:
-        errCode = HandleIsDirectoryAsset(cmd);
+        errCode = IsDirectoryOperation(cmd);
         break;
     case GETCAPACITY:
-        errCode = HandleGetAlbumCapacity(cmd);
+        errCode = GetAlbumCapacityOperation(cmd);
         break;
-    case DELETE:
-        errCode = HandleDeleteAsset(cmd, dirQuerySetMap); // ?dirQuerySetMap
-        break;
-    case UPDATE:
-        errCode = HandleModifyAsset(cmd);
-        break;
+    // case DELETE:
+    //     errCode = DeleteFileOperation(cmd, dirQuerySetMap); // ?dirQuerySetMap
+    //     break;
+    // case UPDATE:
+    //     errCode = ModifyFileOperation(cmd);
+    //     break;
     default:
         MEDIA_WARNING_LOG("unknown operation type %{private}d", cmd.GetOprnType());
         break;

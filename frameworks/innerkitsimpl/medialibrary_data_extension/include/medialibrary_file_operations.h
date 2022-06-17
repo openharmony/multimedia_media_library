@@ -40,13 +40,14 @@ public:
     MediaLibraryFileOperations();
     ~MediaLibraryFileOperations() = default;
 
-    int32_t HandleCreateAsset(MediaLibraryCommand &cmd);
-    int32_t HandleCloseAsset(MediaLibraryCommand &cmd);
-    int32_t HandleGetAlbumCapacity(MediaLibraryCommand &cmd);
     int32_t HandleFileOperation(MediaLibraryCommand &cmd, const unordered_map<string, DirAsset> &dirQuerySetMap);
-    int32_t HandleModifyAsset(MediaLibraryCommand &cmd);
-    int32_t HandleDeleteAsset(MediaLibraryCommand &cmd, const unordered_map<string, DirAsset> &dirQuerySetMap);
-    int32_t HandleIsDirectoryAsset(MediaLibraryCommand &cmd);
+
+    int32_t CreateFileOperation(MediaLibraryCommand &cmd);
+    int32_t CloseFileOperation(MediaLibraryCommand &cmd);
+    int32_t GetAlbumCapacityOperation(MediaLibraryCommand &cmd);
+    int32_t ModifyFileOperation(MediaLibraryCommand &cmd);
+    int32_t DeleteFileOperation(MediaLibraryCommand &cmd, const unordered_map<string, DirAsset> &dirQuerySetMap);
+    int32_t IsDirectoryOperation(MediaLibraryCommand &cmd);
 
 private:
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFiles(MediaLibraryCommand &cmd);

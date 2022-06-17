@@ -46,51 +46,6 @@ string MediaLibraryDataManagerUtils::GetParentPath(const string &path)
     return name;
 }
 
-int32_t MediaLibraryDataManagerUtils::GetParentIdFromDb(const string &path, const shared_ptr<RdbStore> &rdbStore)
-{
-    int32_t parentId = 0;
-    int32_t columnIndex(0);
-
-    if (rdbStore != nullptr && !path.empty()) {
-        AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
-        absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
-
-        vector<string> columns;
-        columns.push_back(MEDIA_DATA_DB_ID);
-
-        unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
-        CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, parentId, "Failed to obtain parentId from database");
-
-        auto ret = queryResultSet->GoToFirstRow();
-        CHECK_AND_RETURN_RET_LOG(ret == 0, parentId, "Failed to shift at first row");
-
-        ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndex);
-        CHECK_AND_RETURN_RET_LOG(ret == 0, parentId, "Failed to obtain column index");
-
-        ret = queryResultSet->GetInt(columnIndex, parentId);
-        CHECK_AND_RETURN_RET_LOG(ret == 0, parentId, "Failed to obtain parent id");
-    }
-
-    return parentId;
-}
-
-string MediaLibraryDataManagerUtils::GetParentDisplayNameFromDb(const int &id, const shared_ptr<RdbStore> &rdbStore)
-{
-    string parentName;
-    int32_t columnIndex(0);
-    if (rdbStore != nullptr) {
-        AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
-        absPredicates.EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
-        vector<string> columns;
-        columns.push_back(MEDIA_DATA_DB_NAME);
-        unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
-        auto ret = queryResultSet->GoToFirstRow();
-        ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_NAME, columnIndex);
-        ret = queryResultSet->GetString(columnIndex, parentName);
-    }
-    return parentName;
-}
-
 bool MediaLibraryDataManagerUtils::IsNumber(const string &str)
 {
     if (str.empty()) {
@@ -104,7 +59,6 @@ bool MediaLibraryDataManagerUtils::IsNumber(const string &str)
             return false;
         }
     }
-
     return true;
 }
 
@@ -697,6 +651,39 @@ bool MediaLibraryDataManagerUtils::CheckFilePending(const shared_ptr<FileAsset> 
     return false;
 }
 
+void MediaLibraryDataManagerUtils::SplitKeyValue(const string& keyValue, string &key, string &value)
+{
+    string::size_type pos = keyValue.find('=');
+    if (string::npos != pos) {
+        key = keyValue.substr(0, pos);
+        value = keyValue.substr(pos + 1);
+    }
+}
+
+void MediaLibraryDataManagerUtils::SplitKeys(const string& query, vector<string>& keys)
+{
+    string::size_type pos1 = 0;
+    string::size_type pos2 = query.find('&');
+    while (string::npos != pos2) {
+        keys.push_back(query.substr(pos1, pos2-pos1));
+        pos1 = pos2 + 1;
+        pos2 = query.find('&', pos1);
+    }
+    if (pos1 != query.length()) {
+        keys.push_back(query.substr(pos1));
+    }
+}
+
+string MediaLibraryDataManagerUtils::ObtionCondition(string &strQueryCondition, const vector<string> &whereArgs)
+{
+    for (string args : whereArgs) {
+        size_t pos = strQueryCondition.find('?');
+        if (pos != string::npos) {
+            strQueryCondition.replace(pos, 1, "'" + args + "'");
+        }
+    }
+    return strQueryCondition;
+}
 
 
 } // namespace Media
