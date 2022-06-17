@@ -167,24 +167,6 @@ std::string MediaLibraryDataManager::GetType(const Uri &uri)
     return "";
 }
 
-int32_t MediaLibraryDataManager::PreCheckInsert(const string &uri, const DataShareValuesBucket &value)
-{
-    if ((!isRdbStoreInitialized) || (value.IsEmpty()) || (rdbStore_ == nullptr)) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager Insert: Input parameter is invalid");
-        return DATA_ABILITY_FAIL;
-    }
-
-    string tmpUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
-    if (uri == tmpUri) {
-        if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
-            return DATA_ABILITY_PERMISSION_DENIED;
-        }
-    } else if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-        return DATA_ABILITY_PERMISSION_DENIED;
-    }
-    return DATA_ABILITY_SUCCESS;
-}
-
 void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset> &outDirQuerySetMap)
 {
     int32_t count = -1;
@@ -229,14 +211,15 @@ void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset>
 int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBucket &dataShareValue)
 {
     string insertUri = uri.ToString();
-    auto result = PreCheckInsert(insertUri, dataShareValue);
-    if (result) {
-        return result;
-    }
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
+    if (value.IsEmpty()) {
+        MEDIA_ERR_LOG("MediaLibraryDataManager Insert: Input parameter is invalid");
+        return DATA_ABILITY_FAIL;
+    }
+
     MediaLibrarySyncTable syncTable;
     std::vector<std::string> devices = std::vector<std::string>();
-
+    int32_t result = DATA_ABILITY_FAIL;
     MediaLibraryCommand cmd(uri, value);
     // boardcast operation
     if (cmd.GetOprnType() == OperationType::SCAN) {
@@ -357,10 +340,11 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
         MEDIA_ERR_LOG("MediaLibraryDataManager Update:Input parameter is invalid ");
         return DATA_ABILITY_FAIL;
     }
-    if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-        return DATA_ABILITY_PERMISSION_DENIED;
-    }
+
     MediaLibraryCommand cmd(uri, value);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
+
     switch (cmd.GetOprnObject()) {
     case OperationObject::FILESYSTEM_ASSET:
     {
