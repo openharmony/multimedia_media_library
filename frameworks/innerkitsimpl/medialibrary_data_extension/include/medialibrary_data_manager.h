@@ -58,7 +58,7 @@
 namespace OHOS {
 namespace Media {
 // kvstore constants
-    const DistributedKv::AppId KVSTORE_APPID { "com.ohos.medialibrary.MediaLibraryDataA" };
+    const DistributedKv::AppId KVSTORE_APPID { "com.ohos.medialibrary.medialibrarydata" };
     const DistributedKv::StoreId KVSTORE_STOREID { "ringtone" };
     enum TableType {
         TYPE_DATA,
@@ -101,7 +101,7 @@ namespace Media {
         void ClearMediaLibraryMgr();
 
     private:
-        static constexpr const char DEVICE_BUNDLENAME[] = "com.ohos.medialibrary.MediaLibraryDataA";
+        static constexpr const char DEVICE_BUNDLENAME[] = "com.ohos.medialibrary.medialibrarydata";
         std::string GetOperationType(const std::string &uri);
         void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
         void InitDeviceData();
