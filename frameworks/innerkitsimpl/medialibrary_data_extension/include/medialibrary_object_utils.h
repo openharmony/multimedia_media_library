@@ -80,11 +80,20 @@ private:
     int32_t UpdateFileInfoInDb(MediaLibraryCommand &cmd, const std::string &dstPath, const int &bucketId,
                                const std::string &bucketName);
     void UpdateDateModifiedForAlbum(const std::string &dirPath);
-    void ScanFile(const std::string &srcPath);
+    void ScanFile(std::string &srcPath);
     int32_t DeleteEmptyDirsRecursively(int32_t dirId);
 
     std::shared_ptr<MediaLibraryUnistore> uniStore_{nullptr};
 };
+
+// Scanner callback objects
+class ScanFileCallback : public IMediaScannerAppCallback {
+public:
+    ScanFileCallback() = default;
+    ~ScanFileCallback() = default;
+    void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
+};
+
 
 } // namespace Media
 } // namespace OHOS
