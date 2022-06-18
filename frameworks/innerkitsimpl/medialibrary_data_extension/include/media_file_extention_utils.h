@@ -35,6 +35,7 @@ namespace OHOS {
 namespace Media {
 class MediaFileExtentionUtils {
 public:
+    static std::string GetFileMediaTypeUri(MediaType mediaType, const std::string& networkId);
     static std::vector<FileAccessFwk::FileInfo> ListFile(std::string selectUri);
 };
 } // Media
