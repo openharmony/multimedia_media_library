@@ -137,7 +137,6 @@ ohos_shared_library("medialibrary") {
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "ipc_js:rpc",
-    "permission_standard:libpermissionsdk_standard",
     "relational_store:native_appdatafwk",
     "relational_store:native_rdb",
   ]

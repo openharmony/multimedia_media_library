@@ -17,7 +17,6 @@
 #include "data_ability_helper.h"
 #include "iservice_registry.h"
 #include "media_log.h"
-#include "permission/permission_kit.h"
 #include "system_ability_definition.h"
 
 using namespace std;
