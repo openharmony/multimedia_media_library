@@ -42,6 +42,13 @@ public:
         URI_WRITE = 1 << 1,
     };
 
+    enum ListFileType {
+        LISTFILE_ROOT,
+        LISTFILE_ALBUM,
+        LISTFILE_FILE,
+        LISTFILE_DIR,
+    };
+
     UriHelper(const std::string_view &uri);
     UriHelper(int32_t fd, int64_t offset, int64_t size);
     ~UriHelper();
@@ -55,6 +62,7 @@ public:
     std::string FormattedUri() const;
     bool AccessCheck(uint8_t flag) const;
     bool ParseFdUri(int32_t &fd, int64_t &offset, int64_t size);
+    static ListFileType ResolveUri(const std::string &uri);
 
 private:
     void FormatMeForUri(const std::string_view &uri) noexcept;

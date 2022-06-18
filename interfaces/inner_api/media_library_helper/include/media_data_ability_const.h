@@ -82,6 +82,10 @@ static const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "datashare://";
 static const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
 static const std::string MEDIALIBRARY_MEDIA_PREFIX = MEDIALIBRARY_DATA_ABILITY_PREFIX +
                                                      MEDIALIBRARY_DATA_URI_IDENTIFIER;
+// device virtual root node
+static const std::string MEDIALIBRARY_ROOT = "/root";
+// fileextension fileinfo mode as folder
+static const std::string MEDIALIBRARY_FOLDER = "folder";
 static const std::string MEDIALIBRARY_TYPE_AUDIO_URI = "/audio";
 static const std::string MEDIALIBRARY_TYPE_VIDEO_URI = "/video";
 static const std::string MEDIALIBRARY_TYPE_IMAGE_URI = "/image";
