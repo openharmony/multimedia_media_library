@@ -60,7 +60,6 @@ ohos_unittest("mediathumbnail_test") {
     "dataability:native_dataability",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
-    "permission_standard:libpermissionsdk_standard",
     "relational_store:native_appdatafwk",
     "relational_store:native_rdb",
     "safwk:system_ability_fwk",
