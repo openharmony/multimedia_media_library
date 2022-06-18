@@ -107,8 +107,7 @@ std::vector<FileAccessFwk::FileInfo> MediaFileExtAbility::ListFile(const Uri &se
 {
     MEDIA_DEBUG_LOG("%{public}s begin.", __func__);
     std::vector<string> typeArray;
-    auto ret = MediaFileExtentionUtils::ListFile(selectUri.ToString(),
-        MediaLibraryDataManager::GetInstance()->rdbStore_);
+    auto ret = MediaFileExtentionUtils::ListFile(selectUri.ToString());
     MEDIA_DEBUG_LOG("%{public}s end.", __func__);
     return ret;
 }

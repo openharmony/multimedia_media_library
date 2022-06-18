@@ -16,17 +16,10 @@
 #include "media_file_extention_utils.h"
 #include "media_lib_service_const.h"
 #include "media_log.h"
-#include "file_asset.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "media_file_utils.h"
-#include "media_asset.h"
-#include "medialibrary_file_db.h"
-#include "data_ability_predicates.h"
-#include "medialibrary_file_operations.h"
 #include "uri_helper.h"
-
-#include <queue>
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -140,8 +133,7 @@ bool GetAlbumRelativePath(const string &selectUri, const string &networkId, stri
     return true;
 }
 
-vector<FileAccessFwk::FileInfo> MediaFileExtentionUtils::ListFile(string selectUri,
-                                                                  const shared_ptr<NativeRdb::RdbStore> &rdbStore)
+vector<FileAccessFwk::FileInfo> MediaFileExtentionUtils::ListFile(string selectUri)
 {
     MEDIA_DEBUG_LOG("selectUri %{public}s", selectUri.c_str());
     UriHelper::ListFileType listFileType = UriHelper::ResolveUri(selectUri);
