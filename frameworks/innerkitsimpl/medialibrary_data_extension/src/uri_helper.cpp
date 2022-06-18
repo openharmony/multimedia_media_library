@@ -24,6 +24,22 @@
 
 namespace OHOS {
 namespace Media {
+UriHelper::ListFileType UriHelper::ResolveUri(const std::string &uri)
+{
+    size_t slashIndex = uri.rfind("/");
+    if (slashIndex != std::string::npos) {
+        std::string type = uri.substr(slashIndex + 1);
+        // MEDIALIBRARY_ROOT
+        if (type == "root") {
+            return UriHelper::LISTFILE_ROOT;
+        } else {
+            return UriHelper::LISTFILE_DIR;
+        }
+    } else {
+        return UriHelper::LISTFILE_FILE;
+    }
+}
+
 static const std::map<std::string_view, uint8_t> g_validUriTypes = {
     {"", UriHelper::UriType::URI_TYPE_FILE }, // empty uri head is treated as the file type uri.
     {"file", UriHelper::UriType::URI_TYPE_FILE},
