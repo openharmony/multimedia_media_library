@@ -39,6 +39,9 @@ public:
 
     sptr<IRemoteObject> OnConnect(const AAFwk::Want &want) override;
     int OpenFile(const Uri &uri, int flags) override;
+    int CreateFile(const Uri &parentUri, const std::string &displayName,  Uri &newFileUri) override;
+    int Mkdir(const Uri &parentUri, const std::string &displayName, Uri &newFileUri) override;
+    int Delete(const Uri &sourceFileUri) override;
     std::vector<FileAccessFwk::FileInfo> ListFile(const Uri &selectUri) override;
 private:
      AbilityRuntime::JsRuntime& jsRuntime_;
