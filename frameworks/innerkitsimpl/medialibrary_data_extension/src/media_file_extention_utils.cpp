@@ -68,7 +68,8 @@ int32_t MediaFileExtentionUtils::Mkdir(Uri parentUri, std::string displayName, U
     return DATA_ABILITY_SUCCESS;
 }
 
-void GetSingleFileInfo(FileAccessFwk::FileInfo &fileInfo, shared_ptr<AbsSharedResultSet> &result)
+void GetSingleFileInfo(const string &networkId, FileAccessFwk::FileInfo &fileInfo,
+    shared_ptr<AbsSharedResultSet> &result)
 {
     int32_t index = 0;
     int fileId;
@@ -85,12 +86,11 @@ void GetSingleFileInfo(FileAccessFwk::FileInfo &fileInfo, shared_ptr<AbsSharedRe
     result->GetLong(index, fileSize);
     result->GetColumnIndex(MEDIA_DATA_DB_DATE_MODIFIED, index);
     result->GetLong(index, date_modified);
-    string networkId;
     string uri = MediaFileExtentionUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) +
          '/' + to_string(fileId);
     fileInfo.uri = Uri(uri);
     fileInfo.fileName = fileName;
-    fileInfo.mimiType = mediaType;
+    fileInfo.mimiType = to_string(mediaType);
     fileInfo.size = fileSize;
     fileInfo.mtime = date_modified;
     if (mediaType == MEDIA_TYPE_ALBUM) {
@@ -98,7 +98,8 @@ void GetSingleFileInfo(FileAccessFwk::FileInfo &fileInfo, shared_ptr<AbsSharedRe
     }
 }
 
-void GetFileInfoFromResult(shared_ptr<AbsSharedResultSet> &result, vector<FileAccessFwk::FileInfo> &fileList)
+void GetFileInfoFromResult(const string &networkId, shared_ptr<AbsSharedResultSet> &result,
+    vector<FileAccessFwk::FileInfo> &fileList)
 {
     int count = 0;
     result->GetRowCount(count);
@@ -110,7 +111,7 @@ void GetFileInfoFromResult(shared_ptr<AbsSharedResultSet> &result, vector<FileAc
     result->GoToFirstRow();
     for (int i = 0; i < count; i++) {
         FileAccessFwk::FileInfo fileInfo;
-        GetSingleFileInfo(fileInfo, result);
+        GetSingleFileInfo(networkId, fileInfo, result);
         MEDIA_DEBUG_LOG("fileInfo.uri %{public}s", fileInfo.uri.ToString().c_str());
         fileList.push_back(fileInfo);
         result->GoToNextRow();
@@ -162,6 +163,7 @@ bool GetAlbumRelativePath(const string &selectUri, const string &networkId, stri
     string displayname;
     result->GetColumnIndex(MEDIA_DATA_DB_NAME, columnIndex);
     result->GetString(columnIndex, displayname);
+
     relativePath = relativePath + displayname + "/";
     MEDIA_DEBUG_LOG("relativePath %{public}s", relativePath.c_str());
     return true;
@@ -169,23 +171,25 @@ bool GetAlbumRelativePath(const string &selectUri, const string &networkId, stri
 
 vector<FileAccessFwk::FileInfo> MediaFileExtentionUtils::ListFile(string selectUri)
 {
-    MEDIA_DEBUG_LOG("selectUri %{public}s", selectUri.c_str());
-    UriHelper::ListFileType listFileType = UriHelper::ResolveUri(selectUri);
-    MEDIA_DEBUG_LOG("listFileType %{public}d", listFileType);
+    UriHelper::ListFileType listFileType = UriHelper::resolveUri(selectUri);
+    MEDIA_DEBUG_LOG("selectUri %{public}s istFileType %{public}d", selectUri.c_str(), listFileType);
     string relativePath;
     vector<FileAccessFwk::FileInfo> fileList;
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(selectUri);
+    string selection;
+    vector<string> selectionArgs;
     if (listFileType == UriHelper::LISTFILE_ROOT) {
-        relativePath = "";
+        selection = MEDIA_DATA_DB_PARENT_ID + " LIKE ? ";
+        selectionArgs = { "0" };
     } else if (listFileType == UriHelper::LISTFILE_DIR) {
         if (!GetAlbumRelativePath(selectUri, networkId, relativePath)) {
             MEDIA_ERR_LOG("selectUri is not valid album uri");
             return fileList;
         }
+        selection = MEDIA_DATA_DB_RELATIVE_PATH + " LIKE ? ";
+        selectionArgs = { relativePath };
+        MEDIA_DEBUG_LOG("relativePath %{public}s", relativePath.c_str());
     }
-    MEDIA_DEBUG_LOG("relativePath %{public}s", relativePath.c_str());
-    string selection = MEDIA_DATA_DB_RELATIVE_PATH + " LIKE ?";
-    vector<string> selectionArgs = { relativePath };
     string queryUri;
     if (!networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
@@ -194,7 +198,7 @@ vector<FileAccessFwk::FileInfo> MediaFileExtentionUtils::ListFile(string selectU
     }
     MEDIA_DEBUG_LOG("queryUri %{public}s", queryUri.c_str());
     std::shared_ptr<AbsSharedResultSet> resultSet = GetListFileResult(queryUri, selection, selectionArgs);
-    GetFileInfoFromResult(resultSet, fileList);
+    GetFileInfoFromResult(networkId, resultSet, fileList);
     MEDIA_DEBUG_LOG("fileList.size() count %{public}lu", fileList.size());
     return fileList;
 }
