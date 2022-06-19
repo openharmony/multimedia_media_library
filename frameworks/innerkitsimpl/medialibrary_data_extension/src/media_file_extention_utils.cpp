@@ -171,7 +171,7 @@ bool GetAlbumRelativePath(const string &selectUri, const string &networkId, stri
 
 vector<FileAccessFwk::FileInfo> MediaFileExtentionUtils::ListFile(string selectUri)
 {
-    UriHelper::ListFileType listFileType = UriHelper::resolveUri(selectUri);
+    UriHelper::ListFileType listFileType = UriHelper::ResolveUri(selectUri);
     MEDIA_DEBUG_LOG("selectUri %{public}s istFileType %{public}d", selectUri.c_str(), listFileType);
     string relativePath;
     vector<FileAccessFwk::FileInfo> fileList;
