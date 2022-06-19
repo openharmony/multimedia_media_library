@@ -177,5 +177,18 @@ std::vector<FileAccessFwk::FileInfo> MediaFileExtAbility::ListFile(const Uri &se
     MEDIA_DEBUG_LOG("%{public}s end.", __func__);
     return ret;
 }
+
+std::vector<DeviceInfo> MediaFileExtAbility::GetRoots()
+{
+    MEDIA_DEBUG_LOG("%{public}s begin.", __func__);
+    return MediaFileExtentionUtils::GetRoots();
+}
+
+int MediaFileExtAbility::Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri)
+{
+    MEDIA_DEBUG_LOG("%{public}s begin.", __func__);
+    auto ret = MediaFileExtentionUtils::Rename(sourceFileUri, displayName, newFileUri);
+    return ret;
+}
 } // Media
 } // OHOS
