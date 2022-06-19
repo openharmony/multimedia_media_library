@@ -36,6 +36,8 @@ namespace Media {
 class MediaFileExtentionUtils {
 public:
     static std::string GetFileMediaTypeUri(MediaType mediaType, const std::string& networkId);
+    static int32_t Mkdir(Uri parentUri, std::string displayName, Uri& newDirUri,
+        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::vector<FileAccessFwk::FileInfo> ListFile(std::string selectUri);
 };
 } // Media

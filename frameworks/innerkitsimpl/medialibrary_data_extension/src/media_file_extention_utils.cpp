@@ -20,6 +20,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "media_file_utils.h"
 #include "uri_helper.h"
+#include "media_asset.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -40,6 +41,31 @@ string MediaFileExtentionUtils::GetFileMediaTypeUri(MediaType mediaType, const s
         default:
             return uri + MEDIALIBRARY_TYPE_FILE_URI;
     }
+}
+
+int32_t MediaFileExtentionUtils::Mkdir(Uri parentUri, std::string displayName, Uri& newDirUri,
+                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    string albumUri, albumId, albumPath, dirPath, relativePath, newUri, networkId;
+    albumUri = parentUri.ToString();
+    albumId = MediaLibraryDataManagerUtils::GetIdFromUri(albumUri);
+    albumPath = MediaLibraryDataManagerUtils::GetPathFromDb(albumId, rdbStore);
+    dirPath = albumPath + '/' + displayName;
+
+    relativePath = dirPath.substr(ROOT_MEDIA_DIR.size()) + '/';
+    networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentUri.ToString());
+
+    vector<int32_t> outIds;
+    NativeAlbumAsset nativeAlbumAsset = MediaLibraryDataManagerUtils::CreateDirectorys(relativePath, rdbStore, outIds);
+    if (nativeAlbumAsset.GetAlbumId() < 0) {
+        return nativeAlbumAsset.GetAlbumId();
+    }
+    nativeAlbumAsset = MediaLibraryDataManagerUtils::GetAlbumAsset(to_string(nativeAlbumAsset.GetAlbumId()), rdbStore);
+    MediaType mediaType = MediaAsset::GetMediaType(dirPath);
+    newUri = GetFileMediaTypeUri(mediaType, networkId) + "/" + to_string(nativeAlbumAsset.GetAlbumId());
+    newDirUri = Uri(newUri);
+
+    return DATA_ABILITY_SUCCESS;
 }
 
 void GetSingleFileInfo(FileAccessFwk::FileInfo &fileInfo, shared_ptr<AbsSharedResultSet> &result)
@@ -106,16 +132,17 @@ std::shared_ptr<AbsSharedResultSet> GetListFileResult(const string &queryUri,
 
 bool GetAlbumRelativePath(const string &selectUri, const string &networkId, string &relativePath)
 {
-    string queryUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
+    string queryUri = MEDIALIBRARY_DATA_URI;
     if (!networkId.empty()) {
-        queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId +
-            MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
+        queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     }
     string selection = MEDIA_DATA_DB_ID + " LIKE ? ";
     string id = MediaLibraryDataManagerUtils::GetIdFromUri(selectUri);
     vector<string> selectionArgs = { id };
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(selection);
+    predicates.SetWhereArgs(selectionArgs);
     Uri uri(queryUri);
     shared_ptr<AbsSharedResultSet> result =
         MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
