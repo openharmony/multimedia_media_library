@@ -43,6 +43,8 @@ public:
     int Mkdir(const Uri &parentUri, const std::string &displayName, Uri &newFileUri) override;
     int Delete(const Uri &sourceFileUri) override;
     std::vector<FileAccessFwk::FileInfo> ListFile(const Uri &selectUri) override;
+    std::vector<FileAccessFwk::DeviceInfo> GetRoots() override;
+    int Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri) override;
 private:
      AbilityRuntime::JsRuntime& jsRuntime_;
 };
