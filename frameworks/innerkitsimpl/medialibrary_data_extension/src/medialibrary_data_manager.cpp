@@ -1080,13 +1080,6 @@ int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const std::string &mod
     string uriString = uri.ToString();
     shared_ptr<FileAsset> fileAsset = MediaLibraryDataManagerUtils::GetFileAssetFromDb(uriString, rdbStore_);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, DATA_ABILITY_FAIL, "Failed to obtain path from Database");
-    bool isWriteMode = MediaLibraryDataManagerUtils::checkOpenMode(mode);
-    if (isWriteMode) {
-        if (MediaLibraryDataManagerUtils::checkFilePending(fileAsset)) {
-            MEDIA_ERR_LOG("MediaLibraryDataManager OpenFile: File is pending");
-            return DATA_ABILITY_HAS_OPENED_FAIL;
-        }
-    }
     if (mode == MEDIA_FILEMODE_READONLY) {
         if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
             return DATA_ABILITY_PERMISSION_DENIED;
@@ -1107,14 +1100,6 @@ int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const std::string &mod
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
         return DATA_ABILITY_HAS_FD_ERROR;
-    }
-    if (isWriteMode && fd > 0) {
-        int32_t errorCode = MediaLibraryDataManagerUtils::setFilePending(uriString, true, rdbStore_);
-        if (errorCode == DATA_ABILITY_FAIL) {
-            fileAsset->CloseAsset(fd);
-            MEDIA_ERR_LOG("MediaLibraryDataManager OpenFile: Set file to pending DB error");
-            return DATA_ABILITY_HAS_DB_ERROR;
-        }
     }
     MEDIA_DEBUG_LOG("MediaLibraryDataManager OpenFile: Success");
     return fd;
