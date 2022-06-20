@@ -165,13 +165,13 @@ bool GetAlbumRelativePath(const string &selectUri, const string &networkId, stri
     int mediaType;
     result->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, columnIndex);
     result->GetInt(columnIndex, mediaType);
+    CHECK_AND_RETURN_RET_LOG(mediaType == MEDIA_TYPE_ALBUM, false, "selectUri is not album");
     result->GetColumnIndex(MEDIA_DATA_DB_RELATIVE_PATH, columnIndex);
     result->GetString(columnIndex, relativePath);
     string displayname;
     result->GetColumnIndex(MEDIA_DATA_DB_NAME, columnIndex);
     result->GetString(columnIndex, displayname);
-
-    relativePath = relativePath + displayname + "/";
+    relativePath = relativePath + displayname + SLASH_CHAR;
     MEDIA_DEBUG_LOG("relativePath %{public}s", relativePath.c_str());
     return true;
 }
