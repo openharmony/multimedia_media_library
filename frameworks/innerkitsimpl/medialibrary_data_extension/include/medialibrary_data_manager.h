@@ -118,7 +118,6 @@ namespace Media {
         bool CheckFileNameValid(const DataShareValuesBucket &value);
         sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
         std::string GetClientBundleName();
-        bool CheckClientPermission(const std::string& permissionStr);
         std::string GetClientBundle(int uid);
         void NeedQuerySync(const std::string &networkId, TableType tabletype);
         void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);

@@ -1047,7 +1047,7 @@ bool MediaLibraryObjectUtils::IsColumnValueExist(const string &value, const stri
     cmd.GetAbsRdbPredicates()->SetWhereClause(strCondition);
     vector<string> columns;
     columns.push_back(column);
-    unique_ptr<NativeRdb::ResultSet> queryResultSet = uniStore_->Query(cmd, columns);
+    auto queryResultSet = uniStore_->Query(cmd, columns);
     if (queryResultSet != nullptr) {
         int32_t count = 0;
         queryResultSet->GetRowCount(count);
@@ -1066,7 +1066,7 @@ bool MediaLibraryObjectUtils::IsAssetExistInDb(const int32_t id)
     MediaLibraryCommand cmd(FILESYSTEM_ASSET, QUERY);
     cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
     vector<string> columns;
-    unique_ptr<NativeRdb::ResultSet> queryResultSet = QueryWithCondition(cmd, columns);
+    auto queryResultSet = QueryWithCondition(cmd, columns);
     if (queryResultSet != nullptr && queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         return true;
     }
@@ -1075,7 +1075,6 @@ bool MediaLibraryObjectUtils::IsAssetExistInDb(const int32_t id)
 
 bool MediaLibraryObjectUtils::IsFileExistInDb(const string &path)
 {
-    int32_t count = 0;
     if (path.empty()) {
         MEDIA_ERR_LOG("path is incorrect");
         return false;
@@ -1087,7 +1086,7 @@ bool MediaLibraryObjectUtils::IsFileExistInDb(const string &path)
     cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
     vector<string> columns;
     columns.push_back(MEDIA_DATA_DB_FILE_PATH);
-    unique_ptr<NativeRdb::ResultSet> queryResultSet = QueryWithCondition(cmd, columns);
+    auto queryResultSet = QueryWithCondition(cmd, columns);
     if (queryResultSet != nullptr && queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         return true;
     }
