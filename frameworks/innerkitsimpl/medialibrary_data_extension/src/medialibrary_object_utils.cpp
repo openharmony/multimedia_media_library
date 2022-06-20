@@ -164,7 +164,7 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
     cmd.SetValueBucket(updatedAssetInfo);
     int64_t outRowId = -1;
     errCode = uniStore_->Insert(cmd, outRowId);
-    MEDIA_INFO_LOG("Insert errCode = %d, outRowId = %lld", errCode, outRowId);
+    MEDIA_INFO_LOG("Insert errCode = %d, outRowId = %d", errCode, (int)outRowId);
     return (errCode == NativeRdb::E_OK) ? outRowId : errCode;
 }
 
@@ -261,7 +261,7 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
         parentId = rowId;
         outIds.push_back(rowId);
     }
-    MEDIA_INFO_LOG("parentId = %{private}lld", parentId);
+    MEDIA_INFO_LOG("parentId = %{private}d", (int)parentId);
     return DATA_ABILITY_SUCCESS;
 }
 
@@ -281,7 +281,7 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
     }
     dirAsset.SetAlbumPath(dirPath);
     rowId = GetIdByPathFromDb(dirPath);
-    MEDIA_INFO_LOG("dirPath %{private}s id in database is %{private}lld", dirPath.c_str(), rowId);
+    MEDIA_INFO_LOG("dirPath %{private}s id in database is %{private}d", dirPath.c_str(), (int)rowId);
     if (rowId < 0) {
         dirAsset.CreateAlbumAsset();
         return InsertDirToDbRecursively(dirPath, rowId);
