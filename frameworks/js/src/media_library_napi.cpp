@@ -1299,9 +1299,9 @@ static void JSModifyAssetCompleteCallback(napi_env env, napi_status status,
         if (index != string::npos) {
             notifyUri = notifyUri.substr(0, index);
         }
-
-        int retVal = context->objectInfo->sDataShareHelper_->Insert(updateAssetUri,
-            context->valuesBucket);
+        DataShare::DataSharePredicates predicates;
+        int retVal = context->objectInfo->sDataShareHelper_->Update(updateAssetUri,
+            predicates, context->valuesBucket);
         if (retVal < 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
                 "File asset modification failed");
@@ -1404,16 +1404,15 @@ static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
-
         DataShare::DataShareValueObject valueObject;
         string notifyUri;
         string mediaType;
+        string deleteId;
         context->valuesBucket.GetObject(MEDIA_DATA_DB_URI, valueObject);
         valueObject.GetString(notifyUri);
         size_t index = notifyUri.rfind('/');
         if (index != string::npos) {
+            deleteId = notifyUri.substr(index + 1);
             notifyUri = notifyUri.substr(0, index);
             size_t indexType = notifyUri.rfind('/');
             if (indexType != string::npos) {
@@ -1422,8 +1421,10 @@ static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
         }
         notifyUri = MEDIALIBRARY_DATA_URI + "/" + mediaType;
         NAPI_DEBUG_LOG("JSDeleteAssetExcute notifyUri = %{private}s", notifyUri.c_str());
-        int retVal = context->objectInfo->sDataShareHelper_->Insert(deleteAssetUri,
-            context->valuesBucket);
+        Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" +
+            MEDIA_FILEOPRN_DELETEASSET +'/' + deleteId);
+        DataSharePredicates predicates;
+        int retVal = context->objectInfo->sDataShareHelper_->Delete(deleteAssetUri, predicates);
         if (retVal < 0) {
             context->error = retVal;
         } else {
@@ -1885,8 +1886,8 @@ static void JSModifyAlbumCompleteCallback(napi_env env, napi_status status,
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri modifyAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_MODIFYALBUM);
-
-        int retVal = context->objectInfo->sDataShareHelper_->Insert(modifyAlbumUri,
+        DataShare::DataSharePredicates predicates;
+        int retVal = context->objectInfo->sDataShareHelper_->Update(modifyAlbumUri, predicates,
             context->valuesBucket);
         if (retVal < 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
@@ -1992,10 +1993,14 @@ static void JSDeleteAlbumCompleteCallback(napi_env env, napi_status status,
 
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM);
-
-        int retVal = context->objectInfo->sDataShareHelper_->Insert(deleteAlbumUri,
-            context->valuesBucket);
+        DataShare::DataShareValueObject valueObject;
+        int32_t albumId;
+        context->valuesBucket.GetObject(MEDIA_DATA_DB_ID, valueObject);
+        valueObject.GetInt(albumId);
+        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" +
+            MEDIA_ALBUMOPRN_DELETEALBUM + '/' + to_string(albumId));
+        DataSharePredicates predicates;
+        int retVal = context->objectInfo->sDataShareHelper_->Delete(deleteAlbumUri, predicates);
         if (retVal < 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
                 "Delete Album failed");
@@ -2885,10 +2890,16 @@ static void JSDeleteSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
+        DataShare::DataShareValueObject valueObject;
+        int32_t smartAlbumId = 0;
+        if (context->valuesBucket.GetObject(SMARTALBUM_DB_ID, valueObject)) {
+            valueObject.GetInt(smartAlbumId);
+        }
         string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri DeleteSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" + MEDIA_SMARTALBUMOPRN_DELETEALBUM);
-        int retVal = context->objectInfo->sDataShareHelper_->Insert(DeleteSmartAlbumUri,
-            context->valuesBucket);
+        Uri DeleteSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" +
+            MEDIA_SMARTALBUMOPRN_DELETEALBUM + '/' + to_string(smartAlbumId));
+        DataSharePredicates predicates;
+        int retVal = context->objectInfo->sDataShareHelper_->Delete(DeleteSmartAlbumUri, predicates);
         NAPI_DEBUG_LOG("JSDeleteSmartAlbumCompleteCallback retVal = %{public}d", retVal);
         if (retVal < 0) {
             context->error = retVal;
