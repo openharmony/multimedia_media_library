@@ -343,9 +343,6 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
 int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
     MEDIA_INFO_LOG("Delete");
-    if (!CheckClientPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-        return DATA_ABILITY_PERMISSION_DENIED;
-    }
 
     if (uri.ToString().find(MEDIALIBRARY_DATA_URI) != 0) {
         // uri begin with MEDIALIBRARY_DATA_URI
@@ -572,11 +569,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         MEDIA_ERR_LOG("Rdb Store is not initialized");
         return nullptr;
     }
-    StartTrace(HITRACE_TAG_OHOS, "CheckClientPermission");
-    if (!CheckClientPermission(PERMISSION_NAME_READ_MEDIA)) {
-        return nullptr;
-    }
-    FinishTrace(HITRACE_TAG_OHOS);
+
     shared_ptr<ResultSetBridge> queryResultSet;
     TableType tabletype = TYPE_DATA;
     string strRow, uriString = uri.ToString();

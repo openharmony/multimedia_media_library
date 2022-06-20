@@ -22,6 +22,7 @@
 #include "media_file_utils.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
+#include "medialibrary_object_utils.h"
 #include "rdb_utils.h"
 
 using namespace std;
