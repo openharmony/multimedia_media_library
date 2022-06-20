@@ -42,9 +42,6 @@ void MediaLibraryDevice::Start()
 {
     MEDIA_DEBUG_LOG("MediaLibraryDevice::start");
     bundleName_ = BUNDLE_NAME;
-    if (mediaLibraryDeviceOperations_ == nullptr) {
-        mediaLibraryDeviceOperations_ = std::make_unique<MediaLibraryDeviceOperations>();
-    }
 
     if (mediaLibraryDeviceHandler_ == nullptr) {
         auto runner = AppExecFwk::EventRunner::Create("MediaLibraryDevice");
@@ -53,7 +50,7 @@ void MediaLibraryDevice::Start()
     devsInfoInter_ = make_unique<DevicesInfoInteract>();
     if (devsInfoInter_ != nullptr) {
         devsInfoInter_->Init();
-        std::string local = "";
+        const std::string local = "";
         localUdid_ = GetUdidByNetworkId(local);
         devsInfoInter_->PutMLDeviceInfos(localUdid_);
     }
@@ -64,10 +61,9 @@ void MediaLibraryDevice::Start()
 
 void MediaLibraryDevice::Stop()
 {
-    MEDIA_INFO_LOG("Stop enter");
+    MEDIA_DEBUG_LOG("Stop enter");
     UnRegisterFromDM();
     ClearAllDevices();
-    mediaLibraryDeviceOperations_ = nullptr;
     dataShareHelper_ = nullptr;
     devsInfoInter_ = nullptr;
 }
@@ -112,18 +108,18 @@ void MediaLibraryDevice::OnSyncCompleted(const std::string &devId, const Distrib
 
 void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t devLevel)
 {
+    MEDIA_INFO_LOG("get dev %{private}s sec level %{public}d", udid.c_str(), devLevel);
     if (udid == localUdid_) {
         MEDIA_INFO_LOG("get local dev sec level %{public}d", devLevel);
         localDevLev_ = devLevel;
         return;
     }
-    if (localDevLev_ < devLevel) { // 只有高设备等级才可以访问同等级以及低等级的设备的媒体文件
-        MEDIA_ERR_LOG("local dev sec lev %{public}d is lower than dev %{public}s sec lev %{public}d!",
+    if (localDevLev_ < devLevel) {
+        MEDIA_ERR_LOG("local dev's sec lev %{public}d is lower than dev %{public}s sec lev %{public}d!",
             localDevLev_, udid.substr(0, 4).c_str(), devLevel);
         return;
     }
 
-    // 通过udid找到devid的 map
     MediaLibraryDeviceInfo mldevInfo;
     for (auto &[_, mlinfo] : deviceInfoMap_) {
         if (mlinfo.deviceUdid == udid) {
@@ -131,8 +127,7 @@ void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t
             break;
         }
     }
-    if (mediaLibraryDeviceOperations_ != nullptr &&
-        !mediaLibraryDeviceOperations_->InsertDeviceInfo(rdbStore_, mldevInfo, bundleName_)) {
+    if (!MediaLibraryDeviceOperations::InsertDeviceInfo(rdbStore_, mldevInfo, bundleName_)) {
         MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed!");
         return;
     }
@@ -152,10 +147,9 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
         MEDIA_ERR_LOG("this dev has permission denied!");
         return;
     }
-    // 在插入数据库之前需要校验设备安全等级,低等级不允许插入数据库
-    MediaLibrarySyncTable syncTable;
+
     std::vector<std::string> devices = { mldevInfo.deviceId };
-    syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
+    MediaLibrarySyncTable::SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
 
     if (devsInfoInter_ != nullptr) {
         if (!devsInfoInter_->GetMLDeviceInfos(mldevInfo.deviceUdid, mldevInfo.versionId)) {
@@ -165,12 +159,11 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
     lock_guard<mutex> autoLock(devMtx_);
     deviceInfoMap_[devInfo.deviceId] = mldevInfo;
     MEDIA_INFO_LOG("OnDeviceOnline cid %{public}s media library version %{public}s",
-        mldevInfo.deviceId.c_str(), mldevInfo.versionId.c_str());
+        mldevInfo.deviceId.substr(0, 4).c_str(), mldevInfo.versionId.c_str());
 }
 
 void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
-    MEDIA_INFO_LOG("OnDeviceOnline deviceId = %{private}s", deviceInfo.deviceId);
     if (mediaLibraryDeviceHandler_ == nullptr) {
         MEDIA_ERR_LOG("OnDeviceOnline mediaLibraryDeviceHandler null");
         return;
@@ -201,9 +194,8 @@ void MediaLibraryDevice::OnDeviceOffline(const OHOS::DistributedHardware::DmDevi
             MEDIA_ERR_LOG("OnDeviceOffline can not find deviceId:%{private}s", devId.c_str());
             return;
         }
-        if (mediaLibraryDeviceOperations_ != nullptr) {
-            mediaLibraryDeviceOperations_->UpdateDeviceInfo(rdbStore_, info->second, bundleName_);
-        }
+
+        MediaLibraryDeviceOperations::UpdateDeviceInfo(rdbStore_, info->second, bundleName_);
         deviceInfoMap_.erase(devId);
 
         // 设备变更通知
@@ -276,49 +268,37 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     }
 
     std::vector<OHOS::Media::MediaLibraryDeviceInfo> deviceDataBaseList;
-    mediaLibraryDeviceOperations_->GetAllDeviceDatas(rdbStore, deviceDataBaseList);
-    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore deviceDataBaseList size = %{public}d",
-        (int) deviceDataBaseList.size());
-    for (OHOS::Media::MediaLibraryDeviceInfo deviceInfo : deviceDataBaseList) {
+    MediaLibraryDeviceOperations::GetAllDeviceDatas(rdbStore, deviceDataBaseList);
+    for (auto deviceInfo : deviceDataBaseList) {
         if (!IsHasDevice(deviceInfo.deviceUdid)) {
-            if (mediaLibraryDeviceOperations_ != nullptr) {
-                mediaLibraryDeviceOperations_->UpdateDeviceInfo(rdbStore_, deviceInfo, bundleName_);
-            }
+            MediaLibraryDeviceOperations::UpdateDeviceInfo(rdbStore_, deviceInfo, bundleName_);
         }
     }
-    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore OUT deviceInfoMap size = %{public}d",
-        (int) deviceInfoMap_.size());
+    MEDIA_INFO_LOG("deviceInfoMap size = %{public}d, deviceDataBaseList size = %{public}d",
+        (int) deviceInfoMap_.size(), (int) deviceDataBaseList.size());
     return true;
 }
 
 bool MediaLibraryDevice::UpdateDevicieSyncStatus(const std::string &deviceId, int32_t syncStatus)
 {
-    if (mediaLibraryDeviceOperations_ != nullptr) {
-        lock_guard<mutex> autoLock(devMtx_);
-        auto info = deviceInfoMap_.find(deviceId);
-        if (info == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("UpdateDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
-            return false;
-        }
-        return mediaLibraryDeviceOperations_->UpdateSyncStatus(rdbStore_, info->second.deviceUdid, syncStatus,
-                                                               bundleName_);
+    lock_guard<mutex> autoLock(devMtx_);
+    auto info = deviceInfoMap_.find(deviceId);
+    if (info == deviceInfoMap_.end()) {
+        MEDIA_ERR_LOG("UpdateDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
+        return false;
     }
-    return false;
+    return MediaLibraryDeviceOperations::UpdateSyncStatus(rdbStore_, info->second.deviceUdid, syncStatus, bundleName_);
 }
 
 bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &deviceId, int32_t &syncStatus)
 {
-    if (mediaLibraryDeviceOperations_ != nullptr) {
-        lock_guard<mutex> autoLock(devMtx_);
-        auto info = deviceInfoMap_.find(deviceId);
-        if (info == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("GetDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
-            return false;
-        }
-        return mediaLibraryDeviceOperations_->GetSyncStatusById(rdbStore_, deviceId, syncStatus,
-                                                                bundleName_);
+    lock_guard<mutex> autoLock(devMtx_);
+    auto info = deviceInfoMap_.find(deviceId);
+    if (info == deviceInfoMap_.end()) {
+        MEDIA_ERR_LOG("GetDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
+        return false;
     }
-    return false;
+    return MediaLibraryDeviceOperations::GetSyncStatusById(rdbStore_, deviceId, syncStatus, bundleName_);
 }
 
 std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId)
@@ -366,11 +346,11 @@ string MediaLibraryDevice::GetNetworkIdBySelfId(const std::string &selfId)
 
 bool MediaLibraryDevice::QueryDeviceTable()
 {
-    if (rdbStore_ != nullptr && mediaLibraryDeviceOperations_ != nullptr) {
-        excludeMap_.clear();
-        return mediaLibraryDeviceOperations_->QueryDeviceTable(rdbStore_, excludeMap_);
+    if (rdbStore_ == nullptr) {
+        return false;
     }
-    return false;
+    excludeMap_.clear();
+    return MediaLibraryDeviceOperations::QueryDeviceTable(rdbStore_, excludeMap_);
 }
 
 void MediaLibraryDevice::OnRemoteDied()

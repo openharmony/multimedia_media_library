@@ -22,17 +22,8 @@ namespace Media {
 using namespace std;
 using namespace OHOS::AppExecFwk;
 
-MediaLibrarySyncTable::MediaLibrarySyncTable()
-{
-}
-
-MediaLibrarySyncTable::~MediaLibrarySyncTable()
-{
-}
-
 bool MediaLibrarySyncTable::SyncPullAllTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName)
 {
-    MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable IN");
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable rdbStore is null");
         return false;
@@ -60,7 +51,7 @@ bool MediaLibrarySyncTable::SyncPullAllTable(const shared_ptr<RdbStore> &rdbStor
         return false;
     }
 
-    MEDIA_ERR_LOG("MediaLibrarySyncTable SyncPullAllTable OUT");
+    MEDIA_INFO_LOG("Sync Pull All Table success");
     return true;
 }
 

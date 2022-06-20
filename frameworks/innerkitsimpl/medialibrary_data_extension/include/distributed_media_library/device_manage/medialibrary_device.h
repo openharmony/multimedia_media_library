@@ -82,7 +82,6 @@ private:
     static constexpr int RANDOM_NUM = 999;
 
     static std::shared_ptr<MediaLibraryDevice> mlDMInstance_;
-    std::unique_ptr<MediaLibraryDeviceOperations> mediaLibraryDeviceOperations_;
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
     std::shared_ptr<AppExecFwk::EventHandler> mediaLibraryDeviceHandler_;
     std::mutex devMtx_;
