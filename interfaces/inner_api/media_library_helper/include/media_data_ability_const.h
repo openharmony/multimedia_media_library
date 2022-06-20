@@ -84,6 +84,7 @@ static const std::string MEDIALIBRARY_MEDIA_PREFIX = MEDIALIBRARY_DATA_ABILITY_P
                                                      MEDIALIBRARY_DATA_URI_IDENTIFIER;
 // device virtual root node
 static const std::string MEDIALIBRARY_ROOT = "/root";
+static const std::string MEDIALIBRARY_LOCAL_DEVICE_NAME = "LOCAL";
 // fileextension fileinfo mode as folder
 static const std::string MEDIALIBRARY_FOLDER = "folder";
 static const std::string MEDIALIBRARY_TYPE_AUDIO_URI = "/audio";

@@ -24,6 +24,8 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "media_file_extention_utils.h"
+#include "media_asset.h"
+#include "media_file_extention_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -96,11 +98,75 @@ int MediaFileExtAbility::OpenFile(const Uri &uri, int flags)
     MEDIA_DEBUG_LOG("%{public}s begin.", __func__);
     string mode = "r";
     if (flags == 1) {
-        mode = "w";
+        mode = MEDIA_FILEMODE_WRITEONLY;
     } else if (flags > 1) {
-        mode = "rw";
+        mode = MEDIA_FILEMODE_READWRITE;
     }
     return MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
+}
+
+int MediaFileExtAbility::CreateFile(const Uri &parentUri, const std::string &displayName,  Uri &newFileUri)
+{
+    Uri createFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
+    string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(parentUri.ToString());
+    string albumPath = MediaLibraryDataManagerUtils::GetPathFromDb(albumId,
+        MediaLibraryDataManager::GetInstance()->rdbStore_);
+    string relativePath = albumPath.substr(ROOT_MEDIA_DIR.size()) + '/';
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MediaAsset::GetMediaType(displayName));
+    auto ret = MediaLibraryDataManager::GetInstance()->Insert(createFileUri, valuesBucket);
+    if (ret > 0) {
+        MediaType mediaType = MediaAsset::GetMediaType(displayName);
+        string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentUri.ToString());
+        string newUri = MediaFileExtentionUtils::GetFileMediaTypeUri(mediaType, networkId) + "/" + to_string(ret);
+        newFileUri = Uri(newUri);
+    }
+    return ret;
+}
+
+int MediaFileExtAbility::Mkdir(const Uri &parentUri, const std::string &displayName, Uri &newFileUri)
+{
+    auto ret = MediaFileExtentionUtils::Mkdir(parentUri, displayName, newFileUri,
+        MediaLibraryDataManager::GetInstance()->rdbStore_);
+    return ret;
+}
+
+int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
+{
+    string queryUri = MEDIALIBRARY_DATA_URI;
+    string selection = MEDIA_DATA_DB_ID + " LIKE ? ";
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(sourceFileUri.ToString());
+    vector<string> selectionArgs = { id };
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(selection);
+    predicates.SetWhereArgs(selectionArgs);
+    Uri uri(queryUri);
+    shared_ptr<AbsSharedResultSet> result =
+        MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+    int count = 0;
+    result->GetRowCount(count);
+    if (count == 0) {
+        MEDIA_ERR_LOG("AbsSharedResultSet null");
+        return false;
+    }
+    result->GoToFirstRow();
+    int columnIndex = 0, mediaType = MEDIA_TYPE_FILE;
+    result->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, columnIndex);
+    result->GetInt(columnIndex, mediaType);
+    int errCode = 0;
+    if (mediaType == MEDIA_TYPE_ALBUM) {
+        // todo
+        // MEDIA_DIROPRN_FMS_TRASHDIR
+    } else {
+        DataShareValuesBucket valuesBucket;
+        valuesBucket.PutString(MEDIA_DATA_DB_URI, sourceFileUri.ToString());
+        Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
+        errCode = MediaLibraryDataManager::GetInstance()->Insert(deleteAssetUri, valuesBucket);
+    }
+    return errCode;
 }
 
 std::vector<FileAccessFwk::FileInfo> MediaFileExtAbility::ListFile(const Uri &selectUri)
@@ -109,6 +175,19 @@ std::vector<FileAccessFwk::FileInfo> MediaFileExtAbility::ListFile(const Uri &se
     std::vector<string> typeArray;
     auto ret = MediaFileExtentionUtils::ListFile(selectUri.ToString());
     MEDIA_DEBUG_LOG("%{public}s end.", __func__);
+    return ret;
+}
+
+std::vector<DeviceInfo> MediaFileExtAbility::GetRoots()
+{
+    MEDIA_DEBUG_LOG("%{public}s begin.", __func__);
+    return MediaFileExtentionUtils::GetRoots();
+}
+
+int MediaFileExtAbility::Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri)
+{
+    MEDIA_DEBUG_LOG("%{public}s begin.", __func__);
+    auto ret = MediaFileExtentionUtils::Rename(sourceFileUri, displayName, newFileUri);
     return ret;
 }
 } // Media
