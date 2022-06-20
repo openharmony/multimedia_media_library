@@ -724,7 +724,7 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
 
 int32_t MediaLibraryObjectUtils::SetFilePending(string &uriStr, bool isPending)
 {
-    MEDIA_INFO_LOG("[lqh] enter");
+    MEDIA_INFO_LOG("[lqh] enter, uri: %{private}s, isPending: %{public}d", uriStr.c_str(), isPending);
     if (uniStore_ == nullptr) {
         MEDIA_WARNING_LOG("uniStore_ is nullptr!");
         return DATA_ABILITY_FAIL;
