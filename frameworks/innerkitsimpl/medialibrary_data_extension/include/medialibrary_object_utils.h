@@ -65,6 +65,9 @@ public:
     int32_t DeleteInfoInDbWithPath(MediaLibraryCommand &cmd, const std::string &path);
     int32_t DeleteInfoInDbWithId(MediaLibraryCommand &cmd, const std::string &fileId = "");
     std::shared_ptr<AbsSharedResultSet> QueryFiles(MediaLibraryCommand &cmd);
+    std::shared_ptr<AbsSharedResultSet> QueryWithCondition(MediaLibraryCommand &cmd,
+        vector<string> columns, const string &conditionColumn = "");
+    std::shared_ptr<AbsSharedResultSet> QueryView(MediaLibraryCommand &cmd, vector<string> columns);
 
 private:
     NativeAlbumAsset GetDirAsset(const std::string &relativePath);
@@ -79,7 +82,7 @@ private:
     int32_t ProcessHiddenDir(const std::string &dstDirName, const std::string &srcDirPath);
     int32_t UpdateFileInfoInDb(MediaLibraryCommand &cmd, const std::string &dstPath, const int &bucketId,
                                const std::string &bucketName);
-    void UpdateDateModifiedForAlbum(const std::string &dirPath);
+    void UpdateDateModified(const std::string &dirPath);
     void ScanFile(std::string &srcPath);
     int32_t DeleteEmptyDirsRecursively(int32_t dirId);
 

@@ -30,6 +30,7 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+
 int32_t MediaLibraryDirOperations::DeleteDirInfoUtil(const int &parent,
     const shared_ptr<RdbStore> &rdbStore,
     const MediaLibraryDirDb &dirDbOprn)
@@ -441,5 +442,6 @@ int32_t MediaLibraryDirOperations::HandleDirOperations(const string &oprn,
     MEDIA_INFO_LOG("HandleDirOperations erroCode = %{public}d", errCode);
     return errCode;
 }
+
 } // namespace Media
 } // namespace OHOS

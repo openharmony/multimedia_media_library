@@ -26,6 +26,11 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
+MediaLibraryAlbumOperations::MediaLibraryAlbumOperations()
+{
+    uniStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+}
+
 int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetOprnType()) {
@@ -87,7 +92,45 @@ int32_t MediaLibraryAlbumOperations::ModifyAlbumOperation(MediaLibraryCommand &c
     return objUtils.RenameDirObj(cmd, srcDirPath, dstDirPath);
 }
 
+string MediaLibraryAlbumOperations::GetDistributedAlbumSql(const string &strQueryCondition, const string &tableName)
+{
+    string distributedAlbumSql;
+    if (!strQueryCondition.empty()) {
+        distributedAlbumSql = "SELECT * FROM ( " + DISTRIBUTED_ABLUM_COLUMNS + " FROM " +
+        tableName + " " + FILE_TABLE + ", " + tableName + " " + ABLUM_TABLE +
+        DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY + " )" +
+        " WHERE " + strQueryCondition;
+    } else {
+        distributedAlbumSql = "SELECT * FROM ( " + DISTRIBUTED_ABLUM_COLUMNS + " FROM " +
+        tableName + " " + FILE_TABLE + ", " + tableName + " " + ABLUM_TABLE +
+        DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY + " )";
+    }
+    MEDIA_INFO_LOG("GetDistributedAlbumSql distributedAlbumSql = %{private}s", distributedAlbumSql.c_str());
+    return distributedAlbumSql;
+}
 
+shared_ptr<AbsSharedResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
+    MediaLibraryCommand &cmd, vector<string> columns)
+{
+    string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    string networkId = cmd.GetOprnDevice();
+    if (!networkId.empty()) {
+        string tableName = uniStore_->ObtainTableName(cmd);
+        MEDIA_INFO_LOG("tableName is %{private}s", tableName.c_str());
+        if (!strQueryCondition.empty()) {
+            strQueryCondition = MediaLibraryDataManagerUtils::ObtionCondition(strQueryCondition,
+                cmd.GetAbsRdbPredicates()->GetWhereArgs());
+        }
+        string distributedAlbumSql = GetDistributedAlbumSql(strQueryCondition, tableName);
+        return uniStore_->QuerySql(distributedAlbumSql);
+    }
+
+    if (!strQueryCondition.empty()) {
+        return uniStore_->Query(cmd, columns);
+    }
+    string querySql = "SELECT * FROM " + cmd.GetTableName();
+    return uniStore_->QuerySql(querySql);
+}
 
 } // namespace Media
 } // namespace OHOS

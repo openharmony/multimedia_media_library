@@ -269,6 +269,25 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
     return ret;
 }
 
+std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql)
+{
+    MEDIA_INFO_LOG("MediaLibraryRdbStore::ExecuteSql");
+
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return nullptr;
+    }
+
+    auto ret = rdbStore_->QuerySql(sql);
+    if (ret != nullptr) {
+        int count;
+        ret->GetRowCount(count);
+        MEDIA_INFO_LOG("GetRowCount() = %{public}d", count);
+    }
+
+    return ret;
+}
+
 std::string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
 {
     const std::string &deviceId = cmd.GetOprnDevice();

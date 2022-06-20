@@ -78,7 +78,7 @@ public:
     const NativeRdb::ValuesBucket &GetValueBucket() const;
     NativeRdb::AbsRdbPredicates *GetAbsRdbPredicates();
     const std::string &GetOprnFileId();
-    const std::string &GetOprnDevice() const;
+    const std::string &GetOprnDevice();
     const Uri &GetUri() const;
 
     void SetOprnObject(const OperationObject oprnObject);
