@@ -14,7 +14,9 @@
  */
 
 #include "media_scanner.h"
+
 #include "hitrace_meter.h"
+
 #include "media_log.h"
 
 namespace OHOS {
@@ -662,9 +664,9 @@ void MediaScannerObj::StoreCallbackObjInMap(int32_t reqId, sptr<IMediaScannerOpe
 
 int32_t MediaScannerObj::GetAvailableRequestId()
 {
-    static int32_t i = 0;
+    static atomic<int32_t> i(0);
 
-    return ++i;
+    return i.fetch_add(1);
 }
 
 void MediaScannerObj::SetAbilityContext(void)
