@@ -38,6 +38,7 @@ public:
     static std::string GetFileMediaTypeUri(MediaType mediaType, const std::string& networkId);
     static int32_t Mkdir(Uri parentUri, std::string displayName, Uri& newDirUri,
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static int32_t Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri);
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
     static std::vector<FileAccessFwk::FileInfo> ListFile(std::string selectUri);
     static std::vector<FileAccessFwk::DeviceInfo> GetRoots();
