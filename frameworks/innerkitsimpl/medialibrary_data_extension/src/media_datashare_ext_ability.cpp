@@ -21,12 +21,14 @@
 #include "media_datashare_stub_impl.h"
 #include "hilog_wrapper.h"
 #include "ipc_skeleton.h"
+#include "sa_mgr_client.h"
 #include "datashare_ext_ability_context.h"
 #include "runtime.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_subscriber.h"
+#include "system_ability_definition.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -40,6 +42,16 @@ using namespace OHOS::AppExecFwk;
 using OHOS::Security::AccessToken::AccessTokenKit;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
 constexpr int INVALID_VALUE = -1;
+constexpr int UID_FILEMANAGER = 1006;
+namespace {
+const std::unordered_set<int32_t> UID_FREE_CHECK {
+    UID_FILEMANAGER
+};
+const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {};
+std::mutex bundleMgrMutex;
+const std::string PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
+const std::string PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
+}
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const std::unique_ptr<Runtime>& runtime)
 {
@@ -106,7 +118,25 @@ std::vector<std::string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, 
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    auto ret = MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
+    int ret = INVALID_VALUE;
+    if (mode == MEDIA_FILEMODE_READONLY) {
+        if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
+            return ret;
+        }
+    } else if (mode == MEDIA_FILEMODE_WRITEONLY ||
+               mode == MEDIA_FILEMODE_WRITETRUNCATE ||
+               mode == MEDIA_FILEMODE_WRITEAPPEND) {
+        if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+            return ret;
+        }
+    } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE ||
+               mode == MEDIA_FILEMODE_READWRITE) {
+        if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA) ||
+            !CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+            return ret;
+        }
+    }
+    ret = MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
 }
@@ -120,11 +150,14 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
-    if (!CheckCallingPermission(abilityInfo_->writePermission)) {
-        HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
+    string tmpUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
+    if (uri.ToString() == tmpUri) {
+        if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
+            return ret;
+        }
+    } else if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         return ret;
     }
-
     ret = MediaLibraryDataManager::GetInstance()->Insert(uri, value);
     HILOG_INFO("%{public}s end.", __func__);
     return ret;
@@ -135,7 +168,7 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
-    if (!CheckCallingPermission(abilityInfo_->writePermission)) {
+    if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
         return ret;
     }
@@ -149,7 +182,7 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
-    if (!CheckCallingPermission(abilityInfo_->writePermission)) {
+    if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
         return ret;
     }
@@ -162,9 +195,12 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
-    std::shared_ptr<DataShare::ResultSetBridge> queryResultSet;
-
-    queryResultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
+    if ((uri.ToString() != MEDIALIBRARY_DIRECTORY_URI) &&
+        !CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
+        HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
+        return nullptr;
+    }
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
     std::shared_ptr<DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(queryResultSet);
     return resultSet;
 }
@@ -181,7 +217,7 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<Data
 {
     HILOG_INFO("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
-    if (!CheckCallingPermission(abilityInfo_->writePermission)) {
+    if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
         return ret;
     }
@@ -271,9 +307,70 @@ std::vector<std::shared_ptr<DataShareResult>> MediaDataShareExtAbility::ExecuteB
 
 bool MediaDataShareExtAbility::CheckCallingPermission(const std::string &permission)
 {
-    HILOG_INFO("%{public}s begin, permission:%{public}s", __func__, permission.c_str());
-    HILOG_INFO("%{public}s end.", __func__);
+    int uid = IPCSkeleton::GetCallingUid();
+    if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
+        HILOG_INFO("CheckCallingPermission: Pass the uid check list");
+        return true;
+    }
+
+    std::string bundleName = GetClientBundle(uid);
+    auto bundleMgr = GetSysBundleManager();
+    if ((bundleMgr != nullptr) && bundleMgr->CheckIsSystemAppByUid(uid) &&
+        (SYSTEM_BUNDLE_FREE_CHECK.find(bundleName) != SYSTEM_BUNDLE_FREE_CHECK.end())) {
+        HILOG_INFO("CheckCallingPermission: Pass the system bundle name check list");
+        return true;
+    }
+
+    Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+    int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+        HILOG_ERROR("MediaLibraryDataManager Query: Have no media permission");
+        return false;
+    }
+
     return true;
+}
+
+std::string MediaDataShareExtAbility::GetClientBundle(int uid)
+{
+    auto bms = GetSysBundleManager();
+    std::string bundleName = "";
+    if (bms == nullptr) {
+        HILOG_INFO("GetClientBundleName bms failed");
+        return bundleName;
+    }
+    auto result = bms->GetBundleNameForUid(uid, bundleName);
+    if (!result) {
+        HILOG_ERROR("GetBundleNameForUid fail");
+        return "";
+    }
+    return bundleName;
+}
+
+sptr<AppExecFwk::IBundleMgr> MediaDataShareExtAbility::GetSysBundleManager()
+{
+    if (bundleMgr_ == nullptr) {
+        std::lock_guard<std::mutex> lock(bundleMgrMutex);
+        if (bundleMgr_ == nullptr) {
+            auto saMgr = OHOS::DelayedSingleton<SaMgrClient>::GetInstance();
+            if (saMgr == nullptr) {
+                HILOG_ERROR("failed to get SaMgrClient::GetInstance");
+                return nullptr;
+            }
+            auto bundleObj = saMgr->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+            if (bundleObj == nullptr) {
+                HILOG_ERROR("failed to get GetSystemAbility");
+                return nullptr;
+            }
+            auto bundleMgr = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
+            if (bundleMgr == nullptr) {
+                HILOG_ERROR("failed to iface_cast");
+                return nullptr;
+            }
+            bundleMgr_ = bundleMgr;
+        }
+    }
+    return bundleMgr_;
 }
 } // namespace AbilityRuntime
 } // namespace OHOS
