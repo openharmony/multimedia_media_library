@@ -629,6 +629,7 @@ bool MediaLibraryDataManagerUtils::CheckFilePending(const shared_ptr<FileAsset> 
         return true;
     } else if (fileAsset->GetTimePending() > 0 &&
         (MediaFileUtils::UTCTimeSeconds() - fileAsset->GetTimePending()) > TIMEPENDING_MIN) {
+        MEDIA_INFO_LOG("checkFilePending IsPending true");
         return true;
     }
     MEDIA_INFO_LOG("checkFilePending IsPending false");
