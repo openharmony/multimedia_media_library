@@ -44,14 +44,15 @@ public:
                        bool isLast = false) override;
     bool SyncPushTable(const std::string &bundleName, const std::string &tableName, std::vector<std::string> &devices,
                        bool isLast = false) override;
-    virtual int32_t ExecuteSql(const std::string &sql) override;
+    int32_t ExecuteSql(const std::string &sql) override;
+    std::shared_ptr<NativeRdb::AbsSharedResultSet> QuerySql(const std::string &sql) override;
     // temp
     std::shared_ptr<NativeRdb::RdbStore> GetRaw() const { return rdbStore_; }
+    std::string ObtainTableName(MediaLibraryCommand &cmd) override;
 
 private:
     bool SubscribeRdbStoreObserver();
     bool UnSubscribeRdbStoreObserver();
-    std::string ObtainTableName(MediaLibraryCommand &cmd);
 
     const std::string DEVICE_BUNDLENAME = "com.ohos.medialibrary.MediaLibraryDataA";
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_{nullptr};

@@ -48,6 +48,7 @@ public:
     int32_t ModifyFileOperation(MediaLibraryCommand &cmd);
     int32_t DeleteFileOperation(MediaLibraryCommand &cmd, const unordered_map<string, DirAsset> &dirQuerySetMap);
     int32_t IsDirectoryOperation(MediaLibraryCommand &cmd);
+    shared_ptr<AbsSharedResultSet> QueryFileOperation(MediaLibraryCommand &cmd, vector<string> columns);
 
 private:
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFiles(MediaLibraryCommand &cmd);

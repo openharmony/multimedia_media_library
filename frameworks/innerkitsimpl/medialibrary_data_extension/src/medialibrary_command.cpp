@@ -141,8 +141,12 @@ const string &MediaLibraryCommand::GetOprnFileId()
     return oprnFileId_;
 }
 
-const string &MediaLibraryCommand::GetOprnDevice() const
+const string &MediaLibraryCommand::GetOprnDevice()
 {
+    if (oprnDevice_.empty()) {
+        oprnDevice_ = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri_.ToString());
+    }
+    MEDIA_INFO_LOG("oprnDevice_: %{private}s", oprnDevice_.c_str());
     return oprnDevice_;
 }
 
@@ -165,9 +169,10 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         {MEDIA_SMARTALBUMMAPOPRN, SMART_ALBUM_MAP},
         {MEDIA_KVSTOREOPRN, KVSTORE},
         // use in Query...
+        {MEDIATYPE_DIRECTORY_TABLE, FILESYSTEM_DIR},
         {MEDIA_DATA_DB_THUMBNAIL, THUMBNAIL},
-        {SMARTABLUMASSETS_VIEW_NAME, SMART_ABLUM_ASSETS}, // SMARTABLUMASSETS_VIEW_NAME
-        {ASSETMAP_VIEW_NAME, ASSETMAP},                   // ASSETMAP_VIEW_NAME
+        {SMARTABLUMASSETS_VIEW_NAME, SMART_ABLUM_ASSETS},
+        {ASSETMAP_VIEW_NAME, ASSETMAP},
         {MEDIA_DEVICE_QUERYALLDEVICE, ALL_DEVICE},
         {MEDIA_DEVICE_QUERYACTIVEDEVICE, ACTIVE_DEVICE},
         {MEDIA_ALBUMOPRN_QUERYALBUM, FILESYSTEM_ALBUM},
@@ -221,6 +226,7 @@ void MediaLibraryCommand::ParseTableName()
         {SMART_ALBUM_MAP, {{UNKNOWN_TYPE, SMARTALBUM_MAP_TABLE}}},
         {SMART_ABLUM_ASSETS, {{UNKNOWN_TYPE, SMARTABLUMASSETS_VIEW_NAME}}},
         {ASSETMAP, {{UNKNOWN_TYPE, ASSETMAP_VIEW_NAME}}},
+        {FILESYSTEM_DIR, {{QUERY, MEDIATYPE_DIRECTORY_TABLE}}},
         {FILESYSTEM_ALBUM, {{QUERY, ABLUM_VIEW_NAME}}},
         {ALL_DEVICE, {{UNKNOWN_TYPE, DEVICE_TABLE}}},
         {ACTIVE_DEVICE, {{UNKNOWN_TYPE, DEVICE_TABLE}}},

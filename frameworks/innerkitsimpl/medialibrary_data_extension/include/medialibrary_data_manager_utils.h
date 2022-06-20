@@ -69,7 +69,6 @@ public:
     static std::shared_ptr<AbsSharedResultSet> QueryFavFiles(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::shared_ptr<AbsSharedResultSet> QueryTrashFiles(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::string GetNetworkIdFromUri(const std::string &uri);
-    static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);
     static int32_t GetAssetRecycle(const int32_t &assetId,
                                    std::string &outOldPath,
                                    std::string &outTrashDirPath,

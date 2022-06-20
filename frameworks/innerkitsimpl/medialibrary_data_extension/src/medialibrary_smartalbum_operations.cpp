@@ -59,7 +59,6 @@ int32_t DeleteAlbumInfoUtil(const ValuesBucket &valuesBucket,
     return deleteErrorCode;
 }
 
-
 int32_t MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperations(const string &oprn,
                                                                      const ValuesBucket &valuesBucket,
                                                                      const shared_ptr<RdbStore> &rdbStore)

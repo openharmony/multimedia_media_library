@@ -59,6 +59,8 @@ public:
         return false;
     };
     virtual int32_t ExecuteSql(const std::string &sql) { return NativeRdb::E_NOT_SUPPORT; };
+    virtual std::shared_ptr<NativeRdb::AbsSharedResultSet> QuerySql(const std::string &sql) { return nullptr; };
+    virtual std::string ObtainTableName(MediaLibraryCommand &cmd) { return ""; };
 
     // Other Query operation with different return type?
 };
