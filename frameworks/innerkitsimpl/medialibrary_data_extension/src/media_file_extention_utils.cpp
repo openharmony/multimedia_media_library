@@ -333,7 +333,7 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const std::str
     }
     string destRelativePath;
     int type;
-    if(!GetFileFromResult(sourceUri, "" , destRelativePath, type)) {
+    if (!GetFileFromResult(sourceUri, "" , destRelativePath, type)) {
         MEDIA_ERR_LOG("Rename uri is not correct");
         return DATA_ABILITY_MODIFY_DATA_FAIL;
     }
