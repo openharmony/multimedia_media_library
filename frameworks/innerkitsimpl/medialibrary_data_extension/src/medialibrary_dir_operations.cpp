@@ -248,6 +248,7 @@ int32_t MediaLibraryDirOperations::CheckDirInfoUtil(const ValuesBucket &values,
     DirAsset dirAsset;
     string extension, path, extensionVal, mediaTypeVal;
     int mediaType;
+    MediaLibraryObjectUtils objUtils;
     dirAsset = GetDirQuerySet(values, rdbStore, dirQuerySetMap);
     if (dirAsset.GetDirType() == DEFAULT_DIR_TYPE) {
         MEDIA_ERR_LOG("Check directory failed");
@@ -263,7 +264,7 @@ int32_t MediaLibraryDirOperations::CheckDirInfoUtil(const ValuesBucket &values,
         valueObject.GetString(path);
     }
     if (extension.compare(MEDIA_NO_FILE) == 0) {
-        if (MediaLibraryDataManagerUtils::isFileExistInDb(path, rdbStore)) {
+        if (objUtils.IsFileExistInDb(path)) {
             MEDIA_ERR_LOG("dir is existed");
             return DATA_ABILITY_CHECK_DIR_ISEXIST_FAIL;
         }

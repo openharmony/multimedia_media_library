@@ -79,6 +79,16 @@ namespace Media {
 
         EXPORT int32_t InitMediaLibraryRdbStore();
         EXPORT void InitialiseKvStore();
+
+// Medialibrary接口使用必读
+
+// 1、insert和update接口有ValueBucket，delete接口没有
+// 2、insert不要再做成大杂烩总入口，napi的调用处，如果是delete就用delete的接口，update就用update的接口；
+// 3、对于fileId或者albumId，如果有ValueBucket则可以将id放在ValueBucket的MEDIA_DATA_DB_ID项里，
+//   或者放在ValueBucket里面的MEDIA_DATA_DB_URI项的最后一个/的后面；如果没有ValueBucket（比如对于delete）
+//   则只能将id放在入参uri的最后一个/后面
+// 4、尽量不要直接使用rdbStore，虽然可以通过uniStore_->GetRdbStoreRaw获取到，但是请尽可能使用下层的uniStore_来操作数据库
+
         EXPORT int32_t Insert(const Uri &uri, const DataShare::DataShareValuesBucket &value);
         EXPORT int32_t Delete(const Uri &uri, const DataShare::DataSharePredicates &predicates);
         EXPORT int32_t BatchInsert(const Uri &uri, const std::vector<DataShare::DataShareValuesBucket> &values);
