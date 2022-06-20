@@ -42,6 +42,7 @@ enum OperationObject {
     ASSETMAP,
     ALL_DEVICE,
     ACTIVE_DEVICE,
+    MEDIA_VOLUME,
 };
 
 enum OperationType {

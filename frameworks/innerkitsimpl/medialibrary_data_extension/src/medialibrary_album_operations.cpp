@@ -112,6 +112,16 @@ string MediaLibraryAlbumOperations::GetDistributedAlbumSql(const string &strQuer
 shared_ptr<AbsSharedResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     MediaLibraryCommand &cmd, vector<string> columns)
 {
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore is nullptr");
+        return nullptr;
+    }
+
+    if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
+        MEDIA_DEBUG_LOG("QUERY_MEDIA_VOLUME = %{public}s", QUERY_MEDIA_VOLUME.c_str());
+        return uniStore_->QuerySql(QUERY_MEDIA_VOLUME);
+    }
+
     string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
     string networkId = cmd.GetOprnDevice();
     if (!networkId.empty()) {

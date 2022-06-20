@@ -552,13 +552,20 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Get id from uri or valuesBucket failed!");
         return DATA_ABILITY_FAIL;
     }
+
     string srcPath = GetPathByIdFromDb(strFileId);
     if (srcPath.empty()) {
         MEDIA_ERR_LOG("Get path of id %{private}s from database file!", strFileId.c_str());
         return DATA_ABILITY_FAIL;
     }
 
-    int32_t errorCode = SetFilePending(srcPath, false);
+    ValueObject valueObject;
+    string uriInValue;
+    if (cmd.GetValueBucket().GetObject(MEDIA_DATA_DB_URI, valueObject)) {
+        valueObject.GetString(uriInValue);
+    }
+
+    int32_t errorCode = SetFilePending(uriInValue, false);
     if (errorCode == DATA_ABILITY_FAIL) {
         MEDIA_ERR_LOG("HandleCloseAsset Set file to pending DB error");
         return DATA_ABILITY_FAIL;
@@ -765,6 +772,7 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
         MEDIA_ERR_LOG("dstPath %{private}s is invalid. Modify failed!", dstPath.c_str());
         return DATA_ABILITY_FAIL;
     }
+    string fileId = cmd.GetOprnFileId();
     ValuesBucket values;
     values.PutString(MEDIA_DATA_DB_FILE_PATH, dstPath);
     values.PutString(MEDIA_DATA_DB_BUCKET_NAME, bucketName);
@@ -774,12 +782,22 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
     cmd.SetValueBucket(values);
 
-    return ModifyInfoInDbWithId(cmd);
+    return ModifyInfoInDbWithId(cmd, fileId);
 }
 
 string MediaLibraryObjectUtils::GetPathByIdFromDb(const string &id)
 {
-    MEDIA_INFO_LOG("[lqh] enter");
+    return GetStringColumnByIdFromDb(id, MEDIA_DATA_DB_FILE_PATH);
+}
+
+string MediaLibraryObjectUtils::GetRecyclePathByIdFromDb(const string &id)
+{
+    return GetStringColumnByIdFromDb(id, MEDIA_DATA_DB_RECYCLE_PATH);
+}
+
+string MediaLibraryObjectUtils::GetStringColumnByIdFromDb(const string &id, const string &column)
+{
+    MEDIA_INFO_LOG("GetStringColumnByIdFromDb column %{private}s", column.c_str());
     if (uniStore_ == nullptr) {
         MEDIA_WARNING_LOG("uniStore_ is nullptr!");
         return "";
@@ -791,7 +809,7 @@ string MediaLibraryObjectUtils::GetPathByIdFromDb(const string &id)
 
     if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) || (stoi(id) == -1)) {
         MEDIA_ERR_LOG("Id for the path is incorrect or rdbStore is null");
-        return "";
+        return filePath;
     }
 
     MediaLibraryCommand cmd(FILESYSTEM_ASSET, QUERY);
@@ -800,7 +818,7 @@ string MediaLibraryObjectUtils::GetPathByIdFromDb(const string &id)
     cmd.GetAbsRdbPredicates()->SetWhereArgs(selectionArgs);
 
     vector<string> columns;
-    columns.push_back(MEDIA_DATA_DB_FILE_PATH);
+    columns.push_back(column);
 
     auto queryResultSet = uniStore_->Query(cmd, columns);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, filePath, "Failed to obtain path from database");
@@ -808,11 +826,11 @@ string MediaLibraryObjectUtils::GetPathByIdFromDb(const string &id)
     auto ret = queryResultSet->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == 0, filePath, "Failed to shift at first row");
 
-    ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, columnIndex);
+    ret = queryResultSet->GetColumnIndex(column, columnIndex);
     CHECK_AND_RETURN_RET_LOG(ret == 0, filePath, "Failed to obtain column index");
 
     ret = queryResultSet->GetString(columnIndex, filePath);
-    CHECK_AND_RETURN_RET_LOG(ret == 0, filePath, "Failed to obtain file path");
+    CHECK_AND_RETURN_RET_LOG(ret == 0, filePath, "Failed to obtain recycle path");
 
     return filePath;
 }
@@ -1015,6 +1033,66 @@ shared_ptr<AbsSharedResultSet> MediaLibraryObjectUtils::QueryView(MediaLibraryCo
         return uniStore_->Query(cmd, columns);
     }
     return uniStore_->QuerySql("SELECT * FROM " + cmd.GetTableName());
+}
+
+bool MediaLibraryObjectUtils::IsColumnValueExist(const string &value, const string &column)
+{
+    if (value.empty() || uniStore_ == nullptr) {
+        MEDIA_ERR_LOG("path is incorrect uniStore_ is null");
+        return false;
+    }
+
+    MediaLibraryCommand cmd(FILESYSTEM_ASSET, QUERY);
+    string strCondition = column + "=" + value;
+    cmd.GetAbsRdbPredicates()->SetWhereClause(strCondition);
+    vector<string> columns;
+    columns.push_back(column);
+    unique_ptr<NativeRdb::ResultSet> queryResultSet = uniStore_->Query(cmd, columns);
+    if (queryResultSet != nullptr) {
+        int32_t count = 0;
+        queryResultSet->GetRowCount(count);
+        MEDIA_DEBUG_LOG("count is %{private}d", count);
+        if (count > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MediaLibraryObjectUtils::IsAssetExistInDb(const int32_t id)
+{
+    string strQueryCondition = MEDIA_DATA_DB_ID + "=" + std::to_string(id);
+
+    MediaLibraryCommand cmd(FILESYSTEM_ASSET, QUERY);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
+    vector<string> columns;
+    unique_ptr<NativeRdb::ResultSet> queryResultSet = QueryWithCondition(cmd, columns);
+    if (queryResultSet != nullptr && queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        return true;
+    }
+    return false;
+}
+
+bool MediaLibraryObjectUtils::IsFileExistInDb(const string &path)
+{
+    int32_t count = 0;
+    if (path.empty()) {
+        MEDIA_ERR_LOG("path is incorrect");
+        return false;
+    }
+    string strQueryCondition = MEDIA_DATA_DB_FILE_PATH +
+        " = '" + path + "' AND " + MEDIA_DATA_DB_IS_TRASH + " = 0";
+
+    MediaLibraryCommand cmd(FILESYSTEM_ASSET, QUERY);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
+    vector<string> columns;
+    columns.push_back(MEDIA_DATA_DB_FILE_PATH);
+    unique_ptr<NativeRdb::ResultSet> queryResultSet = QueryWithCondition(cmd, columns);
+    if (queryResultSet != nullptr && queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        return true;
+    }
+
+    return false;
 }
 
 

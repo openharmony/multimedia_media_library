@@ -178,6 +178,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         {MEDIA_ALBUMOPRN_QUERYALBUM, FILESYSTEM_ALBUM},
         {SMARTALBUM_TABLE, SMART_ALBUM},
         {SMARTALBUM_MAP_TABLE, SMART_ALBUM_MAP},
+        {MEDIA_QUERYOPRN_QUERYVOLUME, MEDIA_VOLUME},
     };
 
     for (const auto &item : oprnMap) {
@@ -209,6 +210,7 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         {MEDIA_ALBUMOPRN_QUERYALBUM, QUERY},
         {MEDIA_FILEOPRN_ISDIRECTORY, ISDICTIONARY},
         {MEDIA_FILEOPRN_GETALBUMCAPACITY, QUERY},
+        {MEDIA_QUERYOPRN_QUERYVOLUME, QUERY},
         {MEDIA_BOARDCASTOPRN, SCAN}
     };
 
