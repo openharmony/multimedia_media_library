@@ -93,15 +93,7 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
     SubscribeRdbStoreObserver();
     InitDeviceData();
 
-    if (rdbStore_ != nullptr) {
-        MEDIA_DEBUG_LOG("Distribute StartTrace:SyncPullAllTableTrace");
-        StartTrace(HITRACE_TAG_OHOS, "SyncPullAllTableTrace");
-        MediaLibrarySyncTable syncTable;
-        syncTable.SyncPullAllTable(rdbStore_, bundleName_);
-        FinishTrace(HITRACE_TAG_OHOS);
-        MEDIA_DEBUG_LOG("Distribute FinishTrace:SyncPullAllTableTrace");
-        MakeDirQuerySetMap(dirQuerySetMap_);
-    }
+    MakeDirQuerySetMap(dirQuerySetMap_);
     InitialiseKvStore();
 
     // scan the media dir
@@ -472,7 +464,6 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
         return result;
     }
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
-    MediaLibrarySyncTable syncTable;
     std::vector<std::string> devices = std::vector<std::string>();
     if (insertUri.find(MEDIA_OPERN_KEYWORD) != string::npos) {
         MediaLibraryFileOperations fileOprn;
@@ -493,20 +484,20 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
             if ((result >= 0) && (operationType == MEDIA_FILEOPRN_CLOSEASSET)) {
                 ScanFile(value, rdbStore_);
             }
-            syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
+            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
         } else if (insertUri.find(MEDIA_DIROPRN) != string::npos) {
             result = dirOprn.HandleDirOperations(operationType, value, rdbStore_, dirQuerySetMap_);
-            syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
+            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
         } else if (insertUri.find(MEDIA_ALBUMOPRN) != string::npos) {
             result = albumOprn.HandleAlbumOperations(operationType, value, rdbStore_);
-            syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_TABLE, devices);
+            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_TABLE, devices);
         } else if (insertUri.find(MEDIA_SMARTALBUMOPRN) != string::npos) {
             result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore_);
-            syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
+            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
         } else if (insertUri.find(MEDIA_SMARTALBUMMAPOPRN) != string::npos) {
             result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType,
                 value, rdbStore_, dirQuerySetMap_);
-            syncTable.SyncPushTable(rdbStore_, bundleName_, CATEGORY_SMARTALBUM_MAP_TABLE, devices);
+            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, CATEGORY_SMARTALBUM_MAP_TABLE, devices);
         } else if (insertUri.find(MEDIA_KVSTOREOPRN) != string::npos) {
             result = kvStoreOprn.HandleKvStoreInsertOperations(operationType, value, kvStorePtr_);
         }
@@ -527,7 +518,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
     // Normal URI scenario
     int64_t outRowId = DATA_ABILITY_FAIL;
     (void)rdbStore_->Insert(outRowId, MEDIALIBRARY_TABLE, value);
-    syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
+    MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
     return outRowId;
 }
 
@@ -1023,8 +1014,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     (void)rdbStore_->Update(changedRows, MEDIALIBRARY_TABLE, value, strUpdateCondition, whereArgs);
     }
     if (changedRows >= 0) {
-        MediaLibrarySyncTable syncTable;
-        syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
+        MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
     }
     return changedRows;
 }
@@ -1199,8 +1189,7 @@ bool MediaLibraryDataManager::QuerySync(const std::string &deviceId, const std::
     }
 
     std::vector<std::string> devices = { deviceId };
-    MediaLibrarySyncTable syncTable;
-    return syncTable.SyncPullTable(rdbStore_, bundleName_, tableName, devices);
+    return MediaLibrarySyncTable::SyncPullTable(rdbStore_, bundleName_, tableName, devices);
 }
 
 bool MediaLibraryDataManager::QuerySync()
@@ -1232,8 +1221,7 @@ bool MediaLibraryDataManager::QuerySync()
         return true;
     }
 
-    MediaLibrarySyncTable syncTable;
-    return syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
+    return MediaLibrarySyncTable::SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
 }
 
 bool MediaLibraryDataManager::CheckFileNameValid(const DataShareValuesBucket &value)

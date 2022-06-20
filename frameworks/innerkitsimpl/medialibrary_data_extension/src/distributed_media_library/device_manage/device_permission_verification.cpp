@@ -117,10 +117,9 @@ void DevicePermissionVerification::MLDevSecInfoCb(const DeviceIdentify *identify
     int32_t ret = GetDeviceSecurityLevelValue(info, &level);
     FreeDeviceSecurityInfo(info);
     if (ret != SUCCESS) {
+        MEDIA_ERR_LOG("get device sec level failed %{public}d", ret);
     }
-    // 获取成功
-    // 调用设备管理回调接口，判断设备等级是否满足，若满再插入数据库等
-    std::string udid((char *)identify->identity);
+    std::string udid(reinterpret_cast<char *>(const_cast<uint8_t *>(identify->identity)), identify->length);
     MediaLibraryDevice::GetInstance()->OnGetDevSecLevel(udid, level);
 }
 
@@ -134,8 +133,10 @@ bool DevicePermissionVerification::ReqDestDevSecLevel(const std::string &udid)
     }
     ret = RequestDeviceSecurityInfoAsync(&devIdentify, nullptr, DevicePermissionVerification::MLDevSecInfoCb);
     if (ret != SUCCESS) {
+        MEDIA_ERR_LOG("request device sec info failed %{public}d", ret);
         return false;
     }
+    MEDIA_INFO_LOG("request device sec info end");
     return true;
 }
 } // namespace Media
