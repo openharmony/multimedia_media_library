@@ -182,7 +182,7 @@ vector<FileAccessFwk::FileInfo> MediaFileExtentionUtils::ListFile(string selectU
     MEDIA_DEBUG_LOG("queryUri %{public}s", queryUri.c_str());
     std::shared_ptr<AbsSharedResultSet> resultSet = GetListFileResult(queryUri, selection, selectionArgs);
     GetFileInfoFromResult(networkId, resultSet, fileList);
-    MEDIA_DEBUG_LOG("fileList.size() count %{public}lu", fileList.size());
+    MEDIA_DEBUG_LOG("fileList.size() count %{public}u", (uint32_t)fileList.size());
     return fileList;
 }
 
