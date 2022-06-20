@@ -156,7 +156,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${aafwk_inner_api_path}/dataobs_manager:dataobs_manager",
     "${aafwk_inner_api_path}/runtime:runtime",
     "${aafwk_kits_path}/ability/native:abilitykit_native",
-    "${aafwk_path}/frameworks/kits/appkit:app_context",
+    "${ability_runtime_path}/frameworks/kits/appkit:app_context",
     "${aafwk_services_path}/abilitymgr:abilityms",
     "//base/security/deviceauth/services:deviceauth_sdk",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
