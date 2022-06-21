@@ -899,7 +899,7 @@ int32_t MediaLibraryObjectUtils::GetParentIdWithId(const string &fileId)
     return parentIdVal;
 }
 
-int64_t InsertInDb(MediaLibraryCommand &cmd)
+int32_t MediaLibraryObjectUtils::InsertInDb(MediaLibraryCommand &cmd)
 {
     MEDIA_INFO_LOG("[lqh] enter");
     if (uniStore_ == nullptr) {
@@ -907,11 +907,11 @@ int64_t InsertInDb(MediaLibraryCommand &cmd)
         return DATA_ABILITY_FAIL;
     }
     int64_t outRowId = DATA_ABILITY_FAIL;
-    int32_t result = uniStore_->Insert(cmd, deletedRows);
+    int32_t result = uniStore_->Insert(cmd, outRowId);
     if (result == NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Insert operation failed. Result %{private}d. Deleted %{private}d", result, deletedRows);
+        MEDIA_ERR_LOG("Insert operation failed. Result %{private}d. Deleted %{private}d", result, static_cast<int32_t>(outRowId));
     }
-    return outRowId;
+    return static_cast<int32_t>(outRowId);
 }
 
 int32_t MediaLibraryObjectUtils::DeleteInfoInDbWithPath(MediaLibraryCommand &cmd, const string &path)

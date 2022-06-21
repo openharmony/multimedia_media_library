@@ -119,7 +119,7 @@ namespace Media {
         sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
         std::string GetClientBundleName();
         std::string GetClientBundle(int uid);
-        void NeedQuerySync(const std::string &networkId, TableType tabletype);
+        void NeedQuerySync(const std::string &networkId, OperationObject oprnObject);
         void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
 
         static const std::string PERMISSION_NAME_READ_MEDIA;
