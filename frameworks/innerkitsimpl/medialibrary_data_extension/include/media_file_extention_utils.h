@@ -33,6 +33,8 @@
 
 namespace OHOS {
 namespace Media {
+// parent id is root path
+const int32_t ROOT_PARENT_ID = 0;
 class MediaFileExtentionUtils {
 public:
     static std::string GetFileMediaTypeUri(MediaType mediaType, const std::string& networkId);
