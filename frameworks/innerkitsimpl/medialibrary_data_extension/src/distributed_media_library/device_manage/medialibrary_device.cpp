@@ -28,6 +28,7 @@ using namespace std;
 using namespace OHOS::AppExecFwk;
 std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::mlDMInstance_ = nullptr;
 
+constexpr int TRIM_LENGTH = 4;
 MediaLibraryDevice::MediaLibraryDevice()
 {
     MEDIA_DEBUG_LOG("MediaLibraryDevice::constructor");
@@ -108,7 +109,7 @@ void MediaLibraryDevice::OnSyncCompleted(const std::string &devId, const Distrib
 
 void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t devLevel)
 {
-    MEDIA_INFO_LOG("get dev %{private}s sec level %{public}d", udid.c_str(), devLevel);
+    MEDIA_INFO_LOG("get dev %{public}s sec level %{public}d", udid.substr(0, TRIM_LENGTH).c_str(), devLevel);
     if (udid == localUdid_) {
         MEDIA_INFO_LOG("get local dev sec level %{public}d", devLevel);
         localDevLev_ = devLevel;
@@ -116,7 +117,7 @@ void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t
     }
     if (localDevLev_ < devLevel) {
         MEDIA_ERR_LOG("local dev's sec lev %{public}d is lower than dev %{public}s sec lev %{public}d!",
-            localDevLev_, udid.substr(0, 4).c_str(), devLevel);
+            localDevLev_, udid.substr(0, TRIM_LENGTH).c_str(), devLevel);
         return;
     }
 
@@ -159,7 +160,7 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
     lock_guard<mutex> autoLock(devMtx_);
     deviceInfoMap_[devInfo.deviceId] = mldevInfo;
     MEDIA_INFO_LOG("OnDeviceOnline cid %{public}s media library version %{public}s",
-        mldevInfo.deviceId.substr(0, 4).c_str(), mldevInfo.versionId.c_str());
+        mldevInfo.deviceId.substr(0, TRIM_LENGTH).c_str(), mldevInfo.versionId.c_str());
 }
 
 void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
