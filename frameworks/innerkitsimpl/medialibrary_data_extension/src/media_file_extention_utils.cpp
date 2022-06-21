@@ -311,7 +311,7 @@ int32_t HandleAlbumRename(const string &srcId, const string &srcPath, const stri
         return errCode;
     }
     ValuesBucket valuesBucket;
-    int64_t date_modified = MediaLibraryDataManagerUtils::GetAlbumDateModified(newAlbumPath);
+    int64_t date_modified = MediaFileUtils::GetAlbumDateModified(newAlbumPath);
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, date_modified);
     string title = displayName.substr(0, displayName.find('.'));
     valuesBucket.PutString(MEDIA_DATA_DB_TITLE, title);
@@ -412,7 +412,7 @@ int32_t HandleAlbumMove(const string &srcId, const string &srcPath, const string
         return errCode;
     }
     ValuesBucket valuesBucket;
-    int64_t date_modified = MediaLibraryDataManagerUtils::GetAlbumDateModified(newAlbumPath);
+    int64_t date_modified = MediaFileUtils::GetAlbumDateModified(newAlbumPath);
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, date_modified);
     valuesBucket.PutInt(MEDIA_DATA_DB_PARENT_ID, stoi(bucketId));
     valuesBucket.PutInt(MEDIA_DATA_DB_BUCKET_ID, stoi(bucketId));
