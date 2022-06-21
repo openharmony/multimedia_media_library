@@ -246,7 +246,6 @@ void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset>
 
 int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBucket &dataShareValue)
 {
-    string insertUri = uri.ToString();
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
     if (value.IsEmpty()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager Insert: Input parameter is invalid");
@@ -262,63 +261,48 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
         std::string path = "/storage/media/local/files";
         MediaScannerObj::GetMediaScannerInstance()->ScanDir(path, nullptr);
         return DATA_ABILITY_SUCCESS;
-    } else if (cmd.GetOprnType() == OperationType::CREATE) {
-        if (!CheckFileNameValid(dataShareValue)) {
-            return DATA_ABILITY_FILE_NAME_INVALID;
-        }
+    } else if (cmd.GetOprnType() == OperationType::CREATE && !CheckFileNameValid(dataShareValue)) {
+        return DATA_ABILITY_FILE_NAME_INVALID;
     }
 
-    string operationType = MediaLibraryDataManagerUtils::GetOperationType(insertUri);
-    // for Neusoft:
+    // after replace all xxxOperations following, remove "operationType"
+    string operationType = MediaLibraryDataManagerUtils::GetOperationType(uri.ToString());
     // need to do: align operations with function names,
     // like: move 'delete' operations in smartalbum into Delete FUNCTION
     switch(cmd.GetOprnObject()) {
-    case OperationObject::FILESYSTEM_ASSET:
-    {
+    case OperationObject::FILESYSTEM_ASSET: {
         MediaLibraryFileOperations fileOprn;
         return fileOprn.HandleFileOperation(cmd, dirQuerySetMap_);
     }
-    case OperationObject::FILESYSTEM_DIR:
-    {
+    case OperationObject::FILESYSTEM_DIR: {
         MediaLibraryDirOperations dirOprn;
         result = dirOprn.HandleDirOperations(operationType, value, rdbStore_, dirQuerySetMap_);
         syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
         break;
     }
-    case OperationObject::FILESYSTEM_ALBUM:
-    {
+    case OperationObject::FILESYSTEM_ALBUM: {
         MediaLibraryAlbumOperations albumOprn;
         return albumOprn.CreateAlbumOperation(cmd);
     }
-    case OperationObject::SMART_ALBUM:
-    {
+    case OperationObject::SMART_ALBUM: {
         MediaLibrarySmartAlbumOperations smartalbumOprn;
         result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore_);
         syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
         break;
     }
-    case OperationObject::SMART_ALBUM_MAP:
-    {
+    case OperationObject::SMART_ALBUM_MAP: {
         MediaLibrarySmartAlbumMapOperations smartalbumMapOprn;
-        result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType,
-            value, rdbStore_, dirQuerySetMap_);
+        result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, rdbStore_, dirQuerySetMap_);
         syncTable.SyncPushTable(rdbStore_, bundleName_, CATEGORY_SMARTALBUM_MAP_TABLE, devices);
         break;
     }
-    case OperationObject::KVSTORE:
-    {
+    case OperationObject::KVSTORE: {
         MediaLibraryKvStoreOperations kvStoreOprn;
         result = kvStoreOprn.HandleKvStoreInsertOperations(operationType, value, kvStorePtr_);
         break;
     }
     default:
-    {
-        // Normal URI scenario
-        int64_t outRowId = DATA_ABILITY_FAIL;
-        (void)rdbStore_->Insert(outRowId, MEDIALIBRARY_TABLE, value);
-        syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-        return outRowId;
-    }
+        return InsertInDb(cmd);
     }
     return result;
 }
@@ -355,8 +339,7 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
 
     switch (cmd.GetOprnObject()) {
-    case OperationObject::FILESYSTEM_ASSET:
-    {
+    case OperationObject::FILESYSTEM_ASSET: {
         MediaLibraryFileOperations fileOprn;
         return fileOprn.DeleteFileOperation(cmd, dirQuerySetMap_);
     }
@@ -365,8 +348,7 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
         // todo: supply a DeleteDirOperation here to replace
         // delete in the HandleDirOperations in Insert function, if need
         break;
-    case OperationObject::FILESYSTEM_ALBUM:
-    {
+    case OperationObject::FILESYSTEM_ALBUM: {
         MediaLibraryAlbumOperations albumOprn;
         return albumOprn.DeleteAlbumOperation(cmd);
     }
@@ -374,7 +356,6 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
         break;
     }
 
-    // for Neusoft:
     // DeleteInfoInDbWithId can finish the default delete of smartalbum and smartmap,
     // so no need to distinct them in switch-case deliberately
     MediaLibraryObjectUtils assetUtils;
@@ -414,7 +395,6 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     default:
         break;
     }
-    // for Neusoft:
     // ModifyInfoInDbWithId can finish the default update of smartalbum and smartmap,
     // so no need to distinct them in switch-case deliberately
     MediaLibraryObjectUtils assetUtils;
@@ -507,53 +487,10 @@ shared_ptr<ResultSetBridge> GenThumbnail(shared_ptr<RdbStore> rdb,
     return queryResultSet;
 }
 
-static void DealWithUriString(string &uriString, TableType &tabletype,
-    string &strQueryCondition, string::size_type &pos, string &strRow)
+void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationObject oprnObject)
 {
-    string type = uriString.substr(pos + 1);
-    MEDIA_INFO_LOG("MediaLibraryDataManager uriString: %{public}s type: %{public}s", uriString.c_str(), type.c_str());
-    if (type == MEDIA_ALBUMOPRN_QUERYALBUM) {
-        tabletype = TYPE_ALBUM_TABLE;
-        uriString = MEDIALIBRARY_DATA_URI;
-    } else if (uriString == MEDIALIBRARY_DIRECTORY_URI) {
-        tabletype = TYPE_DIR_TABLE;
-    } else if (uriString == MEDIALIBRARY_DATA_URI + "/"
-               + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTABLUMASSETS_VIEW_NAME) {
-        tabletype = TYPE_SMARTALBUMASSETS_TABLE;
-        uriString = MEDIALIBRARY_SMARTALBUM_URI;
-    } else if (uriString == MEDIALIBRARY_DATA_URI + "/"
-               + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME) {
-        tabletype = TYPE_ASSETSMAP_TABLE;
-        uriString = MEDIALIBRARY_SMARTALBUM_URI;
-    } else if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE) {
-        tabletype = TYPE_ALL_DEVICE;
-        uriString = MEDIALIBRARY_DATA_URI;
-    } else if (uriString == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE) {
-        tabletype = TYPE_ACTIVE_DEVICE;
-        uriString = MEDIALIBRARY_DATA_URI;
-    } else if (strQueryCondition.empty() && pos != string::npos) {
-        strRow = type;
-        uriString = uriString.substr(0, pos);
-        string::size_type posTable = uriString.find_last_of('/');
-        string tableName = uriString.substr(posTable + 1);
-        MEDIA_INFO_LOG("MediaLibraryDataManager tableName = %{private}s", tableName.c_str());
-        MEDIA_INFO_LOG("MediaLibraryDataManager strRow = %{private}s", strRow.c_str());
-        if (SMARTALBUM_TABLE.compare(tableName) == 0) {
-            tabletype = TYPE_SMARTALBUM;
-            strQueryCondition = SMARTALBUM_DB_ID + " = " + strRow;
-        } else if (SMARTALBUM_MAP_TABLE.compare(tableName) == 0) {
-            tabletype = TYPE_SMARTALBUM_MAP;
-            strQueryCondition = SMARTALBUMMAP_DB_ALBUM_ID + " = " + strRow;
-        } else {
-            tabletype = TYPE_DATA;
-            strQueryCondition = MEDIA_DATA_DB_ID + " = " + strRow;
-        }
-    }
-}
-
-void MediaLibraryDataManager::NeedQuerySync(const string &networkId, TableType tabletype)
-{
-    if (!networkId.empty() && (tabletype != TYPE_ASSETSMAP_TABLE) && (tabletype != TYPE_SMARTALBUMASSETS_TABLE)) {
+    if (!networkId.empty() && (oprnObject != OperationObject::ASSETMAP) &&
+        (oprnObject != OperationObject::SMART_ABLUM_ASSETS)) {
         StartTrace(HITRACE_TAG_OHOS, "QuerySync");
         auto ret = QuerySync();
         FinishTrace(HITRACE_TAG_OHOS);
@@ -570,25 +507,27 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         return nullptr;
     }
 
+    MediaLibraryCommand cmd(uri, QUERY);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
+    cmd.GetAbsRdbPredicates()->SetOrder(predicates.GetOrder());
+
+    string uriString = uri.ToString();
+    string networkId = cmd.GetOprnDevice();
+    OperationObject oprnObject = cmd.GetOprnObject();
+    NeedQuerySync(networkId, oprnObject);
+
     shared_ptr<ResultSetBridge> queryResultSet;
-    TableType tabletype = TYPE_DATA;
-    string strRow, uriString = uri.ToString();
-    string strQueryCondition = predicates.GetWhereClause();
     vector<int> space;
     bool thumbnailQuery = ParseThumbnailInfo(uriString, space);
-    string::size_type pos = uriString.find_last_of('/');
-    string type = uriString.substr(pos + 1);
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uriString);
-    MEDIA_DEBUG_LOG("uriString = %{private}s, type = %{private}s, thumbnailQuery %{private}d, Rdb Verison %{private}d",
-        uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
-    DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
-    NeedQuerySync(networkId, tabletype);
+    MEDIA_DEBUG_LOG("uriString = %{private}s, thumbnailQuery %{private}d, Rdb Verison %{private}d",
+        uriString.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     if (thumbnailQuery) {
         StartTrace(HITRACE_TAG_OHOS, "GenThumbnail");
         queryResultSet = GenThumbnail(rdbStore_, mediaThumbnail_, strRow, space, networkId);
         FinishTrace(HITRACE_TAG_OHOS);
     } else {
-        auto absResultSet = QueryRdb(uri, columns, predicates);
+        auto absResultSet = QueryRdb(cmd, columns);
         queryResultSet = RdbUtils::ToResultSetBridge(absResultSet);
     }
 
@@ -597,35 +536,27 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     return queryResultSet;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
-    const DataSharePredicates &predicates)
+shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryCommand cmd,
+    const vector<string> &columns)
 {
     StartTrace(HITRACE_TAG_OHOS, "MediaLibraryDataManager::QueryRdb");
-    MediaLibraryCommand cmd(uri, QUERY);
-    cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
-    cmd.GetAbsRdbPredicates()->SetOrder(predicates.GetOrder());
 
     shared_ptr<AbsSharedResultSet> queryResultSet;
-    TableType tabletype = TYPE_DATA;
-    string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uriString);
-    string::size_type pos = uriString.find_last_of('/');
-
-    DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
     MediaLibraryObjectUtils assetUtils;
-    if (tabletype == TYPE_SMARTALBUM) {
+    OperationObject oprnObject = cmd.GetOprnObject();
+
+    if (oprnObject == OperationObject::SMART_ALBUM) {
         queryResultSet = assetUtils.QueryWithCondition(cmd, columns, SMARTALBUM_DB_ID);
-    } else if (tabletype == TYPE_SMARTALBUM_MAP) {
+    } else if (oprnObject == OperationObject::SMART_ALBUM_MAP) {
         queryResultSet = assetUtils.QueryWithCondition(cmd, columns, SMARTALBUMMAP_DB_ALBUM_ID);
-    } else if (tabletype == TYPE_ASSETSMAP_TABLE || tabletype == TYPE_SMARTALBUMASSETS_TABLE) {
+    } else if (oprnObject == OperationObject::ASSETMAP || oprnObject == OperationObject::SMART_ABLUM_ASSETS) {
         queryResultSet = assetUtils.QueryView(cmd, columns);
-    } else if (tabletype == TYPE_ALL_DEVICE || tabletype == TYPE_ACTIVE_DEVICE) {
+    } else if (oprnObject == OperationObject::ALL_DEVICE || oprnObject == OperationObject::ACTIVE_DEVICE) {
         queryResultSet = assetUtils.QueryWithCondition(cmd, columns);
-    } else if (tabletype == TYPE_ALBUM_TABLE || cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
+    } else if (oprnObject == OperationObject::FILESYSTEM_ALBUM || oprnObject == OperationObject::MEDIA_VOLUME) {
         MediaLibraryAlbumOperations albumOprn;
         queryResultSet = albumOprn.QueryAlbumOperation(cmd, columns);
-    } else if (tabletype == TYPE_DIR_TABLE) {
+    } else if (oprnObject == OperationObject::FILESYSTEM_DIR) {
         queryResultSet = assetUtils.QueryWithCondition(cmd, columns, MEDIA_DATA_DB_ID);
     } else {
         StartTrace(HITRACE_TAG_OHOS, "QueryFile");
@@ -633,7 +564,10 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
         queryResultSet = fileOprn.QueryFileOperation(cmd, columns);
         FinishTrace(HITRACE_TAG_OHOS);
     }
-    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
+    if (queryResultSet == nullptr) {
+        MEDIA_WARNING_LOG("Query functionality failed");
+        return nullptr;
+    }
     FinishTrace(HITRACE_TAG_OHOS);
     return queryResultSet;
 }

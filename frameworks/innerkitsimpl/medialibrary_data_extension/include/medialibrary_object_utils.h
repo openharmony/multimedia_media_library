@@ -63,19 +63,21 @@ public:
     int32_t GetParentIdWithId(const std::string &fileId);
     std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &uriStr);
 
-    int32_t ModifyInfoInDbWithPath(MediaLibraryCommand &cmd, const std::string &path);
+    int32_t InsertInDb(MediaLibraryCommand &cmd);
     int32_t ModifyInfoInDbWithId(MediaLibraryCommand &cmd, const std::string &fileId = "");
-    int32_t DeleteInfoInDbWithPath(MediaLibraryCommand &cmd, const std::string &path);
     int32_t DeleteInfoInDbWithId(MediaLibraryCommand &cmd, const std::string &fileId = "");
     std::shared_ptr<AbsSharedResultSet> QueryFiles(MediaLibraryCommand &cmd);
     std::shared_ptr<AbsSharedResultSet> QueryWithCondition(MediaLibraryCommand &cmd,
         std::vector<std::string> columns, const std::string &conditionColumn = "");
     std::shared_ptr<AbsSharedResultSet> QueryView(MediaLibraryCommand &cmd, std::vector<std::string> columns);
+
     bool IsColumnValueExist(const std::string &value, const std::string &column);
     bool IsAssetExistInDb(const int32_t id);
     bool IsFileExistInDb(const std::string &path);
 
 private:
+    int32_t ModifyInfoInDbWithPath(MediaLibraryCommand &cmd, const std::string &path);
+    int32_t DeleteInfoInDbWithPath(MediaLibraryCommand &cmd, const std::string &path);
     std::string GetStringColumnByIdFromDb(const std::string &id, const std::string &column);
     NativeAlbumAsset GetDirAsset(const std::string &relativePath);
     int32_t DeleteInvalidRowInDb(const std::string &path);
