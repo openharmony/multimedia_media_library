@@ -43,31 +43,6 @@ string MediaFileExtentionUtils::GetFileMediaTypeUri(MediaType mediaType, const s
     }
 }
 
-int32_t MediaFileExtentionUtils::Mkdir(Uri parentUri, std::string displayName, Uri& newDirUri,
-                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
-{
-    string albumUri, albumId, albumPath, dirPath, relativePath, newUri, networkId;
-    albumUri = parentUri.ToString();
-    albumId = MediaLibraryDataManagerUtils::GetIdFromUri(albumUri);
-    albumPath = MediaLibraryDataManagerUtils::GetPathFromDb(albumId, rdbStore);
-    dirPath = albumPath + '/' + displayName;
-
-    relativePath = dirPath.substr(ROOT_MEDIA_DIR.size()) + '/';
-    networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentUri.ToString());
-
-    vector<int32_t> outIds;
-    NativeAlbumAsset nativeAlbumAsset = MediaLibraryDataManagerUtils::CreateDirectorys(relativePath, rdbStore, outIds);
-    if (nativeAlbumAsset.GetAlbumId() < 0) {
-        return nativeAlbumAsset.GetAlbumId();
-    }
-    nativeAlbumAsset = MediaLibraryDataManagerUtils::GetAlbumAsset(to_string(nativeAlbumAsset.GetAlbumId()), rdbStore);
-    MediaType mediaType = MediaAsset::GetMediaType(dirPath);
-    newUri = GetFileMediaTypeUri(mediaType, networkId) + "/" + to_string(nativeAlbumAsset.GetAlbumId());
-    newDirUri = Uri(newUri);
-
-    return DATA_ABILITY_SUCCESS;
-}
-
 void GetSingleFileInfo(const string &networkId, FileAccessFwk::FileInfo &fileInfo,
     shared_ptr<AbsSharedResultSet> &result)
 {
@@ -150,7 +125,7 @@ static shared_ptr<AbsSharedResultSet> GetFileFromRdb(const string &selectUri, co
     return result;
 }
 
-bool GetAlbumRelativePath(const string &selectUri, const string &networkId, string &relativePath)
+bool MediaFileExtentionUtils::GetAlbumRelativePath(const string &selectUri, const string &networkId, string &relativePath)
 {
     auto result = GetFileFromRdb(selectUri, networkId);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, false, "GetFileFromResult Get fail");
@@ -268,7 +243,7 @@ vector<FileAccessFwk::DeviceInfo> MediaFileExtentionUtils::GetRoots()
     return deviceList;
 }
 
-bool CheckSupport(const string &uri)
+bool MediaFileExtentionUtils::CheckSupport(const string &uri)
 {
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
     if (!networkId.empty()) {
@@ -341,7 +316,7 @@ int32_t HandleAlbumRename(const string &srcId, const string &srcPath, const stri
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     std::vector<std::string> whereArgs = { srcId };
     int32_t count = 0;
-    int32_t updateResult = MediaLibraryDataManager::GetInstance()->rdbStore_->Update(count, 
+    int32_t updateResult = MediaLibraryDataManager::GetInstance()->rdbStore_->Update(count,
         MEDIALIBRARY_TABLE, valuesBucket, MEDIA_DATA_DB_ID + " = ?", whereArgs);
     if (updateResult == NativeRdb::E_OK) {
         // Update data "old albumPath/%" -> "new albumPath/%"
@@ -441,7 +416,7 @@ int32_t HandleAlbumMove(const string &srcId, const string &srcPath, const string
     valuesBucket.PutInt(MEDIA_DATA_DB_BUCKET_ID, stoi(bucketId));
     std::vector<std::string> whereArgs = { srcId };
     int32_t count = 0;
-    int32_t updateResult = MediaLibraryDataManager::GetInstance()->rdbStore_->Update(count, 
+    int32_t updateResult = MediaLibraryDataManager::GetInstance()->rdbStore_->Update(count,
         MEDIALIBRARY_TABLE, valuesBucket, MEDIA_DATA_DB_ID + " = ?", whereArgs);
     if (updateResult == NativeRdb::E_OK) {
         // Update data "old albumPath/%" -> "new albumPath/%"
@@ -471,12 +446,12 @@ int32_t MediaFileExtentionUtils::Move(const Uri &sourceFileUri, const Uri &targe
     }
     string sourcePath, displayName;
     int type;
-    if(!GetSrcFileFromResult(sourceUri, "" , sourcePath, displayName, type)) {
+    if (!GetSrcFileFromResult(sourceUri, "" , sourcePath, displayName, type)) {
         MEDIA_ERR_LOG("Move source uri is not correct");
         return DATA_ABILITY_MODIFY_DATA_FAIL;
     }
     string destRelativePath;
-    if(!GetAlbumRelativePath(targetUri, "" , destRelativePath)) {
+    if (!GetAlbumRelativePath(targetUri, "" , destRelativePath)) {
         MEDIA_ERR_LOG("Move target parent uri is not correct");
         return DATA_ABILITY_MODIFY_DATA_FAIL;
     }
