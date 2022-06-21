@@ -68,7 +68,6 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
-    "//foundation/multimedia/media_library/frameworks/services/media_library:medialibrary_data_ability",
     "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary",
     "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_js",
     "//foundation/multimedia/media_library/sa_profile:medialibrary_service_sa_profile",
