@@ -21,6 +21,7 @@
 #include "media_file_utils.h"
 #include "uri_helper.h"
 #include "media_asset.h"
+#include "medialibrary_object_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

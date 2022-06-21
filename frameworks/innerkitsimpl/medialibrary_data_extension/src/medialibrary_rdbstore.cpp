@@ -137,7 +137,7 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     if (!SyncPushTable(bundleName_, cmd.GetTableName(), devices)) {
         MEDIA_ERR_LOG("SyncPushTable Error");
     }
-    MEDIA_ERR_LOG("[lqh]rdbStore_->Insert end, rowId = %d, ret = %{public}d", (int)rowId, ret);
+    MEDIA_INFO_LOG("[lqh]rdbStore_->Insert end, rowId = %d, ret = %{public}d", (int)rowId, ret);
     return ret;
 }
 

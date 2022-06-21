@@ -743,11 +743,10 @@ int32_t MediaLibraryObjectUtils::SetFilePending(string &uriStr, bool isPending)
     values.PutLong(MEDIA_DATA_DB_TIME_PENDING, isPending ? timeNow : 0);
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, timeNow);
 
-    int32_t rowId = DATA_ABILITY_FAIL;
     MediaLibraryCommand cmd(Uri(uriStr), values);
-    if (uniStore_->Update(cmd, rowId) != NativeRdb::E_OK) {
+    int32_t rowId = ModifyInfoInDbWithId(cmd);
+    if (rowId == DATA_ABILITY_FAIL) {
         MEDIA_ERR_LOG("Update failed for file");
-        return DATA_ABILITY_FAIL;
     }
     return rowId;
 }
@@ -969,7 +968,7 @@ int32_t MediaLibraryObjectUtils::ModifyInfoInDbWithPath(MediaLibraryCommand &cmd
     int32_t updatedRows = DATA_ABILITY_FAIL;
     int32_t result = uniStore_->Update(cmd, updatedRows);
     if (result != NativeRdb::E_OK || updatedRows <= 0) {
-        MEDIA_ERR_LOG("Update operation failed. Result %{private}d. Deleted %{private}d", result, updatedRows);
+        MEDIA_ERR_LOG("Update operation failed. Result %{private}d. Updated %{private}d", result, updatedRows);
     }
 
     return updatedRows;
@@ -1000,7 +999,7 @@ int32_t MediaLibraryObjectUtils::ModifyInfoInDbWithId(MediaLibraryCommand &cmd, 
     int32_t updatedRows = DATA_ABILITY_FAIL;
     int32_t result = uniStore_->Update(cmd, updatedRows);
     if (result != NativeRdb::E_OK || updatedRows <= 0) {
-        MEDIA_ERR_LOG("Update operation failed. Result %{private}d. Deleted %{private}d", result, updatedRows);
+        MEDIA_ERR_LOG("Update operation failed. Result %{private}d. Updated %{private}d", result, updatedRows);
     }
 
     return updatedRows;
