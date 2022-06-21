@@ -33,11 +33,17 @@
 
 namespace OHOS {
 namespace Media {
+// parent id is root path
+const int32_t ROOT_PARENT_ID = 0;
 class MediaFileExtentionUtils {
 public:
     static std::string GetFileMediaTypeUri(MediaType mediaType, const std::string& networkId);
-    static int32_t Mkdir(Uri parentUri, std::string displayName, Uri& newDirUri,
-        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static bool CheckSupport(const std::string &uri);
+    static bool GetAlbumRelativePath(const std::string &selectUri, const std::string &networkId,
+        std::string &relativePath);
+    static std::shared_ptr<NativeRdb::AbsSharedResultSet> GetFileFromRdb(const std::string &selectUri,
+        const std::string &networkId);
+    static int32_t Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri);
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
     static std::vector<FileAccessFwk::FileInfo> ListFile(std::string selectUri);
     static std::vector<FileAccessFwk::DeviceInfo> GetRoots();
