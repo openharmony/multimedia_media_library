@@ -39,7 +39,6 @@ public:
     MediaLibrarySyncTable() = delete;
     ~MediaLibrarySyncTable() = delete;
 
-    static bool SyncPullAllTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName);
     static bool SyncPullAllTableByDeviceId(const shared_ptr<RdbStore> &rdbStore,
                                     const std::string &bundleName, std::vector<std::string> &devices);
     static bool SyncPullTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,

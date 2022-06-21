@@ -33,6 +33,7 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
 {
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbstore is nullptr");
+        return false;
     }
     unique_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
