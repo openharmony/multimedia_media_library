@@ -178,14 +178,23 @@ int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
     result->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, columnIndex);
     result->GetInt(columnIndex, mediaType);
     int errCode = 0;
+    if (id == "") {
+        MEDIA_DEBUG_LOG("Delete uri is not correct");
+        return -1;
+    }
+    int fileId = stoi(id);
     if (mediaType == MEDIA_TYPE_ALBUM) {
-        // todo
-        // MEDIA_DIROPRN_FMS_TRASHDIR
+        DataShareValuesBucket valuesBucket;
+        valuesBucket.PutInt(MEDIA_DATA_DB_ID, fileId);
+        Uri deleteAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_FMS_TRASHDIR);
+        errCode = MediaLibraryDataManager::GetInstance()->Insert(deleteAlbumUri, valuesBucket);
     } else {
         DataShareValuesBucket valuesBucket;
-        valuesBucket.PutString(MEDIA_DATA_DB_URI, sourceFileUri.ToString());
-        Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_DELETEASSET);
-        errCode = MediaLibraryDataManager::GetInstance()->Insert(deleteAssetUri, valuesBucket);
+        valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+        valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileId);
+        Uri trashAssetUri(MEDIALIBRARY_DATA_URI + "/"
+                + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
+        errCode = MediaLibraryDataManager::GetInstance()->Insert(trashAssetUri, valuesBucket);
     }
     return errCode;
 }

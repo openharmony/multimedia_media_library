@@ -53,6 +53,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::InsertTrashAssetsInfoUtil(const int
         if (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {
             errorCode = TrashFileAssetsInfoUtil(fileAssetId, smartAlbumMapQueryData);
         } else {
+            MEDIA_ERR_LOG("InsertTrashAssetsInfoUtil ");
             errorCode = TrashDirAssetsInfoUtil(fileAssetId, smartAlbumMapQueryData);
         }
     } else {
@@ -127,8 +128,8 @@ int32_t MediaLibrarySmartAlbumMapOperations::TrashChildAssetsInfoUtil(const int3
 {
     vector<string> columns;
     AbsRdbPredicates dirAbsPred(MEDIALIBRARY_TABLE);
-    dirAbsPred.EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId));
-    dirAbsPred.EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(CHILD_ISTRASH));
+    dirAbsPred.EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId))->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH,
+        to_string(NOT_ISTRASH));
     shared_ptr<AbsSharedResultSet> queryResultSet = smartAlbumMapQueryData.rdbStore->Query(
         dirAbsPred, columns);
     auto count = 0;
@@ -171,10 +172,11 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperations(const int3
 {
     int32_t errorCode = DATA_ABILITY_FAIL;
     if (albumId == TRASH_ALBUM_ID_VALUES) {
-        InsertTrashAssetsInfoUtil(childFileAssetId, smartAlbumMapQueryData);
+        errorCode = InsertTrashAssetsInfoUtil(childFileAssetId, smartAlbumMapQueryData);
     } else if (albumId == FAVOURITE_ALBUM_ID_VALUES) {
-        UpdateFavoriteAssetsInfoUtil(childFileAssetId, true, smartAlbumMapQueryData);
+        errorCode = UpdateFavoriteAssetsInfoUtil(childFileAssetId, true, smartAlbumMapQueryData);
     }
+    CHECK_AND_RETURN_RET_LOG(errorCode == DATA_ABILITY_SUCCESS, errorCode, "Failed to HandleAddAssetOperations");
     errorCode = InsertAlbumAssetsInfoUtil(smartAlbumMapQueryData);
     return errorCode;
 }

@@ -125,7 +125,8 @@ static shared_ptr<AbsSharedResultSet> GetFileFromRdb(const string &selectUri, co
     return result;
 }
 
-bool MediaFileExtentionUtils::GetAlbumRelativePath(const string &selectUri, const string &networkId, string &relativePath)
+bool MediaFileExtentionUtils::GetAlbumRelativePath(const string &selectUri, const string &networkId,
+    string &relativePath)
 {
     auto result = GetFileFromRdb(selectUri, networkId);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, false, "GetFileFromResult Get fail");
@@ -155,21 +156,21 @@ vector<FileAccessFwk::FileInfo> MediaFileExtentionUtils::ListFile(string selectU
 {
     UriHelper::ListFileType listFileType = UriHelper::ResolveUri(selectUri);
     MEDIA_DEBUG_LOG("selectUri %{public}s istFileType %{public}d", selectUri.c_str(), listFileType);
-    string relativePath;
     vector<FileAccessFwk::FileInfo> fileList;
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(selectUri);
     string selection;
     vector<string> selectionArgs;
     if (listFileType == UriHelper::LISTFILE_ROOT) {
-        selection = MEDIA_DATA_DB_PARENT_ID + " LIKE ? ";
-        selectionArgs = { "0" };
+        selection = MEDIA_DATA_DB_PARENT_ID + " LIKE ? AND " + MEDIA_DATA_DB_IS_TRASH + " LIKE ? ";
+        selectionArgs = { to_string(ROOT_PARENT_ID), to_string(NOT_ISTRASH) };
     } else if (listFileType == UriHelper::LISTFILE_DIR) {
+        string relativePath;
         if (!GetAlbumRelativePath(selectUri, networkId, relativePath)) {
             MEDIA_ERR_LOG("selectUri is not valid album uri");
             return fileList;
         }
-        selection = MEDIA_DATA_DB_RELATIVE_PATH + " LIKE ? ";
-        selectionArgs = { relativePath };
+        selection = MEDIA_DATA_DB_RELATIVE_PATH + " LIKE ? AND " + MEDIA_DATA_DB_IS_TRASH + " LIKE ? ";
+        selectionArgs = { relativePath, to_string(NOT_ISTRASH) };
         MEDIA_DEBUG_LOG("relativePath %{public}s", relativePath.c_str());
     }
     string queryUri;
@@ -446,12 +447,12 @@ int32_t MediaFileExtentionUtils::Move(const Uri &sourceFileUri, const Uri &targe
     }
     string sourcePath, displayName;
     int type;
-    if (!GetSrcFileFromResult(sourceUri, "" , sourcePath, displayName, type)) {
+    if (!GetSrcFileFromResult(sourceUri, "", sourcePath, displayName, type)) {
         MEDIA_ERR_LOG("Move source uri is not correct");
         return DATA_ABILITY_MODIFY_DATA_FAIL;
     }
     string destRelativePath;
-    if (!GetAlbumRelativePath(targetUri, "" , destRelativePath)) {
+    if (!GetAlbumRelativePath(targetUri, "", destRelativePath)) {
         MEDIA_ERR_LOG("Move target parent uri is not correct");
         return DATA_ABILITY_MODIFY_DATA_FAIL;
     }
