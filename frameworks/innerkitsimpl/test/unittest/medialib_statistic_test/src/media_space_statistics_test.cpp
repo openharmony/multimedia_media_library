@@ -212,8 +212,8 @@ void DeleteFile(std::string fileUri)
     Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + '/' + fileUri);
     // DataShareValuesBucket valuesBucketDelete;
     // valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, fileUri);
-    int retVal = helper->Delete(deleteAssetUri, valuesBucketDelete);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test DeleteFile::uri :%{private}s", deleteAssetUri.c_str());
+    int retVal = helper->Delete(deleteAssetUri, {});
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test DeleteFile::uri :%{private}s", deleteAssetUri.ToString().c_str());
     EXPECT_NE((retVal < 0), true);
 }
 

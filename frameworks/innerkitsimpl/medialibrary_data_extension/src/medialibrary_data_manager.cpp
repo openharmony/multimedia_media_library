@@ -381,7 +381,11 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     case OperationObject::FILESYSTEM_ASSET:
     {
         MediaLibraryFileOperations fileOprn;
-        return fileOprn.ModifyFileOperation(cmd);
+        auto ret = fileOprn.ModifyFileOperation(cmd);
+        if (ret != DATA_ABILITY_SUCCESS) {
+            return ret;
+        }
+        break;
     }
     case OperationObject::FILESYSTEM_DIR:
         // for Neusoft:
@@ -399,6 +403,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     // ModifyInfoInDbWithId can finish the default update of smartalbum and smartmap,
     // so no need to distinct them in switch-case deliberately
     MediaLibraryObjectUtils assetUtils;
+    cmd.SetValueBucket(value);
     return assetUtils.ModifyInfoInDbWithId(cmd);
 }
 
@@ -525,7 +530,8 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         uriString.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     if (thumbnailQuery) {
         StartTrace(HITRACE_TAG_OHOS, "GenThumbnail");
-        queryResultSet = GenThumbnail(rdbStore_, mediaThumbnail_, cmd.GetOprnFileId(), space, networkId);
+        string rowId = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+        queryResultSet = GenThumbnail(rdbStore_, mediaThumbnail_, rowId, space, networkId);
         FinishTrace(HITRACE_TAG_OHOS);
     } else {
         auto absResultSet = QueryRdb(uri, columns, predicates);

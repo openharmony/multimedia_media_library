@@ -428,7 +428,8 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd, const s
     }
 
     string dstAlbumPath = MediaLibraryDataManagerUtils::GetParentPath(dstFilePath);
-    MEDIA_INFO_LOG("dstAlbumPath = %{private}s", dstAlbumPath.c_str());
+    MEDIA_INFO_LOG("srcFilePath = %{private}s", srcFilePath.c_str());
+    MEDIA_INFO_LOG("dstAlbumPath = %{private}s, dstFilePath = %{private}s", dstAlbumPath.c_str(), dstFilePath.c_str());
     NativeAlbumAsset dirAsset = GetDirAsset(dstAlbumPath);
     if (dirAsset.GetAlbumId() <= 0) {
         MEDIA_WARNING_LOG("Failed to get or create directory");
@@ -531,14 +532,7 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
         MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
         return DATA_ABILITY_HAS_FD_ERROR;
     }
-    if (isWriteMode && fd > 0) {
-        int32_t errorCode = SetFilePending(uriString, true);
-        if (errorCode == DATA_ABILITY_FAIL) {
-            fileAsset->CloseAsset(fd);
-            MEDIA_ERR_LOG("MediaLibraryDataManager OpenFile: Set file to pending DB error");
-            return DATA_ABILITY_HAS_DB_ERROR;
-        }
-    }
+
     MEDIA_INFO_LOG("MediaLibraryDataManager OpenFile: Success");
     return fd;
 }
@@ -562,12 +556,6 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     string uriInValue;
     if (cmd.GetValueBucket().GetObject(MEDIA_DATA_DB_URI, valueObject)) {
         valueObject.GetString(uriInValue);
-    }
-
-    int32_t errorCode = SetFilePending(uriInValue, false);
-    if (errorCode == DATA_ABILITY_FAIL) {
-        MEDIA_ERR_LOG("HandleCloseAsset Set file to pending DB error");
-        return DATA_ABILITY_FAIL;
     }
 
     string fileName = MediaLibraryDataManagerUtils::GetFileName(srcPath);
@@ -674,10 +662,7 @@ void MediaLibraryObjectUtils::UpdateDateModified(const string &dirPath)
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::GetAlbumDateModified(dirPath));
     cmd.SetValueBucket(valuesBucket);
 
-    int32_t updateResult = ModifyInfoInDbWithPath(cmd, dirPath);
-    if (updateResult != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Update failed for album");
-    }
+    (void)ModifyInfoInDbWithPath(cmd, dirPath);
 }
 
 // Query with the WhereClause
@@ -753,6 +738,7 @@ int32_t MediaLibraryObjectUtils::SetFilePending(string &uriStr, bool isPending)
 int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, const string &dstPath,
                                                     const int &bucketId, const string &bucketName)
 {
+    MEDIA_INFO_LOG("[lqh] enter, dstPath: %{private}s,", dstPath.c_str());
     if (dstPath.empty()) {
         MEDIA_ERR_LOG("Input argument is empty.");
         return DATA_ABILITY_FAIL;
@@ -990,7 +976,7 @@ int32_t MediaLibraryObjectUtils::ModifyInfoInDbWithPath(MediaLibraryCommand &cmd
 
 int32_t MediaLibraryObjectUtils::ModifyInfoInDbWithId(MediaLibraryCommand &cmd, const string &fileId)
 {
-    MEDIA_INFO_LOG("[lqh] enter");
+    MEDIA_INFO_LOG("[lqh] enter, fileId:%s", fileId.c_str());
     if (uniStore_ == nullptr) {
         MEDIA_WARNING_LOG("uniStore_ is nullptr!");
         return DATA_ABILITY_FAIL;
