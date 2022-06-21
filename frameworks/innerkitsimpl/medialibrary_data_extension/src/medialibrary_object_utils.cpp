@@ -423,9 +423,8 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd, const s
 {
     MEDIA_INFO_LOG("[lqh] enter");
     if (srcFilePath.compare(dstFilePath) == 0) {
-        // why: 如果不改名字，只改相关信息？
-        MEDIA_ERR_LOG("Failed to modify the file, the path of new file is the same as old");
-        return DATA_ABILITY_FAIL;
+        MEDIA_ERR_LOG("Skip modify the file, the path of new file is the same as old");
+        return DATA_ABILITY_SUCCESS;
     }
 
     string dstAlbumPath = MediaLibraryDataManagerUtils::GetParentPath(dstFilePath);
@@ -489,7 +488,7 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd, const st
 
     cmd.SetValueBucket(values);
     int32_t retVal = ModifyInfoInDbWithId(cmd);
-    if (retVal == DATA_ABILITY_SUCCESS && !dstDirPath.empty()) {
+    if (retVal > 0 && !dstDirPath.empty()) {
         // Update the path, relative path and album Name for internal files
         const std::string modifyAlbumInternalsStmt =
             "UPDATE " + MEDIALIBRARY_TABLE + " SET " + MEDIA_DATA_DB_FILE_PATH + " = replace(" +
@@ -505,7 +504,7 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd, const st
             return DATA_ABILITY_FAIL;
         }
     }
-    return retVal;
+    return (retVal > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
 }
 
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
@@ -745,7 +744,7 @@ int32_t MediaLibraryObjectUtils::SetFilePending(string &uriStr, bool isPending)
 
     MediaLibraryCommand cmd(Uri(uriStr), values);
     int32_t rowId = ModifyInfoInDbWithId(cmd);
-    if (rowId == DATA_ABILITY_FAIL) {
+    if (rowId < 0) {
         MEDIA_ERR_LOG("Update failed for file");
     }
     return rowId;
@@ -898,6 +897,21 @@ int32_t MediaLibraryObjectUtils::GetParentIdWithId(const string &fileId)
         queryResultSet->GetInt(columnIndexParentId, parentIdVal);
     }
     return parentIdVal;
+}
+
+int64_t InsertInDb(MediaLibraryCommand &cmd)
+{
+    MEDIA_INFO_LOG("[lqh] enter");
+    if (uniStore_ == nullptr) {
+        MEDIA_WARNING_LOG("uniStore_ is nullptr!");
+        return DATA_ABILITY_FAIL;
+    }
+    int64_t outRowId = DATA_ABILITY_FAIL;
+    int32_t result = uniStore_->Insert(cmd, deletedRows);
+    if (result == NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Insert operation failed. Result %{private}d. Deleted %{private}d", result, deletedRows);
+    }
+    return outRowId;
 }
 
 int32_t MediaLibraryObjectUtils::DeleteInfoInDbWithPath(MediaLibraryCommand &cmd, const string &path)
