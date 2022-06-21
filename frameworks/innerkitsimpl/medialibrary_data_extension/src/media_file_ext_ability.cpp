@@ -96,7 +96,7 @@ sptr<IRemoteObject> MediaFileExtAbility::OnConnect(const AAFwk::Want &want)
 int MediaFileExtAbility::OpenFile(const Uri &uri, int flags)
 {
     MEDIA_DEBUG_LOG("%{public}s begin.", __func__);
-    string mode = "r";
+    string mode = MEDIA_FILEMODE_READONLY;
     if (flags == 1) {
         mode = MEDIA_FILEMODE_WRITEONLY;
     } else if (flags > 1) {
@@ -107,7 +107,7 @@ int MediaFileExtAbility::OpenFile(const Uri &uri, int flags)
 
 int MediaFileExtAbility::CreateFile(const Uri &parentUri, const std::string &displayName,  Uri &newFileUri)
 {
-    Uri createFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
+    Uri createFileUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_CREATEASSET);
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(parentUri.ToString());
@@ -120,7 +120,8 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const std::string &dis
     if (ret > 0) {
         MediaType mediaType = MediaAsset::GetMediaType(displayName);
         string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentUri.ToString());
-        string newUri = MediaFileExtentionUtils::GetFileMediaTypeUri(mediaType, networkId) + "/" + to_string(ret);
+        string newUri = MediaFileExtentionUtils::GetFileMediaTypeUri(mediaType, networkId) +
+            SLASH_CHAR + to_string(ret);
         newFileUri = Uri(newUri);
     }
     return ret;
@@ -128,8 +129,28 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const std::string &dis
 
 int MediaFileExtAbility::Mkdir(const Uri &parentUri, const std::string &displayName, Uri &newFileUri)
 {
-    auto ret = MediaFileExtentionUtils::Mkdir(parentUri, displayName, newFileUri,
-        MediaLibraryDataManager::GetInstance()->rdbStore_);
+    string parentUriStr = parentUri.ToString();
+    if (!MediaFileExtentionUtils::CheckSupport(parentUriStr)) {
+        MEDIA_ERR_LOG("Mkdir not support distributed operation");
+        return DATA_ABILITY_FAIL;
+    }
+    Uri mkdirUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR + MEDIA_DIROPRN_FMS_CREATEDIR);
+    DataShareValuesBucket valuesBucket;
+    string relativePath;
+    if (!MediaFileExtentionUtils::GetAlbumRelativePath(parentUriStr, "", relativePath)) {
+        MEDIA_ERR_LOG("selectUri is not valid album uri");
+        return DATA_ABILITY_FAIL;
+    }
+    relativePath = relativePath + displayName + SLASH_CHAR;
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    auto ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
+    if (ret > 0) {
+        MediaType mediaType = MediaAsset::GetMediaType(displayName);
+        string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentUri.ToString());
+        string newUri = MediaFileExtentionUtils::GetFileMediaTypeUri(mediaType, networkId) +
+            SLASH_CHAR + to_string(ret);
+        newFileUri = Uri(newUri);
+    }
     return ret;
 }
 
@@ -163,7 +184,7 @@ int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
     } else {
         DataShareValuesBucket valuesBucket;
         valuesBucket.PutString(MEDIA_DATA_DB_URI, sourceFileUri.ToString());
-        Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
+        Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_DELETEASSET);
         errCode = MediaLibraryDataManager::GetInstance()->Insert(deleteAssetUri, valuesBucket);
     }
     return errCode;
