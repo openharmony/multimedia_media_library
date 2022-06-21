@@ -267,6 +267,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
 
     // after replace all xxxOperations following, remove "operationType"
     string operationType = MediaLibraryDataManagerUtils::GetOperationType(uri.ToString());
+    MediaLibraryObjectUtils objUtils;
     // need to do: align operations with function names,
     // like: move 'delete' operations in smartalbum into Delete FUNCTION
     switch(cmd.GetOprnObject()) {
@@ -302,7 +303,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
         break;
     }
     default:
-        return InsertInDb(cmd);
+        return objUtils.InsertInDb(cmd);
     }
     return result;
 }
@@ -456,7 +457,7 @@ bool ParseThumbnailInfo(string &uriString, vector<int> &space)
 
 shared_ptr<ResultSetBridge> GenThumbnail(shared_ptr<RdbStore> rdb,
     shared_ptr<MediaLibraryThumbnail> thumbnail,
-    string &rowId, vector<int> space, string &networkId)
+    const string &rowId, vector<int> space, string &networkId)
 {
     shared_ptr<ResultSetBridge> queryResultSet;
     int width = space[0];
@@ -524,10 +525,10 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         uriString.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     if (thumbnailQuery) {
         StartTrace(HITRACE_TAG_OHOS, "GenThumbnail");
-        queryResultSet = GenThumbnail(rdbStore_, mediaThumbnail_, strRow, space, networkId);
+        queryResultSet = GenThumbnail(rdbStore_, mediaThumbnail_, cmd.GetOprnFileId(), space, networkId);
         FinishTrace(HITRACE_TAG_OHOS);
     } else {
-        auto absResultSet = QueryRdb(cmd, columns);
+        auto absResultSet = QueryRdb(uri, columns, predicates);
         queryResultSet = RdbUtils::ToResultSetBridge(absResultSet);
     }
 
@@ -536,10 +537,15 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     return queryResultSet;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryCommand cmd,
-    const vector<string> &columns)
+shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
+    const DataSharePredicates &predicates)
 {
     StartTrace(HITRACE_TAG_OHOS, "MediaLibraryDataManager::QueryRdb");
+
+    MediaLibraryCommand cmd(uri, QUERY);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
+    cmd.GetAbsRdbPredicates()->SetOrder(predicates.GetOrder());
 
     shared_ptr<AbsSharedResultSet> queryResultSet;
     MediaLibraryObjectUtils assetUtils;
