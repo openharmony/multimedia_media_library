@@ -53,7 +53,6 @@ int32_t MediaLibrarySmartAlbumMapOperations::InsertTrashAssetsInfoUtil(const int
         if (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {
             errorCode = TrashFileAssetsInfoUtil(fileAssetId, smartAlbumMapQueryData);
         } else {
-            MEDIA_ERR_LOG("InsertTrashAssetsInfoUtil ");
             errorCode = TrashDirAssetsInfoUtil(fileAssetId, smartAlbumMapQueryData);
         }
     } else {

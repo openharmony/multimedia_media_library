@@ -156,32 +156,21 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const std::string &displayN
 
 int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
 {
-    string queryUri = MEDIALIBRARY_DATA_URI;
-    string selection = MEDIA_DATA_DB_ID + " LIKE ? ";
-    string id = MediaLibraryDataManagerUtils::GetIdFromUri(sourceFileUri.ToString());
-    vector<string> selectionArgs = { id };
-    vector<string> columns;
-    DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(selection);
-    predicates.SetWhereArgs(selectionArgs);
-    Uri uri(queryUri);
-    shared_ptr<AbsSharedResultSet> result =
-        MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+    string sourceUri = sourceFileUri.ToString();
+    if (!MediaFileExtentionUtils::CheckSupport(sourceUri)) {
+        MEDIA_ERR_LOG("Delete not support distributed operation");
+        return DATA_ABILITY_FAIL;
+    }
+    auto result = MediaFileExtentionUtils::GetFileFromRdb(sourceUri, "");
     int count = 0;
     result->GetRowCount(count);
-    if (count == 0) {
-        MEDIA_ERR_LOG("AbsSharedResultSet null");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(count != 0, false, "AbsSharedResultSet null");
     result->GoToFirstRow();
     int columnIndex = 0, mediaType = MEDIA_TYPE_FILE;
     result->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, columnIndex);
     result->GetInt(columnIndex, mediaType);
     int errCode = 0;
-    if (id == "") {
-        MEDIA_DEBUG_LOG("Delete uri is not correct");
-        return -1;
-    }
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(sourceUri);
     int fileId = stoi(id);
     if (mediaType == MEDIA_TYPE_ALBUM) {
         DataShareValuesBucket valuesBucket;
