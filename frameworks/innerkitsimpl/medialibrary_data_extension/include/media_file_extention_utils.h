@@ -41,6 +41,8 @@ public:
     static bool CheckSupport(const std::string &uri);
     static bool GetAlbumRelativePath(const std::string &selectUri, const std::string &networkId,
         std::string &relativePath);
+    static std::shared_ptr<NativeRdb::AbsSharedResultSet> GetFileFromRdb(const std::string &selectUri,
+        const std::string &networkId);
     static int32_t Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri);
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
     static std::vector<FileAccessFwk::FileInfo> ListFile(std::string selectUri);

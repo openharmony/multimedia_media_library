@@ -106,7 +106,7 @@ std::shared_ptr<AbsSharedResultSet> GetListFileResult(const string &queryUri,
     return resultSet;
 }
 
-static shared_ptr<AbsSharedResultSet> GetFileFromRdb(const string &selectUri, const string &networkId)
+shared_ptr<AbsSharedResultSet> MediaFileExtentionUtils::GetFileFromRdb(const string &selectUri, const string &networkId)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!networkId.empty()) {
@@ -257,7 +257,7 @@ bool MediaFileExtentionUtils::CheckSupport(const string &uri)
 static bool GetFileFromResult(const string &selectUri, const string &networkId, string &sourcePath,
     string &relativePath, int &mediaType)
 {
-    auto result = GetFileFromRdb(selectUri, networkId);
+    auto result = MediaFileExtentionUtils::GetFileFromRdb(selectUri, networkId);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, false, "GetFileFromResult Get fail");
     int count = 0;
     result->GetRowCount(count);
@@ -368,7 +368,7 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const std::str
 static bool GetSrcFileFromResult(const string &selectUri, const string &networkId, string &sourcePath,
     string &displayName, int &mediaType)
 {
-    auto result = GetFileFromRdb(selectUri, networkId);
+    auto result = MediaFileExtentionUtils::GetFileFromRdb(selectUri, networkId);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, false, "GetSrcFileFromResult Get fail");
     int count = 0;
     result->GetRowCount(count);
