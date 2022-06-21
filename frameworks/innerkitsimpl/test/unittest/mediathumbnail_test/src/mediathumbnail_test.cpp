@@ -98,7 +98,7 @@ void MediaThumbnailTest::SetUpTestCase(void)
 
     RdbStoreConfig config(DATABASE_NAME);
     MediaThumbnailTestCB callback;
-    config.SetBundleName("com.ohos.medialibrary.MediaLibraryDataA");
+    config.SetBundleName("com.ohos.medialibrary.medialibrarydata");
     store = RdbHelper::GetRdbStore(config, 1, callback, errCode);
     EXPECT_NE(store, nullptr);
 }
