@@ -94,7 +94,6 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAllFiles_Test_001, Tes
             '/' + fileAsset->GetUri());
         DataShare::DataSharePredicates deletePredicates;
         MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::uri :%{private}s", fileAsset->GetUri().c_str());
-        // valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
         MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::helper->Insert before");
         int retVal = helper->Delete(deleteAssetUri, deletePredicates);
         MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::helper->Insert after");

@@ -47,7 +47,7 @@ public:
     int32_t ExecuteSql(const std::string &sql) override;
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QuerySql(const std::string &sql) override;
     // temp
-    std::shared_ptr<NativeRdb::RdbStore> GetRaw() const { return rdbStore_; }
+    std::shared_ptr<NativeRdb::RdbStore> GetRaw() const;
     std::string ObtainTableName(MediaLibraryCommand &cmd) override;
 
 private:
