@@ -12,7 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/multimedia/media_library/multimedia_aafwk.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
 
 group("media_library_packages") {
   deps = [ ":media_library" ]
@@ -27,11 +27,11 @@ config("media_library_config") {
     "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//utils/native/base/include",
-    "${aafwk_kits_path}/ability/native/include",
+    "${AAFWK_KITS_PATH}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/appdatafwk/include",
-    "${aafwk_kits_path}/ability/native/include",
+    "${AAFWK_KITS_PATH}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/provider/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
@@ -69,7 +69,7 @@ ohos_shared_library("media_library") {
 
   deps = [
     ":media_library_source",
-    "${aafwk_kits_path}/ability/native:abilitykit_native",
+    "${AAFWK_KITS_PATH}/ability/native:abilitykit_native",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//utils/native/base:utils",
   ]
@@ -114,14 +114,14 @@ ohos_static_library("media_thumbnail_helper") {
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
-    "${aafwk_kits_path}/ability/native/include",
+    "${AAFWK_KITS_PATH}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/provider/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
     "//utils/native/base/include",
   ]
   deps = [
-    "${aafwk_kits_path}/ability/native:abilitykit_native",
+    "${AAFWK_KITS_PATH}/ability/native:abilitykit_native",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
