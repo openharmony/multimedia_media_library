@@ -176,6 +176,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "dataability:native_dataability",
+    "device_security_level:dslm_sdk",
     "eventhandler:libeventhandler",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
