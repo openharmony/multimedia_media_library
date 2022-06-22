@@ -67,12 +67,6 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd
         case GETCAPACITY:
             errCode = GetAlbumCapacityOperation(cmd);
             break;
-        // case DELETE:
-        //     errCode = DeleteFileOperation(cmd, dirQuerySetMap); // ?dirQuerySetMap
-        //     break;
-        // case UPDATE:
-        //     errCode = ModifyFileOperation(cmd);
-        //     break;
         default:
             MEDIA_WARNING_LOG("unknown operation type %{private}d", cmd.GetOprnType());
             break;

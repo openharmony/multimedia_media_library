@@ -302,8 +302,8 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
             result = kvStoreOprn.HandleKvStoreInsertOperations(operationType, value, kvStorePtr_);
             break;
         }
-    default:
-        return objUtils.InsertInDb(cmd);
+        default:
+            return objUtils.InsertInDb(cmd);
     }
     return result;
 }
@@ -554,7 +554,6 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
     shared_ptr<AbsSharedResultSet> queryResultSet;
     MediaLibraryObjectUtils assetUtils;
     OperationObject oprnObject = cmd.GetOprnObject();
-
     if (oprnObject == OperationObject::SMART_ALBUM) {
         queryResultSet = assetUtils.QueryWithCondition(cmd, columns, SMARTALBUM_DB_ID);
     } else if (oprnObject == OperationObject::SMART_ALBUM_MAP) {

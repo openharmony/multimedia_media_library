@@ -42,25 +42,37 @@ public:
                                                                  const std::vector<std::string> &columns)
     {
         return nullptr;
-    };
-    virtual bool SyncPullAllTable(const std::string &bundleName) { return false; };
+    }
+    virtual bool SyncPullAllTable(const std::string &bundleName)
+    {
+        return false;
+    }
     virtual bool SyncPullAllTableByDeviceId(const std::string &bundleName, std::vector<std::string> &devices)
     {
         return false;
-    };
+    }
     virtual bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
                                std::vector<std::string> &devices, bool isLast = false)
     {
         return false;
-    };
+    }
     virtual bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
                                std::vector<std::string> &devices, bool isBlock = false)
     {
         return false;
-    };
-    virtual int32_t ExecuteSql(const std::string &sql) { return NativeRdb::E_NOT_SUPPORT; };
-    virtual std::shared_ptr<NativeRdb::AbsSharedResultSet> QuerySql(const std::string &sql) { return nullptr; };
-    virtual std::string ObtainTableName(MediaLibraryCommand &cmd) { return ""; };
+    }
+    virtual int32_t ExecuteSql(const std::string &sql)
+    {
+        return NativeRdb::E_NOT_SUPPORT;
+    }
+    virtual std::shared_ptr<NativeRdb::AbsSharedResultSet> QuerySql(const std::string &sql)
+    {
+        return nullptr;
+    }
+    virtual std::string ObtainTableName(MediaLibraryCommand &cmd)
+    {
+        return "";
+    }
 
     // Other Query operation with different return type?
 };

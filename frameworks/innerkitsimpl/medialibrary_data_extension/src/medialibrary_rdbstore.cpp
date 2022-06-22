@@ -181,8 +181,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
         return DATA_ABILITY_FAIL;
     }
 
-    // for distributed rdb
-    // tablename = ObtainTableName(cmd);
+    // distributed rdb?
     int32_t ret = rdbStore_->Update(rowId, cmd.GetTableName(), cmd.GetValueBucket(),
                                     cmd.GetAbsRdbPredicates()->GetWhereClause(),
                                     cmd.GetAbsRdbPredicates()->GetWhereArgs());
@@ -225,15 +224,10 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(Media
     for (auto &arg : predicates->GetWhereArgs()) {
         MEDIA_INFO_LOG("[lqh] whereArgs = %s", arg.c_str());
     }
-    MEDIA_INFO_LOG("[lqh] groupBy = %s", predicates->GetGroup().c_str());
-    MEDIA_INFO_LOG("[lqh] orderBy = %s", predicates->GetOrder().c_str());
     MEDIA_INFO_LOG("[lqh] limit = %d", predicates->GetLimit());
     MEDIA_INFO_LOG("======================================");
 
-    // auto ret = rdbStore_->Query(errCode, predicates->IsDistinct(), ObtainTableName(cmd), columns,
-    //     predicates->GetWhereClause(), predicates->GetWhereArgs(), predicates->GetGroup(), "", predicates->GetOrder(),
-    //     std::to_string(predicates->GetLimit()));
-    // MEDIA_INFO_LOG("errCode = %{public}d", errCode);
+    // maybe another way to Query
     auto ret = rdbStore_->Query(*predicates, columns);
     if (ret != nullptr) {
         int count;
@@ -278,6 +272,11 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::QuerySql(co
     }
 
     return ret;
+}
+
+std::shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
+{
+    return rdbStore_;
 }
 
 std::string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
@@ -561,11 +560,6 @@ void MediaLibraryRdbStoreObserver::OnChange(const vector<string> &devices)
     if (devices.empty() || bundleName_.empty()) {
         return;
     }
-    // MediaLibraryDevice::GetInstance()->NotifyRemoteFileChange();
-    // for (auto &deviceId : devices) {
-    //     // MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(deviceId, DEVICE_SYNCSTATUS_COMPLETE,
-    //     bundleName_); isNotifyDeviceChange_ = true;
-    // }
 }
 
 void MediaLibraryRdbStoreObserver::NotifyDeviceChange()

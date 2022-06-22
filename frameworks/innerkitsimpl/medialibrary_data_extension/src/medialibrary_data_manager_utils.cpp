@@ -14,7 +14,6 @@
  */
 
 #include "medialibrary_data_manager_utils.h"
-#include <regex>
 #include "openssl/sha.h"
 #include "media_log.h"
 #include "media_file_utils.h"
