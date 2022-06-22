@@ -37,11 +37,10 @@ bool MediaLibrarySyncTable::SyncPullAllTableByDeviceId(
     for (auto &table_name : table_arr) {
         auto ret = SyncPullTable(rdbStore, bundleName, table_name, devices);
         if (!ret) {
-            MEDIA_ERR_LOG("sync pull table %{public}s failed", table_name.c_str());
+            MEDIA_ERR_LOG("sync pull table %{public}s failed, err %{public}d", table_name.c_str(), ret);
         }
     }
 
-    MEDIA_INFO_LOG("sync pull all Table success!");
     return true;
 }
 
