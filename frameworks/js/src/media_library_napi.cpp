@@ -646,7 +646,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
     if (!context->uri.empty()) {
-        NAPI_ERR_LOG("context->uri is = %{private}s", context->uri.c_str());
+        NAPI_ERR_LOG("context->uri is = %{public}s", context->uri.c_str());
         context->networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(context->uri);
         string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(context->uri);
         if (!fileId.empty()) {
@@ -671,7 +671,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     if (!context->networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     }
-    NAPI_DEBUG_LOG("queryUri is = %{private}s", queryUri.c_str());
+    NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
     shared_ptr<DataShare::DataShareResultSet> resultSet;
 
@@ -818,7 +818,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!context->networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-        NAPI_DEBUG_LOG("querycoverUri is = %{private}s", queryUri.c_str());
+        NAPI_DEBUG_LOG("querycoverUri is = %{public}s", queryUri.c_str());
     }
     Uri uri(queryUri);
     shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
@@ -829,7 +829,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetAlbumCoverUr:FileAsset is nullptr");
     string coverUri = fileAsset->GetUri();
     album->SetCoverUri(coverUri);
-    NAPI_DEBUG_LOG("coverUri is = %{private}s", album->GetCoverUri().c_str());
+    NAPI_DEBUG_LOG("coverUri is = %{public}s", album->GetCoverUri().c_str());
 }
 
 void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSet> resultSet,
@@ -873,7 +873,7 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     if (!context->networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId +
             MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
-        NAPI_DEBUG_LOG("queryAlbumUri is = %{private}s", queryUri.c_str());
+        NAPI_DEBUG_LOG("queryAlbumUri is = %{public}s", queryUri.c_str());
     }
     Uri uri(queryUri);
     shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
@@ -1166,7 +1166,7 @@ static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
     if (!firstDirName.empty()) {
         NAPI_DEBUG_LOG("firstDirName = %{private}s", firstDirName.c_str());
         for (unsigned int i = 0; i < directoryEnumValues.size(); i++) {
-            NAPI_DEBUG_LOG("directoryEnumValues%{public}d = %{private}s", i, directoryEnumValues[i].c_str());
+            NAPI_DEBUG_LOG("directoryEnumValues%{public}d = %{public}s", i, directoryEnumValues[i].c_str());
             if (!strcmp(firstDirName.c_str(), directoryEnumValues[i].c_str())) {
                 return CheckTypeOfType(firstDirName, fileMediaType);
             }
@@ -1421,7 +1421,7 @@ static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
             }
         }
         notifyUri = MEDIALIBRARY_DATA_URI + "/" + mediaType;
-        NAPI_DEBUG_LOG("JSDeleteAssetExcute notifyUri = %{private}s", notifyUri.c_str());
+        NAPI_DEBUG_LOG("JSDeleteAssetExcute notifyUri = %{public}s", notifyUri.c_str());
         int retVal = context->objectInfo->sDataShareHelper_->Insert(deleteAssetUri,
             context->valuesBucket);
         if (retVal < 0) {
@@ -2151,7 +2151,7 @@ int32_t MediaLibraryNapi::GetListenerType(const std::string &str) const
 {
     auto iter = ListenerTypeMaps.find(str);
     if (iter == ListenerTypeMaps.end()) {
-        NAPI_ERR_LOG("Invalid Listener Type %{private}s", str.c_str());
+        NAPI_ERR_LOG("Invalid Listener Type %{public}s", str.c_str());
         return INVALID_LISTENER;
     }
 
@@ -2160,7 +2160,7 @@ int32_t MediaLibraryNapi::GetListenerType(const std::string &str) const
 
 void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj)
 {
-    NAPI_DEBUG_LOG("Register change type = %{private}s", type.c_str());
+    NAPI_DEBUG_LOG("Register change type = %{public}s", type.c_str());
 
     int32_t typeEnum = GetListenerType(type);
     switch (typeEnum) {
@@ -2249,7 +2249,7 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
 
 void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, ChangeListenerNapi &listObj)
 {
-    NAPI_DEBUG_LOG("Unregister change type = %{private}s", type.c_str());
+    NAPI_DEBUG_LOG("Unregister change type = %{public}s", type.c_str());
 
     MediaType mediaType;
     int32_t typeEnum = GetListenerType(type);
@@ -2428,7 +2428,7 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     int32_t refCount = 1;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ERR_LOG("NAPI_ASSERT begin %{private}zu", argc);
+    NAPI_ERR_LOG("NAPI_ASSERT begin %{public}zu", argc);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_ZERO), "requires 1 parameters maximum");
     NAPI_ERR_LOG("NAPI_ASSERT end");
     napi_get_undefined(env, &result);
@@ -2941,12 +2941,12 @@ static napi_status SetValueUtf8String(const napi_env& env, const char* fieldStr,
     napi_value value;
     napi_status status = napi_create_string_utf8(env, str, NAPI_AUTO_LENGTH, &value);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("Set value create utf8 string error! field: %{private}s", fieldStr);
+        NAPI_ERR_LOG("Set value create utf8 string error! field: %{public}s", fieldStr);
         return status;
     }
     status = napi_set_named_property(env, result, fieldStr, value);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("Set utf8 string named property error! field: %{private}s", fieldStr);
+        NAPI_ERR_LOG("Set utf8 string named property error! field: %{public}s", fieldStr);
     }
     return status;
 }
@@ -2956,12 +2956,12 @@ static napi_status SetValueInt32(const napi_env& env, const char* fieldStr, cons
     napi_value value;
     napi_status status = napi_create_int32(env, intValue, &value);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("Set value create int32 error! field: %{private}s", fieldStr);
+        NAPI_ERR_LOG("Set value create int32 error! field: %{public}s", fieldStr);
         return status;
     }
     status = napi_set_named_property(env, result, fieldStr, value);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("Set int32 named property error! field: %{private}s", fieldStr);
+        NAPI_ERR_LOG("Set int32 named property error! field: %{public}s", fieldStr);
     }
     return status;
 }
@@ -2971,12 +2971,12 @@ static napi_status SetValueBool(const napi_env& env, const char* fieldStr, const
     napi_value value = nullptr;
     napi_status status = napi_get_boolean(env, boolvalue, &value);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("Set value create boolean error! field: %{private}s", fieldStr);
+        NAPI_ERR_LOG("Set value create boolean error! field: %{public}s", fieldStr);
         return status;
     }
     status = napi_set_named_property(env, result, fieldStr, value);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("Set boolean named property error! field: %{private}s", fieldStr);
+        NAPI_ERR_LOG("Set boolean named property error! field: %{public}s", fieldStr);
     }
     return status;
 }
@@ -3378,7 +3378,7 @@ static napi_value GetStoreMediaAssetArgs(napi_env env, napi_value param,
         relativePath = GetDefaultDirectory(mediaType);
     }
     context->valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    NAPI_DEBUG_LOG("src:%{private}s mime:%{private}s relp:%{private}s filename:%{private}s",
+    NAPI_DEBUG_LOG("src:%{public}s mime:%{public}s relp:%{private}s filename:%{private}s",
         context->storeMediaSrc.c_str(), mimeType.c_str(), relativePath.c_str(), fileName.c_str());
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -3476,7 +3476,7 @@ static napi_value GetImagePreviewArgsUri(napi_env env, napi_value param, MediaLi
         uri += ",";
     }
     context.uri = uri.substr(0, uri.length() - 1);
-    NAPI_DEBUG_LOG("GetImagePreviewArgs res %{private}s", context.uri.c_str());
+    NAPI_DEBUG_LOG("GetImagePreviewArgs res %{public}s", context.uri.c_str());
     napi_value res;
     napi_get_undefined(env, &res);
     return res;

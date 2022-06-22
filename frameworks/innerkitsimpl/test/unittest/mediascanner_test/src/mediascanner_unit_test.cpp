@@ -86,7 +86,7 @@ void MediaScannerUnitTest::TearDown(void) {}
 
 bool CreateFile(const string &filePath)
 {
-    HiLog::Info(LABEL, "Creating new file: %{private}s", filePath.c_str());
+    HiLog::Info(LABEL, "Creating new file: %{public}s", filePath.c_str());
     bool errCode = false;
 
     if (filePath.empty()) {
@@ -119,7 +119,7 @@ bool CreateFile(const string &filePath)
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
 {
     string path = g_prefixPath;
-    HiLog::Info(LABEL, "ScanDir test case for: %{private}s", path.c_str());
+    HiLog::Info(LABEL, "ScanDir test case for: %{public}s", path.c_str());
 
     int result = 0;
     std::string testcaseName("mediascanner_ScanDir_test_001");
@@ -149,7 +149,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
 {
     string path = g_prefixPath + "/gtest_Image1.jpg";
-    HiLog::Info(LABEL, "ScanFile test case for: %{private}s", path.c_str());
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
 
     bool createRes = CreateFile("/storage/media/100/local/files/gtest_Image1.jpg");
     EXPECT_EQ(createRes, true);
@@ -182,7 +182,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_002, TestSize.Level0)
 {
     string path = g_prefixPath + "/gtest_Image2.png";
-    HiLog::Info(LABEL, "ScanFile test case for: %{private}s", path.c_str());
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
 
     bool createRes = CreateFile("/storage/media/100/local/files/gtest_Image2.png");
     EXPECT_EQ(createRes, true);
@@ -214,7 +214,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_002, TestSize.Level0)
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_003, TestSize.Level0)
 {
     string path = g_prefixPath + "/gtest_Image3.jpeg";
-    HiLog::Info(LABEL, "ScanFile test case for: %{private}s", path.c_str());
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
 
     bool createRes = CreateFile("/storage/media/100/local/files/gtest_Image3.jpeg");
     EXPECT_EQ(createRes, true);
@@ -246,7 +246,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_003, TestSize.Level0)
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanTextFile_Test_001, TestSize.Level0)
 {
     string path = g_prefixPath + "/gtest_Text1.txt";
-    HiLog::Info(LABEL, "ScanFile test case for: %{private}s", path.c_str());
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
 
     bool createRes = CreateFile("/storage/media/100/local/files/gtest_Text1.txt");
     EXPECT_EQ(createRes, true);
@@ -278,7 +278,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanTextFile_Test_001, TestSize.Leve
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanHiddenFile_Test_001, TestSize.Level0)
 {
     string path = g_prefixPath + "/.HiddenFile";
-    HiLog::Info(LABEL, "ScanFile test case for: %{private}s", path.c_str());
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
 
     bool createRes = CreateFile("/storage/media/100/local/files/.HiddenFile");
     EXPECT_EQ(createRes, true);
@@ -310,7 +310,7 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanHiddenFile_Test_001, TestSize.Le
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_002, TestSize.Level0)
 {
     string path = g_prefixPath;
-    HiLog::Info(LABEL, "ScanDir test case for: %{private}s", path.c_str());
+    HiLog::Info(LABEL, "ScanDir test case for: %{public}s", path.c_str());
 
     int result = 0;
     std::string testcaseName("mediascanner_ScanDir_test_002");
@@ -340,7 +340,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_002, TestSize.Level0)
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_CononicalPathtest_001, TestSize.Level0)
 {
     string path = g_prefixPath + "/../files";
-    HiLog::Info(LABEL, "ScanDir test case for: %{private}s", path.c_str());
+    HiLog::Info(LABEL, "ScanDir test case for: %{public}s", path.c_str());
 
     int result = 0;
     std::string testcaseName("mediascanner_ScanDir_CononicalPathtest_001");
@@ -370,7 +370,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_CononicalPathtest_001, Test
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_001, TestSize.Level0)
 {
     string path = g_prefixPath + "/../files/gtest_Image1.jpg";
-    HiLog::Info(LABEL, "ScanFile test case for: %{private}s", path.c_str());
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
 
     int result = 0;
     std::string testcaseName("mediascanner_ScanFile_CononicalPathtest_001");
@@ -400,7 +400,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_001, Tes
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_002, TestSize.Level0)
 {
     string path = g_prefixPath + "/../files/gtest_Text1.txt";
-    HiLog::Info(LABEL, "ScanFile test case for: %{private}s", path.c_str());
+    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
 
     int result = 0;
     std::string testcaseName("mediascanner_ScanFile_CononicalPathtest_002");
