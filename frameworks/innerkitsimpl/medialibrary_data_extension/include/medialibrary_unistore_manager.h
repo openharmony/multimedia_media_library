@@ -23,7 +23,6 @@
 
 namespace OHOS {
 namespace Media {
-
 class MediaLibraryUnistoreManager {
 public:
     static MediaLibraryUnistoreManager &GetInstance()

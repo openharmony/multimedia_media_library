@@ -270,38 +270,38 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
     MediaLibraryObjectUtils objUtils;
     // need to do: align operations with function names,
     // like: move 'delete' operations in smartalbum into Delete FUNCTION
-    switch(cmd.GetOprnObject()) {
-    case OperationObject::FILESYSTEM_ASSET: {
-        MediaLibraryFileOperations fileOprn;
-        return fileOprn.HandleFileOperation(cmd, dirQuerySetMap_);
-    }
-    case OperationObject::FILESYSTEM_DIR: {
-        MediaLibraryDirOperations dirOprn;
-        result = dirOprn.HandleDirOperations(operationType, value, rdbStore_, dirQuerySetMap_);
-        syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-        break;
-    }
-    case OperationObject::FILESYSTEM_ALBUM: {
-        MediaLibraryAlbumOperations albumOprn;
-        return albumOprn.CreateAlbumOperation(cmd);
-    }
-    case OperationObject::SMART_ALBUM: {
-        MediaLibrarySmartAlbumOperations smartalbumOprn;
-        result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore_);
-        syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
-        break;
-    }
-    case OperationObject::SMART_ALBUM_MAP: {
-        MediaLibrarySmartAlbumMapOperations smartalbumMapOprn;
-        result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, rdbStore_, dirQuerySetMap_);
-        syncTable.SyncPushTable(rdbStore_, bundleName_, CATEGORY_SMARTALBUM_MAP_TABLE, devices);
-        break;
-    }
-    case OperationObject::KVSTORE: {
-        MediaLibraryKvStoreOperations kvStoreOprn;
-        result = kvStoreOprn.HandleKvStoreInsertOperations(operationType, value, kvStorePtr_);
-        break;
-    }
+    switch (cmd.GetOprnObject()) {
+        case OperationObject::FILESYSTEM_ASSET: {
+            MediaLibraryFileOperations fileOprn;
+            return fileOprn.HandleFileOperation(cmd, dirQuerySetMap_);
+        }
+        case OperationObject::FILESYSTEM_DIR: {
+            MediaLibraryDirOperations dirOprn;
+            result = dirOprn.HandleDirOperations(operationType, value, rdbStore_, dirQuerySetMap_);
+            syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
+            break;
+        }
+        case OperationObject::FILESYSTEM_ALBUM: {
+            MediaLibraryAlbumOperations albumOprn;
+            return albumOprn.CreateAlbumOperation(cmd);
+        }
+        case OperationObject::SMART_ALBUM: {
+            MediaLibrarySmartAlbumOperations smartalbumOprn;
+            result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore_);
+            syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
+            break;
+        }
+        case OperationObject::SMART_ALBUM_MAP: {
+            MediaLibrarySmartAlbumMapOperations smartalbumMapOprn;
+            result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, rdbStore_, dirQuerySetMap_);
+            syncTable.SyncPushTable(rdbStore_, bundleName_, CATEGORY_SMARTALBUM_MAP_TABLE, devices);
+            break;
+        }
+        case OperationObject::KVSTORE: {
+            MediaLibraryKvStoreOperations kvStoreOprn;
+            result = kvStoreOprn.HandleKvStoreInsertOperations(operationType, value, kvStorePtr_);
+            break;
+        }
     default:
         return objUtils.InsertInDb(cmd);
     }
@@ -340,21 +340,21 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
 
     switch (cmd.GetOprnObject()) {
-    case OperationObject::FILESYSTEM_ASSET: {
-        MediaLibraryFileOperations fileOprn;
-        return fileOprn.DeleteFileOperation(cmd, dirQuerySetMap_);
-    }
-    case OperationObject::FILESYSTEM_DIR:
-        // for Neusoft:
-        // todo: supply a DeleteDirOperation here to replace
-        // delete in the HandleDirOperations in Insert function, if need
-        break;
-    case OperationObject::FILESYSTEM_ALBUM: {
-        MediaLibraryAlbumOperations albumOprn;
-        return albumOprn.DeleteAlbumOperation(cmd);
-    }
-    default:
-        break;
+        case OperationObject::FILESYSTEM_ASSET: {
+            MediaLibraryFileOperations fileOprn;
+            return fileOprn.DeleteFileOperation(cmd, dirQuerySetMap_);
+        }
+        case OperationObject::FILESYSTEM_DIR:
+            // for Neusoft:
+            // todo: supply a DeleteDirOperation here to replace
+            // delete in the HandleDirOperations in Insert function, if need
+            break;
+        case OperationObject::FILESYSTEM_ALBUM: {
+            MediaLibraryAlbumOperations albumOprn;
+            return albumOprn.DeleteAlbumOperation(cmd);
+        }
+        default:
+            break;
     }
 
     // DeleteInfoInDbWithId can finish the default delete of smartalbum and smartmap,
@@ -378,27 +378,25 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
 
     switch (cmd.GetOprnObject()) {
-    case OperationObject::FILESYSTEM_ASSET:
-    {
-        MediaLibraryFileOperations fileOprn;
-        auto ret = fileOprn.ModifyFileOperation(cmd);
-        if (ret != DATA_ABILITY_SUCCESS) {
-            return ret;
+        case OperationObject::FILESYSTEM_ASSET: {
+            MediaLibraryFileOperations fileOprn;
+            auto ret = fileOprn.ModifyFileOperation(cmd);
+            if (ret != DATA_ABILITY_SUCCESS) {
+                return ret;
+            }
+            break;
         }
-        break;
-    }
-    case OperationObject::FILESYSTEM_DIR:
-        // for Neusoft:
-        // todo: supply a ModifyDirOperation here to replace
-        // modify in the HandleDirOperations in Insert function, if need
-        break;
-    case OperationObject::FILESYSTEM_ALBUM:
-    {
-        MediaLibraryAlbumOperations albumOprn;
-        return albumOprn.ModifyAlbumOperation(cmd);
-    }
-    default:
-        break;
+        case OperationObject::FILESYSTEM_DIR:
+            // for Neusoft:
+            // todo: supply a ModifyDirOperation here to replace
+            // modify in the HandleDirOperations in Insert function, if need
+            break;
+        case OperationObject::FILESYSTEM_ALBUM: {
+            MediaLibraryAlbumOperations albumOprn;
+            return albumOprn.ModifyAlbumOperation(cmd);
+        }
+        default:
+            break;
     }
     // ModifyInfoInDbWithId can finish the default update of smartalbum and smartmap,
     // so no need to distinct them in switch-case deliberately
@@ -734,6 +732,5 @@ std::string MediaLibraryDataManager::GetClientBundleName()
     int uid = IPCSkeleton::GetCallingUid();
     return GetClientBundle(uid);
 }
-
 }  // namespace Media
 }  // namespace OHOS

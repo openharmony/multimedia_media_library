@@ -648,9 +648,7 @@ bool MediaLibrarySmartAlbumMapOperations::IsRecycleAssetExist(const int32_t &ass
 }
 
 int32_t MediaLibrarySmartAlbumMapOperations::MakeRecycleDisplayName(const int32_t &assetId,
-                                                             string &outRecyclePath,
-                                                             const string &trashDirPath,
-                                                             const shared_ptr<RdbStore> &rdbStore)
+    string &outRecyclePath, const string &trashDirPath, const shared_ptr<RdbStore> &rdbStore)
 {
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(assetId);

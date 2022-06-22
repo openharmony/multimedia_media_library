@@ -221,8 +221,6 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAsset_Test_001, TestSi
 
     Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET +
         "/" + to_string(index));
-    // NativeRdb::ValuesBucket valuesBucketDelete;
-    // valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, g_createUri1);
     DataAbilityPredicates predicates;
     int retVal = helper->Delete(deleteAssetUri, predicates);
     EXPECT_NE((retVal < 0), true);

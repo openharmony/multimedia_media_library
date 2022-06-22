@@ -24,7 +24,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
 MediaLibraryCommand::MediaLibraryCommand(const Uri &uri)
 {
     uri_ = uri;
@@ -277,6 +276,5 @@ void MediaLibraryCommand::ParseFileId()
     MEDIA_INFO_LOG("ParseFileId: uriInValue is %{public}s", uriInValue.c_str());
     oprnFileId_ = MediaLibraryDataManagerUtils::GetIdFromUri(uriInValue);
 }
-
 } // namespace Media
 } // namespace OHOS

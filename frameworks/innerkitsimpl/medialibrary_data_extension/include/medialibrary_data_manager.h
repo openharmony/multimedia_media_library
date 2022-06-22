@@ -135,7 +135,6 @@ namespace Media {
         static std::shared_ptr<MediaLibraryDataManager> instance_;
         std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
 };
-
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIALIBRARY_DATA_ABILITY_H

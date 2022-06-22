@@ -28,7 +28,6 @@
 
 namespace OHOS {
 namespace Media {
-
 enum OperationObject {
     UNKNOWN_OBJECT = 0,
     FILESYSTEM_ASSET = 1, // real file
@@ -107,7 +106,6 @@ private:
     std::string oprnDevice_;
     std::string tableName_;
 };
-
 } // namespace Media
 } // namespace OHOS
 
