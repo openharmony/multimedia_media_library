@@ -37,7 +37,7 @@ namespace Media {
 MediaLibraryDataAbility g_rdbStoreTest;
 MediaLibraryThumbnail g_mediaThumbnail;
 int g_index = 0;
-int uid = 5010;
+int g_uid = 5010;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> medialibraryDataAbilityHelper = nullptr;
 static const std::string DATABASE_NAME = "/" + MEDIA_DATA_ABILITY_DB_NAME;
 static const std::string ABILITY_URI = Media::MEDIALIBRARY_DATA_URI;
@@ -72,7 +72,7 @@ std::shared_ptr<AppExecFwk::DataAbilityHelper> CreateMediaLibraryHelper()
     if (medialibraryDataAbilityHelper == nullptr) {
         MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper == nullptr");
         std::shared_ptr<Uri> dataAbilityUri = std::make_shared<Uri>("dataability:///media");
-        medialibraryDataAbilityHelper = CreateDataAHelper(uid, dataAbilityUri);
+        medialibraryDataAbilityHelper = CreateDataAHelper(g_uid, dataAbilityUri);
     }
     MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper != nullptr");
     return medialibraryDataAbilityHelper;

@@ -26,7 +26,7 @@ namespace OHOS {
 namespace Media {
 MediaLibraryDataAbility g_rdbStoreTest;
 string g_createUri1, g_createUri2;
-int uid = 5010;
+int g_uid = 5010;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> medialibraryDataAbilityHelper = nullptr;
 int g_fd1 = DATA_ABILITY_FAIL;
 int g_fd2 = DATA_ABILITY_FAIL;
@@ -56,7 +56,7 @@ std::shared_ptr<AppExecFwk::DataAbilityHelper> CreateMediaLibraryHelper()
     if (medialibraryDataAbilityHelper == nullptr) {
         MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper == nullptr");
         std::shared_ptr<Uri> dataAbilityUri = std::make_shared<Uri>("dataability:///media");
-        medialibraryDataAbilityHelper = CreateDataAHelper(uid, dataAbilityUri);
+        medialibraryDataAbilityHelper = CreateDataAHelper(g_uid, dataAbilityUri);
     }
     MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper != nullptr");
     return medialibraryDataAbilityHelper;

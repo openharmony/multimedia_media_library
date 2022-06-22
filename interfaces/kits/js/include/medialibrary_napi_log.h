@@ -23,11 +23,11 @@
 #define LOG_DOMAIN 0xD002B00
 #define LOG_TAG "MediaLibraryNapi"
 
-#define __FILENAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
+#define __FILE_ENT_NAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define NAPI_HILOG(op, fmt, args...) \
     do {                                  \
-        op(LOG_APP, "{%{public}s-%{public}s:%{public}d} " fmt, __FILENAME__, __FUNCTION__, __LINE__, ##args);  \
+        op(LOG_APP, "{%{public}s-%{public}s:%{public}d} " fmt, __FILE_ENT_NAME__, __FUNCTION__, __LINE__, ##args);  \
     } while (0)
 
 
