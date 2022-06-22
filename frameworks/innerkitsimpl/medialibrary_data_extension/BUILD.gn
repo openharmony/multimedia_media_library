@@ -12,12 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/multimedia/media_library/multimedia_aafwk.gni")
-
-MEDIA_LIB_BASE_DIR = "//foundation/multimedia/media_library"
-MEDIA_LIB_INNERKITS_DIR = "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl"
-MEDIA_SCANNER_SOURCE_DIR =
-    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_scanner"
+import("//foundation/multimedia/media_library/media_library.gni")
 
 config("media_data_extension_public_config") {
   include_scanner = [
@@ -33,15 +28,15 @@ config("media_data_extension_public_config") {
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/inner_api/media_library_helper/include",
-    "${aafwk_inner_api_path}/ability_manager/include",
-    "${aafwk_kits_path}/ability/native/include",
+    "${AAFWK_INNER_API_PATH}/ability_manager/include",
+    "${AAFWK_KITS_PATH}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/common/include",
     "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/consumer/include",
     "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/provider/include",
-    "${aafwk_inner_api_path}/dataobs_manager/include",
-    "${aafwk_services_path}/common/include",
+    "${AAFWK_INNER_API_PATH}/dataobs_manager/include",
+    "${AAFWK_SERVICES_PATH}/common/include",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/bundlemgr",
-    "${aafwk_inner_api_path}/app_manager/include/appmgr",
+    "${AAFWK_INNER_API_PATH}/app_manager/include/appmgr",
     "//base/security/device_auth/interfaces/innerkits",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/appmgr",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
@@ -150,11 +145,11 @@ ohos_shared_library("medialibrary_data_extension") {
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_thumbnail_helper",
-    "${aafwk_inner_api_path}/dataobs_manager:dataobs_manager",
-    "${aafwk_inner_api_path}/runtime:runtime",
-    "${aafwk_kits_path}/ability/native:abilitykit_native",
-    "${aafwk_path}/frameworks/kits/appkit:app_context",
-    "${aafwk_services_path}/abilitymgr:abilityms",
+    "${AAFWK_INNER_API_PATH}/dataobs_manager:dataobs_manager",
+    "${AAFWK_INNER_API_PATH}/runtime:runtime",
+    "${AAFWK_KITS_PATH}/ability/native:abilitykit_native",
+    "${AAFWK_PATH}/frameworks/kits/appkit:app_context",
+    "${AAFWK_SERVICES_PATH}/abilitymgr:abilityms",
     "//base/security/device_auth/services:deviceauth_sdk",
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_ext_ability_module",
@@ -172,6 +167,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "access_token:libaccesstoken_sdk",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
+    "device_security_level:dslm_sdk",
     "eventhandler:libeventhandler",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
