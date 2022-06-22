@@ -251,7 +251,7 @@ void MediaLibraryCommand::ParseTableName()
     if (!deviceId.empty()) {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
         if (rdbStore != nullptr) {
-            tableName_ = rdbStore->ObtainDistributedTableName(deviceId, tableName_);
+            tableName_ = rdbStore->ObtainDistributedTableName(deviceId, MEDIALIBRARY_TABLE);
         }
     }
     MEDIA_INFO_LOG("Table name is %{public}s", tableName_.c_str());

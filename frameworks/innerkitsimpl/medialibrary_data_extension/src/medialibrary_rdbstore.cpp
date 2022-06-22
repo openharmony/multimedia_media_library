@@ -33,7 +33,6 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetName(MEDIA_DATA_ABILITY_DB_NAME);
     config_.SetRelativePath(relativePath);
     config_.SetEncryptLevel(ENCRYPTION_LEVEL);
-    config_.SetAppModuleName(context->GetHapModuleInfo()->moduleName);
     Init();
 }
 
