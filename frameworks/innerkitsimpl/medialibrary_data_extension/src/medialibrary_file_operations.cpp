@@ -55,27 +55,27 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd
     }
 
     switch (cmd.GetOprnType()) {
-    case CREATE:
-        errCode = CreateFileOperation(cmd);
-        break;
-    case CLOSE:
-        errCode = CloseFileOperation(cmd);
-        break;
-    case ISDICTIONARY:
-        errCode = IsDirectoryOperation(cmd);
-        break;
-    case GETCAPACITY:
-        errCode = GetAlbumCapacityOperation(cmd);
-        break;
-    // case DELETE:
-    //     errCode = DeleteFileOperation(cmd, dirQuerySetMap); // ?dirQuerySetMap
-    //     break;
-    // case UPDATE:
-    //     errCode = ModifyFileOperation(cmd);
-    //     break;
-    default:
-        MEDIA_WARNING_LOG("unknown operation type %{private}d", cmd.GetOprnType());
-        break;
+        case CREATE:
+            errCode = CreateFileOperation(cmd);
+            break;
+        case CLOSE:
+            errCode = CloseFileOperation(cmd);
+            break;
+        case ISDICTIONARY:
+            errCode = IsDirectoryOperation(cmd);
+            break;
+        case GETCAPACITY:
+            errCode = GetAlbumCapacityOperation(cmd);
+            break;
+        // case DELETE:
+        //     errCode = DeleteFileOperation(cmd, dirQuerySetMap); // ?dirQuerySetMap
+        //     break;
+        // case UPDATE:
+        //     errCode = ModifyFileOperation(cmd);
+        //     break;
+        default:
+            MEDIA_WARNING_LOG("unknown operation type %{private}d", cmd.GetOprnType());
+            break;
     }
     return errCode;
 }
@@ -180,7 +180,7 @@ int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd
 }
 
 int32_t MediaLibraryFileOperations::DeleteFileOperation(MediaLibraryCommand &cmd,
-                                                      const unordered_map<string, DirAsset> &dirQuerySetMap)
+    const unordered_map<string, DirAsset> &dirQuerySetMap)
 {
     int32_t errCode = DATA_ABILITY_FAIL;
 
@@ -247,7 +247,6 @@ int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cm
     return DATA_ABILITY_FAIL;
 }
 
-
 shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFileOperation(
     MediaLibraryCommand &cmd, vector<string> columns)
 {
@@ -275,7 +274,5 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFileOperation(
     MEDIA_INFO_LOG("QueryFile count is %{public}d", count);
     return queryResultSet;
 }
-
-
 } // namespace Media
 } // namespace OHOS

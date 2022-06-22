@@ -229,8 +229,6 @@ int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fil
 int32_t MediaLibraryManager::DeleteAsset(const string &uri)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    // DataShareValuesBucket valuesBucket;
-    // valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
     string fileId;
     if (uri.find(MEDIALIBRARY_DATA_URI) == 0) {
         fileId = uri.substr(MEDIALIBRARY_DATA_URI.length());
@@ -334,8 +332,6 @@ int32_t MediaLibraryManager::ModifyAlbum(const int32_t albumId, const AlbumAsset
 int32_t MediaLibraryManager::DeleteAlbum(const int32_t albumId)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    // DataShareValuesBucket valuesBucket;
-    // valuesBucket.PutInt(MEDIA_DATA_DB_ID, albumId);
 
     if (sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;

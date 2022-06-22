@@ -29,7 +29,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
 // return: dir id in database
 int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
 {
@@ -565,9 +564,9 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     }
 
     MediaLibraryThumbnail thumbnail;
-    ThumbRdbOpt opt{.store = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
-                    .table = MEDIALIBRARY_TABLE,
-                    .row = strFileId};
+    ThumbRdbOpt opt {.store = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+                     .table = MEDIALIBRARY_TABLE,
+                     .row = strFileId};
     string kvId;
     thumbnail.CreateThumbnail(opt, kvId);
     ScanFile(srcPath);
@@ -895,7 +894,8 @@ int32_t MediaLibraryObjectUtils::InsertInDb(MediaLibraryCommand &cmd)
     int64_t outRowId = DATA_ABILITY_FAIL;
     int32_t result = uniStore_->Insert(cmd, outRowId);
     if (result == NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Insert operation failed. Result %{private}d. Deleted %{private}d", result, static_cast<int32_t>(outRowId));
+        MEDIA_ERR_LOG("Insert operation failed. Result %{private}d. Deleted %{private}d",
+            result, static_cast<int32_t>(outRowId));
     }
     return static_cast<int32_t>(outRowId);
 }
@@ -1093,9 +1093,6 @@ bool MediaLibraryObjectUtils::IsFileExistInDb(const string &path)
     return false;
 }
 
-
 void ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) {}
-
-
 } // namespace Media
 } // namespace OHOS

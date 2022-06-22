@@ -25,7 +25,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
 MediaLibraryAlbumOperations::MediaLibraryAlbumOperations()
 {
     uniStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -34,18 +33,17 @@ MediaLibraryAlbumOperations::MediaLibraryAlbumOperations()
 int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetOprnType()) {
-    case CREATE:
-        return CreateAlbumOperation(cmd); break;
-    case DELETE:
-        return DeleteAlbumOperation(cmd); break;
-    case UPDATE:
-        return ModifyAlbumOperation(cmd); break;
-    default:
-        return DATA_ABILITY_SUCCESS;
+        case CREATE:
+            return CreateAlbumOperation(cmd); break;
+        case DELETE:
+            return DeleteAlbumOperation(cmd); break;
+        case UPDATE:
+            return ModifyAlbumOperation(cmd); break;
+        default:
+            return DATA_ABILITY_SUCCESS;
     }
     return DATA_ABILITY_SUCCESS;
 }
-
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -141,6 +139,5 @@ shared_ptr<AbsSharedResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     string querySql = "SELECT * FROM " + cmd.GetTableName();
     return uniStore_->QuerySql(querySql);
 }
-
 } // namespace Media
 } // namespace OHOS

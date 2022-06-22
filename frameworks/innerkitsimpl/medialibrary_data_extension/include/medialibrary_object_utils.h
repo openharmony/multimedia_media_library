@@ -38,7 +38,6 @@
 
 namespace OHOS {
 namespace Media {
-
 class MediaLibraryObjectUtils {
 public:
     MediaLibraryObjectUtils()
@@ -104,8 +103,6 @@ public:
     ~ScanFileCallback() = default;
     void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
 };
-
-
 } // namespace Media
 } // namespace OHOS
 

@@ -23,7 +23,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
 MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
     string databaseDir = context->GetDatabaseDir();
@@ -155,9 +154,6 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &rowId)
         return DATA_ABILITY_FAIL;
     }
 
-    // "Delete" function the code before refactoring uses
-    // a more simple "Detele" function in rdb_store.h
-    // return rdbStore_->Delete(rowId, *(cmd.GetAbsRdbPredicates()))
     int32_t ret = rdbStore_->Delete(rowId, cmd.GetTableName(), cmd.GetAbsRdbPredicates()->GetWhereClause(),
                                     cmd.GetAbsRdbPredicates()->GetWhereArgs());
     if (ret != NativeRdb::E_OK) {
@@ -185,10 +181,6 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
         return DATA_ABILITY_FAIL;
     }
 
-    // "Update" function the code before refactoring uses
-    // a more simple "Detele" function in rdb_store.h
-    // return rdbStore_->Update(rowId, cmd.GetValueBucket(), *(cmd.GetAbsRdbPredicates()))
-
     // for distributed rdb
     // tablename = ObtainTableName(cmd);
     int32_t ret = rdbStore_->Update(rowId, cmd.GetTableName(), cmd.GetValueBucket(),
@@ -208,7 +200,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
 }
 
 std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
-                                                                           const vector<string> &columns)
+    const vector<string> &columns)
 {
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Query");
 
@@ -305,21 +297,21 @@ bool MediaLibraryRdbStore::SyncPullAllTable(const std::string &bundleName)
 }
 
 bool MediaLibraryRdbStore::SyncPullAllTableByDeviceId(const std::string &bundleName,
-                                                                std::vector<std::string> &devices)
+    std::vector<std::string> &devices)
 {
     MediaLibrarySyncTable syncTable;
     return syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName, devices);
 }
 
 bool MediaLibraryRdbStore::SyncPullTable(const std::string &bundleName, const std::string &tableName,
-                                                   std::vector<std::string> &devices, bool isLast)
+    std::vector<std::string> &devices, bool isLast)
 {
     MediaLibrarySyncTable syncTable;
     return syncTable.SyncPullTable(rdbStore_, bundleName, tableName, devices, isLast);
 }
 
 bool MediaLibraryRdbStore::SyncPushTable(const std::string &bundleName, const std::string &tableName,
-                                                   std::vector<std::string> &devices, bool isLast)
+    std::vector<std::string> &devices, bool isLast)
 {
     MediaLibrarySyncTable syncTable;
     return syncTable.SyncPushTable(rdbStore_, bundleName, tableName, devices, isLast);
@@ -583,6 +575,5 @@ void MediaLibraryRdbStoreObserver::NotifyDeviceChange()
         isNotifyDeviceChange_ = false;
     }
 }
-
 } // namespace Media
 } // namespace OHOS
