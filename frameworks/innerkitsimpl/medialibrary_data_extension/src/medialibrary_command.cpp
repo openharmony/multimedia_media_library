@@ -18,6 +18,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_unistore_manager.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -144,8 +145,8 @@ const string &MediaLibraryCommand::GetOprnDevice()
 {
     if (oprnDevice_.empty()) {
         oprnDevice_ = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri_.ToString());
+        MEDIA_INFO_LOG("oprnDevice_: %{private}s", oprnDevice_.c_str());
     }
-    MEDIA_INFO_LOG("oprnDevice_: %{private}s", oprnDevice_.c_str());
     return oprnDevice_;
 }
 
@@ -243,6 +244,15 @@ void MediaLibraryCommand::ParseTableName()
         }
     } else {
         tableName_ = MEDIALIBRARY_TABLE;
+    }
+
+    // distributed tablename
+    auto deviceId = GetOprnDevice();
+    if (!deviceId.empty()) {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+        if (rdbStore != nullptr) {
+            tableName_ = rdbStore->ObtainDistributedTableName(deviceId, tableName_);
+        }
     }
     MEDIA_INFO_LOG("Table name is %{public}s", tableName_.c_str());
 }
