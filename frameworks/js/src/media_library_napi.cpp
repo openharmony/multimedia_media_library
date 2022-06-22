@@ -2138,8 +2138,7 @@ void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const nap
             } while (0);
             delete msg;
             delete w;
-        }
-    );
+    });
     if (ret != 0) {
         NAPI_ERR_LOG("Failed to execute libuv work queue, ret: %{public}d", ret);
         delete msg;
