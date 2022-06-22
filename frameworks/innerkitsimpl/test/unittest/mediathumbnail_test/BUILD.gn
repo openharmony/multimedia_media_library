@@ -13,7 +13,6 @@
 
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
-import("//foundation/multimedia/media_library/multimedia_aafwk.gni")
 
 module_output_path = "media_library/mediathumbnail"
 
@@ -27,8 +26,8 @@ ohos_unittest("mediathumbnail_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./include",
-    "${aafwk_inner_api_path}/ability_manager/include",
-    "${aafwk_inner_api_path}/app_manager/include/appmgr",
+    "${AAFWK_INNER_API_PATH}/ability_manager/include",
+    "${AAFWK_INNER_API_PATH}/app_manager/include/appmgr",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/rdb/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
@@ -38,7 +37,7 @@ ohos_unittest("mediathumbnail_test") {
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
-    "${aafwk_kits_path}/ability/native/include",
+    "${AAFWK_KITS_PATH}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
     "//third_party/json/include",
   ]
@@ -48,8 +47,8 @@ ohos_unittest("mediathumbnail_test") {
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
-    "${aafwk_inner_api_path}/ability_manager:ability_manager",
-    "${aafwk_kits_path}/ability/native:abilitykit_native",
+    "${AAFWK_INNER_API_PATH}/ability_manager:ability_manager",
+    "${AAFWK_KITS_PATH}/ability/native:abilitykit_native",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//utils/native/base:utils",
   ]
