@@ -46,8 +46,8 @@ ohos_unittest("mediascanner_unittest") {
 
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
-    "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
     "${AAFWK_KITS_PATH}/ability/native:abilitykit_native",
+    "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
     "//utils/native/base:utils",
   ]
 
