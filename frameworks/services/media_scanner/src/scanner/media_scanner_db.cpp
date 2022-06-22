@@ -69,7 +69,7 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
     Uri abilityUri(MEDIALIBRARY_DATA_URI);
     rowNum = MediaLibraryDataManager::GetInstance()->Insert(abilityUri, values);
     if (rowNum <= 0) {
-        MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed, return %{private}d", rowNum);
+        MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed, return %{public}d", rowNum);
         return "";
     }
 
@@ -469,21 +469,21 @@ unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::Ab
             case DataType::TYPE_INT: {
                 int32_t intValue(0);
                 ret = resultSet->GetInt(columnIndex, intValue);
-                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{private}d", columnIndex);
+                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{public}d", columnIndex);
                 data = intValue;
                 break;
             }
             case DataType::TYPE_LONG: {
                 int64_t longValue(0);
                 ret = resultSet->GetLong(columnIndex, longValue);
-                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{private}d", columnIndex);
+                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{public}d", columnIndex);
                 data = longValue;
                 break;
             }
             case DataType::TYPE_STRING: {
                 string strValue("");
                 ret = resultSet->GetString(columnIndex, strValue);
-                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain string value for index %{private}d", columnIndex);
+                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain string value for index %{public}d", columnIndex);
                 data = strValue;
                 break;
             }

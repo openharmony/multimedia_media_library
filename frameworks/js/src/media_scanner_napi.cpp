@@ -191,7 +191,7 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
                 napi_get_value_string_utf8(env, argv[PARAM0], buffer, PATH_MAX, &res);
                 event = string(buffer);
             } else {
-                NAPI_ERR_LOG("Invalid arg, valueType: %{private}d", valueType);
+                NAPI_ERR_LOG("Invalid arg, valueType: %{public}d", valueType);
                 return result;
             }
             napi_typeof(env, argv[PARAM1], &valueType);

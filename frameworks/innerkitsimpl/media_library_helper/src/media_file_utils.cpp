@@ -231,7 +231,7 @@ bool MediaFileUtils::CopyFile(const string &filePath, const string &newPath)
         if (errCode) {
             string canonicalDirPath = "";
             if (!PathToRealPath(newPath, canonicalDirPath)) {
-                MEDIA_ERR_LOG("Failed to obtain the canonical path for newpath %{private}s %{private}d",
+                MEDIA_ERR_LOG("Failed to obtain the canonical path for newpath %{private}s %{public}d",
                               filePath.c_str(), errno);
                 return false;
             }
