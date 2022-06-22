@@ -844,7 +844,7 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, TableType t
 }
 
 static void DealWithUriString(string &uriString, TableType &tabletype,
-    string &strQueryCondition, string::size_type &pos, string &strRow)
+    string &strQueryCondition, const string::size_type &pos, string &strRow)
 {
     string type = uriString.substr(pos + 1);
     MEDIA_INFO_LOG("MediaLibraryDataManager uriString: %{public}s type: %{public}s", uriString.c_str(), type.c_str());
