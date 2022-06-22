@@ -20,6 +20,5 @@ MEDIA_SCANNER_SOURCE_DIR =
 
 AAFWK_PATH = "//foundation/ability/ability_runtime"
 AAFWK_KITS_PATH = "${AAFWK_PATH}/frameworks/kits"
-AAFWK_INNER_API_PATH =
-    "${AAFWK_PATH}/interfaces/inner_api"
+AAFWK_INNER_API_PATH = "${AAFWK_PATH}/interfaces/inner_api"
 AAFWK_SERVICES_PATH = "${AAFWK_PATH}/services"
