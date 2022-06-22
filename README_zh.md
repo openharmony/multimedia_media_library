@@ -42,23 +42,23 @@ MediaLibrary接口暂不对外部应用开放, 仅内部使用。
 
 ## 使用说明<a name="usage-guidelines"></a>
 ### 查询音频资产<a name="get-audioasset"></a>
-可以使用接口如 **GetMediaAssets**, **GetAudioAssets**, **GetVideoAssets** 和 **GetImageAssets** 来查询不同类型的媒体文件元数据信息。
+可以使用接口如 **GetMediaAssets**、**GetAudioAssets**、**GetVideoAssets** 和 **GetImageAssets** 来查询不同类型的媒体文件元数据信息。
 以下步骤描述了如何使用 GetAudioAssets 接口来获取相应的音频元数据。
 1. 使用 **GetMediaLibraryClientInstance** 接口来获取 **Medialibrary** 实例。
-    ```
+    ```cpp
     IMediaLibraryClient* mediaLibClientInstance = IMediaLibraryClient::GetMediaLibraryClientInstance();
     ```
 2. 在 **selection** 内设置音频文件的扫描目录。selection 代表媒体公共根目录的相对路径, i.e. "/storage/media/local/files"。接口会在指定目录内递归查找所有音频文件。
-    ```
+    ```cpp
     string selection = "audios/audio1";
     ```
 3. 使用 **GetAudioAssets** 接口来查询音频文件。输入参数 *selectionArgs* 暂无作用，接口会返回 *AudioAsset* 的列表。
-    ```
+    ```cpp
     vector<string> selectionArgs;
     vector<unique_ptr<AudioAsset>> audioAssets = mediaLibClientInstance->GetAudioAssets(selection, selectionArgs);
     ```
 4. 可以从列表内获取音频元数据信息。
-    ```
+    ```cpp
     for (size_t i = 0; i < audioAssets.size(); i++) {
         cout << audioAssets[i]->uri_ << endl;
         cout << audioAssets[i]->size_ << endl;
@@ -71,37 +71,37 @@ MediaLibrary接口暂不对外部应用开放, 仅内部使用。
     ```
 
 ### 创建相册<a name="create-album"></a>
-MediaLibrary 给应用提供了操作相册的接口, 如创建，修改和删除。以下展示了创建一个新相册的步骤。
+MediaLibrary 给应用提供了操作相册的接口, 如创建、修改和删除。以下展示了创建一个新相册的步骤。
 1. 使用 **GetMediaLibraryInstance** 接口来获取 **Medialibrary** 实例。
-    ```
+    ```cpp
     IMediaLibraryClient* mediaLibClientInstance = IMediaLibraryClient::GetMediaLibraryClientInstance();
     ```
-2. 选择一种相册类型, 可以是 *ASSET_GENERIC_ALBUM*, *ASSET_IMAGEALBUM* 或 *ASSET_VIDEOALBUM* 。
-    ```
+2. 选择一种相册类型, 可以是 *ASSET_GENERIC_ALBUM*、*ASSET_IMAGEALBUM* 或 *ASSET_VIDEOALBUM* 。
+    ```cpp
     AssetType assetType = ASSET_VIDEOALBUM;
     ```
 3. 创建一个 **AlbumAsset** 并提供相册名称。如下 "new_video" 相册将在 "/storage/media/local/files/videos" 内被创建。
-    ```
+    ```cpp
     AlbumAsset albumAsset;
     albumAsset.albumName_ = "videos/new_video";
     ```
 4. 使用 **CreateMediaAlbumAsset** 接口来创建新相册, 返回值表示相册创建的成功与否。
-    ```
+    ```cpp
     bool errCode = mediaLibClientInstance->CreateMediaAlbumAsset(assetType, albumAsset);
     ```
 
 ### 拷贝图片资产<a name="copy-imageasset"></a>
-文件操作通过如**CreateMediaAsset**, **ModifyMediaAsset**, **CopyMediaAsset**, **DeleteMediaAsset** 的接口支持。以下例子说明 **CopyMediaAsset** 接口的使用方法。
+文件操作通过如**CreateMediaAsset**、**ModifyMediaAsset**、**CopyMediaAsset**、**DeleteMediaAsset** 的接口支持。以下例子说明 **CopyMediaAsset** 接口的使用方法。
 1. 使用 **GetMediaLibraryInstance** 接口来获取 **Medialibrary** 实例。
-    ```
+    ```cpp
     IMediaLibraryClient* mediaLibClientInstance = IMediaLibraryClient::GetMediaLibraryClientInstance();
     ```
-2. 选择一种资产类型, 可以是 *ASSET_MEDIA*, *ASSET_IMAGE*, *ASSET_AUDIO* 或 *ASSET_VIDEO*.
-    ```
+2. 选择一种资产类型, 可以是 *ASSET_MEDIA*、*ASSET_IMAGE*、*ASSET_AUDIO* 或 *ASSET_VIDEO*.
+    ```cpp
     AssetType assetType = ASSET_IMAGE;
     ```
 3. 确定 **ImageAsset** 的源和目标位置, 目标资产需要指定源拷贝的目标相册名。 
-    ```
+    ```cpp
     MediaAsset srcMediaAsset;
     MediaAsset dstMediaAsset;
 
@@ -111,7 +111,7 @@ MediaLibrary 给应用提供了操作相册的接口, 如创建，修改和删�
     dstMediaAsset.albumName_ = "images/new_image";
     ```
 4. 使用 **CopyMediaAsset** 接口来从源资产拷贝到目标资产相册目录, 接口返回值表示文件操作状态。源文件 "image1.jpg" 将会被拷贝到 "/storage/media/local/files/images/new_image" 。
-    ```
+    ```cpp
     bool errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     ```
 
