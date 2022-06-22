@@ -56,8 +56,7 @@ void MediaLibraryDevice::Start()
         devsInfoInter_->PutMLDeviceInfos(localUdid_);
     }
     RegisterToDM();
-    DevicePermissionVerification queryDevSec;
-    queryDevSec.ReqDestDevSecLevel(localUdid_);
+    DevicePermissionVerification::ReqDestDevSecLevel(localUdid_);
 }
 
 void MediaLibraryDevice::Stop()
@@ -111,7 +110,6 @@ void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t
 {
     MEDIA_INFO_LOG("get dev %{public}s sec level %{public}d", udid.substr(0, TRIM_LENGTH).c_str(), devLevel);
     if (udid == localUdid_) {
-        MEDIA_INFO_LOG("get local dev sec level %{public}d", devLevel);
         localDevLev_ = devLevel;
         return;
     }
@@ -133,7 +131,7 @@ void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t
         return;
     }
 
-    lock_guard<mutex> lck(devMtx_);
+    lock_guard<mutex> lock(devMtx_);
     mldevInfo.devSecLevel = devLevel;
     deviceInfoMap_[mldevInfo.deviceId] = mldevInfo;
 }
@@ -143,8 +141,7 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
     MediaLibraryDeviceInfo mldevInfo;
     GetMediaLibraryDeviceInfo(devInfo, mldevInfo);
 
-    DevicePermissionVerification authVerify;
-    if (!authVerify.CheckPermission(mldevInfo.deviceUdid)) {
+    if (!DevicePermissionVerification::CheckPermission(mldevInfo.deviceUdid)) {
         MEDIA_ERR_LOG("this dev has permission denied!");
         return;
     }
@@ -282,22 +279,28 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
 
 bool MediaLibraryDevice::UpdateDevicieSyncStatus(const std::string &deviceId, int32_t syncStatus)
 {
-    lock_guard<mutex> autoLock(devMtx_);
-    auto info = deviceInfoMap_.find(deviceId);
-    if (info == deviceInfoMap_.end()) {
-        MEDIA_ERR_LOG("UpdateDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
-        return false;
+    std::string udid;
+    {
+        lock_guard<mutex> autoLock(devMtx_);
+        auto iter = deviceInfoMap_.find(deviceId);
+        if (iter == deviceInfoMap_.end()) {
+            MEDIA_ERR_LOG("UpdateDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
+            return false;
+        }
+        udid = iter->second.deviceUdid;
     }
-    return MediaLibraryDeviceOperations::UpdateSyncStatus(rdbStore_, info->second.deviceUdid, syncStatus, bundleName_);
+    return MediaLibraryDeviceOperations::UpdateSyncStatus(rdbStore_, udid, syncStatus, bundleName_);
 }
 
 bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &deviceId, int32_t &syncStatus)
 {
-    lock_guard<mutex> autoLock(devMtx_);
-    auto info = deviceInfoMap_.find(deviceId);
-    if (info == deviceInfoMap_.end()) {
-        MEDIA_ERR_LOG("GetDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
-        return false;
+    {
+        lock_guard<mutex> autoLock(devMtx_);
+        auto info = deviceInfoMap_.find(deviceId);
+        if (info == deviceInfoMap_.end()) {
+            MEDIA_ERR_LOG("GetDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
+            return false;
+        }
     }
     return MediaLibraryDeviceOperations::GetSyncStatusById(rdbStore_, deviceId, syncStatus, bundleName_);
 }

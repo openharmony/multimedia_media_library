@@ -136,7 +136,6 @@ bool DevicePermissionVerification::ReqDestDevSecLevel(const std::string &udid)
         MEDIA_ERR_LOG("request device sec info failed %{public}d", ret);
         return false;
     }
-    MEDIA_INFO_LOG("request device sec info end");
     return true;
 }
 } // namespace Media
