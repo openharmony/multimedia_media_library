@@ -123,7 +123,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
     string networkId = cmd.GetOprnDevice();
     if (!networkId.empty()) {
-        string tableName = uniStore_->ObtainTableName(cmd);
+        string tableName = cmd.GetTableName();
         MEDIA_INFO_LOG("tableName is %{private}s", tableName.c_str());
         if (!strQueryCondition.empty()) {
             strQueryCondition = MediaLibraryDataManagerUtils::ObtionCondition(strQueryCondition,
