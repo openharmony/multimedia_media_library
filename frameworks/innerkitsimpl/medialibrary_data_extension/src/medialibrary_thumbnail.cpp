@@ -714,8 +714,7 @@ bool MediaLibraryThumbnail::UpdateThumbnailInfo(ThumbRdbOpt &opts,
     FinishTrace(HITRACE_TAG_OHOS);
 
     std::vector<std::string> devices = std::vector<std::string>();
-    MediaLibrarySyncTable syncTable;
-    syncTable.SyncPushTable(opts.store, BUNDLE_NAME, MEDIALIBRARY_TABLE, devices);
+    MediaLibrarySyncTable::SyncPushTable(opts.store, BUNDLE_NAME, MEDIALIBRARY_TABLE, devices);
 
     return true;
 }
