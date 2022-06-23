@@ -14,3 +14,11 @@
 MEDIA_LIB_BASE_DIR = "//foundation/multimedia/media_library"
 MEDIA_LIB_INNERKITS_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl"
 MEDIA_LIB_SERVICES_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/services"
+
+MEDIA_SCANNER_SOURCE_DIR =
+    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_scanner"
+
+ABILITY_RUNTIME_PATH = "//foundation/ability/ability_runtime"
+ABILITY_RUNTIME_KITS_PATH = "${ABILITY_RUNTIME_PATH}/frameworks/kits"
+ABILITY_RUNTIME_INNER_API_PATH = "${ABILITY_RUNTIME_PATH}/interfaces/inner_api"
+ABILITY_RUNTIME_SERVICES_PATH = "${ABILITY_RUNTIME_PATH}/services"

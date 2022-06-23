@@ -17,6 +17,9 @@
 #define OHOS_MEDIALIBRARY_DEVICE_PERMISSION_VERIFICATION_H
 
 #include <string>
+#include <string>
+#include "device_security_defines.h"
+#include "device_security_info.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,17 +37,19 @@ struct TrustedRelationshipGroupInfo {
 
 class DevicePermissionVerification final {
 public:
-    DevicePermissionVerification() = default;
-    ~DevicePermissionVerification() = default;
+    DevicePermissionVerification() = delete;
+    ~DevicePermissionVerification() = delete;
     DevicePermissionVerification(const DevicePermissionVerification&) = delete;
     DevicePermissionVerification(DevicePermissionVerification&&) = delete;
     DevicePermissionVerification& operator=(const DevicePermissionVerification&) = delete;
     DevicePermissionVerification& operator=(DevicePermissionVerification&&) = delete;
 
-    bool CheckPermission(const std::string &udid);
+    static bool CheckPermission(const std::string &udid);
+    static void MLDevSecInfoCb(const DeviceIdentify *identify, struct DeviceSecurityInfo *info);
+    static bool ReqDestDevSecLevel(const std::string &udid);
 private:
-    bool QueryTrustedRelationship(const std::string &udid);
-    bool CheckIsSameAccount();
+    static bool QueryTrustedRelationship(const std::string &udid);
+    static bool CheckIsSameAccount();
 };
 } // namespace Media
 } // namespace OHOS

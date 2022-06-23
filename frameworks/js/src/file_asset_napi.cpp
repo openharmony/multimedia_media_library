@@ -982,8 +982,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status,
         }
     } else {
         NAPI_ERR_LOG("JSCommitModify fail %{public}d", context->error);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-                                                     "CheckDisplayName fail");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error, "CheckDisplayName fail");
         napi_get_undefined(env, &jsContext->data);
     }
     if (context->work != nullptr) {
@@ -992,8 +991,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status,
     }
     delete context;
 }
-napi_value GetJSArgsForCommitModify(napi_env env, size_t argc,
-                                    const napi_value argv[],
+napi_value GetJSArgsForCommitModify(napi_env env, size_t argc, const napi_value argv[],
                                     FileAssetAsyncContext &asyncContext)
 {
     const int32_t refCount = 1;
@@ -1084,13 +1082,12 @@ static void JSOpenCompleteCallback(napi_env env, napi_status status,
     jsContext->status = false;
 
     if (context->error == ERR_DEFAULT) {
-        NAPI_DEBUG_LOG("return fd = %{private}d", context->fd);
+        NAPI_DEBUG_LOG("return fd = %{public}d", context->fd);
         napi_create_int32(env, context->fd, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-            "File open asset failed");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error, "File open asset failed");
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -1101,9 +1098,7 @@ static void JSOpenCompleteCallback(napi_env env, napi_status status,
     delete context;
 }
 
-napi_value GetJSArgsForOpen(napi_env env,
-                            size_t argc,
-                            const napi_value argv[],
+napi_value GetJSArgsForOpen(napi_env env, size_t argc, const napi_value argv[],
                             FileAssetAsyncContext &asyncContext)
 {
     NAPI_DEBUG_LOG("GetJSArgsForOpen IN");
@@ -1225,9 +1220,7 @@ static void JSCloseCompleteCallback(napi_env env, napi_status status,
     delete context;
 }
 
-napi_value GetJSArgsForClose(napi_env env,
-                             size_t argc,
-                             const napi_value argv[],
+napi_value GetJSArgsForClose(napi_env env, size_t argc, const napi_value argv[],
                              FileAssetAsyncContext &asyncContext)
 {
     const int32_t refCount = 1;
@@ -1345,7 +1338,7 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
     }
 
     if (to_string(fileId) != id) {
-        NAPI_ERR_LOG("Query thumbnail id error as %{private}s", id.c_str());
+        NAPI_ERR_LOG("Query thumbnail id error as %{public}s", id.c_str());
         return nullptr;
     }
 
@@ -1354,7 +1347,7 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
         return nullptr;
     }
 
-    NAPI_DEBUG_LOG("Query thumbnail id %{private}s with key %{private}s", id.c_str(), thumbnailKey.c_str());
+    NAPI_DEBUG_LOG("Query thumbnail id %{public}s with key %{public}s", id.c_str(), thumbnailKey.c_str());
     StartTrace(HITRACE_TAG_OHOS, "thumbnailHelper->GetThumbnail");
     auto ret = thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
     FinishTrace(HITRACE_TAG_OHOS);
@@ -1519,8 +1512,8 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
     return result;
 }
 
-extern "C" __attribute__((visibility("default")))
-void* OHOS_MEDIA_NativeGetThumbnail(const char* uri, void* context) {
+extern "C" __attribute__((visibility("default"))) void* OHOS_MEDIA_NativeGetThumbnail(const char* uri, void* context)
+{
     if (uri == nullptr || context == nullptr) {
         NAPI_INFO_LOG("uri or context is null while trying call NativeGetThumbnail");
         return nullptr;
@@ -1529,7 +1522,7 @@ void* OHOS_MEDIA_NativeGetThumbnail(const char* uri, void* context) {
     auto runtimeContext = *reinterpret_cast<std::shared_ptr<OHOS::AbilityRuntime::Context>*>(context);
     auto ret = FileAssetNapi::NativeGetThumbnail(uriStr, runtimeContext);
     if (ret == nullptr) {
-        NAPI_INFO_LOG("return value from NativeGetThumbnail is nullptr, uri: %{private}s", uri);
+        NAPI_INFO_LOG("return value from NativeGetThumbnail is nullptr, uri: %{public}s", uri);
         return nullptr;
     }
     return ret.release();
@@ -1648,9 +1641,7 @@ static void JSIsDirectoryCallbackComplete(napi_env env, napi_status status,
     delete context;
 }
 
-static napi_value GetJSArgsForIsDirectory(napi_env env,
-                                          size_t argc,
-                                          const napi_value argv[],
+static napi_value GetJSArgsForIsDirectory(napi_env env, size_t argc, const napi_value argv[],
                                           FileAssetAsyncContext &asyncContext)
 {
     string str = "";
@@ -1784,9 +1775,7 @@ static void JSIsFavoriteCallbackComplete(napi_env env, napi_status status,
     delete context;
 }
 
-napi_value GetJSArgsForFavorite(napi_env env,
-                                size_t argc,
-                                const napi_value argv[],
+napi_value GetJSArgsForFavorite(napi_env env, size_t argc, const napi_value argv[],
                                 FileAssetAsyncContext &asyncContext)
 {
     const int32_t refCount = 1;
@@ -1873,9 +1862,7 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
     return result;
 }
 
-static napi_value GetJSArgsForIsFavorite(napi_env env,
-                                         size_t argc,
-                                         const napi_value argv[],
+static napi_value GetJSArgsForIsFavorite(napi_env env, size_t argc, const napi_value argv[],
                                          FileAssetAsyncContext &asyncContext)
 {
     string str = "";
@@ -1994,9 +1981,7 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status,
     delete context;
 }
 
-napi_value GetJSArgsForTrash(napi_env env,
-                             size_t argc,
-                             const napi_value argv[],
+napi_value GetJSArgsForTrash(napi_env env, size_t argc, const napi_value argv[],
                              FileAssetAsyncContext &asyncContext)
 {
     const int32_t refCount = 1;
@@ -2132,9 +2117,7 @@ static void JSIsTrashCallbackComplete(napi_env env, napi_status status,
     delete context;
 }
 
-static napi_value GetJSArgsForIsTrash(napi_env env,
-                                      size_t argc,
-                                      const napi_value argv[],
+static napi_value GetJSArgsForIsTrash(napi_env env, size_t argc, const napi_value argv[],
                                       FileAssetAsyncContext &asyncContext)
 {
     string str = "";

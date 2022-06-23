@@ -28,12 +28,12 @@ using namespace OHOS::NativeRdb;
 
 class MediaLibraryDeviceDb {
 public:
-    MediaLibraryDeviceDb() = default;
-    ~MediaLibraryDeviceDb() = default;
+    MediaLibraryDeviceDb() = delete;
+    ~MediaLibraryDeviceDb() = delete;
 
-    int64_t InsertDeviceInfo(const ValuesBucket &values, const std::shared_ptr<RdbStore> &rdbStore);
-    int32_t DeleteDeviceInfo(const std::string &deviceId, const std::shared_ptr<RdbStore> &rdbStore);
-    int32_t UpdateDeviceInfo(const ValuesBucket &values, const std::shared_ptr<RdbStore> &rdbStore);
+    static int64_t InsertDeviceInfo(const ValuesBucket &values, const std::shared_ptr<RdbStore> &rdbStore);
+    static int32_t DeleteDeviceInfo(const std::string &deviceId, const std::shared_ptr<RdbStore> &rdbStore);
+    static int32_t UpdateDeviceInfo(const ValuesBucket &values, const std::shared_ptr<RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS

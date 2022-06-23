@@ -99,7 +99,7 @@ napi_value SmartAlbumNapi::Init(napi_env env, napi_value exports)
 
 void SmartAlbumNapi::SetSmartAlbumNapiProperties(const SmartAlbumAsset &albumData)
 {
-    NAPI_ERR_LOG("SetSmartAlbumNapiProperties name = %{private}s", albumData.GetAlbumName().c_str());
+    NAPI_ERR_LOG("SetSmartAlbumNapiProperties name = %{public}s", albumData.GetAlbumName().c_str());
     this->albumId_ = albumData.GetAlbumId();
     this->albumName_ = albumData.GetAlbumName();
     this->albumUri_ = albumData.GetAlbumUri();
@@ -233,7 +233,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumName(napi_env env, napi_callback_info 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         name = obj->albumName_;
-        NAPI_DEBUG_LOG("JSGetSmartAlbumName name = %{private}s", name.c_str());
+        NAPI_DEBUG_LOG("JSGetSmartAlbumName name = %{public}s", name.c_str());
         status = napi_create_string_utf8(env, name.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -448,7 +448,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     int32_t changedRows;
-    NAPI_DEBUG_LOG("CommitModifyNative = %{private}s", context->objectInfo->GetSmartAlbumName().c_str());
+    NAPI_DEBUG_LOG("CommitModifyNative = %{pubilc}s", context->objectInfo->GetSmartAlbumName().c_str());
     if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName())) {
         valuesBucket.PutString(SMARTALBUM_DB_NAME, context->objectInfo->GetSmartAlbumName());
         predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectInfo->GetSmartAlbumId()));

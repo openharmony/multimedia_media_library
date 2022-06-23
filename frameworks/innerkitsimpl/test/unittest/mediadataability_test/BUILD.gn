@@ -13,7 +13,6 @@
 
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
-import("//foundation/multimedia/media_library/multimedia_aafwk.gni")
 
 module_output_path = "media_library/mediadataability"
 
@@ -27,10 +26,10 @@ ohos_unittest("mediadataability_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./include",
-    "${ability_runtime_inner_api_path}/ability_manager/include",
-    "${ability_runtime_inner_api_path}/app_manager/include/appmgr",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
-    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/rdb/include",
+    "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager/include",
+    "${ABILITY_RUNTIME_INNER_API_PATH}/app_manager/include/appmgr",
+    "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/rdb/include",
+    "//foundation/distributeddatamgr/appdatamgr/relational_store/frameworks/native/rdb/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/inner_api/media_library_helper/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include/",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
@@ -38,8 +37,8 @@ ohos_unittest("mediadataability_test") {
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "$MEDIA_LIB_SERVICES_DIR/media_library/include",
-    "${ability_runtime_kits_path}/ability/native/include",
-    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
+    "${ABILITY_RUNTIME_KITS_PATH}/ability/native/include",
+    "//foundation/distributeddatamgr/appdatamgr/relational_store/frameworks/native/appdatafwk/include",
     "//third_party/json/include",
   ]
 
@@ -47,19 +46,19 @@ ohos_unittest("mediadataability_test") {
 
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
+    "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager:ability_manager",
+    "${ABILITY_RUNTIME_KITS_PATH}/ability/native:abilitykit_native",
     "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
-    "${ability_runtime_inner_api_path}/ability_manager:ability_manager",
-    "${ability_runtime_kits_path}/ability/native:abilitykit_native",
     "//utils/native/base:utils",
   ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
-    "dataability:native_dataability",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "relational_store:native_appdatafwk",
+    "relational_store:native_dataability",
     "relational_store:native_rdb",
     "safwk:system_ability_fwk",
     "samgr_standard:samgr_proxy",

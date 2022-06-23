@@ -26,7 +26,7 @@ namespace OHOS {
 namespace Media {
 MediaLibraryDataAbility g_rdbStoreTest;
 string g_createUri1, g_createUri2;
-int uid = 5010;
+int g_uid = 5010;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> medialibraryDataAbilityHelper = nullptr;
 int g_fd1 = DATA_ABILITY_FAIL;
 int g_fd2 = DATA_ABILITY_FAIL;
@@ -56,7 +56,7 @@ std::shared_ptr<AppExecFwk::DataAbilityHelper> CreateMediaLibraryHelper()
     if (medialibraryDataAbilityHelper == nullptr) {
         MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper == nullptr");
         std::shared_ptr<Uri> dataAbilityUri = std::make_shared<Uri>("dataability:///media");
-        medialibraryDataAbilityHelper = CreateDataAHelper(uid, dataAbilityUri);
+        medialibraryDataAbilityHelper = CreateDataAHelper(g_uid, dataAbilityUri);
     }
     MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper != nullptr");
     return medialibraryDataAbilityHelper;
@@ -91,7 +91,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAllFiles_Test_001, Tes
     while (fileAsset != nullptr) {
         Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
         NativeRdb::ValuesBucket valuesBucketDelete;
-        MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::uri :%{private}s", fileAsset->GetUri().c_str());
+        MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::uri :%{public}s", fileAsset->GetUri().c_str());
         valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
         MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::helper->Insert before");
         int retVal = helper->Insert(deleteAssetUri, valuesBucketDelete);
@@ -265,8 +265,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_QueryFiles_Test_002, TestSiz
     unique_ptr<FileAsset> fileAsset = nullptr;
     fileAsset = fetchFileResult->GetFirstObject();
     EXPECT_NE((fileAsset == nullptr), true);
-    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::fileAsset != nullptr");
-    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::End");
+    MEDIA_INFO_LOG("MediaDataAbility_QueryFiles_Test_002::fileAsset != nullptr. End");
 }
 
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_001, TestSize.Level0)
@@ -298,13 +297,13 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_001, TestSi
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
 
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::GetId = %{private}d", fileAsset->GetId());
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::GetUri = %{private}s", fileAsset->GetUri().c_str());
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::GetId = %{public}d, GetUri = %{public}s",
+                   fileAsset->GetId(),
+                   fileAsset->GetUri().c_str());
     Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
     int changedRows = helper->Update(updateAssetUri, valuesBucketUpdate, predicates);
     EXPECT_NE(changedRows < 0, true);
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::changedRows = %{private}d", changedRows);
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::End");
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_001::changedRows = %{public}d. End", changedRows);
 }
 
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_002, TestSize.Level0)
@@ -336,12 +335,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_002, TestSi
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
     valuesBucketUpdate.PutInt(MEDIA_DATA_DB_ORIENTATION, 1);
 
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::GetUri = %{private}s", fileAsset->GetUri().c_str());
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::GetUri = %{public}s", fileAsset->GetUri().c_str());
     Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
     int changedRows = helper->Update(updateAssetUri, valuesBucketUpdate, predicates);
     EXPECT_NE(changedRows < 0, true);
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::changedRows = %{private}d", changedRows);
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::End");
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_002::changedRows = %{public}d. End", changedRows);
 }
 
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_003, TestSize.Level0)
@@ -372,12 +370,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_UpdateAsset_Test_003, TestSi
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_NAME, "U" + fileAsset->GetDisplayName());
 
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::GetUri = %{private}s", fileAsset->GetUri().c_str());
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::GetUri = %{public}s", fileAsset->GetUri().c_str());
     Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
     int changedRows = helper->Update(updateAssetUri, valuesBucketUpdate, predicates);
     EXPECT_NE(changedRows < 0, true);
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::changedRows = %{private}d", changedRows);
-    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::End");
+    MEDIA_INFO_LOG("MediaDataAbility_UpdateAsset_Test_003::changedRows = %{public}d. End", changedRows);
 }
 
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_OpenFile_Test_001, TestSize.Level0)
@@ -407,12 +404,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_OpenFile_Test_001, TestSize.
     string mode = MEDIA_FILEMODE_READONLY;
 
     Uri openFileUri(fileUri);
-    MEDIA_INFO_LOG("openFileUri = %{private}s", openFileUri.ToString().c_str());
+    MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
     int32_t fd = helper->OpenFile(openFileUri, mode);
 
     EXPECT_NE(fd <= 0, true);
-    MEDIA_INFO_LOG("MediaDataAbility_OpenFile_Test_001::fd = %{private}d", fd);
-    MEDIA_INFO_LOG("MediaDataAbility_OpenFile_Test_001::End");
+    MEDIA_INFO_LOG("MediaDataAbility_OpenFile_Test_001::fd = %{public}d. End", fd);
 }
 
 HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseFile_Test_001, TestSize.Level0)
@@ -442,11 +438,11 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseFile_Test_001, TestSize
     string mode = MEDIA_FILEMODE_READWRITE;
 
     Uri openFileUri(fileUri);
-    MEDIA_INFO_LOG("openFileUri = %{private}s", openFileUri.ToString().c_str());
+    MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
     int32_t fd = helper->OpenFile(openFileUri, mode);
 
     EXPECT_NE(fd <= 0, true);
-    MEDIA_INFO_LOG("MediaDataAbility_CloseFile_Test_001::fd = %{private}d", fd);
+    MEDIA_INFO_LOG("MediaDataAbility_CloseFile_Test_001::fd = %{public}d", fd);
 
     Uri closeAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
 

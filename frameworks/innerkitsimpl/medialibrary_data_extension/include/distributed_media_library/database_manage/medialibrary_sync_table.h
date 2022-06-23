@@ -36,15 +36,14 @@ using namespace OHOS::NativeRdb;
 
 class MediaLibrarySyncTable {
 public:
-    MediaLibrarySyncTable();
-    ~MediaLibrarySyncTable();
+    MediaLibrarySyncTable() = delete;
+    ~MediaLibrarySyncTable() = delete;
 
-    bool SyncPullAllTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName);
-    bool SyncPullAllTableByDeviceId(const shared_ptr<RdbStore> &rdbStore,
+    static bool SyncPullAllTableByDeviceId(const shared_ptr<RdbStore> &rdbStore,
                                     const std::string &bundleName, std::vector<std::string> &devices);
-    bool SyncPullTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
+    static bool SyncPullTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
                        const std::string &tableName, std::vector<std::string> &devices, bool isLast = false);
-    bool SyncPushTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
+    static bool SyncPushTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
                        const std::string &tableName, std::vector<std::string> &devices, bool isBlock = false);
 
 private:

@@ -38,21 +38,21 @@ namespace OHOS {
 namespace Media {
 class MediaLibraryDeviceOperations {
 public:
-    MediaLibraryDeviceOperations();
-    ~MediaLibraryDeviceOperations() {}
+    MediaLibraryDeviceOperations() = delete;
+    ~MediaLibraryDeviceOperations() = delete;
 
-    bool InsertDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    static bool InsertDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                           const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
-    bool UpdateDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    static bool UpdateDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                           const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
-    bool DeleteDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &deviceId);
-    bool UpdateSyncStatus(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &deviceId,
+    static bool DeleteDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &deviceId);
+    static bool UpdateSyncStatus(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &deviceId,
                           int32_t syncStatus, const std::string &bundleName);
-    bool GetSyncStatusById(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &deviceId,
+    static bool GetSyncStatusById(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &deviceId,
                            int32_t &syncStatus, const std::string &bundleName);
-    bool QueryDeviceTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    static bool QueryDeviceTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                           std::map<std::string, std::set<int>> &excludeMap);
-    bool GetAllDeviceDatas(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    static bool GetAllDeviceDatas(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                            vector<MediaLibraryDeviceInfo> &outDeviceList);
 };
 } // namespace Media

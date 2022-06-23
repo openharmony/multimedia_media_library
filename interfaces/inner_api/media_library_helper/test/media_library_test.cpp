@@ -37,34 +37,30 @@ public:
         vector<unique_ptr<MediaAsset>> mediaAssets
                             = mediaLibrary->GetMediaAssets(selection, selectionArgs);
         for (size_t i = 0; i < mediaAssets.size(); i++) {
-            MEDIA_DEBUG_LOG("%{private}s", mediaAssets[i]->uri_.c_str());
+            MEDIA_DEBUG_LOG("%{public}s", mediaAssets[i]->uri_.c_str());
         }
 
         MEDIA_DEBUG_LOG("Audio assets:");
         vector<unique_ptr<AudioAsset>> audioAssets
                             = mediaLibrary->GetAudioAssets(selection, selectionArgs);
         for (size_t i = 0; i < audioAssets.size(); i++) {
-            MEDIA_DEBUG_LOG("%{private}s", audioAssets[i]->uri_.c_str());
+            MEDIA_DEBUG_LOG("%{public}s", audioAssets[i]->uri_.c_str());
         }
 
         MEDIA_DEBUG_LOG("Video assets:");
         vector<unique_ptr<VideoAsset>> videoAssets
                             = mediaLibrary->GetVideoAssets(selection, selectionArgs);
         for (size_t i = 0; i < videoAssets.size(); i++) {
-            MEDIA_DEBUG_LOG("%{private}s", videoAssets[i]->uri_.c_str());
+            MEDIA_DEBUG_LOG("%{public}s", videoAssets[i]->uri_.c_str());
         }
 
         MEDIA_DEBUG_LOG("Image assets:");
         vector<unique_ptr<ImageAsset>> imageAssets
                             = mediaLibrary->GetImageAssets(selection, selectionArgs);
         for (size_t i = 0; i < imageAssets.size(); i++) {
-            MEDIA_DEBUG_LOG("uri: %{private}s", imageAssets[i]->uri_.c_str());
-            MEDIA_DEBUG_LOG("id: %{private}d", imageAssets[i]->id_);
-            MEDIA_DEBUG_LOG("media type: %{public}d", imageAssets[i]->mediaType_);
-            MEDIA_DEBUG_LOG("mime type: %{private}s", imageAssets[i]->mimeType_.c_str());
-            MEDIA_DEBUG_LOG("name: %{private}s", imageAssets[i]->name_.c_str());
-            MEDIA_DEBUG_LOG("date added: %{private}lld", imageAssets[i]->dateAdded_);
-            MEDIA_DEBUG_LOG("date modified: %{private}lld", imageAssets[i]->dateModified_);
+            auto asset = imageAssets[i];
+            MEDIA_DEBUG_LOG("uri:%{public}s, type:%{public}s, added:%{public}lld, modified:%{public}lld",
+                asset->uri_.c_str(), asset->mimeType_.c_str(), asset->dateAdded_, asset->dateModified_);
         }
     }
 
@@ -79,37 +75,18 @@ public:
             MEDIA_DEBUG_LOG("Album name:%{private}s", albumAssets[i]->albumName_.c_str());
             MEDIA_DEBUG_LOG("Image album assets:");
             for (size_t j = 0; j < albumAssets[i]->imageAssetList_.size(); j++) {
-                MEDIA_DEBUG_LOG("uri: %{private}s", albumAssets[i]->imageAssetList_[j]->uri_.c_str());
-                MEDIA_DEBUG_LOG("id: %{private}d", albumAssets[i]->imageAssetList_[j]->id_);
-                MEDIA_DEBUG_LOG("width: %{public}d", albumAssets[i]->imageAssetList_[j]->width_);
-                MEDIA_DEBUG_LOG("height: %{public}d", albumAssets[i]->imageAssetList_[j]->height_);
-                MEDIA_DEBUG_LOG("media type: %{public}d",
-                                albumAssets[i]->imageAssetList_[j]->mediaType_);
-                MEDIA_DEBUG_LOG("mime type: %{private}s",
-                                albumAssets[i]->imageAssetList_[j]->mimeType_.c_str());
-                MEDIA_DEBUG_LOG("name: %{private}s", albumAssets[i]->imageAssetList_[j]->name_.c_str());
-                MEDIA_DEBUG_LOG("added: %{private}lld",
-                                albumAssets[i]->imageAssetList_[j]->dateAdded_);
-                MEDIA_DEBUG_LOG("modified: %{private}lld",
-                                albumAssets[i]->imageAssetList_[j]->dateModified_);
+                auto asset = albumAssets[i]->imageAssetList_[j];
+                MEDIA_DEBUG_LOG("uri:%{public}s, w:%{public}d, h:%{public}d, add:%{public}lld, mod:%{public}lld",
+                    asset->uri_.c_str(), asset->width_, asset->height_, asset->dateAdded_, asset->dateModified_);
             }
 
             MEDIA_DEBUG_LOG("Video album assets:");
             for (size_t k = 0; k < albumAssets[i]->videoAssetList_.size(); k++) {
-                MEDIA_DEBUG_LOG("uri: %{private}s", albumAssets[i]->videoAssetList_[k]->uri_.c_str());
-                MEDIA_DEBUG_LOG("id: %{private}d", albumAssets[i]->videoAssetList_[k]->id_);
-                MEDIA_DEBUG_LOG("width: %{public}d", albumAssets[i]->videoAssetList_[k]->width_);
-                MEDIA_DEBUG_LOG("height: %{public}d", albumAssets[i]->videoAssetList_[k]->height_);
-                MEDIA_DEBUG_LOG("duration: %{public}d", albumAssets[i]->videoAssetList_[k]->duration_);
-                MEDIA_DEBUG_LOG("media type: %{public}d",
-                                albumAssets[i]->videoAssetList_[k]->mediaType_);
-                MEDIA_DEBUG_LOG("mime type: %{private}s",
-                                albumAssets[i]->videoAssetList_[k]->mimeType_.c_str());
-                MEDIA_DEBUG_LOG("name: %{private}s", albumAssets[i]->videoAssetList_[k]->name_.c_str());
-                MEDIA_DEBUG_LOG("added: %{private}lld",
-                                albumAssets[i]->videoAssetList_[k]->dateAdded_);
-                MEDIA_DEBUG_LOG("modified: %{private}lld",
-                                albumAssets[i]->videoAssetList_[k]->dateModified_);
+                auto asset = albumAssets[i]->videoAssetList_[k];
+                MEDIA_DEBUG_LOG(
+                    "uri:%{public}s, w-h:%{public}d-%{public}d, dur-add-mod:%{public}d-%{public}lld-%{public}lld",
+                    asset->uri_.c_str(), asset->width_, asset->height_, asset->duration_, asset->dateAdded_,
+                    asset->dateModified_);
             }
         }
     }

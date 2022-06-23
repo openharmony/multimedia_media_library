@@ -111,7 +111,7 @@ vector<string> MediaScanner::GetSupportedMimeTypes()
 
 int32_t MediaScanner::ScanFile(string &path, const sptr<IRemoteObject> &remoteCallback)
 {
-    MEDIA_INFO_LOG("%{private}s: %{private}s", __func__, path.c_str());
+    MEDIA_INFO_LOG("%{public}s: %{private}s", __func__, path.c_str());
     int32_t errCode = ERR_MEM_ALLOC_FAIL;
     bool isDir = false;
 
