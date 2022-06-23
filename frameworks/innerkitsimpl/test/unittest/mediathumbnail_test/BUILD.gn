@@ -37,7 +37,7 @@ ohos_unittest("mediathumbnail_test") {
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
-    "${AAFWK_KITS_PATH}/ability/native/include",
+    "${AAFWK_PATH}/interfaces/kits/native/ability/native",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
     "//third_party/json/include",
   ]
@@ -47,7 +47,7 @@ ohos_unittest("mediathumbnail_test") {
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "${AAFWK_INNER_API_PATH}/ability_manager:ability_manager",
-    "${AAFWK_KITS_PATH}/ability/native:abilitykit_native",
+    "${AAFWK_PATH}/frameworks/native/ability/native:abilitykit_native",
     "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//utils/native/base:utils",
