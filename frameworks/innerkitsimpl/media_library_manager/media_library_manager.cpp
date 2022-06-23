@@ -216,8 +216,8 @@ int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fil
     if (sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri updateAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
-
-        retVal = sAbilityHelper_->Insert(updateAssetUri, valuesBucket);
+        DataShare::DataSharePredicates predicates;
+        retVal = sAbilityHelper_->Update(updateAssetUri, predicates, valuesBucket);
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to modify the file");
         }
@@ -229,14 +229,17 @@ int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fil
 int32_t MediaLibraryManager::DeleteAsset(const string &uri)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
+    string fileId;
+    if (uri.find(MEDIALIBRARY_DATA_URI) == 0) {
+        fileId = uri.substr(MEDIALIBRARY_DATA_URI.length());
+    }
 
     if (sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
-
-        retVal = sAbilityHelper_->Insert(deleteAssetUri, valuesBucket);
+        Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" +
+            MEDIA_FILEOPRN_DELETEASSET + '/' + fileId);
+        DataShare::DataSharePredicates predicates;
+        retVal = sAbilityHelper_->Delete(deleteAssetUri, predicates);
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to delete the file");
         }
@@ -316,8 +319,8 @@ int32_t MediaLibraryManager::ModifyAlbum(const int32_t albumId, const AlbumAsset
     if (sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri modifyAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_MODIFYALBUM);
-
-        retVal = sAbilityHelper_->Insert(modifyAlbumUri, valuesBucket);
+        DataShare::DataSharePredicates predicates;
+        retVal = sAbilityHelper_->Update(modifyAlbumUri, predicates, valuesBucket);
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to modify the album");
         }
@@ -329,14 +332,13 @@ int32_t MediaLibraryManager::ModifyAlbum(const int32_t albumId, const AlbumAsset
 int32_t MediaLibraryManager::DeleteAlbum(const int32_t albumId)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.PutInt(MEDIA_DATA_DB_ID, albumId);
 
     if (sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM);
-
-        retVal = sAbilityHelper_->Insert(deleteAlbumUri, valuesBucket);
+        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" +
+            MEDIA_ALBUMOPRN_DELETEALBUM + '/' + to_string(albumId));
+        DataSharePredicates predicates;
+        retVal = sAbilityHelper_->Delete(deleteAlbumUri, predicates);
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to delete the album");
         }

@@ -17,26 +17,25 @@
 #define OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
 
 #include <string>
-#include <variant>
-#include <grp.h>
 #include <securec.h>
-#include <unistd.h>
 
-#include "album_asset.h"
+#include "medialibrary_command.h"
 #include "native_album_asset.h"
-#include "medialibrary_album_db.h"
-#include "rdb_store.h"
-#include "values_bucket.h"
+#include "rdb_result_set_bridge.h"
+#include "medialibrary_unistore_manager.h"
 
 namespace OHOS {
 namespace Media {
 class MediaLibraryAlbumOperations {
 public:
-    int32_t HandleAlbumOperations(const std::string &uri, const NativeRdb::ValuesBucket &values,
-                                  const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    int32_t HandleAlbumOperations(const std::string &uri, const NativeRdb::ValuesBucket &values,
-                                  const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                                  vector<int32_t> &outIds);
+    MediaLibraryAlbumOperations();
+    int32_t HandleAlbumOperations(MediaLibraryCommand &cmd);
+    int32_t CreateAlbumOperation(MediaLibraryCommand &cmd);
+    int32_t DeleteAlbumOperation(MediaLibraryCommand &cmd);
+    int32_t ModifyAlbumOperation(MediaLibraryCommand &cmd);
+    shared_ptr<NativeRdb::AbsSharedResultSet> QueryAlbumOperation(MediaLibraryCommand &cmd,
+        std::vector<std::string> columns);
+
     std::shared_ptr<NativeAlbumAsset> nativeAlbumAsset_ = std::make_shared<NativeAlbumAsset>();
     void SetNativeAlbumAsset(std::shared_ptr<NativeAlbumAsset> nativeAlbumAsset)
     {
@@ -46,6 +45,9 @@ public:
     {
         return nativeAlbumAsset_;
     }
+private:
+    std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);
+    std::shared_ptr<MediaLibraryUnistore> uniStore_{nullptr};
 };
 } // namespace Media
 } // namespace OHOS

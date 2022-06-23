@@ -21,6 +21,7 @@
 #include "media_file_utils.h"
 #include "uri_helper.h"
 #include "media_asset.h"
+#include "medialibrary_object_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -182,7 +183,7 @@ vector<FileAccessFwk::FileInfo> MediaFileExtentionUtils::ListFile(string selectU
     MEDIA_DEBUG_LOG("queryUri %{public}s", queryUri.c_str());
     std::shared_ptr<AbsSharedResultSet> resultSet = GetListFileResult(queryUri, selection, selectionArgs);
     GetFileInfoFromResult(networkId, resultSet, fileList);
-    MEDIA_DEBUG_LOG("fileList.size() count %{public}lu", fileList.size());
+    MEDIA_DEBUG_LOG("fileList.size() count %{public}u", (uint32_t)fileList.size());
     return fileList;
 }
 
@@ -310,7 +311,7 @@ int32_t HandleAlbumRename(const string &srcId, const string &srcPath, const stri
         return errCode;
     }
     ValuesBucket valuesBucket;
-    int64_t date_modified = MediaLibraryDataManagerUtils::GetAlbumDateModified(newAlbumPath);
+    int64_t date_modified = MediaFileUtils::GetAlbumDateModified(newAlbumPath);
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, date_modified);
     string title = displayName.substr(0, displayName.find('.'));
     valuesBucket.PutString(MEDIA_DATA_DB_TITLE, title);
@@ -411,7 +412,7 @@ int32_t HandleAlbumMove(const string &srcId, const string &srcPath, const string
         return errCode;
     }
     ValuesBucket valuesBucket;
-    int64_t date_modified = MediaLibraryDataManagerUtils::GetAlbumDateModified(newAlbumPath);
+    int64_t date_modified = MediaFileUtils::GetAlbumDateModified(newAlbumPath);
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, date_modified);
     valuesBucket.PutInt(MEDIA_DATA_DB_PARENT_ID, stoi(bucketId));
     valuesBucket.PutInt(MEDIA_DATA_DB_BUCKET_ID, stoi(bucketId));

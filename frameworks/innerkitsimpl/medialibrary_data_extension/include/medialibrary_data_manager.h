@@ -71,7 +71,6 @@ namespace Media {
         TYPE_ASSETSMAP_TABLE,
         TYPE_DIR_TABLE
     };
-    class MediaLibraryRdbStoreObserver;
     class MediaLibraryDataManager {
     public:
         EXPORT MediaLibraryDataManager();
@@ -80,6 +79,16 @@ namespace Media {
 
         EXPORT int32_t InitMediaLibraryRdbStore();
         EXPORT void InitialiseKvStore();
+
+// Medialibrary接口使用必读
+
+// 1、insert和update接口有ValueBucket，delete接口没有
+// 2、insert不要再做成大杂烩总入口，napi的调用处，如果是delete就用delete的接口，update就用update的接口；
+// 3、对于fileId或者albumId，如果有ValueBucket则可以将id放在ValueBucket的MEDIA_DATA_DB_ID项里，
+//   或者放在ValueBucket里面的MEDIA_DATA_DB_URI项的最后一个/的后面；如果没有ValueBucket（比如对于delete）
+//   则只能将id放在入参uri的最后一个/后面
+// 4、尽量不要直接使用rdbStore，虽然可以通过uniStore_->GetRdbStoreRaw获取到，但是请尽可能使用下层的uniStore_来操作数据库
+
         EXPORT int32_t Insert(const Uri &uri, const DataShare::DataShareValuesBucket &value);
         EXPORT int32_t Delete(const Uri &uri, const DataShare::DataSharePredicates &predicates);
         EXPORT int32_t BatchInsert(const Uri &uri, const std::vector<DataShare::DataShareValuesBucket> &values);
@@ -102,20 +111,15 @@ namespace Media {
     private:
         static constexpr const char DEVICE_BUNDLENAME[] = "com.ohos.medialibrary.MediaLibraryDataA";
         std::string GetOperationType(const std::string &uri);
-        void ScanFile(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore1);
         void InitDeviceData();
-        bool SubscribeRdbStoreObserver();
-        bool UnSubscribeRdbStoreObserver();
         bool QuerySync(const std::string &deviceId, const std::string &tableName);
         bool QuerySync();
-		
+
         bool CheckFileNameValid(const DataShareValuesBucket &value);
         sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
         std::string GetClientBundleName();
-        bool CheckClientPermission(const std::string& permissionStr);
         std::string GetClientBundle(int uid);
-        void NeedQuerySync(const std::string &networkId, TableType tabletype);
-        int32_t PreCheckInsert(const std::string &uri, const DataShare::DataShareValuesBucket &value);
+        void NeedQuerySync(const std::string &networkId, OperationObject oprnObject);
         void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
 
         static const std::string PERMISSION_NAME_READ_MEDIA;
@@ -123,7 +127,6 @@ namespace Media {
         std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
         DistributedKv::DistributedKvDataManager dataManager_;
         std::shared_ptr<MediaLibraryThumbnail> mediaThumbnail_;
-        std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
         bool isRdbStoreInitialized;
         std::shared_ptr<OHOS::AbilityRuntime::Context> context_ = nullptr;
         std::string bundleName_;
@@ -131,48 +134,6 @@ namespace Media {
         static std::mutex mutex_;
         static std::shared_ptr<MediaLibraryDataManager> instance_;
         std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
-};
-
-class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
-public:
-    int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
-    int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
-    bool GetDistributedTables();
-    int32_t PrepareDir(NativeRdb::RdbStore &store);
-    int32_t PrepareCameraDir(NativeRdb::RdbStore &store);
-    int32_t PrepareVideoDir(NativeRdb::RdbStore &store);
-    int32_t PreparePictureDir(NativeRdb::RdbStore &store);
-    int32_t PrepareAudioDir(NativeRdb::RdbStore &store);
-    int32_t PrepareDocumentDir(NativeRdb::RdbStore &store);
-    int32_t PrepareDownloadDir(NativeRdb::RdbStore &store);
-    int32_t PrepareSmartAlbum(NativeRdb::RdbStore &store);
-    int32_t PrepareFavourite(NativeRdb::RdbStore &store);
-    int32_t PrepareTrash(NativeRdb::RdbStore &store);
-private:
-    bool isDistributedTables = false;
-};
-
-// Scanner callback objects
-class ScanFileCallback : public IMediaScannerAppCallback {
-public:
-    ScanFileCallback() = default;
-    ~ScanFileCallback() = default;
-    void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
-};
-
-class MediaLibraryRdbStoreObserver : public NativeRdb::RdbStore::RdbStoreObserver {
-public:
-    explicit MediaLibraryRdbStoreObserver(std::string &bundleName);
-    virtual ~MediaLibraryRdbStoreObserver();
-    void OnChange(const std::vector<std::string>& devices) override;
-private:
-    void NotifyDeviceChange();
-private:
-    static constexpr int NOTIFY_TIME_INTERVAL = 10000;
-    std::unique_ptr<OHOS::Utils::Timer> timer_ {nullptr};
-    uint32_t timerId_ {0};
-    std::string bundleName_;
-    bool isNotifyDeviceChange_;
 };
 } // namespace Media
 } // namespace OHOS

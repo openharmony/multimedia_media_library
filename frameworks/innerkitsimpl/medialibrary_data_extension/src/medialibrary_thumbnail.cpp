@@ -29,6 +29,8 @@
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
 #include "uri_helper.h"
+#include "rdb_utils.h"
+
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;

@@ -34,20 +34,18 @@
 
 namespace OHOS {
 namespace Media {
+const std::string DIR_PARENT_WHERECLAUSE = MEDIA_DATA_DB_PARENT_ID + " = ?";
+const std::string DIR_DIRECTORY_WHERECLAUSE = CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY + " = ?";
+const std::string DIR_DIRECTORY_TYPE_WHERECLAUSE = CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE + " = ?";
+const std::string DIR_FILE_WHERECLAUSE = MEDIA_DATA_DB_ID + " = ?";
+const std::string DIR_RELATIVEPATH_WHERECLAUSE = MEDIA_DATA_DB_RELATIVE_PATH + " LIKE ? OR " + MEDIA_DATA_DB_FILE_PATH +
+                                                 " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = 0";
+
 class MediaLibraryDirOperations {
 public:
-    const std::string DIR_PARENT_WHERECLAUSE = MEDIA_DATA_DB_PARENT_ID + " = ?";
-    const std::string DIR_DIRECTORY_WHERECLAUSE = CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY + " = ?";
-    const std::string DIR_DIRECTORY_TYPE_WHERECLAUSE = CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE + " = ?";
-    const std::string DIR_FILE_WHERECLAUSE = MEDIA_DATA_DB_ID + " = ?";
-    const std::string DIR_RELATIVEPATH_WHERECLAUSE = MEDIA_DATA_DB_RELATIVE_PATH +
-        " LIKE ? OR " + MEDIA_DATA_DB_FILE_PATH + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = 0";
-
-    int32_t HandleDirOperations(const std::string &oprn,
-                                const NativeRdb::ValuesBucket &values,
+    int32_t HandleDirOperations(const std::string &oprn, const NativeRdb::ValuesBucket &values,
                                 const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                                const std::unordered_map
-                                <std::string, DirAsset> &dirQuerySetMap = {});
+                                const std::unordered_map<std::string, DirAsset> &dirQuerySetMap = {});
 
     int32_t HandleDeleteDir(const NativeRdb::ValuesBucket &values,
                             const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
