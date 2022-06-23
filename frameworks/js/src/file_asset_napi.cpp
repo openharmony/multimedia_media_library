@@ -1570,9 +1570,6 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     int32_t height = 0;
     StrToInt(uri.substr(tmpIdx + 1), height);
 
-    string meidaUri = MEDIALIBRARY_DATA_URI;
-    AppExecFwk::Want want;
-    want.SetElementName("com.ohos.medialibrary.medialibrarydata", "DataShareExtAbility");
     auto dataAbilityHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
     if (dataAbilityHelper == nullptr) {
         return nullptr;
@@ -2220,6 +2217,7 @@ void FileAssetNapi::UpdateFileAssetInfo()
     artist_ = sFileAsset_->GetArtist();
     duration_ = sFileAsset_->GetDuration();
 
+    dateTrashed_ = sFileAsset_->GetDateTrashed();
     parent_ = sFileAsset_->GetParent();
     albumUri_ = sFileAsset_->GetAlbumUri();
     dateTaken_ = sFileAsset_->GetDateTaken();

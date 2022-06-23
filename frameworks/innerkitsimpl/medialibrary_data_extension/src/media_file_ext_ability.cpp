@@ -26,6 +26,7 @@
 #include "media_file_extention_utils.h"
 #include "media_asset.h"
 #include "media_file_extention_utils.h"
+#include "medialibrary_object_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -111,8 +112,8 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const std::string &dis
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(parentUri.ToString());
-    string albumPath = MediaLibraryDataManagerUtils::GetPathFromDb(albumId,
-        MediaLibraryDataManager::GetInstance()->rdbStore_);
+    MediaLibraryObjectUtils objectUtils;
+    string albumPath = objectUtils.GetPathByIdFromDb(albumId);
     string relativePath = albumPath.substr(ROOT_MEDIA_DIR.size()) + '/';
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MediaAsset::GetMediaType(displayName));

@@ -25,14 +25,6 @@
     ],
     "extensionAbilities": [
       {
-        "srcEntrance": "./ets/MediaDataService/MediaDataService.ts",
-        "name": "MediaDataService",
-        "icon": "$media:icon",
-        "description": "$string:description_serviceability",
-        "type": "service",
-        "visible": true
-      },
-      {
         "srcEntrance": "./ets/DataShareExtAbility/DataShareExtAbility.ts",
         "name": "DataShareExtAbility",
         "icon": "$media:icon",
