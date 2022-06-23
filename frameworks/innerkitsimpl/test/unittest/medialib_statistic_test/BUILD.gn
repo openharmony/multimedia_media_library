@@ -33,9 +33,9 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
     "//foundation/aafwk/standard/interfaces/innerkits/uri/include",
-    "${aafwk_inner_api_path}/ability_manager/include",
-    "${aafwk_inner_api_path}/app_manager/include/appmgr",
-    "${aafwk_kits_path}/ability/native/include",
+    "${ability_runtime_inner_api_path}/ability_manager/include",
+    "${ability_runtime_inner_api_path}/app_manager/include/appmgr",
+    "${ability_runtime_kits_path}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/common/include/",
@@ -60,8 +60,8 @@ ohos_unittest("medialibrary_statistic_unittest") {
   ]
 
   deps = [
-    "${aafwk_inner_api_path}/ability_manager:ability_manager",
-    "${aafwk_kits_path}/ability/native:abilitykit_native",
+    "${ability_runtime_inner_api_path}/ability_manager:ability_manager",
+    "${ability_runtime_kits_path}/ability/native:abilitykit_native",
     "//base/security/access_token/interfaces/innerkits/accesstoken:libaccesstoken_sdk",
     "//base/security/access_token/interfaces/innerkits/nativetoken:libnativetoken",
     "//base/security/access_token/interfaces/innerkits/token_setproc:libtoken_setproc",
