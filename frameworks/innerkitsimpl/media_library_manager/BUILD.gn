@@ -26,15 +26,15 @@ ohos_shared_library("media_library_manager") {
     "${AAFWK_KITS_PATH}/ability/native/include",
     "${AAFWK_INNER_API_PATH}/dataobs_manager/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/appdatafwk/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
+    "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/appdatafwk/include",
+    "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/rdb/include",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/provider/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
-    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/consumer/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/provider/include",
     "//utils/native/base/include",
   ]
 
@@ -42,7 +42,7 @@ ohos_shared_library("media_library_manager") {
     "${AAFWK_INNER_API_PATH}/dataobs_manager:dataobs_manager",
     "${AAFWK_KITS_PATH}/ability/native:abilitykit_native",
     "${AAFWK_KITS_PATH}/appkit:appkit_native",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//utils/native/base:utils",
   ]
@@ -53,9 +53,9 @@ ohos_shared_library("media_library_manager") {
     "ability_runtime:ability_manager",
     "bundle_framework:appexecfwk_base",
     "data_share:datashare_common",
-    "dataability:native_dataability",
     "hiviewdfx_hilog_native:libhilog",
     "relational_store:native_appdatafwk",
+    "relational_store:native_dataability",
     "relational_store:native_rdb",
   ]
 

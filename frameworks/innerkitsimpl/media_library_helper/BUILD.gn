@@ -28,15 +28,15 @@ config("media_library_config") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//utils/native/base/include",
     "${AAFWK_KITS_PATH}/ability/native/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
+    "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/rdb/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/appdatafwk/include",
+    "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/appdatafwk/include",
     "${AAFWK_KITS_PATH}/ability/native/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/provider/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
-    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/frameworks/native/data_share/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/consumer/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/provider/include",
   ]
 
   cflags = [
@@ -70,15 +70,15 @@ ohos_shared_library("media_library") {
   deps = [
     ":media_library_source",
     "${AAFWK_KITS_PATH}/ability/native:abilitykit_native",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
     "//utils/native/base:utils",
   ]
 
   external_deps = [
-    "dataability:native_dataability",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "relational_store:native_appdatafwk",
+    "relational_store:native_dataability",
     "relational_store:native_rdb",
   ]
 
@@ -115,14 +115,14 @@ ohos_static_library("media_thumbnail_helper") {
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
     "${AAFWK_KITS_PATH}/ability/native/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/provider/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share/consumer/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/provider/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/common/include",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/consumer/include",
     "//utils/native/base/include",
   ]
   deps = [
     "${AAFWK_KITS_PATH}/ability/native:abilitykit_native",
-    "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/data_share:datashare_abilitykit",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//utils/native/base:utils",
@@ -130,10 +130,10 @@ ohos_static_library("media_thumbnail_helper") {
 
   # cflags = [ "-DOLD_KV_API" ]
   external_deps = [
-    "dataability:native_dataability",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "relational_store:native_appdatafwk",
+    "relational_store:native_dataability",
     "relational_store:native_rdb",
   ]
   subsystem_name = "multimedia"
