@@ -28,8 +28,8 @@ ohos_unittest("mediascanner_unittest") {
     "./include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
-    "${aafwk_inner_api_path}/ability_manager/include",
-    "${aafwk_inner_api_path}/app_manager/include/appmgr",
+    "${ability_runtime_inner_api_path}/ability_manager/include",
+    "${ability_runtime_inner_api_path}/app_manager/include/appmgr",
     "//foundation/distributeddatamgr/appdatamgr/interfaces/inner_api/native/rdb/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/rdb/include",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
@@ -37,7 +37,7 @@ ohos_unittest("mediascanner_unittest") {
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
-    "${aafwk_kits_path}/ability/native/include",
+    "${ability_runtime_kits_path}/ability/native/include",
     "//foundation/distributeddatamgr/appdatamgr/frameworks/native/appdatafwk/include",
     "$MEDIA_LIB_BASE_DIR/frameworks/services/media_scanner/include/scanner",
     "//third_party/json/include",
@@ -48,7 +48,7 @@ ohos_unittest("mediascanner_unittest") {
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
-    "${aafwk_kits_path}/ability/native:abilitykit_native",
+    "${ability_runtime_kits_path}/ability/native:abilitykit_native",
     "//utils/native/base:utils",
   ]
 
