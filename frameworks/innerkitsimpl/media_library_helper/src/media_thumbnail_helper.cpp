@@ -31,7 +31,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-static const string THUMBNAIL_APP_ID = "com.ohos.medialibrary.MediaLibraryDataA";
+static const string THUMBNAIL_APP_ID = "com.ohos.medialibrary.medialibrarydata";
 static const string THUMBNAIL_STORE_ID = "MediaThumbnailHelperStoreId1";
 
 void MediaThumbnailHelper::InitKvStore()
@@ -188,7 +188,7 @@ bool MediaThumbnailHelper::GetImage(string &key, vector<uint8_t> &image)
     StartTrace(HITRACE_TAG_OHOS, "GetImage singleKvStorePtr_->Get");
     auto status = singleKvStorePtr_->Get(key, res);
     if (status != Status::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to get key [%{private}s]", key.c_str());
+        MEDIA_ERR_LOG("Failed to get key [%{public}s]", key.c_str());
         return false;
     }
     FinishTrace(HITRACE_TAG_OHOS);

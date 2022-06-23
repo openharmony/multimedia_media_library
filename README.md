@@ -44,20 +44,20 @@ The structure of the repository directory is as follows:
 ### Query AudioAsset<a name="get-audioasset"></a>
 We can use APIs like **GetMediaAssets**, **GetAudioAssets**, **GetVideoAssets** and **GetImageAssets** to query for different file metadata information. The following steps describe how to use the GetAudioAssets API to obtain audio related metadata.
 1. Use **GetMediaLibraryClientInstance** API to obtain the **Medialibrary** instance
-    ```
+    ```cpp
     IMediaLibraryClient* mediaLibClientInstance = IMediaLibraryClient::GetMediaLibraryClientInstance();
     ```
 2. Set the scanning directory for audio files in **selection** string. The selection value will be a relative path to a media root directory i.e. "/storage/media/local/files". It will check for audio files recursively in the given directory.
-    ```
+    ```cpp
     string selection = "audios/audio1";
     ```
 3. Use the **GetAudioAssets** API to query for audio files. The input argument *selectionArgs* does not have any use case currently. The API returns a list of *AudioAsset*.
-    ```
+    ```cpp
     vector<string> selectionArgs;
     vector<unique_ptr<AudioAsset>> audioAssets = mediaLibClientInstance->GetAudioAssets(selection, selectionArgs);
     ```
 4. We can obtain audio metadata for each file from the list.
-    ```
+    ```cpp
     for (size_t i = 0; i < audioAssets.size(); i++) {
         cout << audioAssets[i]->uri_ << endl;
         cout << audioAssets[i]->size_ << endl;
@@ -72,35 +72,35 @@ We can use APIs like **GetMediaAssets**, **GetAudioAssets**, **GetVideoAssets** 
 ### Create Album<a name="create-album"></a>
 MediaLibrary offers APIs for application to perform album operations like create, modify and delete. Below are the steps on how to create a new album.
 1. Use **GetMediaLibraryInstance** API to obtain the **Medialibrary** instance
-    ```
+    ```cpp
     IMediaLibraryClient* mediaLibClientInstance = IMediaLibraryClient::GetMediaLibraryClientInstance();
     ```
 2. Specify the album type. It can be either *ASSET_GENERIC_ALBUM*, *ASSET_IMAGEALBUM* or *ASSET_VIDEOALBUM*.
-    ```
+    ```cpp
     AssetType assetType = ASSET_VIDEOALBUM;
     ```
 3. Create a new **AlbumAsset** object and provide a new album name. Below album "new_video" will get created in the path "/storage/media/local/files/videos".
-    ```
+    ```cpp
     AlbumAsset albumAsset;
     albumAsset.albumName_ = "videos/new_video";
     ```
 4. Use **CreateMediaAlbumAsset** API to create the new album in the device. The return value will be boolean, which states whether the album creation succeeded or failed.
-    ```
+    ```cpp
     bool errCode = mediaLibClientInstance->CreateMediaAlbumAsset(assetType, albumAsset);
     ```
 
 ### Copy ImageAsset<a name="copy-imageasset"></a>
 File operations are supported via APIs like **CreateMediaAsset**, **ModifyMediaAsset**, **CopyMediaAsset**, **DeleteMediaAsset**. The example below explains the usage of CopyMediaAsset API.
 1. Use **GetMediaLibraryInstance** API to obtain the **Medialibrary** instance
-    ```
+    ```cpp
     IMediaLibraryClient* mediaLibClientInstance = IMediaLibraryClient::GetMediaLibraryClientInstance();
     ```
 2. Specify the asset type. It can be either *ASSET_MEDIA*, *ASSET_IMAGE*, *ASSET_AUDIO* or *ASSET_VIDEO*.
-    ```
+    ```cpp
     AssetType assetType = ASSET_IMAGE;
     ```
 3. Define the source and target **ImageAsset**. The target asset must specify the new album name where the source asset will be copied.
-    ```
+    ```cpp
     MediaAsset srcMediaAsset;
     MediaAsset dstMediaAsset;
 
@@ -110,7 +110,7 @@ File operations are supported via APIs like **CreateMediaAsset**, **ModifyMediaA
     dstMediaAsset.albumName_ = "images/new_image";
     ```
 4. Use **CopyMediaAsset** API to copy the source asset to target asset's album name location. The boolean return value denotes the status of the file operation. The source file "image1.jpg" will get copied to "/storage/media/local/files/images/new_image".
-    ```
+    ```cpp
     bool errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     ```
 

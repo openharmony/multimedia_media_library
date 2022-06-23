@@ -29,10 +29,11 @@ const std::string SAME_ACCOUNT_MARK = "const.distributed_file_only_for_same_acco
 
 bool DevicePermissionVerification::CheckPermission(const std::string &udid)
 {
-    if (CheckIsSameAccount()) {
-        return true;
+    if (!CheckIsSameAccount()) {
+        return false;
     }
-    return QueryTrustedRelationship(udid);
+    QueryTrustedRelationship(udid);
+    return ReqDestDevSecLevel(udid);
 }
 
 void from_json(const nlohmann::json &jsonObject, TrustedRelationshipGroupInfo &groupInfo)
@@ -108,6 +109,34 @@ bool DevicePermissionVerification::CheckIsSameAccount()
     bool ret = system::GetBoolParameter(SAME_ACCOUNT_MARK, false);
     MEDIA_INFO_LOG("SAME_ACCOUNT_MARK val is %{public}d", ret);
     return ret;
+}
+
+void DevicePermissionVerification::MLDevSecInfoCb(const DeviceIdentify *identify, struct DeviceSecurityInfo *info)
+{
+    int32_t level = 0;
+    int32_t ret = GetDeviceSecurityLevelValue(info, &level);
+    FreeDeviceSecurityInfo(info);
+    if (ret != SUCCESS) {
+        MEDIA_ERR_LOG("get device sec level failed %{public}d", ret);
+    }
+    std::string udid(reinterpret_cast<char *>(const_cast<uint8_t *>(identify->identity)), identify->length);
+    MediaLibraryDevice::GetInstance()->OnGetDevSecLevel(udid, level);
+}
+
+bool DevicePermissionVerification::ReqDestDevSecLevel(const std::string &udid)
+{
+    DeviceIdentify devIdentify;
+    devIdentify.length = DEVICE_ID_MAX_LEN;
+    int ret = memcpy_s(devIdentify.identity, DEVICE_ID_MAX_LEN, udid.c_str(), DEVICE_ID_MAX_LEN);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("str copy failed %{public}d", ret);
+    }
+    ret = RequestDeviceSecurityInfoAsync(&devIdentify, nullptr, DevicePermissionVerification::MLDevSecInfoCb);
+    if (ret != SUCCESS) {
+        MEDIA_ERR_LOG("request device sec info failed %{public}d", ret);
+        return false;
+    }
+    return true;
 }
 } // namespace Media
 } // namespace OHOS
