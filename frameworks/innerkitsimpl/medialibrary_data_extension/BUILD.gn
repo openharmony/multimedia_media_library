@@ -171,13 +171,13 @@ ohos_shared_library("medialibrary_data_extension") {
     "eventhandler:libeventhandler",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_core",
     "multimedia_media_standard:media_client",
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
     "relational_store:native_rdb",
     "samgr_standard:samgr_proxy",
-    "startup_l2:syspara",
   ]
 
   subsystem_name = "multimedia"
