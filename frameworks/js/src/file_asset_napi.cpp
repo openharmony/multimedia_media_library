@@ -75,6 +75,7 @@ FileAssetNapi::~FileAssetNapi()
         napi_delete_reference(env_, wrapper_);
         wrapper_ = nullptr;
     }
+    NAPI_DEBUG_LOG("FileAssetNapi destructor exit");
 }
 
 void FileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
@@ -84,6 +85,7 @@ void FileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, vo
         delete fileAssetObj;
         fileAssetObj = nullptr;
     }
+    NAPI_DEBUG_LOG("FileAssetNapiDestructor exit");
 }
 
 napi_value FileAssetNapi::Init(napi_env env, napi_value exports)

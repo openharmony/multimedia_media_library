@@ -38,6 +38,7 @@ FetchFileResultNapi::~FetchFileResultNapi()
     }
     fetchFileResult_ = nullptr;
     abilityHelper_ = nullptr;
+    NAPI_DEBUG_LOG("FetchFileResult destructor exit");
 }
 
 void FetchFileResultNapi::FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
@@ -47,6 +48,7 @@ void FetchFileResultNapi::FetchFileResultNapiDestructor(napi_env env, void *nati
         delete fetchFileResultObj;
         fetchFileResultObj = nullptr;
     }
+    NAPI_DEBUG_LOG("FetchFileResultNapiDestructor exit");
 }
 
 napi_value FetchFileResultNapi::Init(napi_env env, napi_value exports)
