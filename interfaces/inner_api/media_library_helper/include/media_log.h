@@ -54,7 +54,7 @@
 #define LOG_DOMAIN 0xD002B00
 #define LOG_TAG "MultiMedia:MediaLibrary"
 
-#define __FILE_ENT_NAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
+#define __FILE_NAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #ifndef OHOS_DEBUG
 #define DECORATOR_HILOG(op, fmt, args...) \
@@ -64,7 +64,7 @@
 #else
 #define DECORATOR_HILOG(op, fmt, args...)                                                \
     do {                                                                                 \
-        op(LOG_CORE, "{%{public}s()-%{public}s:%{public}d} " fmt, __FUNCTION__, __FILE_ENT_NAME__, __LINE__, ##args); \
+        op(LOG_CORE, "{%{public}s()-%{public}s:%{public}d} " fmt, __FUNCTION__, __FILE_NAME__, __LINE__, ##args); \
     } while (0)
 #endif
 

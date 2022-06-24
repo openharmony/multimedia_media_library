@@ -560,9 +560,12 @@ static void GetPublicDirectoryExecute(MediaLibraryAsyncContext *context)
         } else {
             NAPI_ERR_LOG("Query for get publicDirectory failed");
         }
+    } else {
+        NAPI_ERR_LOG("sDataShareHelper is null");
     }
     context->error = ERR_INVALID_OUTPUT;
 }
+
 static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status,
                                                MediaLibraryAsyncContext *context)
 {
