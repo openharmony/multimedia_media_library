@@ -36,6 +36,7 @@ MediaScannerNapi::~MediaScannerNapi()
         napi_delete_reference(env_, wrapper_);
         wrapper_ = nullptr;
     }
+    NAPI_DEBUG_LOG("MediaScannerNapi destructor exit");
 }
 
 napi_value MediaScannerNapi::Init(napi_env env, napi_value exports)

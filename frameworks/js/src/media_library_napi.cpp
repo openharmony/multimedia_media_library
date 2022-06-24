@@ -67,6 +67,7 @@ MediaLibraryNapi::~MediaLibraryNapi()
         napi_delete_reference(env_, wrapper_);
         wrapper_ = nullptr;
     }
+    NAPI_DEBUG_LOG("MediaLibraryNapi destructor exit");
 }
 
 void MediaLibraryNapi::MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
@@ -76,6 +77,7 @@ void MediaLibraryNapi::MediaLibraryNapiDestructor(napi_env env, void *nativeObje
         delete mediaLibrary;
         mediaLibrary = nullptr;
     }
+    NAPI_DEBUG_LOG("MediaLibraryNapiDestructor exit");
 }
 
 napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
@@ -147,7 +149,7 @@ shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::GetDataShareHelper(napi
     } else {
         auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
         if (context == nullptr) {
-            NAPI_ERR_LOG("Failed to get native context instance");
+            NAPI_ERR_LOG("Failed to get native stage context instance");
             return nullptr;
         }
         dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);

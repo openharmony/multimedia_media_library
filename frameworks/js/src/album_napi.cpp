@@ -48,6 +48,7 @@ AlbumNapi::~AlbumNapi()
         napi_delete_reference(env_, wrapper_);
         wrapper_ = nullptr;
     }
+    NAPI_DEBUG_LOG("AlbumNapi destructor exit");
 }
 
 void AlbumNapi::AlbumNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
@@ -57,6 +58,7 @@ void AlbumNapi::AlbumNapiDestructor(napi_env env, void *nativeObject, void *fina
         delete album;
         album = nullptr;
     }
+    NAPI_DEBUG_LOG("AlbumNapiDestructor exit");
 }
 
 napi_value AlbumNapi::Init(napi_env env, napi_value exports)
