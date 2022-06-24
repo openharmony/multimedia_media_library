@@ -23,7 +23,7 @@ ohos_shared_library("media_library_manager") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//drivers/peripheral/base",
     "//drivers/peripheral/display/interfaces/include",
-    "${AAFWK_KITS_PATH}/ability/native/include",
+    "${AAFWK_PATH}/interfaces/kits/native/ability/native",
     "${AAFWK_INNER_API_PATH}/dataobs_manager/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/appdatafwk/include",
@@ -40,8 +40,8 @@ ohos_shared_library("media_library_manager") {
 
   deps = [
     "${AAFWK_INNER_API_PATH}/dataobs_manager:dataobs_manager",
-    "${AAFWK_KITS_PATH}/ability/native:abilitykit_native",
-    "${AAFWK_KITS_PATH}/appkit:appkit_native",
+    "${AAFWK_PATH}/frameworks/native/ability/native:abilitykit_native",
+    "${AAFWK_PATH}/frameworks/native/appkit:appkit_native",
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//utils/native/base:utils",
