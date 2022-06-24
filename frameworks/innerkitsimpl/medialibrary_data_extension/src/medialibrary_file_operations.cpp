@@ -17,13 +17,13 @@
 
 #include "datashare_predicates.h"
 #include "datashare_result_set.h"
+#include "hitrace_meter.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_db.h"
 #include "rdb_utils.h"
-#include "hitrace_meter.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -37,7 +37,7 @@ MediaLibraryFileOperations::MediaLibraryFileOperations()
 }
 
 int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd,
-                                                        const unordered_map<string, DirAsset> &dirQuerySetMap)
+    const unordered_map<string, DirAsset> &dirQuerySetMap)
 {
     int32_t errCode = DATA_ABILITY_FAIL;
     auto values = cmd.GetValueBucket();
@@ -76,41 +76,41 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd
 
 int32_t MediaLibraryFileOperations::CreateFileOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_INFO_LOG("[lqh] enter");
+    MEDIA_DEBUG_LOG("enter");
     MediaLibraryObjectUtils objectUtils;
     return objectUtils.CreateFileObj(cmd);
 }
 
 int32_t MediaLibraryFileOperations::CloseFileOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_INFO_LOG("[lqh] enter");
+    MEDIA_DEBUG_LOG("enter");
     MediaLibraryObjectUtils objectUtils;
     return objectUtils.CloseFile(cmd);
 }
 
 shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFavFiles(MediaLibraryCommand &cmd)
 {
-    MEDIA_INFO_LOG("[lqh] enter");
-    string strQueryCondition = MEDIA_DATA_DB_IS_FAV + " = 1 AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> 8";
-    cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
+    MEDIA_DEBUG_LOG("enter");
+    cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_IS_FAV, "1");
+    cmd.GetAbsRdbPredicates()->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, "8");
 
     MediaLibraryObjectUtils objectUtils;
-    return objectUtils.QueryFiles(cmd);
+    return objectUtils.QueryWithCondition(cmd, {});
 }
 
 shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryTrashFiles(MediaLibraryCommand &cmd)
 {
-    MEDIA_INFO_LOG("[lqh] enter");
-    string strQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + " > 0 AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> 8";
-    cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
+    MEDIA_DEBUG_LOG("enter");
+    cmd.GetAbsRdbPredicates()->GreaterThan(MEDIA_DATA_DB_DATE_TRASHED,"0");
+    cmd.GetAbsRdbPredicates()->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, "8");
 
     MediaLibraryObjectUtils objectUtils;
-    return objectUtils.QueryFiles(cmd);
+    return objectUtils.QueryWithCondition(cmd, {});
 }
 
 int32_t MediaLibraryFileOperations::GetAlbumCapacityOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_INFO_LOG("[lqh] enter");
+    MEDIA_DEBUG_LOG("enter");
     int32_t errorCode = DATA_ABILITY_FAIL;
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
 
@@ -126,10 +126,8 @@ int32_t MediaLibraryFileOperations::GetAlbumCapacityOperation(MediaLibraryComman
     }
 
     if (isFavourite) {
-        MEDIA_INFO_LOG("isFavourite");
         resultSet = QueryFavFiles(cmd);
     } else if (isTrash) {
-        MEDIA_INFO_LOG("isTrash");
         resultSet = QueryTrashFiles(cmd);
     }
 
@@ -143,11 +141,11 @@ int32_t MediaLibraryFileOperations::GetAlbumCapacityOperation(MediaLibraryComman
 
 int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_INFO_LOG("[lqh] enter");
+    MEDIA_DEBUG_LOG("enter");
     int32_t errCode = DATA_ABILITY_FAIL;
 
     string strFileId = cmd.GetOprnFileId();
-    if (strFileId == "-1") {
+    if (strFileId.empty()) {
         MEDIA_ERR_LOG("Get id from uri or valuesBucket failed!");
         return errCode;
     }
@@ -179,7 +177,7 @@ int32_t MediaLibraryFileOperations::DeleteFileOperation(MediaLibraryCommand &cmd
     int32_t errCode = DATA_ABILITY_FAIL;
 
     string strFileId = cmd.GetOprnFileId();
-    if (strFileId == "-1") {
+    if (strFileId.empty()) {
         MEDIA_ERR_LOG("Get id from uri or valuesBucket failed!");
         return errCode;
     }
@@ -204,35 +202,19 @@ int32_t MediaLibraryFileOperations::DeleteFileOperation(MediaLibraryCommand &cmd
 
 int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_INFO_LOG("[lqh] enter");
+    MEDIA_DEBUG_LOG("enter");
     if (uniStore_ == nullptr) {
         MEDIA_ERR_LOG("uniStore_ is nullptr");
         return DATA_ABILITY_FAIL;
     }
 
-    int32_t id = -1;
-    ValueObject valueObject;
-    auto values = cmd.GetValueBucket();
-    if (values.GetObject(MEDIA_DATA_DB_ID, valueObject)) {
-        valueObject.GetInt(id);
-    }
-    MEDIA_INFO_LOG("id = %{private}d", id);
-    if (id == -1) {
+    string fileId = cmd.GetOprnFileId();
+    if (fileId.empty()) {
         MEDIA_ERR_LOG("not dictionary id, can't do the judgement!");
         return DATA_ABILITY_FAIL;
     }
-
-    cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, std::to_string(id));
-    std::vector<std::string> columns;
-    columns.push_back(MEDIA_DATA_DB_FILE_PATH);
-    shared_ptr<AbsSharedResultSet> queryResultSet = uniStore_->Query(cmd, columns);
-    string path = "";
-    while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t columnIndex;
-        queryResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, columnIndex);
-        queryResultSet->GetString(columnIndex, path);
-        MEDIA_INFO_LOG("path = %{private}s", path.c_str());
-    }
+    MediaLibraryObjectUtils objectUtils;
+    string path = objectUtils.GetPathByIdFromDb(fileId);
     if (MediaFileUtils::IsDirectory(path)) {
         MEDIA_INFO_LOG("%{private}s is a dictionary!", path.c_str());
         return DATA_ABILITY_SUCCESS;
@@ -244,21 +226,20 @@ int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cm
 shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFileOperation(
     MediaLibraryCommand &cmd, vector<string> columns)
 {
+    if (uniStore_ == nullptr) {
+        MEDIA_ERR_LOG("uniStore_ is nullptr");
+        return nullptr;
+    }
     shared_ptr<AbsSharedResultSet> queryResultSet;
-    string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
-    if (strQueryCondition.empty()) {
-        strQueryCondition = MEDIA_DATA_DB_ID + " = " + cmd.GetOprnFileId();
-        cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
+    string fileId = cmd.GetOprnFileId();
+    if (cmd.GetAbsRdbPredicates()->GetWhereClause().empty() && !fileId.empty()) {
+        cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, fileId);
     }
     string networkId = cmd.GetOprnDevice();
     if (!networkId.empty()) {
         std::vector<string> devices;
         devices.push_back(networkId);
         cmd.GetAbsRdbPredicates()->InDevices(devices);
-    }
-    MEDIA_DEBUG_LOG("predicates.GetWhereClause() %{public}s", strQueryCondition.c_str());
-    for (string whereArgs : cmd.GetAbsRdbPredicates()->GetWhereArgs()) {
-        MEDIA_DEBUG_LOG("predicates.GetWhereArgs() %{public}s", whereArgs.c_str());
     }
     StartTrace(HITRACE_TAG_OHOS, "QueryFile RdbStore->Query");
     queryResultSet = uniStore_->Query(cmd, columns);

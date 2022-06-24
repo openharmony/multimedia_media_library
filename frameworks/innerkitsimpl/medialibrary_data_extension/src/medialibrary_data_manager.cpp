@@ -357,10 +357,10 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
             break;
     }
 
-    // DeleteInfoInDbWithId can finish the default delete of smartalbum and smartmap,
+    // DeleteInfoByIdInDb can finish the default delete of smartalbum and smartmap,
     // so no need to distinct them in switch-case deliberately
     MediaLibraryObjectUtils assetUtils;
-    return assetUtils.DeleteInfoInDbWithId(cmd);
+    return assetUtils.DeleteInfoByIdInDb(cmd);
 }
 
 int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBucket &dataShareValue,
@@ -398,11 +398,11 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
         default:
             break;
     }
-    // ModifyInfoInDbWithId can finish the default update of smartalbum and smartmap,
+    // ModifyInfoByIdInDb can finish the default update of smartalbum and smartmap,
     // so no need to distinct them in switch-case deliberately
     MediaLibraryObjectUtils assetUtils;
     cmd.SetValueBucket(value);
-    return assetUtils.ModifyInfoInDbWithId(cmd);
+    return assetUtils.ModifyInfoByIdInDb(cmd);
 }
 
 bool ParseThumbnailInfo(string &uriString, vector<int> &space)

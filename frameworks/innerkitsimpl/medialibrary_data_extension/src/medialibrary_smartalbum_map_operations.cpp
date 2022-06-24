@@ -708,7 +708,7 @@ shared_ptr<AbsSharedResultSet> MediaLibrarySmartAlbumMapOperations::QueryAgeingT
     MediaLibraryObjectUtils objUtils;
     MediaLibraryCommand cmd(FILESYSTEM_ASSET, QUERY);
     cmd.GetAbsRdbPredicates()->SetWhereClause(strAgeingQueryCondition);
-    return objUtils.QueryFiles(cmd);
+    return objUtils.QueryWithCondition(cmd, {});
 }
 } // namespace Media
 } // namespace OHOS

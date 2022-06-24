@@ -18,8 +18,8 @@
 
 #include <memory>
 
-#include "medialibrary_unistore.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore.h"
 
 namespace OHOS {
 namespace Media {
