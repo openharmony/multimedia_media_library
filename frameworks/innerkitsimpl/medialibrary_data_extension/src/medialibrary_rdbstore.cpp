@@ -213,18 +213,18 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(Media
 
     auto predicates = cmd.GetAbsRdbPredicates();
 
-    MEDIA_INFO_LOG("======================================");
-    MEDIA_INFO_LOG("[lqh] tablename = %s", cmd.GetTableName().c_str());
-    MEDIA_INFO_LOG("[lqh] ObtainTableName = %s", ObtainTableName(cmd).c_str());
+    MEDIA_DEBUG_LOG("======================================");
+    MEDIA_DEBUG_LOG("tablename = %s", cmd.GetTableName().c_str());
+    MEDIA_DEBUG_LOG("ObtainTableName = %s", ObtainTableName(cmd).c_str());
     for (auto &col : columns) {
-        MEDIA_INFO_LOG("[lqh] col = %s", col.c_str());
+        MEDIA_DEBUG_LOG("col = %s", col.c_str());
     }
-    MEDIA_INFO_LOG("[lqh] whereClause = %s", predicates->GetWhereClause().c_str());
+    MEDIA_DEBUG_LOG("whereClause = %s", predicates->GetWhereClause().c_str());
     for (auto &arg : predicates->GetWhereArgs()) {
-        MEDIA_INFO_LOG("[lqh] whereArgs = %s", arg.c_str());
+        MEDIA_DEBUG_LOG("whereArgs = %s", arg.c_str());
     }
-    MEDIA_INFO_LOG("[lqh] limit = %d", predicates->GetLimit());
-    MEDIA_INFO_LOG("======================================");
+    MEDIA_DEBUG_LOG("limit = %d", predicates->GetLimit());
+    MEDIA_DEBUG_LOG("======================================");
 
     // maybe another way to Query
     auto ret = rdbStore_->Query(*predicates, columns);
