@@ -63,19 +63,26 @@ private:
 
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
 public:
+    struct DirValuesBucket {
+        int32_t directoryType;
+        string dirValues;
+        string typeValues;
+        string extensionValues;
+    };
+
+    struct SmartAlbumValuesBucket {
+        int32_t albumId;
+        string albumName;
+        int32_t albumType;
+    };
+
     int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
     int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
     bool GetDistributedTables();
     int32_t PrepareDir(NativeRdb::RdbStore &store);
-    int32_t PrepareCameraDir(NativeRdb::RdbStore &store);
-    int32_t PrepareVideoDir(NativeRdb::RdbStore &store);
-    int32_t PreparePictureDir(NativeRdb::RdbStore &store);
-    int32_t PrepareAudioDir(NativeRdb::RdbStore &store);
-    int32_t PrepareDocumentDir(NativeRdb::RdbStore &store);
-    int32_t PrepareDownloadDir(NativeRdb::RdbStore &store);
     int32_t PrepareSmartAlbum(NativeRdb::RdbStore &store);
-    int32_t PrepareFavourite(NativeRdb::RdbStore &store);
-    int32_t PrepareTrash(NativeRdb::RdbStore &store);
+    int32_t InsertDirValues(DirValuesBucket dirValuesBucket, NativeRdb::RdbStore &store);
+    int32_t InsertSmartAlbumValues(SmartAlbumValuesBucket smartAlbum, NativeRdb::RdbStore &store);
 private:
     bool isDistributedTables = false;
 };
@@ -94,7 +101,6 @@ private:
     std::string bundleName_;
     bool isNotifyDeviceChange_;
 };
-
 } // namespace Media
 } // namespace OHOS
 
