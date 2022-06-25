@@ -337,7 +337,7 @@ int32_t MediaLibraryDataCallBack::PrepareDir(RdbStore &store)
 
     vector<DirValuesBucket> dirValuesBuckets = {
         cameraDir, videoDir, pictureDir, audioDir, documentDir, downloadDir
-    }
+    };
 
     for (auto dirValuesBucket : dirValuesBuckets) {
         if (InsertDirValues(dirValuesBucket, store) != NativeRdb::E_OK) {
@@ -373,7 +373,7 @@ int32_t MediaLibraryDataCallBack::PrepareSmartAlbum(RdbStore &store)
 
     vector<SmartAlbumValuesBucket> smartAlbumValuesBuckets = {
         trashAlbum, favAlbum
-    }
+    };
 
     for (auto smartAlbum : smartAlbumValuesBuckets) {
         if (InsertSmartAlbumValues(smartAlbum, store) != NativeRdb::E_OK) {
@@ -410,9 +410,8 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         CREATE_SMARTABLUMASSETS_VIEW,
         CREATE_ASSETMAP_VIEW,
         CREATE_MEDIATYPE_DIRECTORY_TABLE,
-    }
+    };
 
-    int32_t result = NativeRdb::E_ERROR;
     for (string sqlStr : executeSqlStrs) {
         if (store.ExecuteSql(sqlStr) != NativeRdb::E_OK) {
             return NativeRdb::E_ERROR;

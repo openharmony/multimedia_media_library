@@ -55,13 +55,13 @@ public:
     }
 
     virtual bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
-        std::vector<std::string> &devices, bool isLast = false)
+        const std::vector<std::string> &devices, bool isLast = false)
     {
         return false;
     }
 
     virtual bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
-        std::vector<std::string> &devices, bool isBlock = false)
+        const std::vector<std::string> &devices, bool isBlock = false)
     {
         return false;
     }
