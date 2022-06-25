@@ -30,7 +30,7 @@ MediaLibraryAlbumOperations::MediaLibraryAlbumOperations()
     uniStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
 }
 
-int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(MediaLibraryCommand &cmd)
+int32_t MediaLibraryAlbumOperations::HandleAlbumOperation(MediaLibraryCommand &cmd)
 {
     int32_t ret = DATA_ABILITY_FAIL;
     switch (cmd.GetOprnType()) {
@@ -44,7 +44,7 @@ int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(MediaLibraryCommand &
             ret =  ModifyAlbumOperation(cmd);
             break;
         default:
-            MEDIA_WARNING_LOG("unknown command %d", cmd.GetOprnType());
+            MEDIA_WARNING_LOG("unknown command %{public}d", cmd.GetOprnType());
             break;
     }
     return ret;

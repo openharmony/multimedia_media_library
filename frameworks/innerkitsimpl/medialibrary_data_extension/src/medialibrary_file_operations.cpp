@@ -68,7 +68,7 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd
             errCode = GetAlbumCapacityOperation(cmd);
             break;
         default:
-            MEDIA_WARNING_LOG("unknown operation type %{private}d", cmd.GetOprnType());
+            MEDIA_WARNING_LOG("unknown operation type %{public}d", cmd.GetOprnType());
             break;
     }
     return errCode;

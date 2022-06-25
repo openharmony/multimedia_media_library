@@ -16,7 +16,7 @@
 #ifndef OHOS_MEDIALIBRARY_UNISTORE_H
 #define OHOS_MEDIALIBRARY_UNISTORE_H
 
-#include "foundation/ability/ability_runtime/frameworks/kits/appkit/native/ability_runtime/context/context.h"
+#include "context/context.h"
 #include "medialibrary_command.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"

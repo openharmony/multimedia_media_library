@@ -29,7 +29,7 @@ namespace Media {
 class MediaLibraryAlbumOperations {
 public:
     MediaLibraryAlbumOperations();
-    int32_t HandleAlbumOperations(MediaLibraryCommand &cmd);
+    int32_t HandleAlbumOperation(MediaLibraryCommand &cmd);
     int32_t CreateAlbumOperation(MediaLibraryCommand &cmd);
     int32_t DeleteAlbumOperation(MediaLibraryCommand &cmd);
     int32_t ModifyAlbumOperation(MediaLibraryCommand &cmd);
