@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -50,8 +50,6 @@ public:
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static int32_t MakeHashDispalyName(const std::string &input, std::string &outRes);
     static std::string GetDisPlayNameFromPath(std::string &path);
-    static bool CheckOpenMode(const std::string &mode);
-    static bool CheckFilePending(const std::shared_ptr<FileAsset> fileAsset);
     static void SplitKeyValue(const string& keyValue, string &key, string &value);
     static void SplitKeys(const string& query, vector<string>& keys);
     static string ObtionCondition(string &strQueryCondition, const vector<string> &whereArgs);

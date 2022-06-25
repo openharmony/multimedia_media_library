@@ -218,7 +218,6 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         oprnType_ = oprnTypeMap.at(oprnName);
     }
     MEDIA_INFO_LOG("Command operation type is %{public}d", oprnType_);
-    return;
 }
 
 void MediaLibraryCommand::ParseTableName()
@@ -249,9 +248,12 @@ void MediaLibraryCommand::ParseTableName()
     // distributed tablename
     auto deviceId = GetOprnDevice();
     if (!deviceId.empty()) {
-        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
         if (rdbStore != nullptr) {
-            tableName_ = rdbStore->ObtainDistributedTableName(deviceId, MEDIALIBRARY_TABLE);
+            auto rdbStorePtr = rdbStore->GetRaw();
+            if (rdbStorePtr != nullptr) {
+                tableName_ = rdbStorePtr->ObtainDistributedTableName(deviceId, MEDIALIBRARY_TABLE);
+            }
         }
     }
     MEDIA_INFO_LOG("Table name is %{public}s", tableName_.c_str());

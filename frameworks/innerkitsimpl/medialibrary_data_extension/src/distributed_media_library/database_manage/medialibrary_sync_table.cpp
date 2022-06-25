@@ -146,7 +146,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
 }
 
 bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
-                                          const std::string &tableName, std::vector<std::string> &devices, bool isBlock)
+    const std::string &tableName, std::vector<std::string> &devices, bool isBlock)
 {
     MEDIA_ERR_LOG("SyncPushTable table = %{private}s", tableName.c_str());
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Rdb Store is not initialized");

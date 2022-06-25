@@ -39,7 +39,6 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
 void MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("MediaLibraryRdbStore::Init");
-
     if (rdbStore_ != nullptr) {
         return;
     }
@@ -119,10 +118,10 @@ bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
 
 int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStore::Insert");
-
+    MEDIA_DEBUG_LOG("MediaLibraryRdbStore::Insert");
     if (rdbStore_ == nullptr) {
-        return DATA_ABILITY_FAIL;
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return DATA_ABILITY_HAS_DB_ERROR;
     }
 
     int32_t ret = rdbStore_->Insert(rowId, cmd.GetTableName(), cmd.GetValueBucket());
@@ -135,17 +134,16 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     if (!SyncPushTable(bundleName_, cmd.GetTableName(), devices)) {
         MEDIA_ERR_LOG("SyncPushTable Error");
     }
-    MEDIA_INFO_LOG("[lqh]rdbStore_->Insert end, rowId = %d, ret = %{public}d", (int)rowId, ret);
+    MEDIA_INFO_LOG("rdbStore_->Insert end, rowId = %d, ret = %{public}d", (int)rowId, ret);
     return ret;
 }
 
 int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &rowId)
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStore::Delete");
-
+    MEDIA_DEBUG_LOG("MediaLibraryRdbStore::Delete");
     if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return DATA_ABILITY_FAIL;
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        return DATA_ABILITY_HAS_DB_ERROR;
     }
 
     if (cmd.GetAbsRdbPredicates() == nullptr) {
@@ -170,9 +168,10 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &rowId)
 
 int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStore::Update");
+    MEDIA_DEBUG_LOG("MediaLibraryRdbStore::Update");
     if (rdbStore_ == nullptr) {
-        return DATA_ABILITY_FAIL;
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        return DATA_ABILITY_HAS_DB_ERROR;
     }
 
     if (cmd.GetAbsRdbPredicates() == nullptr) {
@@ -180,7 +179,6 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
         return DATA_ABILITY_FAIL;
     }
 
-    // distributed rdb?
     int32_t ret = rdbStore_->Update(rowId, cmd.GetTableName(), cmd.GetValueBucket(),
                                     cmd.GetAbsRdbPredicates()->GetWhereClause(),
                                     cmd.GetAbsRdbPredicates()->GetWhereArgs());
@@ -200,9 +198,9 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
 std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStore::Query");
-
+    MEDIA_DEBUG_LOG("MediaLibraryRdbStore::Query");
     if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
         return nullptr;
     }
 
@@ -226,23 +224,21 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(Media
     MEDIA_DEBUG_LOG("limit = %d", predicates->GetLimit());
     MEDIA_DEBUG_LOG("======================================");
 
-    // maybe another way to Query
     auto ret = rdbStore_->Query(*predicates, columns);
     if (ret != nullptr) {
         int count;
         ret->GetRowCount(count);
-        MEDIA_INFO_LOG("GetRowCount() = %{public}d", count);
+        MEDIA_DEBUG_LOG("GetRowCount() = %{public}d", count);
     }
     return ret;
 }
 
 int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStore::ExecuteSql");
-
+    MEDIA_DEBUG_LOG("MediaLibraryRdbStore::ExecuteSql");
     if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return DATA_ABILITY_FAIL;
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        return DATA_ABILITY_HAS_DB_ERROR;
     }
 
     int32_t ret = rdbStore_->ExecuteSql(sql);
@@ -256,10 +252,9 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
 
 std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql)
 {
-    MEDIA_INFO_LOG("MediaLibraryRdbStore::ExecuteSql");
-
+    MEDIA_DEBUG_LOG("MediaLibraryRdbStore::ExecuteSql");
     if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
         return nullptr;
     }
 
@@ -267,7 +262,7 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::QuerySql(co
     if (ret != nullptr) {
         int count;
         ret->GetRowCount(count);
-        MEDIA_INFO_LOG("GetRowCount() = %{public}d", count);
+        MEDIA_DEBUG_LOG("GetRowCount() = %{public}d", count);
     }
 
     return ret;
@@ -302,17 +297,19 @@ bool MediaLibraryRdbStore::SyncPullAllTableByDeviceId(const std::string &bundleN
 }
 
 bool MediaLibraryRdbStore::SyncPullTable(const std::string &bundleName, const std::string &tableName,
-    std::vector<std::string> &devices, bool isLast)
+    const std::vector<std::string> &devices, bool isLast)
 {
     MediaLibrarySyncTable syncTable;
-    return syncTable.SyncPullTable(rdbStore_, bundleName, tableName, devices, isLast);
+    std::vector<std::string> devList(devices);
+    return syncTable.SyncPullTable(rdbStore_, bundleName, tableName, devList, isLast);
 }
 
 bool MediaLibraryRdbStore::SyncPushTable(const std::string &bundleName, const std::string &tableName,
-    std::vector<std::string> &devices, bool isLast)
+    const std::vector<std::string> &devices, bool isLast)
 {
     MediaLibrarySyncTable syncTable;
-    return syncTable.SyncPushTable(rdbStore_, bundleName, tableName, devices, isLast);
+    std::vector<std::string> devList(devices);
+    return syncTable.SyncPushTable(rdbStore_, bundleName, tableName, devList, isLast);
 }
 
 int32_t MediaLibraryDataCallBack::PrepareCameraDir(RdbStore &store)
