@@ -36,14 +36,14 @@ public:
     virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &rowId) override;
     virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &rowId) override;
     std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(MediaLibraryCommand &cmd,
-                                                         const std::vector<std::string> &columns) override;
+        const std::vector<std::string> &columns) override;
 
     bool SyncPullAllTable(const std::string &bundleName) override;
     bool SyncPullAllTableByDeviceId(const std::string &bundleName, std::vector<std::string> &devices) override;
     bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
-                       const std::vector<std::string> &devices, bool isLast = false) override;
+        const std::vector<std::string> &devices, bool isLast = false) override;
     bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
-                       const std::vector<std::string> &devices, bool isLast = false) override;
+        const std::vector<std::string> &devices, bool isLast = false) override;
     int32_t ExecuteSql(const std::string &sql) override;
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QuerySql(const std::string &sql) override;
     // temp
@@ -65,14 +65,14 @@ class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
 public:
     struct DirValuesBucket {
         int32_t directoryType;
-        string dirValues;
-        string typeValues;
-        string extensionValues;
+        std::string dirValues;
+        std::string typeValues;
+        std::string extensionValues;
     };
 
     struct SmartAlbumValuesBucket {
         int32_t albumId;
-        string albumName;
+        std::string albumName;
         int32_t albumType;
     };
 
