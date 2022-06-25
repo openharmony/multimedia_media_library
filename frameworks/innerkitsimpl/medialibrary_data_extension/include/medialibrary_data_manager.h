@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,57 +20,44 @@
 #include <unordered_map>
 
 #include "ability.h"
-#include "ability_loader.h"
 #include "abs_rdb_predicates.h"
 #include "data_ability_predicates.h"
+#include "datashare_abs_result_set.h"
+#include "datashare_predicates.h"
 #include "device_manager.h"
 #include "device_manager_callback.h"
 #include "dir_asset.h"
-#include "medialibrary_album_operations.h"
-#include "medialibrary_smartalbum_map_operations.h"
-#include "medialibrary_smartalbum_operations.h"
-#include "media_data_ability_const.h"
-#include "medialibrary_data_manager_utils.h"
-#include "medialibrary_device.h"
-#include "medialibrary_device_info.h"
-#include "medialibrary_file_operations.h"
-#include "medialibrary_dir_operations.h"
-#include "medialibrary_kvstore_operations.h"
+#include "distributed_kv_data_manager.h"
+#include "foundation/ability/ability_runtime/frameworks/kits/appkit/native/ability_runtime/context/context.h"
+#include "hilog/log.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 #include "rdb_open_callback.h"
-#include "foundation/ability/ability_runtime/frameworks/kits/appkit/native/ability_runtime/context/context.h"
 #include "rdb_store.h"
 #include "rdb_store_config.h"
 #include "rdb_types.h"
 #include "result_set.h"
+#include "result_set_bridge.h"
+#include "timer.h"
 #include "uri.h"
 #include "values_bucket.h"
 #include "want.h"
-#include "hilog/log.h"
+
+#include "media_data_ability_const.h"
+#include "medialibrary_album_operations.h"
+#include "medialibrary_data_manager_utils.h"
+#include "medialibrary_device.h"
+#include "medialibrary_device_info.h"
+#include "medialibrary_dir_operations.h"
+#include "medialibrary_file_operations.h"
+#include "medialibrary_kvstore_operations.h"
+#include "medialibrary_smartalbum_map_operations.h"
+#include "medialibrary_smartalbum_operations.h"
+#include "medialibrary_sync_table.h"
 #include "medialibrary_thumbnail.h"
-#include "distributed_kv_data_manager.h"
-#include "timer.h"
-#include "datashare_predicates.h"
-#include "datashare_abs_result_set.h"
-#include "result_set_bridge.h"
 
 namespace OHOS {
 namespace Media {
-// kvstore constants
-    const DistributedKv::AppId KVSTORE_APPID { "com.ohos.medialibrary.MediaLibraryDataA" };
-    const DistributedKv::StoreId KVSTORE_STOREID { "ringtone" };
-    enum TableType {
-        TYPE_DATA,
-        TYPE_SMARTALBUM,
-        TYPE_SMARTALBUM_MAP,
-        TYPE_ALBUM_TABLE,
-        TYPE_SMARTALBUMASSETS_TABLE,
-        TYPE_ACTIVE_DEVICE,
-        TYPE_ALL_DEVICE,
-        TYPE_ASSETSMAP_TABLE,
-        TYPE_DIR_TABLE
-    };
     class MediaLibraryDataManager {
     public:
         EXPORT MediaLibraryDataManager();
@@ -109,8 +96,6 @@ namespace Media {
         void ClearMediaLibraryMgr();
 
     private:
-        static constexpr const char DEVICE_BUNDLENAME[] = "com.ohos.medialibrary.MediaLibraryDataA";
-        std::string GetOperationType(const std::string &uri);
         void InitDeviceData();
         bool QuerySync(const std::string &deviceId, const std::string &tableName);
         bool QuerySync();
@@ -122,11 +107,10 @@ namespace Media {
         void NeedQuerySync(const std::string &networkId, OperationObject oprnObject);
         void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
 
-        static const std::string PERMISSION_NAME_READ_MEDIA;
-        static const std::string PERMISSION_NAME_WRITE_MEDIA;
         std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
         DistributedKv::DistributedKvDataManager dataManager_;
         std::shared_ptr<MediaLibraryThumbnail> mediaThumbnail_;
+        MediaLibrarySyncTable syncTable_;
         bool isRdbStoreInitialized;
         std::shared_ptr<OHOS::AbilityRuntime::Context> context_ = nullptr;
         std::string bundleName_;

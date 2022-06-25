@@ -101,8 +101,10 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFavFiles(MediaLi
 shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryTrashFiles(MediaLibraryCommand &cmd)
 {
     MEDIA_DEBUG_LOG("enter");
-    cmd.GetAbsRdbPredicates()->GreaterThan(MEDIA_DATA_DB_DATE_TRASHED,"0");
-    cmd.GetAbsRdbPredicates()->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, "8");
+    cmd.GetAbsRdbPredicates()
+        ->GreaterThan(MEDIA_DATA_DB_DATE_TRASHED, "0")
+        ->And()
+        ->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, "8");
 
     MediaLibraryObjectUtils objectUtils;
     return objectUtils.QueryWithCondition(cmd, {});
@@ -205,7 +207,7 @@ int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cm
     MEDIA_DEBUG_LOG("enter");
     if (uniStore_ == nullptr) {
         MEDIA_ERR_LOG("uniStore_ is nullptr");
-        return DATA_ABILITY_FAIL;
+        return DATA_ABILITY_HAS_DB_ERROR;
     }
 
     string fileId = cmd.GetOprnFileId();

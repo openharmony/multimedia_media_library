@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,17 +32,22 @@ MediaLibraryAlbumOperations::MediaLibraryAlbumOperations()
 
 int32_t MediaLibraryAlbumOperations::HandleAlbumOperations(MediaLibraryCommand &cmd)
 {
+    int32_t ret = DATA_ABILITY_FAIL;
     switch (cmd.GetOprnType()) {
         case CREATE:
-            return CreateAlbumOperation(cmd); break;
+            ret = CreateAlbumOperation(cmd);
+            break;
         case DELETE:
-            return DeleteAlbumOperation(cmd); break;
+            ret = DeleteAlbumOperation(cmd);
+            break;
         case UPDATE:
-            return ModifyAlbumOperation(cmd); break;
+            ret =  ModifyAlbumOperation(cmd);
+            break;
         default:
-            return DATA_ABILITY_SUCCESS;
+            MEDIA_WARNING_LOG("unknown command %d", cmd.GetOprnType());
+            break;
     }
-    return DATA_ABILITY_SUCCESS;
+    return ret;
 }
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
@@ -79,8 +84,8 @@ int32_t MediaLibraryAlbumOperations::ModifyAlbumOperation(MediaLibraryCommand &c
         return DATA_ABILITY_FAIL;
     }
 
-    ValuesBucket values = const_cast<ValuesBucket &>(cmd.GetValueBucket());
-    string dstDirName = "";
+    auto values = cmd.GetValueBucket();
+    string dstDirName;
     ValueObject valueObject;
     if (values.GetObject(MEDIA_DATA_DB_ALBUM_NAME, valueObject)) {
         valueObject.GetString(dstDirName);

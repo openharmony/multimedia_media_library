@@ -40,10 +40,10 @@ public:
 
     bool SyncPullAllTable(const std::string &bundleName) override;
     bool SyncPullAllTableByDeviceId(const std::string &bundleName, std::vector<std::string> &devices) override;
-    bool SyncPullTable(const std::string &bundleName, const std::string &tableName, std::vector<std::string> &devices,
-                       bool isLast = false) override;
-    bool SyncPushTable(const std::string &bundleName, const std::string &tableName, std::vector<std::string> &devices,
-                       bool isLast = false) override;
+    bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
+                       const std::vector<std::string> &devices, bool isLast = false) override;
+    bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
+                       const std::vector<std::string> &devices, bool isLast = false) override;
     int32_t ExecuteSql(const std::string &sql) override;
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QuerySql(const std::string &sql) override;
     // temp
