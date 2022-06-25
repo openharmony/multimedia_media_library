@@ -21,6 +21,7 @@
 
 #include "ability.h"
 #include "abs_rdb_predicates.h"
+#include "context/context.h"
 #include "data_ability_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "datashare_predicates.h"
@@ -28,7 +29,6 @@
 #include "device_manager_callback.h"
 #include "dir_asset.h"
 #include "distributed_kv_data_manager.h"
-#include "foundation/ability/ability_runtime/frameworks/kits/appkit/native/ability_runtime/context/context.h"
 #include "hilog/log.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"

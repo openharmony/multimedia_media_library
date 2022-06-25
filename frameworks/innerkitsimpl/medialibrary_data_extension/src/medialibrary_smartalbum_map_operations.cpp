@@ -583,8 +583,8 @@ bool MediaLibrarySmartAlbumMapOperations::IsAlbumExistInDb(const std::string &pa
 {
     vector<string> columns;
     string realPath = path;
-    if (realPath.substr(realPath.length() - 1) == "/") {
-        realPath = realPath.substr(0, realPath.length() - 1);
+    if (realPath.back() == '/') {
+        realPath.pop_back();
     }
     outRow = 0;
     MEDIA_INFO_LOG("isAlbumExistInDb path = %{private}s", realPath.c_str());
@@ -593,16 +593,14 @@ bool MediaLibrarySmartAlbumMapOperations::IsAlbumExistInDb(const std::string &pa
         + MEDIA_DATA_DB_IS_TRASH + " = 0";
     absPredicates.SetWhereClause(strQueryCondition);
     unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
-    if (queryResultSet != nullptr) {
-        if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
-            int32_t columnIndexId;
-            int32_t idVal;
-            queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
-            queryResultSet->GetInt(columnIndexId, idVal);
-            MEDIA_INFO_LOG("id = %{private}d", idVal);
-            outRow = idVal;
-            return true;
-        }
+    if (queryResultSet != nullptr && queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t columnIndexId;
+        int32_t idVal;
+        queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndexId);
+        queryResultSet->GetInt(columnIndexId, idVal);
+        MEDIA_INFO_LOG("id = %{private}d", idVal);
+        outRow = idVal;
+        return true;
     }
     return false;
 }
@@ -619,8 +617,8 @@ int32_t MediaLibrarySmartAlbumMapOperations::GetAssetRecycle(const int32_t &asse
     for (pair<string, DirAsset> dirPair : dirQuerySetMap) {
         DirAsset dirAsset = dirPair.second;
         rootPath = ROOT_MEDIA_DIR + dirAsset.GetDirectory();
-        MEDIA_INFO_LOG("GetAssetRecycle = %{public}s", rootPath.c_str());
         if (path.find(rootPath) != string::npos) {
+            MEDIA_INFO_LOG("GetAssetRecycle = %{public}s", rootPath.c_str());
             errorCode = DATA_ABILITY_SUCCESS;
             break;
         }
@@ -655,7 +653,8 @@ int32_t MediaLibrarySmartAlbumMapOperations::MakeRecycleDisplayName(const int32_
     MediaLibraryObjectUtils objUtils;
     shared_ptr<FileAsset> fileAsset = objUtils.GetFileAssetFromDb(uri);
     if (fileAsset == nullptr) {
-        return -1;
+        MEDIA_ERR_LOG("fileAsset not found");
+        return DATA_ABILITY_FAIL;
     }
     string extension = "";
     string hashDisplayName = "";
