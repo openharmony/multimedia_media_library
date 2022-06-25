@@ -14,10 +14,12 @@
  */
 
 #include "medialibrary_data_manager_utils.h"
+
 #include <regex>
-#include "openssl/sha.h"
+
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -585,43 +587,6 @@ string MediaLibraryDataManagerUtils::GetDistributedAlbumSql(const string &strQue
     return distributedAlbumSql;
 }
 
-int32_t MediaLibraryDataManagerUtils::MakeHashDispalyName(const std::string &input, std::string &outRes)
-{
-    vector<uint8_t> data(input.begin(), input.end());
-    MEDIA_INFO_LOG("MakeHashDispalyName IN");
-    if (data.size() <= 0) {
-        MEDIA_ERR_LOG("Empty data");
-        return DATA_ABILITY_GET_HASH_FAIL;
-    }
-    unsigned char hash[SHA256_DIGEST_LENGTH] = "";
-    SHA256_CTX ctx;
-    SHA256_Init(&ctx);
-    SHA256_Update(&ctx, data.data(), data.size());
-    SHA256_Final(hash, &ctx);
-    // here we translate sha256 hash to hexadecimal. each 8-bit char will be presented by two characters([0-9a-f])
-    constexpr int CHAR_WIDTH = 8;
-    constexpr int HEX_WIDTH = 4;
-    constexpr unsigned char HEX_MASK = 0xf;
-    constexpr int HEX_A = 10;
-    outRes.reserve(SHA256_DIGEST_LENGTH * (CHAR_WIDTH / HEX_WIDTH));
-    for (unsigned char i : hash) {
-        unsigned char hex = i >> HEX_WIDTH;
-        if (hex < HEX_A) {
-            outRes.push_back('0' + hex);
-        } else {
-            outRes.push_back('a' + hex - HEX_A);
-        }
-        hex = i & HEX_MASK;
-        if (hex < HEX_A) {
-            outRes.push_back('0' + hex);
-        } else {
-            outRes.push_back('a' + hex - HEX_A);
-        }
-    }
-    MEDIA_DEBUG_LOG("MakeHashDispalyName OUT [%{private}s]", outRes.c_str());
-    return DATA_ABILITY_SUCCESS;
-}
-
 bool MediaLibraryDataManagerUtils::IsColumnValueExist(const string &value,
     const string &column, const shared_ptr<RdbStore> &rdbStore)
 {
@@ -661,14 +626,17 @@ int32_t MediaLibraryDataManagerUtils::MakeRecycleDisplayName(const int32_t &asse
     string hashDisplayName = "";
     string name = to_string(fileAsset->GetId()) +
         fileAsset->GetRelativePath() + fileAsset->GetDisplayName();
-    int32_t errorCode = MakeHashDispalyName(name, hashDisplayName);
-    MEDIA_INFO_LOG("hashDisplayName = %{public}s", hashDisplayName.c_str());
+    int32_t errorCode = MediaLibraryCommonUtils::GenKeySHA256(name, hashDisplayName);
+    if (errorCode < 0) {
+        MEDIA_ERR_LOG("Failed to make hash display name, err: %{public}d", errorCode);
+        return errorCode;
+    }
+    MEDIA_DEBUG_LOG("hashDisplayName = %{public}s", hashDisplayName.c_str());
     outRecyclePath = trashDirPath + hashDisplayName;
     if (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {
         size_t displayNameIndex = fileAsset->GetDisplayName().find(".");
         if (displayNameIndex != string::npos) {
             extension = fileAsset->GetDisplayName().substr(displayNameIndex);
-            MEDIA_INFO_LOG("extension = %{public}s", extension.c_str());
         }
         outRecyclePath = outRecyclePath + extension;
         MEDIA_INFO_LOG("asset outRecyclePath = %{public}s", outRecyclePath.c_str());
@@ -676,7 +644,11 @@ int32_t MediaLibraryDataManagerUtils::MakeRecycleDisplayName(const int32_t &asse
     while (IsColumnValueExist(outRecyclePath, MEDIA_DATA_DB_RECYCLE_PATH, rdbStore)) {
         name = name + HASH_COLLISION_SUFFIX;
         MEDIA_INFO_LOG("name = %{public}s", name.c_str());
-        errorCode = MakeHashDispalyName(name, hashDisplayName);
+        errorCode = MediaLibraryCommonUtils::GenKeySHA256(name, hashDisplayName);
+        if (errorCode < 0) {
+            MEDIA_ERR_LOG("Failed to make hash display name, err: %{public}d", errorCode);
+            return false;
+        }
         if (!extension.empty()) {
             outRecyclePath = trashDirPath + hashDisplayName + extension;
         }
