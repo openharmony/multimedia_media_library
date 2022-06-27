@@ -99,7 +99,7 @@ void MediaLibraryDevice::GetAllDeviceId(
 }
 void MediaLibraryDevice::OnSyncCompleted(const std::string &devId, const DistributedKv::Status status)
 {
-    MEDIA_INFO_LOG("OnSyncCompleted devid %{private}s, status %{public}d", devId.c_str(), status);
+    MEDIA_INFO_LOG("OnSyncCompleted dev id %{private}s, status %{public}d", devId.c_str(), status);
     std::unique_lock<std::mutex> lock(cvMtx_);
     kvSyncDoneCv_.notify_one();
 }
@@ -310,7 +310,6 @@ std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId)
         char localDeviceId[DEVICE_ID_SIZE] = {0};
         GetDevUdid(localDeviceId, DEVICE_ID_SIZE);
         std::string localUdid = std::string(localDeviceId);
-        MEDIA_INFO_LOG("get local udid %{private}s", localUdid.c_str());
         if (localUdid.empty()) {
             MEDIA_ERR_LOG("get local udid failed");
         }
