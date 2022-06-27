@@ -118,6 +118,7 @@ void DevicePermissionVerification::MLDevSecInfoCb(const DeviceIdentify *identify
     FreeDeviceSecurityInfo(info);
     if (ret != SUCCESS) {
         MEDIA_ERR_LOG("get device sec level failed %{public}d", ret);
+        return;
     }
     std::string udid(reinterpret_cast<char *>(const_cast<uint8_t *>(identify->identity)), identify->length);
     MediaLibraryDevice::GetInstance()->OnGetDevSecLevel(udid, level);
