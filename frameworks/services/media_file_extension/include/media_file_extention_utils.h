@@ -15,11 +15,8 @@
 #ifndef FRAMEWORKS_SERVICES_MEDIA_LIBRARY_EXTENTION_UTILS_H_
 #define FRAMEWORKS_SERVICES_MEDIA_LIBRARY_EXTENTION_UTILS_H_
 
-#include <string>
-
 #include "abs_shared_result_set.h"
 #include "file_access_extension_info.h"
-#include "media_lib_service_const.h"
 #include "uri.h"
 
 namespace OHOS {
@@ -33,10 +30,10 @@ static const std::string MEDIALIBRARY_LOCAL_DEVICE_NAME = "LOCAL";
 static const std::string MEDIA_FILE_EXT_MODE_FOLDER = "folder";
 static const std::string MEDIA_FILE_EXT_MODE_FILE = "file";
 enum MediaFileUriType {
-    URITYPE_ROOT,
-    URITYPE_ALBUM,
-    URITYPE_FILE,
-    URITYPE_DIR,
+    URI_ROOT,
+    URI_ALBUM,
+    URI_FILE,
+    URI_DIR,
 };
 class MediaFileExtentionUtils {
 public:
@@ -46,12 +43,12 @@ public:
     static bool CheckValidDirName(const std::string &displayName);
     static bool GetAlbumRelativePathFromDB(const std::string &selectUri, const std::string &networkId,
         std::string &relativePath);
-    static std::shared_ptr<NativeRdb::AbsSharedResultSet> GetFileFromRdb(const std::string &selectUri,
+    static std::shared_ptr<NativeRdb::AbsSharedResultSet> GetFileFromDB(const std::string &selectUri,
         const std::string &networkId);
     static int32_t Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri);
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
-    static int32_t ListFile(std::string selectUri, std::vector<FileAccessFwk::FileInfo> &fileList);
-    static int32_t GetRoots(std::vector<FileAccessFwk::DeviceInfo> &deviceList);
+    static int32_t ListFile(const std::string &selectUri, std::vector<FileAccessFwk::FileInfo> &fileList);
+    static void GetRoots(std::vector<FileAccessFwk::DeviceInfo> &deviceList);
 };
 } // Media
 } // OHOS

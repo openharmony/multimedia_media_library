@@ -36,6 +36,10 @@ bool MediaFileExtentionUtils::CheckUriValid(const string &uri)
         return false;
     }
     size_t slashIndex = uri.rfind(SLASH_CHAR);
+    if (slashIndex == string::npos) {
+        MEDIA_ERR_LOG("invalid uri %{private}s", uri.c_str());
+        return false;
+    }
     string id = uri.substr(slashIndex + 1);
     if (id.empty()) {
         MEDIA_ERR_LOG("invalid uri %{private}s", uri.c_str());
@@ -56,12 +60,12 @@ MediaFileUriType MediaFileExtentionUtils::ResolveUri(const std::string &uri)
     if (slashIndex != std::string::npos) {
         std::string type = uri.substr(slashIndex);
         if (type == MEDIALIBRARY_ROOT) {
-            return MediaFileUriType::URITYPE_ROOT;
+            return MediaFileUriType::URI_ROOT;
         } else {
-            return MediaFileUriType::URITYPE_DIR;
+            return MediaFileUriType::URI_DIR;
         }
     } else {
-        return MediaFileUriType::URITYPE_FILE;
+        return MediaFileUriType::URI_FILE;
     }
 }
 
@@ -71,7 +75,7 @@ bool MediaFileExtentionUtils::CheckValidDirName(const std::string &displayName)
     absPredicates.EqualTo(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, displayName);
     vector<string> columns;
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(absPredicates, columns);
-    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, DATA_ABILITY_FAIL, "Query functionality failed");
+    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, false, "Query functionality failed");
     int32_t count = 0;
     queryResultSet->GetRowCount(count);
     return count > 0;
@@ -82,8 +86,7 @@ void GetSingleFileInfo(const string &networkId, FileAccessFwk::FileInfo &fileInf
 {
     int fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, result, TYPE_INT32));
     int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
-    string uri = MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) +
-         '/' + to_string(fileId);
+    string uri = MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
     fileInfo.uri = Uri(uri);
     fileInfo.fileName = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_NAME, result, TYPE_STRING));
     fileInfo.mimeType = to_string(mediaType);
@@ -102,36 +105,36 @@ void GetFileInfoFromResult(const string &networkId, shared_ptr<AbsSharedResultSe
     int count = 0;
     result->GetRowCount(count);
     CHECK_AND_RETURN_LOG(count > 0, "AbsSharedResultSet empty");
-    result->GoToFirstRow();
+    auto ret = result->GoToFirstRow();
+    CHECK_AND_RETURN_LOG(ret == 0, "Failed to shift at first row");
     fileList.reserve(count);
+    FileAccessFwk::FileInfo fileInfo;
     for (int i = 0; i < count; i++) {
-        FileAccessFwk::FileInfo fileInfo;
         GetSingleFileInfo(networkId, fileInfo, result);
         fileList.push_back(fileInfo);
-        result->GoToNextRow();
+        ret = result->GoToNextRow();
+        CHECK_AND_RETURN_LOG(ret == 0, "Failed to GoToNextRow");
     }
 }
 
-std::shared_ptr<AbsSharedResultSet> GetListFileResult(const string &queryUri,
-                                                      const string &selection,
-                                                      vector<string> &selectionArgs)
+std::shared_ptr<AbsSharedResultSet> GetListFileResult(const string &queryUri, const string &selection,
+    vector<string> &selectionArgs)
 {
     Uri uri(queryUri);
     DataSharePredicates predicates;
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
     vector<string> columns;
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
-    return resultSet;
+    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
-shared_ptr<AbsSharedResultSet> MediaFileExtentionUtils::GetFileFromRdb(const string &selectUri, const string &networkId)
+shared_ptr<AbsSharedResultSet> MediaFileExtentionUtils::GetFileFromDB(const string &selectUri, const string &networkId)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     }
-    string selection = MEDIA_DATA_DB_ID + " LIKE ? ";
+    string selection = MEDIA_DATA_DB_ID + " = ? ";
     string id = MediaLibraryDataManagerUtils::GetIdFromUri(selectUri);
     vector<string> selectionArgs = { id };
     vector<string> columns;
@@ -139,20 +142,19 @@ shared_ptr<AbsSharedResultSet> MediaFileExtentionUtils::GetFileFromRdb(const str
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
     Uri uri(queryUri);
-    shared_ptr<AbsSharedResultSet> result =
-        MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
-    return result;
+    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
 bool MediaFileExtentionUtils::GetAlbumRelativePathFromDB(const string &selectUri, const string &networkId,
     string &relativePath)
 {
-    auto result = GetFileFromRdb(selectUri, networkId);
+    auto result = MediaFileExtentionUtils::GetFileFromDB(selectUri, networkId);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, false, "GetFileFromResult Get fail");
     int count = 0;
     result->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(count > 0, false, "AbsSharedResultSet empty");
-    result->GoToFirstRow();
+    auto ret = result->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Failed to shift at first row");
     int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
     CHECK_AND_RETURN_RET_LOG(mediaType == MEDIA_TYPE_ALBUM, false, "selectUri is not album");
     relativePath = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH, result, TYPE_STRING));
@@ -161,30 +163,30 @@ bool MediaFileExtentionUtils::GetAlbumRelativePathFromDB(const string &selectUri
     return true;
 }
 
-int32_t MediaFileExtentionUtils::ListFile(string selectUri, vector<FileAccessFwk::FileInfo> &fileList)
+int32_t MediaFileExtentionUtils::ListFile(const string &selectUri, vector<FileAccessFwk::FileInfo> &fileList)
 {
     MediaFileUriType uriType = MediaFileExtentionUtils::ResolveUri(selectUri);
     MEDIA_DEBUG_LOG("selectUri %{public}s istFileType %{public}d", selectUri.c_str(), uriType);
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(selectUri);
     string selection;
     vector<string> selectionArgs;
-    if (uriType == MediaFileUriType::URITYPE_ROOT) {
-        selection = MEDIA_DATA_DB_PARENT_ID + " LIKE ? AND " + MEDIA_DATA_DB_IS_TRASH + " LIKE ? ";
+    if (uriType == MediaFileUriType::URI_ROOT) {
+        selection = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? ";
         selectionArgs = { to_string(ROOT_PARENT_ID), to_string(NOT_ISTRASH) };
-    } else if (uriType == MediaFileUriType::URITYPE_DIR) {
+    } else if (uriType == MediaFileUriType::URI_DIR) {
         if (!CheckUriValid(selectUri)) {
             MEDIA_ERR_LOG("selectUri is not valid uri %{private}s", selectUri.c_str());
-            return MEDIA_FILE_URI_INVALID;
+            return ERROR_URI_INVALID;
         }
         string relativePath;
         if (!GetAlbumRelativePathFromDB(selectUri, networkId, relativePath)) {
             MEDIA_ERR_LOG("selectUri is not valid album uri %{private}s", selectUri.c_str());
-            return MEDIA_FILE_URI_IS_NOT_ALBUM;
+            return ERROR_URI_IS_NOT_ALBUM;
         }
-        selection = MEDIA_DATA_DB_RELATIVE_PATH + " LIKE ? AND " + MEDIA_DATA_DB_IS_TRASH + " LIKE ? ";
+        selection = MEDIA_DATA_DB_RELATIVE_PATH + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? ";
         selectionArgs = { relativePath, to_string(NOT_ISTRASH) };
     } else {
-        return MEDIA_FILE_URI_INVALID;
+        return ERROR_URI_INVALID;
     }
     string queryUri;
     if (!networkId.empty()) {
@@ -193,12 +195,12 @@ int32_t MediaFileExtentionUtils::ListFile(string selectUri, vector<FileAccessFwk
         queryUri = MEDIALIBRARY_DATA_URI;
     }
     std::shared_ptr<AbsSharedResultSet> resultSet = GetListFileResult(queryUri, selection, selectionArgs);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, DATA_ABILITY_FAIL, "GetListFileResult Get fail");
     GetFileInfoFromResult(networkId, resultSet, fileList);
     return DATA_ABILITY_SUCCESS;
 }
 
-bool GetDeviceInfo(shared_ptr<AbsSharedResultSet> result,
-    FileAccessFwk::DeviceInfo &deviceInfo)
+bool GetDeviceInfo(shared_ptr<AbsSharedResultSet> &result, FileAccessFwk::DeviceInfo &deviceInfo)
 {
     string networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, result, TYPE_STRING));
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_ROOT;
@@ -207,20 +209,21 @@ bool GetDeviceInfo(shared_ptr<AbsSharedResultSet> result,
     return true;
 }
 
-int GetDeviceInfoFromResult(shared_ptr<AbsSharedResultSet> &result, vector<FileAccessFwk::DeviceInfo> &deviceList)
+void GetDeviceInfoFromResult(shared_ptr<AbsSharedResultSet> &result, vector<FileAccessFwk::DeviceInfo> &deviceList)
 {
     int count = 0;
     result->GetRowCount(count);
-    CHECK_AND_RETURN_RET_LOG(count > 0, DATA_ABILITY_FAIL, "AbsSharedResultSet empty");
-    result->GoToFirstRow();
+    CHECK_AND_RETURN_LOG(count > 0, "AbsSharedResultSet empty");
+    auto ret = result->GoToFirstRow();
+    CHECK_AND_RETURN_LOG(ret == 0, "Failed to shift at first row");
     deviceList.reserve(count + 1);
     for (int i = 0; i < count; i++) {
         FileAccessFwk::DeviceInfo deviceInfo;
         GetDeviceInfo(result, deviceInfo);
         deviceList.push_back(deviceInfo);
-        result->GoToNextRow();
+        ret = result->GoToNextRow();
+        CHECK_AND_RETURN_LOG(ret == 0, "Failed to GoToNextRow");
     }
-    return SUCCESS;
 }
 
 void GetActivePeer(shared_ptr<AbsSharedResultSet> &result)
@@ -233,7 +236,7 @@ void GetActivePeer(shared_ptr<AbsSharedResultSet> &result)
     result = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
-int32_t MediaFileExtentionUtils::GetRoots(vector<FileAccessFwk::DeviceInfo> &deviceList)
+void MediaFileExtentionUtils::GetRoots(vector<FileAccessFwk::DeviceInfo> &deviceList)
 {
     FileAccessFwk::DeviceInfo deviceInfo;
     // add local root
@@ -243,7 +246,6 @@ int32_t MediaFileExtentionUtils::GetRoots(vector<FileAccessFwk::DeviceInfo> &dev
     shared_ptr<AbsSharedResultSet> resultSet;
     GetActivePeer(resultSet);
     GetDeviceInfoFromResult(resultSet, deviceList);
-    return DATA_ABILITY_SUCCESS;
 }
 
 bool MediaFileExtentionUtils::CheckDistributedUri(const string &uri)
@@ -258,24 +260,26 @@ bool MediaFileExtentionUtils::CheckDistributedUri(const string &uri)
 
 static bool GetRelativePathFromDB(const string &selectUri, const string &networkId, string &relativePath)
 {
-    auto result = MediaFileExtentionUtils::GetFileFromRdb(selectUri, networkId);
+    auto result = MediaFileExtentionUtils::GetFileFromDB(selectUri, networkId);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, false, "GetFileFromResult Get fail");
     int count = 0;
     result->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(count > 0, false, "AbsSharedResultSet empty");
-    result->GoToFirstRow();
+    auto ret = result->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Failed to shift at first row");
     relativePath = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH, result, TYPE_STRING));
     return true;
 }
 
 static bool GetSrcFileFromDB(const string &selectUri, const string &networkId, string &sourcePath, int &mediaType)
 {
-    auto result = MediaFileExtentionUtils::GetFileFromRdb(selectUri, networkId);
+    auto result = MediaFileExtentionUtils::GetFileFromDB(selectUri, networkId);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, false, "GetSrcFileFromResult Get fail");
     int count = 0;
     result->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(count > 0, false, "AbsSharedResultSet empty");
-    result->GoToFirstRow();
+    auto ret = result->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Failed to shift at first row");
     mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
     sourcePath = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_FILE_PATH, result, TYPE_STRING));
     return true;
@@ -283,20 +287,21 @@ static bool GetSrcFileFromDB(const string &selectUri, const string &networkId, s
 
 static bool GetDisplayNameFromDB(const string &selectUri, const string &networkId, string &displayName)
 {
-    auto result = MediaFileExtentionUtils::GetFileFromRdb(selectUri, networkId);
+    auto result = MediaFileExtentionUtils::GetFileFromDB(selectUri, networkId);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, false, "GetDisplayNameFromResult Get fail");
     int count = 0;
     result->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(count > 0, false, "AbsSharedResultSet empty");
-    result->GoToFirstRow();
+    auto ret = result->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Failed to shift at first row");
     displayName = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_NAME, result, TYPE_STRING));
     return true;
 }
 
 int32_t HandleFileRename(const string &sourceUri, const string &displayName, const string &destRelativePath)
 {
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri updateAssetUri(abilityUri + SLASH_CHAR + Media::MEDIA_FILEOPRN + SLASH_CHAR +
+    string uri = Media::MEDIALIBRARY_DATA_URI;
+    Uri updateAssetUri(uri + SLASH_CHAR + Media::MEDIA_FILEOPRN + SLASH_CHAR +
         Media::MEDIA_FILEOPRN_MODIFYASSET);
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
@@ -322,13 +327,13 @@ int32_t HandleAlbumRename(const string &srcId, const string &srcPath, const stri
 {
     size_t slashIndex = srcPath.rfind(SLASH_CHAR);
     string newAlbumPath = srcPath.substr(0, slashIndex) + SLASH_CHAR + displayName;
-    int32_t errCode =  MediaFileUtils::RenameDir(srcPath, newAlbumPath);
-    if (errCode == 0) {
+    bool succ = MediaFileUtils::RenameDir(srcPath, newAlbumPath);
+    if (!succ) {
         MEDIA_ERR_LOG("Failed RenameDir errno %{public}d", errno);
-        return errCode;
+        return DATA_ABILITY_MODIFY_DATA_FAIL;
     }
-    ValuesBucket valuesBucket;
     int64_t date_modified = MediaLibraryDataManagerUtils::GetAlbumDateModified(newAlbumPath);
+    ValuesBucket valuesBucket;
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, date_modified);
     valuesBucket.PutString(MEDIA_DATA_DB_TITLE, displayName);
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
@@ -337,6 +342,7 @@ int32_t HandleAlbumRename(const string &srcId, const string &srcPath, const stri
     int32_t count = 0;
     int32_t updateResult = MediaLibraryDataManager::GetInstance()->rdbStore_->Update(count,
         valuesBucket, absPredicates);
+    int32_t errCode = DATA_ABILITY_FAIL;
     if (updateResult == NativeRdb::E_OK) {
         std::string modifySql = "UPDATE " + MEDIALIBRARY_TABLE + " SET ";
         // Update data "old albumPath/%" -> "new albumPath/%"
@@ -362,23 +368,23 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const std::str
 {
     string sourceUri = sourceFileUri.ToString();
     if (!CheckUriValid(sourceUri)) {
-        return MEDIA_FILE_URI_INVALID;
+        return ERROR_URI_INVALID;
     }
     if (!CheckDistributedUri(sourceUri)) {
         MEDIA_ERR_LOG("Rename not support distributed operation");
-        return MEDIA_FILE_DISTIBUTED_URI_NO_SUPPORT;
+        return ERROR_DISTIBUTED_URI_NO_SUPPORT;
     }
     if (!MediaFileUtils::CheckDisplayName(displayName)) {
         MEDIA_ERR_LOG("invalid displayName %{private}s", displayName.c_str());
-        return MEDIA_FILE_INVAVLID_DISPLAY_NAME;
+        return ERROR_INVAVLID_DISPLAY_NAME;
     }
-    string sourcePath, destRelativePath;
+    string sourcePath;
     int type;
     if (!GetSrcFileFromDB(sourceUri, "", sourcePath, type)) {
         MEDIA_ERR_LOG("Rename uri is not correct %{private}s", sourceUri.c_str());
         return DATA_ABILITY_MODIFY_DATA_FAIL;
     }
-
+    string destRelativePath;
     if (!GetRelativePathFromDB(sourceUri, "", destRelativePath)) {
         MEDIA_ERR_LOG("Rename uri is not correct %{private}s", sourceUri.c_str());
         return DATA_ABILITY_MODIFY_DATA_FAIL;
@@ -386,7 +392,7 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const std::str
     string destPath = ROOT_MEDIA_DIR + destRelativePath + displayName;
     if (MediaLibraryDataManagerUtils::isFileExistInDb(destPath, MediaLibraryDataManager::GetInstance()->rdbStore_)) {
         MEDIA_ERR_LOG("Rename file is existed %{private}s", destPath.c_str());
-        return MEDIA_FILE_TARGET_FILE_EXIST;
+        return ERROR_TARGET_FILE_EXIST;
     }
     int ret = 0;
     if (type == MediaType::MEDIA_TYPE_ALBUM) {
@@ -401,8 +407,8 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const std::str
 
 int32_t HandleFileMove(const string &sourceUri, const string &displayName, const string &destRelativePath)
 {
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri updateAssetUri(abilityUri + SLASH_CHAR + Media::MEDIA_FILEOPRN + SLASH_CHAR +
+    string uri = Media::MEDIALIBRARY_DATA_URI;
+    Uri updateAssetUri(uri + SLASH_CHAR + Media::MEDIA_FILEOPRN + SLASH_CHAR +
         Media::MEDIA_FILEOPRN_MODIFYASSET);
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
@@ -418,13 +424,13 @@ int32_t HandleAlbumMove(const string &srcId, const string &srcPath, const string
     const string &destRelativePath, const string &bucketId)
 {
     string newAlbumPath = ROOT_MEDIA_DIR + destRelativePath + displayName;
-    int32_t errCode =  MediaFileUtils::RenameDir(srcPath, newAlbumPath);
-    if (errCode == 0) {
+    bool succ = MediaFileUtils::RenameDir(srcPath, newAlbumPath);
+    if (!succ) {
         MEDIA_ERR_LOG("Failed RenameDir errno %{public}d", errno);
-        return errCode;
+        return DATA_ABILITY_MODIFY_DATA_FAIL;
     }
-    ValuesBucket valuesBucket;
     int64_t date_modified = MediaLibraryDataManagerUtils::GetAlbumDateModified(newAlbumPath);
+    ValuesBucket valuesBucket;
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, date_modified);
     valuesBucket.PutInt(MEDIA_DATA_DB_PARENT_ID, stoi(bucketId));
     valuesBucket.PutInt(MEDIA_DATA_DB_BUCKET_ID, stoi(bucketId));
@@ -434,6 +440,7 @@ int32_t HandleAlbumMove(const string &srcId, const string &srcPath, const string
     int32_t count = 0;
     int32_t updateResult = MediaLibraryDataManager::GetInstance()->rdbStore_->Update(count,
         valuesBucket, absPredicates);
+    int32_t errCode = DATA_ABILITY_FAIL;
     if (updateResult == NativeRdb::E_OK) {
         std::string modifySql = "UPDATE " + MEDIALIBRARY_TABLE + " SET ";
         // Update data "old albumPath/%" -> "new albumPath/%"
@@ -456,21 +463,22 @@ int32_t MediaFileExtentionUtils::Move(const Uri &sourceFileUri, const Uri &targe
 {
     string sourceUri = sourceFileUri.ToString();
     string targetUri = targetParentUri.ToString();
-    CHECK_AND_RETURN_RET_LOG(sourceUri != targetUri, MEDIA_FILE_TWO_URI_ARE_THE_SAME,
+    CHECK_AND_RETURN_RET_LOG(sourceUri != targetUri, ERROR_TWO_URI_ARE_THE_SAME,
         "sourceUri is the same as TargetUri");
     if (!CheckUriValid(sourceUri) || !CheckUriValid(targetUri)) {
-        return MEDIA_FILE_URI_INVALID;
+        return ERROR_URI_INVALID;
     }
     if (!CheckDistributedUri(sourceUri) || !CheckDistributedUri(targetUri)) {
         MEDIA_ERR_LOG("Move not support distributed operation");
-        return MEDIA_FILE_DISTIBUTED_URI_NO_SUPPORT;
+        return ERROR_DISTIBUTED_URI_NO_SUPPORT;
     }
-    string sourcePath, displayName;
+    string sourcePath;
     int type;
     if (!GetSrcFileFromDB(sourceUri, "", sourcePath, type)) {
         MEDIA_ERR_LOG("Move source uri is not correct %{private}s", sourceUri.c_str());
         return DATA_ABILITY_MODIFY_DATA_FAIL;
     }
+    string displayName;
     if (!GetDisplayNameFromDB(sourceUri, "", displayName)) {
         MEDIA_ERR_LOG("Move source uri is not correct %{private}s", sourceUri.c_str());
         return DATA_ABILITY_MODIFY_DATA_FAIL;
@@ -484,7 +492,7 @@ int32_t MediaFileExtentionUtils::Move(const Uri &sourceFileUri, const Uri &targe
         MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(sourcePath);
     if (MediaLibraryDataManagerUtils::isFileExistInDb(destPath, MediaLibraryDataManager::GetInstance()->rdbStore_)) {
         MEDIA_ERR_LOG("Move file is existed %{private}s", destPath.c_str());
-        return MEDIA_FILE_TARGET_FILE_EXIST;
+        return ERROR_TARGET_FILE_EXIST;
     }
     int ret = 0;
     if (type == MediaType::MEDIA_TYPE_ALBUM) {
