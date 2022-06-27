@@ -296,7 +296,6 @@ std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId)
         char localDeviceId[DEVICE_ID_SIZE] = {0};
         GetDevUdid(localDeviceId, DEVICE_ID_SIZE);
         std::string localUdid = std::string(localDeviceId);
-        MEDIA_INFO_LOG("get local udid %{private}s", localUdid.c_str());
         if (localUdid.empty()) {
             MEDIA_ERR_LOG("get local udid failed");
         }
