@@ -184,7 +184,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "ipc:ipc_core",
     "multimedia_player_framework:media_client",
     "relational_store:native_appdatafwk",
-    "relational_store:native_dataability",
     "relational_store:native_rdb",
     "samgr_standard:samgr_proxy",
   ]

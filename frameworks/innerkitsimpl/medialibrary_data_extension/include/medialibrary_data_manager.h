@@ -21,7 +21,6 @@
 
 #include "ability_context.h"
 #include "context/context.h"
-#include "datashare_predicates.h"
 #include "dir_asset.h"
 #include "distributed_kv_data_manager.h"
 #include "imedia_scanner_client.h"

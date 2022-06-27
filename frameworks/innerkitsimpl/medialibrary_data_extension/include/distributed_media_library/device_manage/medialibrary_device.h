@@ -21,7 +21,6 @@
 #include <string>
 #include <unordered_map>
 
-#include "data_ability_helper.h"
 #include "device_manager.h"
 #include "device_manager_callback.h"
 #include "devices_info_interact.h"
