@@ -111,19 +111,29 @@ void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t
         localDevLev_ = devLevel;
         return;
     }
-    if (localDevLev_ < devLevel) {
-        MEDIA_ERR_LOG("local dev's sec lev %{public}d is lower than dev %{public}s sec lev %{public}d!",
+    if (localDevLev_ < devLevel || devLevel <= 0) {
+        MEDIA_ERR_LOG("local dev's sec lev %{public}d is lower than dev %{public}s %{public}d, or level invalid!",
             localDevLev_, udid.substr(0, TRIM_LENGTH).c_str(), devLevel);
         return;
     }
 
     MediaLibraryDeviceInfo mldevInfo;
-    for (auto &[_, mlinfo] : deviceInfoMap_) {
-        if (mlinfo.deviceUdid == udid) {
-            mldevInfo = mlinfo;
-            break;
+    bool findTargetDev {false};
+    {
+        lock_guard<mutex> lock(devMtx_);
+        for (auto &[_, mlinfo] : deviceInfoMap_) {
+            if (mlinfo.deviceUdid == udid) {
+                mldevInfo = mlinfo;
+                findTargetDev = true;
+                break;
+            }
         }
     }
+    if (!findTargetDev) {
+        MEDIA_ERR_LOG("not find this dev %{public}s in device map table", udid.substr(0, TRIM_LENGTH).c_str());
+        return;
+    }
+
     if (!MediaLibraryDeviceOperations::InsertDeviceInfo(rdbStore_, mldevInfo, bundleName_)) {
         MEDIA_ERR_LOG("OnDeviceOnline InsertDeviceInfo failed!");
         return;
@@ -138,6 +148,10 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
 {
     MediaLibraryDeviceInfo mldevInfo;
     GetMediaLibraryDeviceInfo(devInfo, mldevInfo);
+    {
+        lock_guard<mutex> autoLock(devMtx_);
+        deviceInfoMap_[devInfo.deviceId] = mldevInfo;
+    }
 
     if (!DevicePermissionVerification::CheckPermission(mldevInfo.deviceUdid)) {
         MEDIA_ERR_LOG("this dev has permission denied!");
@@ -152,8 +166,6 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
             MEDIA_INFO_LOG("get ml infos failed, so try to sync pull first, wait...");
         }
     }
-    lock_guard<mutex> autoLock(devMtx_);
-    deviceInfoMap_[devInfo.deviceId] = mldevInfo;
     MEDIA_INFO_LOG("OnDeviceOnline cid %{public}s media library version %{public}s",
         mldevInfo.deviceId.substr(0, TRIM_LENGTH).c_str(), mldevInfo.versionId.c_str());
 }
