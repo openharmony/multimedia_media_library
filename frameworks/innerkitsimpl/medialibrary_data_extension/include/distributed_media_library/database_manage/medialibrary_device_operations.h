@@ -24,7 +24,6 @@
 #include <unistd.h>
 
 #include "album_asset.h"
-#include "data_ability_helper.h"
 #include "device_manager.h"
 #include "dm_device_info.h"
 #include "media_data_ability_const.h"
