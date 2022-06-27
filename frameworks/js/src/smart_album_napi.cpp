@@ -47,6 +47,7 @@ SmartAlbumNapi::~SmartAlbumNapi()
         napi_delete_reference(env_, wrapper_);
         wrapper_ = nullptr;
     }
+    NAPI_DEBUG_LOG("SmartAlbumNapi destructor exit");
 }
 
 void SmartAlbumNapi::SmartAlbumNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
@@ -56,6 +57,7 @@ void SmartAlbumNapi::SmartAlbumNapiDestructor(napi_env env, void *nativeObject, 
         delete album;
         album = nullptr;
     }
+    NAPI_DEBUG_LOG("SmartAlbumNapiDestructor exit");
 }
 
 napi_value SmartAlbumNapi::Init(napi_env env, napi_value exports)
