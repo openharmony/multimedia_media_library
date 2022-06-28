@@ -36,14 +36,14 @@ public:
     virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &rowId) override;
     virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &rowId) override;
     std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(MediaLibraryCommand &cmd,
-                                                         const std::vector<std::string> &columns) override;
+        const std::vector<std::string> &columns) override;
 
     bool SyncPullAllTable(const std::string &bundleName) override;
     bool SyncPullAllTableByDeviceId(const std::string &bundleName, std::vector<std::string> &devices) override;
-    bool SyncPullTable(const std::string &bundleName, const std::string &tableName, std::vector<std::string> &devices,
-                       bool isLast = false) override;
-    bool SyncPushTable(const std::string &bundleName, const std::string &tableName, std::vector<std::string> &devices,
-                       bool isLast = false) override;
+    bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
+        const std::vector<std::string> &devices, bool isLast = false) override;
+    bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
+        const std::vector<std::string> &devices, bool isLast = false) override;
     int32_t ExecuteSql(const std::string &sql) override;
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QuerySql(const std::string &sql) override;
     // temp
@@ -63,19 +63,26 @@ private:
 
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
 public:
+    struct DirValuesBucket {
+        int32_t directoryType;
+        std::string dirValues;
+        std::string typeValues;
+        std::string extensionValues;
+    };
+
+    struct SmartAlbumValuesBucket {
+        int32_t albumId;
+        std::string albumName;
+        int32_t albumType;
+    };
+
     int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
     int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
     bool GetDistributedTables();
     int32_t PrepareDir(NativeRdb::RdbStore &store);
-    int32_t PrepareCameraDir(NativeRdb::RdbStore &store);
-    int32_t PrepareVideoDir(NativeRdb::RdbStore &store);
-    int32_t PreparePictureDir(NativeRdb::RdbStore &store);
-    int32_t PrepareAudioDir(NativeRdb::RdbStore &store);
-    int32_t PrepareDocumentDir(NativeRdb::RdbStore &store);
-    int32_t PrepareDownloadDir(NativeRdb::RdbStore &store);
     int32_t PrepareSmartAlbum(NativeRdb::RdbStore &store);
-    int32_t PrepareFavourite(NativeRdb::RdbStore &store);
-    int32_t PrepareTrash(NativeRdb::RdbStore &store);
+    int32_t InsertDirValues(DirValuesBucket dirValuesBucket, NativeRdb::RdbStore &store);
+    int32_t InsertSmartAlbumValues(SmartAlbumValuesBucket smartAlbum, NativeRdb::RdbStore &store);
 private:
     bool isDistributedTables = false;
 };
@@ -94,7 +101,6 @@ private:
     std::string bundleName_;
     bool isNotifyDeviceChange_;
 };
-
 } // namespace Media
 } // namespace OHOS
 

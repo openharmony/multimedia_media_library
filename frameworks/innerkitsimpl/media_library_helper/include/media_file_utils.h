@@ -57,7 +57,6 @@ public:
     static bool CreateDirectory(const std::string& dirPath);
     static bool CheckDisplayName(std::string displayName);
     static bool CheckTitle(std::string title);
-    // GetAlbumDateModified -> GetFileDateModified
     static int64_t GetAlbumDateModified(const std::string &albumPath);
     static int64_t UTCTimeSeconds();
     static std::string GetNetworkIdFromUri(const std::string &uri);

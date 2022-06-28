@@ -216,8 +216,7 @@ int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fil
     if (sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri updateAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
-        DataShare::DataSharePredicates predicates;
-        retVal = sAbilityHelper_->Update(updateAssetUri, predicates, valuesBucket);
+        retVal = sAbilityHelper_->Update(updateAssetUri, {}, valuesBucket);
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to modify the file");
         }
@@ -319,8 +318,7 @@ int32_t MediaLibraryManager::ModifyAlbum(const int32_t albumId, const AlbumAsset
     if (sAbilityHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri modifyAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_MODIFYALBUM);
-        DataShare::DataSharePredicates predicates;
-        retVal = sAbilityHelper_->Update(modifyAlbumUri, predicates, valuesBucket);
+        retVal = sAbilityHelper_->Update(modifyAlbumUri, {}, valuesBucket);
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to modify the album");
         }

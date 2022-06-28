@@ -51,7 +51,6 @@ public:
     shared_ptr<AbsSharedResultSet> QueryFileOperation(MediaLibraryCommand &cmd, vector<string> columns);
 
 private:
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFiles(MediaLibraryCommand &cmd);
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFavFiles(MediaLibraryCommand &cmd);
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryTrashFiles(MediaLibraryCommand &cmd);
     std::shared_ptr<MediaLibraryUnistore> uniStore_{nullptr};
