@@ -110,7 +110,6 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
     refCnt_++;
     context_ = context;
     InitMediaLibraryRdbStore();
-    MediaLibraryDevice::GetInstance()->SetAbilityContext(move(context));
     InitDeviceData();
 
     MakeDirQuerySetMap(dirQuerySetMap_);
