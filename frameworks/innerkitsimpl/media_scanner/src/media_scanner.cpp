@@ -380,7 +380,7 @@ unique_ptr<Metadata> MediaScanner::GetFileMetadata(const string &path, const int
     }
 
     len = rootDir.length();
-    string parentPath = ScannerUtils::GetParentPath(path) + SLASH_CHAR; // GetParentPath whithout slash at end
+    string parentPath = ScannerUtils::GetParentPath(path) + SLASH_CHAR; // GetParentPath without slash at end
     if (parentPath.substr(0, len).compare(rootDir) == 0) {
         parentPath.erase(0, len);
         if (!parentPath.empty()) {
