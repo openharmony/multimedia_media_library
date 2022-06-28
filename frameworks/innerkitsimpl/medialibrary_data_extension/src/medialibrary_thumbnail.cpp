@@ -271,7 +271,7 @@ shared_ptr<ResultSetBridge> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &
 unique_ptr<PixelMap> MediaLibraryThumbnail::GetThumbnailByRdb(ThumbRdbOpt &opts,
                                                               Size &size, const std::string &uri)
 {
-    // rdbData havent be obtained, if use this func,please implement it first
+    // rdbData haven't be obtained, if use this func,please implement it first
     int errorCode = NativeRdb::E_OK;
     ThumbnailRdbData rdbData;
 
