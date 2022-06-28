@@ -14,10 +14,10 @@
  */
 
 #include "medialibrary_device.h"
-#include "datashare_helper.h"
 #include "device_permission_verification.h"
 #include "device_auth.h"
 #include "media_log.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_sync_table.h"
 #include "parameter.h"
 #include "parameters.h"
@@ -63,7 +63,6 @@ void MediaLibraryDevice::Stop()
     MEDIA_DEBUG_LOG("Stop enter");
     UnRegisterFromDM();
     ClearAllDevices();
-    dataShareHelper_ = nullptr;
     devsInfoInter_ = nullptr;
 }
 
@@ -77,13 +76,6 @@ std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::GetInstance()
         }
     });
     return mlDMInstance_;
-}
-
-void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<AbilityRuntime::Context> &context)
-{
-    dataShareHelper_ = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
-    MEDIA_INFO_LOG("MediaLibraryDevice::SetAbilityContext create dataAbilityhelper %{private}d",
-        (dataShareHelper_ != nullptr));
 }
 
 void MediaLibraryDevice::GetAllDeviceId(
@@ -246,19 +238,13 @@ void MediaLibraryDevice::ClearAllDevices()
 void MediaLibraryDevice::NotifyDeviceChange()
 {
     auto contextUri = make_unique<Uri>(MEDIALIBRARY_DEVICE_URI);
-    if (dataShareHelper_ != nullptr) {
-        dataShareHelper_->NotifyChange(*contextUri);
-        MEDIA_INFO_LOG("MediaLibraryDevice NotifyDeviceChange complete");
-    }
+    MediaLibraryDataManager::GetInstance()->NotifyChange(*contextUri);
 }
 
 void MediaLibraryDevice::NotifyRemoteFileChange()
 {
     auto contextUri = make_unique<Uri>(MEDIALIBRARY_REMOTEFILE_URI);
-    if (dataShareHelper_ != nullptr) {
-        dataShareHelper_->NotifyChange(*contextUri);
-        MEDIA_INFO_LOG("MediaLibraryDevice NotifyRemoteFileChange complete");
-    }
+    MediaLibraryDataManager::GetInstance()->NotifyChange(*contextUri);
 }
 
 bool MediaLibraryDevice::IsHasDevice(const string &deviceUdid)
