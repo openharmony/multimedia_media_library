@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,9 +14,10 @@
  */
 
 #include "medialibrary_data_manager_utils.h"
-#include "openssl/sha.h"
-#include "media_log.h"
+
 #include "media_file_utils.h"
+#include "media_log.h"
+#include "openssl/sha.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -168,37 +169,6 @@ string MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(std::string &path)
         displayName = path.substr(lastSlashPosition + 1);
     }
     return displayName;
-}
-
-bool MediaLibraryDataManagerUtils::CheckOpenMode(const string &mode)
-{
-    MEDIA_INFO_LOG("checkOpenMode in mode %{private}s", mode.c_str());
-
-    string lowModeStr = mode;
-    transform(lowModeStr.begin(), lowModeStr.end(), lowModeStr.begin(), [](unsigned char c) {
-        return tolower(c);
-    });
-
-    size_t wIndex = lowModeStr.rfind('w');
-    if (wIndex != string::npos) {
-        return true;
-    }
-    return false;
-}
-
-bool MediaLibraryDataManagerUtils::CheckFilePending(const shared_ptr<FileAsset> fileAsset)
-{
-    MEDIA_INFO_LOG("checkFilePending in");
-    if (fileAsset->IsPending()) {
-        MEDIA_INFO_LOG("checkFilePending IsPending true");
-        return true;
-    } else if (fileAsset->GetTimePending() > 0 &&
-        (MediaFileUtils::UTCTimeSeconds() - fileAsset->GetTimePending()) > TIMEPENDING_MIN) {
-        MEDIA_INFO_LOG("checkFilePending IsPending true");
-        return true;
-    }
-    MEDIA_INFO_LOG("checkFilePending IsPending false");
-    return false;
 }
 
 void MediaLibraryDataManagerUtils::SplitKeyValue(const string& keyValue, string &key, string &value)

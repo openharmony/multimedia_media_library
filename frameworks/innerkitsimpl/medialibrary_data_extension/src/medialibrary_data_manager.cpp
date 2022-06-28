@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,27 +18,26 @@
 #include <unordered_set>
 
 #include "accesstoken_kit.h"
-#include "hitrace_meter.h"
 #include "bundle_mgr_interface.h"
+#include "datashare_abs_result_set.h"
+#include "datashare_ext_ability.h"
+#include "datashare_ext_ability_context.h"
+#include "datashare_predicates.h"
 #include "file_ex.h"
+#include "hitrace_meter.h"
 #include "ipc_singleton.h"
-#include "media_file_utils.h"
-#include "medialibrary_sync_table.h"
 #include "ipc_skeleton.h"
+#include "media_datashare_ext_ability.h"
+#include "media_file_utils.h"
+#include "media_log.h"
+#include "media_scanner.h"
+#include "medialibrary_object_utils.h"
+#include "medialibrary_unistore_manager.h"
+#include "rdb_utils.h"
 #include "sa_mgr_client.h"
 #include "string_ex.h"
 #include "sys_mgr_client.h"
 #include "system_ability_definition.h"
-#include "media_scanner.h"
-#include "datashare_ext_ability.h"
-#include "datashare_ext_ability_context.h"
-#include "media_datashare_ext_ability.h"
-#include "media_log.h"
-#include "rdb_utils.h"
-#include "datashare_predicates.h"
-#include "datashare_abs_result_set.h"
-#include "medialibrary_unistore_manager.h"
-#include "medialibrary_object_utils.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -48,6 +47,11 @@ using namespace OHOS::DistributedKv;
 using namespace OHOS::DataShare;
 using namespace OHOS::RdbDataShareAdapter;
 
+namespace {
+const OHOS::DistributedKv::AppId KVSTORE_APPID = {"com.ohos.medialibrary.MediaLibraryDataA"};
+const OHOS::DistributedKv::StoreId KVSTORE_STOREID = {"ringtone"};
+};
+
 namespace OHOS {
 namespace Media {
 namespace {
@@ -56,8 +60,6 @@ const std::unordered_set<int32_t> UID_FREE_CHECK {
 };
 std::mutex bundleMgrMutex;
 }
-const std::string MediaLibraryDataManager::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
-const std::string MediaLibraryDataManager::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 
 std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 std::mutex MediaLibraryDataManager::mutex_;
@@ -67,7 +69,6 @@ MediaLibraryDataManager::MediaLibraryDataManager(void)
     isRdbStoreInitialized = false;
     rdbStore_ = nullptr;
     kvStorePtr_ = nullptr;
-    bundleName_ = DEVICE_BUNDLENAME;
 }
 
 MediaLibraryDataManager::~MediaLibraryDataManager(void)
@@ -111,8 +112,7 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
     if (rdbStore_ != nullptr) {
         MEDIA_DEBUG_LOG("Distribute StartTrace:SyncPullAllTableTrace");
         StartTrace(HITRACE_TAG_OHOS, "SyncPullAllTableTrace");
-        MediaLibrarySyncTable syncTable;
-        syncTable.SyncPullAllTable(rdbStore_, bundleName_);
+        syncTable_.SyncPullAllTable(rdbStore_, bundleName_);
         FinishTrace(HITRACE_TAG_OHOS);
         MEDIA_DEBUG_LOG("Distribute FinishTrace:SyncPullAllTableTrace");
         MakeDirQuerySetMap(dirQuerySetMap_);
@@ -134,7 +134,6 @@ void MediaLibraryDataManager::InitDeviceData()
     StartTrace(HITRACE_TAG_OHOS, "InitDeviceRdbStoreTrace", -1);
     if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_)) {
         MEDIA_ERR_LOG("MediaLibraryDataManager InitDeviceData failed!");
-        return;
     }
     FinishTrace(HITRACE_TAG_OHOS);
 
@@ -145,6 +144,7 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
 {
     isRdbStoreInitialized = false;
     rdbStore_ = nullptr;
+
     if (kvStorePtr_ != nullptr) {
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
         kvStorePtr_ = nullptr;
@@ -152,6 +152,7 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     if (MediaLibraryDevice::GetInstance()) {
         MediaLibraryDevice::GetInstance()->Stop();
     };
+
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
@@ -246,25 +247,25 @@ void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset>
 
 int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBucket &dataShareValue)
 {
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::BatchInsert");
+
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
     if (value.IsEmpty()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager Insert: Input parameter is invalid");
         return DATA_ABILITY_FAIL;
     }
 
-    MediaLibrarySyncTable syncTable;
-    std::vector<std::string> devices = std::vector<std::string>();
-    int32_t result = DATA_ABILITY_FAIL;
     MediaLibraryCommand cmd(uri, value);
     // boardcast operation
     if (cmd.GetOprnType() == OperationType::SCAN) {
-        std::string path = "/storage/media/local/files";
-        MediaScannerObj::GetMediaScannerInstance()->ScanDir(path, nullptr);
-        return DATA_ABILITY_SUCCESS;
+        string scanPath = ROOT_MEDIA_DIR;
+        return MediaScannerObj::GetMediaScannerInstance()->ScanDir(scanPath, nullptr);
     } else if (cmd.GetOprnType() == OperationType::CREATE && !CheckFileNameValid(dataShareValue)) {
         return DATA_ABILITY_FILE_NAME_INVALID;
     }
 
+    int32_t result = DATA_ABILITY_FAIL;
+    vector<string> devices;
     // after replace all xxxOperations following, remove "operationType"
     string operationType = MediaLibraryDataManagerUtils::GetOperationType(uri.ToString());
     MediaLibraryObjectUtils objUtils;
@@ -278,23 +279,24 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
         case OperationObject::FILESYSTEM_DIR: {
             MediaLibraryDirOperations dirOprn;
             result = dirOprn.HandleDirOperations(operationType, value, rdbStore_, dirQuerySetMap_);
-            syncTable.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
+            syncTable_.SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
             break;
         }
         case OperationObject::FILESYSTEM_ALBUM: {
             MediaLibraryAlbumOperations albumOprn;
-            return albumOprn.CreateAlbumOperation(cmd);
+            result = albumOprn.CreateAlbumOperation(cmd);
+            break;
         }
         case OperationObject::SMART_ALBUM: {
             MediaLibrarySmartAlbumOperations smartalbumOprn;
             result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore_);
-            syncTable.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
+            syncTable_.SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
             break;
         }
         case OperationObject::SMART_ALBUM_MAP: {
             MediaLibrarySmartAlbumMapOperations smartalbumMapOprn;
             result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, rdbStore_, dirQuerySetMap_);
-            syncTable.SyncPushTable(rdbStore_, bundleName_, CATEGORY_SMARTALBUM_MAP_TABLE, devices);
+            syncTable_.SyncPushTable(rdbStore_, bundleName_, CATEGORY_SMARTALBUM_MAP_TABLE, devices);
             break;
         }
         case OperationObject::KVSTORE: {
@@ -310,6 +312,8 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
 
 int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)
 {
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::BatchInsert");
+
     string uriString = uri.ToString();
     if ((!isRdbStoreInitialized) || (rdbStore_ == nullptr) || (uriString != MEDIALIBRARY_DATA_URI)) {
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
@@ -327,10 +331,9 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
 
 int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
-    MEDIA_INFO_LOG("Delete");
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::Delete");
 
     if (uri.ToString().find(MEDIALIBRARY_DATA_URI) != 0) {
-        // uri begin with MEDIALIBRARY_DATA_URI
         MEDIA_ERR_LOG("MediaLibraryDataManager Delete: Not Data ability Uri");
         return DATA_ABILITY_FAIL;
     }
@@ -357,16 +360,17 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
             break;
     }
 
-    // DeleteInfoInDbWithId can finish the default delete of smartalbum and smartmap,
+    // DeleteInfoByIdInDb can finish the default delete of smartalbum and smartmap,
     // so no need to distinct them in switch-case deliberately
     MediaLibraryObjectUtils assetUtils;
-    return assetUtils.DeleteInfoInDbWithId(cmd);
+    return assetUtils.DeleteInfoByIdInDb(cmd);
 }
 
 int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBucket &dataShareValue,
     const DataSharePredicates &predicates)
 {
-    MEDIA_INFO_LOG("Update");
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::Update");
+
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
     if (value.IsEmpty()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager Update:Input parameter is invalid ");
@@ -398,11 +402,11 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
         default:
             break;
     }
-    // ModifyInfoInDbWithId can finish the default update of smartalbum and smartmap,
+    // ModifyInfoByIdInDb can finish the default update of smartalbum and smartmap,
     // so no need to distinct them in switch-case deliberately
     MediaLibraryObjectUtils assetUtils;
     cmd.SetValueBucket(value);
-    return assetUtils.ModifyInfoInDbWithId(cmd);
+    return assetUtils.ModifyInfoByIdInDb(cmd);
 }
 
 bool ParseThumbnailInfo(string &uriString, vector<int> &space)
@@ -462,6 +466,8 @@ shared_ptr<ResultSetBridge> GenThumbnail(shared_ptr<RdbStore> rdb,
     shared_ptr<MediaLibraryThumbnail> thumbnail,
     const string &rowId, vector<int> space, string &networkId)
 {
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::GenThumbnail");
+
     shared_ptr<ResultSetBridge> queryResultSet;
     int width = space[0];
     int height = space[1];
@@ -505,9 +511,11 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationOb
 shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::Query");
     StartTrace(HITRACE_TAG_OHOS, "MediaLibraryDataManager::Query");
     if ((!isRdbStoreInitialized) || (rdbStore_ == nullptr)) {
         MEDIA_ERR_LOG("Rdb Store is not initialized");
+        FinishTrace(HITRACE_TAG_OHOS);
         return nullptr;
     }
 
@@ -575,8 +583,8 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
     }
     if (queryResultSet == nullptr) {
         MEDIA_WARNING_LOG("Query functionality failed");
-        return nullptr;
     }
+
     FinishTrace(HITRACE_TAG_OHOS);
     return queryResultSet;
 }
@@ -606,21 +614,17 @@ bool MediaLibraryDataManager::QuerySync(const std::string &deviceId, const std::
     }
 
     std::vector<std::string> devices = { deviceId };
-    MediaLibrarySyncTable syncTable;
-    return syncTable.SyncPullTable(rdbStore_, bundleName_, tableName, devices);
+    return syncTable_.SyncPullTable(rdbStore_, bundleName_, tableName, devices);
 }
 
 bool MediaLibraryDataManager::QuerySync()
 {
-    std::string strQueryCondition = DEVICE_DB_SYNC_STATUS + "=" + std::to_string(DEVICE_SYNCSTATUSING) +
-        " AND " + DEVICE_DB_DATE_MODIFIED + "=0";
-
-    std::vector<std::string> columns;
     std::vector<std::string> devices;
     AbsRdbPredicates deviceDataSharePredicates(DEVICE_TABLE);
-    deviceDataSharePredicates.SetWhereClause(strQueryCondition);
+    deviceDataSharePredicates.EqualTo(DEVICE_DB_SYNC_STATUS, std::to_string(DEVICE_SYNCSTATUSING))
+        ->And()->EqualTo(DEVICE_DB_DATE_MODIFIED, "0");
 
-    auto queryResultSet = rdbStore_->Query(deviceDataSharePredicates, columns);
+    auto queryResultSet = rdbStore_->Query(deviceDataSharePredicates, {});
     if (queryResultSet == nullptr) {
         return false;
     }
@@ -639,20 +643,9 @@ bool MediaLibraryDataManager::QuerySync()
         return true;
     }
 
-    MediaLibrarySyncTable syncTable;
-    return syncTable.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
+    return syncTable_.SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
 }
 
-/**
- * @brief
- * @param uri
- * @param  mode Indicates the file open mode, which can be "r" for read-only access, "w" for write-only access
- * (erasing whatever data is currently in the file), "wt" for write access that truncates any existing file,
- * "wa" for write-only access to append to any existing data, "rw" for read and write access on any existing data,
- *  or "rwt" for read and write access that truncates any existing file.
- * /
- * @return int32_t
- */
 int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const std::string &mode)
 {
     MediaLibraryCommand cmd(uri, OPEN);

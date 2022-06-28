@@ -61,6 +61,7 @@ config("media_data_extension_public_config") {
     "//foundation/distributedschedule/safwk/services/safwk/include",
     "//foundation/distributedhardware/device_manager/interfaces/inner_kits/native_cpp/include",
     "//foundation/multimedia/media_standard/interfaces/inner_api/native",
+    "//foundation/ability/ability_runtime/frameworks/kits/appkit/native/ability_runtime",
     "//utils/native/base/include",
     "//utils/system/safwk/native/include",
     "//third_party/json/include",
