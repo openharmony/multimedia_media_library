@@ -17,6 +17,7 @@
 #include <cerrno>
 #include <regex>
 #include "directory_ex.h"
+#include "media_asset.h"
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
 #include "media_log.h"
@@ -359,6 +360,28 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     retStr = beginStr + networkId + endStr;
     MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
     return retStr;
+}
+
+string MediaFileUtils::GetFileMediaTypeUri(int32_t mediaType, const string &networkId)
+{
+    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
+    switch (mediaType) {
+        case MEDIA_TYPE_AUDIO:
+            return uri + MEDIALIBRARY_TYPE_AUDIO_URI;
+        case MEDIA_TYPE_VIDEO:
+            return uri + MEDIALIBRARY_TYPE_VIDEO_URI;
+        case MEDIA_TYPE_IMAGE:
+            return uri + MEDIALIBRARY_TYPE_IMAGE_URI;
+        case MEDIA_TYPE_FILE:
+        default:
+            return uri + MEDIALIBRARY_TYPE_FILE_URI;
+    }
+}
+
+string MediaFileUtils::GetUriByNameAndId(const string &displayName, const string &networkId, int32_t id)
+{
+    MediaType mediaType = MediaAsset::GetMediaType(displayName);
+    return MediaFileUtils::GetFileMediaTypeUri(mediaType, networkId) + SLASH_CHAR + to_string(id);
 }
 } // namespace Media
 } // namespace OHOS

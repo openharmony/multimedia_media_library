@@ -39,8 +39,11 @@ class MediaFileExtentionUtils {
 public:
     static bool CheckUriValid(const std::string &uri);
     static bool CheckDistributedUri(const std::string &uri);
+    static int32_t CheckUriSupport(const std::string &uri);
     static MediaFileUriType ResolveUri(const std::string &uri);
     static bool CheckValidDirName(const std::string &displayName);
+    static int32_t CheckMkdirValid(MediaFileUriType uriType, const std::string &parentUriStr,
+        const std::string &displayName);
     static bool GetAlbumRelativePathFromDB(const std::string &selectUri, const std::string &networkId,
         std::string &relativePath);
     static std::shared_ptr<NativeRdb::AbsSharedResultSet> GetFileFromDB(const std::string &selectUri,
