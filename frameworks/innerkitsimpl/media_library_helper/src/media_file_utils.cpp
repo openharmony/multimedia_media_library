@@ -17,6 +17,7 @@
 #include <cerrno>
 #include <regex>
 #include "directory_ex.h"
+#include "media_asset.h"
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
 #include "media_log.h"
@@ -375,6 +376,12 @@ string MediaFileUtils::GetFileMediaTypeUri(int32_t mediaType, const string &netw
         default:
             return uri + MEDIALIBRARY_TYPE_FILE_URI;
     }
+}
+
+string MediaFileUtils::GetUriByNameAndId(const string &displayName, const string &networkId, int32_t id)
+{
+    MediaType mediaType = MediaAsset::GetMediaType(displayName);
+    return MediaFileUtils::GetFileMediaTypeUri(mediaType, networkId) + SLASH_CHAR + to_string(id);
 }
 } // namespace Media
 } // namespace OHOS
