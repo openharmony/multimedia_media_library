@@ -15,7 +15,6 @@
 
 #include "media_file_ext_ability.h"
 
-#include "ability_info.h"
 #include "extension_context.h"
 #include "file_access_ext_stub_impl.h"
 #include "js_runtime_utils.h"
@@ -117,7 +116,7 @@ int MediaFileExtAbility::OpenFile(const Uri &uri, int flags)
     return MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
 }
 
-int MediaFileExtAbility::CreateFile(const Uri &parentUri, const std::string &displayName,  Uri &newFileUri)
+int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayName,  Uri &newFileUri)
 {
     if (!MediaFileUtils::CheckDisplayName(displayName)) {
         MEDIA_ERR_LOG("invalid file displayName %{private}s", displayName.c_str());
@@ -132,8 +131,6 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const std::string &dis
         return ERROR_DISTIBUTED_URI_NO_SUPPORT;
     }
     Uri createFileUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_CREATEASSET);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(parentUriStr);
     string albumPath = MediaLibraryDataManagerUtils::GetPathFromDb(albumId,
         MediaLibraryDataManager::GetInstance()->rdbStore_);
@@ -143,6 +140,8 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const std::string &dis
         MEDIA_ERR_LOG("Create file is existed %{private}s", destPath.c_str());
         return ERROR_TARGET_FILE_EXIST;
     }
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MediaAsset::GetMediaType(displayName));
     auto ret = MediaLibraryDataManager::GetInstance()->Insert(createFileUri, valuesBucket);
@@ -150,11 +149,14 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const std::string &dis
         MediaType mediaType = MediaAsset::GetMediaType(displayName);
         string newUri = MediaFileUtils::GetFileMediaTypeUri(mediaType, "") + SLASH_CHAR + to_string(ret);
         newFileUri = Uri(newUri);
+        return DATA_ABILITY_SUCCESS;
+    } else {
+        MEDIA_ERR_LOG("CreateFile insert fail, %{public}d", ret);
+        return DATA_ABILITY_FAIL;
     }
-    return ret;
 }
 
-int MediaFileExtAbility::Mkdir(const Uri &parentUri, const std::string &displayName, Uri &newFileUri)
+int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, Uri &newFileUri)
 {
     string parentUriStr = parentUri.ToString();
     MediaFileUriType uriType = MediaFileExtentionUtils::ResolveUri(parentUriStr);
@@ -175,23 +177,26 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const std::string &displayN
             ERROR_INVAVLID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
     }
     Uri mkdirUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR + MEDIA_DIROPRN_FMS_CREATEDIR);
-    DataShareValuesBucket valuesBucket;
     string dirPath = ROOT_MEDIA_DIR + relativePath + displayName;
     if (MediaLibraryDataManagerUtils::isFileExistInDb(dirPath, MediaLibraryDataManager::GetInstance()->rdbStore_)) {
         MEDIA_ERR_LOG("Create dir is existed %{private}s", dirPath.c_str());
         return ERROR_TARGET_FILE_EXIST;
     }
     relativePath = relativePath + displayName + SLASH_CHAR;
+    DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    if (MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket) > 0) {
+    auto ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
+    if (ret > 0) {
         MediaType mediaType = MediaAsset::GetMediaType(displayName);
         int32_t dirId = MediaLibraryDataManagerUtils::GetParentIdFromDb(dirPath,
             MediaLibraryDataManager::GetInstance()->rdbStore_);
         string newUri = MediaFileUtils::GetFileMediaTypeUri(mediaType, "") + SLASH_CHAR + to_string(dirId);
         newFileUri = Uri(newUri);
         return DATA_ABILITY_SUCCESS;
+    } else {
+        MEDIA_ERR_LOG("mkdir insert fail, %{public}d", ret);
+        return DATA_ABILITY_FAIL;
     }
-    return DATA_ABILITY_FAIL;
 }
 
 int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
@@ -205,26 +210,27 @@ int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
         return ERROR_DISTIBUTED_URI_NO_SUPPORT;
     }
     auto result = MediaFileExtentionUtils::GetFileFromDB(sourceUri, "");
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, DATA_ABILITY_FAIL, "GetFileFromDB result set is nullptr");
     int count = 0;
     result->GetRowCount(count);
-    CHECK_AND_RETURN_RET_LOG(count > 0, false, "AbsSharedResultSet empty");
-    result->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(count > 0, DATA_ABILITY_FAIL, "AbsSharedResultSet empty");
+    auto ret = result->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == 0, DATA_ABILITY_FAIL, "Failed to shift at first row");
     int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
-    int errCode = 0;
     string id = MediaLibraryDataManagerUtils::GetIdFromUri(sourceUri);
     int fileId = stoi(id);
+    int errCode = 0;
+    DataShareValuesBucket valuesBucket;
     if (mediaType == MEDIA_TYPE_ALBUM) {
-        DataShareValuesBucket valuesBucket;
         valuesBucket.PutInt(MEDIA_DATA_DB_ID, fileId);
-        Uri deleteAlbumUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR +
+        Uri trashAlbumUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR +
             MEDIA_DIROPRN_FMS_TRASHDIR);
-        errCode = MediaLibraryDataManager::GetInstance()->Insert(deleteAlbumUri, valuesBucket);
+        errCode = MediaLibraryDataManager::GetInstance()->Insert(trashAlbumUri, valuesBucket);
     } else {
-        DataShareValuesBucket valuesBucket;
         valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
         valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileId);
-        Uri trashAssetUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR
-                + MEDIA_SMARTALBUMMAPOPRN + SLASH_CHAR + MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
+        Uri trashAssetUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_SMARTALBUMMAPOPRN + SLASH_CHAR +
+            MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
         errCode = MediaLibraryDataManager::GetInstance()->Insert(trashAssetUri, valuesBucket);
     }
     return errCode;
@@ -249,7 +255,7 @@ int MediaFileExtAbility::Move(const Uri &sourceFileUri, const Uri &targetParentU
     return MediaFileExtentionUtils::Move(sourceFileUri, targetParentUri, newFileUri);
 }
 
-int MediaFileExtAbility::Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri)
+int MediaFileExtAbility::Rename(const Uri &sourceFileUri, const string &displayName, Uri &newFileUri)
 {
     return MediaFileExtentionUtils::Rename(sourceFileUri, displayName, newFileUri);
 }

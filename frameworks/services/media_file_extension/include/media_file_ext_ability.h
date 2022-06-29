@@ -16,7 +16,6 @@
 #define FRAMEWORKS_SERVICES_MEDIA_FILE_EXTENTION_ABILITY_H_
 
 #include "file_access_ext_ability.h"
-
 #include "js_runtime.h"
 
 namespace OHOS {
@@ -24,18 +23,16 @@ namespace Media {
 class MediaFileExtAbility : public FileAccessFwk::FileAccessExtAbility {
 public:
     MediaFileExtAbility(AbilityRuntime::JsRuntime& jsRuntime);
-    virtual ~MediaFileExtAbility() override;
-
+    ~MediaFileExtAbility() override;
     static MediaFileExtAbility* Create(const std::unique_ptr<AbilityRuntime::Runtime> &runtime);
-
     void Init(const std::shared_ptr<AppExecFwk::AbilityLocalRecord> &record,
         const std::shared_ptr<AppExecFwk::OHOSApplication> &application,
         std::shared_ptr<AppExecFwk::AbilityHandler> &handler,
         const sptr<IRemoteObject> &token) override;
-
     void OnStart(const AAFwk::Want &want) override;
     void OnStop() override;
     sptr<IRemoteObject> OnConnect(const AAFwk::Want &want) override;
+
     int OpenFile(const Uri &uri, int flags) override;
     int CreateFile(const Uri &parentUri, const std::string &displayName,  Uri &newFileUri) override;
     int Mkdir(const Uri &parentUri, const std::string &displayName, Uri &newFileUri) override;

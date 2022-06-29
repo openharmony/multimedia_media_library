@@ -361,7 +361,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     return retStr;
 }
 
-string MediaFileUtils::GetFileMediaTypeUri(int32_t mediaType, const string& networkId)
+string MediaFileUtils::GetFileMediaTypeUri(int32_t mediaType, const string &networkId)
 {
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     switch (mediaType) {
