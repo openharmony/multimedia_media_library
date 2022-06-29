@@ -22,9 +22,9 @@ namespace Media {
 variant<int32_t, string> ResultSetUtils::GetValFromColumn(const string &columnName,
     shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, ResultSetDataType type)
 {
-    int32_t index;
+    int32_t index = 0;
     variant<int32_t, string> cellValue(0);
-    int32_t integerVal;
+    int32_t integerVal = 0;
     string stringVal;
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, cellValue, "resultSet == nullptr");
     resultSet->GetColumnIndex(columnName, index);
