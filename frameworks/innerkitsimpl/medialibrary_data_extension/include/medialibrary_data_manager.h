@@ -109,7 +109,7 @@ namespace Media {
         bool UnSubscribeRdbStoreObserver();
         bool QuerySync(const std::string &deviceId, const std::string &tableName);
         bool QuerySync();
-		
+
         bool CheckFileNameValid(const DataShareValuesBucket &value);
         sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
         std::string GetClientBundleName();
@@ -131,6 +131,7 @@ namespace Media {
         static std::mutex mutex_;
         static std::shared_ptr<MediaLibraryDataManager> instance_;
         std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
+        std::atomic<int> refCnt_;
 };
 
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {

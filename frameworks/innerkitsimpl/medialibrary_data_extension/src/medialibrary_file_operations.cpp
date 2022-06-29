@@ -106,12 +106,6 @@ int32_t MediaLibraryFileOperations::HandleCreateAsset(const ValuesBucket &values
 int32_t MediaLibraryFileOperations::HandleCloseAsset(string &uriStr, string &srcPath, const ValuesBucket &values,
     const shared_ptr<RdbStore> &rdbStore)
 {
-    int32_t errorCode = MediaLibraryDataManagerUtils::setFilePending(uriStr, false, rdbStore);
-    if (errorCode == DATA_ABILITY_FAIL) {
-        MEDIA_ERR_LOG("HandleCloseAsset Set file to pending DB error");
-        return DATA_ABILITY_FAIL;
-    }
-
     string fileName;
 
     if (!srcPath.empty() && ((fileName = MediaLibraryDataManagerUtils::GetFileName(srcPath)).length() != 0) &&

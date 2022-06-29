@@ -61,6 +61,8 @@ public:
     static int64_t UTCTimeSeconds();
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string UpdatePath(const std::string &path, const std::string &uri);
+    static std::string GetFileMediaTypeUri(int32_t mediaType, const std::string &networkId);
+    static std::string GetUriByNameAndId(const std::string &displayName, const std::string &networkId, int32_t id);
 };
 } // namespace Media
 } // namespace  OHOS
