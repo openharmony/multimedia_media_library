@@ -302,13 +302,17 @@ int32_t MediaLibraryDirOperations::HandleFMSTrashDir(const ValuesBucket &values,
     smartAlbumMapQueryData.values = values;
     smartAlbumMapQueryData.rdbStore = rdbStore;
     smartAlbumMapQueryData.dirQuerySetMap = dirQuerySetMap;
-    int32_t dirId;
+    int32_t dirId = 0;
     if (values.GetObject(MEDIA_DATA_DB_ID, valueObject)) {
         valueObject.GetInt(dirId);
+    } else {
+        MEDIA_ERR_LOG("HandleFMSTrashDir invalid id");
+        return DATA_ABILITY_FAIL;
     }
-    int errorCode = smartAlbumMapOprn.HandleAddAssetOperations(
-        TRASH_ALBUM_ID_VALUES, dirId, smartAlbumMapQueryData);
-    return errorCode;
+    smartAlbumMapQueryData.values.Clear();
+    smartAlbumMapQueryData.values.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+    smartAlbumMapQueryData.values.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, dirId);
+    return smartAlbumMapOprn.HandleAddAssetOperations(TRASH_ALBUM_ID_VALUES, dirId, smartAlbumMapQueryData);
 }
 
 int32_t MediaLibraryDirOperations::GetRootDirAndExtension(string &displayName,

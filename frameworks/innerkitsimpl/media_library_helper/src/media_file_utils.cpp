@@ -360,5 +360,21 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
     return retStr;
 }
+
+string MediaFileUtils::GetFileMediaTypeUri(int32_t mediaType, const string& networkId)
+{
+    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
+    switch (mediaType) {
+        case MEDIA_TYPE_AUDIO:
+            return uri + MEDIALIBRARY_TYPE_AUDIO_URI;
+        case MEDIA_TYPE_VIDEO:
+            return uri + MEDIALIBRARY_TYPE_VIDEO_URI;
+        case MEDIA_TYPE_IMAGE:
+            return uri + MEDIALIBRARY_TYPE_IMAGE_URI;
+        case MEDIA_TYPE_FILE:
+        default:
+            return uri + MEDIALIBRARY_TYPE_FILE_URI;
+    }
+}
 } // namespace Media
 } // namespace OHOS
