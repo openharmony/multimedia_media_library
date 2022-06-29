@@ -66,7 +66,6 @@ void MediaFileExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &record
         MEDIA_ERR_LOG("Failed to get context");
         return;
     }
-    MEDIA_INFO_LOG("%{public}s runtime language  %{public}d", __func__, jsRuntime_.GetLanguage());
     MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context);
 }
 
@@ -123,32 +122,21 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayN
         return ERROR_INVAVLID_DISPLAY_NAME;
     }
     string parentUriStr = parentUri.ToString();
-    if (!MediaFileExtentionUtils::CheckUriValid(parentUriStr)) {
-        return ERROR_URI_INVALID;
-    }
-    if (!MediaFileExtentionUtils::CheckDistributedUri(parentUriStr)) {
-        MEDIA_ERR_LOG("CreateFile not support distributed operation");
-        return ERROR_DISTIBUTED_URI_NO_SUPPORT;
-    }
+    auto ret = MediaFileExtentionUtils::CheckUriSupport(parentUriStr);
+    CHECK_AND_RETURN_RET_LOG(ret == DATA_ABILITY_SUCCESS, ret, "invalid uri");
     Uri createFileUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_CREATEASSET);
     string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(parentUriStr);
     string albumPath = MediaLibraryDataManagerUtils::GetPathFromDb(albumId,
         MediaLibraryDataManager::GetInstance()->rdbStore_);
     string relativePath = albumPath.substr(ROOT_MEDIA_DIR.size()) + SLASH_CHAR;
     string destPath = albumPath + SLASH_CHAR + displayName;
-    if (MediaLibraryDataManagerUtils::isFileExistInDb(destPath, MediaLibraryDataManager::GetInstance()->rdbStore_)) {
-        MEDIA_ERR_LOG("Create file is existed %{private}s", destPath.c_str());
-        return ERROR_TARGET_FILE_EXIST;
-    }
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MediaAsset::GetMediaType(displayName));
-    auto ret = MediaLibraryDataManager::GetInstance()->Insert(createFileUri, valuesBucket);
+    ret = MediaLibraryDataManager::GetInstance()->Insert(createFileUri, valuesBucket);
     if (ret > 0) {
-        MediaType mediaType = MediaAsset::GetMediaType(displayName);
-        string newUri = MediaFileUtils::GetFileMediaTypeUri(mediaType, "") + SLASH_CHAR + to_string(ret);
-        newFileUri = Uri(newUri);
+        newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", ret));
         return DATA_ABILITY_SUCCESS;
     } else {
         MEDIA_ERR_LOG("CreateFile insert fail, %{public}d", ret);
@@ -161,20 +149,11 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
     string parentUriStr = parentUri.ToString();
     MediaFileUriType uriType = MediaFileExtentionUtils::ResolveUri(parentUriStr);
     string relativePath;
+    auto ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, displayName, parentUriStr);
+    CHECK_AND_RETURN_RET_LOG(ret == DATA_ABILITY_SUCCESS, ret, "invalid uri");
     if (uriType != MediaFileUriType::URI_ROOT) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckUriValid(parentUriStr),
-            ERROR_URI_INVALID, "Mkdir invalid uri");
-        CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckDistributedUri(parentUriStr),
-            ERROR_DISTIBUTED_URI_NO_SUPPORT, "Mkdir not support distributed operation");
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDisplayName(displayName),
-            ERROR_INVAVLID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
         CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::GetAlbumRelativePathFromDB(parentUriStr, "", relativePath),
             ERROR_URI_IS_NOT_ALBUM, "selectUri is not valid album uri %{private}s", parentUriStr.c_str());
-    } else {
-        CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckDistributedUri(parentUriStr),
-            ERROR_DISTIBUTED_URI_NO_SUPPORT, "Mkdir not support distributed operation");
-        CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckValidDirName(displayName + SLASH_CHAR),
-            ERROR_INVAVLID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
     }
     Uri mkdirUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR + MEDIA_DIROPRN_FMS_CREATEDIR);
     string dirPath = ROOT_MEDIA_DIR + relativePath + displayName;
@@ -185,13 +164,11 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
     relativePath = relativePath + displayName + SLASH_CHAR;
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    auto ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
+    ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
     if (ret > 0) {
-        MediaType mediaType = MediaAsset::GetMediaType(displayName);
         int32_t dirId = MediaLibraryDataManagerUtils::GetParentIdFromDb(dirPath,
             MediaLibraryDataManager::GetInstance()->rdbStore_);
-        string newUri = MediaFileUtils::GetFileMediaTypeUri(mediaType, "") + SLASH_CHAR + to_string(dirId);
-        newFileUri = Uri(newUri);
+        newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", dirId));
         return DATA_ABILITY_SUCCESS;
     } else {
         MEDIA_ERR_LOG("mkdir insert fail, %{public}d", ret);
@@ -202,19 +179,14 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
 int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
 {
     string sourceUri = sourceFileUri.ToString();
-    if (!MediaFileExtentionUtils::CheckUriValid(sourceUri)) {
-        return ERROR_URI_INVALID;
-    }
-    if (!MediaFileExtentionUtils::CheckDistributedUri(sourceUri)) {
-        MEDIA_ERR_LOG("Delete not support distributed operation");
-        return ERROR_DISTIBUTED_URI_NO_SUPPORT;
-    }
+    auto ret = MediaFileExtentionUtils::CheckUriSupport(sourceUri);
+    CHECK_AND_RETURN_RET_LOG(ret == DATA_ABILITY_SUCCESS, ret, "invalid uri");
     auto result = MediaFileExtentionUtils::GetFileFromDB(sourceUri, "");
     CHECK_AND_RETURN_RET_LOG(result != nullptr, DATA_ABILITY_FAIL, "GetFileFromDB result set is nullptr");
     int count = 0;
     result->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(count > 0, DATA_ABILITY_FAIL, "AbsSharedResultSet empty");
-    auto ret = result->GoToFirstRow();
+    ret = result->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == 0, DATA_ABILITY_FAIL, "Failed to shift at first row");
     int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
     string id = MediaLibraryDataManagerUtils::GetIdFromUri(sourceUri);
