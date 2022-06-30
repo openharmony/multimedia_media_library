@@ -115,11 +115,12 @@ void GetSingleFileInfo(const string &networkId, FileAccessFwk::FileInfo &fileInf
     shared_ptr<AbsSharedResultSet> &result)
 {
     int fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, result, TYPE_INT32));
+    string mimeType = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MIME_TYPE, result, TYPE_STRING));
     int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
     string uri = MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
     fileInfo.uri = Uri(uri);
     fileInfo.fileName = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_NAME, result, TYPE_STRING));
-    fileInfo.mimeType = to_string(mediaType);
+    fileInfo.mimeType = mimeType;
     fileInfo.size = ResultSetUtils::GetLongValFromColumn(MEDIA_DATA_DB_SIZE, result);
     fileInfo.mtime = ResultSetUtils::GetLongValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED, result);
     if (mediaType == MEDIA_TYPE_ALBUM) {
@@ -330,9 +331,8 @@ static bool GetDisplayNameFromDB(const string &selectUri, const string &networkI
 
 int32_t HandleFileRename(const string &sourceUri, const string &displayName, const string &destRelativePath)
 {
-    string uri = Media::MEDIALIBRARY_DATA_URI;
-    Uri updateAssetUri(uri + SLASH_CHAR + Media::MEDIA_FILEOPRN + SLASH_CHAR +
-        Media::MEDIA_FILEOPRN_MODIFYASSET);
+    string uri = MEDIALIBRARY_DATA_URI;
+    Uri updateAssetUri(uri + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_MODIFYASSET);
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, sourceUri);
@@ -341,7 +341,13 @@ int32_t HandleFileRename(const string &sourceUri, const string &displayName, con
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + MediaLibraryDataManagerUtils::GetIdFromUri(sourceUri));
-    return MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucket, predicates);
+    auto ret = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucket, predicates);
+    if (ret > 0) {
+        return DATA_ABILITY_SUCCESS;
+    } else {
+        MEDIA_ERR_LOG("HandleFileRename Update ret %{private}d", ret);
+        return ret;
+    }
 }
 
 string GetRelativePathFromPath(const string &path)
@@ -431,9 +437,8 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const std::str
 
 int32_t HandleFileMove(const string &sourceUri, const string &displayName, const string &destRelativePath)
 {
-    string uri = Media::MEDIALIBRARY_DATA_URI;
-    Uri updateAssetUri(uri + SLASH_CHAR + Media::MEDIA_FILEOPRN + SLASH_CHAR +
-        Media::MEDIA_FILEOPRN_MODIFYASSET);
+    string uri = MEDIALIBRARY_DATA_URI;
+    Uri updateAssetUri(uri + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_MODIFYASSET);
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, sourceUri);
@@ -441,7 +446,13 @@ int32_t HandleFileMove(const string &sourceUri, const string &displayName, const
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + MediaLibraryDataManagerUtils::GetIdFromUri(sourceUri));
-    return MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucket, predicates);
+    auto ret = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucket, predicates);
+    if (ret > 0) {
+        return DATA_ABILITY_SUCCESS;
+    } else {
+        MEDIA_ERR_LOG("HandleFileMove Update ret %{private}d", ret);
+        return ret;
+    }
 }
 
 int32_t HandleAlbumMove(const string &srcId, const string &srcPath, const string &displayName,
