@@ -88,7 +88,7 @@ napi_value FetchFileResultNapi::Init(napi_env env, napi_value exports)
 // Constructor callback
 napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, napi_callback_info info)
 {
-    StartTrace(HITRACE_TAG_OHOS, "FetchFileResultNapiConstructor");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "FetchFileResultNapiConstructor");
 
     napi_status status;
     napi_value result = nullptr;
@@ -113,7 +113,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 fetchRes.release();
             } else {
                 NAPI_ERR_LOG("No native instance assigned yet");
-                FinishTrace(HITRACE_TAG_OHOS);
+                FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
                 return result;
             }
 
@@ -121,7 +121,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                                FetchFileResultNapi::FetchFileResultNapiDestructor, nullptr, &(obj->wrapper_));
             if (status == napi_ok) {
                 obj.release();
-                FinishTrace(HITRACE_TAG_OHOS);
+                FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
                 return thisVar;
             } else {
                 NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
@@ -129,14 +129,14 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
         }
     }
 
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     return result;
 }
 
 napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult &fileResult,
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
-    StartTrace(HITRACE_TAG_OHOS, "CreateFetchFileResult");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "CreateFetchFileResult");
 
     napi_status status;
     napi_value result = nullptr;
@@ -156,7 +156,7 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult 
     }
 
     napi_get_undefined(env, &result);
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     return result;
 }
@@ -222,7 +222,7 @@ napi_value FetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info i
 
 static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, FetchFileResultAsyncContext* context)
 {
-    StartTrace(HITRACE_TAG_OHOS, "GetPositionObjectCompleteCallback");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GetPositionObjectCompleteCallback");
     napi_value jsFileAsset = nullptr;
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -255,13 +255,13 @@ static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, 
                                                    context->work, *jsContext);
     }
 
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     delete context;
 }
 
 napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_info info)
 {
-    StartTrace(HITRACE_TAG_OHOS, "JSGetFirstObject");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "JSGetFirstObject");
 
     napi_status status;
     napi_value result = nullptr;
@@ -302,7 +302,7 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
         NAPI_ASSERT(env, false, "JSGetFirstObject obj == nullptr");
     }
 
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     return result;
 }
 
@@ -450,7 +450,7 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
 
 static void GetAllObjectCompleteCallback(napi_env env, napi_status status, FetchFileResultAsyncContext* context)
 {
-    StartTrace(HITRACE_TAG_OHOS, "GetAllObjectCompleteCallback");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GetAllObjectCompleteCallback");
 
     napi_value jsFileAsset = nullptr;
     napi_value jsFileArray = nullptr;
@@ -492,7 +492,7 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
                                                    context->work, *jsContext);
     }
 
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     delete context;
 }
 
@@ -515,7 +515,7 @@ void GetAllObjectFromFetchResult(const FetchFileResultAsyncContext &asyncContext
 
 napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info info)
 {
-    StartTrace(HITRACE_TAG_OHOS, "JSGetAllObject");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "JSGetAllObject");
 
     napi_status status;
     napi_value result = nullptr;
@@ -556,7 +556,7 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
         NAPI_ASSERT(env, false, "JSGetAllObject obj == nullptr");
     }
 
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     return result;
 }
 
