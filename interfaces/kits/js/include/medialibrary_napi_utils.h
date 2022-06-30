@@ -272,7 +272,7 @@ public:
     static void InvokeJSAsyncMethod(napi_env env, napi_deferred deferred,
         napi_ref callbackRef, napi_async_work work, const JSAsyncContextOutput &asyncContext)
     {
-        StartTrace(HITRACE_TAG_OHOS, "InvokeJSAsyncMethod");
+        StartTrace(HITRACE_TAG_FILEMANAGEMENT, "InvokeJSAsyncMethod");
         NAPI_DEBUG_LOG("InvokeJSAsyncMethod IN");
         napi_value retVal;
         napi_value callback = nullptr;
@@ -296,7 +296,7 @@ public:
         }
         napi_delete_async_work(env, work);
         NAPI_DEBUG_LOG("InvokeJSAsyncMethod OUT");
-        FinishTrace(HITRACE_TAG_OHOS);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     }
 
     static std::tuple<bool, std::unique_ptr<char[]>, size_t> ToUTF8String(napi_env env, napi_value value)
