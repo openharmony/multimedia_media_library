@@ -377,6 +377,15 @@ int32_t MediaLibraryDirOperations::HandleFMSDeleteDir(const ValuesBucket &values
     return errorCode;
 }
 
+static bool HandleSpecialMediaType(const int &mediaType)
+{
+    if (mediaType == MEDIA_TYPE_NOFILE) {
+        MEDIA_DEBUG_LOG("special type %{public}d, pass check", mediaType);
+        return true;
+    }
+    return false;
+}
+
 int32_t MediaLibraryDirOperations::HandleCheckDirExtension(const ValuesBucket &values,
                                                            const shared_ptr<RdbStore> &rdbStore,
                                                            const unordered_map<string, DirAsset>
@@ -384,7 +393,7 @@ int32_t MediaLibraryDirOperations::HandleCheckDirExtension(const ValuesBucket &v
 {
     ValueObject valueObject;
     string displayName, relativePath;
-    int mediaType;
+    int mediaType = MEDIA_TYPE_FILE;
     if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
         valueObject.GetString(displayName);
         MEDIA_INFO_LOG("displayName = %{private}s", displayName.c_str());
@@ -396,6 +405,9 @@ int32_t MediaLibraryDirOperations::HandleCheckDirExtension(const ValuesBucket &v
     if (values.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject)) {
         valueObject.GetInt(mediaType);
         MEDIA_INFO_LOG("mediaType = %{public}d", mediaType);
+    }
+    if (HandleSpecialMediaType(mediaType)) {
+        return DATA_ABILITY_SUCCESS;
     }
     ValuesBucket GetDirAndExtensionValues;
     int errorCode = GetRootDirAndExtension(displayName, relativePath, GetDirAndExtensionValues);
