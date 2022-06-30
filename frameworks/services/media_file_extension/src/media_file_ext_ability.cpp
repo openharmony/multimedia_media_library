@@ -149,7 +149,7 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
     string parentUriStr = parentUri.ToString();
     MediaFileUriType uriType = MediaFileExtentionUtils::ResolveUri(parentUriStr);
     string relativePath;
-    auto ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, displayName, parentUriStr);
+    auto ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
     CHECK_AND_RETURN_RET_LOG(ret == DATA_ABILITY_SUCCESS, ret, "invalid uri");
     if (uriType != MediaFileUriType::URI_ROOT) {
         CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::GetAlbumRelativePathFromDB(parentUriStr, "", relativePath),
