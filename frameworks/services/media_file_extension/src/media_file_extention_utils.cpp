@@ -329,12 +329,14 @@ static bool GetDisplayNameFromDB(const string &selectUri, const string &networkI
     return true;
 }
 
-int32_t HandleFileRename(const string &sourceUri, const string &displayName, const string &destRelativePath)
+int32_t HandleFileRename(const string &sourceUri, const string &displayName, const string &destRelativePath,
+    const int &mediaType)
 {
     string uri = MEDIALIBRARY_DATA_URI;
     Uri updateAssetUri(uri + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_MODIFYASSET);
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.PutString(MEDIA_DATA_DB_URI, sourceUri);
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.PutString(MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(displayName));
@@ -429,18 +431,20 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const std::str
         string sourceId = MediaLibraryDataManagerUtils::GetIdFromUri(sourceUri);
         ret = HandleAlbumRename(sourceId, sourcePath, displayName);
     } else {
-        ret = HandleFileRename(sourceUri, displayName, destRelativePath);
+        ret = HandleFileRename(sourceUri, displayName, destRelativePath, type);
     }
     newFileUri = Uri(sourceUri);
     return ret;
 }
 
-int32_t HandleFileMove(const string &sourceUri, const string &displayName, const string &destRelativePath)
+int32_t HandleFileMove(const string &sourceUri, const string &displayName, const string &destRelativePath,
+    const int &mediaType)
 {
     string uri = MEDIALIBRARY_DATA_URI;
     Uri updateAssetUri(uri + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_MODIFYASSET);
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.PutString(MEDIA_DATA_DB_URI, sourceUri);
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
@@ -531,7 +535,7 @@ int32_t MediaFileExtentionUtils::Move(const Uri &sourceFileUri, const Uri &targe
         string bucketId = MediaLibraryDataManagerUtils::GetIdFromUri(targetUri);
         ret = HandleAlbumMove(sourceId, sourcePath, displayName, destRelativePath, bucketId);
     } else {
-        ret = HandleFileMove(sourceUri, displayName, destRelativePath);
+        ret = HandleFileMove(sourceUri, displayName, destRelativePath, type);
     }
     newFileUri = Uri(sourceUri);
     return ret;
