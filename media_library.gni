@@ -15,6 +15,9 @@ MEDIA_LIB_BASE_DIR = "//foundation/multimedia/media_library"
 MEDIA_LIB_INNERKITS_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl"
 MEDIA_LIB_SERVICES_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/services"
 
+MEDIA_FILEEXT_SOURCE_DIR =
+    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_file_extension"
+
 MEDIA_SCANNER_SOURCE_DIR =
     "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_scanner"
 
