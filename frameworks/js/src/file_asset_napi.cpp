@@ -183,7 +183,7 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
 napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
-    StartTrace(HITRACE_TAG_OHOS, "CreateFileAsset");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "CreateFileAsset");
 
     napi_status status;
     napi_value result = nullptr;
@@ -203,7 +203,7 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
     }
 
     napi_get_undefined(env, &result);
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     return result;
 }
@@ -1302,7 +1302,7 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
     shared_ptr<MediaThumbnailHelper> &thumbnailHelper, int32_t &fileId,
     std::string &uri, int32_t &width, int32_t &height)
 {
-    StartTrace(HITRACE_TAG_OHOS, "QueryThumbnail");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "QueryThumbnail");
     if ((abilityHelper == nullptr) ||(thumbnailHelper == nullptr)) {
         return nullptr;
     }
@@ -1319,14 +1319,14 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
         columns.push_back(MEDIA_DATA_DB_THUMBNAIL);
     }
 
-    StartTrace(HITRACE_TAG_OHOS, "abilityHelper->Query");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "abilityHelper->Query");
     DataShare::DataSharePredicates predicates;
     shared_ptr<DataShare::DataShareResultSet> resultSet = abilityHelper->Query(queryUri1, predicates, columns);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("Query thumbnail error");
         return nullptr;
     }
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     resultSet->GoToFirstRow();
     string id = GetStringInfo(resultSet, PARAM0);
@@ -1348,11 +1348,11 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
     }
 
     NAPI_DEBUG_LOG("Query thumbnail id %{public}s with key %{public}s", id.c_str(), thumbnailKey.c_str());
-    StartTrace(HITRACE_TAG_OHOS, "thumbnailHelper->GetThumbnail");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "thumbnailHelper->GetThumbnail");
     auto ret = thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     return ret;
 }
 
@@ -1375,7 +1375,7 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
                                            FileAssetAsyncContext* context)
 {
-    StartTrace(HITRACE_TAG_OHOS, "JSGetThumbnailCompleteCallback");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "JSGetThumbnailCompleteCallback");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
@@ -1399,14 +1399,14 @@ static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
     }
 
     if (context->work != nullptr) {
-        StartTrace(HITRACE_TAG_OHOS, "InvokeJSAsyncMethod");
+        StartTrace(HITRACE_TAG_FILEMANAGEMENT, "InvokeJSAsyncMethod");
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
-        FinishTrace(HITRACE_TAG_OHOS);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     }
     delete context;
 
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 }
 
 static void GetSizeInfo(napi_env env, napi_value configObj, std::string type, int32_t &result)
@@ -1473,7 +1473,7 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
 
 napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
 {
-    StartTrace(HITRACE_TAG_OHOS, "JSGetThumbnail");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "JSGetThumbnail");
 
     napi_status status;
     napi_value result = nullptr;
@@ -1507,7 +1507,7 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
         }
     }
 
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     return result;
 }

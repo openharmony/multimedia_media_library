@@ -78,9 +78,9 @@ bool MediaLibrarySyncTable::SyncPullTable(
 
     uint32_t count = 0;
     while (count++ < RETRY_COUNT) {
-        StartTrace(HITRACE_TAG_OHOS, "abilityHelper->Query");
+        StartTrace(HITRACE_TAG_FILEMANAGEMENT, "abilityHelper->Query");
         auto ret = rdbStore->Sync(option, predicate, callback);
-        FinishTrace(HITRACE_TAG_OHOS);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         if (ret) {
             return ret;
         }
@@ -116,9 +116,9 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
         }
     };
 
-    StartTrace(HITRACE_TAG_OHOS, "SyncPushTable rdbStore->Sync");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "SyncPushTable rdbStore->Sync");
     bool ret = rdbStore->Sync(option, predicate, callback);
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     return ret;
 }

@@ -51,7 +51,7 @@ void MediaScannerObj::ScanQueueCB(ScanRequest scanReq)
 {
     int32_t errCode = ERR_SCAN_NOT_INIT;
 
-    StartTrace(HITRACE_TAG_OHOS, "ScanQueueCB");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "ScanQueueCB");
 
     MediaScannerObj *scanner = MediaScannerObj::GetMediaScannerInstance();
     if (scanner != nullptr) {
@@ -62,20 +62,20 @@ void MediaScannerObj::ScanQueueCB(ScanRequest scanReq)
         string fileUri("");
         string path = scanReq.GetPath();
         if (scanReq.GetIsDirectory()) {
-            StartTrace(HITRACE_TAG_OHOS, "ScanDirInternal");
+            StartTrace(HITRACE_TAG_FILEMANAGEMENT, "ScanDirInternal");
             errCode = scanner->ScanDirInternal(const_cast<string &>(path));
-            FinishTrace(HITRACE_TAG_OHOS);
+            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         } else {
-            StartTrace(HITRACE_TAG_OHOS, "ScanFileInternal");
+            StartTrace(HITRACE_TAG_FILEMANAGEMENT, "ScanFileInternal");
             errCode = scanner->ScanFileInternal(const_cast<string &>(path));
-            FinishTrace(HITRACE_TAG_OHOS);
+            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
             fileUri = scanner->mediaUri_;
         }
 
         scanner->ExecuteScannerClientCallback(scanReq.GetRequestId(), errCode, fileUri, path);
     }
 
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 }
 
 bool MediaScannerObj::InitScanner(void)
@@ -302,7 +302,7 @@ int32_t MediaScannerObj::RetrieveMetadata(Metadata &fileMetadata)
 // Visit the File
 int32_t MediaScannerObj::VisitFile(const Metadata &fileMD)
 {
-    StartTrace(HITRACE_TAG_OHOS, "VisitFile");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "VisitFile");
 
     auto fileMetadata = const_cast<Metadata *>(&fileMD);
     string mimeType = DEFAULT_FILE_MIME_TYPE;
@@ -321,14 +321,14 @@ int32_t MediaScannerObj::VisitFile(const Metadata &fileMD)
         }
     }
 
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     return errCode;
 }
 
 // Get Basic File Metadata from the file
 unique_ptr<Metadata> MediaScannerObj::GetFileMetadata(const string &path, const int32_t parentId)
 {
-    StartTrace(HITRACE_TAG_OHOS, "GetFileMetaData");
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GetFileMetaData");
 
     unique_ptr<Metadata> fileMetadata = make_unique<Metadata>();
     if (fileMetadata == nullptr) {
@@ -381,7 +381,7 @@ unique_ptr<Metadata> MediaScannerObj::GetFileMetadata(const string &path, const 
                       path.c_str(), rootDir.c_str());
     }
 
-    FinishTrace(HITRACE_TAG_OHOS);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     return fileMetadata;
 }
 
