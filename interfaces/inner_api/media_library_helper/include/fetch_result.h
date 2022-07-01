@@ -33,7 +33,7 @@ enum ResultSetDataType {
 };
 
 /**
- * @brief Class for returing the data cursor to application.
+ * @brief Class for returning the data cursor to application.
  *
  * @since 1.0
  * @version 1.0

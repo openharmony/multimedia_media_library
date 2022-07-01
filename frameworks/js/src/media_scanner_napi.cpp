@@ -239,7 +239,7 @@ void MediaScannerNapi::DataShareScanBoardcast(const std::string &event)
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, event);
     int index = sDataShareHelper_->Insert(insertUri, valuesBucket);
     if (index < 0) {
-        NAPI_ERR_LOG("[MediaScannerNapi::DataShareScanBoardcast reture status %{public}d", index);
+        NAPI_ERR_LOG("[MediaScannerNapi::DataShareScanBoardcast return status %{public}d", index);
     } else {
         NAPI_INFO_LOG("[MediaScannerNapi::DataShareScanBoardcast success");
     }

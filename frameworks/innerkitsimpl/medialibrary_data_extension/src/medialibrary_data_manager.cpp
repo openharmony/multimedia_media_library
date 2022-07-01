@@ -335,7 +335,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 #ifdef RDB_UPGRADE_MOCK
     const std::string ALTER_MOCK_COLUMN = "ALTER TABLE " + MEDIALIBRARY_TABLE +
                                           " ADD COLUMN upgrade_test_column INT DEFAULT 0";
-    MEDIA_INFO_LOG("OnUpgrade |Rdb Verison %{private}d => %{private}d", oldVersion, newVersion);
+    MEDIA_INFO_LOG("OnUpgrade |Rdb Version %{private}d => %{private}d", oldVersion, newVersion);
     int32_t error_code = NativeRdb::E_ERROR;
     error_code = store.ExecuteSql(ALTER_MOCK_COLUMN);
     if (error_code != NativeRdb::E_OK) {
@@ -500,7 +500,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
         return result;
     }
 
-    // boardcast operation
+    // broadcast operation
     if (insertUri.find(MEDIA_BOARDCASTOPRN) != string::npos) {
         std::string operationType = MediaLibraryDataManagerUtils::GetOperationType(insertUri);
         MEDIA_INFO_LOG("MediaData Insert operationType = %{private}s", operationType.c_str());
@@ -903,7 +903,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     string::size_type pos = uriString.find_last_of('/');
     string type = uriString.substr(pos + 1);
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uriString);
-    MEDIA_DEBUG_LOG("uriString = %{private}s, type = %{private}s, thumbnailQuery %{private}d, Rdb Verison %{private}d",
+    MEDIA_DEBUG_LOG("uriString = %{private}s, type = %{private}s, thumbnailQuery %{private}d, Rdb Version %{private}d",
         uriString.c_str(), type.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     DealWithUriString(uriString, tabletype, strQueryCondition, pos, strRow);
     NeedQuerySync(networkId, tabletype);
