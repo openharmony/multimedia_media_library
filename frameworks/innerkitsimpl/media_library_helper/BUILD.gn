@@ -27,11 +27,11 @@ config("media_library_config") {
     "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//utils/native/base/include",
-    "${AAFWK_PATH}/interfaces/kits/native/ability/native",
+    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/rdb/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/appdatafwk/include",
-    "${AAFWK_PATH}/interfaces/kits/native/ability/native",
+    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/provider/include",
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/common/include",
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/consumer/include",
@@ -70,7 +70,7 @@ ohos_shared_library("media_library") {
 
   deps = [
     ":media_library_source",
-    "${AAFWK_PATH}/frameworks/native/ability/native:abilitykit_native",
+    "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
     "//utils/native/base:utils",
   ]
@@ -115,14 +115,14 @@ ohos_static_library("media_thumbnail_helper") {
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
-    "${AAFWK_PATH}/interfaces/kits/native/ability/native",
+    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/provider/include",
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/common/include",
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/consumer/include",
     "//utils/native/base/include",
   ]
   deps = [
-    "${AAFWK_PATH}/frameworks/native/ability/native:abilitykit_native",
+    "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
