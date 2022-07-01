@@ -21,7 +21,7 @@ MEDIA_FILEEXT_SOURCE_DIR =
 MEDIA_SCANNER_SOURCE_DIR =
     "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_scanner"
 
-AAFWK_PATH = "//foundation/ability/ability_runtime"
-AAFWK_KITS_PATH = "${AAFWK_PATH}/frameworks/kits"
-AAFWK_INNER_API_PATH = "${AAFWK_PATH}/interfaces/inner_api"
-AAFWK_SERVICES_PATH = "${AAFWK_PATH}/services"
+ABILITY_RUNTIME_PATH = "//foundation/ability/ability_runtime"
+ABILITY_RUNTIME_KITS_PATH = "${ABILITY_RUNTIME_PATH}/frameworks/kits"
+ABILITY_RUNTIME_INNER_API_PATH = "${ABILITY_RUNTIME_PATH}/interfaces/inner_api"
+ABILITY_RUNTIME_SERVICES_PATH = "${ABILITY_RUNTIME_PATH}/services"
