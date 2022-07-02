@@ -99,7 +99,7 @@ namespace Media {
 
         void InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
         void ClearMediaLibraryMgr();
-
+        void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
     private:
         static constexpr const char DEVICE_BUNDLENAME[] = "com.ohos.medialibrary.medialibrarydata";
         std::string GetOperationType(const std::string &uri);
@@ -116,8 +116,6 @@ namespace Media {
         std::string GetClientBundle(int uid);
         void NeedQuerySync(const std::string &networkId, TableType tabletype);
         int32_t PreCheckInsert(const std::string &uri, const DataShare::DataShareValuesBucket &value);
-        void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
-
         static const std::string PERMISSION_NAME_READ_MEDIA;
         static const std::string PERMISSION_NAME_WRITE_MEDIA;
         std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
