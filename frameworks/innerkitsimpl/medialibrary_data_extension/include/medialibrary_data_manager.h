@@ -107,8 +107,7 @@ namespace Media {
         void InitDeviceData();
         bool SubscribeRdbStoreObserver();
         bool UnSubscribeRdbStoreObserver();
-        bool QuerySync(const std::string &deviceId, const std::string &tableName);
-        bool QuerySync();
+        bool QuerySync(const std::string &networkId, const std::string &tableName);
 
         bool CheckFileNameValid(const DataShareValuesBucket &value);
         sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
