@@ -833,9 +833,20 @@ shared_ptr<ResultSetBridge> GenThumbnail(shared_ptr<RdbStore> rdb,
 
 void MediaLibraryDataManager::NeedQuerySync(const string &networkId, TableType tabletype)
 {
-    if (!networkId.empty() && (tabletype != TYPE_ASSETSMAP_TABLE) && (tabletype != TYPE_SMARTALBUMASSETS_TABLE)) {
+    if (networkId.empty()) {
+        return;
+    }
+    // tabletype mapping into tablename
+    std::string tableName = MEDIALIBRARY_TABLE;
+    if (tabletype == TYPE_SMARTALBUM) {
+        tableName = SMARTALBUM_TABLE;
+    } else if (tabletype == TYPE_SMARTALBUM_MAP) {
+        tableName = SMARTALBUM_MAP_TABLE;
+    }
+
+    if ((tabletype != TYPE_ASSETSMAP_TABLE) && (tabletype != TYPE_SMARTALBUMASSETS_TABLE)) {
         StartTrace(HITRACE_TAG_FILEMANAGEMENT, "QuerySync");
-        auto ret = QuerySync();
+        auto ret = QuerySync(networkId, tableName);
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         MEDIA_INFO_LOG("MediaLibraryDataManager QuerySync result = %{private}d", ret);
     }
@@ -1126,9 +1137,9 @@ bool MediaLibraryDataManager::UnSubscribeRdbStoreObserver()
     return ret;
 }
 
-bool MediaLibraryDataManager::QuerySync(const std::string &deviceId, const std::string &tableName)
+bool MediaLibraryDataManager::QuerySync(const std::string &networkId, const std::string &tableName)
 {
-    if (deviceId.empty() || tableName.empty()) {
+    if (networkId.empty() || tableName.empty()) {
         return false;
     }
 
@@ -1140,50 +1151,18 @@ bool MediaLibraryDataManager::QuerySync(const std::string &deviceId, const std::
         return false;
     }
 
-    if (deviceId == std::string(deviceInfo.deviceId)) {
+    if (networkId == std::string(deviceInfo.networkId)) {
         return true;
     }
 
     int32_t syncStatus = DEVICE_SYNCSTATUSING;
-    auto result = MediaLibraryDevice::GetInstance()->GetDevicieSyncStatus(deviceId, syncStatus);
+    auto result = MediaLibraryDevice::GetInstance()->GetDevicieSyncStatus(networkId, syncStatus);
     if (result && syncStatus == DEVICE_SYNCSTATUS_COMPLETE) {
         return true;
     }
 
-    std::vector<std::string> devices = { deviceId };
+    std::vector<std::string> devices = { networkId };
     return MediaLibrarySyncTable::SyncPullTable(rdbStore_, bundleName_, tableName, devices);
-}
-
-bool MediaLibraryDataManager::QuerySync()
-{
-    std::string strQueryCondition = DEVICE_DB_SYNC_STATUS + "=" + std::to_string(DEVICE_SYNCSTATUSING) +
-        " AND " + DEVICE_DB_DATE_MODIFIED + "=0";
-
-    std::vector<std::string> columns;
-    std::vector<std::string> devices;
-    AbsRdbPredicates deviceDataSharePredicates(DEVICE_TABLE);
-    deviceDataSharePredicates.SetWhereClause(strQueryCondition);
-
-    auto queryResultSet = rdbStore_->Query(deviceDataSharePredicates, columns);
-    if (queryResultSet == nullptr) {
-        return false;
-    }
-    if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t columnIndexId;
-        std::string deviceId;
-        queryResultSet->GetColumnIndex(DEVICE_DB_DEVICEID, columnIndexId);
-        queryResultSet->GetString(columnIndexId, deviceId);
-
-        if (!deviceId.empty()) {
-            devices.push_back(deviceId);
-        }
-    }
-
-    if (devices.empty()) {
-        return true;
-    }
-
-    return MediaLibrarySyncTable::SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
 }
 
 bool MediaLibraryDataManager::CheckFileNameValid(const DataShareValuesBucket &value)
