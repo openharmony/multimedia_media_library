@@ -2261,75 +2261,51 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
     switch (typeEnum) {
         case AUDIO_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.audioDataObserver_, "Failed to obtain audio data observer");
-
             mediaType = MEDIA_TYPE_AUDIO;
             sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_AUDIO_URI), listObj.audioDataObserver_);
-
-            delete listObj.audioDataObserver_;
             listObj.audioDataObserver_ = nullptr;
             break;
         case VIDEO_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.videoDataObserver_, "Failed to obtain video data observer");
-
             mediaType = MEDIA_TYPE_VIDEO;
             sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_VIDEO_URI), listObj.videoDataObserver_);
-
-            delete listObj.videoDataObserver_;
             listObj.videoDataObserver_ = nullptr;
             break;
         case IMAGE_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.imageDataObserver_, "Failed to obtain image data observer");
-
             mediaType = MEDIA_TYPE_IMAGE;
             sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_IMAGE_URI), listObj.imageDataObserver_);
-
-            delete listObj.imageDataObserver_;
             listObj.imageDataObserver_ = nullptr;
             break;
         case FILE_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.fileDataObserver_, "Failed to obtain file data observer");
-
             mediaType = MEDIA_TYPE_FILE;
             sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_FILE_URI), listObj.fileDataObserver_);
-
-            delete listObj.fileDataObserver_;
             listObj.fileDataObserver_ = nullptr;
             break;
         case SMARTALBUM_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.smartAlbumDataObserver_, "Failed to obtain smart album data observer");
-
             mediaType = MEDIA_TYPE_SMARTALBUM;
             sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
                 listObj.smartAlbumDataObserver_);
-
-            delete listObj.smartAlbumDataObserver_;
             listObj.smartAlbumDataObserver_ = nullptr;
             break;
         case DEVICE_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.deviceDataObserver_, "Failed to obtain device data observer");
-
             mediaType = MEDIA_TYPE_DEVICE;
             sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
-
-            delete listObj.deviceDataObserver_;
             listObj.deviceDataObserver_ = nullptr;
             break;
         case REMOTEFILE_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.remoteFileDataObserver_, "Failed to obtain remote file data observer");
-
             mediaType = MEDIA_TYPE_REMOTEFILE;
             sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
-
-            delete listObj.remoteFileDataObserver_;
             listObj.remoteFileDataObserver_ = nullptr;
             break;
         case ALBUM_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.albumDataObserver_, "Failed to obtain album data observer");
-
             mediaType = MEDIA_TYPE_ALBUM;
             sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.albumDataObserver_);
-
-            delete listObj.albumDataObserver_;
             listObj.albumDataObserver_ = nullptr;
             break;
         default:
