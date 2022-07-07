@@ -463,7 +463,7 @@ unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::Ab
         }
 
         int32_t ret(0);
-        std::variant<int32_t, int64_t, std::string, MediaType> data = 0;
+        std::variant<int32_t, int64_t, std::string> data = 0;
 
         switch (dataType) {
             case DataType::TYPE_INT: {
