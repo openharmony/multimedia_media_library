@@ -58,8 +58,8 @@ config("media_data_extension_public_config") {
     "//utils/system/safwk/native/include",
     "//third_party/json/include",
     "//base/notification/common_event_service/interfaces/innerkits/native/include",
+    "$MEDIA_LIB_COMMON_UTILS_DIR/include",
   ]
-  include_dirs += [ "//third_party/openssl/include/" ]
   include_dirs += include_fileext
   include_dirs += include_scanner
 
@@ -152,6 +152,7 @@ ohos_shared_library("medialibrary_data_extension") {
   public_configs = [ ":media_data_extension_public_config" ]
 
   deps = [
+    "$MEDIA_LIB_COMMON_UTILS_DIR:medialibrary_common_utils",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_thumbnail_helper",
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
@@ -169,7 +170,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//utils/native/base:utils",
   ]
-  deps += [ "//third_party/openssl:libcrypto_static" ]
 
   external_deps = [
     "ability_base:want",
