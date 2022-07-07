@@ -22,10 +22,10 @@
 #include "image_packer.h"
 #include "media_data_ability_const.h"
 #include "media_lib_service_const.h"
+#include "medialibrary_common_utils.h"
 #include "media_log.h"
 #include "medialibrary_sync_table.h"
 #include "medialibrary_sync_table.h"
-#include "openssl/sha.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
 #include "uri_helper.h"
@@ -361,6 +361,7 @@ bool MediaLibraryThumbnail::LoadAudioFile(string &path,
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadAudioFile OUT");
     return true;
 }
+
 bool MediaLibraryThumbnail::LoadVideoFile(string &path,
                                           shared_ptr<PixelMap> &pixelMap)
 {
@@ -415,42 +416,6 @@ bool MediaLibraryThumbnail::LoadImageFile(string &path,
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::LoadImageFile OUT");
-    return true;
-}
-
-bool MediaLibraryThumbnail::GenKey(vector<uint8_t> &data, string &key)
-{
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::GenKey IN");
-    if (data.size() <= 0) {
-        MEDIA_ERR_LOG("Empty data");
-        return false;
-    }
-    unsigned char hash[SHA256_DIGEST_LENGTH] = "";
-    SHA256_CTX ctx;
-    SHA256_Init(&ctx);
-    SHA256_Update(&ctx, data.data(), data.size());
-    SHA256_Final(hash, &ctx);
-    // here we translate sha256 hash to hexadecimal. each 8-bit char will be presented by two characters([0-9a-f])
-    constexpr int CHAR_WIDTH = 8;
-    constexpr int HEX_WIDTH = 4;
-    constexpr unsigned char HEX_MASK = 0xf;
-    constexpr int HEX_A = 10;
-    key.reserve(SHA256_DIGEST_LENGTH * (CHAR_WIDTH / HEX_WIDTH));
-    for (unsigned char i : hash) {
-        unsigned char hex = i >> HEX_WIDTH;
-        if (hex < HEX_A) {
-            key.push_back('0' + hex);
-        } else {
-            key.push_back('a' + hex - HEX_A);
-        }
-        hex = i & HEX_MASK;
-        if (hex < HEX_A) {
-            key.push_back('0' + hex);
-        } else {
-            key.push_back('a' + hex - HEX_A);
-        }
-    }
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::GenKey OUT [%{private}s]", key.c_str());
     return true;
 }
 
@@ -738,37 +703,40 @@ bool MediaLibraryThumbnail::LoadSourceImage(ThumbnailData &data)
 
     return ret;
 }
+
 bool MediaLibraryThumbnail::GenThumbnailKey(ThumbnailData &data)
 {
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GenThumbnailKey");
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::GenThumbnailKey IN");
     vector<uint8_t> source(data.source->GetPixels(),
         data.source->GetPixels() + data.source->GetByteCount());
 
-    bool ret = GenKey(source, data.thumbnailKey);
-    if (ret) {
-        data.thumbnailKey += THUMBNAIL_END_SUFFIX;
+    int32_t ret = MediaLibraryCommonUtils::GenKeySHA256(source, data.thumbnailKey);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("MediaLibraryThumbnail::Failed to GenThumbnailKey, err: %{public}d", ret);
+        return false;
     }
+    data.thumbnailKey += THUMBNAIL_END_SUFFIX;
 
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::GenThumbnailKey OUT [%{private}s]",
-                   data.thumbnailKey.c_str());
+    MEDIA_INFO_LOG("MediaLibraryThumbnail::GenThumbnailKey OUT [%{private}s]", data.thumbnailKey.c_str());
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
-    return ret;
+    return true;
 }
+
 bool MediaLibraryThumbnail::GenLcdKey(ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::GenLcdKey IN");
     vector<uint8_t> source(data.source->GetPixels(),
         data.source->GetPixels() + data.source->GetByteCount());
 
-    bool ret = GenKey(source, data.lcdKey);
-    if (ret) {
-        data.lcdKey += THUMBNAIL_LCD_END_SUFFIX;
+    int32_t ret = MediaLibraryCommonUtils::GenKeySHA256(source, data.lcdKey);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("MediaLibraryThumbnail::Failed to GenLcdKey, err: %{public}d", ret);
+        return false;
     }
-    MEDIA_INFO_LOG("MediaLibraryThumbnail::GenLcdKey OUT");
-    return ret;
+    data.lcdKey += THUMBNAIL_LCD_END_SUFFIX;
+    return true;
 }
+
 bool MediaLibraryThumbnail::CreateThumbnailData(ThumbnailData &data)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateThumbnailData IN");
@@ -808,6 +776,7 @@ bool MediaLibraryThumbnail::SaveThumbnailData(ThumbnailData &data)
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveThumbnailData OUT");
     return ret;
 }
+
 bool MediaLibraryThumbnail::SaveLcdData(ThumbnailData &data)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveLcdData IN");
@@ -817,6 +786,7 @@ bool MediaLibraryThumbnail::SaveLcdData(ThumbnailData &data)
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SaveLcdData OUT");
     return ret;
 }
+
 bool MediaLibraryThumbnail::GetThumbnailFromKvStore(ThumbnailData &data)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::GetThumbnailFromKvStore IN");
@@ -826,6 +796,7 @@ bool MediaLibraryThumbnail::GetThumbnailFromKvStore(ThumbnailData &data)
     MEDIA_INFO_LOG("MediaLibraryThumbnail::GetThumbnailFromKvStore OUT");
     return ret;
 }
+
 bool MediaLibraryThumbnail::GetLcdFromKvStore(ThumbnailData &data)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::GetLcdFromKvStore IN");
@@ -859,6 +830,7 @@ bool MediaLibraryThumbnail::ResizeLcdToTarget(ThumbnailData &data,
     MEDIA_INFO_LOG("MediaLibraryThumbnail::ResizeLcdToTarget OUT");
     return ret;
 }
+
 int32_t MediaLibraryThumbnail::SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::SetSource IN");

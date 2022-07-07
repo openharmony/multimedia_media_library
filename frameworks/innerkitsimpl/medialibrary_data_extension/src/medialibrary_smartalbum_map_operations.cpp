@@ -14,8 +14,10 @@
  */
 
 #include "medialibrary_smartalbum_map_operations.h"
+
 #include "datashare_predicates.h"
 #include "datashare_result_set.h"
+#include "medialibrary_common_utils.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_file_operations.h"
 #include "media_file_utils.h"
@@ -77,15 +79,17 @@ int32_t MediaLibrarySmartAlbumMapOperations::TrashFileAssetsInfoUtil(const int32
     SmartAlbumMapQueryData &smartAlbumMapQueryData)
 {
     string trashDirPath, oldPath, recyclePath;
-    int32_t errorCode = DATA_ABILITY_SUCCESS;
-    errorCode = MediaLibraryDataManagerUtils::GetAssetRecycle(assetId,
+    int32_t errorCode = MediaLibraryDataManagerUtils::GetAssetRecycle(assetId,
         oldPath, trashDirPath, smartAlbumMapQueryData.rdbStore, smartAlbumMapQueryData.dirQuerySetMap);
     CHECK_AND_RETURN_RET_LOG(errorCode == DATA_ABILITY_SUCCESS, errorCode, "Failed to GetAssetRecycle");
     if (!MediaFileUtils::IsDirectory(trashDirPath)) {
-        MediaFileUtils::CreateDirectory(trashDirPath);
+        if (!MediaFileUtils::CreateDirectory(trashDirPath)) {
+            return DATA_ABILITY_FAIL;
+        }
     }
     errorCode = MediaLibraryDataManagerUtils::MakeRecycleDisplayName(
         assetId, recyclePath, trashDirPath, smartAlbumMapQueryData.rdbStore);
+    CHECK_AND_RETURN_RET_LOG(errorCode == DATA_ABILITY_SUCCESS, errorCode, "Failed to make recycle display name");
     FileAsset fileAsset;
     errorCode = fileAsset.ModifyAsset(oldPath, recyclePath);
     CHECK_AND_RETURN_RET_LOG(errorCode == DATA_ABILITY_SUCCESS,
@@ -101,12 +105,13 @@ int32_t MediaLibrarySmartAlbumMapOperations::TrashDirAssetsInfoUtil(const int32_
     SmartAlbumMapQueryData &smartAlbumMapQueryData)
 {
     string trashDirPath, oldPath, recyclePath;
-    int32_t errorCode = DATA_ABILITY_SUCCESS;
-    errorCode = MediaLibraryDataManagerUtils::GetAssetRecycle(assetId,
+    int32_t errorCode = MediaLibraryDataManagerUtils::GetAssetRecycle(assetId,
         oldPath, trashDirPath, smartAlbumMapQueryData.rdbStore, smartAlbumMapQueryData.dirQuerySetMap);
     CHECK_AND_RETURN_RET_LOG(errorCode == DATA_ABILITY_SUCCESS, errorCode, "Failed to GetAssetRecycle");
     if (!MediaFileUtils::IsDirectory(trashDirPath)) {
-        MediaFileUtils::CreateDirectory(trashDirPath);
+        if (!MediaFileUtils::CreateDirectory(trashDirPath)) {
+            return DATA_ABILITY_FAIL;
+        }
     }
     errorCode = MediaLibraryDataManagerUtils::MakeRecycleDisplayName(
         assetId, recyclePath, trashDirPath, smartAlbumMapQueryData.rdbStore);

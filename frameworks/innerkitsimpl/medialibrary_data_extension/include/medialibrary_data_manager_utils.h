@@ -93,8 +93,6 @@ public:
                                    const std::string &column,
                                    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 
-    static int32_t MakeHashDispalyName(const std::string &input, std::string &outRes);
-
     static bool isRecycleAssetExist(const int32_t &assetId,
         std::string &outRecyclePath,
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
