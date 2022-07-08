@@ -273,6 +273,7 @@ const std::unordered_set<std::string> SUPPORTED_VIDEO_FORMATS_SET {
 // Unordered set contains list supported image formats
 const std::unordered_set<std::string> SUPPORTED_IMAGE_FORMATS_SET {
                                                 IMAGE_CONTAINER_TYPE_BMP,
+                                                IMAGE_CONTAINER_TYPE_BM,
                                                 IMAGE_CONTAINER_TYPE_GIF,
                                                 IMAGE_CONTAINER_TYPE_JPG,
                                                 IMAGE_CONTAINER_TYPE_JPEG,
