@@ -172,12 +172,15 @@ const std::string AUDIO_CONTAINER_TYPE_MP3 = "mp3";
 const std::string AUDIO_CONTAINER_TYPE_FLAC = "flac";
 const std::string AUDIO_CONTAINER_TYPE_WAV = "wav";
 const std::string AUDIO_CONTAINER_TYPE_OGG = "ogg";
+const std::string AUDIO_CONTAINER_TYPE_M4A = "m4a";
 
 const std::string DIR_ALL_AUDIO_CONTAINER_TYPE = "." + AUDIO_CONTAINER_TYPE_AAC + "?" +
                                                  "." + AUDIO_CONTAINER_TYPE_MP3 + "?" +
                                                  "." + AUDIO_CONTAINER_TYPE_FLAC + "?" +
                                                  "." + AUDIO_CONTAINER_TYPE_WAV + "?" +
-                                                 "." + AUDIO_CONTAINER_TYPE_OGG + "?";
+                                                 "." + AUDIO_CONTAINER_TYPE_OGG + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_M4A + "?";
+
 /** Supported video container types */
 const std::string VIDEO_CONTAINER_TYPE_MP4 = "mp4";
 const std::string VIDEO_CONTAINER_TYPE_3GP = "3gp";
@@ -185,12 +188,17 @@ const std::string VIDEO_CONTAINER_TYPE_MPG = "mpg";
 const std::string VIDEO_CONTAINER_TYPE_MOV = "mov";
 const std::string VIDEO_CONTAINER_TYPE_WEBM = "webm";
 const std::string VIDEO_CONTAINER_TYPE_MKV = "mkv";
+const std::string VIDEO_CONTAINER_TYPE_H264 = "h264";
+const std::string VIDEO_CONTAINER_TYPE_MPEG = "mpeg";
+
 const std::string DIR_ALL_VIDEO_CONTAINER_TYPE = "." + VIDEO_CONTAINER_TYPE_MP4 + "?" +
                                                  "." + VIDEO_CONTAINER_TYPE_3GP + "?" +
                                                  "." + VIDEO_CONTAINER_TYPE_MPG + "?" +
                                                  "." + VIDEO_CONTAINER_TYPE_MOV + "?" +
                                                  "." + VIDEO_CONTAINER_TYPE_WEBM + "?" +
-                                                 "." + VIDEO_CONTAINER_TYPE_MKV + "?";
+                                                 "." + VIDEO_CONTAINER_TYPE_MKV + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_H264 + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MPEG + "?";
 
 /** Supported image types */
 const std::string IMAGE_CONTAINER_TYPE_BMP = "bmp";
@@ -257,7 +265,8 @@ const std::unordered_set<std::string> SUPPORTED_AUDIO_FORMATS_SET {
                                                 AUDIO_CONTAINER_TYPE_MP3,
                                                 AUDIO_CONTAINER_TYPE_FLAC,
                                                 AUDIO_CONTAINER_TYPE_WAV,
-                                                AUDIO_CONTAINER_TYPE_OGG
+                                                AUDIO_CONTAINER_TYPE_OGG,
+                                                AUDIO_CONTAINER_TYPE_M4A
                                                 };
 
 // Unordered set contains list supported video formats
@@ -267,7 +276,9 @@ const std::unordered_set<std::string> SUPPORTED_VIDEO_FORMATS_SET {
                                                 VIDEO_CONTAINER_TYPE_MPG,
                                                 VIDEO_CONTAINER_TYPE_MOV,
                                                 VIDEO_CONTAINER_TYPE_WEBM,
-                                                VIDEO_CONTAINER_TYPE_MKV
+                                                VIDEO_CONTAINER_TYPE_MKV,
+                                                VIDEO_CONTAINER_TYPE_H264,
+                                                VIDEO_CONTAINER_TYPE_MPEG
                                                 };
 
 // Unordered set contains list supported image formats
