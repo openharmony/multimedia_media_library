@@ -647,7 +647,7 @@ int32_t MediaLibraryDataManagerUtils::MakeRecycleDisplayName(const int32_t &asse
         errorCode = MediaLibraryCommonUtils::GenKeySHA256(name, hashDisplayName);
         if (errorCode < 0) {
             MEDIA_ERR_LOG("Failed to make hash display name, err: %{public}d", errorCode);
-            return false;
+            return errorCode;
         }
         if (!extension.empty()) {
             outRecyclePath = trashDirPath + hashDisplayName + extension;
