@@ -159,12 +159,14 @@ ohos_static_library("permission_utils") {
     "//foundation/ability/ability_base/interfaces/inner_api/base/include",
     "//foundation/ability/ability_runtime/services/abilitymgr/include",
 
-    # AccessTokenKit
+    # Security stuff
     "//base/security/access_token/interfaces/innerkits/accesstoken/include",
+    "//base/security/access_token/interfaces/innerkits/privacy/include",
   ]
   deps = [
     # IBundleMgr
     "${ABILITY_RUNTIME_SERVICES_PATH}/abilitymgr:abilityms",
+    "//base/security/access_token/interfaces/innerkits/privacy:libprivacy_sdk",
     "//foundation/bundlemanager/bundle_framework/interfaces/inner_api/appexecfwk_core:appexecfwk_core",
   ]
   external_deps = [

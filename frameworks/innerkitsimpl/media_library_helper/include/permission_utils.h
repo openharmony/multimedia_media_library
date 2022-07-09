@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef MEDIALIBRARY_PERMISSION_UTILS_H
+#define MEDIALIBRARY_PERMISSION_UTILS_H
+
 #include <string>
 
 #include "bundle_mgr_interface.h"
@@ -20,7 +23,6 @@ namespace OHOS {
 namespace Media {
 const std::string PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
 const std::string PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
-const std::string FILE_USR_CREATED = ".nofile";
 
 class PermissionUtils {
 public:
@@ -28,11 +30,12 @@ public:
     static bool CheckCallerSpecialFilePerm(const std::string &displayName);
 
 private:
-    PermissionUtils() {};
-    virtual ~PermissionUtils() {};
+    static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
+    static void GetClientBundle(const int uid, std::string &bundleName, bool &isSystemApp);
 
     static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
     static std::mutex bundleMgrMutex_;
 };
 }  // namespace Media
 }  // namespace OHOS
+#endif // MEDIALIBRARY_PERMISSION_UTILS_H

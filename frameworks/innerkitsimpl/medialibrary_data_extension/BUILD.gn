@@ -52,6 +52,7 @@ config("media_data_extension_public_config") {
     "//third_party/json/include",
     "//base/notification/common_event_service/interfaces/innerkits/native/include",
     "$MEDIA_LIB_COMMON_UTILS_DIR/include",
+    "MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
   ]
   include_dirs += include_fileext
   include_dirs += include_scanner
