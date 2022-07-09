@@ -50,6 +50,9 @@
       },
       {
         "name": "ohos.permission.DISTRIBUTED_DATASYNC"
+      },
+      {
+        "name": "ohos.permission.PERMISSION_USED_STATS"
       }
     ]
   }

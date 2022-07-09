@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,11 +16,12 @@
 
 #include <unordered_set>
 
+#include "accesstoken_kit.h"
 #include "ipc_skeleton.h"
 #include "media_log.h"
-#include "system_ability_definition.h"
+#include "privacy_kit.h"
 #include "sa_mgr_client.h"
-#include "accesstoken_kit.h"
+#include "system_ability_definition.h"
 
 namespace OHOS {
 namespace Media {
@@ -28,17 +29,24 @@ using namespace std;
 using namespace OHOS::Security::AccessToken;
 using namespace OHOS::AppExecFwk::Constants;
 
-static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
-static std::mutex bundleMgrMutex_;
+sptr<AppExecFwk::IBundleMgr> PermissionUtils::bundleMgr_ = nullptr;
+mutex PermissionUtils::bundleMgrMutex_;
 
 constexpr int UID_FILEMANAGER = 1006;
-const std::unordered_set<int32_t> UID_FREE_CHECK {
+const unordered_set<int32_t> UID_FREE_CHECK {
     UID_FILEMANAGER
 };
-const std::unordered_set<string> SYSTEM_BUNDLE_FREE_CHECK {};
+const unordered_set<string> SYSTEM_BUNDLE_FREE_CHECK {};
+const string FILE_USR_CREATED = ".nofile";
+const string FILE_USR_CREATED_OWNER = "fms_service";
 
-sptr<AppExecFwk::IBundleMgr> GetSysBundleManager()
+sptr<AppExecFwk::IBundleMgr> PermissionUtils::GetSysBundleManager()
 {
+    if (bundleMgr_ != nullptr) {
+        return bundleMgr_;
+    }
+
+    lock_guard<mutex> lock(bundleMgrMutex_);
     if (bundleMgr_ != nullptr) {
         return bundleMgr_;
     }
@@ -63,9 +71,8 @@ sptr<AppExecFwk::IBundleMgr> GetSysBundleManager()
     return bundleMgr_;
 }
 
-void GetClientBundle(const int uid, string &bundleName, bool &isSystemApp)
+void PermissionUtils::GetClientBundle(const int uid, string &bundleName, bool &isSystemApp)
 {
-    std::lock_guard<std::mutex> lock(bundleMgrMutex_);
     bundleMgr_ = GetSysBundleManager();
     if (bundleMgr_ == nullptr) {
         bundleName = "";
@@ -80,6 +87,24 @@ void GetClientBundle(const int uid, string &bundleName, bool &isSystemApp)
     isSystemApp = bundleMgr_->CheckIsSystemAppByUid(uid);
 }
 
+bool inline ShouldAddPermissionRecord(const AccessTokenID &token)
+{
+    return (AccessTokenKit::GetTokenTypeFlag(token) == TOKEN_HAP);
+}
+
+void AddPermissionRecord(const AccessTokenID &token, const string &perm, const bool permGranted)
+{
+    if (!ShouldAddPermissionRecord(token)) {
+        return;
+    }
+
+    int res = PrivacyKit::AddPermissionUsedRecord(token, perm, !!permGranted, !permGranted);
+    if (res != 0) {
+        /* Failed to add permission used record, not fatal */
+        MEDIA_WARN_LOG("Failed to add permission used record: %{public}s, permGranted: %{public}d, err: %{public}d",
+            perm.c_str(), permGranted, res);
+    }
+}
 
 bool PermissionUtils::CheckCallerPermission(const string &permission)
 {
@@ -102,8 +127,10 @@ bool PermissionUtils::CheckCallerPermission(const string &permission)
     int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
     if (res != PermissionState::PERMISSION_GRANTED) {
         MEDIA_ERR_LOG("MediaLibraryDataManager Query: Have no media permission: %{public}s", permission.c_str());
+        AddPermissionRecord(tokenCaller, permission, false);
         return false;
     }
+    AddPermissionRecord(tokenCaller, permission, true);
 
     return true;
 }
@@ -114,7 +141,7 @@ bool PermissionUtils::CheckCallerSpecialFilePerm(const string &displayName)
     bool isSystemApp = false;
     int uid = IPCSkeleton::GetCallingUid();
     GetClientBundle(uid, bundleName, isSystemApp);
-    if (IsSameTextStr(displayName, FILE_USR_CREATED) && IsSameTextStr(bundleName, "fms_service")) {
+    if (IsSameTextStr(displayName, FILE_USR_CREATED) && IsSameTextStr(bundleName, FILE_USR_CREATED_OWNER)) {
         return true;
     }
     return false;
