@@ -23,6 +23,7 @@ using OHOS::HiviewDFX::HiLogLabel;
 namespace OHOS {
 namespace Media {
 using namespace std;
+using namespace OHOS::DataShare;
 thread_local napi_ref AlbumNapi::sConstructor_ = nullptr;
 thread_local AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> AlbumNapi::sMediaDataHelper = nullptr;
@@ -59,6 +60,17 @@ void AlbumNapi::AlbumNapiDestructor(napi_env env, void *nativeObject, void *fina
         album = nullptr;
     }
     NAPI_DEBUG_LOG("AlbumNapiDestructor exit");
+}
+
+void AlbumNapiAsyncContext::SetApiName(const string &Name)
+{
+    apiName = Name;
+}
+
+void AlbumNapiAsyncContext::HandleError(napi_env env, napi_value &errorObj)
+{
+    // deal with context->error
+    MediaLibraryNapiUtils::HandleError(env, error, errorObj, apiName);
 }
 
 napi_value AlbumNapi::Init(napi_env env, napi_value exports)
@@ -698,33 +710,30 @@ static void JSGetFileAssetsCompleteCallback(napi_env env,
 static void CommitModifyNative(AlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    int32_t changedRows;
-    context->selection += " AND ";
-    if (MediaFileUtils::CheckTitle(context->objectInfo->GetAlbumName())) {
-        valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
-        predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetAlbumId()));
-        valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
-        Uri uri(MEDIALIBRARY_DATA_URI);
-        changedRows =
-            context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, valuesBucket);
-        if (changedRows > 0) {
-            DataShare::DataSharePredicates filePredicates;
-            DataShare::DataShareValuesBucket fileValuesBucket;
-            fileValuesBucket.PutString(MEDIA_DATA_DB_BUCKET_NAME, context->objectInfo->GetAlbumName());
-            filePredicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = " +
-                std::to_string(context->objectInfo->GetAlbumId()));
-            fileValuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED,
-                MediaFileUtils::UTCTimeSeconds());
-            Uri fileUuri(MEDIALIBRARY_DATA_URI);
-            changedRows =
-                context->objectInfo->GetMediaDataHelper()->Update(fileUuri, filePredicates, fileValuesBucket);
-        }
-    } else {
-        changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;
+    if (!MediaFileUtils::CheckTitle(context->objectInfo->GetAlbumName())) {
+        context->error = JS_ERR_DISPLAYNAME_INVALID;
+        NAPI_ERR_LOG("album name invalid = %{public}s", context->objectInfo->GetAlbumName().c_str());
+        return;
     }
 
+    DataSharePredicates predicates;
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetAlbumId()));
+    valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    Uri uri(MEDIALIBRARY_DATA_URI);
+    int changedRows = context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, valuesBucket);
+    if (changedRows > 0) {
+        DataSharePredicates filePredicates;
+        DataShareValuesBucket fileValuesBucket;
+        fileValuesBucket.PutString(MEDIA_DATA_DB_BUCKET_NAME, context->objectInfo->GetAlbumName());
+        filePredicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = " +
+            std::to_string(context->objectInfo->GetAlbumId()));
+        fileValuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+        Uri fileUuri(MEDIALIBRARY_DATA_URI);
+        changedRows = context->objectInfo->GetMediaDataHelper()->Update(fileUuri, filePredicates, fileValuesBucket);
+    }
+    context->error = (changedRows < 0) ? MediaLibraryNapiUtils::TransErrorCode(changedRows) : context->error;
     context->changedRows = changedRows;
 }
 static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, AlbumNapiAsyncContext *context)
@@ -732,7 +741,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Alb
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    if (context->changedRows != -1 && context->changedRows != DATA_ABILITY_VIOLATION_PARAMETERS) {
+    if (context->error == ERR_DEFAULT) {
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
@@ -740,13 +749,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Alb
         context->objectInfo->GetMediaDataHelper()->NotifyChange(*contextUri);
     } else {
         napi_get_undefined(env, &jsContext->data);
-        if (context->changedRows == DATA_ABILITY_VIOLATION_PARAMETERS) {
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, DATA_ABILITY_VIOLATION_PARAMETERS,
-                                                         "Violation parameters");
-        } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Failed to obtain fetchFileResult from DB or violation parameters");
-        }
+        context->HandleError(env, jsContext->error);
     }
 
     if (context->work != nullptr) {

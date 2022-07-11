@@ -80,6 +80,17 @@ void MediaLibraryNapi::MediaLibraryNapiDestructor(napi_env env, void *nativeObje
     NAPI_DEBUG_LOG("MediaLibraryNapiDestructor exit");
 }
 
+void MediaLibraryAsyncContext::SetApiName(const string &Name)
+{
+    apiName = Name;
+}
+
+void MediaLibraryAsyncContext::HandleError(napi_env env, napi_value &errorObj)
+{
+    // deal with context->error
+    MediaLibraryNapiUtils::HandleError(env, error, errorObj, apiName);
+}
+
 napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor media_library_properties[] = {
@@ -709,8 +720,7 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
     napi_get_undefined(env, &jsContext->data);
 
     if (context->error != ERR_DEFAULT) {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-            "Query for get fileAssets failed");
+        context->HandleError(env, jsContext->error);
     } else {
         // Create FetchResult object using the contents of resultSet
         if (context->fetchFileResult != nullptr) {
@@ -1044,9 +1054,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status,
             }
         }
     } else {
-        NAPI_ERR_LOG("JSCreateAssetCompleteCallback context->error %{public}d", context->error);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-            "File asset creation failed");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -1226,6 +1234,11 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
 static void JSCreateAssetExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    if (context->objectInfo->sDataShareHelper_ == nullptr) {
+        NAPI_ERR_LOG("sDataShareHelper_ is not exist");
+        context->error = JS_ERR_INNER_FAIL;
+        return;
+    }
     if (!CheckTitlePrams(context)) {
         context->error = ERR_DISPLAY_NAME_INVALID;
         return;
@@ -1234,16 +1247,12 @@ static void JSCreateAssetExecute(MediaLibraryAsyncContext *context)
         context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
         return;
     }
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        Uri createFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
-        int index = context->objectInfo->sDataShareHelper_->Insert(createFileUri, context->valuesBucket);
-        if (index < 0) {
-            context->error = index;
-        } else {
-            getFileAssetById(index, "", context);
-        }
+    Uri createFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
+    int index = context->objectInfo->sDataShareHelper_->Insert(createFileUri, context->valuesBucket);
+    if (index < 0) {
+        context->error = MediaLibraryNapiUtils::TransErrorCode(index);
     } else {
-        context->error = ERR_INVALID_OUTPUT;
+        getFileAssetById(index, "", context);
     }
 }
 
@@ -1267,7 +1276,7 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
         result = GetJSArgsForCreateAsset(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCreateAsset");
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSCreateAsset", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext*>(data);
@@ -1408,36 +1417,37 @@ napi_value MediaLibraryNapi::JSModifyAsset(napi_env env, napi_callback_info info
 static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
+    if (context->objectInfo->sDataShareHelper_ == nullptr) {
+        context->error = JS_ERR_INNER_FAIL;
+        NAPI_ERR_LOG("sDataShareHelper_ is not exist");
+        return;
+    }
+    string abilityUri = MEDIALIBRARY_DATA_URI;
+    Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
 
-        DataShare::DataShareValueObject valueObject;
-        string notifyUri;
-        string mediaType;
-        context->valuesBucket.GetObject(MEDIA_DATA_DB_URI, valueObject);
-        valueObject.GetString(notifyUri);
-        size_t index = notifyUri.rfind('/');
-        if (index != string::npos) {
-            notifyUri = notifyUri.substr(0, index);
-            size_t indexType = notifyUri.rfind('/');
-            if (indexType != string::npos) {
-                mediaType = notifyUri.substr(indexType + 1);
-            }
+    DataShare::DataShareValueObject valueObject;
+    string notifyUri;
+    string mediaType;
+    context->valuesBucket.GetObject(MEDIA_DATA_DB_URI, valueObject);
+    valueObject.GetString(notifyUri);
+    size_t index = notifyUri.rfind('/');
+    if (index != string::npos) {
+        notifyUri = notifyUri.substr(0, index);
+        size_t indexType = notifyUri.rfind('/');
+        if (indexType != string::npos) {
+            mediaType = notifyUri.substr(indexType + 1);
         }
-        notifyUri = MEDIALIBRARY_DATA_URI + "/" + mediaType;
-        NAPI_DEBUG_LOG("JSDeleteAssetExcute notifyUri = %{public}s", notifyUri.c_str());
-        int retVal = context->objectInfo->sDataShareHelper_->Insert(deleteAssetUri,
-            context->valuesBucket);
-        if (retVal < 0) {
-            context->error = retVal;
-        } else {
-            context->retVal = retVal;
-            Uri deleteNotify(notifyUri);
-            context->objectInfo->sDataShareHelper_->NotifyChange(deleteNotify);
-        }
+    }
+    notifyUri = MEDIALIBRARY_DATA_URI + "/" + mediaType;
+    NAPI_DEBUG_LOG("JSDeleteAssetExcute notifyUri = %{public}s", notifyUri.c_str());
+    int retVal = context->objectInfo->sDataShareHelper_->Insert(deleteAssetUri,
+        context->valuesBucket);
+    if (retVal < 0) {
+        context->error = MediaLibraryNapiUtils::TransErrorCode(retVal);
     } else {
-        context->error = ERR_INVALID_OUTPUT;
+        context->retVal = retVal;
+        Uri deleteNotify(notifyUri);
+        context->objectInfo->sDataShareHelper_->NotifyChange(deleteNotify);
     }
 }
 
@@ -1454,8 +1464,7 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-            "Ability helper is null");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -1519,8 +1528,7 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSDeleteAsset");
-
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSDeleteAsset", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext*>(data);

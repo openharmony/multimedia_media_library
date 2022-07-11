@@ -107,6 +107,10 @@ struct AlbumNapiAsyncContext {
     std::string order;
     std::unique_ptr<FetchResult> fetchResult;
     std::string networkId_ = "";
+    std::string apiName;
+    int32_t error = 0;
+    void HandleError(napi_env env, napi_value &errorObj);
+    void SetApiName(const std::string &Name);
 };
 } // namespace Media
 } // namespace OHOS
