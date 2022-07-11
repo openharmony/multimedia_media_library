@@ -91,7 +91,7 @@ void ParseQueryResult(shared_ptr<AbsSharedResultSet> resultSet,
     ParseStringResult(resultSet, NUM_1, data.path, errorCode);
     ParseStringResult(resultSet, NUM_2, data.thumbnailKey, errorCode);
     ParseStringResult(resultSet, NUM_3, data.lcdKey, errorCode);
-    data.mediaType = MediaType::MEDIA_TYPE_DEFAULT;
+    data.mediaType = MediaType::MEDIA_TYPE_ALL;
     errorCode = resultSet->GetInt(NUM_4, data.mediaType);
 }
 
