@@ -43,7 +43,7 @@ MediaType MediaAsset::GetMediaType(const std::string &filePath)
     MediaType mediaType = MEDIA_TYPE_FILE;
 
     if (filePath.size() == 0) {
-        return MEDIA_TYPE_DEFAULT;
+        return MEDIA_TYPE_ALL;
     }
 
     size_t dotIndex = filePath.rfind(DOT_CHAR);
