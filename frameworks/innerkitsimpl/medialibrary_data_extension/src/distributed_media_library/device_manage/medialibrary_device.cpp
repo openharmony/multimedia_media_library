@@ -172,18 +172,7 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
 
 void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
-    if (mediaLibraryDeviceHandler_ == nullptr) {
-        MEDIA_ERR_LOG("OnDeviceOnline mediaLibraryDeviceHandler null");
-        return;
-    }
-
-    auto nodeOnline = [this, deviceInfo]() {
-        DevOnlineProcess(deviceInfo);
-        NotifyDeviceChange();
-    };
-    if (!mediaLibraryDeviceHandler_->PostTask(nodeOnline)) {
-        MEDIA_ERR_LOG("OnDeviceOnline handler postTask failed");
-    }
+    MEDIA_INFO_LOG("dev online network id %{private}s", deviceInfo.networkId);
 }
 
 void MediaLibraryDevice::OnDeviceOffline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
@@ -221,7 +210,19 @@ void MediaLibraryDevice::OnDeviceChanged(const OHOS::DistributedHardware::DmDevi
 
 void MediaLibraryDevice::OnDeviceReady(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
-    MEDIA_INFO_LOG("MediaLibraryDevice OnDeviceReady called deviceId = %{private}s", deviceInfo.deviceId);
+    MEDIA_INFO_LOG("OnDeviceReady network id %{private}s", deviceInfo.networkId);
+    if (mediaLibraryDeviceHandler_ == nullptr) {
+        MEDIA_ERR_LOG("mediaLibraryDeviceHandler null");
+        return;
+    }
+
+    auto nodeOnline = [this, deviceInfo]() {
+        DevOnlineProcess(deviceInfo);
+        NotifyDeviceChange();
+    };
+    if (!mediaLibraryDeviceHandler_->PostTask(nodeOnline)) {
+        MEDIA_ERR_LOG("handler postTask failed");
+    }
 }
 
 void MediaLibraryDevice::ClearAllDevices()
