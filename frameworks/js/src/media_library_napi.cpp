@@ -245,7 +245,7 @@ napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
     napi_status status = napi_create_object(env, &result);
     if (status == napi_ok) {
         string propName;
-        for (unsigned int i = MEDIA_TYPE_DEFAULT; i < mediaTypesEnum.size(); i++) {
+        for (unsigned int i = 0; i < mediaTypesEnum.size(); i++) {
             propName = mediaTypesEnum[i];
             status = AddIntegerNamedProperty(env, result, propName, i);
             if (status != napi_ok) {
