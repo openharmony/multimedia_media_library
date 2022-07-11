@@ -464,7 +464,8 @@ bool MediaLibraryThumbnail::CompressImage(std::shared_ptr<PixelMap> &pixelMap,
     InitializationOptions opts = {
         .size = size,
         .pixelFormat = PixelFormat::BGRA_8888,
-        .alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL
+        .alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL,
+        .scaleMode = ScaleMode::CENTER_CROP
     };
 
     StartTrace(HITRACE_TAG_OHOS, "PixelMap::Create");
