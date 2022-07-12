@@ -108,14 +108,14 @@ void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t
     MEDIA_INFO_LOG("get dev %{public}s sec level %{public}d", udid.substr(0, TRIM_LENGTH).c_str(), devLevel);
     if (udid == localUdid_) {
         localDevLev_ = devLevel;
-        localSecLevelGot_ = true;
+        localSecLevelGot_.store(true);
         localSecLevelDoneCv_.notify_all();
         MEDIA_INFO_LOG("get local dev sec level %{public}d, notify all wait pids", devLevel);
         return;
     }
     {
         std::unique_lock<std::mutex> cvlock(gotSecLevelMtx_);
-        localSecLevelDoneCv_.wait_for(cvlock, [this] () { return localSecLevelGot_ == true });
+        localSecLevelDoneCv_.wait(cvlock, [this] () { return localSecLevelGot_.load(); });
         MEDIA_INFO_LOG("wakeup, get other dev sec level %{public}d", devLevel);
     }
 
@@ -154,7 +154,7 @@ void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t
 
 void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInfo &devInfo)
 {
-    if (!localSecLevelGot_) {
+    if (!localSecLevelGot_.load()) {
         DevicePermissionVerification::ReqDestDevSecLevel(localUdid_);
     }
     MediaLibraryDeviceInfo mldevInfo;
