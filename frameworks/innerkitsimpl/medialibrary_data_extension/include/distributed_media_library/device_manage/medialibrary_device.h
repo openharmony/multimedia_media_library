@@ -93,7 +93,10 @@ private:
     std::mutex cvMtx_;
     std::condition_variable kvSyncDoneCv_;
     std::string localUdid_;
-    int32_t localDevLev_;
+    int32_t localDevLev_ {1};
+    bool localSecLevelGot_ {false};
+    std::mutex gotSecLevelMtx_; 
+    std::condition_variable localSecLevelDoneCv_;
 };
 } // namespace Media
 } // namespace OHOS
