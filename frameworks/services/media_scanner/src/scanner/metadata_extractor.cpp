@@ -81,16 +81,6 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     fileMetadata.SetFileMimeType(strTemp);
 }
 
-bool MetadataExtractor::IsSupported(Metadata &Metadata)
-{
-    // If the file type is not audio/video/image
-    auto mimeType = ScannerUtils::GetMimeTypeFromExtension(Metadata.GetFileExtension());
-    Metadata.SetFileMimeType(mimeType);
-
-    return std::find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(), mimeType) !=
-        EXTRACTOR_SUPPORTED_MIME.end();
-}
-
 int32_t MetadataExtractor::ExtractMetadata(Metadata &fileMetadata, const string &uri)
 {
     int32_t errCode = ERR_FAIL;
@@ -142,7 +132,12 @@ int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
 {
     int32_t errCode = ERR_FAIL;
 
-    if (!IsSupported(fileMetadata)) {
+    auto mimeType = ScannerUtils::GetMimeTypeFromExtension(fileMetadata.GetFileExtension());
+    fileMetadata.SetFileMimeType(mimeType);
+
+    // If the file type is not audio/video/image
+    if (std::find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(), mimeType) ==
+        EXTRACTOR_SUPPORTED_MIME.end()) {
         MEDIA_ERR_LOG("Mime type is not supported by the extractor");
         return errCode;
     }

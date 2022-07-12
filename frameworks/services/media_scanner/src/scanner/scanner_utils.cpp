@@ -155,11 +155,6 @@ string ScannerUtils::GetParentPath(const string &path)
 // Get the absolute path from the given path
 int32_t ScannerUtils::GetRealPath(string &path)
 {
-    if (path.empty() || path.length() > PATH_MAX) {
-        MEDIA_ERR_LOG("src path is too long or empty");
-        return ERR_INCORRECT_PATH;
-    }
-
     string cur = path;
     if (!PathToRealPath(cur, path)) {
         MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", cur.c_str(), errno);

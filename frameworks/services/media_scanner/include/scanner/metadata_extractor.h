@@ -39,9 +39,6 @@ public:
     int32_t ConvertStringToInteger(const std::string &str);
     void FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &metadataMap,
                                Metadata &fileMetadata);
-
-private:
-    bool IsSupported(Metadata &Metadata);
 };
 } // namespace Media
 } // namespace OHOS
