@@ -22,7 +22,7 @@
           "bundle_framework",
           "distributedschedule_dms_fwk",
           "image_standard",
-          "media_standard",
+          "player_framework",
           "utils_base",
           "ipc",
           "distributeddatamgr_appdatamgr",
