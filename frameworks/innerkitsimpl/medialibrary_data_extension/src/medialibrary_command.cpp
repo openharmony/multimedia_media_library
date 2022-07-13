@@ -162,23 +162,23 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
 
     const static map<string, OperationObject> oprnMap = {
         // use in Insert...
-        {MEDIA_FILEOPRN, OperationObject::FILESYSTEM_ASSET},
-        {MEDIA_DIROPRN, OperationObject::FILESYSTEM_DIR},
-        {MEDIA_ALBUMOPRN, OperationObject::FILESYSTEM_ALBUM},
-        {MEDIA_SMARTALBUMOPRN, OperationObject::SMART_ALBUM},
-        {MEDIA_SMARTALBUMMAPOPRN, OperationObject::SMART_ALBUM_MAP},
-        {MEDIA_KVSTOREOPRN, OperationObject::KVSTORE},
+        { MEDIA_FILEOPRN, OperationObject::FILESYSTEM_ASSET },
+        { MEDIA_DIROPRN, OperationObject::FILESYSTEM_DIR },
+        { MEDIA_ALBUMOPRN, OperationObject::FILESYSTEM_ALBUM },
+        { MEDIA_SMARTALBUMOPRN, OperationObject::SMART_ALBUM },
+        { MEDIA_SMARTALBUMMAPOPRN, OperationObject::SMART_ALBUM_MAP },
+        { MEDIA_KVSTOREOPRN, OperationObject::KVSTORE },
         // use in Query...
-        {MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR},
-        {MEDIA_DATA_DB_THUMBNAIL, OperationObject::THUMBNAIL},
-        {SMARTABLUMASSETS_VIEW_NAME, OperationObject::SMART_ABLUM_ASSETS},
-        {ASSETMAP_VIEW_NAME, OperationObject::ASSETMAP},
-        {MEDIA_DEVICE_QUERYALLDEVICE, OperationObject::ALL_DEVICE},
-        {MEDIA_DEVICE_QUERYACTIVEDEVICE, OperationObject::ACTIVE_DEVICE},
-        {MEDIA_ALBUMOPRN_QUERYALBUM, OperationObject::FILESYSTEM_ALBUM},
-        {SMARTALBUM_TABLE, OperationObject::SMART_ALBUM},
-        {SMARTALBUM_MAP_TABLE, OperationObject::SMART_ALBUM_MAP},
-        {MEDIA_QUERYOPRN_QUERYVOLUME, OperationObject::MEDIA_VOLUME},
+        { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
+        { MEDIA_DATA_DB_THUMBNAIL, OperationObject::THUMBNAIL },
+        { SMARTABLUMASSETS_VIEW_NAME, OperationObject::SMART_ABLUM_ASSETS },
+        { ASSETMAP_VIEW_NAME, OperationObject::ASSETMAP },
+        { MEDIA_DEVICE_QUERYALLDEVICE, OperationObject::ALL_DEVICE },
+        { MEDIA_DEVICE_QUERYACTIVEDEVICE, OperationObject::ACTIVE_DEVICE },
+        { MEDIA_ALBUMOPRN_QUERYALBUM, OperationObject::FILESYSTEM_ALBUM },
+        { SMARTALBUM_TABLE, OperationObject::SMART_ALBUM },
+        { SMARTALBUM_MAP_TABLE, OperationObject::SMART_ALBUM_MAP },
+        { MEDIA_QUERYOPRN_QUERYVOLUME, OperationObject::MEDIA_VOLUME },
     };
 
     for (const auto &item : oprnMap) {

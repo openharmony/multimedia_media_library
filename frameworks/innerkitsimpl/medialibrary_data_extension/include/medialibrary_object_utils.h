@@ -19,9 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "data_ability_predicates.h"
 #include "datashare_abs_result_set.h"
-#include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
 #include "file_asset.h"
 #include "imedia_scanner_client.h"
@@ -86,7 +84,7 @@ private:
         const int &bucketId, const std::string &bucketName);
     static void UpdateDateModified(const std::string &dirPath);
     static void ScanFile(std::string &srcPath);
-    static int32_t DeleteEmptyDirsRecursively(const int32_t dirId);
+    static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
 };
 
 // Scanner callback objects

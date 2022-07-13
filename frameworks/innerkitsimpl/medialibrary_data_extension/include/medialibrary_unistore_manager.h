@@ -66,7 +66,7 @@ private:
     MediaLibraryUnistoreManager() = default;
     virtual ~MediaLibraryUnistoreManager() = default;
 
-    std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_{nullptr};
+    std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_;
 };
 } // namespace Media
 } // namespace OHOS

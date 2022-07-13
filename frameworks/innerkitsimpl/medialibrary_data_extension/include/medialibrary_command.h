@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "abs_rdb_predicates.h"
-#include "data_ability_predicates.h"
 #include "media_data_ability_const.h"
 #include "uri.h"
 #include "values_bucket.h"
@@ -96,11 +95,11 @@ private:
     void ParseFileId();
 
     Uri uri_{""};
-    NativeRdb::ValuesBucket insertValue_{};
-    std::unique_ptr<NativeRdb::AbsRdbPredicates> absRdbPredicates_{nullptr};
+    NativeRdb::ValuesBucket insertValue_;
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> absRdbPredicates_;
     OperationObject oprnObject_{OperationObject::UNKNOWN_OBJECT};
     OperationType oprnType_{OperationType::UNKNOWN_TYPE};
-    std::string oprnFileId_{""};
+    std::string oprnFileId_;
     std::string oprnDevice_;
     std::string tableName_;
 };

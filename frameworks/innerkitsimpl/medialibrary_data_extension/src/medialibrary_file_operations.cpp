@@ -16,14 +16,19 @@
 #include "medialibrary_file_operations.h"
 
 #include "datashare_predicates.h"
-#include "datashare_result_set.h"
+#include "datashare_values_bucket.h"
+#include "file_asset.h"
 #include "hitrace_meter.h"
+#include "media_data_ability_const.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_db.h"
+#include "medialibrary_thumbnail.h"
 #include "medialibrary_unistore_manager.h"
+#include "native_album_asset.h"
 #include "rdb_utils.h"
 
 using namespace std;

@@ -19,18 +19,9 @@
 #include <string>
 #include <unordered_map>
 
-#include "datashare_values_bucket.h"
+#include "abs_shared_result_set.h"
 #include "dir_asset.h"
-#include "file_asset.h"
-#include "imedia_scanner_client.h"
-#include "media_data_ability_const.h"
-#include "medialibrary_data_manager_utils.h"
-#include "medialibrary_thumbnail.h"
 #include "medialibrary_command.h"
-#include "native_album_asset.h"
-#include "rdb_store.h"
-#include "rdb_utils.h"
-#include "values_bucket.h"
 
 namespace OHOS {
 namespace Media {
