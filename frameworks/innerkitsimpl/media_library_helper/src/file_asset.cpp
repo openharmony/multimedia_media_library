@@ -389,16 +389,16 @@ int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
     }
     if (!MediaFileUtils::IsFileExists(oldPath)) {
         MEDIA_ERR_LOG("Failed to modify asset, oldPath: %{private}s does not exist!", oldPath.c_str());
-        return err;
+        return E_NO_SUCH_FILE;
     }
     if (MediaFileUtils::IsFileExists(newPath)) {
         MEDIA_ERR_LOG("Failed to modify asset, newPath: %{private}s is already exist!", newPath.c_str());
-        return err;
+        return E_FILE_EXIST;
     }
     err = rename(oldPath.c_str(), newPath.c_str());
     if (err < 0) {
         MEDIA_ERR_LOG("Failed ModifyAsset errno %{public}d", errno);
-        return errno;
+        return E_FILE_OPER_FAIL;
     }
 
     return DATA_ABILITY_SUCCESS;
