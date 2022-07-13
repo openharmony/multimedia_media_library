@@ -33,6 +33,7 @@ using OHOS::HiviewDFX::HiLogLabel;
 using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
 using std::string;
 
 namespace OHOS {
@@ -86,6 +87,17 @@ void FileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, vo
         fileAssetObj = nullptr;
     }
     NAPI_DEBUG_LOG("FileAssetNapiDestructor exit");
+}
+
+void FileAssetAsyncContext::SetApiName(const string &Name)
+{
+    apiName = Name;
+}
+
+void FileAssetAsyncContext::HandleError(napi_env env, napi_value &errorObj)
+{
+    // deal with context->error
+    MediaLibraryNapiUtils::HandleError(env, error, errorObj, apiName);
 }
 
 napi_value FileAssetNapi::Init(napi_env env, napi_value exports)
@@ -930,38 +942,38 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
 static void JSCommitModifyExecute(FileAssetAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    if (!MediaFileUtils::CheckTitle(context->objectInfo->GetTitle()) ||
+        !MediaFileUtils::CheckDisplayName(context->objectInfo->GetFileDisplayName())) {
+        NAPI_ERR_LOG("JSCommitModify CheckDisplayName fail");
+        context->error = JS_ERR_DISPLAYNAME_INVALID;
+        return;
+    }
+
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri updateAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET);
-    Media::MediaType mediaType = context->objectInfo->GetMediaType();
+    MediaType mediaType = context->objectInfo->GetMediaType();
     string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
+    DataSharePredicates predicates;
+    DataShareValuesBucket valuesBucket;
     int32_t changedRows;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
-
-    if (MediaFileUtils::CheckTitle(context->objectInfo->GetTitle()) &&
-        MediaFileUtils::CheckDisplayName(context->objectInfo->GetFileDisplayName())) {
-        valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
-        valuesBucket.PutString(MEDIA_DATA_DB_NAME, context->objectInfo->GetFileDisplayName());
-        if (context->objectInfo->GetOrientation() >= 0) {
-            valuesBucket.PutInt(MEDIA_DATA_DB_ORIENTATION, context->objectInfo->GetOrientation());
-        }
-        valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, context->objectInfo->GetRelativePath());
-        valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, context->objectInfo->GetMediaType());
-        valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
-        predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetFileId()));
-        changedRows = context->objectInfo->sDataShareHelper_->Update(updateAssetUri, predicates, valuesBucket);
-        if (changedRows < 0) {
-            context->error = changedRows;
-            NAPI_ERR_LOG("File asset modification failed, err: %{public}d", changedRows);
-        } else {
-            context->changedRows = changedRows;
-            Uri modifyNotify(notifyUri);
-            context->objectInfo->sDataShareHelper_->NotifyChange(modifyNotify);
-        }
+    valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, context->objectInfo->GetFileDisplayName());
+    if (context->objectInfo->GetOrientation() >= 0) {
+        valuesBucket.PutInt(MEDIA_DATA_DB_ORIENTATION, context->objectInfo->GetOrientation());
+    }
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, context->objectInfo->GetRelativePath());
+    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, context->objectInfo->GetMediaType());
+    valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetFileId()));
+    changedRows = context->objectInfo->sDataShareHelper_->Update(updateAssetUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context->error = MediaLibraryNapiUtils::TransErrorCode(changedRows);
+        NAPI_ERR_LOG("File asset modification failed, err: %{public}d", changedRows);
     } else {
-        NAPI_ERR_LOG("JSCommitModify CheckDisplayName fail");
-        context->error = DATA_ABILITY_VIOLATION_PARAMETERS;
+        context->changedRows = changedRows;
+        Uri modifyNotify(notifyUri);
+        context->objectInfo->sDataShareHelper_->NotifyChange(modifyNotify);
     }
 }
 
@@ -984,7 +996,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status,
         }
     } else {
         NAPI_ERR_LOG("JSCommitModify fail %{public}d", context->error);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error, "CheckDisplayName fail");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
     if (context->work != nullptr) {
@@ -1032,7 +1044,7 @@ napi_value FileAssetNapi::JSCommitModify(napi_env env, napi_callback_info info)
         result = GetJSArgsForCommitModify(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCommitModify");
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSCommitModify", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -1065,7 +1077,7 @@ static void JSOpenExecute(FileAssetAsyncContext *context)
         Uri openFileUri(fileUri);
         int32_t retVal = context->objectInfo->sDataShareHelper_->OpenFile(openFileUri, mode);
         if (retVal <= 0) {
-            context->error = retVal;
+            context->error = MediaLibraryNapiUtils::TransErrorCode(retVal);
             NAPI_ERR_LOG("File open asset failed, ret: %{public}d", retVal);
         } else {
             context->fd = retVal;
@@ -1089,7 +1101,7 @@ static void JSOpenCompleteCallback(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error, "File open asset failed");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -1151,7 +1163,7 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
         result = GetJSArgsForOpen(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSOpen");
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSOpen", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -1173,29 +1185,29 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
 static void JSCloseExecute(FileAssetAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
-        DataShare::DataShareValueObject valueObject;
-        int fd = 0;
-
-        if (context->valuesBucket.GetObject(MEDIA_FILEDESCRIPTOR, valueObject)) {
-            valueObject.GetInt(fd);
-        }
-
-        int32_t retVal = close(fd);
-        if (retVal == DATA_ABILITY_SUCCESS) {
-            retVal = context->objectInfo->sDataShareHelper_->Insert(closeAssetUri, context->valuesBucket);
-            if (retVal == DATA_ABILITY_SUCCESS) {
-                return;
-            }
-        }
-        context->error = retVal;
-        NAPI_ERR_LOG("File close asset failed %{public}d", retVal);
-    } else {
-        context->error = ERR_INVALID_OUTPUT;
+    if (context->objectInfo->sDataShareHelper_ == nullptr) {
+        context->error = JS_ERR_INNER_FAIL;
         NAPI_ERR_LOG("Ability helper is null");
+        return;
     }
+    string abilityUri = MEDIALIBRARY_DATA_URI;
+    Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
+    DataShare::DataShareValueObject valueObject;
+    int fd = 0;
+
+    if (context->valuesBucket.GetObject(MEDIA_FILEDESCRIPTOR, valueObject)) {
+        valueObject.GetInt(fd);
+    }
+
+    int32_t retVal = close(fd);
+    if (retVal == DATA_ABILITY_SUCCESS) {
+        retVal = context->objectInfo->sDataShareHelper_->Insert(closeAssetUri, context->valuesBucket);
+        if (retVal == DATA_ABILITY_SUCCESS) {
+            return;
+        }
+    }
+    context->error = MediaLibraryNapiUtils::TransErrorCode(retVal);
+    NAPI_ERR_LOG("File close asset failed %{public}d", retVal);
 }
 
 static void JSCloseCompleteCallback(napi_env env, napi_status status,
@@ -1210,8 +1222,7 @@ static void JSCloseCompleteCallback(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-            "File close asset failed");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -1273,7 +1284,7 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
         result = GetJSArgsForClose(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSClose", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -1590,8 +1601,7 @@ static void JSFavoriteCallbackComplete(napi_env env, napi_status status,
         Uri modifyNotify(notifyUri);
         context->objectInfo->sDataShareHelper_->NotifyChange(modifyNotify);
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Ability helper is null");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
     if (context->work != nullptr) {
@@ -1806,28 +1816,29 @@ napi_value GetJSArgsForFavorite(napi_env env, size_t argc, const napi_value argv
 static void JSFavouriteExecute(FileAssetAsyncContext* context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        int32_t changedRows;
-        DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
-        valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
-        if (context->isFavorite) {
-            Uri AddAsseturi(MEDIALIBRARY_DATA_URI + "/"
-                + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
-            changedRows =
-                context->objectInfo->sDataShareHelper_->Insert(AddAsseturi, valuesBucket);
-            context->changedRows = changedRows;
-        } else {
-            Uri RemoveAsseturi(MEDIALIBRARY_DATA_URI + "/"
-                + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
-            changedRows =
-                context->objectInfo->sDataShareHelper_->Insert(RemoveAsseturi, valuesBucket);
-            context->changedRows = changedRows;
-        }
-    } else {
-        context->error = ERR_INVALID_OUTPUT;
+    if (context->objectInfo->sDataShareHelper_ == nullptr) {
+        context->error = JS_ERR_INNER_FAIL;
         NAPI_ERR_LOG("Ability helper is null");
+        return;
     }
+    int32_t changedRows;
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
+    valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
+    if (context->isFavorite) {
+        Uri AddAsseturi(MEDIALIBRARY_DATA_URI + "/"
+            + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
+        changedRows =
+            context->objectInfo->sDataShareHelper_->Insert(AddAsseturi, valuesBucket);
+        context->changedRows = changedRows;
+    } else {
+        Uri RemoveAsseturi(MEDIALIBRARY_DATA_URI + "/"
+            + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
+        changedRows =
+            context->objectInfo->sDataShareHelper_->Insert(RemoveAsseturi, valuesBucket);
+        context->changedRows = changedRows;
+    }
+    context->error = (changedRows < 0) ? MediaLibraryNapiUtils::TransErrorCode(changedRows) : context->error;
 }
 
 napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
@@ -1847,7 +1858,7 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
         result = GetJSArgsForFavorite(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose");
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSFavorite", asyncContext);
         status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
                 FileAssetAsyncContext* context = static_cast<FileAssetAsyncContext*>(data);
                 JSFavouriteExecute(context);
@@ -1932,28 +1943,29 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
 static void JSTrashExecute(FileAssetAsyncContext* context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
-        valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
-        int32_t changedRows;
-        if (context->isTrash) {
-            Uri AddAsseturi(MEDIALIBRARY_DATA_URI + "/"
-                + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
-            changedRows =
-                context->objectInfo->sDataShareHelper_->Insert(AddAsseturi, valuesBucket);
-            context->changedRows = changedRows;
-        } else {
-            Uri RemoveAsseturi(MEDIALIBRARY_DATA_URI + "/"
-                + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
-            changedRows =
-                context->objectInfo->sDataShareHelper_->Insert(RemoveAsseturi, valuesBucket);
-            context->changedRows = changedRows;
-        }
-    } else {
-        context->error = ERR_INVALID_OUTPUT;
+    if (context->objectInfo->sDataShareHelper_ == nullptr) {
+        context->error = JS_ERR_INNER_FAIL;
         NAPI_ERR_LOG("Ability helper is null");
+        return;
     }
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+    valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
+    int32_t changedRows;
+    if (context->isTrash) {
+        Uri AddAsseturi(MEDIALIBRARY_DATA_URI + "/"
+            + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
+        changedRows =
+            context->objectInfo->sDataShareHelper_->Insert(AddAsseturi, valuesBucket);
+        context->changedRows = changedRows;
+    } else {
+        Uri RemoveAsseturi(MEDIALIBRARY_DATA_URI + "/"
+            + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
+        changedRows =
+            context->objectInfo->sDataShareHelper_->Insert(RemoveAsseturi, valuesBucket);
+        context->changedRows = changedRows;
+    }
+    context->error = (changedRows < 0) ? MediaLibraryNapiUtils::TransErrorCode(changedRows) : context->error;
 }
 
 static void JSTrashCallbackComplete(napi_env env, napi_status status,
@@ -1972,8 +1984,7 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status,
         context->objectInfo->sDataShareHelper_->NotifyChange(modifyNotify);
         NAPI_DEBUG_LOG("JSTrashCallbackComplete success");
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-            "Ability helper is null");
+        context->HandleError(env, jsContext->error);
     }
     if (context->work != nullptr) {
         NAPI_ERR_LOG("JSTrashCallbackComplete context->work != nullptr");
@@ -2028,7 +2039,7 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
         result = GetJSArgsForTrash(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSTrash");
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSTrash", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);

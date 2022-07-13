@@ -215,6 +215,9 @@ struct MediaLibraryAsyncContext {
     Ability *ability_;
     std::string storeMediaSrc;
     int32_t imagePreviewIndex;
+    string apiName;
+    void HandleError(napi_env env, napi_value &errorObj);
+    void SetApiName(const string &Name);
 };
 } // namespace Media
 } // namespace OHOS

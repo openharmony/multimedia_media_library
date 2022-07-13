@@ -52,7 +52,7 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd
     // only support CloseAsset when networkId is not empty
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(actualUri);
     if (!networkId.empty() && cmd.GetOprnType() != OperationType::CLOSE) {
-        return DATA_ABILITY_PERMISSION_DENIED;
+        return E_PERMISSION_DENIED;
     }
 
     switch (cmd.GetOprnType()) {

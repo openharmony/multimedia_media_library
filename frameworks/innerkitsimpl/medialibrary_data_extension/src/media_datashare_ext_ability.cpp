@@ -119,27 +119,24 @@ std::vector<std::string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, 
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    int ret = INVALID_VALUE;
     if (mode == MEDIA_FILEMODE_READONLY) {
         if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
-            return ret;
+            return E_PERMISSION_DENIED;
         }
     } else if (mode == MEDIA_FILEMODE_WRITEONLY ||
                mode == MEDIA_FILEMODE_WRITETRUNCATE ||
                mode == MEDIA_FILEMODE_WRITEAPPEND) {
         if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-            return ret;
+            return E_PERMISSION_DENIED;
         }
     } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE ||
                mode == MEDIA_FILEMODE_READWRITE) {
         if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA) ||
             !CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-            return ret;
+            return E_PERMISSION_DENIED;
         }
     }
-    ret = MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
-    HILOG_INFO("%{public}s end.", __func__);
-    return ret;
+    return MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
 }
 
 int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const std::string &mode)
@@ -150,47 +147,38 @@ int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const std::string &mod
 int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket &value)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    int ret = INVALID_VALUE;
     string tmpUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
     if (uri.ToString() == tmpUri) {
         if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
-            return ret;
+            return E_PERMISSION_DENIED;
         }
     } else if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-        return ret;
+        return E_PERMISSION_DENIED;
     }
-    ret = MediaLibraryDataManager::GetInstance()->Insert(uri, value);
-    HILOG_INFO("%{public}s end.", __func__);
-    return ret;
+    return MediaLibraryDataManager::GetInstance()->Insert(uri, value);
 }
 
 int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &predicates,
     const DataShareValuesBucket &value)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    int ret = INVALID_VALUE;
     if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
-        return ret;
+        return E_PERMISSION_DENIED;
     }
 
-    ret = MediaLibraryDataManager::GetInstance()->Update(uri, value, predicates);
-    HILOG_INFO("%{public}s end.", __func__);
-    return ret;
+    return MediaLibraryDataManager::GetInstance()->Update(uri, value, predicates);
 }
 
 int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
     HILOG_INFO("%{public}s begin.", __func__);
-    int ret = INVALID_VALUE;
     if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         HILOG_ERROR("%{public}s Check calling permission failed.", __func__);
-        return ret;
+        return E_PERMISSION_DENIED;
     }
 
-    ret = MediaLibraryDataManager::GetInstance()->Delete(uri, predicates);
-    HILOG_INFO("%{public}s end.", __func__);
-    return ret;
+    return MediaLibraryDataManager::GetInstance()->Delete(uri, predicates);
 }
 
 std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
