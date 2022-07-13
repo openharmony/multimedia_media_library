@@ -18,16 +18,11 @@
 #include <unordered_set>
 
 #include "abs_rdb_predicates.h"
-#include "accesstoken_kit.h"
 #include "bundle_mgr_interface.h"
 #include "datashare_abs_result_set.h"
-#include "datashare_ext_ability.h"
-#include "datashare_ext_ability_context.h"
-#include "datashare_predicates.h"
 #include "device_manager.h"
 #include "device_manager_callback.h"
 #include "hitrace_meter.h"
-#include "ipc_singleton.h"
 #include "ipc_skeleton.h"
 #include "media_datashare_ext_ability.h"
 #include "media_file_utils.h"
@@ -47,7 +42,6 @@
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "sa_mgr_client.h"
-#include "sys_mgr_client.h"
 #include "system_ability_definition.h"
 #include "timer.h"
 
@@ -76,10 +70,6 @@ static MediaDataShareExtAbility* mediaDataShare_ = nullptr;
 
 MediaLibraryDataManager::MediaLibraryDataManager(void)
 {
-    rdbStore_ = nullptr;
-    kvStorePtr_ = nullptr;
-    bundleName_ = BUNDLE_NAME;
-    refCnt_ = 0;
 }
 
 MediaLibraryDataManager::~MediaLibraryDataManager(void)
@@ -116,6 +106,7 @@ __attribute__((constructor)) void RegisterDataShareCreator()
 
 void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
+    std::lock_guard<std::mutex> lock(mgrMutex_);
     refCnt_++;
     context_ = context;
     InitMediaLibraryRdbStore();
@@ -142,11 +133,11 @@ void MediaLibraryDataManager::InitDeviceData()
         MEDIA_ERR_LOG("MediaLibraryDataManager InitDeviceData failed!");
     }
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-
 }
 
 void MediaLibraryDataManager::ClearMediaLibraryMgr()
 {
+    std::lock_guard<std::mutex> lock(mgrMutex_);
     refCnt_--;
     if (refCnt_.load() > 0) {
         MEDIA_DEBUG_LOG("still other extension exist");
@@ -340,7 +331,7 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::Delete");
 
-    if (uri.ToString().find(MEDIALIBRARY_DATA_URI) != string::npos) {
+    if (uri.ToString().find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("MediaLibraryDataManager Delete: Not Data ability Uri");
         return DATA_ABILITY_INVALID_URI;
     }

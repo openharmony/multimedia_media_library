@@ -72,16 +72,17 @@ private:
     std::string GetClientBundle(int uid);
     void NeedQuerySync(const std::string &networkId, OperationObject oprnObject);
 
+    std::mutex mgrMutex_;
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
     DistributedKv::DistributedKvDataManager dataManager_;
     std::shared_ptr<MediaLibraryThumbnail> mediaThumbnail_;
-    std::shared_ptr<OHOS::AbilityRuntime::Context> context_ = nullptr;
-    std::string bundleName_;
+    std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
+    std::string bundleName_{BUNDLE_NAME};
     OHOS::sptr<AppExecFwk::IBundleMgr> bundleMgr_;
     static std::mutex mutex_;
     static std::shared_ptr<MediaLibraryDataManager> instance_;
     std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
-    std::atomic<int> refCnt_;
+    std::atomic<int> refCnt_{0};
 };
 } // namespace Media
 } // namespace OHOS

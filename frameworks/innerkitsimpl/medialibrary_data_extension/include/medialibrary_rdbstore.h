@@ -53,8 +53,8 @@ private:
     bool SubscribeRdbStoreObserver();
     bool UnSubscribeRdbStoreObserver();
 
-    std::shared_ptr<NativeRdb::RdbStore> rdbStore_{nullptr};
-    std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_{nullptr};
+    std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
     std::string bundleName_{BUNDLE_NAME};
     NativeRdb::RdbStoreConfig config_{""};
 };
@@ -95,7 +95,7 @@ public:
 private:
     void NotifyDeviceChange();
     static constexpr int NOTIFY_TIME_INTERVAL = 10000;
-    std::unique_ptr<OHOS::Utils::Timer> timer_{nullptr};
+    std::unique_ptr<OHOS::Utils::Timer> timer_;
     uint32_t timerId_{0};
     std::string bundleName_;
     bool isNotifyDeviceChange_;

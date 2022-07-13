@@ -26,6 +26,10 @@ namespace OHOS {
 namespace Media {
 MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("Failed to get context");
+        return;
+    }
     string databaseDir = context->GetDatabaseDir();
     string relativePath = MEDIA_DATA_ABILITY_DB_NAME;
 
@@ -45,7 +49,7 @@ void MediaLibraryRdbStore::Init()
     }
 
     int32_t errCode = 0;
-    MediaLibraryDataCallBack rdbDataCallBack{};
+    MediaLibraryDataCallBack rdbDataCallBack;
     rdbStore_ = RdbHelper::GetRdbStore(config_, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("GetRdbStore is failed ");
