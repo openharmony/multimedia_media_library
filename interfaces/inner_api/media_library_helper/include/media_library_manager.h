@@ -235,7 +235,7 @@ public:
     int32_t QueryTotalSize(MediaVolume &outMediaVolume);
 
 private:
-    static shared_ptr<DataShare::DataShareHelper> sAbilityHelper_;
+    static shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
 };
 } // namespace Media
 } // namespace OHOS

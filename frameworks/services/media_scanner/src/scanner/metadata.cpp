@@ -123,7 +123,7 @@ std::string Metadata::GetFileMimeType() const
 
 void Metadata::SetFileMediaType(const VariantData &mediaType)
 {
-    mediaType_ = static_cast<MediaType>(std::get<int32_t>(mediaType));
+    mediaType_ = std::get<MediaType>(mediaType);
 }
 
 MediaType Metadata::GetFileMediaType() const

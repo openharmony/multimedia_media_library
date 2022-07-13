@@ -23,7 +23,7 @@ using namespace OHOS::NativeRdb;;
 
 namespace OHOS {
 namespace Media {
-shared_ptr<DataShare::DataShareHelper> MediaLibraryManager::sAbilityHelper_ = nullptr;
+shared_ptr<DataShare::DataShareHelper> MediaLibraryManager::sDataShareHelper_ = nullptr;
 
 MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 {
@@ -33,8 +33,8 @@ MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 
 void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &token)
 {
-    if (sAbilityHelper_ == nullptr) {
-        sAbilityHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    if (sDataShareHelper_ == nullptr) {
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     }
 }
 
@@ -66,8 +66,8 @@ unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptio
     Uri uri(MEDIALIBRARY_DATA_URI);
     shared_ptr<DataShareResultSet> resultSet = nullptr;
 
-    if (sAbilityHelper_ == nullptr
-        || ((resultSet = sAbilityHelper_->Query(uri, predicates, columns)) == nullptr)) {
+    if (sDataShareHelper_ == nullptr
+        || ((resultSet = sDataShareHelper_->Query(uri, predicates, columns)) == nullptr)) {
         MEDIA_ERR_LOG("Resultset retrieval failure caused Query operation to fail");
     } else {
         // Create FetchResult object using the contents of resultSet
@@ -122,7 +122,7 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
     MediaFetchOptions fetchOptions = const_cast<MediaFetchOptions &>(fetchOps);
     DataSharePredicates predicates;
 
-    if (sAbilityHelper_ == nullptr) {
+    if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("Ability Helper is null");
         return albums;
     }
@@ -138,7 +138,7 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
 
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI);
-    auto resultSet = sAbilityHelper_->Query(
+    auto resultSet = sDataShareHelper_->Query(
         uri, predicates, columns);
     if (resultSet != nullptr) {
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -180,11 +180,11 @@ string MediaLibraryManager::CreateAsset(const FileAsset &fileAssetObj)
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, fileAssetObj.GetPath());
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAssetObj.GetMediaType());
 
-    if (sAbilityHelper_ != nullptr) {
+    if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri createAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
 
-        int32_t index = sAbilityHelper_->Insert(createAssetUri, valuesBucket);
+        int32_t index = sDataShareHelper_->Insert(createAssetUri, valuesBucket);
         if (index < 0) {
             MEDIA_ERR_LOG("Failed to create the file");
         } else {
@@ -213,11 +213,10 @@ int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fil
     valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, fileAssetObj.GetPath());
 
-    if (sAbilityHelper_ != nullptr) {
+    if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri updateAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
-
-        retVal = sAbilityHelper_->Insert(updateAssetUri, valuesBucket);
+        retVal = sDataShareHelper_->Update(updateAssetUri, {}, valuesBucket);
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to modify the file");
         }
@@ -229,14 +228,19 @@ int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fil
 int32_t MediaLibraryManager::DeleteAsset(const string &uri)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
+    string fileId;
+    if (uri.find(MEDIALIBRARY_DATA_URI) == string::npos) {
+        fileId = uri.substr(MEDIALIBRARY_DATA_URI.length());
+    } else {
+        return retVal;
+    }
 
-    if (sAbilityHelper_ != nullptr) {
+    if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
-
-        retVal = sAbilityHelper_->Insert(deleteAssetUri, valuesBucket);
+        DataShare::DataSharePredicates predicates;
+        predicates.EqualTo(MEDIA_DATA_DB_ID, fileId);
+        retVal = sDataShareHelper_->Delete(deleteAssetUri, predicates);
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to delete the file");
         }
@@ -252,11 +256,11 @@ int32_t MediaLibraryManager::OpenAsset(const string &uri, string &mode)
     valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
     valuesBucket.PutString(MEDIA_FILEMODE, mode);
 
-    if (sAbilityHelper_ != nullptr) {
+    if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri openAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_OPENASSET);
 
-        retVal = sAbilityHelper_->Insert(openAssetUri, valuesBucket);
+        retVal = sDataShareHelper_->Insert(openAssetUri, valuesBucket);
         if (retVal <= 0) {
             MEDIA_ERR_LOG("Failed to open the file");
         }
@@ -271,12 +275,12 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
 
-    if (sAbilityHelper_ != nullptr) {
+    if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
 
         if (close(fd) == DATA_ABILITY_SUCCESS) {
-            retVal = sAbilityHelper_->Insert(closeAssetUri, valuesBucket);
+            retVal = sDataShareHelper_->Insert(closeAssetUri, valuesBucket);
         }
 
         if (retVal == DATA_ABILITY_FAIL) {
@@ -293,11 +297,11 @@ int32_t MediaLibraryManager::CreateAlbum(const AlbumAsset &albumNapiObj)
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, albumNapiObj.GetAlbumPath());
 
-    if (sAbilityHelper_ != nullptr) {
+    if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri createAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
 
-        albumId = sAbilityHelper_->Insert(createAlbumUri, valuesBucket);
+        albumId = sDataShareHelper_->Insert(createAlbumUri, valuesBucket);
         if (albumId < 0) {
             MEDIA_ERR_LOG("Failed to create the album");
         }
@@ -313,11 +317,10 @@ int32_t MediaLibraryManager::ModifyAlbum(const int32_t albumId, const AlbumAsset
     valuesBucket.PutInt(MEDIA_DATA_DB_ID, albumId);
     valuesBucket.PutString(MEDIA_DATA_DB_ALBUM_NAME, albumNapiObj.GetAlbumName());
 
-    if (sAbilityHelper_ != nullptr) {
+    if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri modifyAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_MODIFYALBUM);
-
-        retVal = sAbilityHelper_->Insert(modifyAlbumUri, valuesBucket);
+        retVal = sDataShareHelper_->Update(modifyAlbumUri, {}, valuesBucket);
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to modify the album");
         }
@@ -329,14 +332,13 @@ int32_t MediaLibraryManager::ModifyAlbum(const int32_t albumId, const AlbumAsset
 int32_t MediaLibraryManager::DeleteAlbum(const int32_t albumId)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.PutInt(MEDIA_DATA_DB_ID, albumId);
 
-    if (sAbilityHelper_ != nullptr) {
+    if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM);
-
-        retVal = sAbilityHelper_->Insert(deleteAlbumUri, valuesBucket);
+        DataSharePredicates predicates;
+        predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(albumId));
+        retVal = sDataShareHelper_->Delete(deleteAlbumUri, predicates);
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to delete the album");
         }
@@ -351,7 +353,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
     DataSharePredicates predicates;
     MediaFetchOptions fetchOptions = const_cast<MediaFetchOptions &>(option);
 
-    if (sAbilityHelper_ != nullptr) {
+    if (sDataShareHelper_ != nullptr) {
         string prefix = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
         UpdateFetchOptionSelection(fetchOptions.selections, prefix);
         fetchOptions.selectionArgs.insert(fetchOptions.selectionArgs.begin(), std::to_string(MEDIA_TYPE_ALBUM));
@@ -365,7 +367,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
         Uri uri(MEDIALIBRARY_DATA_URI);
 
         auto resultSet =
-            sAbilityHelper_->Query(uri, predicates, columns);
+            sDataShareHelper_->Query(uri, predicates, columns);
 
         fetchFileResult = make_unique<FetchResult>(resultSet);
         if (fetchFileResult == nullptr) {
@@ -379,14 +381,14 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
 int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 {
     MEDIA_INFO_LOG("QueryTotalSize start");
-    if (sAbilityHelper_ == nullptr) {
-        MEDIA_ERR_LOG("sAbilityHelper_ is null");
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("sDataShareHelper_ is null");
         return DATA_ABILITY_FAIL;
     }
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
     DataSharePredicates predicates;
-    auto queryResultSet = sAbilityHelper_->Query(uri, predicates, columns);
+    auto queryResultSet = sDataShareHelper_->Query(uri, predicates, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("queryResultSet is null!");
         return DATA_ABILITY_FAIL;

@@ -19,6 +19,7 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
@@ -58,7 +59,6 @@ int32_t DeleteAlbumInfoUtil(const ValuesBucket &valuesBucket,
     }
     return deleteErrorCode;
 }
-
 
 int32_t MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperations(const string &oprn,
                                                                      const ValuesBucket &valuesBucket,

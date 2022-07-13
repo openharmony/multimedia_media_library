@@ -18,6 +18,7 @@
 #include "rdb_utils.h"
 
 using namespace std;
+using namespace OHOS::DataShare;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
