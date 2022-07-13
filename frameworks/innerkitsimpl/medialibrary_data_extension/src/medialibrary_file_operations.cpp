@@ -193,7 +193,6 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
 {
     string dstFilePath, dstReFilePath, dstFileName, destAlbumPath, bucketName;
     int32_t errCode = DATA_ABILITY_SUCCESS;
-    int32_t bucketId = 0;
     ValueObject valueObject;
     FileAsset fileAsset;
     MediaLibraryFileDb fileDbOprn;
@@ -206,6 +205,7 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     }
     errCode = dirOprn.HandleDirOperations(MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION, values, rdbStore, dirQuerySetMap);
     if (errCode != DATA_ABILITY_SUCCESS) {
+        MEDIA_ERR_LOG("Failed check extension %{private}d", errCode);
         return errCode;
     }
     dstFilePath = ROOT_MEDIA_DIR + dstReFilePath + dstFileName;
@@ -213,7 +213,7 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     if (destAlbumPath.back() == '/') {
         destAlbumPath = destAlbumPath.substr(0, destAlbumPath.length() - 1);
     }
-    bucketId = MediaLibraryDataManagerUtils::GetParentIdFromDb(destAlbumPath, rdbStore);
+    int32_t bucketId = MediaLibraryDataManagerUtils::GetParentIdFromDb(destAlbumPath, rdbStore);
     if ((!dstReFilePath.empty()) && (bucketId == 0)) {
         vector<int32_t> outIds;
         NativeAlbumAsset nativeAlbumAsset = MediaLibraryDataManagerUtils::CreateDirectorys(dstReFilePath,
@@ -227,7 +227,7 @@ int32_t MediaLibraryFileOperations::HandleModifyAsset(const string &rowNum, cons
     bucketName = MediaLibraryDataManagerUtils::GetParentDisplayNameFromDb(bucketId, rdbStore);
     if (srcPath.compare(dstFilePath) != 0) {
         errCode = fileAsset.ModifyAsset(srcPath, dstFilePath);
-        if (errCode == DATA_ABILITY_MODIFY_DATA_FAIL) {
+        if (errCode != DATA_ABILITY_SUCCESS) {
             return errCode;
         }
         errCode = ModifyDisName(dstFileName, destAlbumPath, srcPath, rdbStore);
