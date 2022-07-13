@@ -20,11 +20,16 @@
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_object_utils.h"
 #include "result_set_utils.h"
 #include "uri_helper.h"
+#include "medialibrary_smartalbum_map_db.h"
+
+#include "medialibrary_dir_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
@@ -373,7 +378,7 @@ string GetRelativePathFromPath(const string &path)
 
 int32_t UpdateRenamedAlbumInfo(const string &srcId, const string &displayName, const string &newAlbumPath)
 {
-    int64_t date_modified = MediaLibraryDataManagerUtils::GetAlbumDateModified(newAlbumPath);
+    int64_t date_modified = MediaFileUtils::GetAlbumDateModified(newAlbumPath);
     AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
     absPredicates.EqualTo(MEDIA_DATA_DB_ID, srcId);
     ValuesBucket valuesBucket;
@@ -388,7 +393,7 @@ int32_t UpdateRenamedAlbumInfo(const string &srcId, const string &displayName, c
 
 int32_t UpdateSubFilesPath(const string &srcPath, const string &newAlbumPath)
 {
-    int64_t date_modified = MediaLibraryDataManagerUtils::GetAlbumDateModified(newAlbumPath);
+    int64_t date_modified = MediaFileUtils::GetAlbumDateModified(newAlbumPath);
     std::string modifySql = "UPDATE " + MEDIALIBRARY_TABLE + " SET ";
     // Update data "old albumPath/%" -> "new albumPath/%"
     modifySql += MEDIA_DATA_DB_FILE_PATH + " = replace("
@@ -422,7 +427,7 @@ int32_t HandleAlbumRename(const FileAsset &srcAsset, const string &displayName)
     string srcPath = srcAsset.GetPath();
     size_t slashIndex = srcPath.rfind(SLASH_CHAR);
     string destPath = srcPath.substr(0, slashIndex) + SLASH_CHAR + displayName;
-    if (MediaLibraryDataManagerUtils::isFileExistInDb(destPath, MediaLibraryDataManager::GetInstance()->rdbStore_)) {
+    if (MediaLibraryObjectUtils::IsFileExistInDb(destPath)) {
         MEDIA_ERR_LOG("Rename file is existed %{private}s", destPath.c_str());
         return ERROR_TARGET_FILE_EXIST;
     }
@@ -496,7 +501,7 @@ int32_t HandleFileMove(const FileAsset &srcAsset, const string &destRelativePath
 int32_t UpdateMovedAlbumInfo(const FileAsset &srcAsset, const string &bucketId, const string &newAlbumPath,
     const string &destRelativePath)
 {
-    int64_t date_modified = MediaLibraryDataManagerUtils::GetAlbumDateModified(newAlbumPath);
+    int64_t date_modified = MediaFileUtils::GetAlbumDateModified(newAlbumPath);
     AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
     absPredicates.EqualTo(MEDIA_DATA_DB_ID, to_string(srcAsset.GetId()));
     ValuesBucket valuesBucket;
@@ -512,7 +517,7 @@ int32_t UpdateMovedAlbumInfo(const FileAsset &srcAsset, const string &bucketId, 
 int32_t HandleAlbumMove(const FileAsset &srcAsset, const string &destRelativePath, const string &bucketId)
 {
     string destPath = ROOT_MEDIA_DIR + destRelativePath + srcAsset.GetDisplayName();
-    if (MediaLibraryDataManagerUtils::isFileExistInDb(destPath, MediaLibraryDataManager::GetInstance()->rdbStore_)) {
+    if (MediaLibraryObjectUtils::IsFileExistInDb(destPath)) {
         MEDIA_ERR_LOG("Move file is existed %{private}s", destPath.c_str());
         return ERROR_TARGET_FILE_EXIST;
     }

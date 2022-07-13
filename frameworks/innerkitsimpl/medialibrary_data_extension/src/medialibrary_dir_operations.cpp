@@ -22,6 +22,7 @@
 #include "media_file_utils.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
+#include "medialibrary_object_utils.h"
 #include "rdb_utils.h"
 
 using namespace std;
@@ -262,7 +263,7 @@ int32_t MediaLibraryDirOperations::CheckDirInfoUtil(const ValuesBucket &values,
         valueObject.GetString(path);
     }
     if (extension.compare(MEDIA_NO_FILE) == 0) {
-        if (MediaLibraryDataManagerUtils::isFileExistInDb(path, rdbStore)) {
+        if (MediaLibraryObjectUtils::IsFileExistInDb(path)) {
             MEDIA_ERR_LOG("dir is existed");
             return DATA_ABILITY_CHECK_DIR_ISEXIST_FAIL;
         }
@@ -434,7 +435,6 @@ int32_t MediaLibraryDirOperations::HandleDirOperations(const string &oprn,
     ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
     int32_t errCode = DATA_ABILITY_FAIL;
     ValueObject valueObject;
-    MediaLibraryFileOperations fileOprn;
     if (oprn == MEDIA_DIROPRN_DELETEDIR) {
         errCode = HandleDeleteDir(values, rdbStore);
     } else if (oprn == MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION) {
@@ -442,7 +442,9 @@ int32_t MediaLibraryDirOperations::HandleDirOperations(const string &oprn,
     } else if (oprn == MEDIA_DIROPRN_FMS_CREATEDIR) {
         values.PutString(MEDIA_DATA_DB_NAME, ".nofile");
         values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_NOFILE);
-        errCode = fileOprn.HandleCreateAsset(values, rdbStore, dirQuerySetMap);
+        MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
+        cmd.SetValueBucket(values);
+        errCode = MediaLibraryFileOperations::CreateFileOperation(cmd);
     } else if (oprn == MEDIA_DIROPRN_FMS_DELETEDIR) {
         errCode = HandleFMSDeleteDir(values, rdbStore);
     } else if (oprn == MEDIA_DIROPRN_FMS_TRASHDIR) {

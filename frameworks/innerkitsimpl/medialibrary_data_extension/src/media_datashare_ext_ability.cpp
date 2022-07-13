@@ -35,6 +35,7 @@ using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::Media;
+using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace AbilityRuntime {

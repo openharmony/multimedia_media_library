@@ -27,7 +27,7 @@ class Metadata {
 public:
     Metadata();
     ~Metadata() = default;
-    using VariantData = std::variant<int32_t, int64_t, std::string>;
+    using VariantData = std::variant<int32_t, int64_t, std::string, MediaType>;
 
     void SetFileId(const VariantData &id);
     int32_t GetFileId() const;

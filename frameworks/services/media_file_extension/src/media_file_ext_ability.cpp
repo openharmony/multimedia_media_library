@@ -26,12 +26,14 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
+#include "medialibrary_object_utils.h"
 
 namespace OHOS {
 namespace Media {
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::AbilityRuntime;
 using namespace OHOS::FileAccessFwk;
+using namespace OHOS::DataShare;
 
 MediaFileExtAbility::MediaFileExtAbility(JsRuntime& jsRuntime) : jsRuntime_(jsRuntime) {}
 
@@ -126,8 +128,7 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayN
     CHECK_AND_RETURN_RET_LOG(ret == DATA_ABILITY_SUCCESS, ret, "invalid uri");
     Uri createFileUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_CREATEASSET);
     string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(parentUriStr);
-    string albumPath = MediaLibraryDataManagerUtils::GetPathFromDb(albumId,
-        MediaLibraryDataManager::GetInstance()->rdbStore_);
+    string albumPath = MediaLibraryObjectUtils::GetPathByIdFromDb(albumId);
     string relativePath = albumPath.substr(ROOT_MEDIA_DIR.size()) + SLASH_CHAR;
     string destPath = albumPath + SLASH_CHAR + displayName;
     DataShareValuesBucket valuesBucket;
@@ -157,7 +158,7 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
     }
     Uri mkdirUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR + MEDIA_DIROPRN_FMS_CREATEDIR);
     string dirPath = ROOT_MEDIA_DIR + relativePath + displayName;
-    if (MediaLibraryDataManagerUtils::isFileExistInDb(dirPath, MediaLibraryDataManager::GetInstance()->rdbStore_)) {
+    if (MediaLibraryObjectUtils::IsFileExistInDb(dirPath)) {
         MEDIA_ERR_LOG("Create dir is existed %{private}s", dirPath.c_str());
         return ERROR_TARGET_FILE_EXIST;
     }
@@ -166,8 +167,7 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
     if (ret > 0) {
-        int32_t dirId = MediaLibraryDataManagerUtils::GetParentIdFromDb(dirPath,
-            MediaLibraryDataManager::GetInstance()->rdbStore_);
+        int32_t dirId = MediaLibraryObjectUtils::GetParentIdByIdFromDb(dirPath);
         newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", dirId));
         return DATA_ABILITY_SUCCESS;
     } else {
