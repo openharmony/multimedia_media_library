@@ -994,3 +994,71 @@ shared_ptr<AbsSharedResultSet> MediaLibraryObjectUtils::QueryWithCondition(Media
 
     return uniStore->Query(cmd, columns);
 }
+
+bool MediaLibraryObjectUtils::IsColumnValueExist(const string &value, const string &column)
+{
+    if (column.empty()) {
+        MEDIA_ERR_LOG("Empty column param");
+        return false;
+    }
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr!");
+        return false;
+    }
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->EqualTo(column, value);
+    vector<string> columns;
+    columns.push_back(column);
+    auto queryResultSet = uniStore->Query(cmd, columns);
+    if (queryResultSet != nullptr) {
+        int32_t count = 0;
+        queryResultSet->GetRowCount(count);
+        MEDIA_DEBUG_LOG("count is %{private}d", count);
+        if (count > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MediaLibraryObjectUtils::IsAssetExistInDb(const int32_t id)
+{
+    if (id <= 0) {
+        MEDIA_ERR_LOG("Invalid id param");
+        return false;
+    }
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(id));
+    vector<string> columns;
+    auto queryResultSet = QueryWithCondition(cmd, columns);
+    if (queryResultSet != nullptr && queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        return true;
+    }
+    return false;
+}
+
+bool MediaLibraryObjectUtils::IsFileExistInDb(const string &path)
+{
+    if (path.empty()) {
+        MEDIA_ERR_LOG("path is incorrect");
+        return false;
+    }
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_FILE_PATH, path)
+        ->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
+
+    vector<string> columns;
+    columns.push_back(MEDIA_DATA_DB_FILE_PATH);
+    auto queryResultSet = QueryWithCondition(cmd, columns);
+    if (queryResultSet != nullptr && queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        return true;
+    }
+
+    return false;
+}
+} // namespace Media
+} // namespace OHOS
