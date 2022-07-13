@@ -21,11 +21,14 @@
 #include <grp.h>
 #include <securec.h>
 #include <unistd.h>
+#include <unordered_map>
 
 #include "dir_asset.h"
+#include "file_asset.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_smartalbum_map_db.h"
 #include "medialibrary_data_manager_utils.h"
+#include "native_album_asset.h"
 #include "rdb_store.h"
 #include "values_bucket.h"
 
@@ -96,6 +99,18 @@ private:
     int32_t UpdateFavoriteAssetsInfoUtil(const int32_t &fileAssetId,
                                          const bool &isFavorites,
                                          SmartAlbumMapQueryData &smartAlbumMapQueryData);
+
+    NativeAlbumAsset GetAlbumAsset(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    bool IsAlbumExistInDb(const std::string &path, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                          int32_t &outRow);
+    int32_t GetAssetRecycle(const int32_t &assetId, std::string &outOldPath, std::string &outTrashDirPath,
+                            const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+                            const std::unordered_map<std::string, DirAsset> &dirQuerySetMap);
+    bool IsRecycleAssetExist(const int32_t &assetId, std::string &outRecyclePath,
+                             const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    int32_t MakeRecycleDisplayName(const int32_t &assetId, std::string &outDisplayName, const std::string &trashDirPath,
+                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    std::shared_ptr<AbsSharedResultSet> QueryAgeingTrashFiles(const std::shared_ptr<RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS

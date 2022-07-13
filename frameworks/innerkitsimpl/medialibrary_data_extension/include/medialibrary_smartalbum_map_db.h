@@ -27,7 +27,6 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::NativeRdb;
-using namespace OHOS::DataShare;
 using namespace std;
 const int32_t NOT_ISTRASH = 0;
 const int32_t ASSET_ISTRASH = 1;
@@ -60,11 +59,9 @@ public:
     int32_t UpdateDirTrashInfo(const int32_t &assetId,
         const int64_t &trashDate, const shared_ptr<RdbStore> &rdbStore, string &recyclePath, const string &oldPath);
     int32_t UpdateChildTrashInfo(const int32_t &assetId,
-                                 const shared_ptr<RdbStore> &rdbStore,
-                                 const int64_t &trashDate);
+        const shared_ptr<RdbStore> &rdbStore, const int64_t &trashDate);
     int32_t UpdateChildRecycleInfo(const int32_t &assetId,
-                                   const shared_ptr<RdbStore> &rdbStore,
-                                   const int64_t &recycleDate);
+        const shared_ptr<RdbStore> &rdbStore, const int64_t &recycleDate);
 };
 } // namespace Media
 } // namespace OHOS
