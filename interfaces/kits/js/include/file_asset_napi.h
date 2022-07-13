@@ -157,6 +157,9 @@ struct FileAssetAsyncContext {
     bool isTrash = false;
     std::string networkId;
     std::shared_ptr<PixelMap> pixelmap;
+    std::string apiName;
+    void HandleError(napi_env env, napi_value &errorObj);
+    void SetApiName(const std::string &Name);
 };
 } // namespace Media
 } // namespace OHOS

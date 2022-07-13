@@ -15,7 +15,7 @@
 
 #ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIALIBRARY_NAPI_UTILS_H_
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIALIBRARY_NAPI_UTILS_H_
- 
+
 #include <tuple>
 #include <memory>
 #include <vector>
@@ -62,6 +62,12 @@
         if ((callbackRef) == nullptr) {                             \
             napi_create_promise(env, &(deferred), &(result));       \
         }                                                           \
+    } while (0)
+
+#define NAPI_CREATE_RESOURCE_API_NAME(env, resource, resourceName, context)         \
+    do {                                                                            \
+        napi_create_string_utf8(env, resourceName, NAPI_AUTO_LENGTH, &(resource));  \
+        context->SetApiName(resourceName);                                          \
     } while (0)
 
 #define NAPI_CREATE_RESOURCE_NAME(env, resource, resourceName)                      \
@@ -113,9 +119,16 @@ const int32_t REFERENCE_COUNT_ONE = 1;
 const int32_t ERR_DEFAULT = 0;
 const int32_t ERR_MEM_ALLOCATION = 2;
 const int32_t ERR_INVALID_OUTPUT = 3;
-const int32_t ERR_PERMISSION_DENIED = 4;
+
+const int32_t JS_ERR_PERMISSION_DENIED = 4;
 const int32_t ERR_DISPLAY_NAME_INVALID = 5;
 const int32_t ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID = 6;
+const int32_t JS_ERR_INNER_FAIL = 7;                // ipc, rdb or file operation fail, etc
+const int32_t JS_ERR_PARAMETER_INVALID = 8;         // input parameter invalid
+const int32_t JS_ERR_DISPLAYNAME_INVALID = 9;       // input display invalid
+const int32_t JS_ERR_NO_SUCH_FILE = 10;             // no such file
+const int32_t JS_ERR_FILE_EXIST = 11;               // file has exist
+const int32_t JS_ERR_WRONG_FILE_TYPE = 12;          // file type is not allow in the directory
 
 const int32_t TRASH_SMART_ALBUM_ID = 1;
 const std::string TRASH_SMART_ALBUM_NAME = "TrashAlbum";
@@ -160,6 +173,27 @@ const std::vector<std::string> directoryEnumValues {
     "Audios/",
     "Documents/",
     "Download/"
+};
+
+// trans server errorCode to js Error code
+const std::unordered_map<int, int> trans2JsError = {
+    {E_PERMISSION_DENIED, JS_ERR_PERMISSION_DENIED},
+    {DATA_ABILITY_FAIL, JS_ERR_INNER_FAIL},
+    {E_NO_SUCH_FILE, JS_ERR_NO_SUCH_FILE},
+    {E_FILE_EXIST, JS_ERR_FILE_EXIST},
+    {DATA_ABILITY_FILE_NAME_INVALID, JS_ERR_DISPLAYNAME_INVALID},
+    {DATA_ABILITY_CHECK_EXTENSION_FAIL, JS_ERR_FILE_EXIST},
+    {E_FILE_OPER_FAIL, JS_ERR_INNER_FAIL},
+};
+
+const std::unordered_map<int, std::string> jsErrMap = {
+    {JS_ERR_PERMISSION_DENIED, "without medialibrary permission"},
+    {JS_ERR_INNER_FAIL, "medialibrary inner fail"},
+    {JS_ERR_PARAMETER_INVALID, "invalid parameter"},
+    {JS_ERR_DISPLAYNAME_INVALID, "display name invalid"},
+    {JS_ERR_NO_SUCH_FILE, "no such file"},
+    {JS_ERR_FILE_EXIST, "file has exist"},
+    {JS_ERR_WRONG_FILE_TYPE, "file type is not allow in the directory"},
 };
 
 const std::vector<std::string> fileKeyEnumValues {
@@ -251,6 +285,30 @@ public:
                 break;
         }
     }
+
+    static int TransErrorCode(int error)
+    {
+        // Transfer Server error to napi error code
+        if (trans2JsError.count(error)) {
+            error = trans2JsError.at(error);
+        }
+        return error;
+    }
+
+    static void HandleError(napi_env env, int error, napi_value &errorObj, const std::string &Name)
+    {
+        if (error == ERR_DEFAULT) {
+            return;
+        }
+        std::string errMsg = "operation fail";
+        if (jsErrMap.count(error) > 0) {
+            errMsg = jsErrMap.at(error);
+        }
+        CreateNapiErrorObject(env, errorObj, error, errMsg);
+        errMsg = Name + " " + errMsg;
+        NAPI_ERR_LOG("Error: %{public}s, code:%{public}d ", errMsg.c_str(), error);
+    }
+
     static void CreateNapiErrorObject(napi_env env, napi_value &errorObj,
         const int32_t errCode, const std::string errMsg)
     {
