@@ -18,7 +18,6 @@
 
 #include <string>
 #include "abs_rdb_predicates.h"
-#include "data_ability_predicates.h"
 #include "device_manager.h"
 #include "device_manager_callback.h"
 #include "distributed_kv_data_manager.h"

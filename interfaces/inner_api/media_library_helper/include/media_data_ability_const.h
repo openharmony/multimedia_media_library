@@ -25,7 +25,7 @@ const int32_t DATA_ABILITY_SUCCESS = 0;
 const int32_t DATA_ABILITY_FAIL = -1;
 const int32_t DATA_ABILITY_HAS_OPENED_FAIL = -10;
 const int32_t DATA_ABILITY_HAS_DB_ERROR = -100;
-const int32_t DATA_ABILITY_HAS_FD_ERROR = -101;
+const int32_t DATA_ABILITY_HAS_FS_ERROR = -101;
 const int32_t DATA_ABILITY_VIOLATION_PARAMETERS = -1000;
 const int32_t DATA_ABILITY_DUPLICATE_CREATE = -10000;
 const int32_t DATA_ABILITY_FILE_NAME_INVALID = -10002;
@@ -40,6 +40,10 @@ const int32_t DATA_ABILITY_GET_HASH_FAIL = -10010;
 const int32_t DATA_ABILITY_RECYCLE_FILE_IS_NULL = -10011;
 const int32_t DATA_ABILITY_IS_RECYCLED = -10012;
 const int32_t DATA_ABILITY_RDIR_FAIL = -10013;
+const int32_t DATA_ABILITY_INVALID_VALUES = -10014;
+const int32_t DATA_ABILITY_INVALID_URI = -10015;
+const int32_t DATA_ABILITY_INVALID_FILEID = -10016;
+const int32_t DATA_ABILITY_INVALID_PATH = -10017;
 const int32_t DATA_ABILITY_MODIFY_DATA_FAIL = -100000;
 
 // common error code
@@ -88,6 +92,7 @@ static const std::string HASH_COLLISION_SUFFIX = "(1)";
 static const std::string ASSET_RECYCLE_SUFFIX = "-copy";
 static const std::string DIR_RECYCLE_SUFFIX = "_recycle";
 static const int64_t ONEDAY_TO_MS = 60*60*24*1000;
+static const int32_t DEFAULT_RECYCLE_DAYS = 30;
 
 static const std::string MEDIA_DATA_DB_Path = "/data/media/";
 static const std::string MEDIA_DATA_DEVICE_PATH = "local";

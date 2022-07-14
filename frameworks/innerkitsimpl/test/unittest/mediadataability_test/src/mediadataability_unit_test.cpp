@@ -89,12 +89,12 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAllFiles_Test_001, Tes
     EXPECT_NE((fetchFileResult->GetCount() < 0), true);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     while (fileAsset != nullptr) {
-        Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
-        NativeRdb::ValuesBucket valuesBucketDelete;
+        Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET +
+            '/' + fileAsset->GetUri());
+        DataShare::DataSharePredicates deletePredicates;
         MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::uri :%{public}s", fileAsset->GetUri().c_str());
-        valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
         MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::helper->Insert before");
-        int retVal = helper->Insert(deleteAssetUri, valuesBucketDelete);
+        int retVal = helper->Delete(deleteAssetUri, deletePredicates);
         MEDIA_INFO_LOG("MediaDataAbility_DeleteAllFiles_Test_001::helper->Insert after");
         EXPECT_NE((retVal < 0), true);
 
@@ -218,9 +218,9 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAsset_Test_001, TestSi
     EXPECT_NE((index <= 0), true);
 
     Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
-    NativeRdb::ValuesBucket valuesBucketDelete;
-    valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, g_createUri1);
-    int retVal = helper->Insert(deleteAssetUri, valuesBucketDelete);
+    DataAbilityPredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(index));
+    int retVal = helper->Delete(deleteAssetUri, predicates);
     EXPECT_NE((retVal < 0), true);
     MEDIA_INFO_LOG("MediaDataAbility_DeleteAsset_Test_001::End");
 }

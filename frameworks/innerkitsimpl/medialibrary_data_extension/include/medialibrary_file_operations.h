@@ -19,51 +19,29 @@
 #include <string>
 #include <unordered_map>
 
+#include "abs_shared_result_set.h"
 #include "dir_asset.h"
-#include "file_asset.h"
-#include "media_data_ability_const.h"
-#include "medialibrary_data_manager_utils.h"
-#include "medialibrary_file_db.h"
-#include "imedia_scanner_client.h"
-#include "native_album_asset.h"
-#include "rdb_store.h"
-#include "values_bucket.h"
-#include "datashare_values_bucket.h"
-#include "rdb_utils.h"
-#include "medialibrary_thumbnail.h"
+#include "medialibrary_command.h"
 
 namespace OHOS {
 namespace Media {
 class MediaLibraryFileOperations {
 public:
-    int32_t HandleCreateAsset(const NativeRdb::ValuesBucket &values,
-                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                              const std::unordered_map
-                              <std::string, DirAsset> &dirQuerySetMap);
-    int32_t HandleCloseAsset(std::string &actualUri, std::string &srcPath, const NativeRdb::ValuesBucket &values,
-                             const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    int32_t HandleGetAlbumCapacity(const NativeRdb::ValuesBucket &values,
-                                const std::shared_ptr<RdbStore> &rdbStore);
-    int32_t HandleFileOperation(const std::string &oprn, const NativeRdb::ValuesBucket &values,
-                                const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                                const std::shared_ptr<MediaLibraryThumbnail> &mediaThumbnail,
-                                const std::unordered_map
-                                <std::string, DirAsset> &dirQuerySetMap);
-    int32_t HandleModifyAsset(const std::string &rowNum, const std::string &srcPath,
-                              const NativeRdb::ValuesBucket &values,
-                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                              const std::unordered_map
-                              <std::string, DirAsset> &dirQuerySetMap);
-    int32_t HandleDeleteAsset(const std::string &rowNum, const std::string &srcPath,
-                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                              const std::unordered_map
-                              <std::string, DirAsset> &dirQuerySetMap);
-    int32_t HandleIsDirectoryAsset(const NativeRdb::ValuesBucket &values,
-                                   const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    NativeRdb::ValuesBucket UpdateBasicAssetDetails(int32_t mediaType,
-                                                    const std::string &fileName,
-                                                    const std::string &relPath,
-                                                    const std::string &path);
+    static int32_t HandleFileOperation(MediaLibraryCommand &cmd);
+
+    static int32_t CreateFileOperation(MediaLibraryCommand &cmd);
+    static int32_t CloseFileOperation(MediaLibraryCommand &cmd);
+    static int32_t GetAlbumCapacityOperation(MediaLibraryCommand &cmd);
+    static int32_t ModifyFileOperation(MediaLibraryCommand &cmd);
+    static int32_t DeleteFileOperation(MediaLibraryCommand &cmd,
+        const std::unordered_map<std::string, DirAsset> &dirQuerySetMap);
+    static int32_t IsDirectoryOperation(MediaLibraryCommand &cmd);
+    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFileOperation(MediaLibraryCommand &cmd,
+        std::vector<std::string> columns);
+
+private:
+    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFavFiles(MediaLibraryCommand &cmd);
+    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryTrashFiles(MediaLibraryCommand &cmd);
 };
 } // namespace Media
 } // namespace OHOS

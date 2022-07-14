@@ -82,7 +82,7 @@ std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::GetInstance()
 
 void MediaLibraryDevice::SetAbilityContext(const std::shared_ptr<AbilityRuntime::Context> &context)
 {
-    dataShareHelper_ = DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
+    dataShareHelper_ = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
     MEDIA_INFO_LOG("MediaLibraryDevice::SetAbilityContext create dataAbilityhelper %{private}d",
         (dataShareHelper_ != nullptr));
 }

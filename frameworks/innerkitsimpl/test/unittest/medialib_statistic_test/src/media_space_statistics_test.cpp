@@ -206,11 +206,12 @@ std::unique_ptr<FileAsset> GetFile(int mediaTypeId)
 void DeleteFile(std::string fileUri)
 {
     std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
-    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
-    DataShareValuesBucket valuesBucketDelete;
-    valuesBucketDelete.PutString(MEDIA_DATA_DB_URI, fileUri);
-    int retVal = helper->Insert(deleteAssetUri, valuesBucketDelete);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test DeleteFile::uri :%{private}s", fileUri.c_str());
+    if (fileUri.find(MEDIALIBRARY_DATA_URI) == 0) {
+        fileUri = fileUri.substr(MEDIALIBRARY_DATA_URI.length());
+    }
+    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + '/' + fileUri);
+    int retVal = helper->Delete(deleteAssetUri, {});
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test DeleteFile::uri :%{private}s", deleteAssetUri.ToString().c_str());
     EXPECT_NE((retVal < 0), true);
 }
 
