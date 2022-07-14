@@ -17,7 +17,6 @@
 #define FOUNDATION_ABILITYRUNTIME_OHOS_MEDIA_DATASHARE_EXT_ABILITY_H
 
 #include "abs_shared_result_set.h"
-#include "data_ability_predicates.h"
 #include "datashare_ext_ability.h"
 #include "native_engine/native_reference.h"
 #include "native_engine/native_value.h"
