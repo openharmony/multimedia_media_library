@@ -36,7 +36,7 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::NativeRdb;
-
+static constexpr int DEFAULT_DEV_SECURITY_LEVEL = 1;
 class MediaLibraryDevice : public DistributedHardware::DeviceStateCallback,
                             public DistributedHardware::DmInitCallback,
                             public std::enable_shared_from_this<MediaLibraryDevice> {
@@ -93,7 +93,10 @@ private:
     std::mutex cvMtx_;
     std::condition_variable kvSyncDoneCv_;
     std::string localUdid_;
-    int32_t localDevLev_;
+    int32_t localDevLev_ {DEFAULT_DEV_SECURITY_LEVEL};
+    std::atomic<bool> localSecLevelGot_ {false};
+    std::mutex gotSecLevelMtx_;
+    std::condition_variable localSecLevelDoneCv_;
 };
 } // namespace Media
 } // namespace OHOS
