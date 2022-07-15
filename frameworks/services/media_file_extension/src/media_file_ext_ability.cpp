@@ -167,7 +167,7 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
     if (ret > 0) {
-        int32_t dirId = MediaLibraryObjectUtils::GetParentIdByIdFromDb(dirPath);
+        int32_t dirId = MediaLibraryObjectUtils::GetParentIdByIdFromDb(to_string(ret));
         newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", dirId));
         return DATA_ABILITY_SUCCESS;
     } else {

@@ -14,12 +14,16 @@
  */
 
 #include "file_asset.h"
-#include <cerrno>
+
+#include <fstream>
+#include <unistd.h>
+
 #include "directory_ex.h"
 #include "media_data_ability_const.h"
 #include "media_file_utils.h"
 #include "media_lib_service_const.h"
 #include "media_log.h"
+
 
 using namespace std;
 
