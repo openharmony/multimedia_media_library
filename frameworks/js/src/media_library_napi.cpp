@@ -1423,8 +1423,6 @@ static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
         NAPI_ERR_LOG("sDataShareHelper_ is not exist");
         return;
     }
-    string abilityUri = MEDIALIBRARY_DATA_URI;
-    Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
 
     DataShare::DataShareValueObject valueObject;
     string notifyUri;
@@ -1443,9 +1441,9 @@ static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
     }
     notifyUri = MEDIALIBRARY_DATA_URI + "/" + mediaType;
     NAPI_DEBUG_LOG("JSDeleteAssetExcute notifyUri = %{public}s", notifyUri.c_str());
-    DataSharePredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_ID, deleteId);
-    int retVal = context->objectInfo->sDataShareHelper_->Delete(deleteAssetUri, predicates);
+    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + "/" +
+        deleteId);
+    int retVal = context->objectInfo->sDataShareHelper_->Delete(deleteAssetUri, {});
     if (retVal < 0) {
         context->error = MediaLibraryNapiUtils::TransErrorCode(retVal);
     } else {
@@ -2013,10 +2011,9 @@ static void JSDeleteAlbumCompleteCallback(napi_env env, napi_status status,
         int32_t albumId = 0;
         context->valuesBucket.GetObject(MEDIA_DATA_DB_ID, valueObject);
         valueObject.GetInt(albumId);
-        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM);
-        DataSharePredicates predicates;
-        predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(albumId));
-        int retVal = context->objectInfo->sDataShareHelper_->Delete(deleteAlbumUri, predicates);
+        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM + "/" +
+            to_string(albumId));
+        int retVal = context->objectInfo->sDataShareHelper_->Delete(deleteAlbumUri, {});
         if (retVal < 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
                 "Delete Album failed");
