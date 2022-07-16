@@ -265,7 +265,7 @@ int32_t MediaLibraryDirOperations::CheckDirInfoUtil(const ValuesBucket &values,
     if (extension.compare(MEDIA_NO_FILE) == 0) {
         if (MediaLibraryObjectUtils::IsFileExistInDb(path)) {
             MEDIA_ERR_LOG("dir is existed");
-            return DATA_ABILITY_CHECK_DIR_ISEXIST_FAIL;
+            return E_FILE_EXIST;
         }
         return DATA_ABILITY_SUCCESS;
     }

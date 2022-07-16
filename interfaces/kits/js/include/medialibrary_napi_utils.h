@@ -19,6 +19,7 @@
 #include <tuple>
 #include <memory>
 #include <vector>
+#include "datashare_result_set.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "hitrace_meter.h"
@@ -182,7 +183,7 @@ const std::unordered_map<int, int> trans2JsError = {
     {E_NO_SUCH_FILE, JS_ERR_NO_SUCH_FILE},
     {E_FILE_EXIST, JS_ERR_FILE_EXIST},
     {DATA_ABILITY_FILE_NAME_INVALID, JS_ERR_DISPLAYNAME_INVALID},
-    {DATA_ABILITY_CHECK_EXTENSION_FAIL, JS_ERR_FILE_EXIST},
+    {DATA_ABILITY_CHECK_EXTENSION_FAIL, JS_ERR_WRONG_FILE_TYPE},
     {E_FILE_OPER_FAIL, JS_ERR_INNER_FAIL},
 };
 
@@ -192,7 +193,7 @@ const std::unordered_map<int, std::string> jsErrMap = {
     {JS_ERR_PARAMETER_INVALID, "invalid parameter"},
     {JS_ERR_DISPLAYNAME_INVALID, "display name invalid"},
     {JS_ERR_NO_SUCH_FILE, "no such file"},
-    {JS_ERR_FILE_EXIST, "file has exist"},
+    {JS_ERR_FILE_EXIST, "file has existed"},
     {JS_ERR_WRONG_FILE_TYPE, "file type is not allow in the directory"},
 };
 
@@ -286,10 +287,21 @@ public:
         }
     }
 
+    static int TransErrorCode(std::shared_ptr<DataShare::DataShareResultSet> resultSet)
+    {
+        // Query can't return errorcode, so assume nullptr as permission deny
+        if (resultSet == nullptr) {
+            return JS_ERR_PERMISSION_DENIED;
+        }
+        return ERR_DEFAULT;
+    }
+
     static int TransErrorCode(int error)
     {
         // Transfer Server error to napi error code
-        if (trans2JsError.count(error)) {
+        if (error >= E_COMMON_START && error <= E_COMMON_END) {
+            error = JS_ERR_INNER_FAIL;
+        } else if (trans2JsError.count(error)) {
             error = trans2JsError.at(error);
         }
         return error;
@@ -300,6 +312,7 @@ public:
         if (error == ERR_DEFAULT) {
             return;
         }
+
         std::string errMsg = "operation fail";
         if (jsErrMap.count(error) > 0) {
             errMsg = jsErrMap.at(error);
