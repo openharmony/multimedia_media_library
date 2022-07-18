@@ -59,7 +59,6 @@ private:
     std::shared_ptr<MediaScannerNapiCallback> mediaScannerNapiCallbackObj_;
 
     napi_env env_;
-    napi_ref wrapper_;
 
     static thread_local napi_ref sConstructor_;
     static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;

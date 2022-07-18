@@ -45,7 +45,7 @@ std::shared_ptr<MediaThumbnailHelper> FileAssetNapi::sThumbnailHelper_ = nullptr
 using CompleteCallback = napi_async_complete_callback;
 
 FileAssetNapi::FileAssetNapi()
-    : env_(nullptr), wrapper_(nullptr)
+    : env_(nullptr)
 {
     fileId_ = DEFAULT_MEDIA_ID;
     fileUri_ = DEFAULT_MEDIA_URI;
@@ -72,10 +72,6 @@ FileAssetNapi::FileAssetNapi()
 
 FileAssetNapi::~FileAssetNapi()
 {
-    if (wrapper_ != nullptr) {
-        napi_delete_reference(env_, wrapper_);
-        wrapper_ = nullptr;
-    }
     NAPI_DEBUG_LOG("FileAssetNapi destructor exit");
 }
 
@@ -181,7 +177,7 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
                 obj->sThumbnailHelper_ = std::make_shared<MediaThumbnailHelper>();
             }
             status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
-                               FileAssetNapi::FileAssetNapiDestructor, nullptr, &(obj->wrapper_));
+                               FileAssetNapi::FileAssetNapiDestructor, nullptr, nullptr);
             if (status == napi_ok) {
                 obj.release();
                 return thisVar;
