@@ -154,7 +154,7 @@ const std::vector<std::string> privateAlbumTypeNameEnum {
 };
 
 const std::vector<std::string> mediaTypesEnum {
-    "DEFAULT", "FILE", "MEDIA", "IMAGE", "VIDEO", "AUDIO", "ALBUM_LIST", "ALBUM_LIST_INFO"
+    "FILE", "IMAGE", "VIDEO", "AUDIO", "MEDIA", "ALBUM_LIST", "ALBUM_LIST_INFO"
 };
 
 const std::vector<std::string> fileKeyEnum {
