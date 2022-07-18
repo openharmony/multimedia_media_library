@@ -53,7 +53,6 @@ private:
     static napi_value JSClose(napi_env env, napi_callback_info info);
 
     napi_env env_;
-    napi_ref wrapper_;
     std::shared_ptr<FetchResult> fetchFileResult_;
 
     static thread_local napi_ref sConstructor_;

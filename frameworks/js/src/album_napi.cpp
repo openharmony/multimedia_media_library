@@ -31,7 +31,7 @@ std::shared_ptr<DataShare::DataShareHelper> AlbumNapi::sMediaDataHelper = nullpt
 using CompleteCallback = napi_async_complete_callback;
 
 AlbumNapi::AlbumNapi()
-    : env_(nullptr), wrapper_(nullptr)
+    : env_(nullptr)
 {
     albumId_ = DEFAULT_ALBUM_ID;
     albumName_ = DEFAULT_ALBUM_NAME;
@@ -46,10 +46,6 @@ AlbumNapi::AlbumNapi()
 
 AlbumNapi::~AlbumNapi()
 {
-    if (wrapper_ != nullptr) {
-        napi_delete_reference(env_, wrapper_);
-        wrapper_ = nullptr;
-    }
     NAPI_DEBUG_LOG("AlbumNapi destructor exit");
 }
 
@@ -144,7 +140,7 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
             }
 
             status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
-                               AlbumNapi::AlbumNapiDestructor, nullptr, &(obj->wrapper_));
+                               AlbumNapi::AlbumNapiDestructor, nullptr, nullptr);
             if (status == napi_ok) {
                 obj.release();
                 return thisVar;

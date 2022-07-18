@@ -29,14 +29,10 @@ thread_local napi_ref MediaScannerNapi::sConstructor_ = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> MediaScannerNapi::sDataShareHelper_ = nullptr;
 
 MediaScannerNapi::MediaScannerNapi()
-    : env_(nullptr), wrapper_(nullptr) {}
+    : env_(nullptr) {}
 
 MediaScannerNapi::~MediaScannerNapi()
 {
-    if (wrapper_ != nullptr) {
-        napi_delete_reference(env_, wrapper_);
-        wrapper_ = nullptr;
-    }
     NAPI_DEBUG_LOG("MediaScannerNapi destructor exit");
 }
 
@@ -96,7 +92,7 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
             }
 
             status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
-                               MediaScannerNapi::MediaScannerNapiDestructor, nullptr, &(obj->wrapper_));
+                               MediaScannerNapi::MediaScannerNapiDestructor, nullptr, nullptr);
             if (status == napi_ok) {
                 obj.release();
                 return thisVar;

@@ -88,7 +88,6 @@ private:
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
     static thread_local SmartAlbumAsset *sAlbumData_;
     napi_env env_;
-    napi_ref wrapper_;
 
     static thread_local napi_ref sConstructor_;
 };
