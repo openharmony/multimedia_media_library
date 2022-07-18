@@ -14,6 +14,9 @@
  */
 
 #include "metadata_extractor.h"
+
+#include "hitrace_meter.h"
+
 #include "media_log.h"
 
 namespace OHOS {
@@ -78,28 +81,13 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     fileMetadata.SetFileMimeType(strTemp);
 }
 
-int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
+int32_t MetadataExtractor::ExtractMetadata(Metadata &fileMetadata, const string &uri)
 {
     int32_t errCode = ERR_FAIL;
-    string fileuri;
-    std::shared_ptr<AVMetadataHelper> avMetadataHelper = nullptr;
-    std::unordered_map<int32_t, std::string> metadataMap;
 
-    // If the file type is not audio/video/image
-    auto mimeType = ScannerUtils::GetMimeTypeFromExtension(fileMetadata.GetFileExtension());
-    fileMetadata.SetFileMimeType(mimeType);
-    auto isSupported = std::find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(), mimeType) !=
-        EXTRACTOR_SUPPORTED_MIME.end();
-    if (!isSupported) {
-        MEDIA_ERR_LOG("Mime type is not supported by the extractor");
-        return ERR_SUCCESS;
-    }
-
-    if (fileMetadata.GetFileMediaType() == MEDIA_TYPE_IMAGE) {
-        return ExtractImageMetadata(fileMetadata);
-    }
-
-    avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "CreateAVMetadataHelper");
+    std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     if (avMetadataHelper == nullptr) {
         MEDIA_ERR_LOG("AV metadata helper is null");
         return errCode;
@@ -107,7 +95,7 @@ int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
 
     int32_t fd = open(uri.c_str(), O_RDONLY);
     if (fd <= 0) {
-        MEDIA_ERR_LOG("Open file descriptor failed");
+        MEDIA_ERR_LOG("Open file descriptor failed, errno = %{public}d", errno);
         return errCode;
     }
 
@@ -118,14 +106,17 @@ int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
         return errCode;
     }
 
-    int64_t length = static_cast<int64_t>(st.st_size);
-    errCode = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_META_ONLY);
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "avMetadataHelper->SetSource");
+    errCode = avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(st.st_size), AV_META_USAGE_META_ONLY);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     if (errCode != ERR_SUCCESS) {
         MEDIA_ERR_LOG("SetSource failed for the given file descriptor");
         (void)close(fd);
         return errCode;
     } else {
-        metadataMap = avMetadataHelper->ResolveMetadata();
+        StartTrace(HITRACE_TAG_FILEMANAGEMENT, "avMetadataHelper->ResolveMetadata");
+        std::unordered_map<int32_t, std::string> metadataMap = avMetadataHelper->ResolveMetadata();
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         if (!metadataMap.empty()) {
             FillExtractedMetadata(metadataMap, fileMetadata);
         }
@@ -133,7 +124,33 @@ int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
 
     (void)close(fd);
     avMetadataHelper->Release();
-    return ERR_SUCCESS;
+
+    return errCode;
+}
+
+int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
+{
+    int32_t errCode = ERR_FAIL;
+
+    auto mimeType = ScannerUtils::GetMimeTypeFromExtension(fileMetadata.GetFileExtension());
+    fileMetadata.SetFileMimeType(mimeType);
+
+    // If the file type is not audio/video/image
+    if (std::find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(), mimeType) ==
+        EXTRACTOR_SUPPORTED_MIME.end()) {
+        MEDIA_ERR_LOG("Mime type is not supported by the extractor");
+        return errCode;
+    }
+
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "ExtractMetadata");
+    if (fileMetadata.GetFileMediaType() == MEDIA_TYPE_IMAGE) {
+        errCode = ExtractImageMetadata(fileMetadata);
+    } else {
+        errCode = ExtractMetadata(fileMetadata, uri);
+    }
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
+
+    return errCode;
 }
 } // namespace Media
 } // namespace OHOS
