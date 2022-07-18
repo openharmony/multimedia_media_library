@@ -16,31 +16,10 @@
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIBRARY_MANAGER_H_
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIBRARY_MANAGER_H_
 
-#include <cerrno>
-#include <iostream>
-#include <variant>
-#include <dirent.h>
-#include <fcntl.h>
-#include <ftw.h>
-#include <securec.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include "ability.h"
-#include "ability_context.h"
-#include "ability_loader.h"
 #include "album_asset.h"
-#include "abs_shared_result_set.h"
-#include "context.h"
-#include "data_ability_helper.h"
-#include "data_ability_predicates.h"
-#include "data_ability_observer_stub.h"
 #include "file_asset.h"
 #include "fetch_result.h"
-#include "media_data_ability_const.h"
 #include "media_volume.h"
-#include "uri.h"
-#include "values_bucket.h"
 #include "datashare_helper.h"
 
 namespace OHOS {
@@ -90,15 +69,6 @@ public:
      * @version 1.0
      */
     static MediaLibraryManager *GetMediaLibraryManager();
-
-    /**
-     * @brief Initializes the environment for Media Library Manager
-     *
-     * @param context The Ability context required for calling Data Ability Helper APIs
-     * @since 1.0
-     * @version 1.0
-     */
-    void InitMediaLibraryManager(const shared_ptr<AppExecFwk::Context> context);
 
     /**
      * @brief Initializes the environment for Media Library Manager

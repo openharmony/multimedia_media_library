@@ -16,15 +16,40 @@
 #define INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_RESULT_SET_UTILS_H_
 
 #include "fetch_result.h"
-
 namespace OHOS {
 namespace Media {
 class ResultSetUtils {
 public:
-    static std::variant<int32_t, std::string> GetValFromColumn(const std::string &columnName,
-        std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, ResultSetDataType type);
-    static int64_t GetLongValFromColumn(std::string columnName,
-        std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    template<typename T>
+    static std::variant<int32_t, std::string, int64_t> GetValFromColumn(const std::string &columnName,
+        T &resultSet, ResultSetDataType type)
+    {
+        int32_t index = 0;
+        std::variant<int32_t, std::string, int64_t> cellValue(0);
+        int32_t integerVal = 0;
+        int64_t longVal = 0;
+        std::string stringVal;
+        if (resultSet == nullptr) {
+            return cellValue;
+        }
+        resultSet->GetColumnIndex(columnName, index);
+        switch (type) {
+            case ResultSetDataType::TYPE_STRING:
+                resultSet->GetString(index, stringVal);
+                cellValue = stringVal;
+                break;
+            case ResultSetDataType::TYPE_INT32:
+                resultSet->GetInt(index, integerVal);
+                cellValue = integerVal;
+                break;
+            case ResultSetDataType::TYPE_INT64:
+                resultSet->GetLong(index, longVal);
+                cellValue = longVal;
+            default:
+                break;
+        }
+        return cellValue;
+    }
 };
 } // namespace Media
 } // namespace  OHOS
