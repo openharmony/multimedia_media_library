@@ -23,6 +23,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_thumbnail.h"
 #include "value_object.h"
@@ -262,8 +263,7 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
         values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::GetAlbumDateModified(path));
         values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::GetAlbumDateModified(path));
 
-        MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::CREATE);
-        cmd.SetValueBucket(values);
+        MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::CREATE, values);
         rowId = InsertInDb(cmd);
         if (rowId <= 0) {
             rowId = parentId;
@@ -272,7 +272,6 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
         parentId = rowId;
         outIds.push_back(rowId);
     }
-    MEDIA_DEBUG_LOG("parentId = %{private}d", static_cast<int>(parentId));
     return DATA_ABILITY_SUCCESS;
 }
 
