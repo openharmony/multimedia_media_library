@@ -128,29 +128,20 @@ public:
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);
     static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
 
-public:
-    static const std::string PERMISSION_NAME_READ_MEDIA;
-    static const std::string PERMISSION_NAME_WRITE_MEDIA;
-
 private:
     static void MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
     static napi_value MediaLibraryNapiConstructor(napi_env env, napi_callback_info info);
 
     static napi_value GetMediaLibraryNewInstance(napi_env env, napi_callback_info info);
 
-    // New APIs For L2
     static napi_value JSGetPublicDirectory(napi_env env, napi_callback_info info);
     static napi_value JSGetFileAssets(napi_env env, napi_callback_info info);
     static napi_value JSGetAlbums(napi_env env, napi_callback_info info);
 
     static napi_value JSCreateAsset(napi_env env, napi_callback_info info);
-    static napi_value JSModifyAsset(napi_env env, napi_callback_info info);
     static napi_value JSDeleteAsset(napi_env env, napi_callback_info info);
-    static napi_value JSOpenAsset(napi_env env, napi_callback_info info);
-    static napi_value JSCloseAsset(napi_env env, napi_callback_info info);
 
     static napi_value JSCreateAlbum(napi_env env, napi_callback_info info);
-    static napi_value JSModifyAlbum(napi_env env, napi_callback_info info);
     static napi_value JSDeleteAlbum(napi_env env, napi_callback_info info);
 
     static napi_value JSOnCallback(napi_env env, napi_callback_info info);
@@ -180,7 +171,6 @@ private:
 
     napi_env env_;
     napi_ref wrapper_;
-    static bool isStageMode_;
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref sMediaTypeEnumRef_;
