@@ -22,7 +22,6 @@
 #include "datashare_abs_result_set.h"
 #include "datashare_values_bucket.h"
 #include "file_asset.h"
-#include "imedia_scanner_client.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
@@ -85,14 +84,6 @@ private:
     static void UpdateDateModified(const std::string &dirPath);
     static void ScanFile(std::string &srcPath);
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
-};
-
-// Scanner callback objects
-class ScanFileCallback : public IMediaScannerAppCallback {
-public:
-    ScanFileCallback() = default;
-    ~ScanFileCallback() = default;
-    void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override {};
 };
 } // namespace Media
 } // namespace OHOS
