@@ -16,7 +16,6 @@
 #ifndef OHOS_MEDIALIBRARY_COMMON_UTILS_H
 #define OHOS_MEDIALIBRARY_COMMON_UTILS_H
 
-#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <string>

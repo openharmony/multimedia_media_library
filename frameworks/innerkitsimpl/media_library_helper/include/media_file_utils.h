@@ -16,20 +16,8 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_
 #define FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_
 
-#include <fstream>
 #include <string>
-#include <sstream>
-
-#include <ftw.h>
-#include <fcntl.h>
-#include <grp.h>
-#include <limits.h>
-#include <pwd.h>
-#include <sys/stat.h>
-#include <sys/sendfile.h>
 #include <sys/types.h>
-#include <securec.h>
-#include <unistd.h>
 
 namespace OHOS {
 namespace Media {
