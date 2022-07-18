@@ -15,6 +15,7 @@
 
 #include "medialibrary_device_operations.h"
 #include "media_log.h"
+#include "result_set_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -192,36 +193,6 @@ bool MediaLibraryDeviceOperations::QueryDeviceTable(const std::shared_ptr<Native
     return true;
 }
 
-variant<int32_t, string> GetValFromColumn(string columnName,
-    shared_ptr<AbsSharedResultSet> &resultSet)
-{
-    int32_t index;
-    variant<int32_t, string> cellValue;
-    ColumnType type;
-    int32_t integerVal;
-    string stringVal;
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet == nullptr");
-        return cellValue;
-    }
-    resultSet->GetColumnIndex(columnName, index);
-    resultSet->GetColumnType(index, type);
-    switch (type) {
-        case ColumnType::TYPE_STRING:
-            resultSet->GetString(index, stringVal);
-            cellValue = stringVal;
-            break;
-        case ColumnType::TYPE_INTEGER:
-            resultSet->GetInt(index, integerVal);
-            cellValue = integerVal;
-            break;
-        default:
-            break;
-    }
-
-    return cellValue;
-}
-
 bool MediaLibraryDeviceOperations::GetAllDeviceDatas(
     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
     vector<MediaLibraryDeviceInfo> &outDeviceList)
@@ -237,12 +208,16 @@ bool MediaLibraryDeviceOperations::GetAllDeviceDatas(
 
     while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         MediaLibraryDeviceInfo deviceInfo;
-        deviceInfo.deviceId = get<string>(GetValFromColumn(DEVICE_DB_NETWORK_ID, queryResultSet));
-        deviceInfo.deviceName = get<string>(GetValFromColumn(DEVICE_DB_NAME, queryResultSet));
-        deviceInfo.deviceTypeId =
-        (DistributedHardware::DmDeviceType)(get<int32_t>(GetValFromColumn(DEVICE_DB_TYPE, queryResultSet)));
-        deviceInfo.deviceUdid = get<string>(GetValFromColumn(DEVICE_DB_DEVICEID, queryResultSet));
-        deviceInfo.selfId = get<string>(GetValFromColumn(DEVICE_DB_SELF_ID, queryResultSet));
+        deviceInfo.deviceId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, queryResultSet,
+            TYPE_STRING));
+        deviceInfo.deviceName = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NAME, queryResultSet,
+            TYPE_STRING));
+        deviceInfo.deviceTypeId =(DistributedHardware::DmDeviceType)(get<int32_t>(
+            ResultSetUtils::GetValFromColumn(DEVICE_DB_TYPE, queryResultSet, TYPE_INT32)));
+        deviceInfo.deviceUdid = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_DEVICEID, queryResultSet,
+            TYPE_STRING));
+        deviceInfo.selfId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_SELF_ID, queryResultSet,
+            TYPE_STRING));
         outDeviceList.push_back(deviceInfo);
     }
     return true;
