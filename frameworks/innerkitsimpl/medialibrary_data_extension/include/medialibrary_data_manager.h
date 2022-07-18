@@ -24,6 +24,7 @@
 #include "datashare_predicates.h"
 #include "dir_asset.h"
 #include "distributed_kv_data_manager.h"
+#include "imedia_scanner_client.h"
 #include "media_data_ability_const.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
@@ -83,6 +84,14 @@ private:
     static std::shared_ptr<MediaLibraryDataManager> instance_;
     std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
     std::atomic<int> refCnt_{0};
+};
+
+// Scanner callback objects
+class ScanFileCallback : public IMediaScannerAppCallback {
+public:
+    ScanFileCallback() = default;
+    ~ScanFileCallback() = default;
+    void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override {};
 };
 } // namespace Media
 } // namespace OHOS

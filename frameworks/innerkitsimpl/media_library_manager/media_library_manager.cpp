@@ -228,19 +228,22 @@ int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fil
 int32_t MediaLibraryManager::DeleteAsset(const string &uri)
 {
     int32_t retVal = DATA_ABILITY_FAIL;
-    string fileId;
     if (uri.find(MEDIALIBRARY_DATA_URI) == string::npos) {
-        fileId = uri.substr(MEDIALIBRARY_DATA_URI.length());
+        return retVal;
+    }
+
+    string fileId;
+    size_t pos = uri.rfind('/');
+    if (pos != string::npos) {
+        fileId = uri.substr(pos + 1);
     } else {
         return retVal;
     }
 
     if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
-        DataShare::DataSharePredicates predicates;
-        predicates.EqualTo(MEDIA_DATA_DB_ID, fileId);
-        retVal = sDataShareHelper_->Delete(deleteAssetUri, predicates);
+        Uri deleteAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + "/" + fileId);
+        retVal = sDataShareHelper_->Delete(deleteAssetUri, {});
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to delete the file");
         }
@@ -335,10 +338,9 @@ int32_t MediaLibraryManager::DeleteAlbum(const int32_t albumId)
 
     if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM);
-        DataSharePredicates predicates;
-        predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(albumId));
-        retVal = sDataShareHelper_->Delete(deleteAlbumUri, predicates);
+        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM +
+            to_string(albumId));
+        retVal = sDataShareHelper_->Delete(deleteAlbumUri, {});
         if (retVal < 0) {
             MEDIA_ERR_LOG("Failed to delete the album");
         }
