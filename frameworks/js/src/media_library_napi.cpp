@@ -540,50 +540,49 @@ ValVariant GetValFromColumn(string columnName, shared_ptr<DataShare::DataShareRe
 static void GetPublicDirectoryExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    shared_ptr<DataShareHelper> helper = context->objectInfo->sDataShareHelper_;
+    if (helper == nullptr) {
+        context->error = ERR_INVALID_OUTPUT;
+        NAPI_ERR_LOG("sDataShareHelper is null");
+        return;
+    }
     vector<string> selectionArgs, columns;
-    DataShare::DataSharePredicates predicates;
+    DataSharePredicates predicates;
     NAPI_ERR_LOG("context->dirType is = %{public}d", context->dirType);
     selectionArgs.push_back(to_string(context->dirType));
     predicates.SetWhereClause(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE + " = ?");
     predicates.SetWhereArgs(selectionArgs);
     string queryUri = MEDIALIBRARY_DIRECTORY_URI;
-    NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
-    shared_ptr<DataShare::DataShareResultSet> resultSet;
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        resultSet = context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
-        if (resultSet != nullptr) {
-            auto count = 0;
-            auto ret = resultSet->GetRowCount(count);
-            if (ret != NativeRdb::E_OK) {
-                NAPI_ERR_LOG("get rdbstore failed");
-                context->error = DATA_ABILITY_HAS_DB_ERROR;
-                return;
-            }
-            if (count == 0) {
-                NAPI_ERR_LOG("Query for get publicDirectory form db failed");
-                context->error = ERR_INVALID_OUTPUT;
-                return;
-            }
-            NAPI_ERR_LOG("Query for get publicDirectory count = %{private}d", count);
-            if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-                context->directoryRelativePath = get<string>(
-                    GetValFromColumn(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, resultSet, TYPE_STRING));
-            }
+
+    shared_ptr<DataShareResultSet> resultSet = helper->Query(uri, predicates, columns);
+    if (resultSet != nullptr) {
+        auto count = 0;
+        auto ret = resultSet->GetRowCount(count);
+        if (ret != NativeRdb::E_OK) {
+            NAPI_ERR_LOG("get rdbstore failed");
+            context->error = JS_ERR_INNER_FAIL;
             return;
-        } else {
-            NAPI_ERR_LOG("Query for get publicDirectory failed");
         }
+        if (count == 0) {
+            NAPI_ERR_LOG("Query for get publicDirectory form db failed");
+            context->error = JS_ERR_INNER_FAIL;
+            return;
+        }
+        NAPI_ERR_LOG("Query for get publicDirectory count = %{private}d", count);
+        if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+            context->directoryRelativePath = get<string>(
+                GetValFromColumn(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, resultSet, TYPE_STRING));
+        }
+        return;
     } else {
-        NAPI_ERR_LOG("sDataShareHelper is null");
+        context->error = MediaLibraryNapiUtils::TransErrorCode(resultSet);
+        NAPI_ERR_LOG("Query for get publicDirectory failed");
     }
-    context->error = ERR_INVALID_OUTPUT;
 }
 
-static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status,
-                                               MediaLibraryAsyncContext *context)
+static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status, MediaLibraryAsyncContext *context)
 {
-    NAPI_DEBUG_LOG("GetPublicDirectoryCompleteCallback IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -592,8 +591,7 @@ static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status,
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
-        NAPI_DEBUG_LOG("dirIndex is illegal");
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error, "dirIndex is illegal");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -601,7 +599,6 @@ static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status,
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
-    NAPI_DEBUG_LOG("GetPublicDirectoryCompleteCallback OUT");
     delete context;
 }
 
@@ -634,8 +631,7 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetPublicDirectory");
-
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSGetPublicDirectory", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource,
             [](napi_env env, void* data) {
@@ -659,7 +655,12 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
 {
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GetFileAssetsExecute");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
+    shared_ptr<DataShareHelper> helper = context->objectInfo->sDataShareHelper_;
+    if (helper == nullptr) {
+        context->error = ERR_INVALID_OUTPUT;
+        NAPI_ERR_LOG("sDataShareHelper is null");
+        return;
+    }
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
     if (!context->uri.empty()) {
@@ -692,19 +693,17 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     Uri uri(queryUri);
     shared_ptr<DataShare::DataShareResultSet> resultSet;
 
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        resultSet = context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
-        if (resultSet != nullptr) {
-            // Create FetchResult object using the contents of resultSet
-            context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
-            context->fetchFileResult->networkId_ = context->networkId;
-            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-            return;
-        } else {
-            NAPI_ERR_LOG("Query for get fileAssets failed");
-        }
+    resultSet = helper->Query(uri, predicates, columns);
+    if (resultSet != nullptr) {
+        // Create FetchResult object using the contents of resultSet
+        context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
+        context->fetchFileResult->networkId_ = context->networkId;
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
+        return;
+    } else {
+        context->error = MediaLibraryNapiUtils::TransErrorCode(resultSet);
+        NAPI_ERR_LOG("Query for get fileAssets failed");
     }
-    context->error = ERR_INVALID_OUTPUT;
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 }
 
@@ -776,7 +775,7 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetFileAssets");
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSGetFileAssets", asyncContext);
 
         status = napi_create_async_work(
             env, nullptr, resource,
@@ -871,13 +870,15 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSe
 static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 {
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GetResultDataExecute");
-    NAPI_ERR_LOG("GetResultDataExecute IN");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    DataShare::DataSharePredicates sharePredicates;
-
-    if (context->objectInfo->sDataShareHelper_ == nullptr) {
+    shared_ptr<DataShareHelper> helper = context->objectInfo->sDataShareHelper_;
+    if (helper == nullptr) {
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
+        NAPI_ERR_LOG("sDataShareHelper is null");
         context->error = ERR_INVALID_OUTPUT;
+        return;
     }
+    DataSharePredicates sharePredicates;
     sharePredicates.SetWhereClause(context->selection);
     sharePredicates.SetWhereArgs(context->selectionArgs);
     if (!context->order.empty()) {
@@ -892,11 +893,11 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
         NAPI_DEBUG_LOG("queryAlbumUri is = %{public}s", queryUri.c_str());
     }
     Uri uri(queryUri);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
-        uri, sharePredicates, columns);
+    shared_ptr<DataShareResultSet> resultSet = helper->Query(uri, sharePredicates, columns);
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr");
+        context->error = MediaLibraryNapiUtils::TransErrorCode(resultSet);
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return;
     }
@@ -922,8 +923,7 @@ static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
     napi_get_undefined(env, &jsContext->error);
     if (context->error != ERR_DEFAULT) {
         napi_get_undefined(env, &jsContext->data);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-            "Query for get fileAssets failed");
+        context->HandleError(env, jsContext->error);
     } else {
         if (context->albumNativeArray.empty()) {
             napi_value albumNoArray = nullptr;
@@ -974,7 +974,7 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAlbums");
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSGetAlbums", asyncContext);
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -2230,7 +2230,7 @@ napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info 
             }
         }
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetPublicDirectory");
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "getPrivateAlbum", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource,
             [](napi_env env, void* data) {
