@@ -15,9 +15,7 @@
 
 #include "smart_album_asset.h"
 
-#include "media_file_utils.h"
 #include "media_lib_service_const.h"
-#include "media_log.h"
 
 using namespace std;
 

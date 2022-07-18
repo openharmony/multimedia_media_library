@@ -16,12 +16,7 @@
 #ifndef URI_HELPER_H
 #define URI_HELPER_H
 
-#include <cstdint>
 #include <string>
-#include <string_view>
-#include <map>
-#include <unistd.h>
-#include <fcntl.h>
 
 namespace OHOS {
 namespace Media {

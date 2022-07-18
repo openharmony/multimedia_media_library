@@ -18,7 +18,6 @@
 
 #include "iremote_proxy.h"
 #include "imedia_scanner_operation_callback.h"
-#include "media_scanner_const.h"
 
 namespace OHOS {
 namespace Media {

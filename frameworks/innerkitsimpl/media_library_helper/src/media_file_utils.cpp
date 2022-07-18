@@ -14,8 +14,15 @@
  */
 
 #include "media_file_utils.h"
-#include <cerrno>
+
+#include <fcntl.h>
+#include <fstream>
+#include <ftw.h>
 #include <regex>
+#include <sstream>
+#include <sys/sendfile.h>
+#include <unistd.h>
+
 #include "directory_ex.h"
 #include "media_asset.h"
 #include "media_data_ability_const.h"

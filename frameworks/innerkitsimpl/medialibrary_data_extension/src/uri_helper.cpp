@@ -14,12 +14,12 @@
  */
 
 #include "uri_helper.h"
-#include <cstring>
-#include <climits>
-#include <sys/types.h>
+
+#include <map>
 #include <sys/stat.h>
 #include <type_traits>
-#include "media_errors.h"
+#include <unistd.h>
+
 #include "media_log.h"
 
 namespace OHOS {
