@@ -45,7 +45,7 @@ int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
     values.PutString(MEDIA_DATA_DB_FILE_PATH, dirPath);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::CREATE, values);
     int32_t ret = CreateDirObj(cmd, rowId);
-    if (ret == DATA_ABILITY_DUPLICATE_CREATE || ret == DATA_ABILITY_SUCCESS) {
+    if (ret == E_FILE_EXIST || ret == DATA_ABILITY_SUCCESS) {
         return rowId;
     }
     return ret;
@@ -302,7 +302,7 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
         dirAsset.CreateAlbumAsset();
         return DATA_ABILITY_SUCCESS;
     }
-    return DATA_ABILITY_DUPLICATE_CREATE;
+    return E_FILE_EXIST;
 }
 
 int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
