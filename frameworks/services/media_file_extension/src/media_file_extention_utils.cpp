@@ -256,6 +256,7 @@ bool GetDeviceInfo(shared_ptr<AbsSharedResultSet> &result, FileAccessFwk::Device
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_ROOT;
     deviceInfo.uri = Uri(uri);
     deviceInfo.displayName = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NAME, result, TYPE_STRING));
+    deviceInfo.type = FileAccessFwk::DEVICE_SHARED_TERMINAL;
     return true;
 }
 
@@ -292,6 +293,7 @@ void MediaFileExtentionUtils::GetRoots(vector<FileAccessFwk::DeviceInfo> &device
     // add local root
     deviceInfo.uri = Uri(MEDIALIBRARY_DATA_URI + MEDIALIBRARY_ROOT);
     deviceInfo.displayName = MEDIALIBRARY_LOCAL_DEVICE_NAME;
+    deviceInfo.type = FileAccessFwk::DEVICE_LOCAL_DISK;
     deviceList.push_back(deviceInfo);
     shared_ptr<AbsSharedResultSet> resultSet;
     GetActivePeer(resultSet);
