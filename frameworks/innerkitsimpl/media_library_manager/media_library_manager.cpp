@@ -17,9 +17,10 @@
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "media_log.h"
+#include "result_set_utils.h"
 
 using namespace std;
-using namespace OHOS::NativeRdb;;
+using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
@@ -80,42 +81,6 @@ unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptio
     return fetchFileResult;
 }
 
-variant<int32_t, string> GetValFromColumn(string columnName,
-    shared_ptr<DataShareResultSet> &resultSet)
-{
-    variant<int32_t, string> cellValue;
-    int32_t index;
-    DataShare::DataType type;
-    int32_t integerVal;
-    string stringVal;
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, cellValue, "resultSet != nullptr");
-    resultSet->GetColumnIndex(columnName, index);
-    resultSet->GetDataType(index, type);
-    switch (type) {
-        case DataShare::DataType::TYPE_STRING:
-            resultSet->GetString(index, stringVal);
-            cellValue = stringVal;
-            break;
-        case DataShare::DataType::TYPE_INTEGER:
-            resultSet->GetInt(index, integerVal);
-            cellValue = integerVal;
-            break;
-        default:
-            break;
-    }
-
-    return cellValue;
-}
-
-int64_t GetLongValFromColumn(string columnName, shared_ptr<DataShareResultSet> &resultSet)
-{
-    int index = 0;
-    int64_t longVal = 0;
-    resultSet->GetColumnIndex(columnName, index);
-    resultSet->GetLong(index, longVal);
-    return longVal;
-}
-
 vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOptions &fetchOps)
 {
     vector<unique_ptr<AlbumAsset>> albums;
@@ -145,17 +110,20 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
             unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
             if (albumData != nullptr) {
                 // Get album id index and value
-                albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_ID, resultSet)));
+                albumData->SetAlbumId(get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID,
+                    resultSet, TYPE_INT32)));
 
                 // Get album name index and value
-                albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_ALBUM_NAME, resultSet)));
+                albumData->SetAlbumName(get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ALBUM_NAME,
+                    resultSet, TYPE_STRING)));
 
                 // Get album path index and value
-                albumData->SetAlbumPath(get<string>(GetValFromColumn(MEDIA_DATA_DB_FILE_PATH, resultSet)));
+                albumData->SetAlbumPath(get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_FILE_PATH,
+                    resultSet, TYPE_STRING)));
 
                 // Get album relative path index and value
-                albumData->SetAlbumRelativePath(get<string>(GetValFromColumn(
-                    MEDIA_DATA_DB_RELATIVE_PATH, resultSet)));
+                albumData->SetAlbumRelativePath(get<string>(ResultSetUtils::GetValFromColumn(
+                    MEDIA_DATA_DB_RELATIVE_PATH, resultSet, TYPE_STRING)));
 
                 // Get album date modified index and value
                 int64_t albumDateModified;
@@ -382,7 +350,6 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
 
 int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 {
-    MEDIA_INFO_LOG("QueryTotalSize start");
     if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("sDataShareHelper_ is null");
         return DATA_ABILITY_FAIL;
@@ -404,17 +371,16 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
     MEDIA_INFO_LOG("count = %{public}d", (int)count);
     if (count >= 0) {
         while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
-            int mediatype = get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, queryResultSet));
-            MEDIA_INFO_LOG("mediatype = %{public}d", mediatype);
-            int64_t size = GetLongValFromColumn(MEDIA_DATA_DB_SIZE, queryResultSet);
-            MEDIA_INFO_LOG("size = %{public}lld", (long long)size);
+            int mediatype = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE,
+                queryResultSet, TYPE_INT32));
+            int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE,
+                queryResultSet, TYPE_INT64));
             outMediaVolume.SetSize(mediatype, size);
         }
     }
-    MEDIA_INFO_LOG("GetFilesSize = %{public}lld", (long long)outMediaVolume.GetFilesSize());
-    MEDIA_INFO_LOG("GetVideosSize = %{public}lld", (long long)outMediaVolume.GetVideosSize());
-    MEDIA_INFO_LOG("GetImagesSize = %{public}lld", (long long)outMediaVolume.GetImagesSize());
-    MEDIA_INFO_LOG("GetAudiosSize = %{public}lld", (long long)outMediaVolume.GetAudiosSize());
+    MEDIA_INFO_LOG("Size:Files:%{public}lld Videos:%{public}lld Images:%{public}lld Audio:%{public}lld",
+        (long long)outMediaVolume.GetFilesSize(), (long long)outMediaVolume.GetVideosSize(),
+        (long long)outMediaVolume.GetImagesSize(), (long long)outMediaVolume.GetAudiosSize());
     return DATA_ABILITY_SUCCESS;
 }
 } // namespace Media
