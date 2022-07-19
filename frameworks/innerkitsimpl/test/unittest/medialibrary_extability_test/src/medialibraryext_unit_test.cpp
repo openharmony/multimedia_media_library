@@ -210,7 +210,7 @@ void CleanAll()
     MEDIA_DEBUG_LOG("CleanAll index %{public}d", index);
 }
 
-void CreateFile(std::string baseURI, shared_ptr<Asset> &asset, unsigned char fileContent[], int len)
+void CreateFile(const std::string baseURI, shared_ptr<Asset> &asset, const unsigned char fileContent[], const int len)
 {
     Uri createAssetUri(Media::MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" +
         Media::MEDIA_FILEOPRN_CREATEASSET);
