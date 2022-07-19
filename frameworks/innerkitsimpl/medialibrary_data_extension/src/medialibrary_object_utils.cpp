@@ -37,7 +37,7 @@ static const string NO_MEDIA_TAG = ".nomedia";
 int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
 {
     if (dirPath.empty()) {
-        return DATA_ABILITY_INVALID_PATH;
+        return E_INVALID_PATH;
     }
 
     int64_t rowId = -1;
@@ -45,7 +45,7 @@ int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
     values.PutString(MEDIA_DATA_DB_FILE_PATH, dirPath);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::CREATE, values);
     int32_t ret = CreateDirObj(cmd, rowId);
-    if (ret == E_FILE_EXIST || ret == DATA_ABILITY_SUCCESS) {
+    if (ret == E_FILE_EXIST || ret == E_SUCCESS) {
         return rowId;
     }
     return ret;
@@ -56,14 +56,14 @@ NativeAlbumAsset MediaLibraryObjectUtils::GetDirAsset(const string &path)
     NativeAlbumAsset dirAsset;
     if (path.empty()) {
         MEDIA_ERR_LOG("Path is empty, create failed!");
-        dirAsset.SetAlbumId(DATA_ABILITY_INVALID_PATH);
+        dirAsset.SetAlbumId(E_INVALID_PATH);
         return dirAsset;
     }
 
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        dirAsset.SetAlbumId(DATA_ABILITY_HAS_DB_ERROR);
+        dirAsset.SetAlbumId(E_HAS_DB_ERROR);
         return dirAsset;
     }
 
@@ -88,22 +88,22 @@ int32_t MediaLibraryObjectUtils::DeleteInvalidRowInDb(const string &path)
 {
     if (GetIdByPathFromDb(path) < 0) {
         // path is not in database, no need to delete
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     }
 
     FileAsset fileAsset;
     if (fileAsset.IsFileExists(path)) {
         // File aready exist, not need to create again
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     }
 
     MediaLibraryCommand deleteCmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
-    if (DeleteInfoByPathInDb(deleteCmd, path) != DATA_ABILITY_SUCCESS) {
+    if (DeleteInfoByPathInDb(deleteCmd, path) != E_SUCCESS) {
         // Delete the record in database if file is not in filesystem any more
         MEDIA_ERR_LOG("CreateFileAsset: delete info in db failed");
-        return DATA_ABILITY_DELETE_DIR_FAIL;
+        return E_DELETE_DIR_FAIL;
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
@@ -112,7 +112,7 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     // Fill basic file information into DB
@@ -169,13 +169,13 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
 
     // delete rows in database but not in real filesystem
     int32_t errCode = DeleteInvalidRowInDb(path);
-    if (errCode != DATA_ABILITY_SUCCESS) {
+    if (errCode != E_SUCCESS) {
         MEDIA_ERR_LOG("Delete invalid row in database failed");
         return errCode;
     }
 
     errCode = fileAsset.CreateAsset(path);
-    if (errCode != DATA_ABILITY_SUCCESS) {
+    if (errCode != E_SUCCESS) {
         MEDIA_ERR_LOG("CreateFileAsset: create file asset failed");
         return errCode;
     }
@@ -225,7 +225,7 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
 {
     if (dirPath.empty()) {
         MEDIA_ERR_LOG("Input parameter dirPath is empty!");
-        return DATA_ABILITY_VIOLATION_PARAMETERS;
+        return E_VIOLATION_PARAMETERS;
     }
     NativeAlbumAsset dirAsset = GetLastDirExistInDb(dirPath);
     string parentPath = dirAsset.GetAlbumPath();
@@ -253,7 +253,7 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
         if (!MediaFileUtils::CheckDisplayName(title)) {
             DeleteRows(outIds);
             MEDIA_ERR_LOG("Check display name failed!");
-            return DATA_ABILITY_VIOLATION_PARAMETERS;
+            return E_VIOLATION_PARAMETERS;
         }
         values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
         values.PutString(MEDIA_DATA_DB_TITLE, title);
@@ -267,12 +267,12 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
         rowId = InsertInDb(cmd);
         if (rowId <= 0) {
             rowId = parentId;
-            return DATA_ABILITY_HAS_DB_ERROR;
+            return E_HAS_DB_ERROR;
         }
         parentId = rowId;
         outIds.push_back(rowId);
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t &rowId)
@@ -286,7 +286,7 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
     }
     if (dirPath.empty()) {
         MEDIA_ERR_LOG("Dir path is empty!");
-        return DATA_ABILITY_INVALID_PATH;
+        return E_INVALID_PATH;
     }
 
     AlbumAsset dirAsset;
@@ -300,7 +300,7 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
 
     if (!MediaFileUtils::IsDirectory(dirPath)) {
         dirAsset.CreateAlbumAsset();
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     }
     return E_FILE_EXIST;
 }
@@ -308,26 +308,26 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
 int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
 {
     if (dirId <= 0) {
-        return DATA_ABILITY_INVALID_FILEID;
+        return E_INVALID_FILEID;
     }
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     const int32_t MAX_DIR_DEPTH = 15;
     int depth = 0;
     while ((depth++ < MAX_DIR_DEPTH) && (dirId > 0)) {
         if (IsColumnValueExist(to_string(dirId), MEDIA_DATA_DB_PARENT_ID)) {
-            return DATA_ABILITY_SUCCESS;
+            return E_SUCCESS;
         }
 
         MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
         cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(dirId));
         auto queryParentResultSet = uniStore->Query(cmd, {});
         if (queryParentResultSet->GoToNextRow() != NativeRdb::E_OK) {
-            return DATA_ABILITY_SUCCESS;
+            return E_SUCCESS;
         }
         int32_t colIndex = 0;
         int32_t parentIdVal = 0;
@@ -337,13 +337,13 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
         queryParentResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, colIndex);
         queryParentResultSet->GetString(colIndex, dirVal);
         if (parentIdVal == 0) {
-            return DATA_ABILITY_SUCCESS;
+            return E_SUCCESS;
         }
         MEDIA_DEBUG_LOG("dirVal = %{private}s, parentIdVal = %{public}d", dirVal.c_str(), parentIdVal);
 
         MediaLibraryCommand deleteDirCmd(OperationObject::FILESYSTEM_DIR, OperationType::DELETE);
         int32_t errCode = DeleteInfoByIdInDb(deleteDirCmd, to_string(dirId));
-        if (errCode != DATA_ABILITY_SUCCESS) {
+        if (errCode != E_SUCCESS) {
             MEDIA_ERR_LOG("Delete dir info failed, errCode = %{public}d", errCode);
             break;
         }
@@ -353,7 +353,7 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
         }
         dirId = parentIdVal;
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 // Restriction: input param cmd MUST have file id in either uri or valuebucket
@@ -362,7 +362,7 @@ int32_t MediaLibraryObjectUtils::DeleteFileObj(MediaLibraryCommand &cmd, const s
     MEDIA_DEBUG_LOG("enter");
     FileAsset fileAsset;
     int32_t errCode = fileAsset.DeleteAsset(filePath);
-    if (errCode != DATA_ABILITY_SUCCESS) {
+    if (errCode != E_SUCCESS) {
         MEDIA_ERR_LOG("Delete file in filesystem failed!");
         return errCode;
     }
@@ -370,7 +370,7 @@ int32_t MediaLibraryObjectUtils::DeleteFileObj(MediaLibraryCommand &cmd, const s
     string fileId = cmd.GetOprnFileId();
     if (fileId.empty()) {
         MEDIA_ERR_LOG("Get id from uri or valuebucket failed!");
-        return DATA_ABILITY_INVALID_FILEID;
+        return E_INVALID_FILEID;
     }
     int32_t parentId = GetParentIdByIdFromDb(fileId);
     int32_t deleteRows = DeleteInfoByIdInDb(cmd);
@@ -382,8 +382,8 @@ int32_t MediaLibraryObjectUtils::DeleteFileObj(MediaLibraryCommand &cmd, const s
     string dirPath = MediaLibraryDataManagerUtils::GetParentPath(filePath);
     UpdateDateModified(dirPath);
     // 2) recursively delete empty parent dirs
-    if (DeleteEmptyDirsRecursively(parentId) != DATA_ABILITY_SUCCESS) {
-        return DATA_ABILITY_DELETE_DIR_FAIL;
+    if (DeleteEmptyDirsRecursively(parentId) != E_SUCCESS) {
+        return E_DELETE_DIR_FAIL;
     }
     // 3) delete relative records in smart album
     MediaLibraryCommand deleteSmartMapCmd(OperationObject::SMART_ALBUM_MAP, OperationType::DELETE);
@@ -398,20 +398,20 @@ int32_t MediaLibraryObjectUtils::DeleteDirObj(MediaLibraryCommand &cmd, const st
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     AlbumAsset dirAsset;
     if (!dirAsset.DeleteAlbumAsset(dirPath)) {
         MEDIA_ERR_LOG("Delete album asset failed!");
-        return DATA_ABILITY_DELETE_DIR_FAIL;
+        return E_DELETE_DIR_FAIL;
     }
 
     int32_t parentId = GetParentIdByIdFromDb(cmd.GetOprnFileId());
     int32_t deleteRows = DeleteInfoByIdInDb(cmd);
     if (deleteRows <= 0) {
         MEDIA_ERR_LOG("Delete album info in database failed!");
-        return DATA_ABILITY_DELETE_DIR_FAIL;
+        return E_DELETE_DIR_FAIL;
     }
     // need to delete subfiles in the album when deleting album, delete: xx/xxx/album_name/%
     MediaLibraryCommand deleteSubfilesCmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
@@ -424,8 +424,8 @@ int32_t MediaLibraryObjectUtils::DeleteDirObj(MediaLibraryCommand &cmd, const st
         MEDIA_ERR_LOG("Delete subfiles in album %{private}s failed", pathPrefix.c_str());
         return deleteResult;
     }
-    if (DeleteEmptyDirsRecursively(parentId) != DATA_ABILITY_SUCCESS) {
-        return DATA_ABILITY_DELETE_DIR_FAIL;
+    if (DeleteEmptyDirsRecursively(parentId) != E_SUCCESS) {
+        return E_DELETE_DIR_FAIL;
     }
     return deleteRows;
 }
@@ -438,11 +438,11 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
         srcFilePath.c_str(), dstFilePath.c_str());
     if (srcFilePath.empty() || dstFilePath.empty()) {
         MEDIA_ERR_LOG("srcFilePath or dstFilePath is empty, rename failed!");
-        return DATA_ABILITY_INVALID_PATH;
+        return E_INVALID_PATH;
     }
     if (srcFilePath.compare(dstFilePath) == 0) {
         MEDIA_DEBUG_LOG("Skip modify the file, the path of new file is the same as old");
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     }
 
     string dstAlbumPath = MediaLibraryDataManagerUtils::GetParentPath(dstFilePath);
@@ -454,7 +454,7 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
 
     FileAsset fileAsset;
     int32_t errCode = fileAsset.ModifyAsset(srcFilePath, dstFilePath);
-    if (errCode == DATA_ABILITY_MODIFY_DATA_FAIL) {
+    if (errCode == E_MODIFY_DATA_FAIL) {
         MEDIA_ERR_LOG("Failed to modify the file in the device");
         return errCode;
     }
@@ -462,7 +462,7 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
     if (ProcessNoMediaFile(dstFileName, dstAlbumPath) || ProcessHiddenFile(dstFileName, srcFilePath)) {
         MEDIA_ERR_LOG("New file is a .nomedia file or hidden file.");
         // why: return fail insteal of success
-        return DATA_ABILITY_FAIL;
+        return E_FAIL;
     }
 
     if (UpdateFileInfoInDb(cmd, dstFilePath, dirAsset.GetAlbumId(), dirAsset.GetAlbumName()) > 0) {
@@ -482,21 +482,21 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     if (srcDirPath.empty() || dstDirPath.empty()) {
         MEDIA_ERR_LOG("srcDirPath or dstDirPath is empty, rename failed!");
-        return DATA_ABILITY_INVALID_PATH;
+        return E_INVALID_PATH;
     }
     if (!MediaFileUtils::RenameDir(srcDirPath, dstDirPath)) {
         MEDIA_ERR_LOG("Rename directory failed!");
-        return DATA_ABILITY_HAS_FS_ERROR;
+        return E_HAS_FS_ERROR;
     }
     string dstDirName = MediaLibraryDataManagerUtils::GetFileName(dstDirPath);
-    if (ProcessHiddenDir(dstDirName, srcDirPath) == DATA_ABILITY_SUCCESS) {
+    if (ProcessHiddenDir(dstDirName, srcDirPath) == E_SUCCESS) {
         MEDIA_ERR_LOG("New album is a hidden album.");
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     }
 
     ValuesBucket values = cmd.GetValueBucket();
@@ -519,9 +519,9 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
         MEDIA_DATA_DB_FILE_PATH + " LIKE '" + srcDirPath + "/%'";
     if (uniStore->ExecuteSql(modifyAlbumInternalsStmt) != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Album update sql failed");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
@@ -531,14 +531,14 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(uriString);
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain path from Database");
-        return DATA_ABILITY_INVALID_URI;
+        return E_INVALID_URI;
     }
 
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     int32_t fd = fileAsset->OpenAsset(path, mode);
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
-        return DATA_ABILITY_HAS_FS_ERROR;
+        return E_HAS_FS_ERROR;
     }
 
     MEDIA_DEBUG_LOG("MediaLibraryDataManager OpenFile: Success");
@@ -551,13 +551,13 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     string strFileId = cmd.GetOprnFileId();
     if (strFileId.empty()) {
         MEDIA_ERR_LOG("Get id from uri or valuesBucket failed!");
-        return DATA_ABILITY_INVALID_FILEID;
+        return E_INVALID_FILEID;
     }
 
     string srcPath = GetPathByIdFromDb(strFileId);
     if (srcPath.empty()) {
         MEDIA_ERR_LOG("Get path of id %{private}s from database file!", strFileId.c_str());
-        return DATA_ABILITY_INVALID_FILEID;
+        return E_INVALID_FILEID;
     }
 
     string fileName = MediaLibraryDataManagerUtils::GetFileName(srcPath);
@@ -575,7 +575,7 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     string kvId;
     thumbnail.CreateThumbnail(opt, kvId);
     ScanFile(srcPath);
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 void MediaLibraryObjectUtils::ScanFile(string &path)
@@ -599,7 +599,7 @@ bool MediaLibraryObjectUtils::ProcessNoMediaFile(const string &dstFileName, cons
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     if (dstFileName.empty() || dstAlbumPath.empty() || dstFileName != NO_MEDIA_TAG) {
@@ -629,7 +629,7 @@ bool MediaLibraryObjectUtils::ProcessHiddenFile(const string &dstFileName, const
         return false;
     }
     MediaLibraryCommand deleteCmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
-    if (DeleteInfoByPathInDb(deleteCmd, srcPath) != DATA_ABILITY_SUCCESS) {
+    if (DeleteInfoByPathInDb(deleteCmd, srcPath) != E_SUCCESS) {
         MEDIA_ERR_LOG("Delete rows for the old path failed");
     }
     return true;
@@ -639,12 +639,12 @@ int32_t MediaLibraryObjectUtils::ProcessHiddenDir(const string &dstDirName, cons
 {
     if (dstDirName.empty() || srcDirPath.empty() || dstDirName.at(0) != '.') {
         MEDIA_INFO_LOG("Not a hidden dir(name begin with \'.\'), no need to do anything.");
-        return DATA_ABILITY_INVALID_PATH;
+        return E_INVALID_PATH;
     }
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     MediaLibraryCommand deleteCmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
@@ -655,9 +655,9 @@ int32_t MediaLibraryObjectUtils::ProcessHiddenDir(const string &dstDirName, cons
     int32_t deletedRows = -1;
     if (uniStore->Delete(deleteCmd, deletedRows) != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete src dir in database failed!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 void MediaLibraryObjectUtils::UpdateDateModified(const string &dirPath)
@@ -713,7 +713,7 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
     MEDIA_DEBUG_LOG("enter, dstPath: %{private}s,", dstPath.c_str());
     if (dstPath.empty()) {
         MEDIA_ERR_LOG("Input argument is empty.");
-        return DATA_ABILITY_INVALID_PATH;
+        return E_INVALID_PATH;
     }
 
     // dispName doesn't be used, maybe forget
@@ -726,7 +726,7 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
     struct stat statInfo;
     if (stat(dstPath.c_str(), &statInfo) != 0) {
         MEDIA_ERR_LOG("dstPath %{private}s is invalid. Modify failed!", dstPath.c_str());
-        return DATA_ABILITY_HAS_FS_ERROR;
+        return E_HAS_FS_ERROR;
     }
     string fileId = cmd.GetOprnFileId();
     ValuesBucket values;
@@ -792,12 +792,12 @@ int32_t MediaLibraryObjectUtils::GetIdByPathFromDb(const string &path)
 {
     MEDIA_DEBUG_LOG("enter, path = %{private}s", path.c_str());
     if (path.empty()) {
-        return DATA_ABILITY_INVALID_PATH;
+        return E_INVALID_PATH;
     }
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     int32_t columnIndex = 0;
@@ -805,7 +805,7 @@ int32_t MediaLibraryObjectUtils::GetIdByPathFromDb(const string &path)
     if (newPath.back() == '/') {
         newPath.pop_back();
     }
-    int32_t fileId = DATA_ABILITY_INVALID_FILEID;
+    int32_t fileId = E_INVALID_FILEID;
 
     vector<string> columns;
     columns.push_back(MEDIA_DATA_DB_ID);
@@ -832,12 +832,12 @@ int32_t MediaLibraryObjectUtils::GetParentIdByIdFromDb(const string &fileId)
 {
     MEDIA_DEBUG_LOG("enter, fileId = %{private}s", fileId.c_str());
     if (fileId.empty() || fileId == "-1") {
-        return DATA_ABILITY_INVALID_FILEID;
+        return E_INVALID_FILEID;
     }
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     int32_t parentIdVal = -1;
@@ -865,15 +865,15 @@ int32_t MediaLibraryObjectUtils::InsertInDb(MediaLibraryCommand &cmd)
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
-    int64_t outRowId = DATA_ABILITY_HAS_DB_ERROR;
+    int64_t outRowId = E_HAS_DB_ERROR;
     int32_t result = uniStore->Insert(cmd, outRowId);
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Insert operation failed. Result %{public}d. Deleted %{public}d",
             result, static_cast<int32_t>(outRowId));
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
     return static_cast<int32_t>(outRowId);
 }
@@ -884,18 +884,18 @@ int32_t MediaLibraryObjectUtils::DeleteInfoByPathInDb(MediaLibraryCommand &cmd, 
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
-    int32_t deletedRows = DATA_ABILITY_HAS_DB_ERROR;
+    int32_t deletedRows = E_HAS_DB_ERROR;
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
     int32_t result = uniStore->Delete(cmd, deletedRows);
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete operation failed. Result %{public}d. Deleted %{public}d", result, deletedRows);
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibraryObjectUtils::DeleteInfoByIdInDb(MediaLibraryCommand &cmd, const string &fileId)
@@ -904,7 +904,7 @@ int32_t MediaLibraryObjectUtils::DeleteInfoByIdInDb(MediaLibraryCommand &cmd, co
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     string strDeleteCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
@@ -912,12 +912,12 @@ int32_t MediaLibraryObjectUtils::DeleteInfoByIdInDb(MediaLibraryCommand &cmd, co
         string strRow = fileId.empty() ? cmd.GetOprnFileId() : fileId;
         if (strRow.empty() || !MediaLibraryDataManagerUtils::IsNumber(strRow)) {
             MEDIA_ERR_LOG("MediaLibraryObjectUtils DeleteFile: Index not digit");
-            return DATA_ABILITY_INVALID_FILEID;
+            return E_INVALID_FILEID;
         }
         cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, strRow);
     }
 
-    int32_t deletedRows = DATA_ABILITY_HAS_DB_ERROR;
+    int32_t deletedRows = E_HAS_DB_ERROR;
     int32_t result = uniStore->Delete(cmd, deletedRows);
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete operation failed. Result %{public}d. Deleted %{public}d", result, deletedRows);
@@ -932,11 +932,11 @@ int32_t MediaLibraryObjectUtils::ModifyInfoByPathInDb(MediaLibraryCommand &cmd, 
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_FILE_PATH, path);
-    int32_t updatedRows = DATA_ABILITY_HAS_DB_ERROR;
+    int32_t updatedRows = E_HAS_DB_ERROR;
     int32_t result = uniStore->Update(cmd, updatedRows);
     if (result != NativeRdb::E_OK || updatedRows <= 0) {
         MEDIA_ERR_LOG("Update operation failed. Result %{public}d. Updated %{public}d", result, updatedRows);
@@ -951,7 +951,7 @@ int32_t MediaLibraryObjectUtils::ModifyInfoByIdInDb(MediaLibraryCommand &cmd, co
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     string strDeleteCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
@@ -959,12 +959,12 @@ int32_t MediaLibraryObjectUtils::ModifyInfoByIdInDb(MediaLibraryCommand &cmd, co
         string strRow = fileId.empty() ? cmd.GetOprnFileId() : fileId;
         if (strRow.empty() || !MediaLibraryDataManagerUtils::IsNumber(strRow) || (stoi(strRow) == -1)) {
             MEDIA_ERR_LOG("DeleteFile: Index not digit");
-            return DATA_ABILITY_INVALID_FILEID;
+            return E_INVALID_FILEID;
         }
         cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, strRow);
     }
 
-    int32_t updatedRows = DATA_ABILITY_HAS_DB_ERROR;
+    int32_t updatedRows = E_HAS_DB_ERROR;
     int32_t result = uniStore->Update(cmd, updatedRows);
     if (result != NativeRdb::E_OK || updatedRows <= 0) {
         MEDIA_ERR_LOG("Update operation failed. Result %{public}d. Updated %{public}d", result, updatedRows);

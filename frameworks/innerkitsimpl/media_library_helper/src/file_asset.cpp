@@ -352,7 +352,7 @@ int32_t FileAsset::CreateAsset(const string &filePath)
 
     if (filePath.empty()) {
         MEDIA_ERR_LOG("Filepath is empty");
-        return DATA_ABILITY_VIOLATION_PARAMETERS;
+        return E_VIOLATION_PARAMETERS;
     }
 
     if (MediaFileUtils::IsFileExists(filePath)) {
@@ -379,12 +379,12 @@ int32_t FileAsset::CreateAsset(const string &filePath)
 
     file.close();
 
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
 {
-    int32_t err = DATA_ABILITY_MODIFY_DATA_FAIL;
+    int32_t err = E_MODIFY_DATA_FAIL;
 
     if (oldPath.empty() || newPath.empty()) {
         MEDIA_ERR_LOG("Failed to modify asset, oldPath: %{private}s or newPath: %{private}s is empty!",
@@ -405,7 +405,7 @@ int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
         return E_FILE_OPER_FAIL;
     }
 
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 bool FileAsset::IsFileExists(const string &filePath)

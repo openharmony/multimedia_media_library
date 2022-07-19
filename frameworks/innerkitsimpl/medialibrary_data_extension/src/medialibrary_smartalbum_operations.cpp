@@ -67,7 +67,7 @@ int32_t MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperations(const strin
     MEDIA_ERR_LOG("HandleSmartAlbumOperations");
     ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
     MediaLibrarySmartAlbumDb smartAlbumDbOprn;
-    int32_t errCode = DATA_ABILITY_FAIL;
+    int32_t errCode = E_FAIL;
     ValueObject valueObject;
     if (oprn == MEDIA_SMARTALBUMOPRN_CREATEALBUM) {
         errCode = InsertAlbumInfoUtil(values, rdbStore, smartAlbumDbOprn);

@@ -63,13 +63,13 @@ int32_t MediaFileExtentionUtils::CheckUriSupport(const string &uri)
 {
     if (!MediaFileExtentionUtils::CheckUriValid(uri)) {
         MEDIA_ERR_LOG("Invalid uri");
-        return ERROR_URI_INVALID;
+        return E_URI_INVALID;
     }
     if (!MediaFileExtentionUtils::CheckDistributedUri(uri)) {
         MEDIA_ERR_LOG("CreateFile not support distributed operation");
-        return ERROR_DISTIBUTED_URI_NO_SUPPORT;
+        return E_DISTIBUTED_URI_NO_SUPPORT;
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 MediaFileUriType MediaFileExtentionUtils::ResolveUri(const std::string &uri)
@@ -104,16 +104,16 @@ int32_t MediaFileExtentionUtils::CheckMkdirValid(MediaFileUriType uriType, const
 {
     if (uriType == MediaFileUriType::URI_ROOT) {
         CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckDistributedUri(parentUriStr),
-            ERROR_DISTIBUTED_URI_NO_SUPPORT, "Mkdir not support distributed operation");
+            E_DISTIBUTED_URI_NO_SUPPORT, "Mkdir not support distributed operation");
         CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckValidDirName(displayName + SLASH_CHAR),
-            ERROR_INVAVLID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
+            E_INVAVLID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
     } else {
         auto ret = MediaFileExtentionUtils::CheckUriSupport(parentUriStr);
-        CHECK_AND_RETURN_RET_LOG(ret == DATA_ABILITY_SUCCESS, ret, "invalid uri");
+        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDisplayName(displayName),
-            ERROR_INVAVLID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
+            E_INVAVLID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 void GetSingleFileInfo(const string &networkId, FileAccessFwk::FileInfo &fileInfo,
@@ -211,23 +211,23 @@ int32_t GetListFilePredicates(const string &selectUri, string &networkId, string
     } else if (uriType == MediaFileUriType::URI_DIR) {
         if (!MediaFileExtentionUtils::CheckUriValid(selectUri)) {
             MEDIA_ERR_LOG("selectUri is not valid uri %{private}s", selectUri.c_str());
-            return ERROR_URI_INVALID;
+            return E_URI_INVALID;
         }
         string relativePath;
         if (!MediaFileExtentionUtils::GetAlbumRelativePathFromDB(selectUri, networkId, relativePath)) {
             MEDIA_ERR_LOG("selectUri is not valid album uri %{private}s", selectUri.c_str());
-            return ERROR_URI_IS_NOT_ALBUM;
+            return E_URI_IS_NOT_ALBUM;
         }
         selection = MEDIA_DATA_DB_RELATIVE_PATH + " = ?";
         selectionArgs = { relativePath };
     } else {
-        return ERROR_URI_INVALID;
+        return E_URI_INVALID;
     }
     selection += " AND " + MEDIA_DATA_DB_IS_TRASH + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + "<> ? ";
     selectionArgs.push_back(to_string(NOT_ISTRASH));
     selectionArgs.push_back(to_string(MEDIA_TYPE_NOFILE));
     MEDIA_DEBUG_LOG("GetListFilePredicates selection %{public}s", selection.c_str());
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaFileExtentionUtils::ListFile(const string &selectUri, vector<FileAccessFwk::FileInfo> &fileList)
@@ -235,7 +235,7 @@ int32_t MediaFileExtentionUtils::ListFile(const string &selectUri, vector<FileAc
     string networkId, selection;
     vector<string> selectionArgs;
     int32_t errCode = GetListFilePredicates(selectUri, networkId, selection, selectionArgs);
-    if (errCode != DATA_ABILITY_SUCCESS) {
+    if (errCode != E_SUCCESS) {
         return errCode;
     }
     string queryUri;
@@ -245,7 +245,7 @@ int32_t MediaFileExtentionUtils::ListFile(const string &selectUri, vector<FileAc
         queryUri = MEDIALIBRARY_DATA_URI;
     }
     std::shared_ptr<AbsSharedResultSet> resultSet = GetListFileResult(queryUri, selection, selectionArgs);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, DATA_ABILITY_FAIL, "GetListFileResult Get fail");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "GetListFileResult Get fail");
     GetFileInfoFromResult(networkId, resultSet, fileList);
     return errCode;
 }
@@ -360,7 +360,7 @@ int32_t HandleFileRename(const FileAsset &srcAsset, const string &displayName, c
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + MediaLibraryDataManagerUtils::GetIdFromUri(srcAsset.GetUri()));
     auto ret = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucket, predicates);
     if (ret > 0) {
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     } else {
         MEDIA_ERR_LOG("HandleFileRename Update ret %{private}d", ret);
         return ret;
@@ -422,56 +422,56 @@ int32_t HandleAlbumRename(const FileAsset &srcAsset, const string &displayName)
 {
     if (srcAsset.GetRelativePath().empty()) {
         MEDIA_ERR_LOG("Rename dir in root dir, denied");
-        return ERROR_DENIED_RENAME;
+        return E_DENIED_RENAME;
     }
     string srcPath = srcAsset.GetPath();
     size_t slashIndex = srcPath.rfind(SLASH_CHAR);
     string destPath = srcPath.substr(0, slashIndex) + SLASH_CHAR + displayName;
     if (MediaLibraryObjectUtils::IsFileExistInDb(destPath)) {
         MEDIA_ERR_LOG("Rename file is existed %{private}s", destPath.c_str());
-        return ERROR_TARGET_FILE_EXIST;
+        return E_TARGET_FILE_EXIST;
     }
     bool succ = MediaFileUtils::RenameDir(srcPath, destPath);
     if (!succ) {
         MEDIA_ERR_LOG("Failed RenameDir errno %{public}d", errno);
-        return DATA_ABILITY_MODIFY_DATA_FAIL;
+        return E_MODIFY_DATA_FAIL;
     }
     string srcId = to_string(srcAsset.GetId());
     int32_t updateResult = UpdateRenamedAlbumInfo(srcId, displayName, destPath);
-    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, ERROR_UPDATE_DB_FAIL, "UpdateRenamedAlbumInfo failed");
+    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL, "UpdateRenamedAlbumInfo failed");
     updateResult = UpdateSubFilesPath(srcPath, destPath);
-    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, ERROR_UPDATE_DB_FAIL, "UpdateSubFilesPath failed");
+    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL, "UpdateSubFilesPath failed");
     updateResult = UpdateSubFilesBucketName(srcId, displayName);
-    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, ERROR_UPDATE_DB_FAIL,
+    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL,
         "UpdateSubFilesBucketName failed");
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri)
 {
     string sourceUri = sourceFileUri.ToString();
     auto ret = MediaFileExtentionUtils::CheckUriSupport(sourceUri);
-    CHECK_AND_RETURN_RET_LOG(ret == DATA_ABILITY_SUCCESS, ret, "invalid uri");
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
     if (!MediaFileUtils::CheckDisplayName(displayName)) {
         MEDIA_ERR_LOG("invalid displayName %{private}s", displayName.c_str());
-        return ERROR_INVAVLID_DISPLAY_NAME;
+        return E_INVAVLID_DISPLAY_NAME;
     }
     FileAsset srcAsset;
     if (!GetAssetFromDB(sourceUri, "", srcAsset)) {
         MEDIA_ERR_LOG("Rename source uri is not correct %{private}s", sourceUri.c_str());
-        return DATA_ABILITY_MODIFY_DATA_FAIL;
+        return E_MODIFY_DATA_FAIL;
     }
     string destRelativePath;
     if (!GetRelativePathFromDB(sourceUri, "", destRelativePath)) {
         MEDIA_ERR_LOG("Rename uri is not correct %{private}s", sourceUri.c_str());
-        return DATA_ABILITY_MODIFY_DATA_FAIL;
+        return E_MODIFY_DATA_FAIL;
     }
     if (srcAsset.GetMediaType() == MediaType::MEDIA_TYPE_ALBUM) {
         ret = HandleAlbumRename(srcAsset, displayName);
     } else {
         ret = HandleFileRename(srcAsset, displayName, destRelativePath);
     }
-    if (ret == DATA_ABILITY_SUCCESS) {
+    if (ret == E_SUCCESS) {
         newFileUri = Uri(sourceUri);
     }
     return ret;
@@ -491,7 +491,7 @@ int32_t HandleFileMove(const FileAsset &srcAsset, const string &destRelativePath
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + MediaLibraryDataManagerUtils::GetIdFromUri(srcAsset.GetUri()));
     auto ret = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucket, predicates);
     if (ret > 0) {
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     } else {
         MEDIA_ERR_LOG("HandleFileMove Update ret %{private}d", ret);
         return ret;
@@ -519,18 +519,18 @@ int32_t HandleAlbumMove(const FileAsset &srcAsset, const string &destRelativePat
     string destPath = ROOT_MEDIA_DIR + destRelativePath + srcAsset.GetDisplayName();
     if (MediaLibraryObjectUtils::IsFileExistInDb(destPath)) {
         MEDIA_ERR_LOG("Move file is existed %{private}s", destPath.c_str());
-        return ERROR_TARGET_FILE_EXIST;
+        return E_TARGET_FILE_EXIST;
     }
     bool succ = MediaFileUtils::RenameDir(srcAsset.GetPath(), destPath);
     if (!succ) {
         MEDIA_ERR_LOG("Failed RenameDir errno %{public}d", errno);
-        return DATA_ABILITY_MODIFY_DATA_FAIL;
+        return E_MODIFY_DATA_FAIL;
     }
     int32_t updateResult = UpdateMovedAlbumInfo(srcAsset, bucketId, destPath, destRelativePath);
-    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, ERROR_UPDATE_DB_FAIL, "UpdateMovedAlbumInfo failed");
+    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL, "UpdateMovedAlbumInfo failed");
     updateResult = UpdateSubFilesPath(srcAsset.GetPath(), destPath);
-    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, ERROR_UPDATE_DB_FAIL, "UpdateSubFilesPath failed");
-    return DATA_ABILITY_SUCCESS;
+    CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL, "UpdateSubFilesPath failed");
+    return E_SUCCESS;
 }
 
 int32_t CheckFileExtension(const string &relativePath, const string &name, int32_t mediaType)
@@ -577,7 +577,7 @@ bool CheckSubFileExtension(const string &srcPath, const string &destRelPath)
         if (mediaType == MEDIA_TYPE_ALBUM) {
             continue;
         }
-        if (CheckFileExtension(destRelPath, name, mediaType) != DATA_ABILITY_SUCCESS) {
+        if (CheckFileExtension(destRelPath, name, mediaType) != E_SUCCESS) {
             return false;
         }
     }
@@ -612,33 +612,33 @@ int32_t MediaFileExtentionUtils::Move(const Uri &sourceFileUri, const Uri &targe
 {
     string sourceUri = sourceFileUri.ToString();
     string targetUri = targetParentUri.ToString();
-    CHECK_AND_RETURN_RET_LOG(sourceUri != targetUri, ERROR_TWO_URI_ARE_THE_SAME,
+    CHECK_AND_RETURN_RET_LOG(sourceUri != targetUri, E_TWO_URI_ARE_THE_SAME,
         "sourceUri is the same as TargetUri");
     auto ret = MediaFileExtentionUtils::CheckUriSupport(sourceUri);
-    CHECK_AND_RETURN_RET_LOG(ret == DATA_ABILITY_SUCCESS, ret, "invalid source uri");
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid source uri");
     ret = MediaFileExtentionUtils::CheckUriSupport(targetUri);
-    CHECK_AND_RETURN_RET_LOG(ret == DATA_ABILITY_SUCCESS, ret, "invalid targetUri uri");
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid targetUri uri");
     FileAsset srcAsset;
     if (!GetAssetFromDB(sourceUri, "", srcAsset)) {
         MEDIA_ERR_LOG("Move source uri is not correct %{private}s", sourceUri.c_str());
-        return DATA_ABILITY_MODIFY_DATA_FAIL;
+        return E_MODIFY_DATA_FAIL;
     }
     string destRelativePath;
     if (!GetAlbumRelativePathFromDB(targetUri, "", destRelativePath)) {
         MEDIA_ERR_LOG("Move target parent uri is not correct %{private}s", targetUri.c_str());
-        return DATA_ABILITY_MODIFY_DATA_FAIL;
+        return E_MODIFY_DATA_FAIL;
     }
     if (srcAsset.GetMediaType() == MediaType::MEDIA_TYPE_ALBUM) {
         if (!CheckRootDir(srcAsset, destRelativePath)) {
             MEDIA_ERR_LOG("Move file to another type alubm, denied");
-            return ERROR_DENIED_MOVE;
+            return E_DENIED_MOVE;
         }
         string bucketId = MediaLibraryDataManagerUtils::GetIdFromUri(targetUri);
         ret = HandleAlbumMove(srcAsset, destRelativePath, bucketId);
     } else {
         ret = HandleFileMove(srcAsset, destRelativePath);
     }
-    if (ret == DATA_ABILITY_SUCCESS) {
+    if (ret == E_SUCCESS) {
         newFileUri = Uri(sourceUri);
     }
     return ret;

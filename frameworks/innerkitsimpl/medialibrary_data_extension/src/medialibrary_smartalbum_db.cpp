@@ -58,7 +58,7 @@ int32_t MediaLibrarySmartAlbumDb::DeleteSmartAlbumInfo(const int32_t albumId, co
     vector<string> whereArgs = { std::to_string(albumId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_TABLE, SMARTALBUM_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
-    return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
+    return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 }  // namespace Media
 }  // namespace OHOS

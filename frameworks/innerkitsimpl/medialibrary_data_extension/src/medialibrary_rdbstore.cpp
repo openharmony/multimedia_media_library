@@ -127,13 +127,13 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     MEDIA_DEBUG_LOG("Insert");
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     int32_t ret = rdbStore_->Insert(rowId, cmd.GetTableName(), cmd.GetValueBucket());
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Insert failed, ret = %{public}d", ret);
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     std::vector<std::string> devices = std::vector<std::string>();
@@ -149,14 +149,14 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &rowId)
     MEDIA_DEBUG_LOG("Delete");
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     int32_t ret = rdbStore_->Delete(rowId, cmd.GetTableName(), cmd.GetAbsRdbPredicates()->GetWhereClause(),
         cmd.GetAbsRdbPredicates()->GetWhereArgs());
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Delete failed, ret = %{public}d", ret);
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     std::vector<std::string> devices = std::vector<std::string>();
@@ -172,14 +172,14 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
     MEDIA_DEBUG_LOG("Update");
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     int32_t ret = rdbStore_->Update(rowId, cmd.GetTableName(), cmd.GetValueBucket(),
         cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Update failed, ret = %{public}d", ret);
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     std::vector<std::string> devices = std::vector<std::string>();
@@ -226,13 +226,13 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
 
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     int32_t ret = rdbStore_->ExecuteSql(sql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->ExecuteSql failed, ret = %{public}d", ret);
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
     return ret;
 }

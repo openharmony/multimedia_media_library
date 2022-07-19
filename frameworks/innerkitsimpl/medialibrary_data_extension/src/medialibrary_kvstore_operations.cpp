@@ -54,7 +54,7 @@ int32_t MediaLibraryKvStoreOperations::HandleKvStoreInsertOperations(const strin
     const ValuesBucket &valuesBucket, const shared_ptr<SingleKvStore> &kvStorePtr)
 {
     MEDIA_INFO_LOG("MediaLibraryKvStoreOperations::%{private}s", __func__);
-    CHECK_AND_RETURN_RET_LOG(kvStorePtr != nullptr, DATA_ABILITY_FAIL, "kv store not available");
+    CHECK_AND_RETURN_RET_LOG(kvStorePtr != nullptr, E_FAIL, "kv store not available");
 
     ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
     ValueObject valueObject;
@@ -65,56 +65,56 @@ int32_t MediaLibraryKvStoreOperations::HandleKvStoreInsertOperations(const strin
             valueObject.GetString(ringtoneUri);
         }
 
-        CHECK_AND_RETURN_RET_LOG(!ringtoneUri.empty(), DATA_ABILITY_FAIL, "uri is empty");
+        CHECK_AND_RETURN_RET_LOG(!ringtoneUri.empty(), E_FAIL, "uri is empty");
 
-        int32_t ringtoneType = DATA_ABILITY_FAIL;
+        int32_t ringtoneType = E_FAIL;
         if (values.GetObject(MEDIA_DATA_DB_RINGTONE_TYPE, valueObject)) {
             valueObject.GetInt(ringtoneType);
         }
 
-        CHECK_AND_RETURN_RET_LOG(ringtoneType >= DEFAULT && ringtoneType <= MULTISIM, DATA_ABILITY_FAIL, "wrong type");
+        CHECK_AND_RETURN_RET_LOG(ringtoneType >= DEFAULT && ringtoneType <= MULTISIM, E_FAIL, "wrong type");
 
         auto key = GetRingtoneUriKey(ringtoneType);
         Value value = Value(ringtoneUri);
         if (kvStorePtr->Put(key, value) != Status::SUCCESS) {
             MEDIA_ERR_LOG("ringtone put to kvStore error");
-            return DATA_ABILITY_FAIL;
+            return E_FAIL;
         }
 
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     } else if (oprn == MEDIA_KVSTOREOPRN_SET_NOTIFICATION_URI) {
         string notificationUri = "";
         if (values.GetObject(MEDIA_DATA_DB_NOTIFICATION_URI, valueObject)) {
             valueObject.GetString(notificationUri);
         }
 
-        CHECK_AND_RETURN_RET_LOG(!notificationUri.empty(), DATA_ABILITY_FAIL, "notification uri is empty");
+        CHECK_AND_RETURN_RET_LOG(!notificationUri.empty(), E_FAIL, "notification uri is empty");
 
         Value value = Value(notificationUri);
         if (kvStorePtr->Put(RINGTONE_NOTIFICATION_KEY, value) != Status::SUCCESS) {
             MEDIA_ERR_LOG("notification put to kvStore error");
-            return DATA_ABILITY_FAIL;
+            return E_FAIL;
         }
 
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     } else if (oprn == MEDIA_KVSTOREOPRN_SET_ALARM_URI) {
         string alarmUri = "";
         if (values.GetObject(MEDIA_DATA_DB_ALARM_URI, valueObject)) {
             valueObject.GetString(alarmUri);
         }
 
-        CHECK_AND_RETURN_RET_LOG(!alarmUri.empty(), DATA_ABILITY_FAIL, "notification uri is empty");
+        CHECK_AND_RETURN_RET_LOG(!alarmUri.empty(), E_FAIL, "notification uri is empty");
 
         Value value = Value(alarmUri);
         if (kvStorePtr->Put(RINGTONE_ALARM_KEY, value) != Status::SUCCESS) {
             MEDIA_ERR_LOG("alarm put to kvStore error");
-            return DATA_ABILITY_FAIL;
+            return E_FAIL;
         }
 
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     }
 
-    return DATA_ABILITY_FAIL;
+    return E_FAIL;
 }
 
 string MediaLibraryKvStoreOperations::HandleKvStoreGetOperations(const string &uri,

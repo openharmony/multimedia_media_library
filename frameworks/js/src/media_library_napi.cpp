@@ -2722,7 +2722,7 @@ static int32_t CloseAsset(MediaLibraryAsyncContext *context, string uri)
     context->valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
     int32_t ret = context->objectInfo->sDataShareHelper_->Insert(closeAssetUri, context->valuesBucket);
     NAPI_DEBUG_LOG("File close asset %{public}d", ret);
-    if (ret != DATA_ABILITY_SUCCESS) {
+    if (ret != E_SUCCESS) {
         context->error = ret;
         NAPI_ERR_LOG("File close asset fail, %{public}d", ret);
     }
