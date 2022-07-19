@@ -458,7 +458,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
                             "/" + MEDIA_SMARTALBUMOPRN_MODIFYALBUM);
         changedRows = context->objectInfo->GetMediaDataHelper()->Update(commitModifyUri, predicates, valuesBucket);
     } else {
-        changedRows = DATA_ABILITY_VIOLATION_PARAMETERS;
+        changedRows = E_VIOLATION_PARAMETERS;
     }
     context->changedRows = changedRows;
 }

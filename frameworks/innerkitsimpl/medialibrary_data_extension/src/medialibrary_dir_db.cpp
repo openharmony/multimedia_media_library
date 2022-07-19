@@ -28,7 +28,7 @@ int32_t MediaLibraryDirDb::DeleteDirInfo(const int32_t dirId, const shared_ptr<R
     vector<string> whereArgs = { std::to_string(dirId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, DIR_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, DIR_OPERATION_ERR, "Delete failed");
-    return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
+    return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 } // namespace Media
 } // namespace OHOS

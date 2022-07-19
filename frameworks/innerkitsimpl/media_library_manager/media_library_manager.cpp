@@ -176,7 +176,7 @@ string MediaLibraryManager::CreateAsset(const FileAsset &fileAssetObj)
 
 int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fileAssetObj)
 {
-    int32_t retVal = DATA_ABILITY_FAIL;
+    int32_t retVal = E_FAIL;
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, fileAssetObj.GetPath());
@@ -195,7 +195,7 @@ int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fil
 
 int32_t MediaLibraryManager::DeleteAsset(const string &uri)
 {
-    int32_t retVal = DATA_ABILITY_FAIL;
+    int32_t retVal = E_FAIL;
     if (uri.find(MEDIALIBRARY_DATA_URI) == string::npos) {
         return retVal;
     }
@@ -222,7 +222,7 @@ int32_t MediaLibraryManager::DeleteAsset(const string &uri)
 
 int32_t MediaLibraryManager::OpenAsset(const string &uri, string &mode)
 {
-    int32_t retVal = DATA_ABILITY_FAIL;
+    int32_t retVal = E_FAIL;
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
     valuesBucket.PutString(MEDIA_FILEMODE, mode);
@@ -242,7 +242,7 @@ int32_t MediaLibraryManager::OpenAsset(const string &uri, string &mode)
 
 int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
 {
-    int32_t retVal = DATA_ABILITY_FAIL;
+    int32_t retVal = E_FAIL;
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
 
@@ -250,11 +250,11 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
 
-        if (close(fd) == DATA_ABILITY_SUCCESS) {
+        if (close(fd) == E_SUCCESS) {
             retVal = sDataShareHelper_->Insert(closeAssetUri, valuesBucket);
         }
 
-        if (retVal == DATA_ABILITY_FAIL) {
+        if (retVal == E_FAIL) {
             MEDIA_ERR_LOG("Failed to close the file");
         }
     }
@@ -264,7 +264,7 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
 
 int32_t MediaLibraryManager::CreateAlbum(const AlbumAsset &albumNapiObj)
 {
-    int32_t albumId = DATA_ABILITY_FAIL;
+    int32_t albumId = E_FAIL;
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, albumNapiObj.GetAlbumPath());
 
@@ -283,7 +283,7 @@ int32_t MediaLibraryManager::CreateAlbum(const AlbumAsset &albumNapiObj)
 
 int32_t MediaLibraryManager::ModifyAlbum(const int32_t albumId, const AlbumAsset &albumNapiObj)
 {
-    int32_t retVal = DATA_ABILITY_FAIL;
+    int32_t retVal = E_FAIL;
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutInt(MEDIA_DATA_DB_ID, albumId);
     valuesBucket.PutString(MEDIA_DATA_DB_ALBUM_NAME, albumNapiObj.GetAlbumName());
@@ -302,7 +302,7 @@ int32_t MediaLibraryManager::ModifyAlbum(const int32_t albumId, const AlbumAsset
 
 int32_t MediaLibraryManager::DeleteAlbum(const int32_t albumId)
 {
-    int32_t retVal = DATA_ABILITY_FAIL;
+    int32_t retVal = E_FAIL;
 
     if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
@@ -352,7 +352,7 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 {
     if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("sDataShareHelper_ is null");
-        return DATA_ABILITY_FAIL;
+        return E_FAIL;
     }
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
@@ -360,13 +360,13 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
     auto queryResultSet = sDataShareHelper_->Query(uri, predicates, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("queryResultSet is null!");
-        return DATA_ABILITY_FAIL;
+        return E_FAIL;
     }
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("get rdbstore failed");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
     MEDIA_INFO_LOG("count = %{public}d", (int)count);
     if (count >= 0) {
@@ -381,7 +381,7 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
     MEDIA_INFO_LOG("Size:Files:%{public}lld Videos:%{public}lld Images:%{public}lld Audio:%{public}lld",
         (long long)outMediaVolume.GetFilesSize(), (long long)outMediaVolume.GetVideosSize(),
         (long long)outMediaVolume.GetImagesSize(), (long long)outMediaVolume.GetAudiosSize());
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS

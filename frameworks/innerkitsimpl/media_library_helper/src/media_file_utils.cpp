@@ -35,7 +35,7 @@ namespace OHOS {
 namespace Media {
 int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
 {
-    CHECK_AND_RETURN_RET_LOG(fpath != nullptr, DATA_ABILITY_FAIL, "fpath == nullptr");
+    CHECK_AND_RETURN_RET_LOG(fpath != nullptr, E_FAIL, "fpath == nullptr");
     int32_t errRet = remove(fpath);
     if (errRet) {
         perror(fpath);

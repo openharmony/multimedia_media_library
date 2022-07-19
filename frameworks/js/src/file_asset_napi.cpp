@@ -1201,9 +1201,9 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
     }
 
     int32_t retVal = close(fd);
-    if (retVal == DATA_ABILITY_SUCCESS) {
+    if (retVal == E_SUCCESS) {
         retVal = context->objectInfo->sDataShareHelper_->Insert(closeAssetUri, context->valuesBucket);
-        if (retVal == DATA_ABILITY_SUCCESS) {
+        if (retVal == E_SUCCESS) {
             return;
         }
     }
@@ -1219,7 +1219,7 @@ static void JSCloseCompleteCallback(napi_env env, napi_status status,
     jsContext->status = false;
 
     if (context->error == ERR_DEFAULT) {
-        napi_create_int32(env, DATA_ABILITY_SUCCESS, &jsContext->data);
+        napi_create_int32(env, E_SUCCESS, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
