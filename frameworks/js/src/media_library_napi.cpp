@@ -26,6 +26,7 @@
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "uv.h"
+#include "result_set_utils.h"
 #include "string_ex.h"
 #include "string_wrapper.h"
 
@@ -505,38 +506,6 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
     return result;
 }
 
-using ValVariant = variant<int, int64_t, string>;
-ValVariant GetValFromColumn(string columnName, shared_ptr<DataShare::DataShareResultSet> &resultSet,
-    ResultSetDataType type)
-{
-    int index;
-    ValVariant cellValue;
-    int integerVal;
-    string stringVal;
-    int64_t longVaL;
-
-    resultSet->GetColumnIndex(columnName, index);
-    switch (type) {
-        case TYPE_STRING:
-            resultSet->GetString(index, stringVal);
-            cellValue = stringVal;
-            break;
-        case TYPE_INT32:
-            resultSet->GetInt(index, integerVal);
-            cellValue = integerVal;
-            break;
-        case TYPE_INT64:
-            resultSet->GetLong(index, longVaL);
-            cellValue = longVaL;
-            break;
-        default:
-            NAPI_ERR_LOG("No type: type %{private}d", type);
-            cellValue = "Notype";
-            break;
-    }
-    return cellValue;
-}
-
 static void GetPublicDirectoryExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -572,7 +541,7 @@ static void GetPublicDirectoryExecute(MediaLibraryAsyncContext *context)
         NAPI_ERR_LOG("Query for get publicDirectory count = %{private}d", count);
         if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
             context->directoryRelativePath = get<string>(
-                GetValFromColumn(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, resultSet, TYPE_STRING));
+                ResultSetUtils::GetValFromColumn(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, resultSet, TYPE_STRING));
         }
         return;
     } else {
@@ -851,20 +820,22 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSe
     const string &networkId)
 {
     // Get album id index and value
-    albumData->SetAlbumId(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet, TYPE_INT32)));
+    albumData->SetAlbumId(get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet,
+        TYPE_INT32)));
 
     // Get album title index and value
-    albumData->SetAlbumName(get<string>(GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet, TYPE_STRING)));
+    albumData->SetAlbumName(get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet,
+        TYPE_STRING)));
 
     // Get album asset count index and value
-    albumData->SetCount(get<int32_t>(GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet, TYPE_INT32)));
+    albumData->SetCount(get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet, TYPE_INT32)));
     albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) +
         "/" + to_string(albumData->GetAlbumId()));
     // Get album relativePath index and value
-    albumData->SetAlbumRelativePath(get<string>(GetValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
-                                                                 resultSet, TYPE_STRING)));
-    albumData->SetAlbumDateModified(get<int64_t>(GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED,
-                                                                  resultSet, TYPE_INT64)));
+    albumData->SetAlbumRelativePath(get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
+        resultSet, TYPE_STRING)));
+    albumData->SetAlbumDateModified(get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED,
+        resultSet, TYPE_INT64)));
 }
 
 static void GetResultDataExecute(MediaLibraryAsyncContext *context)
@@ -2029,9 +2000,10 @@ static void SetSmartAlbumData(SmartAlbumAsset* smartAlbumData, shared_ptr<DataSh
     const string &networkId)
 {
     CHECK_NULL_PTR_RETURN_VOID(smartAlbumData, "albumData is null");
-    smartAlbumData->SetAlbumId(get<int32_t>(GetValFromColumn(SMARTALBUM_DB_ID, resultSet, TYPE_INT32)));
-    smartAlbumData->SetAlbumName(get<string>(GetValFromColumn(SMARTALBUM_DB_NAME, resultSet, TYPE_STRING)));
-    smartAlbumData->SetAlbumCapacity(get<int32_t>(GetValFromColumn(SMARTABLUMASSETS_ALBUMCAPACITY,
+    smartAlbumData->SetAlbumId(get<int32_t>(ResultSetUtils::GetValFromColumn(SMARTALBUM_DB_ID, resultSet, TYPE_INT32)));
+    smartAlbumData->SetAlbumName(get<string>(ResultSetUtils::GetValFromColumn(SMARTALBUM_DB_NAME, resultSet,
+        TYPE_STRING)));
+    smartAlbumData->SetAlbumCapacity(get<int32_t>(ResultSetUtils::GetValFromColumn(SMARTABLUMASSETS_ALBUMCAPACITY,
         resultSet, TYPE_INT32)));
     smartAlbumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_SMARTALBUM, networkId) +
         "/" + to_string(smartAlbumData->GetAlbumId()));
@@ -2570,10 +2542,12 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         unique_ptr<PeerInfo> peerInfo = make_unique<PeerInfo>();
         if (peerInfo != nullptr) {
-            peerInfo->deviceName = get<string>(GetValFromColumn(DEVICE_DB_NAME, resultSet, TYPE_STRING));
-            peerInfo->networkId = get<string>(GetValFromColumn(DEVICE_DB_NETWORK_ID, resultSet, TYPE_STRING));
+            peerInfo->deviceName = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NAME, resultSet,
+                TYPE_STRING));
+            peerInfo->networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, resultSet,
+                TYPE_STRING));
             peerInfo->deviceTypeId = (DistributedHardware::DmDeviceType)
-                                     (get<int32_t>(GetValFromColumn(DEVICE_DB_TYPE, resultSet, TYPE_INT32)));
+                (get<int32_t>(ResultSetUtils::GetValFromColumn(DEVICE_DB_TYPE, resultSet, TYPE_INT32)));
             peerInfo->isOnline = true;
             peerInfoArray.push_back(move(peerInfo));
         }
@@ -2631,11 +2605,14 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         unique_ptr<PeerInfo> peerInfo = make_unique<PeerInfo>();
         if (peerInfo != nullptr) {
-            peerInfo->deviceName = get<string>(GetValFromColumn(DEVICE_DB_NAME, resultSet, TYPE_STRING));
-            peerInfo->networkId = get<string>(GetValFromColumn(DEVICE_DB_NETWORK_ID, resultSet, TYPE_STRING));
+            peerInfo->deviceName = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NAME, resultSet,
+                TYPE_STRING));
+            peerInfo->networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, resultSet,
+                TYPE_STRING));
             peerInfo->deviceTypeId = (DistributedHardware::DmDeviceType)
-                                     (get<int32_t>(GetValFromColumn(DEVICE_DB_TYPE, resultSet, TYPE_INT32)));
-            peerInfo->isOnline = (get<int32_t>(GetValFromColumn(DEVICE_DB_DATE_MODIFIED, resultSet, TYPE_INT32)) == 0);
+                (get<int32_t>(ResultSetUtils::GetValFromColumn(DEVICE_DB_TYPE, resultSet, TYPE_INT32)));
+            peerInfo->isOnline = (get<int32_t>(ResultSetUtils::GetValFromColumn(DEVICE_DB_DATE_MODIFIED, resultSet,
+                TYPE_INT32)) == 0);
             peerInfoArray.push_back(move(peerInfo));
         }
     }

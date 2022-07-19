@@ -126,8 +126,8 @@ void GetSingleFileInfo(const string &networkId, FileAccessFwk::FileInfo &fileInf
     fileInfo.uri = Uri(uri);
     fileInfo.fileName = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_NAME, result, TYPE_STRING));
     fileInfo.mimeType = mimeType;
-    fileInfo.size = ResultSetUtils::GetLongValFromColumn(MEDIA_DATA_DB_SIZE, result);
-    fileInfo.mtime = ResultSetUtils::GetLongValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED, result);
+    fileInfo.size =  get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, result, TYPE_INT64));
+    fileInfo.mtime = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED, result, TYPE_INT64));
     if (mediaType == MEDIA_TYPE_ALBUM) {
         fileInfo.mode = MEDIA_FILE_EXT_MODE_FOLDER;
     } else {
