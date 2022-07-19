@@ -160,14 +160,14 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
 int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
 {
     if (rdbStore_) {
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     }
 
     MediaLibraryUnistoreManager::GetInstance().Init(context_);
     rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
 
     mediaThumbnail_ = std::make_shared<MediaLibraryThumbnail>();
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 void MediaLibraryDataManager::InitialiseKvStore()
@@ -251,7 +251,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
     if (value.IsEmpty()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager Insert: Input parameter is invalid");
-        return DATA_ABILITY_INVALID_VALUES;
+        return E_INVALID_VALUES;
     }
 
     MediaLibraryCommand cmd(uri, value);
@@ -260,10 +260,10 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
         string scanPath = ROOT_MEDIA_DIR;
         return MediaScannerObj::GetMediaScannerInstance()->ScanDir(scanPath, nullptr);
     } else if ((cmd.GetOprnType() == OperationType::CREATE) && !CheckFileNameValid(dataShareValue)) {
-        return DATA_ABILITY_FILE_NAME_INVALID;
+        return E_FILE_NAME_INVALID;
     }
 
-    int32_t result = DATA_ABILITY_FAIL;
+    int32_t result = E_FAIL;
     vector<string> devices;
     // after replace all xxxOperations following, remove "operationType"
     string operationType = MediaLibraryDataManagerUtils::GetOperationType(uri.ToString());
@@ -315,7 +315,7 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
     string uriString = uri.ToString();
     if (uriString != MEDIALIBRARY_DATA_URI) {
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
-        return DATA_ABILITY_INVALID_URI;
+        return E_INVALID_URI;
     }
     int32_t rowCount = 0;
     for (auto it = values.begin(); it != values.end(); it++) {
@@ -333,7 +333,7 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
 
     if (uri.ToString().find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("MediaLibraryDataManager Delete: Not Data ability Uri");
-        return DATA_ABILITY_INVALID_URI;
+        return E_INVALID_URI;
     }
 
     MediaLibraryCommand cmd(uri, OperationType::DELETE);
@@ -368,7 +368,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
     if (value.IsEmpty()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager Update:Input parameter is invalid ");
-        return DATA_ABILITY_INVALID_VALUES;
+        return E_INVALID_VALUES;
     }
 
     MediaLibraryCommand cmd(uri, value);
@@ -378,7 +378,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
             auto ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
-            if (ret != DATA_ABILITY_SUCCESS) {
+            if (ret != E_SUCCESS) {
                 return ret;
             }
             break;

@@ -42,12 +42,12 @@ int32_t MediaLibraryDirOperations::DeleteDirInfoUtil(const int &parent,
     mediaLibDirAbsPred.SetWhereClause(DIR_PARENT_WHERECLAUSE);
     mediaLibDirAbsPred.SetWhereArgs(selectionArgs);
     queryResultSet = rdbStore -> Query(mediaLibDirAbsPred, columns);
-    int32_t deleteErrorCode = DATA_ABILITY_FAIL;
+    int32_t deleteErrorCode = E_FAIL;
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("get rdbstore failed");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
     MEDIA_INFO_LOG("count = %{public}d", (int)count);
     if (count == 0) {
@@ -63,24 +63,24 @@ int32_t MediaLibraryDirOperations::DeleteDirInfoUtil(const int &parent,
             queryParentResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, columnIndexDir);
             queryParentResultSet->GetString(columnIndexDir, dirVal);
             if (parentIdVal == 0) {
-                return DATA_ABILITY_SUCCESS;
+                return E_SUCCESS;
             }
             MEDIA_INFO_LOG("dirVal = %{private}s", dirVal.c_str());
             MEDIA_INFO_LOG("parentIdVal = %{public}d", parentIdVal);
             deleteErrorCode = const_cast<MediaLibraryDirDb &>(dirDbOprn)
                 .DeleteDirInfo(parent, rdbStore);
-            if (deleteErrorCode != DATA_ABILITY_SUCCESS) {
+            if (deleteErrorCode != E_SUCCESS) {
                 MEDIA_ERR_LOG("rdbstore delete failed");
                 return deleteErrorCode;
             }
             if (!MediaFileUtils::DeleteDir(dirVal)) {
                 MEDIA_ERR_LOG("deleteDir failed");
-                return DATA_ABILITY_DELETE_DIR_FAIL;
+                return E_DELETE_DIR_FAIL;
             }
             DeleteDirInfoUtil(parentIdVal, rdbStore, dirDbOprn);
         }
     } else {
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     }
     return deleteErrorCode;
 }
@@ -91,7 +91,7 @@ int32_t MediaLibraryDirOperations::DeleteFMSDirInfoUtil(const std::string &relat
 {
     shared_ptr<AbsSharedResultSet> queryResultSet;
     vector<string> columns, selectionArgs;
-    int32_t deleteErrorCode = DATA_ABILITY_FAIL;
+    int32_t deleteErrorCode = E_FAIL;
     MEDIA_INFO_LOG("relativePath = %{private}s", relativePath.c_str());
     string data = ROOT_MEDIA_DIR + relativePath;
     if (data.substr(data.length() - 1) == "/") {
@@ -114,12 +114,12 @@ int32_t MediaLibraryDirOperations::DeleteFMSDirInfoUtil(const std::string &relat
         MEDIA_INFO_LOG("DeleteFMSDirInfoUtil parentIdVal = %{public}d", parentIdVal);
         if (parentIdVal == 0) {
             MEDIA_INFO_LOG("Root dir can not delete");
-            return DATA_ABILITY_SUCCESS;
+            return E_SUCCESS;
         }
         deleteErrorCode = const_cast<MediaLibraryDirDb &>(dirDbOprn)
                               .DeleteDirInfo(idVal, rdbStore);
         if (!MediaFileUtils::DeleteDir(data)) {
-            return DATA_ABILITY_DELETE_DIR_FAIL;
+            return E_DELETE_DIR_FAIL;
         } else {
             DeleteDirInfoUtil(parentIdVal, rdbStore, dirDbOprn);
         }
@@ -251,7 +251,7 @@ int32_t MediaLibraryDirOperations::CheckDirInfoUtil(const ValuesBucket &values,
     dirAsset = GetDirQuerySet(values, rdbStore, dirQuerySetMap);
     if (dirAsset.GetDirType() == DEFAULT_DIR_TYPE) {
         MEDIA_ERR_LOG("Check directory failed");
-        return DATA_ABILITY_CHECK_DIR_FAIL;
+        return E_CHECK_DIR_FAIL;
     }
     if (values.GetObject(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, valueObject)) {
         valueObject.GetString(extension);
@@ -267,28 +267,28 @@ int32_t MediaLibraryDirOperations::CheckDirInfoUtil(const ValuesBucket &values,
             MEDIA_ERR_LOG("dir is existed");
             return E_FILE_EXIST;
         }
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     }
     if (!CheckMediaTypeMatchExtension(mediaType, extension)) {
-        return DATA_ABILITY_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL;
+        return E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL;
     }
     extensionVal = dirAsset.GetExtensions();
     mediaTypeVal = dirAsset.GetMediaTypes();
     MEDIA_INFO_LOG("CheckDirInfoUtil extensionVal = %{public}s", extensionVal.c_str());
     MEDIA_INFO_LOG("CheckDirInfoUtil mediaTypeVal = %{public}s", mediaTypeVal.c_str());
     if (!CheckMediaType(mediaTypeVal, mediaType)) {
-        return DATA_ABILITY_CHECK_MEDIATYPE_FAIL;
+        return E_CHECK_MEDIATYPE_FAIL;
     }
     if (mediaType == MEDIA_TYPE_FILE) {
         if (!CheckFileExtension(dirQuerySetMap, extension)) {
-            return DATA_ABILITY_CHECK_EXTENSION_FAIL;
+            return E_CHECK_EXTENSION_FAIL;
         }
     } else {
         if (!CheckExtension(extensionVal, extension)) {
-            return DATA_ABILITY_CHECK_EXTENSION_FAIL;
+            return E_CHECK_EXTENSION_FAIL;
         }
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibraryDirOperations::HandleFMSTrashDir(const ValuesBucket &values,
@@ -308,7 +308,7 @@ int32_t MediaLibraryDirOperations::HandleFMSTrashDir(const ValuesBucket &values,
         valueObject.GetInt(dirId);
     } else {
         MEDIA_ERR_LOG("HandleFMSTrashDir invalid id");
-        return DATA_ABILITY_FAIL;
+        return E_FAIL;
     }
     smartAlbumMapQueryData.values.Clear();
     smartAlbumMapQueryData.values.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
@@ -320,9 +320,9 @@ int32_t MediaLibraryDirOperations::GetRootDirAndExtension(string &displayName,
                                                           string &relativePath, ValuesBucket &outValues)
 {
     string extension, rootDir;
-    int32_t errorCode = DATA_ABILITY_FAIL;
+    int32_t errorCode = E_FAIL;
     if (!MediaFileUtils::CheckDisplayName(displayName)) {
-        return DATA_ABILITY_FILE_NAME_INVALID;
+        return E_FILE_NAME_INVALID;
     }
     size_t displayNameIndex = displayName.find(".");
     if (displayNameIndex != string::npos) {
@@ -330,7 +330,7 @@ int32_t MediaLibraryDirOperations::GetRootDirAndExtension(string &displayName,
         MEDIA_INFO_LOG("extension = %{public}s", extension.c_str());
     } else {
         MEDIA_ERR_LOG("get displayNameIndex failed");
-        errorCode = DATA_ABILITY_FILE_NAME_INVALID;
+        errorCode = E_FILE_NAME_INVALID;
         return errorCode;
     }
     size_t dirIndex = relativePath.find("/");
@@ -343,12 +343,12 @@ int32_t MediaLibraryDirOperations::GetRootDirAndExtension(string &displayName,
         MEDIA_INFO_LOG("rootDir = %{public}s", rootDir.c_str());
     } else {
         MEDIA_ERR_LOG("get dirIndex failed");
-        errorCode = DATA_ABILITY_CHECK_ROOT_DIR_FAIL;
+        errorCode = E_CHECK_ROOT_DIR_FAIL;
         return errorCode;
     }
     outValues.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, extension);
     outValues.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, rootDir);
-    errorCode = DATA_ABILITY_SUCCESS;
+    errorCode = E_SUCCESS;
     return errorCode;
 }
 
@@ -408,11 +408,11 @@ int32_t MediaLibraryDirOperations::HandleCheckDirExtension(const ValuesBucket &v
         MEDIA_INFO_LOG("mediaType = %{public}d", mediaType);
     }
     if (HandleSpecialMediaType(mediaType)) {
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     }
     ValuesBucket GetDirAndExtensionValues;
     int errorCode = GetRootDirAndExtension(displayName, relativePath, GetDirAndExtensionValues);
-    if (errorCode != DATA_ABILITY_SUCCESS) {
+    if (errorCode != E_SUCCESS) {
         MEDIA_ERR_LOG("GetDirAndExtension fail");
         return errorCode;
     }
@@ -433,7 +433,7 @@ int32_t MediaLibraryDirOperations::HandleDirOperations(const string &oprn,
     const unordered_map<string, DirAsset> &dirQuerySetMap)
 {
     ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
-    int32_t errCode = DATA_ABILITY_FAIL;
+    int32_t errCode = E_FAIL;
     ValueObject valueObject;
     if (oprn == MEDIA_DIROPRN_DELETEDIR) {
         errCode = HandleDeleteDir(values, rdbStore);

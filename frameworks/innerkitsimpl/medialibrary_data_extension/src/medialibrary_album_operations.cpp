@@ -30,7 +30,7 @@ int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &c
 {
     int64_t outRow = -1;
     int32_t errCode = MediaLibraryObjectUtils::CreateDirObj(cmd, outRow);
-    if (errCode == DATA_ABILITY_SUCCESS) {
+    if (errCode == E_SUCCESS) {
         return outRow;
     }
     return errCode;
@@ -42,7 +42,7 @@ int32_t MediaLibraryAlbumOperations::DeleteAlbumOperation(MediaLibraryCommand &c
     string dirPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strId);
     if (dirPath.empty()) {
         MEDIA_ERR_LOG("Get path of id %{private}s from database file!", strId.c_str());
-        return DATA_ABILITY_INVALID_PATH;
+        return E_INVALID_PATH;
     }
     return MediaLibraryObjectUtils::DeleteDirObj(cmd, dirPath);
 }
@@ -54,7 +54,7 @@ int32_t MediaLibraryAlbumOperations::ModifyAlbumOperation(MediaLibraryCommand &c
     string srcDirPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strId);
     if (srcDirPath.empty()) {
         MEDIA_ERR_LOG("Get path of id %{private}s from database file!", strId.c_str());
-        return DATA_ABILITY_INVALID_PATH;
+        return E_INVALID_PATH;
     }
 
     auto values = cmd.GetValueBucket();

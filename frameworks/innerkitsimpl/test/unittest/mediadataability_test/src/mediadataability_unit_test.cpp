@@ -28,10 +28,10 @@ MediaLibraryDataAbility g_rdbStoreTest;
 string g_createUri1, g_createUri2;
 int g_uid = 5010;
 std::shared_ptr<AppExecFwk::DataAbilityHelper> medialibraryDataAbilityHelper = nullptr;
-int g_fd1 = DATA_ABILITY_FAIL;
-int g_fd2 = DATA_ABILITY_FAIL;
-int g_albumId1 = DATA_ABILITY_FAIL;
-int g_albumId2 = DATA_ABILITY_FAIL;
+int g_fd1 = E_FAIL;
+int g_fd2 = E_FAIL;
+int g_albumId1 = E_FAIL;
+int g_albumId2 = E_FAIL;
 shared_ptr<NativeRdb::AbsSharedResultSet> g_resultSet1 = nullptr;
 shared_ptr<NativeRdb::AbsSharedResultSet> g_resultSet2 = nullptr;
 shared_ptr<NativeRdb::AbsSharedResultSet> g_resultSet3 = nullptr;
@@ -108,7 +108,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_001, TestSi
 {
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_001::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
-    int index = DATA_ABILITY_FAIL;
+    int index = E_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket;
@@ -128,7 +128,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_002, TestSi
 {
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_002::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
-    int index = DATA_ABILITY_FAIL;
+    int index = E_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket;
@@ -148,7 +148,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_003, TestSi
 {
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_003::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
-    int index = DATA_ABILITY_FAIL;
+    int index = E_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket;
@@ -168,7 +168,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_004, TestSi
 {
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_004::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
-    int index = DATA_ABILITY_FAIL;
+    int index = E_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket;
@@ -187,7 +187,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CreateAsset_Test_005, TestSi
 {
     MEDIA_INFO_LOG("MediaDataAbility_CreateAsset_Test_005::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
-    int index = DATA_ABILITY_FAIL;
+    int index = E_FAIL;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket;
@@ -204,7 +204,7 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_DeleteAsset_Test_001, TestSi
 {
     MEDIA_INFO_LOG("MediaDataAbility_DeleteAsset_Test_001::Start");
     std::shared_ptr<AppExecFwk::DataAbilityHelper> helper = CreateMediaLibraryHelper();
-    int index = DATA_ABILITY_FAIL;
+    int index = E_FAIL;
     Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
     NativeRdb::ValuesBucket valuesBucket;
     string relativePath = "Pictures/";
@@ -447,12 +447,12 @@ HWTEST_F(MediaDataAbilityUnitTest, MediaDataAbility_CloseFile_Test_001, TestSize
     Uri closeAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
 
     int32_t retVal = close(fd);
-    EXPECT_NE(retVal != DATA_ABILITY_SUCCESS, true);
+    EXPECT_NE(retVal != E_SUCCESS, true);
 
     NativeRdb::ValuesBucket valuesBucketClose;
     valuesBucketClose.PutString(MEDIA_DATA_DB_URI, fileUri);
     int32_t retValClose = helper->Insert(closeAssetUri, valuesBucketClose);
-    EXPECT_NE(retValClose != DATA_ABILITY_SUCCESS, true);
+    EXPECT_NE(retValClose != E_SUCCESS, true);
 
     MEDIA_INFO_LOG("MediaDataAbility_CloseFile_Test_001::End");
 }

@@ -56,7 +56,7 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
             valuesBucket.PutInt(DEVICE_DB_SYNC_STATUS, 0);
             valuesBucket.PutLong(DEVICE_DB_DATE_MODIFIED, 0);
             MEDIA_INFO_LOG("MediaLibraryDeviceOperations::InsertDeviceInfo UpdateDeviceInfo");
-            return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == DATA_ABILITY_SUCCESS;
+            return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == E_SUCCESS;
         } else {
             // 插入数据库
             int64_t now = CurrentTimeMillis();
@@ -101,7 +101,7 @@ bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const std::shared_ptr<Native
             valuesBucket.PutString(DEVICE_DB_SELF_ID, deviceInfo.selfId);
             valuesBucket.PutLong(DEVICE_DB_DATE_MODIFIED, now);
             MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo UpdateDeviceInfo");
-            return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == DATA_ABILITY_SUCCESS;
+            return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == E_SUCCESS;
         }
     }
     return false;
@@ -133,7 +133,7 @@ bool MediaLibraryDeviceOperations::UpdateSyncStatus(const std::shared_ptr<Native
             valuesBucket.PutString(DEVICE_DB_DEVICEID, deviceId);
             valuesBucket.PutInt(DEVICE_DB_SYNC_STATUS, syncStatus);
             MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateSyncStatus");
-            return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == DATA_ABILITY_SUCCESS;
+            return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == E_SUCCESS;
         }
     }
     return false;
