@@ -62,6 +62,8 @@ ohos_source_set("media_library_source") {
 
   configs = [ ":media_library_config" ]
 
+  external_deps = [ "hitrace_native:hitrace_meter" ]
+
   part_name = "media_library"
   subsystem_name = "multimedia"
 }
@@ -78,6 +80,7 @@ ohos_shared_library("media_library") {
     "c_utils:utils",
     "data_share:datashare_abilitykit",
     "data_share:datashare_common",
+    "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "relational_store:native_appdatafwk",

@@ -23,7 +23,10 @@
 #endif
 #undef LOG_TAG
 #define LOG_TAG "MediaLibraryNapi"
+
 #include "hilog/log.h"
+
+#include "media_trace.h"
 
 static inline OHOS::HiviewDFX::HiLogLabel LogLable()
 {
