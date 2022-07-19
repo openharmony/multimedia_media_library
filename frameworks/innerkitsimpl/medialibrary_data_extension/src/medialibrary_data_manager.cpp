@@ -66,7 +66,6 @@ std::mutex bundleMgrMutex;
 
 std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 std::mutex MediaLibraryDataManager::mutex_;
-static MediaDataShareExtAbility* mediaDataShare_ = nullptr;
 
 MediaLibraryDataManager::MediaLibraryDataManager(void)
 {
@@ -94,8 +93,7 @@ std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::GetInstance()
 static DataShare::DataShareExtAbility *MediaDataShareCreator(const std::unique_ptr<Runtime> &runtime)
 {
     MEDIA_DEBUG_LOG("MediaLibraryCreator::%{public}s", __func__);
-    mediaDataShare_ = MediaDataShareExtAbility::Create(runtime);
-    return mediaDataShare_;
+    return  MediaDataShareExtAbility::Create(runtime);
 }
 
 __attribute__((constructor)) void RegisterDataShareCreator()
@@ -154,6 +152,7 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     };
 
     MediaLibraryUnistoreManager::GetInstance().Stop();
+    extension_ = nullptr;
 }
 
 int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
@@ -186,6 +185,16 @@ void MediaLibraryDataManager::InitialiseKvStore()
     if (status != Status::SUCCESS || kvStorePtr_ == nullptr) {
         MEDIA_INFO_LOG("MediaLibraryDataManager::InitialiseKvStore failed %{private}d", status);
     }
+}
+
+std::shared_ptr<MediaDataShareExtAbility> MediaLibraryDataManager::GetOwner()
+{
+    return extension_;
+}
+
+void MediaLibraryDataManager::SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExternsion)
+{
+    extension_ = datashareExternsion;
 }
 
 std::string MediaLibraryDataManager::GetType(const Uri &uri)
@@ -697,8 +706,8 @@ std::string MediaLibraryDataManager::GetClientBundleName()
 
 void MediaLibraryDataManager::NotifyChange(const Uri &uri)
 {
-    if (mediaDataShare_ != nullptr) {
-        // Fix notify
+    if (extension_ != nullptr) {
+        extension_->NotifyChange(uri);
     }
 }
 }  // namespace Media

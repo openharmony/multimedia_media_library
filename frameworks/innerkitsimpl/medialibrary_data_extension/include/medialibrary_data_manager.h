@@ -33,7 +33,11 @@
 #include "values_bucket.h"
 
 namespace OHOS {
+namespace AbilityRuntime {
+class MediaDataShareExtAbility;
+}
 namespace Media {
+using OHOS::AbilityRuntime::MediaDataShareExtAbility;
 class MediaLibraryDataManager {
 public:
     EXPORT MediaLibraryDataManager();
@@ -62,6 +66,8 @@ public:
     void ClearMediaLibraryMgr();
     void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
     std::unordered_map<std::string, DirAsset> GetDirQuerySetMap() const;
+    std::shared_ptr<MediaDataShareExtAbility> GetOwner();
+    void SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExtension);
 
 private:
     void InitDeviceData();
@@ -84,6 +90,7 @@ private:
     static std::shared_ptr<MediaLibraryDataManager> instance_;
     std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
     std::atomic<int> refCnt_{0};
+    std::shared_ptr<MediaDataShareExtAbility> extension_;
 };
 
 // Scanner callback objects

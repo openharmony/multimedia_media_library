@@ -78,6 +78,7 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
     HILOG_INFO("%{public}s runtime language  %{public}d", __func__, runtime_.GetLanguage());
 
     MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context);
+    MediaLibraryDataManager::GetInstance()->SetOwner(static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()));
 }
 
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
