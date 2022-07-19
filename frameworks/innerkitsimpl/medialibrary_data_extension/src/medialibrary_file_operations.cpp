@@ -40,7 +40,7 @@ namespace OHOS {
 namespace Media {
 int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd)
 {
-    int32_t errCode = DATA_ABILITY_FAIL;
+    int32_t errCode = E_FAIL;
     auto values = cmd.GetValueBucket();
     string actualUri;
 
@@ -110,7 +110,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryTrashFiles(Media
 int32_t MediaLibraryFileOperations::GetAlbumCapacityOperation(MediaLibraryCommand &cmd)
 {
     MEDIA_DEBUG_LOG("enter");
-    int32_t errorCode = DATA_ABILITY_FAIL;
+    int32_t errorCode = E_FAIL;
     shared_ptr<AbsSharedResultSet> resultSet = nullptr;
 
     auto values = cmd.GetValueBucket();
@@ -145,13 +145,13 @@ int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd
     string strFileId = cmd.GetOprnFileId();
     if (strFileId.empty()) {
         MEDIA_ERR_LOG("Get id from uri or valuesBucket failed!");
-        return DATA_ABILITY_INVALID_FILEID;
+        return E_INVALID_FILEID;
     }
 
     string srcPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strFileId);
     if (srcPath.empty()) {
         MEDIA_ERR_LOG("Get path of id %{private}s from database file!", strFileId.c_str());
-        return DATA_ABILITY_INVALID_FILEID;
+        return E_INVALID_FILEID;
     }
 
     string dstFileName, dstReFilePath;
@@ -174,13 +174,13 @@ int32_t MediaLibraryFileOperations::DeleteFileOperation(MediaLibraryCommand &cmd
     string strFileId = cmd.GetOprnFileId();
     if (strFileId.empty()) {
         MEDIA_ERR_LOG("Get id from uri or valuesBucket failed!");
-        return DATA_ABILITY_INVALID_FILEID;
+        return E_INVALID_FILEID;
     }
 
     string srcPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strFileId);
     if (srcPath.empty()) {
         MEDIA_ERR_LOG("Get path of id %{private}s from database file!", strFileId.c_str());
-        return DATA_ABILITY_INVALID_FILEID;
+        return E_INVALID_FILEID;
     }
 
     int32_t errCode = MediaLibraryObjectUtils::DeleteFileObj(cmd, srcPath);
@@ -200,21 +200,21 @@ int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cm
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr");
-        return DATA_ABILITY_HAS_DB_ERROR;
+        return E_HAS_DB_ERROR;
     }
 
     string fileId = cmd.GetOprnFileId();
     if (fileId.empty()) {
         MEDIA_ERR_LOG("not dictionary id, can't do the judgement!");
-        return DATA_ABILITY_INVALID_FILEID;
+        return E_INVALID_FILEID;
     }
     string path = MediaLibraryObjectUtils::GetPathByIdFromDb(fileId);
     if (MediaFileUtils::IsDirectory(path)) {
         MEDIA_INFO_LOG("%{private}s is a dictionary!", path.c_str());
-        return DATA_ABILITY_SUCCESS;
+        return E_SUCCESS;
     }
     MEDIA_INFO_LOG("%{private}s is NOT a dictionary!", path.c_str());
-    return DATA_ABILITY_CHECK_DIR_FAIL;
+    return E_CHECK_DIR_FAIL;
 }
 
 shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFileOperation(

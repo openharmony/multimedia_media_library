@@ -43,7 +43,7 @@ int32_t MediaLibrarySmartAlbumMapDb::DeleteSmartAlbumMapInfo(const int32_t album
     vector<string> whereArgs = { std::to_string(albumId), std::to_string(assetId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_MAP_TABLE, SMARTALBUM_MAP_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
-    return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
+    return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::DeleteAllSmartAlbumMapInfo(const int32_t albumId,
@@ -55,7 +55,7 @@ int32_t MediaLibrarySmartAlbumMapDb::DeleteAllSmartAlbumMapInfo(const int32_t al
     int32_t deleteResult = rdbStore->Delete(deletedRows,
         SMARTALBUM_MAP_TABLE, SMARTALBUM_MAP_DE_SMARTALBUM_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
-    return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
+    return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::DeleteAllAssetsMapInfo(const int32_t assetId,
@@ -67,7 +67,7 @@ int32_t MediaLibrarySmartAlbumMapDb::DeleteAllAssetsMapInfo(const int32_t assetI
     int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_MAP_TABLE,
         SMARTALBUM_MAP_DE_ASSETS_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
-    return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
+    return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateAssetTrashInfo(const int32_t &assetId,
@@ -90,9 +90,9 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateAssetTrashInfo(const int32_t &assetId
     int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
     if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
         MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
-        return DATA_ABILITY_FAIL;
+        return E_FAIL;
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateSameNameInfo(const int32_t &assetId,
@@ -108,10 +108,10 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateSameNameInfo(const int32_t &assetId,
         int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
         if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
             MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
-            return DATA_ABILITY_FAIL;
+            return E_FAIL;
         }
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateParentDirRecycleInfo(const int32_t &assetId, const int32_t &parentId,
@@ -131,10 +131,10 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateParentDirRecycleInfo(const int32_t &a
         int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
         if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
             MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
-            return DATA_ABILITY_FAIL;
+            return E_FAIL;
         }
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateChildFileRecycleInfo(const int32_t &assetId,
@@ -152,10 +152,10 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateChildFileRecycleInfo(const int32_t &a
         int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
         if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
             MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
-            return DATA_ABILITY_FAIL;
+            return E_FAIL;
         }
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateChildPathInfo(const int32_t &assetId,
@@ -176,16 +176,16 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateChildPathInfo(const int32_t &assetId,
         int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
         if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
             MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
-            return DATA_ABILITY_FAIL;
+            return E_FAIL;
         }
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::DeleteTrashInfo(const int32_t &assetId, const shared_ptr<RdbStore> &rdbStore)
 {
     vector<string> whereArgs = {};
-    int32_t deletedRows = DATA_ABILITY_FAIL;
+    int32_t deletedRows = E_FAIL;
     if ((rdbStore != nullptr) && (assetId > 0)) {
         string strDeleteCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
         int32_t result = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, strDeleteCondition, whereArgs);
@@ -194,7 +194,7 @@ int32_t MediaLibrarySmartAlbumMapDb::DeleteTrashInfo(const int32_t &assetId, con
         }
     }
 
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateFavoriteInfo(const int32_t &assetId,
@@ -207,10 +207,10 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateFavoriteInfo(const int32_t &assetId,
         int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
         if ((result != E_OK) || (changedRows <= 0)) {
             MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
-            return DATA_ABILITY_FAIL;
+            return E_FAIL;
         }
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateRecycleInfo(const int32_t &assetId,
@@ -232,9 +232,9 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateRecycleInfo(const int32_t &assetId,
     int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
     if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
         MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
-        return DATA_ABILITY_FAIL;
+        return E_FAIL;
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateChildRecycleInfo(const int32_t &assetId,
@@ -252,9 +252,9 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateChildRecycleInfo(const int32_t &asset
     int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
     if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
         MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
-        return DATA_ABILITY_FAIL;
+        return E_FAIL;
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateDirTrashInfo(const int32_t &assetId,
@@ -277,9 +277,9 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateDirTrashInfo(const int32_t &assetId,
     int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
     if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
         MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
-        return DATA_ABILITY_FAIL;
+        return E_FAIL;
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateChildTrashInfo(const int32_t &assetId,
@@ -297,9 +297,9 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateChildTrashInfo(const int32_t &assetId
     int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
     if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
         MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
-        return DATA_ABILITY_FAIL;
+        return E_FAIL;
     }
-    return DATA_ABILITY_SUCCESS;
+    return E_SUCCESS;
 }
 }  // namespace Media
 }  // namespace OHOS

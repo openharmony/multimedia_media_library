@@ -42,7 +42,7 @@ int32_t MediaLibraryDeviceDb::DeleteDeviceInfo(const std::string &deviceId,
     int32_t deleteResult = rdbStore->Delete(deletedRows, DEVICE_TABLE, DEVICE_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, DEVICE_OPERATION_ERR, "Delete failed");
 
-    return (deletedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
+    return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 
 int32_t MediaLibraryDeviceDb::UpdateDeviceInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
@@ -66,7 +66,7 @@ int32_t MediaLibraryDeviceDb::UpdateDeviceInfo(const ValuesBucket &values, const
     int32_t updateResult = rdbStore->Update(updatedRows, DEVICE_TABLE, values, DEVICE_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(updateResult == E_OK, DEVICE_OPERATION_ERR, "Update failed");
 
-    return (updatedRows > 0) ? DATA_ABILITY_SUCCESS : DATA_ABILITY_FAIL;
+    return (updatedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 }  // namespace Media
 }  // namespace OHOS
