@@ -15,6 +15,7 @@ group("test") {
   testonly = true
 
   deps = [
+    "unittest/mediadatashare_test:unittest",
     "unittest/medialib_statistic_test:unittest",
     "unittest/medialibrary_extability_test:unittest",
   ]

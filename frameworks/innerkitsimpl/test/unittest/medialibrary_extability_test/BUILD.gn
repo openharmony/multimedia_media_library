@@ -25,6 +25,7 @@ ohos_unittest("medialibrary_extability_unittest") {
 
   include_dirs = [
     "./include",
+    "../get_self_permissions/include",
     "//base/security/access_token/interfaces/innerkits/accesstoken/include",
     "//base/security/access_token/interfaces/innerkits/nativetoken/include",
     "//base/security/access_token/interfaces/innerkits/token_setproc/include",
@@ -54,7 +55,7 @@ ohos_unittest("medialibrary_extability_unittest") {
   ]
 
   sources = [
-    "./src/get_self_permissions.cpp",
+    "../get_self_permissions/src/get_self_permissions.cpp",
     "./src/medialibraryext_unit_test.cpp",
   ]
 
