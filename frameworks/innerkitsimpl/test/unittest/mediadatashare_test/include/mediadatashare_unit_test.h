@@ -16,17 +16,11 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIADATAABILITY_TEST_INCLUDE_MEDIADATAABILITY_UNIT_TEST_H_
 #define FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIADATAABILITY_TEST_INCLUDE_MEDIADATAABILITY_UNIT_TEST_H_
 
-#include <cstdio>
-#include <thread>
-
 #include "gtest/gtest.h"
-
-#include "fetch_result.h"
-#include "medialibrary_data_ability.h"
 
 namespace OHOS {
 namespace Media {
-class MediaDataAbilityUnitTest : public testing::Test {
+class MediaDataShareUnitTest : public testing::Test {
 public:
     /* SetUpTestCase:The preset action of the test suite is executed before the first TestCase */
     static void SetUpTestCase(void);
