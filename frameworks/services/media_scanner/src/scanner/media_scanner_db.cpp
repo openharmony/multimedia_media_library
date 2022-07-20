@@ -66,6 +66,10 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
     values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
 
+    values.PutLong(MEDIA_DATA_DB_TAKE_PICTURE_TIME, metadata.GetTakePictureTime());
+    values.PutLong(MEDIA_DATA_DB_CONTENT_CREATE_TIME, metadata.GetContentCreateTime());
+    values.PutInt(MEDIA_DATA_DB_ROTATION_ANGLE, metadata.GetRotationAngle());
+
     Uri abilityUri(MEDIALIBRARY_DATA_URI);
     rowNum = MediaLibraryDataManager::GetInstance()->Insert(abilityUri, values);
     if (rowNum <= 0) {
@@ -139,6 +143,10 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     values.PutString(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
     values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
+
+    values.PutLong(MEDIA_DATA_DB_TAKE_PICTURE_TIME, metadata.GetTakePictureTime());
+    values.PutLong(MEDIA_DATA_DB_CONTENT_CREATE_TIME, metadata.GetContentCreateTime());
+    values.PutInt(MEDIA_DATA_DB_ROTATION_ANGLE, metadata.GetRotationAngle());
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     updateCount = MediaLibraryDataManager::GetInstance()->Update(uri, values, predicates);
