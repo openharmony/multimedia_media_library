@@ -244,6 +244,11 @@ void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset>
     MEDIA_DEBUG_LOG("MakeDirQuerySetMap OUT");
 }
 
+std::unordered_map<std::string, DirAsset> MediaLibraryDataManager::GetDirQuerySetMap() const
+{
+    return dirQuerySetMap_;
+}
+
 int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBucket &dataShareValue)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::Insert");
