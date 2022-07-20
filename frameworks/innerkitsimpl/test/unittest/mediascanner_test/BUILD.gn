@@ -46,8 +46,12 @@ ohos_unittest("mediascanner_unittest") {
 
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
+    "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager:ability_manager",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
     "//utils/native/base:utils",
   ]
 
