@@ -62,6 +62,7 @@ public:
     void InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
     void ClearMediaLibraryMgr();
     void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
+    std::unordered_map<std::string, DirAsset> GetDirQuerySetMap() const;
 
 private:
     void InitDeviceData();

@@ -25,6 +25,7 @@
 #include "media_scanner.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_dir_operations.h"
 #include "medialibrary_thumbnail.h"
 #include "value_object.h"
 
@@ -161,6 +162,12 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
         valueObject.GetInt(mediaType);
         fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
     }
+    MediaLibraryDirOperations dirOprn;
+    int32_t errCode = dirOprn.HandleDirOperations(MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION, values,
+        MediaLibraryDataManager::GetInstance()->rdbStore_, MediaLibraryDataManager::GetInstance()->GetDirQuerySetMap());
+    if (errCode != E_SUCCESS) {
+        return errCode;
+    }
 
     NativeAlbumAsset dirAsset = GetDirAsset(ROOT_MEDIA_DIR + relativePath);
     if (dirAsset.GetAlbumId() < 0) {
@@ -168,7 +175,7 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
     }
 
     // delete rows in database but not in real filesystem
-    int32_t errCode = DeleteInvalidRowInDb(path);
+    errCode = DeleteInvalidRowInDb(path);
     if (errCode != E_SUCCESS) {
         MEDIA_ERR_LOG("Delete invalid row in database failed");
         return errCode;
