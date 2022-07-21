@@ -438,11 +438,13 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleRemoveAssetOperations(const i
 {
     int32_t errorCode = E_FAIL;
     if (albumId == TRASH_ALBUM_ID_VALUES) {
-        RemoveTrashAssetsInfoUtil(childFileAssetId, smartAlbumMapQueryData);
+        errorCode = RemoveTrashAssetsInfoUtil(childFileAssetId, smartAlbumMapQueryData);
     } else if (albumId == FAVOURITE_ALBUM_ID_VALUES) {
-        UpdateFavoriteAssetsInfoUtil(childFileAssetId, false, smartAlbumMapQueryData);
+        errorCode = UpdateFavoriteAssetsInfoUtil(childFileAssetId, false, smartAlbumMapQueryData);
     }
-    errorCode = RemoveAlbumAssetsInfoUtil(albumId, smartAlbumMapQueryData);
+    if (errorCode > 0) {
+        errorCode = RemoveAlbumAssetsInfoUtil(albumId, smartAlbumMapQueryData);
+    }
     return errorCode;
 }
 
