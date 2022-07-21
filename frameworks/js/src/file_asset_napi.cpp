@@ -19,7 +19,6 @@
 
 #include "abs_shared_result_set.h"
 #include "hitrace_meter.h"
-#include "data_ability_predicates.h"
 #include "fetch_result.h"
 #include "hilog/log.h"
 #include "media_file_utils.h"
