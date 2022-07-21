@@ -16,7 +16,7 @@
 #include "metadata_extractor.h"
 
 #include "hitrace_meter.h"
-
+#include "media_data_ability_const.h"
 #include "media_log.h"
 
 namespace OHOS {
@@ -26,6 +26,14 @@ using namespace std;
 int32_t MetadataExtractor::ConvertStringToInteger(const string &str)
 {
     int32_t integer = 0;
+    std::stringstream ss(str);
+    ss >> integer;
+    return integer;
+}
+
+static int64_t ConvertStringToInteger64(const string &str)
+{
+    int64_t integer = 0;
     std::stringstream ss(str);
     ss >> integer;
     return integer;
@@ -50,6 +58,13 @@ int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
         fileMetadata.SetFileHeight(imageInfo.size.height);
     }
 
+    string takePictureTime;
+    ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL, takePictureTime);
+    if (ret == ERR_SUCCESS) {
+        int64_t int64TempMeta = ConvertStringToInteger64(takePictureTime);
+        fileMetadata.SetTakePictureTime(int64TempMeta);
+    }
+
     return ERR_SUCCESS;
 }
 
@@ -58,6 +73,7 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
 {
     string strTemp;
     int32_t intTempMeta;
+    int64_t int64TempMeta;
 
     strTemp = metadataMap.at(AV_KEY_ALBUM);
     fileMetadata.SetAlbum(strTemp);
@@ -79,6 +95,14 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
 
     strTemp = metadataMap.at(AV_KEY_MIME_TYPE);
     fileMetadata.SetFileMimeType(strTemp);
+
+    strTemp = metadataMap.at(AV_KEY_DATE_TIME);
+    int64TempMeta = ConvertStringToInteger64(strTemp);
+    fileMetadata.SetContentCreateTime(int64TempMeta);
+
+    strTemp = metadataMap.at(AV_KEY_VIDEO_ORIENTATION);
+    intTempMeta = ConvertStringToInteger(strTemp);
+    fileMetadata.SetRotationAngle(intTempMeta);
 }
 
 int32_t MetadataExtractor::ExtractMetadata(Metadata &fileMetadata, const string &uri)

@@ -95,6 +95,15 @@ public:
     void SetRecyclePath(const VariantData &recyclePath);
     std::string GetRecyclePath() const;
 
+    void SetTakePictureTime(const VariantData &takePictureTime);
+    int64_t GetTakePictureTime() const;
+
+    void SetContentCreateTime(const VariantData &contentCreateTime);
+    int64_t GetContentCreateTime() const;
+
+    void SetRotationAngle(const VariantData &rotationAngle);
+    int32_t GetRotationAngle() const;
+
     void Init();
 
     using MetadataFnPtr = void (Metadata::*)(const VariantData &);
@@ -127,6 +136,15 @@ private:
     int32_t width_;
     int32_t duration_;
     int32_t orientation_;
+
+    // image
+    int64_t takePictureTime_;
+
+    // video, audio
+    int64_t contentCreateTime_;
+
+    // video
+    int32_t rotationAngle_;
 
     // album
     int32_t albumId_;

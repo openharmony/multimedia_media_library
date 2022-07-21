@@ -40,6 +40,9 @@ Metadata::Metadata()
     width_(FILE_WIDTH_DEFAULT),
     duration_(FILE_DURATION_DEFAULT),
     orientation_(FILE_ORIENTATION_DEFAULT),
+    takePictureTime_(FILE_TAKE_PICTURE_TIME_DEFAULT),
+    contentCreateTime_(FILE_CONTENT_CREATE_TIME_DEFAULT),
+    rotationAngle_(FILE_ROTATION_ANGLE_DEFAULT),
     albumId_(FILE_ALBUM_ID_DEFAULT),
     albumName_(FILE_ALBUM_NAME_DEFAULT),
     recyclePath_(FILE_RECYCLE_PATH_DEFAULT)
@@ -69,6 +72,9 @@ void Metadata::Init()
     memberFuncMap_[MEDIA_DATA_DB_BUCKET_NAME] = make_pair(DataType::TYPE_STRING, &Metadata::SetAlbumName);
     memberFuncMap_[MEDIA_DATA_DB_PARENT_ID] = make_pair(DataType::TYPE_INT, &Metadata::SetParentId);
     memberFuncMap_[MEDIA_DATA_DB_RECYCLE_PATH] = make_pair(DataType::TYPE_STRING, &Metadata::SetRecyclePath);
+    memberFuncMap_[MEDIA_DATA_DB_TAKE_PICTURE_TIME] = make_pair(DataType::TYPE_LONG, &Metadata::SetTakePictureTime);
+    memberFuncMap_[MEDIA_DATA_DB_CONTENT_CREATE_TIME] = make_pair(DataType::TYPE_LONG, &Metadata::SetContentCreateTime);
+    memberFuncMap_[MEDIA_DATA_DB_ROTATION_ANGLE] = make_pair(DataType::TYPE_INT, &Metadata::SetRotationAngle);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -289,6 +295,36 @@ void Metadata::SetRecyclePath(const VariantData &recyclePath)
 std::string Metadata::GetRecyclePath() const
 {
     return recyclePath_;
+}
+
+void Metadata::SetTakePictureTime(const VariantData &takePictureTime)
+{
+    takePictureTime_ = std::get<int64_t>(takePictureTime);
+}
+
+int64_t Metadata::GetTakePictureTime() const
+{
+    return takePictureTime_;
+}
+
+void Metadata::SetContentCreateTime(const VariantData &contentCreateTime)
+{
+    contentCreateTime_ = std::get<int64_t>(contentCreateTime);
+}
+
+int64_t Metadata::GetContentCreateTime() const
+{
+    return contentCreateTime_;
+}
+
+void Metadata::SetRotationAngle(const VariantData &rotationAngle)
+{
+    rotationAngle_ = std::get<int32_t>(rotationAngle);
+}
+
+int32_t Metadata::GetRotationAngle() const
+{
+    return rotationAngle_;
 }
 } // namespace Media
 } // namespace OHOS

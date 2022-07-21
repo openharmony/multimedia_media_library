@@ -162,6 +162,9 @@ static const std::string MEDIA_DATA_DB_LATITUDE = "latitude";
 static const std::string MEDIA_DATA_DB_LONGITUDE = "longitude";
 static const std::string MEDIA_DATA_DB_DATE_TAKEN = "date_taken";
 static const std::string MEDIA_DATA_DB_THUMBNAIL = "thumbnail";
+static const std::string MEDIA_DATA_DB_TAKE_PICTURE_TIME = "take_picture_time";
+static const std::string MEDIA_DATA_DB_ROTATION_ANGLE = "rotation_angle";
+static const std::string MEDIA_DATA_DB_CONTENT_CREATE_TIME = "content_create_time";
 
 static const std::string MEDIA_DATA_DB_LCD = "lcd";
 static const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";
@@ -196,6 +199,8 @@ static const std::string MEDIA_DATA_DB_RINGTONE_URI = "ringtone_uri";
 static const std::string MEDIA_DATA_DB_ALARM_URI = "alarm_uri";
 static const std::string MEDIA_DATA_DB_NOTIFICATION_URI = "notification_uri";
 static const std::string MEDIA_DATA_DB_RINGTONE_TYPE = "ringtone_type";
+
+static const std::string MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL = "DateTimeOriginal";
 
 static const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " ("
                                        + MEDIA_DATA_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -232,6 +237,9 @@ static const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + ME
                                        + MEDIA_DATA_DB_RELATIVE_PATH + " TEXT, "
                                        + MEDIA_DATA_DB_VOLUME_NAME + " TEXT, "
                                        + MEDIA_DATA_DB_SELF_ID + " TEXT DEFAULT '1', "
+                                       + MEDIA_DATA_DB_TAKE_PICTURE_TIME + " BIGINT DEFAULT 0, "
+                                       + MEDIA_DATA_DB_CONTENT_CREATE_TIME + " BIGINT DEFAULT 0, "
+                                       + MEDIA_DATA_DB_ROTATION_ANGLE + " INT DEFAULT 0, "
                                        + MEDIA_DATA_DB_ALBUM_NAME + " TEXT, "
                                        + MEDIA_DATA_DB_URI + " TEXT, "
                                        + MEDIA_DATA_DB_ALBUM + " TEXT)";
