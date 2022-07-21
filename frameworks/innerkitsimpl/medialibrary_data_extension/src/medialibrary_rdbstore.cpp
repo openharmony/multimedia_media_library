@@ -19,7 +19,7 @@
 #include "media_log.h"
 #include "medialibrary_device.h"
 #include "medialibrary_sync_table.h"
-
+#include "sqlite_database_utils.h"
 using namespace std;
 using namespace OHOS::NativeRdb;
 
@@ -32,13 +32,19 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
         return;
     }
     string databaseDir = context->GetDatabaseDir();
-    string relativePath = MEDIA_DATA_ABILITY_DB_NAME;
-
-    config_ = RdbStoreConfig(databaseDir + "/" + relativePath);
+    string name = MEDIA_DATA_ABILITY_DB_NAME;
+    string moduleName;
+    auto hapInfo = context->GetHapModuleInfo();
+    if (hapInfo != nullptr) {
+        moduleName = hapInfo->moduleName;
+    }
+    int32_t errCode = 0;
+    std::string realPath = SqliteDatabaseUtils::GetDefaultDatabasePath(databaseDir, name, errCode);
+    config_.SetName(std::move(name));
+    config_.SetPath(std::move(realPath));
     config_.SetBundleName(context->GetBundleName());
-    config_.SetName(MEDIA_DATA_ABILITY_DB_NAME);
-    config_.SetRelativePath(relativePath);
-    config_.SetEncryptLevel(ENCRYPTION_LEVEL);
+    config_.SetModuleName(moduleName);
+    config_.SetArea(context->GetArea());
     Init();
 }
 
