@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "KvStoreOperation"
 
 #include "medialibrary_kvstore_operations.h"
 #include "media_log.h"

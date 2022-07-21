@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "Subscribe"
+
 #include "medialibrary_subscriber.h"
 
 #include "appexecfwk_errors.h"
