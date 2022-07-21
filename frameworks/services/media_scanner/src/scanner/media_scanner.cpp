@@ -330,6 +330,7 @@ unique_ptr<Metadata> MediaScannerObj::GetFileMetadata(const string &path, const 
     unique_ptr<Metadata> fileMetadata = make_unique<Metadata>();
     if (fileMetadata == nullptr) {
         MEDIA_ERR_LOG("File metadata is null");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
@@ -361,6 +362,7 @@ unique_ptr<Metadata> MediaScannerObj::GetFileMetadata(const string &path, const 
     ScannerUtils::GetRootMediaDir(rootDir);
     if (rootDir.empty()) {
         MEDIA_ERR_LOG("Root dir path is empty!");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return fileMetadata;
     }
 

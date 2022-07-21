@@ -87,6 +87,7 @@ std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Si
     vector<uint8_t> image;
     if (!GetImage(key, image)) {
         if (!uri.substr(0, MEDIALIBRARY_MEDIA_PREFIX.length()).compare(MEDIALIBRARY_MEDIA_PREFIX)) {
+            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
             return nullptr;
         }
 
@@ -96,10 +97,12 @@ std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Si
 
         if (syncStatus != DistributedKv::Status::SUCCESS) {
             MEDIA_ERR_LOG("sync KvStore failed! ret %{public}d", syncStatus);
+            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
             return nullptr;
         }
         if (!GetImage(key, image)) {
             MEDIA_ERR_LOG("get image failed again!");
+            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
             return nullptr;
         }
     }
@@ -107,6 +110,7 @@ std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Si
     unique_ptr<PixelMap> pixelMap;
     if (!ResizeImage(image, size, pixelMap)) {
         MEDIA_ERR_LOG("resize image failed!");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
@@ -144,6 +148,7 @@ bool MediaThumbnailHelper::ResizeImage(vector<uint8_t> &data, Size &size, unique
 
     if (data.size() == 0) {
         MEDIA_ERR_LOG("Data is empty");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
 
@@ -152,22 +157,24 @@ bool MediaThumbnailHelper::ResizeImage(vector<uint8_t> &data, Size &size, unique
     SourceOptions opts;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data.data(),
         data.size(), opts, errorCode);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to create image source %{public}d", errorCode);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "imageSource->CreatePixelMap");
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize.width = size.width;
     decodeOpts.desiredSize.height = size.height;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to create pixelmap %{public}d", errorCode);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     return true;
@@ -190,6 +197,7 @@ bool MediaThumbnailHelper::GetImage(string &key, vector<uint8_t> &image)
     auto status = singleKvStorePtr_->Get(key, res);
     if (status != Status::SUCCESS) {
         MEDIA_ERR_LOG("Failed to get key [%{public}s]", key.c_str());
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);

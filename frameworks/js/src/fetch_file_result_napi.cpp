@@ -150,6 +150,7 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult 
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         sFetchFileResult_ = nullptr;
         if (status == napi_ok && result != nullptr) {
+            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
             return result;
         } else {
             NAPI_ERR_LOG("Failed to create fetch file result instance, status: %{public}d", status);
