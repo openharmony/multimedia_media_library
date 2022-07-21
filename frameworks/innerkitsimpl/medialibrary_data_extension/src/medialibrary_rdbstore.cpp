@@ -33,17 +33,11 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     }
     string databaseDir = context->GetDatabaseDir();
     string name = MEDIA_DATA_ABILITY_DB_NAME;
-    string moduleName;
-    auto hapInfo = context->GetHapModuleInfo();
-    if (hapInfo != nullptr) {
-        moduleName = hapInfo->moduleName;
-    }
     int32_t errCode = 0;
     std::string realPath = SqliteDatabaseUtils::GetDefaultDatabasePath(databaseDir, name, errCode);
     config_.SetName(std::move(name));
     config_.SetPath(std::move(realPath));
     config_.SetBundleName(context->GetBundleName());
-    config_.SetModuleName(moduleName);
     config_.SetArea(context->GetArea());
     Init();
 }
