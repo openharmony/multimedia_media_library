@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "FileUtils"
 
 #include "media_file_utils.h"
 
@@ -21,6 +22,7 @@
 #include <regex>
 #include <sstream>
 #include <sys/sendfile.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "directory_ex.h"
@@ -33,6 +35,9 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
+static const mode_t CHOWN_RWX_USR_GRP = 02770;
+static const mode_t CHOWN_RW_USR_GRP = 0660;
+
 int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
 {
     CHECK_AND_RETURN_RET_LOG(fpath != nullptr, E_FAIL, "fpath == nullptr");
@@ -53,7 +58,7 @@ int32_t RemoveDirectory(const string &path)
     return errCode;
 }
 
-bool MediaFileUtils::CreateDirectory(const string& dirPath)
+bool MediaFileUtils::CreateDirectory(const string &dirPath)
 {
     string subStr;
     string segment;
@@ -265,7 +270,7 @@ bool MediaFileUtils::RenameDir(const string &oldPath, const string &newPath)
     return errRet;
 }
 
-bool MediaFileUtils::CheckDisplayName(std::string displayName)
+bool MediaFileUtils::CheckDisplayName(const std::string &displayName)
 {
     size_t size = displayName.length();
     if (size == 0 || size > DISPLAYNAME_MAX) {
@@ -280,7 +285,7 @@ bool MediaFileUtils::CheckDisplayName(std::string displayName)
     return true;
 }
 
-bool MediaFileUtils::CheckTitle(std::string title)
+bool MediaFileUtils::CheckTitle(const std::string &title)
 {
     size_t size = title.length();
     if (size == 0 || size > DISPLAYNAME_MAX) {

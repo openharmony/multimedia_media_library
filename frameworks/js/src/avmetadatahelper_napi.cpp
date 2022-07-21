@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "AVMetadataHelperNapi"
 
 #include "avmetadatahelper_napi.h"
 #include <climits>

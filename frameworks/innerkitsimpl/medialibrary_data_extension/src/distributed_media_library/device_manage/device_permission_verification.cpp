@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "Distributed"
 
 #include "device_permission_verification.h"
 #include "device_auth.h"
