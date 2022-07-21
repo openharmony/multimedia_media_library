@@ -65,8 +65,6 @@ public:
     unique_ptr<Metadata> GetFileModifiedInfo(const string &path);
     unordered_map<int32_t, MediaType> GetIdsFromFilePath(const string &path);
 
-    static string FormatSqlPath(const string &path);
-
 private:
     std::string GetMediaTypeUri(MediaType mediaType);
     std::unique_ptr<Metadata> FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
