@@ -52,6 +52,7 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl/medialibrary_data_extension/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/inner_api/media_library_helper/include",
     "//third_party/json/include",
+    "${MEDIA_SCANNER_SOURCE_DIR}/include/scanner",
   ]
 
   sources = [
