@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "FetchResult"
 
 #include "fetch_result.h"
 #include "media_log.h"

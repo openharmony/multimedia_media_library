@@ -12,10 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "Extension"
 
 #include "media_datashare_stub_impl.h"
 
-#include "datashare_log.h"
+#include "media_log.h"
 
 namespace OHOS {
 namespace DataShare {
@@ -26,229 +27,229 @@ std::shared_ptr<MediaDataShareExtAbility> MediaDataShareStubImpl::GetOwner()
 
 std::vector<std::string> MediaDataShareStubImpl::GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     std::vector<std::string> ret;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return ret;
     }
     ret = extension->GetFileTypes(uri, mimeTypeFilter);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return ret;
 }
 
 int MediaDataShareStubImpl::OpenFile(const Uri &uri, const std::string &mode)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     int ret = -1;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return ret;
     }
     ret = extension->OpenFile(uri, mode);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return ret;
 }
 
 int MediaDataShareStubImpl::OpenRawFile(const Uri &uri, const std::string &mode)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     int ret = -1;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-            LOG_ERROR("%{public}s end failed.", __func__);
+            MEDIA_ERR_LOG("%{public}s end failed.", __func__);
             return ret;
     }
     ret = extension->OpenRawFile(uri, mode);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return ret;
 }
 
 int MediaDataShareStubImpl::Insert(const Uri &uri, const DataShareValuesBucket &value)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     int ret = 0;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return ret;
     }
     ret = extension->Insert(uri, value);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return ret;
 }
 
 int MediaDataShareStubImpl::Update(const Uri &uri, const DataSharePredicates &predicates,
     const DataShareValuesBucket &value)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     int ret = 0;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return ret;
     }
     ret = extension->Update(uri, predicates, value);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return ret;
 }
 
 int MediaDataShareStubImpl::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     int ret = 0;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return ret;
     }
     ret = extension->Delete(uri, predicates);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return ret;
 }
 
 std::shared_ptr<DataShareResultSet> MediaDataShareStubImpl::Query(const Uri &uri,
     const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     std::shared_ptr<DataShareResultSet> resultSet = nullptr;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return nullptr;
     }
     resultSet = extension->Query(uri, predicates, columns);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return resultSet;
 }
 
 std::string MediaDataShareStubImpl::GetType(const Uri &uri)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     std::string ret = "";
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return ret;
     }
     ret = extension->GetType(uri);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return ret;
 }
 
 int MediaDataShareStubImpl::BatchInsert(const Uri &uri, const std::vector<DataShareValuesBucket> &values)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     int ret = 0;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return ret;
     }
     ret = extension->BatchInsert(uri, values);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return ret;
 }
 
 bool MediaDataShareStubImpl::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     bool ret = false;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return ret;
     }
     ret = extension->RegisterObserver(uri, dataObserver);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return ret;
 }
 
 bool MediaDataShareStubImpl::UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     bool ret = false;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return ret;
     }
     ret = extension->UnregisterObserver(uri, dataObserver);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return ret;
 }
 
 bool MediaDataShareStubImpl::NotifyChange(const Uri &uri)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     bool ret = false;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return ret;
     }
     ret = extension->NotifyChange(uri);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return ret;
 }
 
 Uri MediaDataShareStubImpl::NormalizeUri(const Uri &uri)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     Uri urivalue("");
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return urivalue;
     }
     urivalue = extension->NormalizeUri(uri);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return urivalue;
 }
 
 Uri MediaDataShareStubImpl::DenormalizeUri(const Uri &uri)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     Uri urivalue("");
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return urivalue;
     }
     urivalue = extension->DenormalizeUri(uri);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return urivalue;
 }
 
 std::vector<std::shared_ptr<DataShareResult>> MediaDataShareStubImpl::ExecuteBatch(
     const std::vector<std::shared_ptr<DataShareOperation>> &operations)
 {
-    LOG_INFO("begin.");
+    MEDIA_INFO_LOG("begin.");
     std::vector<std::shared_ptr<DataShareResult>> results;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-        LOG_ERROR("%{public}s end failed.", __func__);
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return results;
     }
     results = extension->ExecuteBatch(operations);
-    LOG_INFO("end successfully.");
+    MEDIA_INFO_LOG("end successfully.");
     return results;
 }
 } // namespace DataShare

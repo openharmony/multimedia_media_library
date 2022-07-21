@@ -17,13 +17,9 @@
 #define FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_
 
 #include <string>
-#include <sys/types.h>
 
 namespace OHOS {
 namespace Media {
-static const mode_t CHOWN_RWX_USR_GRP = 02770;
-static const mode_t CHOWN_RW_USR_GRP = 0660;
-
 /**
  * @brief Utility class for file operations
  *
@@ -32,19 +28,19 @@ static const mode_t CHOWN_RW_USR_GRP = 0660;
  */
 class MediaFileUtils {
 public:
-    static bool IsFileExists(const std::string& fileName);
-    static bool CreateFile(const std::string& fileName);
-    static bool DeleteFile(const std::string& fileName);
-    static bool DeleteDir(const std::string& dirName);
-    static std::string GetFilename(const std::string& filePath);
+    static bool IsFileExists(const std::string &fileName);
+    static bool CreateFile(const std::string &fileName);
+    static bool DeleteFile(const std::string &fileName);
+    static bool DeleteDir(const std::string &dirName);
+    static std::string GetFilename(const std::string &filePath);
     static std::string GetParentPath(const std::string &path);
-    static bool IsDirectory(const std::string& dirName);
-    static bool MoveFile(const std::string& oldPath, const std::string& newPath);
-    static bool CopyFile(const std::string& filePath, const std::string& newPath);
-    static bool RenameDir(const std::string& oldPath, const std::string& newPath);
-    static bool CreateDirectory(const std::string& dirPath);
-    static bool CheckDisplayName(std::string displayName);
-    static bool CheckTitle(std::string title);
+    static bool IsDirectory(const std::string &dirName);
+    static bool MoveFile(const std::string &oldPath, const std::string &newPath);
+    static bool CopyFile(const std::string &filePath, const std::string &newPath);
+    static bool RenameDir(const std::string &oldPath, const std::string &newPath);
+    static bool CreateDirectory(const std::string &dirPath);
+    static bool CheckDisplayName(const std::string &displayName);
+    static bool CheckTitle(const std::string &title);
     static int64_t GetAlbumDateModified(const std::string &albumPath);
     static int64_t UTCTimeSeconds();
     static std::string GetNetworkIdFromUri(const std::string &uri);
