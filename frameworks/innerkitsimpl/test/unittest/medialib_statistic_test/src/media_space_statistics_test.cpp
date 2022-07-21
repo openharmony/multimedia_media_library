@@ -16,6 +16,7 @@
 #include "media_space_statistics_test.h"
 #include "hilog/log.h"
 #include "media_log.h"
+#include "scanner_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -39,6 +40,7 @@ void ClearFile();
 void CreateDataAHelper(int32_t systemAbilityId);
 
 int g_uid = 5003;
+int g_albumMediaType = MEDIA_TYPE_ALBUM;
 const int COPY_TIME = 99;
 const int SCAN_WAIT_TIME = 10;
 int64_t g_oneImageSize = 0;
@@ -106,6 +108,17 @@ static const unsigned char FILE_CONTENT_MP4[] = {
     0x3d, 0x32, 0x35, 0x20, 0x73, 0x63, 0x65, 0x6e, 0x65, 0x63, 0x75
 };
 
+std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper()
+{
+    if (sDataShareHelper_ == nullptr) {
+        CreateDataAHelper(g_uid);
+    }
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("GetDataShareHelper ::sDataShareHelper_ is nullptr");
+    }
+    return sDataShareHelper_;
+}
+
 void MediaSpaceStatisticsTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: invoked");
@@ -121,7 +134,15 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
         FILE_CONTENT_MP3, sizeof(FILE_CONTENT_MP3));
     CreateFile(MEDIALIBRARY_FILE_URI, "Documents/", "MediaSpaceStatisticsTest.txt", MEDIA_TYPE_FILE,
         FILE_CONTENT_TXT, sizeof(FILE_CONTENT_TXT));
+
+    std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
+    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    auto ret = helper->Insert(scanUri, valuesBucket);
+    EXPECT_EQ(ret, ERR_MEM_ALLOC_FAIL);
     sleep(SCAN_WAIT_TIME);
+
     // get base size
     g_oneImageSize = GetFile(MEDIA_TYPE_IMAGE)->GetSize();
     g_oneVideoSize = GetFile(MEDIA_TYPE_VIDEO)->GetSize();
@@ -172,17 +193,6 @@ void CreateDataAHelper(int32_t systemAbilityId)
     }
 }
 
-std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper()
-{
-    if (sDataShareHelper_ == nullptr) {
-        CreateDataAHelper(g_uid);
-    }
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("GetDataShareHelper ::sDataShareHelper_ is nullptr");
-    }
-    return sDataShareHelper_;
-}
-
 std::unique_ptr<FileAsset> GetFile(int mediaTypeId)
 {
     std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
@@ -206,9 +216,6 @@ std::unique_ptr<FileAsset> GetFile(int mediaTypeId)
 void DeleteFile(std::string fileUri)
 {
     std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
-    if (fileUri.find(MEDIALIBRARY_DATA_URI) == 0) {
-        fileUri = fileUri.substr(MEDIALIBRARY_DATA_URI.length());
-    }
     Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + '/' + fileUri);
     int retVal = helper->Delete(deleteAssetUri, {});
     MEDIA_INFO_LOG("MediaSpaceStatistics_test DeleteFile::uri :%{private}s", deleteAssetUri.ToString().c_str());
@@ -220,7 +227,7 @@ void ClearFile()
     std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
     vector<string> columns;
     DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
     predicates.SetWhereClause(prefix);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<DataShareResultSet> resultSet = nullptr;
@@ -296,6 +303,13 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
 
     mediaLibraryManager->CloseAsset(srcUri, srcFd);
     mediaLibraryManager->CloseAsset(destUri, destFd);
+    if (sleepSecond) {
+        Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+        DataShareValuesBucket valuesBucket1;
+        valuesBucket1.PutString(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+        auto ret = helper->Insert(scanUri, valuesBucket1);
+        EXPECT_EQ(ret, ERR_MEM_ALLOC_FAIL);
+    }
     sleep(sleepSecond);
     MEDIA_INFO_LOG("CopyFile:: end Copy file: %s", newName.c_str());
 }
