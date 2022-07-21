@@ -21,7 +21,6 @@
 #include <string>
 #include <unordered_map>
 
-#include "data_ability_helper.h"
 #include "device_manager.h"
 #include "device_manager_callback.h"
 #include "devices_info_interact.h"
@@ -55,7 +54,6 @@ public:
     void OnDeviceChanged(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
     void OnRemoteDied() override;
 
-    void SetAbilityContext(const std::shared_ptr<AbilityRuntime::Context> &context);
     void GetAllDeviceId(std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList);
     bool InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void NotifyDeviceChange();
@@ -82,7 +80,6 @@ private:
     static constexpr int RANDOM_NUM = 999;
 
     static std::shared_ptr<MediaLibraryDevice> mlDMInstance_;
-    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
     std::shared_ptr<AppExecFwk::EventHandler> mediaLibraryDeviceHandler_;
     std::mutex devMtx_;
     std::unordered_map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
