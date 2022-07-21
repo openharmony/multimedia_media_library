@@ -45,20 +45,21 @@ ohos_unittest("mediascanner_unittest") {
   sources = [ "./src/mediascanner_unit_test.cpp" ]
 
   deps = [
-    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
-    "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
-    "//utils/native/base:utils",
+    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
+    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
   ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
+    "ability_runtime:abilitykit_native",
+    "data_share:datashare_abilitykit",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
     "relational_store:native_rdb",
     "samgr_standard:samgr_proxy",
+    "utils_base:utils",
   ]
 }
