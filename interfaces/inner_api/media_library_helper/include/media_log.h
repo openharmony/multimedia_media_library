@@ -16,57 +16,31 @@
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LOG_H_
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LOG_H_
 
-#include <stdio.h>
+#ifndef MLOG_TAG
+#define MLOG_TAG "Common"
+#endif
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0xD002B70
+#undef LOG_TAG
+#define LOG_TAG "MediaLibrary"
+
 #include "hilog/log.h"
 
-#ifdef HILOG_FATAL
-#undef HILOG_FATAL
-#endif
+static inline OHOS::HiviewDFX::HiLogLabel LogLable()
+{
+    return { LOG_CORE, LOG_DOMAIN, LOG_TAG };
+}
 
-#ifdef HILOG_ERROR
-#undef HILOG_ERROR
-#endif
-
-#ifdef HILOG_WARN
-#undef HILOG_WARN
-#endif
-
-#ifdef HILOG_INFO
-#undef HILOG_INFO
-#endif
-
-#ifdef HILOG_DEBUG
-#undef HILOG_DEBUG
-#endif
-
-#define HILOG_DEBUG(type, ...) ((void)HiLogPrint((type), LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
-
-#define HILOG_INFO(type, ...) ((void)HiLogPrint((type), LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
-
-#define HILOG_WARN(type, ...) ((void)HiLogPrint((type), LOG_WARN, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
-
-#define HILOG_ERROR(type, ...) ((void)HiLogPrint((type), LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
-
-#define HILOG_FATAL(type, ...) ((void)HiLogPrint((type), LOG_FATAL, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
-
-#undef LOG_DOMAIN
-#undef LOG_TAG
-#define LOG_DOMAIN 0xD002B00
-#define LOG_TAG "MultiMedia:MediaLibrary"
-
-#define __FILE_NAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
-
-#ifndef OHOS_DEBUG
-#define DECORATOR_HILOG(op, fmt, args...) \
+#define MEDIA_HILOG(op, fmt, args...) \
     do {                                  \
-        op(LOG_CORE, "{%{public}s:%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);        \
+        op(LogLable(), MLOG_TAG ":{%{public}s:%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);  \
     } while (0)
-#else
-#define DECORATOR_HILOG(op, fmt, args...)                                                \
-    do {                                                                                 \
-        op(LOG_CORE, "{%{public}s()-%{public}s:%{public}d} " fmt, __FUNCTION__, __FILE_NAME__, __LINE__, ##args); \
-    } while (0)
-#endif
+
+#define MEDIA_DEBUG_LOG(fmt, ...) MEDIA_HILOG(OHOS::HiviewDFX::HiLog::Debug, fmt, ##__VA_ARGS__)
+#define MEDIA_ERR_LOG(fmt, ...) MEDIA_HILOG(OHOS::HiviewDFX::HiLog::Error, fmt, ##__VA_ARGS__)
+#define MEDIA_WARN_LOG(fmt, ...) MEDIA_HILOG(OHOS::HiviewDFX::HiLog::Warn, fmt, ##__VA_ARGS__)
+#define MEDIA_INFO_LOG(fmt, ...) MEDIA_HILOG(OHOS::HiviewDFX::HiLog::Info, fmt, ##__VA_ARGS__)
+#define MEDIA_FATAL_LOG(fmt, ...) MEDIA_HILOG(OHOS::HiviewDFX::HiLog::Fatal, fmt, ##__VA_ARGS__)
 
 #define CHECK_AND_RETURN_RET_LOG(cond, ret, fmt, ...)  \
     do {                                               \
@@ -90,17 +64,5 @@
             MEDIA_ERR_LOG(fmt, ##__VA_ARGS__);         \
         }                                              \
     } while (0)
-
-#define MEDIA_DEBUG_LOG(fmt, ...) DECORATOR_HILOG(HILOG_DEBUG, fmt, ##__VA_ARGS__)
-#define MEDIA_ERR_LOG(fmt, ...) DECORATOR_HILOG(HILOG_ERROR, fmt, ##__VA_ARGS__)
-#define MEDIA_WARNING_LOG(fmt, ...) DECORATOR_HILOG(HILOG_WARN, fmt, ##__VA_ARGS__)
-#define MEDIA_INFO_LOG(fmt, ...) DECORATOR_HILOG(HILOG_INFO, fmt, ##__VA_ARGS__)
-#define MEDIA_FATAL_LOG(fmt, ...) DECORATOR_HILOG(HILOG_FATAL, fmt, ##__VA_ARGS__)
-
-#define MEDIA_OK 0
-#define MEDIA_INVALID_PARAM (-1)
-#define MEDIA_INIT_FAIL (-2)
-#define MEDIA_ERR (-3)
-#define MEDIA_PERMISSION_DENIED (-4)
 
 #endif // OHOS_MEDIA_LOG_H

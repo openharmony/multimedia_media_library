@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "FetchResultNapi"
 
 #include "fetch_file_result_napi.h"
 #include "hitrace_meter.h"

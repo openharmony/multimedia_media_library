@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "Thumbnail"
 
 #include "media_thumbnail_helper.h"
 #include "hitrace_meter.h"

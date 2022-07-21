@@ -16,25 +16,31 @@
 #ifndef OHOS_MEDIALIBRARY_NAPI_LOG_H
 #define OHOS_MEDIALIBRARY_NAPI_LOG_H
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0xD002B71
+#ifndef MLOG_TAG
+#define MLOG_TAG "Common"
+#endif
+#undef LOG_TAG
+#define LOG_TAG "MediaLibraryNapi"
 #include "hilog/log.h"
 
-#undef LOG_DOMAIN
-#undef LOG_TAG
-#define LOG_DOMAIN 0xD002B00
-#define LOG_TAG "MediaLibraryNapi"
+static inline OHOS::HiviewDFX::HiLogLabel LogLable()
+{
+    return { LOG_CORE, LOG_DOMAIN, LOG_TAG };
+}
 
 #define __FILE_NAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define NAPI_HILOG(op, fmt, args...) \
     do {                                  \
-        op(LOG_APP, "{%{public}s-%{public}s:%{public}d} " fmt, __FILE_NAME__, __FUNCTION__, __LINE__, ##args);  \
+        op(LogLable(), MLOG_TAG ":{%{public}s:%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);  \
     } while (0)
 
-
-#define NAPI_DEBUG_LOG(fmt, ...) NAPI_HILOG(HILOG_DEBUG, fmt, ##__VA_ARGS__)
-#define NAPI_ERR_LOG(fmt, ...) NAPI_HILOG(HILOG_ERROR, fmt, ##__VA_ARGS__)
-#define NAPI_WARNING_LOG(fmt, ...) NAPI_HILOG(HILOG_WARN, fmt, ##__VA_ARGS__)
-#define NAPI_INFO_LOG(fmt, ...) NAPI_HILOG(HILOG_INFO, fmt, ##__VA_ARGS__)
-#define NAPI_FATAL_LOG(fmt, ...) NAPI_HILOG(HILOG_FATAL, fmt, ##__VA_ARGS__)
+#define NAPI_DEBUG_LOG(fmt, ...) NAPI_HILOG(OHOS::HiviewDFX::HiLog::Debug, fmt, ##__VA_ARGS__)
+#define NAPI_ERR_LOG(fmt, ...) NAPI_HILOG(OHOS::HiviewDFX::HiLog::Error, fmt, ##__VA_ARGS__)
+#define NAPI_WARN_LOG(fmt, ...) NAPI_HILOG(OHOS::HiviewDFX::HiLog::Warn, fmt, ##__VA_ARGS__)
+#define NAPI_INFO_LOG(fmt, ...) NAPI_HILOG(OHOS::HiviewDFX::HiLog::Info, fmt, ##__VA_ARGS__)
+#define NAPI_FATAL_LOG(fmt, ...) NAPI_HILOG(OHOS::HiviewDFX::HiLog::Fatal, fmt, ##__VA_ARGS__)
 
 #endif // OHOS_MEDIALIBRARY_NAPI_LOG_H

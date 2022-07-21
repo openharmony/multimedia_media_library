@@ -21,7 +21,7 @@ class ScannerMessaageClient {
             outObj: this,
             onConnect: function (elementName, proxy) {
                 console.log("[MediaScannerSubscriber] onConnect success");
-                if (proxy === null) {
+                if (proxy == null) {
                     console.log("[MediaScannerSubscriber] onConnect proxy is null");
                     return;
                 }

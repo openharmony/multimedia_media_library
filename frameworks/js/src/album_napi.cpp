@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "AlbumNapi"
 
 #include "album_napi.h"
 #include "medialibrary_napi_log.h"

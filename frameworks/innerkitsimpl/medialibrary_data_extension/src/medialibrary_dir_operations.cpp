@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "DirOperation"
 
 #include "medialibrary_dir_operations.h"
 #include "abs_rdb_predicates.h"
