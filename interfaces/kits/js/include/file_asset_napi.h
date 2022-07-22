@@ -21,6 +21,7 @@
 #include "media_thumbnail_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "napi_error.h"
 #include "pixel_map_napi.h"
 #include "values_bucket.h"
 #include "napi_remote_object.h"
@@ -140,7 +141,7 @@ private:
     static thread_local napi_ref sConstructor_;
     static thread_local FileAsset *sFileAsset_;
 };
-struct FileAssetAsyncContext {
+struct FileAssetAsyncContext : public NapiError {
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
@@ -150,16 +151,12 @@ struct FileAssetAsyncContext {
     int32_t thumbWidth;
     int32_t thumbHeight;
     bool isDirectory;
-    int32_t error = 0;
     int32_t changedRows;
     int32_t fd;
     bool isFavorite = false;
     bool isTrash = false;
     std::string networkId;
     std::shared_ptr<PixelMap> pixelmap;
-    std::string apiName;
-    void HandleError(napi_env env, napi_value &errorObj);
-    void SetApiName(const std::string &Name);
 };
 } // namespace Media
 } // namespace OHOS

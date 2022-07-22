@@ -30,8 +30,8 @@ const int32_t E_FILE_EXIST        = -EEXIST;
 // medialibary inner common err { 200, 1999 }
 const int32_t E_COMMON_OFFSET = 200;
 const int32_t E_COMMON_START =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 0);
-const int32_t E_FAIL =                  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1);
-const int32_t E_FILE_OPER_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 0);
+const int32_t E_FAIL =                  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 0);
+const int32_t E_FILE_OPER_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1);
 const int32_t E_HAS_DB_ERROR =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 2);
 const int32_t E_HAS_FS_ERROR =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 3);
 const int32_t E_CHECK_DIR_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 4);
