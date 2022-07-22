@@ -1318,6 +1318,7 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
 {
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "QueryThumbnail");
     if ((abilityHelper == nullptr) ||(thumbnailHelper == nullptr)) {
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
@@ -1336,11 +1337,12 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "abilityHelper->Query");
     DataShare::DataSharePredicates predicates;
     shared_ptr<DataShare::DataShareResultSet> resultSet = abilityHelper->Query(queryUri1, predicates, columns);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("Query thumbnail error");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     resultSet->GoToFirstRow();
     string id = GetStringInfo(resultSet, PARAM0);
@@ -1353,11 +1355,13 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
 
     if (to_string(fileId) != id) {
         NAPI_ERR_LOG("Query thumbnail id error as %{public}s", id.c_str());
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
     if (thumbnailKey.empty()) {
         NAPI_ERR_LOG("thumbnailKey is empty");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
