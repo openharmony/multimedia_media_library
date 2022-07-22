@@ -227,6 +227,7 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
         g_isNewApi = true;
         status = napi_new_instance(env, ctor, argc, argv, &result);
         if (status == napi_ok) {
+            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
             return result;
         } else {
             NAPI_ERR_LOG("New instance could not be obtained status: %{public}d", status);
@@ -629,6 +630,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     if (helper == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
         NAPI_ERR_LOG("sDataShareHelper is null");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return;
     }
     vector<string> columns;

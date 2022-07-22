@@ -594,8 +594,8 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     }
-    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
+    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     return queryResultSet;
 }
 

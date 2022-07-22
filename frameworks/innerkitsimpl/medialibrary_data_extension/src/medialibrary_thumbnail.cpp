@@ -155,6 +155,7 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts, string &key)
     ThumbnailData thumbnailData;
     int errorCode;
     if (!QueryThumbnailInfo(opts, thumbnailData, errorCode)) {
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
 
@@ -168,9 +169,7 @@ bool MediaLibraryThumbnail::CreateThumbnail(ThumbRdbOpt &opts, string &key)
 
 bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
 {
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "CreateLcd");
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcd IN");
-
     ThumbnailData thumbnailData;
     int errorCode;
     if (!QueryThumbnailInfo(opts, thumbnailData, errorCode)) {
@@ -189,6 +188,7 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
 
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "CreateLcd GenLcdKey");
     if (!GenLcdKey(thumbnailData)) {
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
@@ -218,6 +218,7 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
 
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "CreateLcd UpdateThumbnailInfo");
     if (!UpdateThumbnailInfo(opts, thumbnailData, errorCode)) {
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
@@ -225,7 +226,6 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
     key = thumbnailData.lcdKey;
 
     MEDIA_INFO_LOG("MediaLibraryThumbnail::CreateLcd OUT");
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     return true;
 }
@@ -404,6 +404,7 @@ bool MediaLibraryThumbnail::LoadImageFile(string &path,
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to create image source path %{private}s err %{private}d",
                       path.c_str(), errorCode);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
@@ -414,6 +415,7 @@ bool MediaLibraryThumbnail::LoadImageFile(string &path,
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to create pixelmap path %{private}s err %{private}d",
                       path.c_str(), errorCode);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
@@ -450,28 +452,31 @@ bool MediaLibraryThumbnail::CompressImage(std::shared_ptr<PixelMap> &pixelMap,
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "imagePacker.StartPacking");
     ImagePacker imagePacker;
     int errorCode = imagePacker.StartPacking(data.data(), data.size(), option);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to StartPacking %{private}d", errorCode);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "imagePacker.AddImage");
     errorCode = imagePacker.AddImage(*compressImage);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to StartPacking %{private}d", errorCode);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "imagePacker.FinalizePacking");
     int64_t packedSize = 0;
     errorCode = imagePacker.FinalizePacking(packedSize);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to StartPacking %{private}d", errorCode);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     MEDIA_INFO_LOG("packedSize=%{private}lld.", static_cast<long long>(packedSize));
     data.resize(packedSize);
@@ -550,21 +555,24 @@ shared_ptr<ResultSetBridge> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOp
     shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     int rowCount = 0;
     errorCode = resultSet->GetRowCount(rowCount);
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to get row count %{private}d", errorCode);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     if (rowCount <= 0) {
         MEDIA_ERR_LOG("No match! %{private}s", rdbPredicates.GetWhereClause().c_str());
         errorCode = NativeRdb::E_EMPTY_VALUES_BUCKET;
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
     errorCode = resultSet->GoToFirstRow();
     if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{private}d", errorCode);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
@@ -572,12 +580,14 @@ shared_ptr<ResultSetBridge> MediaLibraryThumbnail::QueryThumbnailInfo(ThumbRdbOp
     errorCode = resultSet->GetColumnCount(columnCount);
     if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to get column count %{private}d", errorCode);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
     if (columnCount <= 0) {
         MEDIA_ERR_LOG("No column!");
         errorCode = NativeRdb::E_EMPTY_VALUES_BUCKET;
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
@@ -677,6 +687,7 @@ bool MediaLibraryThumbnail::UpdateThumbnailInfo(ThumbRdbOpt &opts,
         vector<string> { opts.row });
     if (errorCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{private}d", errorCode);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
@@ -716,6 +727,7 @@ bool MediaLibraryThumbnail::GenThumbnailKey(ThumbnailData &data)
     int32_t ret = MediaLibraryCommonUtils::GenKeySHA256(source, data.thumbnailKey);
     if (ret < 0) {
         MEDIA_ERR_LOG("MediaLibraryThumbnail::Failed to GenThumbnailKey, err: %{public}d", ret);
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return false;
     }
     data.thumbnailKey += THUMBNAIL_END_SUFFIX;
