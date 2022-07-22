@@ -26,15 +26,8 @@ ohos_shared_library("media_library_manager") {
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/appdatafwk/include",
-    "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/rdb/include",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/provider/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/consumer/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/provider/include",
     "//utils/native/base/include",
   ]
 
@@ -42,7 +35,6 @@ ohos_shared_library("media_library_manager") {
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//utils/native/base:utils",
   ]
@@ -52,6 +44,7 @@ ohos_shared_library("media_library_manager") {
     "ability_base:zuri",
     "ability_runtime:ability_manager",
     "bundle_framework:appexecfwk_base",
+    "data_share:datashare_abilitykit",
     "data_share:datashare_common",
     "hiviewdfx_hilog_native:libhilog",
     "relational_store:native_appdatafwk",
