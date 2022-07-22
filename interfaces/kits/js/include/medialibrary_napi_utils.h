@@ -19,6 +19,7 @@
 #include <tuple>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 #include "datashare_result_set.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -287,8 +288,9 @@ public:
         }
     }
 
-    static int TransErrorCode(std::shared_ptr<DataShare::DataShareResultSet> resultSet)
+    static int TransErrorCode(const std::string &Name, std::shared_ptr<DataShare::DataShareResultSet> resultSet)
     {
+        NAPI_ERR_LOG("interface: %{public}s, server return nullptr", Name.c_str());
         // Query can't return errorcode, so assume nullptr as permission deny
         if (resultSet == nullptr) {
             return JS_ERR_PERMISSION_DENIED;
@@ -296,8 +298,9 @@ public:
         return ERR_DEFAULT;
     }
 
-    static int TransErrorCode(int error)
+    static int TransErrorCode(const std::string &Name, int error)
     {
+        NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
         // Transfer Server error to napi error code
         if (error >= E_COMMON_START && error <= E_COMMON_END) {
             error = JS_ERR_INNER_FAIL;
@@ -319,7 +322,7 @@ public:
         }
         CreateNapiErrorObject(env, errorObj, error, errMsg);
         errMsg = Name + " " + errMsg;
-        NAPI_ERR_LOG("Error: %{public}s, code:%{public}d ", errMsg.c_str(), error);
+        NAPI_ERR_LOG("Error: %{public}s, js errcode:%{public}d ", errMsg.c_str(), error);
     }
 
     static void CreateNapiErrorObject(napi_env env, napi_value &errorObj,

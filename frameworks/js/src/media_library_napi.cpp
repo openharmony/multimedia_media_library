@@ -81,17 +81,6 @@ void MediaLibraryNapi::MediaLibraryNapiDestructor(napi_env env, void *nativeObje
     NAPI_DEBUG_LOG("MediaLibraryNapiDestructor exit");
 }
 
-void MediaLibraryAsyncContext::SetApiName(const string &Name)
-{
-    apiName = Name;
-}
-
-void MediaLibraryAsyncContext::HandleError(napi_env env, napi_value &errorObj)
-{
-    // deal with context->error
-    MediaLibraryNapiUtils::HandleError(env, error, errorObj, apiName);
-}
-
 napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor media_library_properties[] = {
@@ -545,7 +534,7 @@ static void GetPublicDirectoryExecute(MediaLibraryAsyncContext *context)
         }
         return;
     } else {
-        context->error = MediaLibraryNapiUtils::TransErrorCode(resultSet);
+        context->SaveError(resultSet);
         NAPI_ERR_LOG("Query for get publicDirectory failed");
     }
 }
@@ -670,7 +659,7 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return;
     } else {
-        context->error = MediaLibraryNapiUtils::TransErrorCode(resultSet);
+        context->SaveError(resultSet);
         NAPI_ERR_LOG("Query for get fileAssets failed");
     }
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
@@ -868,7 +857,7 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr");
-        context->error = MediaLibraryNapiUtils::TransErrorCode(resultSet);
+        context->SaveError(resultSet);
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return;
     }
@@ -1222,7 +1211,7 @@ static void JSCreateAssetExecute(MediaLibraryAsyncContext *context)
     Uri createFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
     int index = context->objectInfo->sDataShareHelper_->Insert(createFileUri, context->valuesBucket);
     if (index < 0) {
-        context->error = MediaLibraryNapiUtils::TransErrorCode(index);
+        context->SaveError(index);
     } else {
         getFileAssetById(index, "", context);
     }
@@ -1296,7 +1285,7 @@ static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
         deleteId);
     int retVal = context->objectInfo->sDataShareHelper_->Delete(deleteAssetUri, {});
     if (retVal < 0) {
-        context->error = MediaLibraryNapiUtils::TransErrorCode(retVal);
+        context->SaveError(retVal);
     } else {
         context->retVal = retVal;
         Uri deleteNotify(notifyUri);
