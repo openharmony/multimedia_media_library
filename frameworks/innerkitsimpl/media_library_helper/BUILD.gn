@@ -13,6 +13,9 @@
 
 import("//build/ohos.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
+import("//foundation/distributeddatamgr/appdatamgr/data_share/datashare.gni")
+import(
+    "//foundation/distributeddatamgr/appdatamgr/relational_store/relational_store.gni")
 
 group("media_library_packages") {
   deps = [ ":media_library" ]
@@ -28,15 +31,14 @@ config("media_library_config") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//utils/native/base/include",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
-    "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/rdb/include",
+    "${relational_store_innerapi_path}/rdb/include",
+    "${relational_store_innerapi_path}/appdatafwk/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/appdatafwk/include",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/provider/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/consumer/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/provider/include",
+    "${datashare_common_native_path}/include",
+    "${datashare_innerapi_path}/common/include",
+    "${datashare_innerapi_path}/consumer/include",
+    "${datashare_innerapi_path}/provider/include",
   ]
 
   cflags = [
@@ -70,11 +72,12 @@ ohos_shared_library("media_library") {
   deps = [
     ":media_library_source",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
     "//utils/native/base:utils",
   ]
 
   external_deps = [
+    "data_share:datashare_abilitykit",
+    "data_share:datashare_common",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "relational_store:native_appdatafwk",
@@ -104,6 +107,8 @@ ohos_executable("media_library_test") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
   ]
 
+  external_deps = [ "relational_store:native_rdb" ]
+
   part_name = "media_library"
   subsystem_name = "multimedia"
 }
@@ -115,14 +120,10 @@ ohos_static_library("media_thumbnail_helper") {
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/provider/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/consumer/include",
     "//utils/native/base/include",
   ]
   deps = [
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//utils/native/base:utils",
@@ -130,6 +131,8 @@ ohos_static_library("media_thumbnail_helper") {
 
   # cflags = [ "-DOLD_KV_API" ]
   external_deps = [
+    "data_share:datashare_abilitykit",
+    "data_share:datashare_common",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "relational_store:native_appdatafwk",
