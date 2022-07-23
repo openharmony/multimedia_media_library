@@ -17,7 +17,6 @@
 #include "media_datashare_ext_ability.h"
 
 #include "ability_info.h"
-#include "accesstoken_kit.h"
 #include "dataobs_mgr_client.h"
 #include "media_datashare_stub_impl.h"
 #include "hilog_wrapper.h"
@@ -31,6 +30,7 @@
 #include "medialibrary_subscriber.h"
 #include "media_log.h"
 #include "system_ability_definition.h"
+#include "permission_utils.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -42,19 +42,8 @@ using namespace OHOS::DataShare;
 namespace OHOS {
 namespace AbilityRuntime {
 using namespace OHOS::AppExecFwk;
-using OHOS::Security::AccessToken::AccessTokenKit;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
 constexpr int INVALID_VALUE = -1;
-constexpr int UID_FILEMANAGER = 1006;
-namespace {
-const std::unordered_set<int32_t> UID_FREE_CHECK {
-    UID_FILEMANAGER
-};
-const std::unordered_set<std::string> SYSTEM_BUNDLE_FREE_CHECK {};
-std::mutex bundleMgrMutex;
-const std::string PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
-const std::string PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
-}
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const std::unique_ptr<Runtime>& runtime)
 {
@@ -123,19 +112,19 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     if (mode == MEDIA_FILEMODE_READONLY) {
-        if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
+        if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA)) {
             return E_PERMISSION_DENIED;
         }
     } else if (mode == MEDIA_FILEMODE_WRITEONLY ||
                mode == MEDIA_FILEMODE_WRITETRUNCATE ||
                mode == MEDIA_FILEMODE_WRITEAPPEND) {
-        if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+        if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA)) {
             return E_PERMISSION_DENIED;
         }
     } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE ||
                mode == MEDIA_FILEMODE_READWRITE) {
-        if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA) ||
-            !CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+        if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA) ||
+            !PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA)) {
             return E_PERMISSION_DENIED;
         }
     }
@@ -152,10 +141,10 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     string tmpUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
     if (uri.ToString() == tmpUri) {
-        if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
+        if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA)) {
             return E_PERMISSION_DENIED;
         }
-    } else if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+    } else if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         return E_PERMISSION_DENIED;
     }
     return MediaLibraryDataManager::GetInstance()->Insert(uri, value);
@@ -165,7 +154,7 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     const DataShareValuesBucket &value)
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
-    if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+    if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         MEDIA_ERR_LOG("%{public}s Check calling permission failed.", __func__);
         return E_PERMISSION_DENIED;
     }
@@ -176,7 +165,7 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
 int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
-    if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+    if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         MEDIA_ERR_LOG("%{public}s Check calling permission failed.", __func__);
         return E_PERMISSION_DENIED;
     }
@@ -187,7 +176,7 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
-    if (!CheckCallingPermission(PERMISSION_NAME_READ_MEDIA)) {
+    if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA)) {
         MEDIA_ERR_LOG("%{public}s Check calling permission failed.", __func__);
         return nullptr;
     }
@@ -208,7 +197,7 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<Data
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     int ret = INVALID_VALUE;
-    if (!CheckCallingPermission(PERMISSION_NAME_WRITE_MEDIA)) {
+    if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         MEDIA_ERR_LOG("%{public}s Check calling permission failed.", __func__);
         return ret;
     }
@@ -294,74 +283,6 @@ std::vector<std::shared_ptr<DataShareResult>> MediaDataShareExtAbility::ExecuteB
     std::vector<std::shared_ptr<DataShareResult>> ret;
     MEDIA_INFO_LOG("%{public}s end.", __func__);
     return ret;
-}
-
-bool MediaDataShareExtAbility::CheckCallingPermission(const std::string &permission)
-{
-    int uid = IPCSkeleton::GetCallingUid();
-    if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
-        MEDIA_INFO_LOG("CheckCallingPermission: Pass the uid check list");
-        return true;
-    }
-
-    std::string bundleName = GetClientBundle(uid);
-    auto bundleMgr = GetSysBundleManager();
-    if ((bundleMgr != nullptr) && bundleMgr->CheckIsSystemAppByUid(uid) &&
-        (SYSTEM_BUNDLE_FREE_CHECK.find(bundleName) != SYSTEM_BUNDLE_FREE_CHECK.end())) {
-        MEDIA_INFO_LOG("CheckCallingPermission: Pass the system bundle name check list");
-        return true;
-    }
-
-    Security::AccessToken::AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
-    int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
-    if (res != Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager Query: Have no media permission");
-        return false;
-    }
-
-    return true;
-}
-
-std::string MediaDataShareExtAbility::GetClientBundle(int uid)
-{
-    auto bms = GetSysBundleManager();
-    std::string bundleName = "";
-    if (bms == nullptr) {
-        MEDIA_INFO_LOG("GetClientBundleName bms failed");
-        return bundleName;
-    }
-    auto result = bms->GetBundleNameForUid(uid, bundleName);
-    if (!result) {
-        MEDIA_ERR_LOG("GetBundleNameForUid fail");
-        return "";
-    }
-    return bundleName;
-}
-
-sptr<AppExecFwk::IBundleMgr> MediaDataShareExtAbility::GetSysBundleManager()
-{
-    if (bundleMgr_ == nullptr) {
-        std::lock_guard<std::mutex> lock(bundleMgrMutex);
-        if (bundleMgr_ == nullptr) {
-            auto saMgr = OHOS::DelayedSingleton<SaMgrClient>::GetInstance();
-            if (saMgr == nullptr) {
-                MEDIA_ERR_LOG("failed to get SaMgrClient::GetInstance");
-                return nullptr;
-            }
-            auto bundleObj = saMgr->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
-            if (bundleObj == nullptr) {
-                MEDIA_ERR_LOG("failed to get GetSystemAbility");
-                return nullptr;
-            }
-            auto bundleMgr = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
-            if (bundleMgr == nullptr) {
-                MEDIA_ERR_LOG("failed to iface_cast");
-                return nullptr;
-            }
-            bundleMgr_ = bundleMgr;
-        }
-    }
-    return bundleMgr_;
 }
 } // namespace AbilityRuntime
 } // namespace OHOS
