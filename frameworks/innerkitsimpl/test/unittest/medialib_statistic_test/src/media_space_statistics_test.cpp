@@ -33,27 +33,28 @@ namespace OHOS {
 namespace Media {
 std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 void CreateFile(std::string baseURI, std::string targetPath, std::string newName, MediaType mediaType,
-    const unsigned char fileContent[], const int len);
+    unsigned char fileContent[], int len);
 std::unique_ptr<FileAsset> GetFile(int mediaTypeId);
 void ClearFile();
 void CreateDataAHelper(int32_t systemAbilityId);
 
-int g_uid = 5003;
-const int COPY_TIME = 99;
-const int SCAN_WAIT_TIME = 10;
+int uid = 5003;
+const int COPY_TIME = 29;
+const int SCAN_WAIT_TIME_SHORT = 5;
+const int SCAN_WAIT_TIME_LONG = 15;
 int64_t g_oneImageSize = 0;
 int64_t g_oneVideoSize = 0;
 int64_t g_oneAudioSize = 0;
 int64_t g_oneFileSize = 0;
 
-static const unsigned char FILE_CONTENT_TXT[] = {
+unsigned char FILE_CONTENT_TXT[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24
 };
-static const unsigned char FILE_CONTENT_JPG[] = {
+unsigned char FILE_CONTENT_JPG[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24, 0x5d, 0x54, 0x45, 0x4e, 0x43, 0x20, 0x20, 0x20, 0x0b,
     0x20, 0x20, 0x20, 0x50
 };
-static const unsigned char FILE_CONTENT_MP3[] = {
+unsigned char FILE_CONTENT_MP3[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24, 0x5d, 0x54, 0x45, 0x4e, 0x43, 0x20, 0x20, 0x20, 0x0b, 0x20,
     0x20, 0x20, 0x50, 0x72, 0x6f, 0x20, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x20, 0x54, 0x58, 0x58, 0x58, 0x20, 0x20, 0x20,
     0x27, 0x20, 0x20, 0x20, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x6f, 0x72, 0x5f, 0x72, 0x65, 0x66, 0x65,
@@ -71,7 +72,7 @@ static const unsigned char FILE_CONTENT_MP3[] = {
     0x61, 0x20, 0x54, 0x43, 0x4f, 0x4e, 0x20, 0x20, 0x20, 0x09, 0x20, 0x20, 0x20, 0x4c, 0x79, 0x72, 0x69, 0x63, 0x61,
     0x6c, 0x20, 0x54, 0x53, 0x53, 0x45, 0x20, 0x20, 0x20, 0x0f, 0x20, 0x20, 0x20, 0x4c, 0x61
 };
-static const unsigned char FILE_CONTENT_MP4[] = {
+unsigned char FILE_CONTENT_MP4[] = {
     0x20, 0x20, 0x20, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0x20, 0x20, 0x02, 0x20, 0x69, 0x73, 0x6f,
     0x6d, 0x69, 0x73, 0x6f, 0x32, 0x61, 0x76, 0x63, 0x31, 0x6d, 0x70, 0x34, 0x31, 0x20, 0x20, 0x20, 0x08, 0x66, 0x72,
     0x65, 0x65, 0x20, 0x49, 0xdd, 0x01, 0x6d, 0x64, 0x61, 0x74, 0x20, 0x20, 0x02, 0xa0, 0x06, 0x05, 0xff, 0xff, 0x9c,
@@ -121,12 +122,24 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
         FILE_CONTENT_MP3, sizeof(FILE_CONTENT_MP3));
     CreateFile(MEDIALIBRARY_FILE_URI, "Documents/", "MediaSpaceStatisticsTest.txt", MEDIA_TYPE_FILE,
         FILE_CONTENT_TXT, sizeof(FILE_CONTENT_TXT));
-    sleep(SCAN_WAIT_TIME);
+    sleep(SCAN_WAIT_TIME_LONG);
     // get base size
-    g_oneImageSize = GetFile(MEDIA_TYPE_IMAGE)->GetSize();
-    g_oneVideoSize = GetFile(MEDIA_TYPE_VIDEO)->GetSize();
-    g_oneAudioSize = GetFile(MEDIA_TYPE_AUDIO)->GetSize();
-    g_oneFileSize = GetFile(MEDIA_TYPE_FILE)->GetSize();
+    std::unique_ptr<FileAsset> fileAssetImage = GetFile(MEDIA_TYPE_IMAGE);
+    std::unique_ptr<FileAsset> fileAssetVideo = GetFile(MEDIA_TYPE_VIDEO);
+    std::unique_ptr<FileAsset> fileAssetAudio = GetFile(MEDIA_TYPE_AUDIO);
+    std::unique_ptr<FileAsset> fileAssetFile = GetFile(MEDIA_TYPE_FILE);
+    if (fileAssetImage != nullptr) {
+        g_oneImageSize = fileAssetImage->GetSize();
+    }
+    if (fileAssetVideo != nullptr) {
+        g_oneVideoSize = fileAssetVideo->GetSize();
+    }
+    if (fileAssetAudio != nullptr) {
+        g_oneAudioSize = fileAssetAudio->GetSize();
+    }
+    if (fileAssetFile != nullptr) {
+        g_oneFileSize = fileAssetFile->GetSize();
+    }
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: g_oneImageSize = %{public}lld",
         (long long)g_oneImageSize);
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: g_oneVideoSize = %{public}lld",
@@ -175,7 +188,7 @@ void CreateDataAHelper(int32_t systemAbilityId)
 std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper()
 {
     if (sDataShareHelper_ == nullptr) {
-        CreateDataAHelper(g_uid);
+        CreateDataAHelper(uid);
     }
     if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("GetDataShareHelper ::sDataShareHelper_ is nullptr");
@@ -236,7 +249,7 @@ void ClearFile()
 }
 
 void CreateFile(std::string baseURI, std::string targetPath, std::string newName, MediaType mediaType,
-    const unsigned char fileContent[], const int len)
+    unsigned char fileContent[], int len)
 {
     MEDIA_INFO_LOG("CreateFile:: start Create file: %s", newName.c_str());
     std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
@@ -351,8 +364,10 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_002, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_002::Start");
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_IMAGE);
-    CopyFile(fileAsset->GetUri(), MEDIALIBRARY_IMAGE_URI, "Pictures/",
-                    "copy_MediaSpaceStatistics_test.jpg", MEDIA_TYPE_IMAGE, 10);
+    if (fileAsset != nullptr) {
+        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_IMAGE_URI, "Pictures/",
+                    "copy_MediaSpaceStatistics_test.jpg", MEDIA_TYPE_IMAGE, SCAN_WAIT_TIME_SHORT);
+    }
     CheckQuerySize("MediaSpaceStatistics_test_002", MEDIA_TYPE_IMAGE, 2);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_002::End");
 }
@@ -369,7 +384,9 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_003, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_003::Start");
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_IMAGE);
-    DeleteFile(fileAsset->GetUri());
+    if (fileAsset != nullptr) {
+        DeleteFile(fileAsset->GetUri());
+    }
     CheckQuerySize("MediaSpaceStatistics_test_003", MEDIA_TYPE_IMAGE, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_003::End");
 }
@@ -386,18 +403,20 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_004, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004::Start");
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_IMAGE);
-
-    for (int i = 0; i < COPY_TIME; i++)
-    {
-        string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".jpg";
-        int sleepSecond = 0;
-        if (i + 1 == COPY_TIME) {
-            sleepSecond = 10;
+    if (fileAsset != nullptr) {
+        for (int i = 0; i < COPY_TIME; i++)
+        {
+            string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".jpg";
+            MEDIA_INFO_LOG("MediaSpaceStatistics_test_004:: Copy newName is: %s start!", newName.c_str());
+            int sleepSecond = 0;
+            if (i + 1 == COPY_TIME) {
+                sleepSecond = SCAN_WAIT_TIME_LONG;
+            }
+            CopyFile(fileAsset->GetUri(), MEDIALIBRARY_IMAGE_URI, "Pictures/", newName, MEDIA_TYPE_IMAGE, sleepSecond);
+            MEDIA_INFO_LOG("MediaSpaceStatistics_test_004:: Copy newName is: %s end!", newName.c_str());
         }
-        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_IMAGE_URI, "Pictures/", newName, MEDIA_TYPE_IMAGE, sleepSecond);
+        MEDIA_INFO_LOG("MediaSpaceStatistics_test_004:: Copy finish!!!");
     }
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_004:: Copy finish!!!");
-
     CheckQuerySize("MediaSpaceStatistics_test_004", MEDIA_TYPE_IMAGE, COPY_TIME + 1);
 
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004::End");
@@ -429,8 +448,10 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_006, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_006::Start");
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_VIDEO);
-    CopyFile(fileAsset->GetUri(), MEDIALIBRARY_VIDEO_URI, "Videos/",
-                    "copy_MediaSpaceStatistics_test.mp4", MEDIA_TYPE_VIDEO, 10);
+    if (fileAsset != nullptr) {
+        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_VIDEO_URI, "Videos/",
+                    "copy_MediaSpaceStatistics_test.mp4", MEDIA_TYPE_VIDEO, SCAN_WAIT_TIME_LONG);
+    }
     CheckQuerySize("MediaSpaceStatistics_test_006", MEDIA_TYPE_VIDEO, 2);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_006::End");
 }
@@ -448,7 +469,9 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_007, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_007::Start");
     std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_VIDEO);
-    DeleteFile(fileAsset->GetUri());
+    if (fileAsset != nullptr) {
+        DeleteFile(fileAsset->GetUri());
+    }
     CheckQuerySize("MediaSpaceStatistics_test_007", MEDIA_TYPE_VIDEO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_007::End");
 }
@@ -465,14 +488,18 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_008, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_008::Start");
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_VIDEO);
-    for (int i = 0; i < COPY_TIME; i++)
-    {
-        string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".mp4";
-        int sleepSecond = 0;
-        if (i + 1 == COPY_TIME) {
-            sleepSecond = 10;
+    if (fileAsset != nullptr) {
+        for (int i = 0; i < COPY_TIME; i++)
+        {
+            string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".mp4";
+            MEDIA_INFO_LOG("MediaSpaceStatistics_test_008:: Copy newName is: %s start!", newName.c_str());
+            int sleepSecond = SCAN_WAIT_TIME_SHORT;
+            if (i + 1 == COPY_TIME) {
+                sleepSecond = SCAN_WAIT_TIME_LONG;
+            }
+            CopyFile(fileAsset->GetUri(), MEDIALIBRARY_VIDEO_URI, "Videos/", newName, MEDIA_TYPE_VIDEO, sleepSecond);
+            MEDIA_INFO_LOG("MediaSpaceStatistics_test_008:: Copy newName is: %s end!", newName.c_str());
         }
-        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_VIDEO_URI, "Videos/", newName, MEDIA_TYPE_VIDEO, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_008:: Copy finish!!!");
     CheckQuerySize("MediaSpaceStatistics_test_008", MEDIA_TYPE_VIDEO, COPY_TIME + 1);
@@ -505,8 +532,10 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_010, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_010::Start");
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_AUDIO);
-    CopyFile(fileAsset->GetUri(), MEDIALIBRARY_AUDIO_URI, "Audios/",
-                    "copy_MediaSpaceStatistics_test.mp3", MEDIA_TYPE_AUDIO, 10);
+    if (fileAsset != nullptr) {
+        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_AUDIO_URI, "Audios/",
+                    "copy_MediaSpaceStatistics_test.mp3", MEDIA_TYPE_AUDIO, SCAN_WAIT_TIME_LONG);
+    }
     CheckQuerySize("MediaSpaceStatistics_test_010", MEDIA_TYPE_AUDIO, 2);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_010::End");
 }
@@ -523,7 +552,9 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_011, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_011::Start");
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_AUDIO);
-    DeleteFile(fileAsset->GetUri());
+    if (fileAsset != nullptr) {
+        DeleteFile(fileAsset->GetUri());
+    }
     CheckQuerySize("MediaSpaceStatistics_test_011", MEDIA_TYPE_AUDIO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_011::End");
 }
@@ -540,14 +571,16 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_012, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012::Start");
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_AUDIO);
-    for (int i = 0; i < COPY_TIME; i++)
-    {
-        string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".mp3";
-        int sleepSecond = 0;
-        if (i + 1 == COPY_TIME) {
-            sleepSecond = 10;
+    if (fileAsset != nullptr) {
+        for (int i = 0; i < COPY_TIME; i++)
+        {
+            string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".mp3";
+            int sleepSecond = SCAN_WAIT_TIME_SHORT;
+            if (i + 1 == COPY_TIME) {
+                sleepSecond = SCAN_WAIT_TIME_LONG;
+            }
+            CopyFile(fileAsset->GetUri(), MEDIALIBRARY_AUDIO_URI, "Audios/", newName, MEDIA_TYPE_AUDIO, sleepSecond);
         }
-        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_AUDIO_URI, "Audios/", newName, MEDIA_TYPE_AUDIO, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012:: Copy finish!!!");
     CheckQuerySize("MediaSpaceStatistics_test_012", MEDIA_TYPE_AUDIO, COPY_TIME + 1);
@@ -580,8 +613,10 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_014, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_014::Start");
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
-    CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/",
-                    "copy_MediaSpaceStatistics_test.txt", MEDIA_TYPE_FILE, 10);
+    if (fileAsset != nullptr) {
+        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/",
+                    "copy_MediaSpaceStatistics_test.txt", MEDIA_TYPE_FILE, SCAN_WAIT_TIME_LONG);
+    }
     CheckQuerySize("MediaSpaceStatistics_test_014", MEDIA_TYPE_FILE, 2);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_014::End");
 }
@@ -599,7 +634,9 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_015, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_015::Start");
     std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
-    DeleteFile(fileAsset->GetUri());
+    if (fileAsset != nullptr) {
+        DeleteFile(fileAsset->GetUri());
+    }
     CheckQuerySize("MediaSpaceStatistics_test_015", MEDIA_TYPE_FILE, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_015::End");
 }
@@ -616,14 +653,16 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_016, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_016::Start");
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
-    for (int i = 0; i < COPY_TIME; i++)
-    {
-        string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".txt";
-        int sleepSecond = 0;
-        if (i + 1 == COPY_TIME) {
-            sleepSecond = 10;
+    if (fileAsset != nullptr) {
+        for (int i = 0; i < COPY_TIME; i++)
+        {
+            string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".txt";
+            int sleepSecond = SCAN_WAIT_TIME_SHORT;
+            if (i + 1 == COPY_TIME) {
+                sleepSecond = SCAN_WAIT_TIME_LONG;
+            }
+            CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/", newName, MEDIA_TYPE_FILE, sleepSecond);
         }
-        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/", newName, MEDIA_TYPE_FILE, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012:: Copy finish!!!");
     CheckQuerySize("MediaSpaceStatistics_test_015", MEDIA_TYPE_FILE, COPY_TIME + 1);
