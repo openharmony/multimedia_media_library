@@ -74,9 +74,6 @@ private:
     bool QuerySync(const std::string &networkId, const std::string &tableName);
 
     bool CheckFileNameValid(const DataShare::DataShareValuesBucket &value);
-    sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
-    std::string GetClientBundleName();
-    std::string GetClientBundle(int uid);
     void NeedQuerySync(const std::string &networkId, OperationObject oprnObject);
 
     std::mutex mgrMutex_;
