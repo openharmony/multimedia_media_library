@@ -13,8 +13,7 @@
 
 import("//build/ohos.gni")
 import("//foundation/distributeddatamgr/data_share/datashare.gni")
-import(
-    "//foundation/distributeddatamgr/relational_store/relational_store.gni")
+import("//foundation/distributeddatamgr/relational_store/relational_store.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
 group("media_library_packages") {
