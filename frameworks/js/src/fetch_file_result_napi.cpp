@@ -29,14 +29,10 @@ thread_local FetchResult *FetchFileResultNapi::sFetchFileResult_ = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> FetchFileResultNapi::sMediaDataHelper = nullptr;
 
 FetchFileResultNapi::FetchFileResultNapi()
-    : env_(nullptr), wrapper_(nullptr) {}
+    : env_(nullptr) {}
 
 FetchFileResultNapi::~FetchFileResultNapi()
 {
-    if (wrapper_ != nullptr) {
-        napi_delete_reference(env_, wrapper_);
-        wrapper_ = nullptr;
-    }
     fetchFileResult_ = nullptr;
     abilityHelper_ = nullptr;
     NAPI_DEBUG_LOG("FetchFileResult destructor exit");
@@ -119,7 +115,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
             }
 
             status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
-                               FetchFileResultNapi::FetchFileResultNapiDestructor, nullptr, &(obj->wrapper_));
+                               FetchFileResultNapi::FetchFileResultNapiDestructor, nullptr, nullptr);
             if (status == napi_ok) {
                 obj.release();
                 FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
