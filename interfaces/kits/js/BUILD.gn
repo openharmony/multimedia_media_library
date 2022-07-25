@@ -74,6 +74,11 @@ ohos_shared_library("medialibrary") {
     "//drivers/peripheral/display/interfaces/include",
     "//drivers/peripheral/base",
     "//foundation/multimedia/player_framework/interfaces/inner_api/native",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension/include",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
+    "//foundation/multimedia/media_library/frameworks/services/media_scanner/include/callback",
+    "//foundation/multimedia/media_library/frameworks/utils/include",
+    "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
     "//foundation/multimedia/media_library/interfaces/kits/js/include",
     "//foundation/multimedia/media_library/medialibrary_data_extension/include",
     "//third_party/node/src",
@@ -88,6 +93,8 @@ ohos_shared_library("medialibrary") {
   ]
 
   sources = [
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/src/media_thumbnail_helper.cpp",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_data_manager_utils.cpp",
     "//foundation/multimedia/media_library/frameworks/js/src/album_napi.cpp",
     "//foundation/multimedia/media_library/frameworks/js/src/avmetadatahelper_napi.cpp",
     "//foundation/multimedia/media_library/frameworks/js/src/fetch_file_result_napi.cpp",
@@ -112,7 +119,6 @@ ohos_shared_library("medialibrary") {
     "//foundation/arkui/napi:ace_napi",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library",
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
     "//foundation/multimedia/player_framework/interfaces/inner_api/native:media_client",
     "//utils/native/base:utils",
   ]
