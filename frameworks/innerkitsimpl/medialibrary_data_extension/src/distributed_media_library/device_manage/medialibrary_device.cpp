@@ -49,7 +49,7 @@ void MediaLibraryDevice::Start()
         auto runner = AppExecFwk::EventRunner::Create("MediaLibraryDevice");
         mediaLibraryDeviceHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
     }
-    devsInfoInter_ = make_unique<DevicesInfoInteract>();
+    devsInfoInter_ = make_shared<DevicesInfoInteract>();
     if (devsInfoInter_ != nullptr) {
         devsInfoInter_->Init();
         const std::string local = "";
@@ -94,6 +94,37 @@ void MediaLibraryDevice::OnSyncCompleted(const std::string &devId, const Distrib
     MEDIA_INFO_LOG("OnSyncCompleted dev id %{private}s, status %{public}d", devId.c_str(), status);
     std::unique_lock<std::mutex> lock(cvMtx_);
     kvSyncDoneCv_.notify_one();
+}
+
+void MediaLibraryDevice::TryToGetTargetDevMLInfos(const std::string &udid, const std::string &networkId)
+{
+    constexpr int SLEEP_WAITOUT = 500;
+    if (devsInfoInter_ == nullptr) {
+        MEDIA_ERR_LOG("devsInfoInter_ is nullptr");
+        return;
+    }
+    std::string version;
+    bool ret = devsInfoInter_->GetMLDeviceInfos(udid, version);
+    if (!ret) {
+        MEDIA_INFO_LOG("get ml infos failed, so try to sync pull first, wait...");
+        devsInfoInter_->SyncMLDeviceInfos(udid, networkId);
+        {
+            std::unique_lock<std::mutex> lock(cvMtx_);
+            if (kvSyncDoneCv_.wait_for(lock, std::chrono::milliseconds(SLEEP_WAITOUT)) == std::cv_status::timeout) {
+                MEDIA_INFO_LOG("get ml infos sync timeout");
+            }
+        }
+        MEDIA_INFO_LOG("get ml infos sync done, wakeup, try to get again");
+        ret = devsInfoInter_->GetMLDeviceInfos(udid, version);
+        if (!ret) {
+            MEDIA_INFO_LOG("get ml infos failed again, maybe target dev have never init");
+            return;
+        }
+    }
+    lock_guard<std::mutex> lock(devMtx_);
+    deviceInfoMap_[networkId].versionId = version;
+    MEDIA_INFO_LOG("get dev %{public}s ml infos, version %{public}s",
+        networkId.substr(0, TRIM_LENGTH).c_str(), version.c_str());
 }
 
 void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t devLevel)
@@ -165,13 +196,9 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
     std::vector<std::string> devices = { mldevInfo.deviceId };
     MediaLibrarySyncTable::SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
 
-    if (devsInfoInter_ != nullptr) {
-        if (!devsInfoInter_->GetMLDeviceInfos(mldevInfo.deviceUdid, mldevInfo.versionId)) {
-            MEDIA_INFO_LOG("get ml infos failed, so try to sync pull first, wait...");
-        }
-    }
-    MEDIA_INFO_LOG("OnDeviceOnline cid %{public}s media library version %{public}s",
-        mldevInfo.deviceId.substr(0, TRIM_LENGTH).c_str(), mldevInfo.versionId.c_str());
+    auto getTargetMLInfoTask = std::make_unique<std::thread>(&MediaLibraryDevice::TryToGetTargetDevMLInfos,
+        this, mldevInfo.deviceUdid, mldevInfo.deviceId);
+    getTargetMLInfoTask->detach();
 }
 
 void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)

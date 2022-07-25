@@ -15,6 +15,7 @@
 #define MLOG_TAG "Distributed"
 
 #include "devices_info_interact.h"
+#include "application_context.h"
 #include "medialibrary_device.h"
 #include "media_data_ability_const.h"
 #include "media_log.h"
@@ -42,6 +43,11 @@ DevicesInfoInteract::~DevicesInfoInteract()
 
 void DevicesInfoInteract::Init()
 {
+    auto context = AbilityRuntime::Context::GetApplicationContext();
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is null");
+        return;
+    }
     DistributedKv::DistributedKvDataManager kvManager;
     DistributedKv::Options options = {
         .createIfMissing = true,
@@ -49,8 +55,10 @@ void DevicesInfoInteract::Init()
         .backup = true,
         .autoSync = true,
         .securityLevel = DistributedKv::SecurityLevel::NO_LABEL,
+        .area = ENCRYPTION_LEVEL_INT,
         .syncPolicy = DistributedKv::SyncPolicy::HIGH,
-        .kvStoreType = DistributedKv::KvStoreType::SINGLE_VERSION
+        .kvStoreType = DistributedKv::KvStoreType::SINGLE_VERSION,
+        .baseDir = context->GetDatabaseDir()
     };
     DistributedKv::AppId appId = { BUNDLE_NAME };
     DistributedKv::StoreId storeId = { ML_MULTIDEV_INFO_ID };

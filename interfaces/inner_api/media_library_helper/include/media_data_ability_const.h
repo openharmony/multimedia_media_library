@@ -115,6 +115,7 @@ static const std::string MEDIA_DATA_ABILITY_DB_NAME = "media_library.db";
 
 static const std::string BUNDLE_NAME = "com.ohos.medialibrary.medialibrarydata";
 static const std::string ENCRYPTION_LEVEL = "el2";
+static const int ENCRYPTION_LEVEL_INT = 2;
 
 static const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "datashare://";
 static const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
