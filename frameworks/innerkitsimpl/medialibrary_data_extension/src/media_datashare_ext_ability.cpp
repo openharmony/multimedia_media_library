@@ -72,7 +72,7 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
     const sptr<IRemoteObject> &token)
 {
     DataShareExtAbility::Init(record, application, handler, token);
-    auto context = GetContext();
+    auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
         MEDIA_ERR_LOG("Failed to get context");
         return;
