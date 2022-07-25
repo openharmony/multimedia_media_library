@@ -63,17 +63,6 @@ void AlbumNapi::AlbumNapiDestructor(napi_env env, void *nativeObject, void *fina
     NAPI_DEBUG_LOG("AlbumNapiDestructor exit");
 }
 
-void AlbumNapiAsyncContext::SetApiName(const string &Name)
-{
-    apiName = Name;
-}
-
-void AlbumNapiAsyncContext::HandleError(napi_env env, napi_value &errorObj)
-{
-    // deal with context->error
-    MediaLibraryNapiUtils::HandleError(env, error, errorObj, apiName);
-}
-
 napi_value AlbumNapi::Init(napi_env env, napi_value exports)
 {
     napi_status status;
@@ -734,7 +723,7 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
         Uri fileUuri(MEDIALIBRARY_DATA_URI);
         changedRows = context->objectInfo->GetMediaDataHelper()->Update(fileUuri, filePredicates, fileValuesBucket);
     }
-    context->error = (changedRows < 0) ? MediaLibraryNapiUtils::TransErrorCode(changedRows) : context->error;
+    context->SaveError(changedRows);
     context->changedRows = changedRows;
 }
 static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, AlbumNapiAsyncContext *context)
