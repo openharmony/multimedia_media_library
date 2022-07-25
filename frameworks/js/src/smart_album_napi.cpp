@@ -30,7 +30,7 @@ std::shared_ptr<DataShare::DataShareHelper> SmartAlbumNapi::sMediaDataHelper = n
 using CompleteCallback = napi_async_complete_callback;
 
 SmartAlbumNapi::SmartAlbumNapi()
-    : env_(nullptr), wrapper_(nullptr)
+    : env_(nullptr)
 {
     albumId_ = DEFAULT_ALBUM_ID;
     albumName_ = DEFAULT_ALBUM_NAME;
@@ -44,10 +44,6 @@ SmartAlbumNapi::SmartAlbumNapi()
 }
 SmartAlbumNapi::~SmartAlbumNapi()
 {
-    if (wrapper_ != nullptr) {
-        napi_delete_reference(env_, wrapper_);
-        wrapper_ = nullptr;
-    }
     NAPI_DEBUG_LOG("SmartAlbumNapi destructor exit");
 }
 
@@ -131,7 +127,7 @@ napi_value SmartAlbumNapi::SmartAlbumNapiConstructor(napi_env env, napi_callback
                 obj->SetSmartAlbumNapiProperties(*sAlbumData_);
             }
             status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
-                               SmartAlbumNapi::SmartAlbumNapiDestructor, nullptr, &(obj->wrapper_));
+                               SmartAlbumNapi::SmartAlbumNapiDestructor, nullptr, nullptr);
             if (status == napi_ok) {
                 obj.release();
                 return thisVar;

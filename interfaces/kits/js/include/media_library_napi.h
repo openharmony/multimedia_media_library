@@ -171,7 +171,6 @@ private:
     void UnregisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
 
     napi_env env_;
-    napi_ref wrapper_;
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref sMediaTypeEnumRef_;

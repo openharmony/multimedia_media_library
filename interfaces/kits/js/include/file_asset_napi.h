@@ -136,7 +136,6 @@ private:
     std::string albumName_;
 
     napi_env env_;
-    napi_ref wrapper_;
 
     static thread_local napi_ref sConstructor_;
     static thread_local FileAsset *sFileAsset_;

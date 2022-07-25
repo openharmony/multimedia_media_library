@@ -269,10 +269,6 @@ AVMetadataHelperNapi::AVMetadataHelperNapi()
 
 AVMetadataHelperNapi::~AVMetadataHelperNapi()
 {
-    if (wrapper_ != nullptr) {
-        napi_delete_reference(env_, wrapper_);
-        wrapper_ = nullptr;
-    }
     nativeAVMetadataHelper_ = nullptr;
 }
 
@@ -348,7 +344,7 @@ napi_value AVMetadataHelperNapi::Constructor(napi_env env, napi_callback_info in
     }
 
     status = napi_wrap(env, jsThis, reinterpret_cast<void *>(avMetadataHelperNapi),
-        AVMetadataHelperNapi::Destructor, nullptr, &(avMetadataHelperNapi->wrapper_));
+        AVMetadataHelperNapi::Destructor, nullptr, nullptr);
     if (status != napi_ok) {
         delete avMetadataHelperNapi;
         NAPI_ERR_LOG("native wrap fail, status: %{public}d", status);
