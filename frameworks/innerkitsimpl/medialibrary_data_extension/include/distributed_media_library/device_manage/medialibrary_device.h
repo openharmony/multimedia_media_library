@@ -75,6 +75,7 @@ private:
     void RegisterToDM();
     void UnRegisterFromDM();
     void DevOnlineProcess(const DistributedHardware::DmDeviceInfo &devInfo);
+    void TryToGetTargetDevMLInfos(const std::string &udid, const std::string &networkId);
 private:
     static constexpr int SHORT_UDID_LEN = 8;
     static constexpr int RANDOM_NUM = 999;
@@ -85,7 +86,7 @@ private:
     std::unordered_map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
     std::map<std::string, std::set<int>> excludeMap_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
-    std::unique_ptr<DevicesInfoInteract> devsInfoInter_;
+    std::shared_ptr<DevicesInfoInteract> devsInfoInter_;
     std::string bundleName_;
     std::mutex cvMtx_;
     std::condition_variable kvSyncDoneCv_;
