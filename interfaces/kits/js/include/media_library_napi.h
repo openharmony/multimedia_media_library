@@ -26,6 +26,7 @@
 #include "napi_base_context.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "napi_error.h"
 #include "smart_album_asset.h"
 #include "values_bucket.h"
 #include "napi_remote_object.h"
@@ -177,8 +178,7 @@ private:
     static thread_local napi_ref sFileKeyEnumRef_;
 };
 
-struct MediaLibraryAsyncContext {
-    int32_t error = ERR_DEFAULT;
+struct MediaLibraryAsyncContext : public NapiError {
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
@@ -205,9 +205,6 @@ struct MediaLibraryAsyncContext {
     Ability *ability_;
     std::string storeMediaSrc;
     int32_t imagePreviewIndex;
-    string apiName;
-    void HandleError(napi_env env, napi_value &errorObj);
-    void SetApiName(const string &Name);
 };
 } // namespace Media
 } // namespace OHOS

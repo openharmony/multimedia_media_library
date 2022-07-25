@@ -89,17 +89,6 @@ void FileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, vo
     NAPI_DEBUG_LOG("FileAssetNapiDestructor exit");
 }
 
-void FileAssetAsyncContext::SetApiName(const string &Name)
-{
-    apiName = Name;
-}
-
-void FileAssetAsyncContext::HandleError(napi_env env, napi_value &errorObj)
-{
-    // deal with context->error
-    MediaLibraryNapiUtils::HandleError(env, error, errorObj, apiName);
-}
-
 napi_value FileAssetNapi::Init(napi_env env, napi_value exports)
 {
     napi_status status;
@@ -969,7 +958,7 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetFileId()));
     changedRows = context->objectInfo->sDataShareHelper_->Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
-        context->error = MediaLibraryNapiUtils::TransErrorCode(changedRows);
+        context->SaveError(changedRows);
         NAPI_ERR_LOG("File asset modification failed, err: %{public}d", changedRows);
     } else {
         context->changedRows = changedRows;
@@ -1078,7 +1067,7 @@ static void JSOpenExecute(FileAssetAsyncContext *context)
         Uri openFileUri(fileUri);
         int32_t retVal = context->objectInfo->sDataShareHelper_->OpenFile(openFileUri, mode);
         if (retVal <= 0) {
-            context->error = MediaLibraryNapiUtils::TransErrorCode(retVal);
+            context->SaveError(retVal);
             NAPI_ERR_LOG("File open asset failed, ret: %{public}d", retVal);
         } else {
             context->fd = retVal;
@@ -1207,7 +1196,7 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
             return;
         }
     }
-    context->error = MediaLibraryNapiUtils::TransErrorCode(retVal);
+    context->SaveError(retVal);
     NAPI_ERR_LOG("File close asset failed %{public}d", retVal);
 }
 
@@ -1826,6 +1815,7 @@ static void JSFavouriteExecute(FileAssetAsyncContext* context)
         NAPI_ERR_LOG("Ability helper is null");
         return;
     }
+
     int32_t changedRows;
     DataShareValuesBucket valuesBucket;
     valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
@@ -1843,7 +1833,7 @@ static void JSFavouriteExecute(FileAssetAsyncContext* context)
             context->objectInfo->sDataShareHelper_->Insert(RemoveAsseturi, valuesBucket);
         context->changedRows = changedRows;
     }
-    context->error = (changedRows < 0) ? MediaLibraryNapiUtils::TransErrorCode(changedRows) : context->error;
+    context->SaveError(changedRows);
 }
 
 napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
@@ -1859,23 +1849,30 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
-        result = GetJSArgsForFavorite(env, argc, argv, *asyncContext);
-        ASSERT_NULLPTR_CHECK(env, result);
-        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSFavorite", asyncContext);
-        status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
-                FileAssetAsyncContext* context = static_cast<FileAssetAsyncContext*>(data);
-                JSFavouriteExecute(context);
-            },
-            reinterpret_cast<CompleteCallback>(JSFavoriteCallbackComplete),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
-        if (status != napi_ok) {
-            napi_get_undefined(env, &result);
-        } else {
-            napi_queue_async_work(env, asyncContext->work);
-            asyncContext.release();
-        }
+    if (status == napi_ok && asyncContext->objectInfo == nullptr) {
+        NAPI_DEBUG_LOG("get this Var fail");
+        return result;
+    }
+
+    result = GetJSArgsForFavorite(env, argc, argv, *asyncContext);
+    if (asyncContext->isFavorite == asyncContext->objectInfo->IsFavorite()) {
+        NAPI_DEBUG_LOG("favorite state is the same");
+        return result;
+    }
+    ASSERT_NULLPTR_CHECK(env, result);
+    NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+    NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSFavorite", asyncContext);
+    status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
+            FileAssetAsyncContext* context = static_cast<FileAssetAsyncContext*>(data);
+            JSFavouriteExecute(context);
+        },
+        reinterpret_cast<CompleteCallback>(JSFavoriteCallbackComplete),
+        static_cast<void*>(asyncContext.get()), &asyncContext->work);
+    if (status != napi_ok) {
+        napi_get_undefined(env, &result);
+    } else {
+        napi_queue_async_work(env, asyncContext->work);
+        asyncContext.release();
     }
     return result;
 }
@@ -1970,7 +1967,7 @@ static void JSTrashExecute(FileAssetAsyncContext* context)
             context->objectInfo->sDataShareHelper_->Insert(RemoveAsseturi, valuesBucket);
         context->changedRows = changedRows;
     }
-    context->error = (changedRows < 0) ? MediaLibraryNapiUtils::TransErrorCode(changedRows) : context->error;
+    context->SaveError(changedRows);
 }
 
 static void JSTrashCallbackComplete(napi_env env, napi_status status,

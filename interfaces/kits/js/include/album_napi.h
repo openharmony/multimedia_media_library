@@ -36,6 +36,7 @@
 #include "values_bucket.h"
 #include "napi_remote_object.h"
 #include "datashare_helper.h"
+#include "napi_error.h"
 
 namespace OHOS {
 namespace Media {
@@ -95,7 +96,7 @@ private:
     static thread_local AlbumAsset *sAlbumData_;
 };
 
-struct AlbumNapiAsyncContext {
+struct AlbumNapiAsyncContext : public NapiError {
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
@@ -107,10 +108,6 @@ struct AlbumNapiAsyncContext {
     std::string order;
     std::unique_ptr<FetchResult> fetchResult;
     std::string networkId_ = "";
-    std::string apiName;
-    int32_t error = 0;
-    void HandleError(napi_env env, napi_value &errorObj);
-    void SetApiName(const std::string &Name);
 };
 } // namespace Media
 } // namespace OHOS
