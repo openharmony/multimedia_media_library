@@ -189,6 +189,7 @@ const std::string VIDEO_CONTAINER_TYPE_WEBM = "webm";
 const std::string VIDEO_CONTAINER_TYPE_MKV = "mkv";
 const std::string VIDEO_CONTAINER_TYPE_H264 = "h264";
 const std::string VIDEO_CONTAINER_TYPE_MPEG = "mpeg";
+const std::string VIDEO_CONTAINER_TYPE_TS = "ts";
 
 const std::string DIR_ALL_VIDEO_CONTAINER_TYPE = "." + VIDEO_CONTAINER_TYPE_MP4 + "?" +
                                                  "." + VIDEO_CONTAINER_TYPE_3GP + "?" +
@@ -197,7 +198,8 @@ const std::string DIR_ALL_VIDEO_CONTAINER_TYPE = "." + VIDEO_CONTAINER_TYPE_MP4 
                                                  "." + VIDEO_CONTAINER_TYPE_WEBM + "?" +
                                                  "." + VIDEO_CONTAINER_TYPE_MKV + "?" +
                                                  "." + VIDEO_CONTAINER_TYPE_H264 + "?" +
-                                                 "." + VIDEO_CONTAINER_TYPE_MPEG + "?";
+                                                 "." + VIDEO_CONTAINER_TYPE_MPEG + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_TS + "?";
 
 /** Supported image types */
 const std::string IMAGE_CONTAINER_TYPE_BMP = "bmp";
@@ -277,7 +279,8 @@ const std::unordered_set<std::string> SUPPORTED_VIDEO_FORMATS_SET {
                                                 VIDEO_CONTAINER_TYPE_WEBM,
                                                 VIDEO_CONTAINER_TYPE_MKV,
                                                 VIDEO_CONTAINER_TYPE_H264,
-                                                VIDEO_CONTAINER_TYPE_MPEG
+                                                VIDEO_CONTAINER_TYPE_MPEG,
+                                                VIDEO_CONTAINER_TYPE_TS
                                                 };
 
 // Unordered set contains list supported image formats
