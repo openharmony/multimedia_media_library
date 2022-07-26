@@ -14,5 +14,5 @@
 group("test") {
   testonly = true
 
-  deps = [ "unittest/medialib_statistic_test:unittest" ]
+  deps = []
 }
