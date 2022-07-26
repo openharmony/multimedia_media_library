@@ -49,13 +49,18 @@
         ]
       },
       "build": {
-        "sub_component": [
+        "group_type": {
+          "base_group": [],
+          "fwk_group": [
+            "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary",
+            "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_js"
+          ],
+          "service_group": [
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
-            "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary",
-            "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_js",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension"
-        ],
+          ]
+        },
         "inner_kits": [
             {
                 "header": {
