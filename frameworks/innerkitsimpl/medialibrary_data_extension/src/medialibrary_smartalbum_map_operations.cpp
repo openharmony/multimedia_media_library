@@ -437,16 +437,12 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleRemoveAssetOperations(const i
                                                                          const int32_t &childFileAssetId,
                                                                          SmartAlbumMapQueryData &smartAlbumMapQueryData)
 {
-    int32_t errorCode = E_FAIL;
     if (albumId == TRASH_ALBUM_ID_VALUES) {
-        errorCode = RemoveTrashAssetsInfoUtil(childFileAssetId, smartAlbumMapQueryData);
+        RemoveTrashAssetsInfoUtil(childFileAssetId, smartAlbumMapQueryData);
     } else if (albumId == FAVOURITE_ALBUM_ID_VALUES) {
-        errorCode = UpdateFavoriteAssetsInfoUtil(childFileAssetId, false, smartAlbumMapQueryData);
+        UpdateFavoriteAssetsInfoUtil(childFileAssetId, false, smartAlbumMapQueryData);
     }
-    if (errorCode > 0) {
-        errorCode = RemoveAlbumAssetsInfoUtil(albumId, smartAlbumMapQueryData);
-    }
-    return errorCode;
+    return RemoveAlbumAssetsInfoUtil(albumId, smartAlbumMapQueryData);
 }
 
 int32_t MediaLibrarySmartAlbumMapOperations::DeleteDir(const string &recyclePath)
