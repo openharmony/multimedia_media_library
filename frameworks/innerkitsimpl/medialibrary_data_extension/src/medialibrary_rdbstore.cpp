@@ -38,7 +38,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetName(std::move(name));
     config_.SetPath(std::move(realPath));
     config_.SetBundleName(context->GetBundleName());
-    config_.SetArea(ENCRYPTION_LEVEL_INT);
+    config_.SetArea(context->GetArea());
     Init();
 }
 
