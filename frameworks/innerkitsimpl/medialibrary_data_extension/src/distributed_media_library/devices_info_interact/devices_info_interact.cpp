@@ -55,7 +55,7 @@ void DevicesInfoInteract::Init()
         .backup = true,
         .autoSync = true,
         .securityLevel = DistributedKv::SecurityLevel::NO_LABEL,
-        .area = EL2,
+        .area = DistributedKv::Area::EL2,
         .syncPolicy = DistributedKv::SyncPolicy::HIGH,
         .kvStoreType = DistributedKv::KvStoreType::SINGLE_VERSION,
         .baseDir = context->GetDatabaseDir()
