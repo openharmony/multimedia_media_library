@@ -19,7 +19,6 @@
 #include <unordered_set>
 
 #include "abs_rdb_predicates.h"
-#include "bundle_mgr_interface.h"
 #include "datashare_abs_result_set.h"
 #include "device_manager.h"
 #include "device_manager_callback.h"
@@ -45,6 +44,7 @@
 #include "sa_mgr_client.h"
 #include "system_ability_definition.h"
 #include "timer.h"
+#include "permission_utils.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -647,62 +647,9 @@ bool MediaLibraryDataManager::CheckFileNameValid(const DataShareValuesBucket &va
     }
 
     if (displayName.at(0) == '.') {
-        std::string bundleName = GetClientBundleName();
-        if (IsSameTextStr(displayName, ".nofile") && IsSameTextStr(bundleName, "fms_service")) {
-            return true;
-        }
-        return false;
+        return PermissionUtils::CheckCallerSpecialFilePerm(displayName);
     }
     return true;
-}
-
-sptr<AppExecFwk::IBundleMgr> MediaLibraryDataManager::GetSysBundleManager()
-{
-    if (bundleMgr_ == nullptr) {
-        std::lock_guard<std::mutex> lock(bundleMgrMutex);
-        if (bundleMgr_ == nullptr) {
-            auto saMgr = OHOS::DelayedSingleton<SaMgrClient>::GetInstance();
-            if (saMgr == nullptr) {
-                MEDIA_ERR_LOG("failed to get SaMgrClient::GetInstance");
-                return nullptr;
-            }
-            auto bundleObj = saMgr->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
-            if (bundleObj == nullptr) {
-                MEDIA_ERR_LOG("failed to get GetSystemAbility");
-                return nullptr;
-            }
-            auto bundleMgr = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
-            if (bundleMgr == nullptr) {
-                MEDIA_ERR_LOG("failed to iface_cast");
-                return nullptr;
-            }
-            bundleMgr_ = bundleMgr;
-        }
-    }
-    return bundleMgr_;
-}
-
-std::string MediaLibraryDataManager::GetClientBundle(int uid)
-{
-    auto bms = GetSysBundleManager();
-    std::string bundleName = "";
-    if (bms == nullptr) {
-        MEDIA_INFO_LOG("GetClientBundleName bms failed");
-        return bundleName;
-    }
-    auto result = bms->GetBundleNameForUid(uid, bundleName);
-    MEDIA_INFO_LOG("uid %{private}d bundleName is %{private}s ", uid, bundleName.c_str());
-    if (!result) {
-        MEDIA_ERR_LOG("GetBundleNameForUid fail");
-        return "";
-    }
-    return bundleName;
-}
-
-std::string MediaLibraryDataManager::GetClientBundleName()
-{
-    int uid = IPCSkeleton::GetCallingUid();
-    return GetClientBundle(uid);
 }
 
 void MediaLibraryDataManager::NotifyChange(const Uri &uri)

@@ -239,12 +239,7 @@ public:
     std::vector<std::shared_ptr<DataShareResult>> ExecuteBatch(
         const std::vector<std::shared_ptr<DataShareOperation>> &operations) override;
 private:
-    bool CheckCallingPermission(const std::string &permission);
-    std::string GetClientBundle(int uid);
-    sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
-
     Runtime& runtime_;
-    OHOS::sptr<AppExecFwk::IBundleMgr> bundleMgr_;
 };
 } // namespace AbilityRuntime
 } // namespace OHOS
