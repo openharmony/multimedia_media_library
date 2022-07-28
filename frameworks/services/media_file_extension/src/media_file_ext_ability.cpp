@@ -64,7 +64,7 @@ void MediaFileExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &record
 {
     MEDIA_INFO_LOG("Init MediaFileExtAbility");
     FileAccessExtAbility::Init(record, application, handler, token);
-    auto context = GetContext();
+    auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
         MEDIA_ERR_LOG("Failed to get context");
         return;
