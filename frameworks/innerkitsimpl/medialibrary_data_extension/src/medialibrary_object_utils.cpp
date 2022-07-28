@@ -453,6 +453,13 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
         return E_SUCCESS;
     }
 
+    MediaLibraryDirOperations dirOprn;
+    int32_t errCode = dirOprn.HandleDirOperations(MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION, cmd.GetValueBucket(),
+        MediaLibraryDataManager::GetInstance()->rdbStore_, MediaLibraryDataManager::GetInstance()->GetDirQuerySetMap());
+    if (errCode != E_SUCCESS) {
+        return errCode;
+    }
+
     string dstAlbumPath = MediaLibraryDataManagerUtils::GetParentPath(dstFilePath);
     NativeAlbumAsset dirAsset = GetDirAsset(dstAlbumPath);
     if (dirAsset.GetAlbumId() <= 0) {
@@ -461,7 +468,7 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
     }
 
     FileAsset fileAsset;
-    int32_t errCode = fileAsset.ModifyAsset(srcFilePath, dstFilePath);
+    errCode = fileAsset.ModifyAsset(srcFilePath, dstFilePath);
     if (errCode == E_MODIFY_DATA_FAIL) {
         MEDIA_ERR_LOG("Failed to modify the file in the device");
         return errCode;
