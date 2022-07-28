@@ -432,7 +432,7 @@ int32_t HandleAlbumRename(const FileAsset &srcAsset, const string &displayName)
     string destPath = srcPath.substr(0, slashIndex) + SLASH_CHAR + displayName;
     if (MediaLibraryObjectUtils::IsFileExistInDb(destPath)) {
         MEDIA_ERR_LOG("Rename file is existed %{private}s", destPath.c_str());
-        return E_TARGET_FILE_EXIST;
+        return E_FILE_EXIST;
     }
     bool succ = MediaFileUtils::RenameDir(srcPath, destPath);
     if (!succ) {
@@ -522,7 +522,7 @@ int32_t HandleAlbumMove(const FileAsset &srcAsset, const string &destRelativePat
     string destPath = ROOT_MEDIA_DIR + destRelativePath + srcAsset.GetDisplayName();
     if (MediaLibraryObjectUtils::IsFileExistInDb(destPath)) {
         MEDIA_ERR_LOG("Move file is existed %{private}s", destPath.c_str());
-        return E_TARGET_FILE_EXIST;
+        return E_FILE_EXIST;
     }
     bool succ = MediaFileUtils::RenameDir(srcAsset.GetPath(), destPath);
     if (!succ) {
