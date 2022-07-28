@@ -17,6 +17,7 @@
 #include "media_scanner_db.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -67,9 +68,10 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
     values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
 
-    values.PutLong(MEDIA_DATA_DB_TAKE_PICTURE_TIME, metadata.GetTakePictureTime());
-    values.PutLong(MEDIA_DATA_DB_CONTENT_CREATE_TIME, metadata.GetContentCreateTime());
-    values.PutInt(MEDIA_DATA_DB_ROTATION_ANGLE, metadata.GetRotationAngle());
+    values.PutLong(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
+    values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
+    values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
+    values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
 
     Uri abilityUri(MEDIALIBRARY_DATA_URI);
     rowNum = MediaLibraryDataManager::GetInstance()->Insert(abilityUri, values);
@@ -145,9 +147,10 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
     values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
 
-    values.PutLong(MEDIA_DATA_DB_TAKE_PICTURE_TIME, metadata.GetTakePictureTime());
-    values.PutLong(MEDIA_DATA_DB_CONTENT_CREATE_TIME, metadata.GetContentCreateTime());
-    values.PutInt(MEDIA_DATA_DB_ROTATION_ANGLE, metadata.GetRotationAngle());
+    values.PutLong(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
+    values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
+    values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
+    values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     updateCount = MediaLibraryDataManager::GetInstance()->Update(uri, values, predicates);
@@ -450,6 +453,62 @@ void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)
     MediaLibraryDataManager::GetInstance()->NotifyChange(uri);
 }
 
+void MediaScannerDb::ExtractMetaFromColumn(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+                                           unique_ptr<Metadata> &metadata, const std::string &col)
+{
+    int32_t columnIndex(0);
+    resultSet->GetColumnIndex(col, columnIndex);
+
+    auto dataType = DataType::TYPE_NULL;
+    Metadata::MetadataFnPtr requestFunc = nullptr;
+    auto itr = metadata->memberFuncMap_.find(col);
+    if (itr != metadata->memberFuncMap_.end()) {
+        dataType = itr->second.first;
+        requestFunc = itr->second.second;
+    }
+
+    int32_t ret(0);
+    std::variant<int32_t, int64_t, double, std::string> data = 0;
+
+    switch (dataType) {
+        case DataType::TYPE_INT: {
+            int32_t intValue(0);
+            ret = resultSet->GetInt(columnIndex, intValue);
+            CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{public}d", columnIndex);
+            data = intValue;
+            break;
+        }
+        case DataType::TYPE_LONG: {
+            int64_t longValue(0);
+            ret = resultSet->GetLong(columnIndex, longValue);
+            CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{public}d", columnIndex);
+            data = longValue;
+            break;
+        }
+        case DataType::TYPE_STRING: {
+            string strValue("");
+            ret = resultSet->GetString(columnIndex, strValue);
+            CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain string value for index %{public}d", columnIndex);
+            data = strValue;
+            break;
+        }
+        case DataType::TYPE_DOUBLE: {
+            double doubleVal(0);
+            ret = resultSet->GetDouble(columnIndex, doubleVal);
+            CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain double value for index %{public}d", columnIndex);
+            data = doubleVal;
+            break;
+        }
+        default:
+            break;
+    }
+
+    // Use the function pointer from map and pass data to fn ptr
+    if (requestFunc != nullptr) {
+        (metadata.get()->*requestFunc)(data);
+    }
+}
+
 unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
     unique_ptr<Metadata> metadata = make_unique<Metadata>();
@@ -460,50 +519,7 @@ unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::Ab
 
     resultSet->GetAllColumnNames(columnNames);
     for (const auto &col : columnNames) {
-        int32_t columnIndex(0);
-        resultSet->GetColumnIndex(col, columnIndex);
-
-        auto dataType = DataType::TYPE_NULL;
-        Metadata::MetadataFnPtr requestFunc = nullptr;
-        auto itr = metadata->memberFuncMap_.find(col);
-        if (itr != metadata->memberFuncMap_.end()) {
-            dataType = itr->second.first;
-            requestFunc = itr->second.second;
-        }
-
-        int32_t ret(0);
-        std::variant<int32_t, int64_t, std::string, MediaType> data = 0;
-
-        switch (dataType) {
-            case DataType::TYPE_INT: {
-                int32_t intValue(0);
-                ret = resultSet->GetInt(columnIndex, intValue);
-                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{public}d", columnIndex);
-                data = intValue;
-                break;
-            }
-            case DataType::TYPE_LONG: {
-                int64_t longValue(0);
-                ret = resultSet->GetLong(columnIndex, longValue);
-                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{public}d", columnIndex);
-                data = longValue;
-                break;
-            }
-            case DataType::TYPE_STRING: {
-                string strValue("");
-                ret = resultSet->GetString(columnIndex, strValue);
-                CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain string value for index %{public}d", columnIndex);
-                data = strValue;
-                break;
-            }
-            default:
-                break;
-        }
-
-        // Use the function pointer from map and pass data to fn ptr
-        if (requestFunc != nullptr) {
-            (metadata.get()->*requestFunc)(data);
-        }
+        ExtractMetaFromColumn(resultSet, metadata, col);
     }
 
     return metadata;
