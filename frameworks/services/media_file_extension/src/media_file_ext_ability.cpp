@@ -142,7 +142,7 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayN
         return E_SUCCESS;
     } else {
         MEDIA_ERR_LOG("CreateFile insert fail, %{public}d", ret);
-        return E_FAIL;
+        return ret;
     }
 }
 
@@ -161,7 +161,7 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
     string dirPath = ROOT_MEDIA_DIR + relativePath + displayName;
     if (MediaLibraryObjectUtils::IsFileExistInDb(dirPath)) {
         MEDIA_ERR_LOG("Create dir is existed %{private}s", dirPath.c_str());
-        return E_TARGET_FILE_EXIST;
+        return E_FILE_EXIST;
     }
     relativePath = relativePath + displayName + SLASH_CHAR;
     DataShareValuesBucket valuesBucket;
@@ -173,7 +173,7 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
         return E_SUCCESS;
     } else {
         MEDIA_ERR_LOG("mkdir insert fail, %{public}d", ret);
-        return E_FAIL;
+        return ret;
     }
 }
 
