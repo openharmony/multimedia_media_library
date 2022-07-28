@@ -32,10 +32,11 @@ ohos_shared_library("media_library_manager") {
   ]
 
   deps = [
+    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
+    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:permission_utils",
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//utils/native/base:utils",
   ]
 
