@@ -33,7 +33,7 @@
           "ipc_js",
           "data_share",
           "multimedia_image_standard",
-          "samgr_standard",
+          "samgr",
           "hiviewdfx_hilog_native",
           "user_file_service",
           "eventhandler",
