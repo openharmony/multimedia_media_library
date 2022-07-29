@@ -66,6 +66,15 @@ MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, cons
     insertValue_ = value;
 }
 
+MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
+    const std::string &deviceId)
+{
+    SetOprnObject(oprnObject);
+    SetOprnType(oprnType);
+    SetOprnDevice(deviceId);
+    ParseTableName();
+}
+
 MediaLibraryCommand::~MediaLibraryCommand() {}
 
 // set functions
