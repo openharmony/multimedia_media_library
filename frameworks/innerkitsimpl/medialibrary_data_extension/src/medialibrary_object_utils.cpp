@@ -702,9 +702,7 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
         return nullptr;
     }
 
-    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + id;
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
-    cmd.SetOprnDevice(networkId);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY, networkId);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, id);
 
     shared_ptr<AbsSharedResultSet> resultSet = QueryWithCondition(cmd, {});
