@@ -30,7 +30,7 @@ ohos_unittest("mediascanner_unittest") {
     "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager/include",
     "${ABILITY_RUNTIME_INNER_API_PATH}/app_manager/include/appmgr",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
-    "//utils/native/base/include",
+    "//commonlibrary/c_utils/base/include",
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
@@ -50,6 +50,7 @@ ohos_unittest("mediascanner_unittest") {
     "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:abilitykit_native",
+    "c_utils:utils",
     "data_share:datashare_abilitykit",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
@@ -57,6 +58,5 @@ ohos_unittest("mediascanner_unittest") {
     "relational_store:native_dataability",
     "relational_store:native_rdb",
     "samgr_standard:samgr_proxy",
-    "utils_base:utils",
   ]
 }
