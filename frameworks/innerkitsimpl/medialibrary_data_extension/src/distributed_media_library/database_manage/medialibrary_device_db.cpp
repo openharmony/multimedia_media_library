@@ -35,13 +35,13 @@ int64_t MediaLibraryDeviceDb::InsertDeviceInfo(const ValuesBucket &values, const
     return outRowId;
 }
 
-int32_t MediaLibraryDeviceDb::DeleteDeviceInfo(const std::string &deviceId,
+int32_t MediaLibraryDeviceDb::DeleteDeviceInfo(const std::string &networkId,
                                                const shared_ptr<RdbStore> &rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (!deviceId.empty()), E_DEVICE_OPER_ERR, "Invalid input");
+    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (!networkId.empty()), E_DEVICE_OPER_ERR, "Invalid input");
 
     int32_t deletedRows(E_DEVICE_OPER_ERR);
-    vector<string> whereArgs = { deviceId };
+    vector<string> whereArgs = { networkId };
 
     int32_t deleteResult = rdbStore->Delete(deletedRows, DEVICE_TABLE, DEVICE_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, E_DEVICE_OPER_ERR, "Delete failed");
@@ -54,18 +54,18 @@ int32_t MediaLibraryDeviceDb::UpdateDeviceInfo(const ValuesBucket &values, const
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DEVICE_OPER_ERR, "Invalid input");
 
     ValueObject obj;
-    std::string deviceId;
+    std::string networkId;
 
     auto contains = values.GetObject(DEVICE_DB_DEVICEID, obj);
     if (contains) {
-        obj.GetString(deviceId);
+        obj.GetString(networkId);
     }
 
-    CHECK_AND_RETURN_RET_LOG(!deviceId.empty(), E_DEVICE_OPER_ERR, "Invalid deviceId = %{private}s",
-        deviceId.c_str());
+    CHECK_AND_RETURN_RET_LOG(!networkId.empty(), E_DEVICE_OPER_ERR, "Invalid networkId = %{private}s",
+        networkId.c_str());
 
     int32_t updatedRows(0);
-    vector<string> whereArgs = { deviceId };
+    vector<string> whereArgs = { networkId };
 
     int32_t updateResult = rdbStore->Update(updatedRows, DEVICE_TABLE, values, DEVICE_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(updateResult == E_OK, E_DEVICE_OPER_ERR, "Update failed");

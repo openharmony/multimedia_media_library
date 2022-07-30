@@ -62,7 +62,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
         // update device db
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
             if (iter->first.empty()) {
-                MEDIA_ERR_LOG("SyncPullTable deviceId is empty");
+                MEDIA_ERR_LOG("SyncPullTable networkId is empty");
                 continue;
             }
             if (iter->second != 0) {
@@ -105,7 +105,7 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
         // update device db
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
             if (iter->first.empty()) {
-                MEDIA_ERR_LOG("SyncPushTable deviceId is empty");
+                MEDIA_ERR_LOG("SyncPushTable networkId is empty");
                 continue;
             }
             if (iter->second != 0) {

@@ -126,14 +126,14 @@ DistributedKv::Status MediaThumbnailHelper::SyncKvstore(std::string key, const s
         MEDIA_INFO_LOG("MediaThumbnailHelper::DistributedKv::Status::ERROR");
         return DistributedKv::Status::ERROR;
     }
-    std::string deviceId = MediaFileUtils::GetNetworkIdFromUri(uri);
-    if (deviceId.empty()) {
+    std::string networkId = MediaFileUtils::GetNetworkIdFromUri(uri);
+    if (networkId.empty()) {
         MEDIA_INFO_LOG("MediaThumbnailHelper::DistributedKv::Status::ERROR");
         return DistributedKv::Status::ERROR;
     }
     DistributedKv::DataQuery dataQuery;
     dataQuery.KeyPrefix(key);
-    std::vector<std::string> deviceIds = { deviceId };
+    std::vector<std::string> deviceIds = { networkId };
     MEDIA_DEBUG_LOG("Distribute StartTrace:Sync");
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "SyncKvstore singleKvStorePtr_->Sync");
     auto status = singleKvStorePtr_->Sync(deviceIds, OHOS::DistributedKv::SyncMode::PULL, dataQuery);
