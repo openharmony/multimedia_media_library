@@ -13,22 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_TRACE_H_
-#define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_TRACE_H_
+#ifndef OHOS_MEDIA_LIBRARY_TRACER
+#define OHOS_MEDIA_LIBRARY_TRACER
 
 #include <string.h>
 
 #include "hitrace_meter.h"
 
-class Tracer {
+class MediaLibraryTracer final {
 public:
-    Tracer() = default;
+    MediaLibraryTracer() = default;
 
-    ~Tracer()
+    virtual ~MediaLibraryTracer()
     {
         for (int32_t i = 0; i < count_; i++) {
             FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         }
+
+        count_ = 0;
     }
 
     void Start(const std::string &label)
@@ -47,4 +49,4 @@ private:
     int32_t count_ = 0;
 };
 
-#endif // OHOS_MEDIA_TRACE_H
+#endif // OHOS_MEDIA_LIBRARY_TRACER

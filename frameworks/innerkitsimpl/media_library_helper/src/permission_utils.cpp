@@ -110,6 +110,9 @@ void AddPermissionRecord(const AccessTokenID &token, const string &perm, const b
 
 bool PermissionUtils::CheckCallerPermission(const string &permission)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckCallerPermission");
+
     int uid = IPCSkeleton::GetCallingUid();
     if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
         MEDIA_INFO_LOG("CheckCallingPermission: Pass the uid check list");

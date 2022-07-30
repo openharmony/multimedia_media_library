@@ -26,7 +26,7 @@
 
 #include "hilog/log.h"
 
-#include "media_trace.h"
+#include "media_library_tracer.h"
 
 static inline OHOS::HiviewDFX::HiLogLabel LogLable()
 {
