@@ -173,7 +173,7 @@ void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t
 
     lock_guard<mutex> lock(devMtx_);
     mldevInfo.devSecLevel = devLevel;
-    deviceInfoMap_[mldevInfo.deviceId] = mldevInfo;
+    deviceInfoMap_[mldevInfo.networkId] = mldevInfo;
 }
 
 void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInfo &devInfo)
@@ -185,7 +185,7 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
     GetMediaLibraryDeviceInfo(devInfo, mldevInfo);
     {
         lock_guard<mutex> autoLock(devMtx_);
-        deviceInfoMap_[devInfo.deviceId] = mldevInfo;
+        deviceInfoMap_[devInfo.networkId] = mldevInfo;
     }
 
     if (!DevicePermissionVerification::CheckPermission(mldevInfo.deviceUdid)) {
@@ -193,11 +193,11 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
         return;
     }
 
-    std::vector<std::string> devices = { mldevInfo.deviceId };
+    std::vector<std::string> devices = { mldevInfo.networkId };
     MediaLibrarySyncTable::SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
 
     auto getTargetMLInfoTask = std::make_unique<std::thread>(&MediaLibraryDevice::TryToGetTargetDevMLInfos,
-        this, mldevInfo.deviceUdid, mldevInfo.deviceId);
+        this, mldevInfo.deviceUdid, mldevInfo.networkId);
     getTargetMLInfoTask->detach();
 }
 
@@ -208,7 +208,7 @@ void MediaLibraryDevice::OnDeviceOnline(const OHOS::DistributedHardware::DmDevic
 
 void MediaLibraryDevice::OnDeviceOffline(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
-    MEDIA_INFO_LOG("OnDeviceOffline deviceId = %{private}s", deviceInfo.deviceId);
+    MEDIA_INFO_LOG("OnDeviceOffline networkId = %{private}s", deviceInfo.networkId);
 
     if (mediaLibraryDeviceHandler_ == nullptr) {
         MEDIA_ERR_LOG("OnDeviceOffline mediaLibraryDeviceHandler null");
@@ -216,15 +216,15 @@ void MediaLibraryDevice::OnDeviceOffline(const OHOS::DistributedHardware::DmDevi
     }
     auto nodeOffline = [this, deviceInfo]() {
         lock_guard<mutex> autoLock(devMtx_);
-        std::string devId = deviceInfo.deviceId;
-        auto info = deviceInfoMap_.find(devId);
+        std::string networkId = deviceInfo.networkId;
+        auto info = deviceInfoMap_.find(networkId);
         if (info == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("OnDeviceOffline can not find deviceId:%{private}s", devId.c_str());
+            MEDIA_ERR_LOG("OnDeviceOffline can not find networkId:%{private}s", networkId.c_str());
             return;
         }
 
         MediaLibraryDeviceOperations::UpdateDeviceInfo(rdbStore_, info->second, bundleName_);
-        deviceInfoMap_.erase(devId);
+        deviceInfoMap_.erase(networkId);
 
         // 设备变更通知
         NotifyDeviceChange();
@@ -236,7 +236,7 @@ void MediaLibraryDevice::OnDeviceOffline(const OHOS::DistributedHardware::DmDevi
 
 void MediaLibraryDevice::OnDeviceChanged(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
-    MEDIA_INFO_LOG("MediaLibraryDevice OnDeviceChanged called deviceId = %{private}s", deviceInfo.deviceId);
+    MEDIA_INFO_LOG("MediaLibraryDevice OnDeviceChanged called networkId = %{private}s", deviceInfo.networkId);
 }
 
 void MediaLibraryDevice::OnDeviceReady(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
@@ -313,14 +313,14 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     return true;
 }
 
-bool MediaLibraryDevice::UpdateDevicieSyncStatus(const std::string &deviceId, int32_t syncStatus)
+bool MediaLibraryDevice::UpdateDevicieSyncStatus(const std::string &networkId, int32_t syncStatus)
 {
     std::string udid;
     {
         lock_guard<mutex> autoLock(devMtx_);
-        auto iter = deviceInfoMap_.find(deviceId);
+        auto iter = deviceInfoMap_.find(networkId);
         if (iter == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("UpdateDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
+            MEDIA_ERR_LOG("UpdateDevicieSyncStatus can not find networkId:%{private}s", networkId.c_str());
             return false;
         }
         udid = iter->second.deviceUdid;
@@ -328,22 +328,22 @@ bool MediaLibraryDevice::UpdateDevicieSyncStatus(const std::string &deviceId, in
     return MediaLibraryDeviceOperations::UpdateSyncStatus(rdbStore_, udid, syncStatus, bundleName_);
 }
 
-bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &deviceId, int32_t &syncStatus)
+bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &networkId, int32_t &syncStatus)
 {
     {
         lock_guard<mutex> autoLock(devMtx_);
-        auto info = deviceInfoMap_.find(deviceId);
+        auto info = deviceInfoMap_.find(networkId);
         if (info == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("GetDevicieSyncStatus can not find deviceId:%{private}s", deviceId.c_str());
+            MEDIA_ERR_LOG("GetDevicieSyncStatus can not find networkId:%{private}s", networkId.c_str());
             return false;
         }
     }
-    return MediaLibraryDeviceOperations::GetSyncStatusById(rdbStore_, deviceId, syncStatus, bundleName_);
+    return MediaLibraryDeviceOperations::GetSyncStatusById(rdbStore_, networkId, syncStatus, bundleName_);
 }
 
-std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId)
+std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &networkId)
 {
-    if (deviceId.empty()) {
+    if (networkId.empty()) {
         constexpr int32_t DEVICE_ID_SIZE = 65;
         char localDeviceId[DEVICE_ID_SIZE] = {0};
         GetDevUdid(localDeviceId, DEVICE_ID_SIZE);
@@ -355,9 +355,9 @@ std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId)
     }
     auto &deviceManager = DistributedHardware::DeviceManager::GetInstance();
     std::string deviceUdid;
-    auto ret = deviceManager.GetUdidByNetworkId(bundleName_, deviceId, deviceUdid);
+    auto ret = deviceManager.GetUdidByNetworkId(bundleName_, networkId, deviceUdid);
     if (ret != 0) {
-        MEDIA_INFO_LOG("GetDeviceUdid error deviceId = %{private}s", deviceId.c_str());
+        MEDIA_INFO_LOG("GetDeviceUdid error networkId = %{private}s", networkId.c_str());
         return std::string();
     }
     return deviceUdid;
@@ -366,10 +366,10 @@ std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId)
 void MediaLibraryDevice::GetMediaLibraryDeviceInfo(const DistributedHardware::DmDeviceInfo &dmInfo,
     MediaLibraryDeviceInfo& mlInfo)
 {
-    mlInfo.deviceId = dmInfo.deviceId;
+    mlInfo.networkId = dmInfo.networkId;
     mlInfo.deviceName = dmInfo.deviceName;
     mlInfo.deviceTypeId = dmInfo.deviceTypeId;
-    mlInfo.deviceUdid = GetUdidByNetworkId(mlInfo.deviceId);
+    mlInfo.deviceUdid = GetUdidByNetworkId(mlInfo.networkId);
 }
 
 string MediaLibraryDevice::GetNetworkIdBySelfId(const std::string &selfId)

@@ -19,7 +19,7 @@
 namespace OHOS {
 namespace Media {
 typedef struct MediaLibraryDeviceInfo {
-    std::string deviceId;
+    std::string networkId;
     std::string deviceName;
     std::string deviceUdid;
     std::string selfId;

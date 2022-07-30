@@ -3009,10 +3009,10 @@ static void JSStartImagePreviewExecute(MediaLibraryAsyncContext *context)
         return;
     }
     Want want;
-    string deviceId = "";
+    string networkId = "";
     string bundleName = "com.ohos.photos";
     string abilityName = "com.ohos.photos.MainAbility";
-    want.SetElementName(deviceId, bundleName, abilityName);
+    want.SetElementName(networkId, bundleName, abilityName);
     want.SetUri(context->uri);
     want.SetAction("ohos.want.action.viewData");
     want.SetParam("index", context->imagePreviewIndex);
