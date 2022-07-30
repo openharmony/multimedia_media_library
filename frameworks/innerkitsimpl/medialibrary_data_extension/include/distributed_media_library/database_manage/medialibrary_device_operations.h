@@ -44,11 +44,11 @@ public:
                           const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
     static bool UpdateDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                           const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
-    static bool DeleteDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &networkId);
-    static bool UpdateSyncStatus(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &networkId,
-                          int32_t syncStatus, const std::string &bundleName);
-    static bool GetSyncStatusById(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &networkId,
-                           int32_t &syncStatus, const std::string &bundleName);
+    static bool DeleteDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &udid);
+    static bool UpdateSyncStatus(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &udid,
+                          int32_t syncStatus);
+    static bool GetSyncStatusById(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &udid,
+                           int32_t &syncStatus);
     static bool QueryDeviceTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                           std::map<std::string, std::set<int>> &excludeMap);
     static bool GetAllDeviceDatas(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,

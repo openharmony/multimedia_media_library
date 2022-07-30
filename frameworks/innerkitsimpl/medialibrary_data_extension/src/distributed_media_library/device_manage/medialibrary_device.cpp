@@ -325,11 +325,12 @@ bool MediaLibraryDevice::UpdateDevicieSyncStatus(const std::string &networkId, i
         }
         udid = iter->second.deviceUdid;
     }
-    return MediaLibraryDeviceOperations::UpdateSyncStatus(rdbStore_, udid, syncStatus, bundleName_);
+    return MediaLibraryDeviceOperations::UpdateSyncStatus(rdbStore_, udid, syncStatus);
 }
 
 bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &networkId, int32_t &syncStatus)
 {
+    std::string udid;
     {
         lock_guard<mutex> autoLock(devMtx_);
         auto info = deviceInfoMap_.find(networkId);
@@ -337,8 +338,9 @@ bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &networkId, int3
             MEDIA_ERR_LOG("GetDevicieSyncStatus can not find networkId:%{private}s", networkId.c_str());
             return false;
         }
+        udid = info->second.deviceUdid;
     }
-    return MediaLibraryDeviceOperations::GetSyncStatusById(rdbStore_, networkId, syncStatus, bundleName_);
+    return MediaLibraryDeviceOperations::GetSyncStatusById(rdbStore_, udid, syncStatus);
 }
 
 std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &networkId)

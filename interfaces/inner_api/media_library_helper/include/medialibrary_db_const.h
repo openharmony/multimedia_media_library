@@ -357,7 +357,7 @@ static const std::string CREATE_MEDIATYPE_DIRECTORY_TABLE = "CREATE TABLE IF NOT
                                             + CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION + " TEXT) ";
 
 static const std::string DEVICE_DB_ID = "id";
-static const std::string DEVICE_DB_DEVICEID = "device_id";
+static const std::string DEVICE_DB_UDID = "device_udid";
 static const std::string DEVICE_DB_NETWORK_ID = "network_id";
 static const std::string DEVICE_DB_NAME = "device_name";
 static const std::string DEVICE_DB_IP = "device_ip";
@@ -369,7 +369,7 @@ static const std::string DEVICE_DB_DATE_ADDED = "date_added";
 static const std::string DEVICE_DB_DATE_MODIFIED = "date_modified";
 static const std::string CREATE_DEVICE_TABLE = "CREATE TABLE IF NOT EXISTS " + DEVICE_TABLE + " ("
                                             + DEVICE_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                            + DEVICE_DB_DEVICEID + " TEXT, "
+                                            + DEVICE_DB_UDID + " TEXT, "
                                             + DEVICE_DB_NETWORK_ID + " TEXT, "
                                             + DEVICE_DB_NAME + " TEXT, "
                                             + DEVICE_DB_IP + " TEXT DEFAULT '', "
@@ -479,7 +479,6 @@ static const std::string MEDIA_FILEMODE_READWRITE = "rw";
 static const std::string MEDIA_FILEMODE_WRITETRUNCATE = "wt";
 static const std::string MEDIA_FILEMODE_WRITEAPPEND = "wa";
 static const std::string MEDIA_FILEMODE_READWRITETRUNCATE = "rwt";
-
 
 static const std::string MEDIA_DEVICE_QUERYALLDEVICE = "query_all_device";
 static const std::string MEDIA_DEVICE_QUERYACTIVEDEVICE = "query_active_device";
