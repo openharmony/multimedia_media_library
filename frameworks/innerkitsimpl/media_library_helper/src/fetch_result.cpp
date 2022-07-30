@@ -217,6 +217,9 @@ static string GetFileMediaTypeUri(MediaType mediaType, const string& networkId)
 
 unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("FetchResult::GetObject");
+
     unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
 
     fileAsset->SetId(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_ID, TYPE_INT32, resultSet)));

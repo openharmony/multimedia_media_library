@@ -83,7 +83,7 @@ bool MediaThumbnailHelper::isThumbnailFromLcd(Size &size)
 
 std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Size &size, const std::string &uri)
 {
-    Tracer tracer;
+    MediaLibraryTracer tracer;
     tracer.Start("GetThumbnail");
 
     vector<uint8_t> image;

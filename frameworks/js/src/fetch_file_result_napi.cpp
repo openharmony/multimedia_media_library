@@ -172,6 +172,9 @@ napi_value FetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info
     int32_t count = 0;
     napi_value thisVar = nullptr;
 
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetCount");
+
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
@@ -199,6 +202,9 @@ napi_value FetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info i
     bool isAfterLast = false;
     napi_value thisVar = nullptr;
 
+    MediaLibraryTracer tracer;
+    tracer.Start("JSIsAfterLast");
+
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
@@ -220,8 +226,8 @@ napi_value FetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info i
 
 static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, FetchFileResultAsyncContext* context)
 {
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GetPositionObjectCompleteCallback");
-    napi_value jsFileAsset = nullptr;
+    MediaLibraryTracer tracer;
+    tracer.Start("GetPositionObjectCompleteCallback");
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -229,8 +235,8 @@ static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, 
     jsContext->status = false;
 
     if (context->fileAsset != nullptr) {
-        jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
-                                                     context->objectInfo->GetMediaDataHelper());
+        napi_value jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
+            context->objectInfo->GetMediaDataHelper());
         if (jsFileAsset == nullptr) {
             NAPI_ERR_LOG("Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);
@@ -253,14 +259,11 @@ static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, 
                                                    context->work, *jsContext);
     }
 
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     delete context;
 }
 
 napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_info info)
 {
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "JSGetFirstObject");
-
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
@@ -269,10 +272,13 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
 
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetFirstObject");
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
-
     napi_get_undefined(env, &result);
+
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
@@ -282,6 +288,7 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetFirstObject");
+
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
@@ -300,7 +307,6 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
         NAPI_ASSERT(env, false, "JSGetFirstObject obj == nullptr");
     }
 
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     return result;
 }
 
@@ -313,6 +319,9 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetNextObject");
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
@@ -357,6 +366,9 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetLastObject");
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
@@ -403,6 +415,9 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
 
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPositionObject");
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameter maximum");
 
@@ -448,7 +463,8 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
 
 static void GetAllObjectCompleteCallback(napi_env env, napi_status status, FetchFileResultAsyncContext* context)
 {
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GetAllObjectCompleteCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAllObjectCompleteCallback");
 
     napi_value jsFileAsset = nullptr;
     napi_value jsFileArray = nullptr;
@@ -490,7 +506,6 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
                                                    context->work, *jsContext);
     }
 
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     delete context;
 }
 
@@ -501,6 +516,9 @@ std::shared_ptr<FetchResult> FetchFileResultNapi::GetFetchResultObject()
 
 void GetAllObjectFromFetchResult(const FetchFileResultAsyncContext &asyncContext)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAllObjectFromFetchResult");
+
     unique_ptr<FileAsset> fAsset = nullptr;
     FetchFileResultAsyncContext *context = const_cast<FetchFileResultAsyncContext *>(&asyncContext);
 
@@ -513,8 +531,6 @@ void GetAllObjectFromFetchResult(const FetchFileResultAsyncContext &asyncContext
 
 napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info info)
 {
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "JSGetAllObject");
-
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
@@ -522,6 +538,9 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAllObject");
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter maximum");
@@ -536,6 +555,7 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAllObject");
+
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
@@ -554,7 +574,6 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
         NAPI_ASSERT(env, false, "JSGetAllObject obj == nullptr");
     }
 
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     return result;
 }
 
@@ -564,6 +583,9 @@ napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
     napi_value jsResult = nullptr;
     FetchFileResultNapi* obj = nullptr;
     napi_value thisVar = nullptr;
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSClose");
 
     napi_get_undefined(env, &jsResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
