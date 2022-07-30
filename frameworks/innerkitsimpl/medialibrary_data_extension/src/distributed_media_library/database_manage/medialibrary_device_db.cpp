@@ -16,18 +16,21 @@
 
 #include "medialibrary_device_db.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+static const std::string DEVICE_DB_COND = DEVICE_DB_DEVICEID + " = ?";
+
 int64_t MediaLibraryDeviceDb::InsertDeviceInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, DEVICE_OPERATION_ERR, "Invalid RDB store");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DEVICE_OPER_ERR, "Invalid RDB store");
     int64_t outRowId(0);
     int32_t insertResult = rdbStore->Insert(outRowId, DEVICE_TABLE, values);
-    CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, DEVICE_OPERATION_ERR, "Insert failed");
+    CHECK_AND_RETURN_RET_LOG(insertResult == E_OK, E_DEVICE_OPER_ERR, "Insert failed");
 
     return outRowId;
 }
@@ -35,20 +38,20 @@ int64_t MediaLibraryDeviceDb::InsertDeviceInfo(const ValuesBucket &values, const
 int32_t MediaLibraryDeviceDb::DeleteDeviceInfo(const std::string &deviceId,
                                                const shared_ptr<RdbStore> &rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (!deviceId.empty()), DEVICE_OPERATION_ERR, "Invalid input");
+    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (!deviceId.empty()), E_DEVICE_OPER_ERR, "Invalid input");
 
-    int32_t deletedRows(DEVICE_OPERATION_ERR);
+    int32_t deletedRows(E_DEVICE_OPER_ERR);
     vector<string> whereArgs = { deviceId };
 
     int32_t deleteResult = rdbStore->Delete(deletedRows, DEVICE_TABLE, DEVICE_DB_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, DEVICE_OPERATION_ERR, "Delete failed");
+    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, E_DEVICE_OPER_ERR, "Delete failed");
 
     return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 
 int32_t MediaLibraryDeviceDb::UpdateDeviceInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, DEVICE_OPERATION_ERR, "Invalid input");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DEVICE_OPER_ERR, "Invalid input");
 
     ValueObject obj;
     std::string deviceId;
@@ -58,14 +61,14 @@ int32_t MediaLibraryDeviceDb::UpdateDeviceInfo(const ValuesBucket &values, const
         obj.GetString(deviceId);
     }
 
-    CHECK_AND_RETURN_RET_LOG(!deviceId.empty(), DEVICE_OPERATION_ERR, "Invalid deviceId = %{private}s",
+    CHECK_AND_RETURN_RET_LOG(!deviceId.empty(), E_DEVICE_OPER_ERR, "Invalid deviceId = %{private}s",
         deviceId.c_str());
 
     int32_t updatedRows(0);
     vector<string> whereArgs = { deviceId };
 
     int32_t updateResult = rdbStore->Update(updatedRows, DEVICE_TABLE, values, DEVICE_DB_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(updateResult == E_OK, DEVICE_OPERATION_ERR, "Update failed");
+    CHECK_AND_RETURN_RET_LOG(updateResult == E_OK, E_DEVICE_OPER_ERR, "Update failed");
 
     return (updatedRows > 0) ? E_SUCCESS : E_FAIL;
 }

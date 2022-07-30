@@ -24,9 +24,10 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "hitrace_meter.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
-#include "media_lib_service_const.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_type_const.h"
 
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \
     do {                                                                    \

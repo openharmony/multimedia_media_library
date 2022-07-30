@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "abs_rdb_predicates.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "uri.h"
 #include "values_bucket.h"
 

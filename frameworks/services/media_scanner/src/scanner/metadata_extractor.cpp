@@ -17,8 +17,9 @@
 #include "metadata_extractor.h"
 
 #include "hitrace_meter.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS {
 namespace Media {

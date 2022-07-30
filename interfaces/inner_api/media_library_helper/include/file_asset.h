@@ -17,7 +17,7 @@
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_FILE_ASSET_H_
 
 #include <string>
-#include "media_lib_service_const.h"
+#include "medialibrary_type_const.h"
 
 namespace OHOS {
 namespace Media {

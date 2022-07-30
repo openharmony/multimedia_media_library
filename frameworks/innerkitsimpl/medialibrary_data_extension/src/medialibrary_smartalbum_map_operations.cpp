@@ -21,6 +21,7 @@
 #include "fetch_result.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_dir_operations.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
 #include "medialibrary_object_utils.h"
 #include "media_file_utils.h"
@@ -34,6 +35,13 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+static const std::string HASH_COLLISION_SUFFIX = "(1)";
+static const std::string ASSET_RECYCLE_SUFFIX = "-copy";
+static const std::string DIR_RECYCLE_SUFFIX = "_recycle";
+const std::string RECYCLE_DIR = ".recycle/";
+static const int64_t ONEDAY_TO_MS = 60*60*24*1000;
+static const int32_t DEFAULT_RECYCLE_DAYS = 30;
+
 int32_t MediaLibrarySmartAlbumMapOperations::InsertAlbumAssetsInfoUtil(
     SmartAlbumMapQueryData &smartAlbumMapQueryData)
 {

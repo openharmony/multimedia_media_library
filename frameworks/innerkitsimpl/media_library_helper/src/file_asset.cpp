@@ -20,10 +20,11 @@
 #include <unistd.h>
 
 #include "directory_ex.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "media_file_utils.h"
-#include "media_lib_service_const.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
+#include "medialibrary_type_const.h"
 
 
 using namespace std;
@@ -349,7 +350,7 @@ void FileAsset::SetRecyclePath(const string &recyclePath)
 int32_t FileAsset::CreateAsset(const string &filePath)
 {
     MEDIA_ERR_LOG("CreateAsset in");
-    int32_t errCode = FAIL;
+    int32_t errCode = E_ERR;
 
     if (filePath.empty()) {
         MEDIA_ERR_LOG("Filepath is empty");
@@ -421,7 +422,7 @@ int32_t FileAsset::DeleteAsset(const string &filePath)
 
 int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
 {
-    int32_t errCode = FAIL;
+    int32_t errCode = E_ERR;
 
     if (filePath.empty() || mode.empty()) {
         return errCode;

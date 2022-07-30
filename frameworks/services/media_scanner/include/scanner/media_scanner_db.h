@@ -21,8 +21,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "media_data_ability_const.h"
-#include "media_lib_service_const.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_type_const.h"
 #include "metadata.h"
 #include "abs_shared_result_set.h"
 #include "rdb_errno.h"
