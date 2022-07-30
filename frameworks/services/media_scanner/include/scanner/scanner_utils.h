@@ -22,7 +22,7 @@
 #include <vector>
 #include <sys/stat.h>
 
-#include "media_lib_service_const.h"
+#include "medialibrary_type_const.h"
 #include "media_scanner_const.h"
 
 namespace OHOS {

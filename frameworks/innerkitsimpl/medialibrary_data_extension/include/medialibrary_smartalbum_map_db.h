@@ -17,7 +17,7 @@
 #define OHOS_MEDIALIBRARY_SMARTALBUMMAP_DB_H
 
 #include <string>
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 #include "rdb_store.h"

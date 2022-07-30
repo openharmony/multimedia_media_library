@@ -25,6 +25,7 @@ ohos_shared_library("media_library_manager") {
     "//drivers/peripheral/display/interfaces/include",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager/include",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",

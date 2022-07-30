@@ -17,13 +17,15 @@
 #include "media_asset.h"
 
 #include "media_file_utils.h"
-#include "media_lib_service_const.h"
+#include "medialibrary_type_const.h"
 #include "media_log.h"
 
 using namespace std;
 
 namespace OHOS {
 namespace Media {
+static const char DOT_CHAR = '.';
+
 MediaAsset::MediaAsset()
 {
     id_ = DEFAULT_MEDIA_ID;
@@ -38,7 +40,6 @@ MediaAsset::MediaAsset()
 }
 
 MediaAsset::~MediaAsset() = default;
-
 MediaType MediaAsset::GetMediaType(const std::string &filePath)
 {
     MediaType mediaType = MEDIA_TYPE_FILE;

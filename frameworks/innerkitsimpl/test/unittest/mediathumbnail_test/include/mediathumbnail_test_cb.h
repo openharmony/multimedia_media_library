@@ -17,9 +17,9 @@
 #define FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIATHUMBNAIL_TEST_INCLUDE_MEDIATHUMBNAIL_TEST_CB_H_
 
 #include "gtest/gtest.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_thumbnail.h"
-#include "media_data_ability_const.h"
-#include "medialibrary_data_ability.h"
 
 namespace OHOS {
 namespace Media {

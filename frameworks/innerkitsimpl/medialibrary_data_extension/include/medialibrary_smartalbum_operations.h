@@ -22,7 +22,7 @@
 #include <securec.h>
 #include <unistd.h>
 
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_smartalbum_db.h"
 #include "medialibrary_data_manager_utils.h"
 #include "rdb_store.h"

@@ -23,6 +23,7 @@
 #include "fetch_result.h"
 #include "hilog/log.h"
 #include "media_file_utils.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
 #include "rdb_errno.h"
@@ -38,6 +39,8 @@ using std::string;
 
 namespace OHOS {
 namespace Media {
+static const std::string MEDIA_FILEDESCRIPTOR = "fd";
+
 thread_local napi_ref FileAssetNapi::sConstructor_ = nullptr;
 thread_local FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> FileAssetNapi::sDataShareHelper_ = nullptr;

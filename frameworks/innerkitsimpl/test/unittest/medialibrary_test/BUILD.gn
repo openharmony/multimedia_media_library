@@ -26,8 +26,9 @@ ohos_unittest("medialibrary_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./include",
-    "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
-    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include/",
+    "${MEDIA_LIB_BASE_DIR}/interfaces/innerkits/native/include",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
+    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include/",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include/",
     "//commonlibrary/c_utils/base/include",
   ]

@@ -18,7 +18,8 @@
 #include "iservice_registry.h"
 #include "media_log.h"
 #include "system_ability_definition.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_errno.h"
 #include "media_library_manager.h"
 #include "fetch_result.h"
 
