@@ -264,9 +264,9 @@ std::shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
 
 std::string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
 {
-    const std::string &deviceId = cmd.GetOprnDevice();
-    if (!deviceId.empty()) {
-        return rdbStore_->ObtainDistributedTableName(deviceId, cmd.GetTableName());
+    const std::string &networkId = cmd.GetOprnDevice();
+    if (!networkId.empty()) {
+        return rdbStore_->ObtainDistributedTableName(networkId, cmd.GetTableName());
     }
 
     return cmd.GetTableName();

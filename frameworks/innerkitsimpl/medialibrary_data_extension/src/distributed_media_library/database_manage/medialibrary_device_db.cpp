@@ -23,7 +23,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-static const std::string DEVICE_DB_COND = DEVICE_DB_DEVICEID + " = ?";
+static const std::string DEVICE_DB_COND = DEVICE_DB_UDID + " = ?";
 
 int64_t MediaLibraryDeviceDb::InsertDeviceInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
@@ -35,13 +35,13 @@ int64_t MediaLibraryDeviceDb::InsertDeviceInfo(const ValuesBucket &values, const
     return outRowId;
 }
 
-int32_t MediaLibraryDeviceDb::DeleteDeviceInfo(const std::string &deviceId,
+int32_t MediaLibraryDeviceDb::DeleteDeviceInfo(const std::string &udid,
                                                const shared_ptr<RdbStore> &rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (!deviceId.empty()), E_DEVICE_OPER_ERR, "Invalid input");
+    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (!udid.empty()), E_DEVICE_OPER_ERR, "Invalid input");
 
     int32_t deletedRows(E_DEVICE_OPER_ERR);
-    vector<string> whereArgs = { deviceId };
+    vector<string> whereArgs = { udid };
 
     int32_t deleteResult = rdbStore->Delete(deletedRows, DEVICE_TABLE, DEVICE_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, E_DEVICE_OPER_ERR, "Delete failed");
@@ -54,18 +54,18 @@ int32_t MediaLibraryDeviceDb::UpdateDeviceInfo(const ValuesBucket &values, const
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DEVICE_OPER_ERR, "Invalid input");
 
     ValueObject obj;
-    std::string deviceId;
+    std::string udid;
 
-    auto contains = values.GetObject(DEVICE_DB_DEVICEID, obj);
+    auto contains = values.GetObject(DEVICE_DB_UDID, obj);
     if (contains) {
-        obj.GetString(deviceId);
+        obj.GetString(udid);
     }
 
-    CHECK_AND_RETURN_RET_LOG(!deviceId.empty(), E_DEVICE_OPER_ERR, "Invalid deviceId = %{private}s",
-        deviceId.c_str());
+    CHECK_AND_RETURN_RET_LOG(!udid.empty(), E_DEVICE_OPER_ERR, "Invalid dev id = %{private}s",
+        udid.c_str());
 
     int32_t updatedRows(0);
-    vector<string> whereArgs = { deviceId };
+    vector<string> whereArgs = { udid };
 
     int32_t updateResult = rdbStore->Update(updatedRows, DEVICE_TABLE, values, DEVICE_DB_COND, whereArgs);
     CHECK_AND_RETURN_RET_LOG(updateResult == E_OK, E_DEVICE_OPER_ERR, "Update failed");

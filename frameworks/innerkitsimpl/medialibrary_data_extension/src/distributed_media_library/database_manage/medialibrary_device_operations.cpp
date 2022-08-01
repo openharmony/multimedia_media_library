@@ -41,9 +41,7 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
     unique_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
     AbsRdbPredicates mediaLibAbsPredDevice(DEVICE_TABLE);
-    std::string strQueryCondition =
-        DEVICE_DB_DEVICEID + "= '" + deviceInfo.deviceUdid + "'";
-    mediaLibAbsPredDevice.SetWhereClause(strQueryCondition);
+    mediaLibAbsPredDevice.EqualTo(DEVICE_DB_UDID, deviceInfo.deviceUdid);
     queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
 
     auto count = 0;
@@ -53,25 +51,23 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
         if (count > 0) {
             // 更新数据库
             ValuesBucket valuesBucket;
-            valuesBucket.PutString(DEVICE_DB_DEVICEID, deviceInfo.deviceUdid);
-            valuesBucket.PutString(DEVICE_DB_NETWORK_ID, deviceInfo.deviceId);
+            valuesBucket.PutString(DEVICE_DB_UDID, deviceInfo.deviceUdid);
+            valuesBucket.PutString(DEVICE_DB_NETWORK_ID, deviceInfo.networkId);
             valuesBucket.PutInt(DEVICE_DB_SYNC_STATUS, 0);
             valuesBucket.PutLong(DEVICE_DB_DATE_MODIFIED, 0);
-            MEDIA_INFO_LOG("MediaLibraryDeviceOperations::InsertDeviceInfo UpdateDeviceInfo");
             return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == E_SUCCESS;
         } else {
             // 插入数据库
             int64_t now = CurrentTimeMillis();
             ValuesBucket valuesBucket;
-            valuesBucket.PutString(DEVICE_DB_DEVICEID, deviceInfo.deviceUdid);
-            valuesBucket.PutString(DEVICE_DB_NETWORK_ID, deviceInfo.deviceId);
+            valuesBucket.PutString(DEVICE_DB_UDID, deviceInfo.deviceUdid);
+            valuesBucket.PutString(DEVICE_DB_NETWORK_ID, deviceInfo.networkId);
             valuesBucket.PutString(DEVICE_DB_NAME, deviceInfo.deviceName);
             valuesBucket.PutString(DEVICE_DB_IP, std::string());
             valuesBucket.PutString(DEVICE_DB_SELF_ID, deviceInfo.selfId);
             valuesBucket.PutInt(DEVICE_DB_TYPE, (int32_t) deviceInfo.deviceTypeId);
             valuesBucket.PutString(DEVICE_DB_PREPATH, std::string());
             valuesBucket.PutLong(DEVICE_DB_DATE_ADDED, now);
-            MEDIA_INFO_LOG("MediaLibraryDeviceOperations::InsertDeviceInfo InsertDeviceInfo");
             return MediaLibraryDeviceDb::InsertDeviceInfo(valuesBucket, rdbStore) >= 0;
         }
     }
@@ -84,11 +80,9 @@ bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const std::shared_ptr<Native
     unique_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
     AbsRdbPredicates mediaLibAbsPredDevice(DEVICE_TABLE);
-    std::string strQueryCondition =
-        DEVICE_DB_DEVICEID + " = '" + deviceInfo.deviceUdid + "'";
-    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo deviceId = %{private}s",
+    mediaLibAbsPredDevice.EqualTo(DEVICE_DB_UDID, deviceInfo.deviceUdid);
+    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo dev id = %{private}s",
         deviceInfo.deviceUdid.c_str());
-    mediaLibAbsPredDevice.SetWhereClause(strQueryCondition);
     queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
 
     auto count = 0;
@@ -98,11 +92,9 @@ bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const std::shared_ptr<Native
             int64_t now = CurrentTimeMillis();
             // 更新数据库
             ValuesBucket valuesBucket;
-            valuesBucket.PutString(DEVICE_DB_DEVICEID, deviceInfo.deviceUdid);
-            valuesBucket.PutString(DEVICE_DB_NETWORK_ID, "");
-            valuesBucket.PutString(DEVICE_DB_SELF_ID, deviceInfo.selfId);
+            valuesBucket.PutString(DEVICE_DB_UDID, deviceInfo.deviceUdid);
+            valuesBucket.PutString(DEVICE_DB_NETWORK_ID, deviceInfo.networkId);
             valuesBucket.PutLong(DEVICE_DB_DATE_MODIFIED, now);
-            MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo UpdateDeviceInfo");
             return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == E_SUCCESS;
         }
     }
@@ -110,20 +102,19 @@ bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const std::shared_ptr<Native
 }
 
 bool MediaLibraryDeviceOperations::DeleteDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                                                    const std::string &deviceId)
+                                                    const std::string &udid)
 {
-    return MediaLibraryDeviceDb::DeleteDeviceInfo(deviceId, rdbStore);
+    return MediaLibraryDeviceDb::DeleteDeviceInfo(udid, rdbStore);
 }
 
 bool MediaLibraryDeviceOperations::UpdateSyncStatus(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const std::string &deviceId, int32_t syncStatus, const std::string &bundleName)
+    const std::string &udid, int32_t syncStatus)
 {
     unique_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
     AbsRdbPredicates mediaLibAbsPredDevice(DEVICE_TABLE);
 
-    std::string strQueryCondition = DEVICE_DB_DEVICEID + " = '" + deviceId + "'";
-    mediaLibAbsPredDevice.SetWhereClause(strQueryCondition);
+    mediaLibAbsPredDevice.EqualTo(DEVICE_DB_UDID, udid);
     queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
 
     auto count = 0;
@@ -132,7 +123,7 @@ bool MediaLibraryDeviceOperations::UpdateSyncStatus(const std::shared_ptr<Native
         if (count > 0) {
             // 更新数据库
             ValuesBucket valuesBucket;
-            valuesBucket.PutString(DEVICE_DB_DEVICEID, deviceId);
+            valuesBucket.PutString(DEVICE_DB_UDID, udid);
             valuesBucket.PutInt(DEVICE_DB_SYNC_STATUS, syncStatus);
             MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateSyncStatus");
             return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == E_SUCCESS;
@@ -142,15 +133,14 @@ bool MediaLibraryDeviceOperations::UpdateSyncStatus(const std::shared_ptr<Native
 }
 
 bool MediaLibraryDeviceOperations::GetSyncStatusById(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                                                     const std::string &deviceId,
-                                                     int32_t &syncStatus, const std::string &bundleName)
+                                                     const std::string &udid,
+                                                     int32_t &syncStatus)
 {
     unique_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
     AbsRdbPredicates mediaLibAbsPredDevice(DEVICE_TABLE);
 
-    std::string strQueryCondition = DEVICE_DB_DEVICEID + " = '" + deviceId + "'";
-    mediaLibAbsPredDevice.SetWhereClause(strQueryCondition);
+    mediaLibAbsPredDevice.EqualTo(DEVICE_DB_UDID, udid);
     queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
     if (queryResultSet == nullptr) {
         return false;
@@ -210,13 +200,13 @@ bool MediaLibraryDeviceOperations::GetAllDeviceDatas(
 
     while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         MediaLibraryDeviceInfo deviceInfo;
-        deviceInfo.deviceId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, queryResultSet,
+        deviceInfo.networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, queryResultSet,
             TYPE_STRING));
         deviceInfo.deviceName = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NAME, queryResultSet,
             TYPE_STRING));
         deviceInfo.deviceTypeId =(DistributedHardware::DmDeviceType)(get<int32_t>(
             ResultSetUtils::GetValFromColumn(DEVICE_DB_TYPE, queryResultSet, TYPE_INT32)));
-        deviceInfo.deviceUdid = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_DEVICEID, queryResultSet,
+        deviceInfo.deviceUdid = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_UDID, queryResultSet,
             TYPE_STRING));
         deviceInfo.selfId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_SELF_ID, queryResultSet,
             TYPE_STRING));

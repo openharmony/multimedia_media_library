@@ -64,7 +64,7 @@ public:
     MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
         const NativeRdb::ValuesBucket &value);
     MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
-        const std::string &deviceId);
+        const std::string &networkId);
 
     MediaLibraryCommand() = delete;
     ~MediaLibraryCommand();
@@ -89,7 +89,7 @@ public:
 private:
     void SetOprnObject(const OperationObject &oprnObject);
     void SetOprnType(const OperationType &oprnType);
-    void SetOprnDevice(const std::string &deviceId);
+    void SetOprnDevice(const std::string &networkId);
     void ParseOprnObjectFromUri();
     void ParseOprnTypeFromUri();
     void ParseTableName();
