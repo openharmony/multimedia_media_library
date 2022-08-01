@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+// @ts-nocheck
 import Extension from '@ohos.application.FileAccessExtensionAbility'
 
 export default class FileExtAbility extends Extension {
