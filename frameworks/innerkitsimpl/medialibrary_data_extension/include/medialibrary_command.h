@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "abs_rdb_predicates.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "uri.h"
 #include "values_bucket.h"
 
@@ -63,6 +63,8 @@ public:
     MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType);
     MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
         const NativeRdb::ValuesBucket &value);
+    MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
+        const std::string &deviceId);
 
     MediaLibraryCommand() = delete;
     ~MediaLibraryCommand();
@@ -80,14 +82,14 @@ public:
     const std::string &GetOprnDevice();
     const Uri &GetUri() const;
 
-    void SetOprnObject(const OperationObject &oprnObject);
-    void SetOprnType(const OperationType &oprnType);
     void SetOprnAssetId(const std::string &oprnId);
-    void SetOprnDevice(const std::string &deviceId);
     void SetValueBucket(const NativeRdb::ValuesBucket &value);
     void SetTableName(const std::string &tableName);
 
 private:
+    void SetOprnObject(const OperationObject &oprnObject);
+    void SetOprnType(const OperationType &oprnType);
+    void SetOprnDevice(const std::string &deviceId);
     void ParseOprnObjectFromUri();
     void ParseOprnTypeFromUri();
     void ParseTableName();

@@ -35,6 +35,7 @@ namespace {
     std::shared_ptr<DataShare::DataShareHelper> g_mediaDataShareHelper;
     std::shared_ptr<FileAccessFwk::FileAccessHelper> g_mediaFileExtHelper;
     bool g_envReady = false;
+    const int32_t FAIL = -1;
 } // namespace
 
 MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();

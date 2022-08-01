@@ -22,6 +22,7 @@
 #include "medialibrary_file_operations.h"
 #include "media_file_utils.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_object_utils.h"
 #include "rdb_utils.h"
@@ -32,6 +33,8 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+static const std::string MEDIA_NO_FILE = ".nofile";
+
 int32_t MediaLibraryDirOperations::DeleteDirInfoUtil(const int &parent,
     const shared_ptr<RdbStore> &rdbStore,
     const MediaLibraryDirDb &dirDbOprn)

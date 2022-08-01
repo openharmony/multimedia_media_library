@@ -32,6 +32,7 @@
 #include "medialibrary_device.h"
 #include "medialibrary_device_info.h"
 #include "medialibrary_dir_operations.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
 #include "medialibrary_kvstore_operations.h"
 #include "medialibrary_object_utils.h"

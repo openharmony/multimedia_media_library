@@ -14,6 +14,7 @@
  */
 
 #include "medialibrary_dir_db.h"
+#include "medialibrary_errno.h"
 #include "media_log.h"
 
 using namespace std;
@@ -21,13 +22,14 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+static const std::string DIR_DB_COND = MEDIA_DATA_DB_ID + " = ?";
 int32_t MediaLibraryDirDb::DeleteDirInfo(const int32_t dirId, const shared_ptr<RdbStore> &rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (dirId > 0), DIR_OPERATION_ERR, "Invalid input");
-    int32_t deletedRows(ALBUM_OPERATION_ERR);
+    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (dirId > 0), E_DIR_OPER_ERR, "Invalid input");
+    int32_t deletedRows(E_ALBUM_OPER_ERR);
     vector<string> whereArgs = { std::to_string(dirId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows, MEDIALIBRARY_TABLE, DIR_DB_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, DIR_OPERATION_ERR, "Delete failed");
+    CHECK_AND_RETURN_RET_LOG(deleteResult == E_OK, E_DIR_OPER_ERR, "Delete failed");
     return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 } // namespace Media

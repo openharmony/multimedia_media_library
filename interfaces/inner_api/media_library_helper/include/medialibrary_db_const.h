@@ -15,93 +15,19 @@
 
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_DATA_ABILITY_CONST_H_
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_DATA_ABILITY_CONST_H_
-#include "media_lib_service_const.h"
+#include "medialibrary_type_const.h"
 namespace OHOS {
 namespace Media {
-#define MEDIA_LIBRARY_ERR(offset, errCode) (-((offset) + (errCode)))
-
-// common error code
-// linux standard ERROR { 0, 200 }
-const int32_t E_SUCCESS = 0;
-const int32_t E_PERMISSION_DENIED = -EACCES;
-const int32_t E_NO_SUCH_FILE      = -ENOENT;
-const int32_t E_FILE_EXIST        = -EEXIST;
-
-// medialibary inner common err { 200, 1999 }
-const int32_t E_COMMON_OFFSET = 200;
-const int32_t E_COMMON_START =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 0);
-const int32_t E_FAIL =                  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 0);
-const int32_t E_FILE_OPER_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1);
-const int32_t E_HAS_DB_ERROR =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 2);
-const int32_t E_HAS_FS_ERROR =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 3);
-const int32_t E_CHECK_DIR_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 4);
-const int32_t E_MODIFY_DATA_FAIL =      MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 5);
-const int32_t E_INVALID_VALUES =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 6);
-const int32_t E_INVALID_URI =           MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 7);
-const int32_t E_INVALID_FILEID =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 8);
-const int32_t E_INVALID_PATH =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 9);
-const int32_t E_VIOLATION_PARAMETERS =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 10);
-const int32_t E_RDIR_FAIL =             MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 11);
-const int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
-
-// medialibary directory and file type control { 2000, 2099 }
-const int32_t E_DIR_CTRL_OFFSET = 2000;
-const int32_t E_CHECK_EXTENSION_FAIL = MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 0);
-const int32_t E_DELETE_DIR_FAIL =      MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 1);
-const int32_t E_CHECK_MEDIATYPE_FAIL = MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 2);
-const int32_t E_CHECK_ROOT_DIR_FAIL =  MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 3);
-const int32_t E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL = MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 4);
-const int32_t E_FILE_NAME_INVALID =    MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 5);
-
-// medialibary recycle, trash { 2100, 2199 }
-const int32_t E_TRASH_OFFSET = 2100;
-const int32_t E_RECYCLE_FILE_IS_NULL = MEDIA_LIBRARY_ERR(E_TRASH_OFFSET, 0);
-const int32_t E_IS_RECYCLED =          MEDIA_LIBRARY_ERR(E_TRASH_OFFSET, 1);
-
-// medialibary distributed { 2200, 2299 }
-
-// medialibary thumbanail { 2300, 2399 }
-
-// medialibary scanner { 2400, 2499 }
-
-// media file extension module error code { 3000, 3099 }
-const int32_t E_MEDIA_FILE_OFFSET = 3000;
-const int32_t E_URI_INVALID =               MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 0);
-const int32_t E_DISTIBUTED_URI_NO_SUPPORT = MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 1);
-const int32_t E_URI_IS_NOT_ALBUM =          MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 2);
-const int32_t E_URI_IS_NOT_FILE =           MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 3);
-const int32_t E_TWO_URI_ARE_THE_SAME =      MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 4);
-const int32_t E_OPENFILE_INVALID_FLAG =     MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 5);
-const int32_t E_INVAVLID_DISPLAY_NAME =     MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 6);
-const int32_t E_DENIED_MOVE =               MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 7);
-const int32_t E_UPDATE_DB_FAIL =            MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 8);
-const int32_t E_DENIED_RENAME =             MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 9);
-
-const int32_t ALBUM_OPERATION_ERR = -2;
-const int32_t FILE_OPERATION_ERR = -1;
-const int32_t DIR_OPERATION_ERR = -3;
-const int32_t QUERY_OPERATION_ERR = -4;
-const int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
 #ifdef RDB_UPGRADE_MOCK
 const int32_t MEDIA_RDB_VERSION = 2;
 #else
 const int32_t MEDIA_RDB_VERSION = 1;
 #endif
 static const std::string MEDIA_LIBRARY_VERSION = "1.0";
-const int32_t MEDIA_RDB_VERSION_NEW = 5;
-const int32_t MEDIA_SMARTALBUM_RDB_VERSION = 1;
-const int32_t MEDIA_SMARTALBUMMAP_RDB_VERSION = 1;
-const int32_t DEVICE_OPERATION_ERR = -1;
 
 const int32_t DEVICE_SYNCSTATUSING = 0;
 const int32_t DEVICE_SYNCSTATUS_COMPLETE = 1;
-static const std::string HASH_COLLISION_SUFFIX = "(1)";
-static const std::string ASSET_RECYCLE_SUFFIX = "-copy";
-static const std::string DIR_RECYCLE_SUFFIX = "_recycle";
-static const int64_t ONEDAY_TO_MS = 60*60*24*1000;
-static const int32_t DEFAULT_RECYCLE_DAYS = 30;
 
-static const std::string MEDIA_DATA_DB_Path = "/data/media/";
 static const std::string MEDIA_DATA_DEVICE_PATH = "local";
 static const std::string MEDIALIBRARY_TABLE = "Files";
 static const std::string SMARTALBUM_TABLE = "SmartAlbum";
@@ -109,12 +35,9 @@ static const std::string SMARTALBUM_MAP_TABLE = "SmartAlbumMap";
 static const std::string CATEGORY_SMARTALBUM_MAP_TABLE = "CategorySmartAlbumMap";
 static const std::string MEDIATYPE_DIRECTORY_TABLE = "MediaTypeDirectory";
 static const std::string DEVICE_TABLE = "Device";
-static const std::string MEDIA_NO_FILE = ".nofile";
 static const std::string MEDIA_DATA_ABILITY_DB_NAME = "media_library.db";
 
 static const std::string BUNDLE_NAME = "com.ohos.medialibrary.medialibrarydata";
-static const std::string ENCRYPTION_LEVEL = "el2";
-static const int ENCRYPTION_LEVEL_INT = 2;
 
 static const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "datashare://";
 static const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
@@ -162,8 +85,6 @@ static const std::string MEDIA_DATA_DB_LATITUDE = "latitude";
 static const std::string MEDIA_DATA_DB_LONGITUDE = "longitude";
 static const std::string MEDIA_DATA_DB_DATE_TAKEN = "date_taken";
 static const std::string MEDIA_DATA_DB_THUMBNAIL = "thumbnail";
-static const std::string MEDIA_DATA_DB_TAKE_PICTURE_TIME = "take_picture_time";
-static const std::string MEDIA_DATA_DB_ROTATION_ANGLE = "rotation_angle";
 static const std::string MEDIA_DATA_DB_CONTENT_CREATE_TIME = "content_create_time";
 
 static const std::string MEDIA_DATA_DB_LCD = "lcd";
@@ -200,7 +121,19 @@ static const std::string MEDIA_DATA_DB_ALARM_URI = "alarm_uri";
 static const std::string MEDIA_DATA_DB_NOTIFICATION_URI = "notification_uri";
 static const std::string MEDIA_DATA_DB_RINGTONE_TYPE = "ringtone_type";
 
-static const std::string MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL = "DateTimeOriginal";
+const std::string MEDIA_DATA_IMAGE_BITS_PER_SAMPLE = "BitsPerSample";
+const std::string MEDIA_DATA_IMAGE_ORIENTATION = "Orientation";
+const std::string MEDIA_DATA_IMAGE_IMAGE_LENGTH = "ImageLength";
+const std::string MEDIA_DATA_IMAGE_IMAGE_WIDTH = "ImageWidth";
+const std::string MEDIA_DATA_IMAGE_GPS_LATITUDE = "GPSLatitude";
+const std::string MEDIA_DATA_IMAGE_GPS_LONGITUDE = "GPSLongitude";
+const std::string MEDIA_DATA_IMAGE_GPS_LATITUDE_REF = "GPSLatitudeRef";
+const std::string MEDIA_DATA_IMAGE_GPS_LONGITUDE_REF = "GPSLongitudeRef";
+const std::string MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL = "DateTimeOriginal";
+const std::string MEDIA_DATA_IMAGE_EXPOSURE_TIME = "ExposureTime";
+const std::string MEDIA_DATA_IMAGE_F_NUMBER = "FNumber";
+const std::string MEDIA_DATA_IMAGE_ISO_SPEED_RATINGS = "ISOSpeedRatings";
+const std::string MEDIA_DATA_IMAGE_SCENE_TYPE = "SceneType";
 
 static const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " ("
                                        + MEDIA_DATA_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -237,9 +170,6 @@ static const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + ME
                                        + MEDIA_DATA_DB_RELATIVE_PATH + " TEXT, "
                                        + MEDIA_DATA_DB_VOLUME_NAME + " TEXT, "
                                        + MEDIA_DATA_DB_SELF_ID + " TEXT DEFAULT '1', "
-                                       + MEDIA_DATA_DB_TAKE_PICTURE_TIME + " BIGINT DEFAULT 0, "
-                                       + MEDIA_DATA_DB_CONTENT_CREATE_TIME + " BIGINT DEFAULT 0, "
-                                       + MEDIA_DATA_DB_ROTATION_ANGLE + " INT DEFAULT 0, "
                                        + MEDIA_DATA_DB_ALBUM_NAME + " TEXT, "
                                        + MEDIA_DATA_DB_URI + " TEXT, "
                                        + MEDIA_DATA_DB_ALBUM + " TEXT)";
@@ -543,7 +473,6 @@ static const std::string MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM = "add_smartalbum
 static const std::string MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM = "remove_smartalbum_map";
 static const std::string MEDIA_SMARTALBUMMAPOPRN_AGEINGSMARTALBUM = "ageing_smartalbum_map";
 static const std::string MEDIA_FILEMODE = "mode";
-static const std::string MEDIA_FILEDESCRIPTOR = "fd";
 static const std::string MEDIA_FILEMODE_READONLY = "r";
 static const std::string MEDIA_FILEMODE_WRITEONLY = "w";
 static const std::string MEDIA_FILEMODE_READWRITE = "rw";
@@ -551,14 +480,7 @@ static const std::string MEDIA_FILEMODE_WRITETRUNCATE = "wt";
 static const std::string MEDIA_FILEMODE_WRITEAPPEND = "wa";
 static const std::string MEDIA_FILEMODE_READWRITETRUNCATE = "rwt";
 
-static const std::string ALBUM_DB_COND = MEDIA_DATA_DB_ID + " = ?";
-static const std::string DIR_DB_COND = MEDIA_DATA_DB_ID + " = ?";
-static const std::string SMARTALBUM_DB_COND = SMARTALBUM_DB_ID + " = ?";
-static const std::string SMARTALBUM_MAP_DE_SMARTALBUM_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ?";
-static const std::string SMARTALBUM_MAP_DE_ASSETS_COND = SMARTALBUMMAP_DB_CHILD_ASSET_ID + " = ?";
-static const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID +
-    " = ? AND " + SMARTALBUMMAP_DB_CHILD_ASSET_ID + " = ?";
-static const std::string DEVICE_DB_COND = DEVICE_DB_DEVICEID + " = ?";
+
 static const std::string MEDIA_DEVICE_QUERYALLDEVICE = "query_all_device";
 static const std::string MEDIA_DEVICE_QUERYACTIVEDEVICE = "query_active_device";
 } // namespace Media

@@ -14,7 +14,7 @@
  */
 
 #include "metadata.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 
 namespace OHOS {
 namespace Media {
@@ -40,9 +40,9 @@ Metadata::Metadata()
     width_(FILE_WIDTH_DEFAULT),
     duration_(FILE_DURATION_DEFAULT),
     orientation_(FILE_ORIENTATION_DEFAULT),
-    takePictureTime_(FILE_TAKE_PICTURE_TIME_DEFAULT),
-    contentCreateTime_(FILE_CONTENT_CREATE_TIME_DEFAULT),
-    rotationAngle_(FILE_ROTATION_ANGLE_DEFAULT),
+    dateTaken_(FILE_DATE_TAKEN_DEFAULT),
+    longitude_(FILE_LONGITUDE_DEFAULT),
+    latitude_(FILE_LATITUDE_DEFAULT),
     albumId_(FILE_ALBUM_ID_DEFAULT),
     albumName_(FILE_ALBUM_NAME_DEFAULT),
     recyclePath_(FILE_RECYCLE_PATH_DEFAULT)
@@ -69,12 +69,12 @@ void Metadata::Init()
     memberFuncMap_[MEDIA_DATA_DB_WIDTH] = make_pair(DataType::TYPE_INT, &Metadata::SetFileWidth);
     memberFuncMap_[MEDIA_DATA_DB_ORIENTATION] = make_pair(DataType::TYPE_INT, &Metadata::SetOrientation);
     memberFuncMap_[MEDIA_DATA_DB_DURATION] = make_pair(DataType::TYPE_INT, &Metadata::SetFileDuration);
+    memberFuncMap_[MEDIA_DATA_DB_LONGITUDE] = make_pair(DataType::TYPE_DOUBLE, &Metadata::SetLongitude);
+    memberFuncMap_[MEDIA_DATA_DB_LATITUDE] = make_pair(DataType::TYPE_DOUBLE, &Metadata::SetLatitude);
     memberFuncMap_[MEDIA_DATA_DB_BUCKET_NAME] = make_pair(DataType::TYPE_STRING, &Metadata::SetAlbumName);
     memberFuncMap_[MEDIA_DATA_DB_PARENT_ID] = make_pair(DataType::TYPE_INT, &Metadata::SetParentId);
     memberFuncMap_[MEDIA_DATA_DB_RECYCLE_PATH] = make_pair(DataType::TYPE_STRING, &Metadata::SetRecyclePath);
-    memberFuncMap_[MEDIA_DATA_DB_TAKE_PICTURE_TIME] = make_pair(DataType::TYPE_LONG, &Metadata::SetTakePictureTime);
-    memberFuncMap_[MEDIA_DATA_DB_CONTENT_CREATE_TIME] = make_pair(DataType::TYPE_LONG, &Metadata::SetContentCreateTime);
-    memberFuncMap_[MEDIA_DATA_DB_ROTATION_ANGLE] = make_pair(DataType::TYPE_INT, &Metadata::SetRotationAngle);
+    memberFuncMap_[MEDIA_DATA_DB_DATE_TAKEN] = make_pair(DataType::TYPE_LONG, &Metadata::SetDateTaken);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -129,7 +129,7 @@ std::string Metadata::GetFileMimeType() const
 
 void Metadata::SetFileMediaType(const VariantData &mediaType)
 {
-    mediaType_ = std::get<MediaType>(mediaType);
+    mediaType_ = static_cast<MediaType>(std::get<int32_t>(mediaType));
 }
 
 MediaType Metadata::GetFileMediaType() const
@@ -297,34 +297,34 @@ std::string Metadata::GetRecyclePath() const
     return recyclePath_;
 }
 
-void Metadata::SetTakePictureTime(const VariantData &takePictureTime)
+void Metadata::SetDateTaken(const VariantData &dateTaken)
 {
-    takePictureTime_ = std::get<int64_t>(takePictureTime);
+    dateTaken_ = std::get<int64_t>(dateTaken);
 }
 
-int64_t Metadata::GetTakePictureTime() const
+int64_t Metadata::GetDateTaken() const
 {
-    return takePictureTime_;
+    return dateTaken_;
 }
 
-void Metadata::SetContentCreateTime(const VariantData &contentCreateTime)
+void Metadata::SetLongitude(const VariantData &longitude)
 {
-    contentCreateTime_ = std::get<int64_t>(contentCreateTime);
+    longitude_ = std::get<double>(longitude);
 }
 
-int64_t Metadata::GetContentCreateTime() const
+double Metadata::GetLongitude() const
 {
-    return contentCreateTime_;
+    return longitude_;
 }
 
-void Metadata::SetRotationAngle(const VariantData &rotationAngle)
+void Metadata::SetLatitude(const VariantData &latitude)
 {
-    rotationAngle_ = std::get<int32_t>(rotationAngle);
+    latitude_ = std::get<double>(latitude);
 }
 
-int32_t Metadata::GetRotationAngle() const
+double Metadata::GetLatitude() const
 {
-    return rotationAngle_;
+    return latitude_;
 }
 } // namespace Media
 } // namespace OHOS

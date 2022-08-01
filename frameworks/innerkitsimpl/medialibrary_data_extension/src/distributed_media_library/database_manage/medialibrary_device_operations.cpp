@@ -16,6 +16,7 @@
 
 #include "medialibrary_device_operations.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 #include "result_set_utils.h"
 
 using namespace std;

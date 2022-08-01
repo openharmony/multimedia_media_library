@@ -28,7 +28,7 @@
 #include "fetch_result.h"
 #include "smart_album_asset.h"
 #include "medialibrary_napi_utils.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "result_set.h"

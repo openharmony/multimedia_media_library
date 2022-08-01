@@ -177,6 +177,7 @@ private:
     static thread_local napi_ref sFileKeyEnumRef_;
 };
 
+const int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
 struct MediaLibraryAsyncContext : public NapiError {
     napi_async_work work;
     napi_deferred deferred;

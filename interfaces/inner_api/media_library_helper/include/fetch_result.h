@@ -19,8 +19,8 @@
 #include <variant>
 #include "abs_shared_result_set.h"
 #include "file_asset.h"
-#include "media_lib_service_const.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_type_const.h"
+#include "medialibrary_db_const.h"
 #include "rdb_errno.h"
 #include "datashare_result_set.h"
 

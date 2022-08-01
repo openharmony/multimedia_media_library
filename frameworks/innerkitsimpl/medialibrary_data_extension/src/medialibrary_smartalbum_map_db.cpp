@@ -16,6 +16,7 @@
 
 #include "medialibrary_smartalbum_map_db.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 #include "rdb_utils.h"
 
 using namespace std;
@@ -24,13 +25,17 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+static const std::string SMARTALBUM_MAP_DE_SMARTALBUM_COND = SMARTALBUMMAP_DB_ALBUM_ID + " = ?";
+static const std::string SMARTALBUM_MAP_DE_ASSETS_COND = SMARTALBUMMAP_DB_CHILD_ASSET_ID + " = ?";
+static const std::string SMARTALBUM_MAP_DB_COND = SMARTALBUMMAP_DB_ALBUM_ID +
+    " = ? AND " + SMARTALBUMMAP_DB_CHILD_ASSET_ID + " = ?";
 int64_t MediaLibrarySmartAlbumMapDb::InsertSmartAlbumMapInfo(const ValuesBucket &values,
                                                              const shared_ptr<RdbStore> &rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid RDB store");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ALBUM_OPER_ERR, "Invalid RDB store");
     int64_t outRowId(0);
     int32_t insertResult = rdbStore->Insert(outRowId, SMARTALBUM_MAP_TABLE, values);
-    CHECK_AND_RETURN_RET_LOG(insertResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Insert failed");
+    CHECK_AND_RETURN_RET_LOG(insertResult == NativeRdb::E_OK, E_ALBUM_OPER_ERR, "Insert failed");
     return outRowId;
 }
 
@@ -39,35 +44,35 @@ int32_t MediaLibrarySmartAlbumMapDb::DeleteSmartAlbumMapInfo(const int32_t album
                                                              const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (albumId > 0) && (assetId > 0),
-        ALBUM_OPERATION_ERR, "Invalid input");
-    int32_t deletedRows(ALBUM_OPERATION_ERR);
+        E_ALBUM_OPER_ERR, "Invalid input");
+    int32_t deletedRows(E_ALBUM_OPER_ERR);
     vector<string> whereArgs = { std::to_string(albumId), std::to_string(assetId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_MAP_TABLE, SMARTALBUM_MAP_DB_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
+    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, E_ALBUM_OPER_ERR, "Delete failed");
     return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::DeleteAllSmartAlbumMapInfo(const int32_t albumId,
                                                                 const shared_ptr<RdbStore> &rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (albumId > 0), ALBUM_OPERATION_ERR, "Invalid input");
-    int32_t deletedRows(ALBUM_OPERATION_ERR);
+    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (albumId > 0), E_ALBUM_OPER_ERR, "Invalid input");
+    int32_t deletedRows(E_ALBUM_OPER_ERR);
     vector<string> whereArgs = { std::to_string(albumId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows,
         SMARTALBUM_MAP_TABLE, SMARTALBUM_MAP_DE_SMARTALBUM_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
+    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, E_ALBUM_OPER_ERR, "Delete failed");
     return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::DeleteAllAssetsMapInfo(const int32_t assetId,
                                                             const shared_ptr<RdbStore> &rdbStore)
 {
-    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (assetId > 0), ALBUM_OPERATION_ERR, "Invalid input");
-    int32_t deletedRows(ALBUM_OPERATION_ERR);
+    CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (assetId > 0), E_ALBUM_OPER_ERR, "Invalid input");
+    int32_t deletedRows(E_ALBUM_OPER_ERR);
     vector<string> whereArgs = { std::to_string(assetId)};
     int32_t deleteResult = rdbStore->Delete(deletedRows, SMARTALBUM_MAP_TABLE,
         SMARTALBUM_MAP_DE_ASSETS_COND, whereArgs);
-    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, ALBUM_OPERATION_ERR, "Delete failed");
+    CHECK_AND_RETURN_RET_LOG(deleteResult == NativeRdb::E_OK, E_ALBUM_OPER_ERR, "Delete failed");
     return (deletedRows > 0) ? E_SUCCESS : E_FAIL;
 }
 
@@ -79,7 +84,7 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateAssetTrashInfo(const int32_t &assetId
 {
     vector<string> whereArgs;
     int32_t changedRows = -1;
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ALBUM_OPER_ERR, "Invalid input");
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
     ValuesBucket values;
     MEDIA_DEBUG_LOG("UpdateAssetTrashInfo isTrash != 0");
@@ -220,7 +225,7 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateRecycleInfo(const int32_t &assetId,
                                                        string &recyclePath,
                                                        const string &realPath)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ALBUM_OPER_ERR, "Invalid input");
     vector<string> whereArgs;
     int32_t changedRows = -1;
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
@@ -242,7 +247,7 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateChildRecycleInfo(const int32_t &asset
                                                             const shared_ptr<RdbStore> &rdbStore,
                                                             const int64_t &recycleDate)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ALBUM_OPER_ERR, "Invalid input");
     vector<string> whereArgs;
     int32_t changedRows = -1;
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
@@ -264,7 +269,7 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateDirTrashInfo(const int32_t &assetId,
                                                         string &recyclePath,
                                                         const string &oldPath)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ALBUM_OPER_ERR, "Invalid input");
     vector<string> whereArgs;
     int32_t changedRows = -1;
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
@@ -287,7 +292,7 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateChildTrashInfo(const int32_t &assetId
                                                           const shared_ptr<RdbStore> &rdbStore,
                                                           const int64_t &trashDate)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ALBUM_OPERATION_ERR, "Invalid input");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ALBUM_OPER_ERR, "Invalid input");
     vector<string> whereArgs;
     int32_t changedRows = -1;
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
