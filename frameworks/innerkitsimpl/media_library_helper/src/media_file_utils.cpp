@@ -321,26 +321,26 @@ int64_t MediaFileUtils::UTCTimeSeconds()
 }
 string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
 {
-    string deviceId;
+    string networkId;
     if (uri.empty()) {
-        return deviceId;
+        return networkId;
     }
     size_t pos = uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX);
     if (pos == string::npos) {
-        return deviceId;
+        return networkId;
     }
 
     string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
     if (tempUri.empty()) {
-        return deviceId;
+        return networkId;
     }
     MEDIA_INFO_LOG("MediaFileUtils::GetNetworkIdFromUri tempUri = %{private}s", tempUri.c_str());
     pos = tempUri.find_first_of('/');
     if (pos == 0 || pos == string::npos) {
-        return deviceId;
+        return networkId;
     }
-    deviceId = tempUri.substr(0, pos);
-    return deviceId;
+    networkId = tempUri.substr(0, pos);
+    return networkId;
 }
 
 string MediaFileUtils::UpdatePath(const string &path, const string &uri)

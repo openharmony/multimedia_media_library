@@ -58,10 +58,10 @@ public:
     bool InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void NotifyDeviceChange();
     void NotifyRemoteFileChange();
-    bool UpdateDevicieSyncStatus(const std::string &deviceId, int32_t syncStatus);
-    bool GetDevicieSyncStatus(const std::string &deviceId, int32_t &syncStatus);
+    bool UpdateDeviceSyncStatus(const std::string &networkId, int32_t syncStatus);
+    bool GetDevicieSyncStatus(const std::string &networkId, int32_t &syncStatus);
     std::string GetNetworkIdBySelfId(const std::string &selfId);
-    std::string GetUdidByNetworkId(const std::string &deviceId);
+    std::string GetUdidByNetworkId(const std::string &networkId);
     void OnSyncCompleted(const std::string &devId, const DistributedKv::Status staus);
     void OnGetDevSecLevel(const std::string &udid, const int32_t level);
 private:

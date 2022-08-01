@@ -67,11 +67,11 @@ MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, cons
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
-    const std::string &deviceId)
+    const std::string &networkId)
 {
     SetOprnObject(oprnObject);
     SetOprnType(oprnType);
-    SetOprnDevice(deviceId);
+    SetOprnDevice(networkId);
     ParseTableName();
 }
 
@@ -93,9 +93,9 @@ void MediaLibraryCommand::SetOprnAssetId(const std::string &oprnId)
     oprnFileId_ = oprnId;
 }
 
-void MediaLibraryCommand::SetOprnDevice(const std::string &deviceId)
+void MediaLibraryCommand::SetOprnDevice(const std::string &networkId)
 {
-    oprnDevice_ = deviceId;
+    oprnDevice_ = networkId;
 }
 
 void MediaLibraryCommand::SetValueBucket(const NativeRdb::ValuesBucket &value)
@@ -256,15 +256,15 @@ void MediaLibraryCommand::ParseTableName()
     }
 
     // distributed tablename
-    auto deviceId = GetOprnDevice();
-    if (deviceId.empty()) {
+    auto networkId = GetOprnDevice();
+    if (networkId.empty()) {
         return;
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore != nullptr) {
         auto rdbStorePtr = rdbStore->GetRaw();
         if (rdbStorePtr != nullptr) {
-            tableName_ = rdbStorePtr->ObtainDistributedTableName(deviceId, MEDIALIBRARY_TABLE);
+            tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
         }
     }
     MEDIA_INFO_LOG("Table name is %{public}s", tableName_.c_str());
