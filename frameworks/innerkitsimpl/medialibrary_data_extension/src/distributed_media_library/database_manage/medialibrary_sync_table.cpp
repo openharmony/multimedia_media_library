@@ -71,7 +71,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
                 continue;
             }
             if (isLast) {
-                MediaLibraryDevice::GetInstance()->UpdateDevicieSyncStatus(iter->first, DEVICE_SYNCSTATUS_COMPLETE);
+                MediaLibraryDevice::GetInstance()->UpdateDeviceSyncStatus(iter->first, DEVICE_SYNCSTATUS_COMPLETE);
             }
             MEDIA_ERR_LOG("SyncPullTable device = %{public}s success", iter->first.c_str());
         }

@@ -313,14 +313,14 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     return true;
 }
 
-bool MediaLibraryDevice::UpdateDevicieSyncStatus(const std::string &networkId, int32_t syncStatus)
+bool MediaLibraryDevice::UpdateDeviceSyncStatus(const std::string &networkId, int32_t syncStatus)
 {
     std::string udid;
     {
         lock_guard<mutex> autoLock(devMtx_);
         auto iter = deviceInfoMap_.find(networkId);
         if (iter == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("UpdateDevicieSyncStatus can not find networkId:%{private}s", networkId.c_str());
+            MEDIA_ERR_LOG("UpdateDeviceSyncStatus can not find networkId:%{private}s", networkId.c_str());
             return false;
         }
         udid = iter->second.deviceUdid;
