@@ -27,7 +27,7 @@ class Metadata {
 public:
     Metadata();
     ~Metadata() = default;
-    using VariantData = std::variant<int32_t, int64_t, std::string, MediaType>;
+    using VariantData = std::variant<int32_t, int64_t, double, std::string>;
 
     void SetFileId(const VariantData &id);
     int32_t GetFileId() const;
@@ -95,14 +95,14 @@ public:
     void SetRecyclePath(const VariantData &recyclePath);
     std::string GetRecyclePath() const;
 
-    void SetTakePictureTime(const VariantData &takePictureTime);
-    int64_t GetTakePictureTime() const;
+    void SetDateTaken(const VariantData &dateTaken);
+    int64_t GetDateTaken() const;
 
-    void SetContentCreateTime(const VariantData &contentCreateTime);
-    int64_t GetContentCreateTime() const;
+    void SetLongitude(const VariantData &longitude);
+    double GetLongitude() const;
 
-    void SetRotationAngle(const VariantData &rotationAngle);
-    int32_t GetRotationAngle() const;
+    void SetLatitude(const VariantData &latitude);
+    double GetLatitude() const;
 
     void Init();
 
@@ -137,14 +137,12 @@ private:
     int32_t duration_;
     int32_t orientation_;
 
+    // video, audio, image
+    int64_t dateTaken_;
+
     // image
-    int64_t takePictureTime_;
-
-    // video, audio
-    int64_t contentCreateTime_;
-
-    // video
-    int32_t rotationAngle_;
+    double longitude_;
+    double latitude_;
 
     // album
     int32_t albumId_;

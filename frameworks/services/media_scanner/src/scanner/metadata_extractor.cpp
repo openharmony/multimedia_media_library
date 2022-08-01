@@ -24,20 +24,13 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-int32_t MetadataExtractor::ConvertStringToInteger(const string &str)
+template <class Type>
+static Type stringToNum(const string& str)
 {
-    int32_t integer = 0;
-    std::stringstream ss(str);
-    ss >> integer;
-    return integer;
-}
-
-static int64_t ConvertStringToInteger64(const string &str)
-{
-    int64_t integer = 0;
-    std::stringstream ss(str);
-    ss >> integer;
-    return integer;
+    std::istringstream iss(str);
+    Type num;
+    iss >> num;
+    return num;
 }
 
 int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
@@ -59,11 +52,32 @@ int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
         fileMetadata.SetFileHeight(imageInfo.size.height);
     }
 
-    string takePictureTime;
-    ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL, takePictureTime);
+    string propertyStr;
+    int64_t int64TempMeta = 0;
+    ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL, propertyStr);
     if (ret == ERR_SUCCESS) {
-        int64_t int64TempMeta = ConvertStringToInteger64(takePictureTime);
-        fileMetadata.SetTakePictureTime(int64TempMeta);
+        int64TempMeta = stringToNum<int64_t>(propertyStr);
+        fileMetadata.SetDateTaken(int64TempMeta);
+    }
+
+    int32_t intTempMeta = 0;
+    ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_ORIENTATION, propertyStr);
+    if (ret == ERR_SUCCESS) {
+        intTempMeta = stringToNum<int32_t>(propertyStr);
+        fileMetadata.SetOrientation(intTempMeta);
+    }
+
+    double dbleTempMeta = -1;
+    ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
+    if (ret == ERR_SUCCESS) {
+        dbleTempMeta = stringToNum<double>(propertyStr);
+        fileMetadata.SetLongitude(dbleTempMeta);
+    }
+
+    ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE, propertyStr);
+    if (ret == ERR_SUCCESS) {
+        dbleTempMeta = stringToNum<double>(propertyStr);
+        fileMetadata.SetLatitude(dbleTempMeta);
     }
 
     return ERR_SUCCESS;
@@ -83,27 +97,27 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     fileMetadata.SetFileArtist(strTemp);
 
     strTemp = metadataMap.at(AV_KEY_DURATION);
-    intTempMeta = ConvertStringToInteger(strTemp);
+    intTempMeta = stringToNum<int32_t>(strTemp);
     fileMetadata.SetFileDuration(intTempMeta);
 
     strTemp = metadataMap.at(AV_KEY_VIDEO_HEIGHT);
-    intTempMeta = ConvertStringToInteger(strTemp);
+    intTempMeta = stringToNum<int32_t>(strTemp);
     fileMetadata.SetFileHeight(intTempMeta);
 
     strTemp = metadataMap.at(AV_KEY_VIDEO_WIDTH);
-    intTempMeta = ConvertStringToInteger(strTemp);
+    intTempMeta = stringToNum<int32_t>(strTemp);
     fileMetadata.SetFileWidth(intTempMeta);
 
     strTemp = metadataMap.at(AV_KEY_MIME_TYPE);
     fileMetadata.SetFileMimeType(strTemp);
 
     strTemp = metadataMap.at(AV_KEY_DATE_TIME);
-    int64TempMeta = ConvertStringToInteger64(strTemp);
-    fileMetadata.SetContentCreateTime(int64TempMeta);
+    int64TempMeta = stringToNum<int64_t>(strTemp);
+    fileMetadata.SetDateTaken(int64TempMeta);
 
     strTemp = metadataMap.at(AV_KEY_VIDEO_ORIENTATION);
-    intTempMeta = ConvertStringToInteger(strTemp);
-    fileMetadata.SetRotationAngle(intTempMeta);
+    intTempMeta = stringToNum<int32_t>(strTemp);
+    fileMetadata.SetOrientation(intTempMeta);
 }
 
 int32_t MetadataExtractor::ExtractMetadata(Metadata &fileMetadata, const string &uri)

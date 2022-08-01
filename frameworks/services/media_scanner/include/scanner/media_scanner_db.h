@@ -70,6 +70,8 @@ public:
 private:
     std::string GetMediaTypeUri(MediaType mediaType);
     std::unique_ptr<Metadata> FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    void ExtractMetaFromColumn(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+                               unique_ptr<Metadata> &metadata, const std::string &col);
 };
 } // namespace Media
 } // namespace OHOS
