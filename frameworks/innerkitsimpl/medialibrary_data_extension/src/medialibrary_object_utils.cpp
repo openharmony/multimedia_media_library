@@ -27,6 +27,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_dir_operations.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_thumbnail.h"
 #include "value_object.h"
 
@@ -702,9 +703,7 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
         return nullptr;
     }
 
-    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + id;
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
-    cmd.SetOprnDevice(networkId);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY, networkId);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, id);
 
     shared_ptr<AbsSharedResultSet> resultSet = QueryWithCondition(cmd, {});

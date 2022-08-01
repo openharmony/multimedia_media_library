@@ -31,20 +31,21 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "//base/security/access_token/interfaces/innerkits/token_setproc/include",
     "//base/security/access_token/frameworks/common/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
     "//foundation/aafwk/standard/interfaces/innerkits/uri/include",
     "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager/include",
     "${ABILITY_RUNTIME_INNER_API_PATH}/app_manager/include/appmgr",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
-    "//utils/native/base/include",
+    "//commonlibrary/c_utils/base/include",
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
-    "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl/medialibrary_data_extension/include",
-    "$MEDIA_LIB_BASE_DIR/interfaces/inner_api/media_library_helper/include",
-    "//third_party/json/include",
+    "${MEDIA_LIB_BASE_DIR}/interfaces/innerkits/native/include",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include",
+    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
     "${MEDIA_SCANNER_SOURCE_DIR}/include/scanner",
+    "//third_party/json/include",
   ]
 
   sources = [
@@ -62,12 +63,12 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
     "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary",
     "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_js",
-    "//utils/native/base:utils",
   ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
+    "c_utils:utils",
     "data_share:datashare_abilitykit",
     "data_share:datashare_common",
     "hiviewdfx_hilog_native:libhilog",

@@ -37,12 +37,13 @@ ohos_unittest("medialibrary_datashare_unittest") {
     "${ABILITY_RUNTIME_INNER_API_PATH}/app_manager/include/appmgr",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
-    "//utils/native/base/include",
+    "//commonlibrary/c_utils/base/include",
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
-    "$MEDIA_LIB_BASE_DIR/frameworks/innerkitsimpl/medialibrary_data_extension/include",
-    "$MEDIA_LIB_BASE_DIR/interfaces/inner_api/media_library_helper/include",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include",
+    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
     "//third_party/json/include",
   ]
 
@@ -60,12 +61,12 @@ ohos_unittest("medialibrary_datashare_unittest") {
     "//foundation/filemanagement/user_file_service/frameworks/innerkits/file_access:file_access_extension_ability_kit",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
-    "//utils/native/base:utils",
   ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
+    "c_utils:utils",
     "data_share:datashare_abilitykit",
     "data_share:datashare_common",
     "hiviewdfx_hilog_native:libhilog",

@@ -23,9 +23,10 @@
 #include "media_asset.h"
 #include "media_file_extention_utils.h"
 #include "media_file_utils.h"
-#include "media_lib_service_const.h"
+#include "medialibrary_type_const.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "medialibrary_object_utils.h"
 

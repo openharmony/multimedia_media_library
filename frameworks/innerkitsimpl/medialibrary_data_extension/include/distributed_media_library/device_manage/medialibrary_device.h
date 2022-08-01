@@ -26,7 +26,7 @@
 #include "devices_info_interact.h"
 #include "distributed_kv_data_manager.h"
 #include "event_handler.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_device_info.h"
 #include "medialibrary_device_operations.h"
 #include "rdb_errno.h"

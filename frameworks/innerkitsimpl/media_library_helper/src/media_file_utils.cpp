@@ -27,9 +27,10 @@
 
 #include "directory_ex.h"
 #include "media_asset.h"
-#include "media_data_ability_const.h"
-#include "media_lib_service_const.h"
 #include "media_log.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_errno.h"
+#include "medialibrary_type_const.h"
 
 using namespace std;
 
@@ -37,6 +38,8 @@ namespace OHOS {
 namespace Media {
 static const mode_t CHOWN_RWX_USR_GRP = 02770;
 static const mode_t CHOWN_RW_USR_GRP = 0660;
+static const size_t DISPLAYNAME_MAX = 128;
+const int32_t OPEN_FDS = 64;
 
 int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
 {
@@ -209,7 +212,7 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 
     if (fstat(source, &fst) == SUCCESS) {
         // Copy file content
-        if (sendfile(dest, source, 0, fst.st_size) != FAIL) {
+        if (sendfile(dest, source, 0, fst.st_size) != E_ERR) {
             // Copy ownership and mode of source file
             if (fchown(dest, fst.st_uid, fst.st_gid) == SUCCESS &&
                 fchmod(dest, fst.st_mode) == SUCCESS) {

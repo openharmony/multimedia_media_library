@@ -17,7 +17,7 @@
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FILE_ASSET_NAPI_H_
 
 #include "file_asset.h"
-#include "media_lib_service_const.h"
+#include "medialibrary_type_const.h"
 #include "media_thumbnail_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"

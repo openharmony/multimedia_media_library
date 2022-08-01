@@ -18,6 +18,7 @@
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 #include "result_set_utils.h"
 
 using namespace std;

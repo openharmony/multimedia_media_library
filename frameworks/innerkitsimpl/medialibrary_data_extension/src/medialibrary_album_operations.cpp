@@ -18,6 +18,7 @@
 
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "values_bucket.h"

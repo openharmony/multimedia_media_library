@@ -85,8 +85,9 @@ ohos_shared_library("medialibrary") {
     "//foundation/arkui/napi/interfaces/kits",
     "//foundation/multimedia/media_library/interfaces/innerkits/native/include",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
-    "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager/include",
+    "$MEDIA_LIB_COMMON_UTILS_DIR/include",
+    "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include",
     "//foundation/multimedia/image_standard/interfaces/kits/js/common/include",
     "//foundation/distributedhardware/device_manager/interfaces/inner_kits/native_cpp/include",
@@ -120,7 +121,6 @@ ohos_shared_library("medialibrary") {
     "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library",
     "//foundation/multimedia/player_framework/interfaces/inner_api/native:media_client",
-    "//utils/native/base:utils",
   ]
 
   external_deps = [
@@ -128,6 +128,7 @@ ohos_shared_library("medialibrary") {
     "ability_base:zuri",
     "ability_runtime:ability_manager",
     "ability_runtime:napi_base_context",
+    "c_utils:utils",
     "data_share:datashare_abilitykit",
     "data_share:datashare_common",
     "hitrace_native:hitrace_meter",
