@@ -37,7 +37,7 @@ void CreateFile(std::string baseURI, std::string targetPath, std::string newName
     const unsigned char fileContent[], const int len);
 std::unique_ptr<FileAsset> GetFile(int mediaTypeId);
 void ClearFile();
-void CreateDataAHelper(int32_t systemAbilityId);
+void CreateDataHelper(int32_t systemAbilityId);
 
 int g_uid = 5003;
 int g_albumMediaType = MEDIA_TYPE_ALBUM;
@@ -111,7 +111,7 @@ static const unsigned char FILE_CONTENT_MP4[] = {
 std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper()
 {
     if (sDataShareHelper_ == nullptr) {
-        CreateDataAHelper(g_uid);
+        CreateDataHelper(g_uid);
     }
     if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("GetDataShareHelper ::sDataShareHelper_ is nullptr");
@@ -173,19 +173,19 @@ void MediaSpaceStatisticsTest::TearDown(void) {}
 
 MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();
 
-void CreateDataAHelper(int32_t systemAbilityId)
+void CreateDataHelper(int32_t systemAbilityId)
 {
-    MEDIA_INFO_LOG("CreateDataAHelper::CreateDataAHelper");
+    MEDIA_INFO_LOG("CreateDataHelper::CreateDataHelper");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
-        MEDIA_ERR_LOG("CreateDataAHelper:: Get system ability mgr failed.");
+        MEDIA_ERR_LOG("CreateDataHelper:: Get system ability mgr failed.");
     }
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
     while (remoteObj == nullptr) {
-        MEDIA_ERR_LOG("CreateDataAHelper:: GetSystemAbility Service Failed.");
+        MEDIA_ERR_LOG("CreateDataHelper:: GetSystemAbility Service Failed.");
     }
     mediaLibraryManager->InitMediaLibraryManager(remoteObj);
-    MEDIA_INFO_LOG("CreateDataAHelper:: InitMediaLibraryManager success~!");
+    MEDIA_INFO_LOG("CreateDataHelper:: InitMediaLibraryManager success~!");
 
     if (sDataShareHelper_ == nullptr) {
         const sptr<IRemoteObject> &token = remoteObj;

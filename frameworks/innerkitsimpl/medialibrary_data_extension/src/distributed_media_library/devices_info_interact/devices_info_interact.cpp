@@ -16,9 +16,10 @@
 
 #include "devices_info_interact.h"
 #include "application_context.h"
-#include "medialibrary_device.h"
-#include "media_data_ability_const.h"
 #include "media_log.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_device.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS {
 namespace Media {

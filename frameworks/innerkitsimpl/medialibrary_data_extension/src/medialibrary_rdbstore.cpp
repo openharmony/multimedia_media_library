@@ -18,6 +18,7 @@
 
 #include "media_log.h"
 #include "medialibrary_device.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_sync_table.h"
 #include "sqlite_database_utils.h"
 using namespace std;

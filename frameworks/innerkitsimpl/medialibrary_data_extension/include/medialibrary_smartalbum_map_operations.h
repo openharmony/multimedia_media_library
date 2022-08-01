@@ -25,7 +25,7 @@
 
 #include "dir_asset.h"
 #include "file_asset.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_smartalbum_map_db.h"
 #include "medialibrary_data_manager_utils.h"
 #include "native_album_asset.h"

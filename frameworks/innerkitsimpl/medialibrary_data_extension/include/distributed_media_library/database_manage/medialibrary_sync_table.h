@@ -21,7 +21,7 @@
 #include "device_manager.h"
 #include "device_manager_callback.h"
 #include "distributed_kv_data_manager.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_device.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"

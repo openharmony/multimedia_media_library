@@ -15,7 +15,7 @@
 
 #include "dir_asset.h"
 
-#include "media_lib_service_const.h"
+#include "medialibrary_type_const.h"
 
 using namespace std;
 

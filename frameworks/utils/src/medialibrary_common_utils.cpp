@@ -68,7 +68,7 @@ int32_t MediaLibraryCommonUtils::GenKey(const unsigned char *data, const size_t 
 
     /* here we translate sha256 hash to hexadecimal. each 8-bit char will be presented by two characters([0-9a-f]) */
     Char2Hex(hash, SHA256_DIGEST_LENGTH, key);
-    return Utils::E_OK;
+    return E_OK;
 }
 
 int32_t MediaLibraryCommonUtils::GenKeySHA256(const std::vector<uint8_t> &input, std::string &key)

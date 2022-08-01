@@ -17,7 +17,7 @@
 #define FRAMEWORKS_INNERKITSIMPL_MEDIALIBRARY_DATA_ABILITY_INCLUDE_MEDIALIBRARY_DIR_DB_H_
 
 #include <string>
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 #include "sys/stat.h"

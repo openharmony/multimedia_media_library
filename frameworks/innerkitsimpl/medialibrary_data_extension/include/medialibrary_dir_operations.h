@@ -25,7 +25,7 @@
 
 #include "dir_asset.h"
 #include "datashare_values_bucket.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_dir_db.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
