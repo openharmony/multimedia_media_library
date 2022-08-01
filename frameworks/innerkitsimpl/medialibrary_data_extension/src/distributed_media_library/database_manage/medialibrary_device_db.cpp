@@ -23,7 +23,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-static const std::string DEVICE_DB_COND = DEVICE_DB_DEVICEID + " = ?";
+static const std::string DEVICE_DB_COND = DEVICE_DB_UDID + " = ?";
 
 int64_t MediaLibraryDeviceDb::InsertDeviceInfo(const ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore)
 {
