@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "DataShareUnitTest"
 
 #include "mediadatashare_unit_test.h"
 #include "datashare_helper.h"
@@ -30,6 +31,7 @@ namespace OHOS {
 namespace Media {
 string g_createUri1, g_createUri2;
 int g_uid = 5003;
+int g_albumMediaType = MEDIA_TYPE_ALBUM;
 std::shared_ptr<DataShare::DataShareHelper> g_mediaDataShareHelper;
 MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();
 int g_fd1 = E_FAIL;
@@ -71,7 +73,7 @@ HWTEST_F(MediaDataShareUnitTest, MediaDataShare_DeleteAllFiles_Test_001, TestSiz
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
@@ -228,7 +230,7 @@ HWTEST_F(MediaDataShareUnitTest, MediaDataShare_QueryFiles_Test_001, TestSize.Le
     std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
@@ -245,7 +247,7 @@ HWTEST_F(MediaDataShareUnitTest, MediaDataShare_QueryFiles_Test_002, TestSize.Le
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
@@ -272,7 +274,7 @@ HWTEST_F(MediaDataShareUnitTest, MediaDataShare_UpdateAsset_Test_001, TestSize.L
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
@@ -311,7 +313,7 @@ HWTEST_F(MediaDataShareUnitTest, MediaDataShare_UpdateAsset_Test_002, TestSize.L
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
@@ -351,7 +353,7 @@ HWTEST_F(MediaDataShareUnitTest, MediaDataShare_UpdateAsset_Test_003, TestSize.L
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
@@ -387,7 +389,7 @@ HWTEST_F(MediaDataShareUnitTest, MediaDataShare_OpenFile_Test_001, TestSize.Leve
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
@@ -421,7 +423,7 @@ HWTEST_F(MediaDataShareUnitTest, MediaDataShare_CloseFile_Test_001, TestSize.Lev
     unique_ptr<FetchResult> fetchFileResult = nullptr;
     vector<string> columns;
     DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> 8 ";
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
     predicates.SetWhereClause(prefix);
 
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
