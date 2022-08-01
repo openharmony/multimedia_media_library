@@ -28,7 +28,7 @@ ohos_shared_library("media_library_manager") {
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
-    "//utils/native/base/include",
+    "//commonlibrary/c_utils/base/include",
   ]
 
   deps = [
@@ -37,7 +37,6 @@ ohos_shared_library("media_library_manager") {
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
-    "//utils/native/base:utils",
   ]
 
   external_deps = [
@@ -45,6 +44,7 @@ ohos_shared_library("media_library_manager") {
     "ability_base:zuri",
     "ability_runtime:ability_manager",
     "bundle_framework:appexecfwk_base",
+    "c_utils:utils",
     "data_share:datashare_abilitykit",
     "data_share:datashare_common",
     "hiviewdfx_hilog_native:libhilog",

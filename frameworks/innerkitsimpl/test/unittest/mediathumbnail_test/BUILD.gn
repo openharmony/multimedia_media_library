@@ -31,7 +31,7 @@ ohos_unittest("mediathumbnail_test") {
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include/",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
-    "//utils/native/base/include",
+    "//commonlibrary/c_utils/base/include",
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
@@ -47,12 +47,12 @@ ohos_unittest("mediathumbnail_test") {
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
     "${MEDIA_LIB_SERVICES_DIR}/media_library:medialibrary_data_ability",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
-    "//utils/native/base:utils",
   ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
+    "c_utils:utils",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "relational_store:native_appdatafwk",
