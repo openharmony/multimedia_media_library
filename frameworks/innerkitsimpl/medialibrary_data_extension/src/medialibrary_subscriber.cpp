@@ -36,7 +36,6 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_USER_STARTING,
     EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF,
     EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON,
-    EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK,
     EventFwk::CommonEventSupport::COMMON_EVENT_BOOT_COMPLETED
 };
 
