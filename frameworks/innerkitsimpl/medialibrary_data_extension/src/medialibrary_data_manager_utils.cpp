@@ -15,10 +15,10 @@
 
 #include "medialibrary_data_manager_utils.h"
 
-#include "media_data_ability_const.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_common_utils.h"
+#include "medialibrary_db_const.h"
 
 using namespace std;
 

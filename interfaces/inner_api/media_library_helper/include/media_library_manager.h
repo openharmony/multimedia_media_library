@@ -134,7 +134,7 @@ public:
      * @brief Open an existing file
      *
      * @param uri source uri of a file which is to be opened
-     * @param mode Mode in which the file is to be opened. Refer media_data_ability_const.h for
+     * @param mode Mode in which the file is to be opened. Refer medialibrary_db_const.h for
      *             the list of supported file modes
      * @return file descriptor for the opened file. Upon failure, return value will be <= 0
      * @since 1.0

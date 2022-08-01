@@ -15,7 +15,7 @@
 
 #include "media_volume.h"
 
-#include "media_lib_service_const.h"
+#include "medialibrary_type_const.h"
 
 using namespace std;
 

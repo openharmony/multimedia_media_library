@@ -18,6 +18,7 @@
 #include "scanner_utils.h"
 #include "media_scanner.h"
 #include "media_scanner_operation_callback_stub.h"
+#include "medialibrary_errno.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;

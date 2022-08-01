@@ -34,7 +34,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "media_lib_service_const.h"
+#include "medialibrary_type_const.h"
 #include "media_scan_executor.h"
 #include "media_scanner_const.h"
 #include "media_scanner_db.h"

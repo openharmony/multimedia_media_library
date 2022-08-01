@@ -19,7 +19,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-#include "media_lib_service_const.h"
+#include "medialibrary_type_const.h"
 
 namespace OHOS {
 namespace Media {

@@ -16,6 +16,7 @@
 
 #include "medialibrary_kvstore_operations.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;

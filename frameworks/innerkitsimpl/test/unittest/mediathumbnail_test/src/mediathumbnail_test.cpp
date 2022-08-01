@@ -22,7 +22,7 @@
 #include "hilog/log.h"
 #include "iservice_registry.h"
 #include "mediathumbnail_test_cb.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_data_ability.h"
 #include "media_log.h"
 
@@ -50,11 +50,12 @@ static const std::string TEST_VIDEO_PATH1 = "/storage/media/local/files/Videos/t
 static const std::string TEST_AUDIO_NAME = "test.mp3";
 static const std::string TEST_AUDIO_PATH = "/storage/media/100/local/files/Audios/test.mp3";
 static const std::string TEST_AUDIO_PATH1 = "/storage/media/local/files/Audios/test.mp3";
+
 std::shared_ptr<RdbStore> store = nullptr;
-std::shared_ptr<AppExecFwk::DataAbilityHelper> CreateDataAHelper(
+std::shared_ptr<AppExecFwk::DataAbilityHelper> CreateDataHelper(
     int32_t systemAbilityId, std::shared_ptr<Uri> dataAbilityUri)
 {
-    MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateDataAHelper ");
+    MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateDataHelper ");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
         MEDIA_INFO_LOG("DataMedialibraryRdbHelper Get system ability mgr failed.");
@@ -72,7 +73,7 @@ std::shared_ptr<AppExecFwk::DataAbilityHelper> CreateMediaLibraryHelper()
     if (medialibraryDataAbilityHelper == nullptr) {
         MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper == nullptr");
         std::shared_ptr<Uri> dataAbilityUri = std::make_shared<Uri>("dataability:///media");
-        medialibraryDataAbilityHelper = CreateDataAHelper(g_uid, dataAbilityUri);
+        medialibraryDataAbilityHelper = CreateDataHelper(g_uid, dataAbilityUri);
     }
     MEDIA_INFO_LOG("CreateMediaLibraryHelper ::medialibraryDataAbilityHelper != nullptr");
     return medialibraryDataAbilityHelper;

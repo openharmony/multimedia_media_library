@@ -38,6 +38,7 @@ config("media_library_config") {
     "${datashare_innerapi_path}/common/include",
     "${datashare_innerapi_path}/consumer/include",
     "${datashare_innerapi_path}/provider/include",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
   ]
 
   cflags = [
@@ -120,6 +121,7 @@ ohos_static_library("media_thumbnail_helper") {
     "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "//commonlibrary/c_utils/base/include",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
   ]
   deps = [
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",

@@ -15,9 +15,10 @@
 #define MLOG_TAG "ScannerNapi"
 
 #include "media_scanner_napi.h"
-#include "medialibrary_napi_log.h"
 #include "media_library_napi.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_napi_log.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_errno.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;

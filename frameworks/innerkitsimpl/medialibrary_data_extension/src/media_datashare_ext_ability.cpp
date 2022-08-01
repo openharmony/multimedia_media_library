@@ -27,6 +27,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_subscriber.h"
 #include "media_log.h"
 #include "system_ability_definition.h"

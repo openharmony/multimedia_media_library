@@ -14,7 +14,7 @@
  */
 
 #include "metadata.h"
-#include "media_data_ability_const.h"
+#include "medialibrary_db_const.h"
 
 namespace OHOS {
 namespace Media {
