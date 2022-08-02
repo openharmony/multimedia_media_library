@@ -71,6 +71,7 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "c_utils:utils",
     "data_share:datashare_abilitykit",
     "data_share:datashare_common",
+    "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "relational_store:native_appdatafwk",
