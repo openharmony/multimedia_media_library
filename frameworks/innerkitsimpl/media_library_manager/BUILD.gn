@@ -48,6 +48,7 @@ ohos_shared_library("media_library_manager") {
     "c_utils:utils",
     "data_share:datashare_abilitykit",
     "data_share:datashare_common",
+    "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",

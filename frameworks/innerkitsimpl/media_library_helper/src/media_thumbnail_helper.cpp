@@ -83,7 +83,8 @@ bool MediaThumbnailHelper::isThumbnailFromLcd(Size &size)
 
 std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Size &size, const std::string &uri)
 {
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GetThumbnail");
+    MediaLibraryTracer tracer;
+    tracer.Start("GetThumbnail");
 
     vector<uint8_t> image;
     if (!GetImage(key, image)) {
@@ -92,9 +93,9 @@ std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Si
             return nullptr;
         }
 
-        StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GetThumbnail SyncKvstore", -1);
+        tracer.Start("GetThumbnail SyncKvstore");
         auto syncStatus = SyncKvstore(key, uri);
-        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
+        tracer.Finish();
 
         if (syncStatus != DistributedKv::Status::SUCCESS) {
             MEDIA_ERR_LOG("sync KvStore failed! ret %{public}d", syncStatus);
@@ -114,8 +115,6 @@ std::unique_ptr<PixelMap> MediaThumbnailHelper::GetThumbnail(std::string key, Si
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
-
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     return pixelMap;
 }
