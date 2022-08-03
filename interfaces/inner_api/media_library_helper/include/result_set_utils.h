@@ -45,6 +45,7 @@ public:
             case ResultSetDataType::TYPE_INT64:
                 resultSet->GetLong(index, longVal);
                 cellValue = longVal;
+                break;
             default:
                 break;
         }
