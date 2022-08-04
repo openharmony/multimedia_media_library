@@ -34,6 +34,14 @@ static Type stringToNum(const string& str)
     return num;
 }
 
+static time_t convertTimeStr2TimeStamp(string &timeStr)
+{
+    struct tm timeinfo;
+    strptime(timeStr.c_str(), "%Y-%m-%d %H:%M:%S",  &timeinfo);
+    time_t timeStamp = mktime(&timeinfo);
+    return timeStamp;
+}
+
 int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
 {
     uint32_t errorCode = 0;
@@ -113,11 +121,15 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     fileMetadata.SetFileMimeType(strTemp);
 
     strTemp = metadataMap.at(AV_KEY_DATE_TIME);
-    int64TempMeta = stringToNum<int64_t>(strTemp);
+    int64TempMeta = convertTimeStr2TimeStamp(strTemp);
     fileMetadata.SetDateTaken(int64TempMeta);
 
     strTemp = metadataMap.at(AV_KEY_VIDEO_ORIENTATION);
-    intTempMeta = stringToNum<int32_t>(strTemp);
+    if (strTemp == "") {
+        intTempMeta = 0;
+    } else {
+        intTempMeta = stringToNum<int32_t>(strTemp);
+    }
     fileMetadata.SetOrientation(intTempMeta);
 }
 
