@@ -170,7 +170,7 @@ void ScannerUtils::GetRootMediaDir(string &dir)
     dir = ROOT_MEDIA_DIR;
 }
 
-string ScannerUtils::GetFileTitle(const string& displayName)
+string ScannerUtils::GetFileTitle(const string &displayName)
 {
     string title = "";
     if (!displayName.empty()) {
