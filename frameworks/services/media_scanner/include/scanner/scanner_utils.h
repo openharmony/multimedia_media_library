@@ -184,7 +184,7 @@ public:
     static bool IsDirectory(const std::string &path);
     static MediaType GetMediatypeFromMimetype(const std::string &mimetype);
     static void GetRootMediaDir(std::string &dir);
-    static std::string GetFileTitle(const std::string& displayName);
+    static std::string GetFileTitle(const std::string &displayName);
 };
 } // namespace Media
 } // namespace OHOS
