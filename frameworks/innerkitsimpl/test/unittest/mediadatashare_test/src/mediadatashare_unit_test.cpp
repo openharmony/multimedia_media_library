@@ -15,29 +15,23 @@
 #define MLOG_TAG "DataShareUnitTest"
 
 #include "mediadatashare_unit_test.h"
+
 #include "datashare_helper.h"
+#include "fetch_result.h"
 #include "iservice_registry.h"
+#include "medialibrary_errno.h"
+#include "media_file_utils.h"
+#include "media_library_manager.h"
 #include "media_log.h"
 #include "system_ability_definition.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
-#include "media_library_manager.h"
-#include "fetch_result.h"
 
 using namespace std;
 using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-string g_createUri1, g_createUri2;
 int g_uid = 5003;
-int g_albumMediaType = MEDIA_TYPE_ALBUM;
 std::shared_ptr<DataShare::DataShareHelper> g_mediaDataShareHelper;
-MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();
-int g_fd1 = E_FAIL;
-int g_fd2 = E_FAIL;
-int g_albumId1 = E_FAIL;
-int g_albumId2 = E_FAIL;
 
 std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t systemAbilityId)
 {
@@ -52,176 +46,415 @@ std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t system
         MEDIA_INFO_LOG("CreateDataShareHelper GetSystemAbility Service Failed.");
         return nullptr;
     }
-    mediaLibraryManager->InitMediaLibraryManager(remoteObj);
     return DataShare::DataShareHelper::Creator(remoteObj, MEDIALIBRARY_DATA_URI);
 }
 
 void MediaDataShareUnitTest::SetUpTestCase(void)
 {
-    MEDIA_DEBUG_LOG("SetUpTestCase invoked");
+    MEDIA_INFO_LOG("SetUpTestCase invoked");
     g_mediaDataShareHelper = CreateDataShareHelper(g_uid);
+
+    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
+    DataShare::DataSharePredicates predicates;
+    string selections = MEDIA_DATA_DB_ID + " <> 0 ";
+    predicates.SetWhereClause(selections);
+    int retVal = g_mediaDataShareHelper->Delete(deleteAssetUri, predicates);
+    MEDIA_INFO_LOG("SetUpTestCase Delete retVal: %{public}d", retVal);
+    EXPECT_EQ((retVal >= 0), true);
+}
+
+int32_t CreateFile(string displayName)
+{
+    MEDIA_INFO_LOG("CreateFile::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
+    DataShare::DataShareValuesBucket valuesBucket;
+    string relativePath = "Pictures/" + displayName + "/";
+    displayName += ".jpg";
+    MediaType mediaType = MEDIA_TYPE_IMAGE;
+    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    int32_t retVal = helper->Insert(createAssetUri, valuesBucket);
+    MEDIA_INFO_LOG("CreateFile::File: %{public}s, retVal: %{public}d", (relativePath + displayName).c_str(), retVal);
+    EXPECT_EQ((retVal > 0), true);
+    if (retVal <= 0) {
+        retVal = E_FAIL;
+    }
+    MEDIA_INFO_LOG("CreateFile::retVal = %{public}d. End", retVal);
+    return retVal;
+}
+
+int32_t CreateAlbum(string displayName)
+{
+    MEDIA_INFO_LOG("CreateAlbum::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    Uri createAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
+    DataShare::DataShareValuesBucket valuesBucket;
+    string dirPath = ROOT_MEDIA_DIR + "Pictures/" + displayName;
+    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, dirPath);
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
+    auto retVal = helper->Insert(createAlbumUri, valuesBucket);
+    MEDIA_INFO_LOG("CreateAlbum::Album: %{public}s, retVal: %{public}d", dirPath.c_str(), retVal);
+    EXPECT_EQ((retVal > 0), true);
+    if (retVal <= 0) {
+        retVal = E_FAIL;
+    }
+    MEDIA_INFO_LOG("CreateAlbum::retVal = %{public}d. End", retVal);
+    return retVal;
+}
+
+bool GetFileAsset(unique_ptr<FileAsset> &fileAsset, bool isAlbum, string displayName)
+{
+    int32_t index = E_FAIL;
+    if (isAlbum) {
+        index = CreateAlbum(displayName);
+    } else {
+        index = CreateFile(displayName);
+    }
+    if (index == E_FAIL) {
+        MEDIA_ERR_LOG("GetFileAsset failed");
+        return false;
+    }
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string selections = MEDIA_DATA_DB_ID + " = " + to_string(index);
+    predicates.SetWhereClause(selections);
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
+    auto resultSet = helper->Query(queryFileUri, predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("GetFileAsset::resultSet == nullptr");
+        return false;
+    }
+
+    // Create FetchResult object using the contents of resultSet
+    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    if (fetchFileResult->GetCount() <= 0) {
+        MEDIA_ERR_LOG("GetFileAsset::GetCount <= 0");
+        return false;
+    }
+
+    fileAsset = fetchFileResult->GetFirstObject();
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("GetFileAsset::fileAsset = nullptr.");
+        return false;
+    }
+    return true;
 }
 
 void MediaDataShareUnitTest::TearDownTestCase(void) {}
 void MediaDataShareUnitTest::SetUp(void) {}
 void MediaDataShareUnitTest::TearDown(void) {}
 
-HWTEST_F(MediaDataShareUnitTest, MediaDataShare_DeleteAllFiles_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaDataShare_DeleteAllFiles_Test_001::Start");
-    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
-    DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
-    predicates.SetWhereClause(prefix);
-
-    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<DataShareResultSet> resultSet = nullptr;
-    MEDIA_INFO_LOG("MediaDataShare_DeleteAllFiles_Test_001::helper->Query before");
-    resultSet = helper->Query(queryFileUri, predicates, columns);
-    MEDIA_INFO_LOG("MediaDataShare_DeleteAllFiles_Test_001::helper->Query after");
-    EXPECT_NE((resultSet == nullptr), true);
-    // Create FetchResult object using the contents of resultSet
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult->GetCount() < 0), true);
-    unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
-    while (fileAsset != nullptr) {
-        Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET +
-            '/' + fileAsset->GetUri());
-        DataShare::DataSharePredicates deletePredicates;
-        MEDIA_INFO_LOG("MediaDataShare_DeleteAllFiles_Test_001::uri :%{public}s", fileAsset->GetUri().c_str());
-        MEDIA_INFO_LOG("MediaDataShare_DeleteAllFiles_Test_001::helper->Insert before");
-        int retVal = helper->Delete(deleteAssetUri, deletePredicates);
-        MEDIA_INFO_LOG("MediaDataShare_DeleteAllFiles_Test_001::helper->Insert after");
-        EXPECT_NE((retVal < 0), true);
-
-        fileAsset = fetchFileResult->GetNextObject();
-    }
-
-    MEDIA_INFO_LOG("MediaDataShare_DeleteAllFiles_Test_001::End");
-}
-
 HWTEST_F(MediaDataShareUnitTest, MediaDataShare_CreateAsset_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataShare_CreateAsset_Test_001::Start");
     std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    int index = E_FAIL;
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
+    Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     DataShare::DataShareValuesBucket valuesBucket;
     string relativePath = "Pictures/";
-    string displayName = "gtest_new_file001.jpg";
+    string displayName = "CreateAsset_Test_001.jpg";
     MediaType mediaType = MEDIA_TYPE_IMAGE;
     valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = helper->Insert(createAssetUri, valuesBucket);
-    g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
-    EXPECT_NE((index <= 0), true);
-    MEDIA_INFO_LOG("MediaDataShare_CreateAsset_Test_001::End");
+    auto retVal = helper->Insert(createAssetUri, valuesBucket);
+    EXPECT_EQ((retVal > 0), true);
+    MEDIA_INFO_LOG("MediaDataShare_CreateAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaDataShareUnitTest, MediaDataShare_CreateAsset_Test_002, TestSize.Level0)
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_CloseAsset_Test_001, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("MediaDataShare_CreateAsset_Test_002::Start");
+    MEDIA_INFO_LOG("MediaDataShare_CloseAsset_Test_001::Start");
     std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    int index = E_FAIL;
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, false, "CloseAsset_Test_001")) {
+        return;
+    }
+    Uri closeAssetUri(MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CLOSEASSET);
     DataShare::DataShareValuesBucket valuesBucket;
-    string relativePath = "Pictures/";
-    string displayName = "gtest_new_file_0102.jpg";
-    MediaType mediaType = MEDIA_TYPE_IMAGE;
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = helper->Insert(createAssetUri, valuesBucket);
-    g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
-    EXPECT_NE((index <= 0), true);
-    MEDIA_INFO_LOG("MediaDataShare_CreateAsset_Test_002::End");
+    valuesBucket.PutInt(MEDIA_DATA_DB_ID, fileAsset->GetId());
+    auto retVal = helper->Insert(closeAssetUri, valuesBucket);
+    EXPECT_EQ(retVal, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaDataShare_CloseAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaDataShareUnitTest, MediaDataShare_CreateAsset_Test_003, TestSize.Level0)
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_IsDirectory_Test_001, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("MediaDataShare_CreateAsset_Test_003::Start");
+    MEDIA_INFO_LOG("MediaDataShare_IsDirectory_Test_001::Start");
     std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    int index = E_FAIL;
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, true, "IsDirectory_Test_001")) {
+        return;
+    }
+    Uri isDirectoryUri(MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_ISDIRECTORY);
     DataShare::DataShareValuesBucket valuesBucket;
-    string relativePath = "Pictures/createAsset/";
-    string displayName = "gtest_new_file0103.jpg";
-    MediaType mediaType = MEDIA_TYPE_IMAGE;
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = helper->Insert(createAssetUri, valuesBucket);
-    g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
-    EXPECT_NE((index <= 0), true);
-    MEDIA_INFO_LOG("MediaDataShare_CreateAsset_Test_003::End");
+    valuesBucket.PutInt(MEDIA_DATA_DB_ID, fileAsset->GetId());
+    auto retVal = helper->Insert(isDirectoryUri, valuesBucket);
+    EXPECT_EQ(retVal, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaDataShare_IsDirectory_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaDataShareUnitTest, MediaDataShare_CreateAsset_Test_004, TestSize.Level0)
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_IsDirectory_Test_002, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("MediaDataShare_CreateAsset_Test_004::Start");
+    MEDIA_INFO_LOG("MediaDataShare_IsDirectory_Test_002::Start");
     std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    int index = E_FAIL;
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, false, "IsDirectory_Test_002")) {
+        return;
+    }
+    Uri isDirectoryUri(MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_ISDIRECTORY);
     DataShare::DataShareValuesBucket valuesBucket;
-    string relativePath = "Pictures/createAsset/";
-    string displayName = ".gtest_new_file0103.jpg";
-    MediaType mediaType = MEDIA_TYPE_IMAGE;
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = helper->Insert(createAssetUri, valuesBucket);
-    EXPECT_NE((index <= 0), false);
-    MEDIA_INFO_LOG("MediaDataShare_CreateAsset_Test_004::End");
+    valuesBucket.PutInt(MEDIA_DATA_DB_ID, fileAsset->GetId());
+    auto retVal = helper->Insert(isDirectoryUri, valuesBucket);
+    EXPECT_EQ(retVal, E_CHECK_DIR_FAIL);
+    MEDIA_INFO_LOG("MediaDataShare_IsDirectory_Test_002::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaDataShareUnitTest, MediaDataShare_CreateAsset_Test_005, TestSize.Level0)
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_CreateAlbum_Test_001, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("MediaDataShare_CreateAsset_Test_005::Start");
+    MEDIA_INFO_LOG("MediaDataShare_CreateAlbum_Test_001::Start");
     std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    int index = E_FAIL;
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
+    Uri createAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
     DataShare::DataShareValuesBucket valuesBucket;
-    string relativePath = "Pictures/createAsset/";
-    MediaType mediaType = MEDIA_TYPE_IMAGE;
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    string dirPath = ROOT_MEDIA_DIR + "Pictures/CreateAlbum_Test_001/";
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, "CreateAlbum_Test_001");
+    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, dirPath);
+    auto retVal = helper->Insert(createAlbumUri, valuesBucket);
+    EXPECT_EQ((retVal > 0), true);
+    MEDIA_INFO_LOG("MediaDataShare_CreateAlbum_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_DeleteDir_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_DeleteDir_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, true, "DeleteDir_Test_001")) {
+        return;
+    }
+    Uri deleteDirUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_DELETEDIR);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.PutInt(MEDIA_DATA_DB_PARENT_ID, fileAsset->GetId());
+    auto retVal = helper->Insert(deleteDirUri, valuesBucket);
+    EXPECT_EQ(retVal, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaDataShare_DeleteDir_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_CheckDir_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_CheckDir_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, false, "CheckDir_Test_001")) {
+        return;
+    }
+    Uri checkDirUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
+    auto retVal = helper->Insert(checkDirUri, valuesBucket);
+    EXPECT_EQ(retVal, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaDataShare_CheckDir_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_CreateDir_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_CreateDir_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    Uri createDirUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_FMS_CREATEDIR);
+    DataShare::DataShareValuesBucket valuesBucket;
+    string relativePath = "Pictures/CreateDir_Test_001/";
     valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = helper->Insert(createAssetUri, valuesBucket);
-    EXPECT_NE((index <= 0), false);
-    MEDIA_INFO_LOG("MediaDataShare_CreateAsset_Test_005::End");
+    auto retVal = helper->Insert(createDirUri, valuesBucket);
+    EXPECT_EQ((retVal > 0), true);
+    MEDIA_INFO_LOG("MediaDataShare_CreateDir_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_FMSDeleteDir_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_FMSDeleteDir_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, false, "FMSDeleteDir_Test_001")) {
+        return;
+    }
+    Uri deleteDirUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_FMS_DELETEDIR);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
+    auto retVal = helper->Insert(deleteDirUri, valuesBucket);
+    EXPECT_EQ(retVal, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaDataShare_FMSDeleteDir_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_TrashDir_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_TrashDir_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, true, "TrashDir_Test_001")) {
+        return;
+    }
+    Uri trashDirUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_FMS_TRASHDIR);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.PutInt(MEDIA_DATA_DB_ID, fileAsset->GetId());
+    auto retVal = helper->Insert(trashDirUri, valuesBucket);
+    EXPECT_EQ((retVal > 0), true);
+    MEDIA_INFO_LOG("MediaDataShare_TrashDir_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_SmartAlbum_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_SmartAlbum_Test_001::Create Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    Uri createSmartAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMOPRN + "/" +
+        MEDIA_SMARTALBUMOPRN_CREATEALBUM);
+    DataShare::DataShareValuesBucket createValuesBucket;
+    createValuesBucket.PutInt(SMARTALBUM_DB_ID, 3);
+    createValuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, 3);
+    createValuesBucket.PutString(SMARTALBUM_DB_NAME, "TestAlbum001");
+    auto retVal = helper->Insert(createSmartAlbumUri, createValuesBucket);
+    EXPECT_EQ((retVal > 0), true);
+    MEDIA_INFO_LOG("MediaDataShare_SmartAlbum_Test_001::Create End. retVal = %{public}d", retVal);
+    MEDIA_INFO_LOG("MediaDataShare_SmartAlbum_Test_001::Delete Start");
+    Uri deleteSmartAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMOPRN + "/" +
+        MEDIA_SMARTALBUMOPRN_DELETEALBUM);
+    DataShare::DataShareValuesBucket deleteValuesBucket;
+    deleteValuesBucket.PutInt(SMARTALBUM_DB_ID, 3);
+    retVal = helper->Insert(deleteSmartAlbumUri, deleteValuesBucket);
+    EXPECT_EQ(retVal, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaDataShare_SmartAlbum_Test_001::Delete End. retVal = %{public}d", retVal);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_Favorite_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_Favorite_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, false, "Favorite_Test_001")) {
+        return;
+    }
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
+    valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileAsset->GetId());
+    Uri addSmartAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
+    auto retVal = helper->Insert(addSmartAlbumUri, valuesBucket);
+    EXPECT_EQ((retVal > 0), true);
+    Uri removeSmartAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
+    retVal = helper->Insert(removeSmartAlbumUri, valuesBucket);
+    EXPECT_EQ(retVal, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaDataShare_Favorite_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_Trash_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_Trash_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, false, "Trash_Test_001")) {
+        return;
+    }
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+    valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileAsset->GetId());
+    Uri addSmartAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
+    auto retVal = helper->Insert(addSmartAlbumUri, valuesBucket);
+    EXPECT_EQ((retVal > 0), true);
+    Uri removeSmartAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
+    retVal = helper->Insert(removeSmartAlbumUri, valuesBucket);
+    EXPECT_EQ(retVal, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaDataShare_Trash_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_Insert_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_Insert_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    Uri insertUri(MEDIALIBRARY_DATA_URI);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.PutString(MEDIA_DATA_DB_NAME, "MediaDataShare_Insert_Test_001");
+    auto retVal = helper->Insert(insertUri, valuesBucket);
+    EXPECT_EQ((retVal > 0), true);
+    MEDIA_INFO_LOG("MediaDataShare_Insert_Test_001::retVal = %{public}d. End", retVal);
 }
 
 HWTEST_F(MediaDataShareUnitTest, MediaDataShare_DeleteAsset_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataShare_DeleteAsset_Test_001::Start");
     std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    int index = E_FAIL;
-    Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
-    DataShare::DataShareValuesBucket valuesBucket;
-    string relativePath = "Pictures/";
-    string displayName = "gtest_delete_file001.jpg";
-    MediaType mediaType = MEDIA_TYPE_IMAGE;
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    index = helper->Insert(createAssetUri, valuesBucket);
-    g_createUri1 = MEDIALIBRARY_IMAGE_URI + "/" + to_string(index);
-    EXPECT_NE((index <= 0), true);
-
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, false, "DeleteAsset_Test_001")) {
+        return;
+    }
     Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET +
-        '/' + to_string(index));
+        '/' + to_string(fileAsset->GetId()));
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(index));
-    int retVal = helper->Delete(deleteAssetUri, predicates);
-    EXPECT_NE((retVal < 0), true);
-    MEDIA_INFO_LOG("MediaDataShare_DeleteAsset_Test_001::End");
+    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(fileAsset->GetId()));
+    auto retVal = helper->Delete(deleteAssetUri, predicates);
+    EXPECT_EQ(retVal, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaDataShare_DeleteAsset_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_DeleteAlbum_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_DeleteAlbum_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, true, "DeleteAlbum_Test_001")) {
+        return;
+    }
+    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM +
+        '/' + to_string(fileAsset->GetId()));
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_ID, fileAsset->GetId());
+    auto retVal = helper->Delete(deleteAssetUri, predicates);
+    EXPECT_EQ((retVal > 0), true);
+    MEDIA_INFO_LOG("MediaDataShare_DeleteAlbum_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_QueryDirTable_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_QueryDirTable_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIATYPE_DIRECTORY_TABLE);
+    auto resultSet = helper->Query(queryFileUri, predicates, columns);
+    EXPECT_NE((resultSet == nullptr), true);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_QueryAlbum_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_QueryAlbum_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM);
+    auto resultSet = helper->Query(queryFileUri, predicates, columns);
+    EXPECT_NE((resultSet == nullptr), true);
+}
+
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_QueryVolume_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaDataShare_QueryVolume_Test_001::Start");
+    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
+    auto resultSet = helper->Query(queryFileUri, predicates, columns);
+    EXPECT_NE((resultSet == nullptr), true);
 }
 
 HWTEST_F(MediaDataShareUnitTest, MediaDataShare_QueryFiles_Test_001, TestSize.Level0)
@@ -230,267 +463,77 @@ HWTEST_F(MediaDataShareUnitTest, MediaDataShare_QueryFiles_Test_001, TestSize.Le
     std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
-
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<DataShareResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, predicates, columns);
+    auto resultSet = helper->Query(queryFileUri, predicates, columns);
     EXPECT_NE((resultSet == nullptr), true);
-    MEDIA_INFO_LOG("MediaDataShare_QueryFiles_Test_001::End");
 }
 
-HWTEST_F(MediaDataShareUnitTest, MediaDataShare_QueryFiles_Test_002, TestSize.Level0)
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_UpdateFileAsset_Test_001, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("MediaDataShare_QueryFiles_Test_002::Start");
+    MEDIA_INFO_LOG("MediaDataShare_UpdateFileAsset_Test_001::Start");
     std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, false, "UpdateFileAsset_Test_001")) {
+        return;
+    }
+    DataShare::DataShareValuesBucket valuesBucketUpdate;
+    valuesBucketUpdate.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
+    valuesBucketUpdate.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_NAME, "UpdateAsset_Test_001.jpg");
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_TITLE, "UpdateAsset_Test_001");
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
     DataShare::DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
-    predicates.SetWhereClause(prefix);
-
-    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<DataShareResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, predicates, columns);
-    EXPECT_NE((resultSet == nullptr), true);
-    MEDIA_INFO_LOG("MediaDataShare_QueryFiles_Test_002::resultSet != nullptr");
-
-    // Create FetchResult object using the contents of resultSet
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-    MEDIA_INFO_LOG("MediaDataShare_QueryFiles_Test_002::GetCount > 0");
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
-    EXPECT_NE((fileAsset == nullptr), true);
-    MEDIA_INFO_LOG("MediaDataShare_QueryFiles_Test_002::fileAsset != nullptr. End");
-}
-
-HWTEST_F(MediaDataShareUnitTest, MediaDataShare_UpdateAsset_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaDataShare_UpdateAsset_Test_001::Start");
-    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
-    DataShare::DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
-    predicates.SetWhereClause(prefix);
-
-    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<DataShareResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, predicates, columns);
-    EXPECT_NE((resultSet == nullptr), true);
-
-    // Create FetchResult object using the contents of resultSet
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
-    EXPECT_NE((fileAsset == nullptr), true);
-
-    DataShare::DataShareValuesBucket valuesBucketUpdate;
-    valuesBucketUpdate.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
-    valuesBucketUpdate.PutString(MEDIA_DATA_DB_TITLE, "UpdateAsset_Test_001.jpg");
-    valuesBucketUpdate.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
-    valuesBucketUpdate.PutString(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
-    valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
-
-    MEDIA_INFO_LOG("MediaDataShare_UpdateAsset_Test_001::GetId = %{public}d, GetUri = %{public}s",
-                   fileAsset->GetId(),
-                   fileAsset->GetUri().c_str());
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + to_string(fileAsset->GetId()));
     Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
-    int changedRows = helper->Update(updateAssetUri, predicates, valuesBucketUpdate);
-    EXPECT_NE(changedRows < 0, true);
-    MEDIA_INFO_LOG("MediaDataShare_UpdateAsset_Test_001::changedRows = %{public}d. End", changedRows);
+    auto retVal = helper->Update(updateAssetUri, predicates, valuesBucketUpdate);
+    EXPECT_EQ((retVal > 0), true);
+    MEDIA_INFO_LOG("MediaDataShare_UpdateFileAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaDataShareUnitTest, MediaDataShare_UpdateAsset_Test_002, TestSize.Level0)
+HWTEST_F(MediaDataShareUnitTest, MediaDataShare_UpdateAlbumAsset_Test_001, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("MediaDataShare_UpdateAsset_Test_002::Start");
+    MEDIA_INFO_LOG("MediaDataShare_UpdateAlbumAsset_Test_001::Start");
     std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, true, "UpdateAlbumAsset_Test_001")) {
+        return;
+    }
     DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
+    string prefix = MEDIA_DATA_DB_ID + " = " + to_string(fileAsset->GetId());
     predicates.SetWhereClause(prefix);
-
-    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<DataShareResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, predicates, columns);
-    EXPECT_NE((resultSet == nullptr), true);
-
-    // Create FetchResult object using the contents of resultSet
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
-    EXPECT_NE((fileAsset == nullptr), true);
-
-    DataShare::DataShareValuesBucket valuesBucketUpdate;
-    valuesBucketUpdate.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
-    valuesBucketUpdate.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
-    valuesBucketUpdate.PutString(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
-    valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
-    valuesBucketUpdate.PutInt(MEDIA_DATA_DB_ORIENTATION, 1);
-
-    MEDIA_INFO_LOG("MediaDataShare_UpdateAsset_Test_002::GetName = %{public}s, GetRelPath = %{public}s",
-                   fileAsset->GetDisplayName().c_str(),
-                   fileAsset->GetRelativePath().c_str());
-    MEDIA_INFO_LOG("MediaDataShare_UpdateAsset_Test_002::GetUri = %{public}s", fileAsset->GetUri().c_str());
-    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
-    int changedRows = helper->Update(updateAssetUri, predicates, valuesBucketUpdate);
-    EXPECT_NE(changedRows < 0, true);
-    MEDIA_INFO_LOG("MediaDataShare_UpdateAsset_Test_002::changedRows = %{public}d. End", changedRows);
-}
-
-HWTEST_F(MediaDataShareUnitTest, MediaDataShare_UpdateAsset_Test_003, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaDataShare_UpdateAsset_Test_003::Start");
-    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
-    DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
-    predicates.SetWhereClause(prefix);
-
-    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<DataShareResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, predicates, columns);
-    EXPECT_NE((resultSet == nullptr), true);
-
-    // Create FetchResult object using the contents of resultSet
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
-    EXPECT_NE((fileAsset == nullptr), true);
-
     DataShare::DataShareValuesBucket valuesBucketUpdate;
     valuesBucketUpdate.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_URI, fileAsset->GetUri());
     valuesBucketUpdate.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
-    valuesBucketUpdate.PutString(MEDIA_DATA_DB_NAME, "U" + fileAsset->GetDisplayName());
-
-    MEDIA_INFO_LOG("MediaDataShare_UpdateAsset_Test_003::GetUri = %{public}s", fileAsset->GetUri().c_str());
-    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
-    int changedRows = helper->Update(updateAssetUri, predicates, valuesBucketUpdate);
-    EXPECT_NE(changedRows < 0, true);
-    MEDIA_INFO_LOG("MediaDataShare_UpdateAsset_Test_003::changedRows = %{public}d. End", changedRows);
+    valuesBucketUpdate.PutString(MEDIA_DATA_DB_ALBUM_NAME, "U" + fileAsset->GetDisplayName());
+    MEDIA_INFO_LOG("MediaDataShare_UpdateAlbumAsset_Test_001::GetUri = %{public}s", fileAsset->GetUri().c_str());
+    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_MODIFYALBUM);
+    auto retVal = helper->Update(updateAssetUri, predicates, valuesBucketUpdate);
+    EXPECT_EQ(retVal, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaDataShare_UpdateAlbumAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
 HWTEST_F(MediaDataShareUnitTest, MediaDataShare_OpenFile_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaDataShare_OpenFile_Test_001::Start");
     std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
-    DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
-    predicates.SetWhereClause(prefix);
-
-    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<DataShareResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, predicates, columns);
-    EXPECT_NE((resultSet == nullptr), true);
-
-    // Create FetchResult object using the contents of resultSet
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
     unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
-    EXPECT_NE((fileAsset == nullptr), true);
-
+    if (!GetFileAsset(fileAsset, false, "OpenFile_Test_001")) {
+        return;
+    }
     string fileUri = fileAsset->GetUri();
     string mode = MEDIA_FILEMODE_READONLY;
-
     Uri openFileUri(fileUri);
     MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
     int32_t fd = helper->OpenFile(openFileUri, mode);
-
-    EXPECT_NE(fd <= 0, true);
+    EXPECT_EQ(fd > 0, true);
+    if (fd > 0) {
+        close(fd);
+    }
     MEDIA_INFO_LOG("MediaDataShare_OpenFile_Test_001::fd = %{public}d. End", fd);
-}
-
-HWTEST_F(MediaDataShareUnitTest, MediaDataShare_CloseFile_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaDataShare_CloseFile_Test_001::Start");
-    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
-    vector<string> columns;
-    DataSharePredicates predicates;
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
-    predicates.SetWhereClause(prefix);
-
-    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<DataShareResultSet> resultSet = nullptr;
-    resultSet = helper->Query(queryFileUri, predicates, columns);
-    EXPECT_NE((resultSet == nullptr), true);
-
-    // Create FetchResult object using the contents of resultSet
-    fetchFileResult = make_unique<FetchResult>(move(resultSet));
-    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
-
-    unique_ptr<FileAsset> fileAsset = nullptr;
-    fileAsset = fetchFileResult->GetFirstObject();
-    EXPECT_NE((fileAsset == nullptr), true);
-
-    string fileUri = fileAsset->GetUri();
-    string mode = MEDIA_FILEMODE_READWRITE;
-
-    Uri openFileUri(fileUri);
-    MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
-    int32_t fd = helper->OpenFile(openFileUri, mode);
-
-    EXPECT_NE(fd <= 0, true);
-    MEDIA_INFO_LOG("MediaDataShare_CloseFile_Test_001::fd = %{public}d", fd);
-
-    Uri closeAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
-
-    int32_t retVal = close(fd);
-    EXPECT_NE(retVal != E_SUCCESS, true);
-
-    DataShare::DataShareValuesBucket valuesBucketClose;
-    valuesBucketClose.PutString(MEDIA_DATA_DB_URI, fileUri);
-    int32_t retValClose = helper->Insert(closeAssetUri, valuesBucketClose);
-    EXPECT_NE(retValClose != E_SUCCESS, true);
-
-    MEDIA_INFO_LOG("MediaDataShare_CloseFile_Test_001::End");
-}
-
-HWTEST_F(MediaDataShareUnitTest, MediaDataShare_GetAlbum_Test_001, TestSize.Level0)
-{
-    std::shared_ptr<DataShare::DataShareHelper> helper = g_mediaDataShareHelper;
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_ALBUMOPRN_QUERYALBUM;
-    Uri createAssetUri(abilityUri);
-    string queryAssetUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri createAssetUri1(queryAssetUri);
-    DataShare::DataShareValuesBucket valuesBucket;
-    DataSharePredicates predicates1;
-    std::vector<std::string> columns;
-    helper->Query(createAssetUri, predicates1, columns);
-
-    DataSharePredicates queryPredicates;
-    queryPredicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(1));
-    std::vector<std::string> queryColumns;
-    helper->Query(createAssetUri1, queryPredicates, queryColumns);
-
-    DataSharePredicates predicates2;
-    DataShare::DataShareValuesBucket valuesBucket1;
-    valuesBucket1.PutString(MEDIA_DATA_DB_TITLE, "newTest");
-    predicates2.EqualTo(MEDIA_DATA_DB_ID, std::to_string(1));
-    Uri uri(MEDIALIBRARY_DATA_URI);
-    helper->Update(uri, predicates2, valuesBucket1);
-
-    DataSharePredicates filePredicates;
-    DataShare::DataShareValuesBucket fileValuesBucket;
-    fileValuesBucket.PutString(MEDIA_DATA_DB_BUCKET_NAME, "newTest");
-    filePredicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, std::to_string(1));
-    helper->Update(uri, filePredicates, fileValuesBucket);
 }
 } // namespace Media
 } // namespace OHOS
