@@ -26,7 +26,7 @@ namespace Media {
 using namespace std;
 
 template <class Type>
-static Type stringToNum(const string& str)
+static Type stringToNum(const string &str)
 {
     std::istringstream iss(str);
     Type num;
@@ -175,7 +175,6 @@ int32_t MetadataExtractor::ExtractMetadata(Metadata &fileMetadata, const string 
     }
 
     (void)close(fd);
-    avMetadataHelper->Release();
 
     return errCode;
 }

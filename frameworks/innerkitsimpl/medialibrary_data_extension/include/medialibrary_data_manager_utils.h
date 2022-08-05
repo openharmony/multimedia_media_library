@@ -31,7 +31,7 @@ public:
     static bool IsNumber(const std::string &str);
     static std::string GetOperationType(const std::string &uri);
     static std::string GetIdFromUri(const std::string &uri);
-    static std::string GetFileTitle(const std::string& displayName);
+    static std::string GetFileTitle(const std::string &displayName);
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string GetDisPlayNameFromPath(std::string &path);
     static void SplitKeyValue(const std::string &keyValue, std::string &key, std::string &value);

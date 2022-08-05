@@ -970,7 +970,7 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAsyncContext *context)
+static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     vector<string> columns;
@@ -1061,7 +1061,7 @@ static bool CheckTitlePrams(MediaLibraryAsyncContext *context)
     return true;
 }
 
-static string GetFirstDirName(const string& relativePath)
+static string GetFirstDirName(const string &relativePath)
 {
     string firstDirName = "";
     if (!relativePath.empty()) {
@@ -1075,7 +1075,7 @@ static string GetFirstDirName(const string& relativePath)
     return firstDirName;
 }
 
-static bool IsDirectory(const string& dirName)
+static bool IsDirectory(const string &dirName)
 {
     struct stat statInfo {};
     if (stat((ROOT_MEDIA_DIR + dirName).c_str(), &statInfo) == SUCCESS) {
@@ -1087,7 +1087,7 @@ static bool IsDirectory(const string& dirName)
     return false;
 }
 
-static bool CheckTypeOfType(const std::string& firstDirName, int32_t fileMediaType)
+static bool CheckTypeOfType(const std::string &firstDirName, int32_t fileMediaType)
 {
     NAPI_DEBUG_LOG("CheckTypeOfType IN");
     // "CDSA/"
