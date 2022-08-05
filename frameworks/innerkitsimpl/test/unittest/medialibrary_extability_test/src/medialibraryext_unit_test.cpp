@@ -82,7 +82,7 @@ std::shared_ptr<FileAccessFwk::FileAccessHelper> CreateFileExtHelper(int32_t sys
     }
     AppExecFwk::Want want;
     want.SetElementName("com.ohos.medialibrary.medialibrarydata", "FileExtensionAbility");
-    vector<AAFwk::Want> wants{want};
+    vector<AAFwk::Want> wants {want};
     FileAccessFwk::FileAccessHelper::GetRegisterFileAccessExtAbilityInfo();
     return FileAccessFwk::FileAccessHelper::Creator(remoteObj, wants);
 }
