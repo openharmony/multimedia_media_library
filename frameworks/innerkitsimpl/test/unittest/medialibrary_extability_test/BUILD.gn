@@ -72,6 +72,7 @@ ohos_unittest("medialibrary_extability_unittest") {
     "c_utils:utils",
     "data_share:datashare_abilitykit",
     "data_share:datashare_common",
+    "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "relational_store:native_appdatafwk",
@@ -79,4 +80,7 @@ ohos_unittest("medialibrary_extability_unittest") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]
+
+  resource_config_file =
+      "${MEDIA_LIB_INNERKITS_DIR}/test/unittest/resources/ohos_test.xml"
 }
