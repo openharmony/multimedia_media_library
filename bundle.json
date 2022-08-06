@@ -15,6 +15,9 @@
       "adapted_system_type": [ "standard" ],
       "rom": "4068KB",
       "ram": "4068KB",
+      "hisysevent_config": [
+        "//foundation/multimedia/media_library/hisysevent.yaml"
+      ],
       "deps": {
         "components": [
           "device_manager",

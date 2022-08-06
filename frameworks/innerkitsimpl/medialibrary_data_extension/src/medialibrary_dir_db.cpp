@@ -14,8 +14,8 @@
  */
 
 #include "medialibrary_dir_db.h"
-#include "medialibrary_errno.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

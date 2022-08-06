@@ -45,9 +45,9 @@ void MediaLibraryDevice::Start()
     MEDIA_DEBUG_LOG("MediaLibraryDevice::start");
     bundleName_ = BUNDLE_NAME;
 
-    if (mediaLibraryDeviceHandler_ == nullptr) {
+    if (deviceHandler_ == nullptr) {
         auto runner = AppExecFwk::EventRunner::Create("MediaLibraryDevice");
-        mediaLibraryDeviceHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
+        deviceHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
     }
     devsInfoInter_ = make_shared<DevicesInfoInteract>();
     if (devsInfoInter_ != nullptr) {
@@ -210,7 +210,7 @@ void MediaLibraryDevice::OnDeviceOffline(const OHOS::DistributedHardware::DmDevi
 {
     MEDIA_INFO_LOG("OnDeviceOffline networkId = %{private}s", deviceInfo.networkId);
 
-    if (mediaLibraryDeviceHandler_ == nullptr) {
+    if (deviceHandler_ == nullptr) {
         MEDIA_ERR_LOG("OnDeviceOffline mediaLibraryDeviceHandler null");
         return;
     }
@@ -229,7 +229,7 @@ void MediaLibraryDevice::OnDeviceOffline(const OHOS::DistributedHardware::DmDevi
         // 设备变更通知
         NotifyDeviceChange();
     };
-    if (!mediaLibraryDeviceHandler_->PostTask(nodeOffline)) {
+    if (!deviceHandler_->PostTask(nodeOffline)) {
         MEDIA_ERR_LOG("OnDeviceOffline handler postTask failed");
     }
 }
@@ -242,7 +242,7 @@ void MediaLibraryDevice::OnDeviceChanged(const OHOS::DistributedHardware::DmDevi
 void MediaLibraryDevice::OnDeviceReady(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
     MEDIA_INFO_LOG("OnDeviceReady network id %{private}s", deviceInfo.networkId);
-    if (mediaLibraryDeviceHandler_ == nullptr) {
+    if (deviceHandler_ == nullptr) {
         MEDIA_ERR_LOG("mediaLibraryDeviceHandler null");
         return;
     }
@@ -251,7 +251,7 @@ void MediaLibraryDevice::OnDeviceReady(const OHOS::DistributedHardware::DmDevice
         DevOnlineProcess(deviceInfo);
         NotifyDeviceChange();
     };
-    if (!mediaLibraryDeviceHandler_->PostTask(nodeOnline)) {
+    if (!deviceHandler_->PostTask(nodeOnline)) {
         MEDIA_ERR_LOG("handler postTask failed");
     }
 }
