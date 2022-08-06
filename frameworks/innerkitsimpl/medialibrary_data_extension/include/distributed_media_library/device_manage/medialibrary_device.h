@@ -81,7 +81,7 @@ private:
     static constexpr int RANDOM_NUM = 999;
 
     static std::shared_ptr<MediaLibraryDevice> mlDMInstance_;
-    std::shared_ptr<AppExecFwk::EventHandler> mediaLibraryDeviceHandler_;
+    std::shared_ptr<AppExecFwk::EventHandler> deviceHandler_;
     std::mutex devMtx_;
     std::unordered_map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
     std::map<std::string, std::set<int>> excludeMap_;

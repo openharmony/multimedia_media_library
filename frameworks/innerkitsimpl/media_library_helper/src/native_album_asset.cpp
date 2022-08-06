@@ -17,8 +17,8 @@
 #include "native_album_asset.h"
 
 #include "media_file_utils.h"
-#include "medialibrary_type_const.h"
 #include "media_log.h"
+#include "medialibrary_type_const.h"
 
 using namespace std;
 

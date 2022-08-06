@@ -18,16 +18,15 @@
 #include "media_asset.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_data_manager_utils.h"
+#include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_smartalbum_map_db.h"
 #include "result_set_utils.h"
 #include "uri_helper.h"
-
-#include "medialibrary_dir_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
