@@ -20,9 +20,9 @@
 #include <unistd.h>
 
 #include "directory_ex.h"
-#include "medialibrary_db_const.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
 

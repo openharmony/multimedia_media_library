@@ -15,9 +15,9 @@
 #define MLOG_TAG "SmartAlbum"
 
 #include "medialibrary_smartalbum_operations.h"
-#include "medialibrary_smartalbum_map_db.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_smartalbum_map_db.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
