@@ -16,9 +16,9 @@
 
 #include "media_scanner_napi.h"
 #include "media_library_napi.h"
-#include "medialibrary_napi_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_napi_log.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;

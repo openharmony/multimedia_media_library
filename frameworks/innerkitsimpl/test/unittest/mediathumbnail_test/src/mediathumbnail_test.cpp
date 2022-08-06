@@ -22,8 +22,8 @@
 #include "hilog/log.h"
 #include "iservice_registry.h"
 #include "mediathumbnail_test_cb.h"
-#include "medialibrary_db_const.h"
 #include "medialibrary_data_ability.h"
+#include "medialibrary_db_const.h"
 #include "media_log.h"
 
 using namespace std;
