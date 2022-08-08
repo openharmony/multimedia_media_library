@@ -70,9 +70,8 @@ int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
     }
 
     int32_t intTempMeta = 0;
-    ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_ORIENTATION, propertyStr);
+    ret = imageSource->GetImagePropertyInt(0, MEDIA_DATA_IMAGE_ORIENTATION, intTempMeta);
     if (ret == ERR_SUCCESS) {
-        intTempMeta = stringToNum<int32_t>(propertyStr);
         fileMetadata.SetOrientation(intTempMeta);
     }
 
