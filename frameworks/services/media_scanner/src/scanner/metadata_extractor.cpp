@@ -65,7 +65,7 @@ int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
     int64_t int64TempMeta = 0;
     ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL, propertyStr);
     if (ret == ERR_SUCCESS) {
-        int64TempMeta = stringToNum<int64_t>(propertyStr);
+        int64TempMeta = convertTimeStr2TimeStamp(propertyStr);
         fileMetadata.SetDateTaken(int64TempMeta);
     }
 
