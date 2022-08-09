@@ -121,7 +121,7 @@ ohos_static_library("media_thumbnail_helper") {
   include_dirs = [
     "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
-    "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata/include/",
+    "//foundation/distributeddatamgr/kv_store/interfaces/innerkits/distributeddata/include/",
     "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "//commonlibrary/c_utils/base/include",
@@ -129,7 +129,7 @@ ohos_static_library("media_thumbnail_helper") {
   ]
   deps = [
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
+    "//foundation/distributeddatamgr/kv_store/interfaces/innerkits/distributeddata:distributeddata_inner",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
   ]
 
