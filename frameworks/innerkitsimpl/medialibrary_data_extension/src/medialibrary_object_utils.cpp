@@ -470,8 +470,10 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
 
     FileAsset fileAsset;
     errCode = fileAsset.ModifyAsset(srcFilePath, dstFilePath);
-    if (errCode == E_MODIFY_DATA_FAIL) {
-        MEDIA_ERR_LOG("Failed to modify the file in the device");
+    if (errCode != E_SUCCESS) {
+        if (errCode != E_FILE_EXIST) {
+            MEDIA_ERR_LOG("Failed to modify the file in the device, errCode = %{public}d", errCode);
+        }
         return errCode;
     }
     string dstFileName = MediaLibraryDataManagerUtils::GetFileName(dstFilePath);
