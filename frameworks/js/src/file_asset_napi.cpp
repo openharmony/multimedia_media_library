@@ -1774,45 +1774,10 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void MakeIsFavorite(shared_ptr<DataShare::DataShareResultSet> resultSet, FileAssetAsyncContext* context)
-{
-    if (resultSet != nullptr) {
-        // Create FetchResult object using the contents of resultSet
-        unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
-        if (fetchFileResult->GetCount() != 0) {
-            unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
-            if (fileAsset == nullptr) {
-                context->error = ERR_INVALID_OUTPUT;
-                NAPI_ERR_LOG("MakeIsFavorite fileAsset is nullptr");
-                return;
-            }
-            context->isFavorite = fileAsset->IsFavorite();
-        } else {
-            NAPI_ERR_LOG("have no fileAssets");
-            context->error = ERR_INVALID_OUTPUT;
-        }
-    } else {
-        NAPI_ERR_LOG("helper == nullptr");
-        context->error = ERR_INVALID_OUTPUT;
-    }
-}
-
 static void JSIsFavoriteExecute(FileAssetAsyncContext* context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    vector<string> columns, selectionArgs;
-    string trashPrefix = MEDIA_DATA_DB_ID + " = ?";
-    selectionArgs.insert(selectionArgs.begin(), to_string(context->objectInfo->GetFileId()));
-    DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(trashPrefix);
-    predicates.SetWhereArgs(selectionArgs);
-    string queryUri = MEDIALIBRARY_DATA_URI;
-    Uri uri(queryUri);
-    shared_ptr<DataShare::DataShareResultSet> resultSet;
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        resultSet = context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
-        MakeIsFavorite(resultSet, context);
-    }
+    context->isFavorite = context->objectInfo->IsFavorite();
     return;
 }
 
@@ -1894,6 +1859,9 @@ static void JSFavouriteExecute(FileAssetAsyncContext* context)
         changedRows =
             context->objectInfo->sDataShareHelper_->Insert(RemoveAsseturi, valuesBucket);
         context->changedRows = changedRows;
+    }
+    if (changedRows >= 0) {
+        context->objectInfo->SetFavorite(context->isFavorite);
     }
     context->SaveError(changedRows);
 }
@@ -2041,6 +2009,9 @@ static void JSTrashExecute(FileAssetAsyncContext* context)
             context->objectInfo->sDataShareHelper_->Insert(RemoveAsseturi, valuesBucket);
         context->changedRows = changedRows;
     }
+    if (changedRows >= 0) {
+        context->objectInfo->SetTrash(context->isTrash);
+    }
     context->SaveError(changedRows);
 }
 
@@ -2141,56 +2112,13 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void MakeIsTrash(shared_ptr<DataShare::DataShareResultSet> resultSet, FileAssetAsyncContext* context)
-{
-    if (resultSet != nullptr) {
-        // Create FetchResult object using the contents of resultSet
-        unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
-        if (fetchFileResult == nullptr) {
-            context->error = ERR_INVALID_OUTPUT;
-            NAPI_ERR_LOG("fetchFileResult == nullptr");
-        }
-        if (fetchFileResult->GetCount() != 0) {
-            unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
-            if (fileAsset == nullptr) {
-                context->error = ERR_INVALID_OUTPUT;
-                NAPI_ERR_LOG("fileAsset == nullptr");
-                return;
-            }
-            if (fileAsset->GetIsTrash() == 0) {
-                context->isTrash = false;
-            } else {
-                context->isTrash = true;
-            }
-        } else {
-            NAPI_ERR_LOG("have no fileAssets");
-            context->error = ERR_INVALID_OUTPUT;
-        }
-    } else {
-        NAPI_ERR_LOG("helper == nullptr");
-        context->error = ERR_INVALID_OUTPUT;
-    }
-}
-
 static void JSIsTrashExecute(FileAssetAsyncContext* context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSIsTrashExecute");
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    vector<string> columns, selectionArgs;
-    string trashPrefix = MEDIA_DATA_DB_ID + " = ?";
-    selectionArgs.insert(selectionArgs.begin(), to_string(context->objectInfo->GetFileId()));
-    DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(trashPrefix);
-    predicates.SetWhereArgs(selectionArgs);
-    string queryUri = MEDIALIBRARY_DATA_URI;
-    Uri uri(queryUri);
-    shared_ptr<DataShare::DataShareResultSet> resultSet;
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        resultSet = context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
-        MakeIsTrash(resultSet, context);
-    }
+    context->isTrash = context->objectInfo->IsTrash();
     return;
 }
 
