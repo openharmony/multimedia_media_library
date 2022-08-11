@@ -53,7 +53,7 @@ ohos_unittest("mediascanner_unittest") {
     "ability_base:zuri",
     "ability_runtime:abilitykit_native",
     "c_utils:utils",
-    "data_share:datashare_abilitykit",
+    "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
