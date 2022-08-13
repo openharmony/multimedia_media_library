@@ -32,6 +32,7 @@ struct ThumbRdbOpt {
     std::shared_ptr<NativeRdb::RdbStore> store;
     std::string table;
     std::string row;
+    std::string uri;
 };
 
 struct ThumbnailData {

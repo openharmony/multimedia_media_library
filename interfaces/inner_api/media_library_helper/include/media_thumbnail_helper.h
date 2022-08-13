@@ -35,12 +35,10 @@ public:
     std::unique_ptr<PixelMap> GetThumbnail(std::string key, Size &size, const std::string &uri = "");
     bool isThumbnailFromLcd(Size &size);
     std::string GetDeviceIdByUri(const std::string &uri);
-protected:
-    std::shared_ptr<DistributedKv::SingleKvStore> singleKvStorePtr_ = nullptr;
-    void InitKvStore();
-
     // utils
     bool ResizeImage(std::vector<uint8_t> &data, Size &size, std::unique_ptr<PixelMap> &pixelMap);
+protected:
+    std::shared_ptr<DistributedKv::SingleKvStore> singleKvStorePtr_ = nullptr;
 
     // KV Store
     bool GetImage(std::string &key, std::vector<uint8_t> &image);
