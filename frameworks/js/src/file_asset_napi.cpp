@@ -1330,22 +1330,12 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     return result;
 }
 
-static string GetStringInfo(shared_ptr<DataShare::DataShareResultSet> resultSet, int pos)
-{
-    string res;
-    int errorCode = resultSet->GetString(pos, res);
-    if (errorCode != 0) {
-        NAPI_ERR_LOG("Failed to get string column %{public}d %{public}d", pos, errorCode);
-    }
-    return res;
-}
-
 static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper> &abilityHelper,
     shared_ptr<MediaThumbnailHelper> &thumbnailHelper, int32_t &fileId,
     std::string &uri, int32_t &width, int32_t &height)
 {
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "QueryThumbnail");
-    if ((abilityHelper == nullptr) ||(thumbnailHelper == nullptr)) {
+    if ((abilityHelper == nullptr) || (thumbnailHelper == nullptr)) {
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
@@ -1373,33 +1363,17 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
     }
 
     resultSet->GoToFirstRow();
-    string id = GetStringInfo(resultSet, PARAM0);
-    string thumbnailKey;
-    if (!thumbnailHelper->isThumbnailFromLcd(size)) {
-        thumbnailKey = GetStringInfo(resultSet, PARAM2);
-    } else {
-        thumbnailKey = GetStringInfo(resultSet, PARAM3);
-    }
+    vector<uint8_t> image;
+    resultSet->GetBlob(PARAM1, image);
+    resultSet->Close();
 
-    if (to_string(fileId) != id) {
-        NAPI_ERR_LOG("Query thumbnail id error as %{public}s", id.c_str());
-        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-        return nullptr;
-    }
-
-    if (thumbnailKey.empty()) {
-        NAPI_ERR_LOG("thumbnailKey is empty");
-        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-        return nullptr;
-    }
-
-    NAPI_DEBUG_LOG("Query thumbnail id %{public}s with key %{public}s", id.c_str(), thumbnailKey.c_str());
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "thumbnailHelper->GetThumbnail");
-    auto ret = thumbnailHelper->GetThumbnail(thumbnailKey, size, uri);
+    unique_ptr<PixelMap> pixelMap;
+    thumbnailHelper->ResizeImage(image, size, pixelMap);
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-    return ret;
+    return pixelMap;
 }
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)

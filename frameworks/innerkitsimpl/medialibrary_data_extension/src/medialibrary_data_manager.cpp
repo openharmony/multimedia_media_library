@@ -180,7 +180,9 @@ void MediaLibraryDataManager::InitialiseKvStore()
         .createIfMissing = true,
         .encrypt = false,
         .autoSync = false,
-        .kvStoreType = KvStoreType::SINGLE_VERSION
+        .area = DistributedKv::Area::EL2,
+        .kvStoreType = KvStoreType::SINGLE_VERSION,
+        .baseDir = context_->GetDatabaseDir(),
     };
 
     Status status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_STOREID, kvStorePtr_);
@@ -414,7 +416,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
 }
 
-bool ParseThumbnailInfo(string &uriString, vector<int> &space)
+bool ParseThumbnailInfo(string &uriString, Size &size)
 {
     string::size_type pos = uriString.find_last_of('?');
     string queryKeys;
@@ -462,20 +464,18 @@ bool ParseThumbnailInfo(string &uriString, vector<int> &space)
         MEDIA_ERR_LOG("ParseThumbnailInfo | Error args");
         return false;
     }
-    space.push_back(width);
-    space.push_back(height);
+    size.width = width;
+    size.height = height;
     return true;
 }
 
 shared_ptr<ResultSetBridge> GenThumbnail(shared_ptr<RdbStore> rdb,
     shared_ptr<MediaLibraryThumbnail> thumbnail,
-    const string &rowId, vector<int> space, string &networkId)
+    const string &uri, Size &size, string &networkId)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::GenThumbnail");
 
     shared_ptr<ResultSetBridge> queryResultSet;
-    int width = space[0];
-    int height = space[1];
     string filesTableName = MEDIALIBRARY_TABLE;
 
     if (!networkId.empty()) {
@@ -484,14 +484,12 @@ shared_ptr<ResultSetBridge> GenThumbnail(shared_ptr<RdbStore> rdb,
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     }
 
+    string rowId = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
     ThumbRdbOpt opts = {
         .store = rdb,
         .table = filesTableName,
-        .row = rowId
-    };
-    Size size = {
-        .width = width,
-        .height = height
+        .row = rowId,
+        .uri = uri
     };
 
     MEDIA_INFO_LOG("Get thumbnail [ %{private}s ], width %{private}d", opts.row.c_str(), size.width);
@@ -545,14 +543,13 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     NeedQuerySync(networkId, oprnObject);
 
     shared_ptr<ResultSetBridge> queryResultSet;
-    vector<int> space;
-    bool thumbnailQuery = ParseThumbnailInfo(uriString, space);
+    Size size;
+    bool thumbnailQuery = ParseThumbnailInfo(uriString, size);
     MEDIA_DEBUG_LOG("uriString = %{private}s, thumbnailQuery %{private}d, Rdb Verison %{private}d",
         uriString.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     if (thumbnailQuery) {
         StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GenThumbnail");
-        string rowId = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
-        queryResultSet = GenThumbnail(rdbStore_, mediaThumbnail_, rowId, space, networkId);
+        queryResultSet = GenThumbnail(rdbStore_, mediaThumbnail_, uriString, size, networkId);
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     } else {
         auto absResultSet = QueryRdb(uri, columns, predicates);
