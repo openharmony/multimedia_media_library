@@ -36,6 +36,7 @@ struct ThumbRdbOpt {
     std::shared_ptr<NativeRdb::RdbStore> store;
     std::string table;
     std::string row;
+    std::string uri;
 };
 
 struct ThumbnailData {
@@ -72,6 +73,7 @@ public:
     EXPORT std::unique_ptr<PixelMap> GetThumbnailByRdb(ThumbRdbOpt &opts, Size &size, const std::string &uri);
 
 private:
+    void InitKvStore();
     // utils
     bool LoadImageFile(std::string &path, std::shared_ptr<PixelMap> &pixelMap);
     bool LoadVideoFile(std::string &path, std::shared_ptr<PixelMap> &pixelMap);
