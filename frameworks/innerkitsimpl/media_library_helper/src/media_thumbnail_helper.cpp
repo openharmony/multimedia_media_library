@@ -33,47 +33,8 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-static const string THUMBNAIL_APP_ID = "com.ohos.medialibrary.medialibrarydata";
-static const string THUMBNAIL_STORE_ID = "MediaThumbnailHelperStoreId1";
-
-void MediaThumbnailHelper::InitKvStore()
-{
-    MEDIA_INFO_LOG("MediaThumbnailHelper::InitMediaThumbnaiKvStore IN");
-    DistributedKvDataManager manager;
-    Options options = {
-        .createIfMissing = true,
-        .encrypt = true,
-        .persistent = true,
-        .backup = true,
-        .autoSync = true,
-        .securityLevel = SecurityLevel::NO_LABEL,
-        .syncPolicy = SyncPolicy::HIGH,
-        .kvStoreType = KvStoreType::SINGLE_VERSION
-    };
-
-    AppId appId = { THUMBNAIL_APP_ID };
-    StoreId storeId = { THUMBNAIL_STORE_ID };
-#ifdef OLD_KV_API
-    manager.GetSingleKvStore(options, appId, storeId, [&](Status status, unique_ptr<SingleKvStore> store) {
-        if (status != Status::SUCCESS) {
-            MEDIA_ERR_LOG("KvStore get failed! %{public}d", status);
-        } else {
-            singleKvStorePtr_ = std::move(store);
-        }
-    });
-#else
-    Status status = manager.GetSingleKvStore(options, appId, storeId, singleKvStorePtr_);
-    if (status != Status::SUCCESS) {
-        MEDIA_ERR_LOG("KvStore get failed! %{public}d", status);
-    }
-#endif
-    MEDIA_INFO_LOG("MediaThumbnailHelper::InitMediaThumbnaiKvStore OUT");
-}
-
 MediaThumbnailHelper::MediaThumbnailHelper()
-{
-    InitKvStore();
-}
+{}
 
 bool MediaThumbnailHelper::isThumbnailFromLcd(Size &size)
 {

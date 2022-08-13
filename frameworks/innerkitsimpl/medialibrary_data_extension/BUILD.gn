@@ -136,6 +136,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_smartalbum_operations.cpp",
     "src/medialibrary_subscriber.cpp",
     "src/medialibrary_thumbnail.cpp",
+    "src/thumbnail_datashare_bridge.cpp",
     "src/uri_helper.cpp",
   ]
   sources += media_fileext_source

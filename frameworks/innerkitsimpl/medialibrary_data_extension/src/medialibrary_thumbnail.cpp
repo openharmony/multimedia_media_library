@@ -18,8 +18,10 @@
 
 #include <fcntl.h>
 
+#include "application_context.h"
 #include "hitrace_meter.h"
 #include "distributed_kv_data_manager.h"
+#include "thumbnail_datashare_bridge.h"
 #include "image_packer.h"
 #include "media_log.h"
 #include "medialibrary_common_utils.h"
@@ -66,6 +68,40 @@ void ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData)
 MediaLibraryThumbnail::MediaLibraryThumbnail()
 {
     InitKvStore();
+}
+
+static const string THUMBNAIL_APP_ID = "com.ohos.medialibrary.medialibrarydata";
+static const string THUMBNAIL_STORE_ID = "MediaThumbnailHelperStoreId1";
+
+void MediaLibraryThumbnail::InitKvStore()
+{
+    MEDIA_INFO_LOG("MediaThumbnailHelper::InitMediaThumbnaiKvStore IN");
+    auto context = AbilityRuntime::Context::GetApplicationContext();
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is null");
+        return;
+    }
+    DistributedKvDataManager manager;
+    Options options = {
+        .createIfMissing = true,
+        .encrypt = true,
+        .persistent = true,
+        .backup = true,
+        .autoSync = true,
+        .securityLevel = SecurityLevel::NO_LABEL,
+        .area = DistributedKv::Area::EL2,
+        .syncPolicy = SyncPolicy::HIGH,
+        .kvStoreType = KvStoreType::SINGLE_VERSION,
+        .baseDir = context->GetDatabaseDir()
+    };
+
+    AppId appId = { THUMBNAIL_APP_ID };
+    StoreId storeId = { THUMBNAIL_STORE_ID };
+
+    Status status = manager.GetSingleKvStore(options, appId, storeId, singleKvStorePtr_);
+    if (status != Status::SUCCESS) {
+        MEDIA_ERR_LOG("KvStore get failed! %{public}d", status);
+    }
 }
 
 void ParseStringResult(shared_ptr<AbsSharedResultSet> resultSet,
@@ -230,6 +266,14 @@ bool MediaLibraryThumbnail::CreateLcd(ThumbRdbOpt &opts, string &key)
     return true;
 }
 
+shared_ptr<ResultSetBridge> GetKvResultSet(shared_ptr<SingleKvStore> &kvStore, const string &key)
+{
+    if (key.empty() || (kvStore == nullptr)) {
+        return nullptr;
+    }
+    return shared_ptr<ResultSetBridge>(ThumbnailDataShareBridge::Create(kvStore, key));
+}
+
 shared_ptr<ResultSetBridge> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &opts, Size &size)
 {
     MEDIA_INFO_LOG("MediaLibraryThumbnail::GetThumbnailKey IN");
@@ -245,30 +289,28 @@ shared_ptr<ResultSetBridge> MediaLibraryThumbnail::GetThumbnailKey(ThumbRdbOpt &
         return queryResultSet;
     }
 
-    // Distribute data
-    if (MEDIALIBRARY_TABLE.compare(opts.table) != 0) {
-        return queryResultSet;
-    }
+    queryResultSet.reset();
+    bool isRemote = MEDIALIBRARY_TABLE.compare(opts.table) != 0;
 
     bool isFromLcd = isThumbnailFromLcd(size);
-    if (isFromLcd) {
-        if (thumbnailData.lcdKey.empty()) {
-            queryResultSet.reset();
-            CreateLcd(opts, thumbnailData.lcdKey);
+    if (!isRemote) {
+        if (isFromLcd) {
+            if (thumbnailData.lcdKey.empty()) {
+                CreateLcd(opts, thumbnailData.lcdKey);
+            }
         } else {
-            return queryResultSet;
-        }
-    } else {
-        if (thumbnailData.thumbnailKey.empty()) {
-            queryResultSet.reset();
-            CreateThumbnail(opts, thumbnailData.thumbnailKey);
-        } else {
-            return queryResultSet;
+            if (thumbnailData.thumbnailKey.empty()) {
+                CreateThumbnail(opts, thumbnailData.thumbnailKey);
+            }
         }
     }
+    auto key = isFromLcd ? thumbnailData.lcdKey : thumbnailData.thumbnailKey;
+    // Distribute data
+    if (isRemote) {
+        SyncKvstore(key, opts.uri);
+    }
 
-    queryResultSet = QueryThumbnailSet(opts);
-    return queryResultSet;
+    return GetKvResultSet(singleKvStorePtr_, key);
 }
 
 unique_ptr<PixelMap> MediaLibraryThumbnail::GetThumbnailByRdb(ThumbRdbOpt &opts,
@@ -773,7 +815,7 @@ bool MediaLibraryThumbnail::CreateLcdData(ThumbnailData &data)
 
     Size size = DEFAULT_LCD_SIZE;
     double widthF = data.source->GetWidth();
-    widthF = widthF*size.height/data.source->GetHeight();
+    widthF = widthF * size.height / data.source->GetHeight();
     size.width = static_cast<int32_t>(widthF);
 
     bool ret = CompressImage(data.source, size, data.lcd);
