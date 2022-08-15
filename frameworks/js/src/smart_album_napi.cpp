@@ -449,7 +449,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
     int32_t changedRows;
     NAPI_DEBUG_LOG("CommitModifyNative = %{pubilc}s", context->objectInfo->GetSmartAlbumName().c_str());
     if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName())) {
-        valuesBucket.PutString(SMARTALBUM_DB_NAME, context->objectInfo->GetSmartAlbumName());
+        valuesBucket.Put(SMARTALBUM_DB_NAME, context->objectInfo->GetSmartAlbumName());
         predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectInfo->GetSmartAlbumId()));
         Uri commitModifyUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMOPRN +
                             "/" + MEDIA_SMARTALBUMOPRN_MODIFYALBUM);
@@ -466,8 +466,8 @@ static void JSAddAssetExecute(SmartAlbumNapiAsyncContext *context)
         MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
     for (int32_t id : context->assetIds) {
         DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
-        valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
+        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
+        valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
         context->changedRows = context->objectInfo->GetMediaDataHelper()->Insert(addAssetUri, valuesBucket);
     }
 }
@@ -479,8 +479,8 @@ static void JSRemoveAssetExecute(SmartAlbumNapiAsyncContext *context)
         MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
     for (int32_t id : context->assetIds) {
         DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
-        valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
+        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
+        valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
         context->changedRows = context->objectInfo->GetMediaDataHelper()->Insert(removeAssetUri, context->valuesBucket);
     }
 }
