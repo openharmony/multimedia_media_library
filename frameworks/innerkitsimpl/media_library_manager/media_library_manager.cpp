@@ -147,8 +147,8 @@ string MediaLibraryManager::CreateAsset(const FileAsset &fileAssetObj)
 {
     string createUri;
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, fileAssetObj.GetPath());
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAssetObj.GetMediaType());
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, fileAssetObj.GetPath());
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAssetObj.GetMediaType());
 
     if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
@@ -180,8 +180,8 @@ int32_t MediaLibraryManager::ModifyAsset(const string &uri, const FileAsset &fil
 {
     int32_t retVal = E_FAIL;
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
-    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, fileAssetObj.GetPath());
+    valuesBucket.Put(MEDIA_DATA_DB_URI, uri);
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, fileAssetObj.GetPath());
 
     if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
@@ -226,8 +226,8 @@ int32_t MediaLibraryManager::OpenAsset(const string &uri, string &mode)
 {
     int32_t retVal = E_FAIL;
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
-    valuesBucket.PutString(MEDIA_FILEMODE, mode);
+    valuesBucket.Put(MEDIA_DATA_DB_URI, uri);
+    valuesBucket.Put(MEDIA_FILEMODE, mode);
 
     if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
@@ -246,7 +246,7 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
 {
     int32_t retVal = E_FAIL;
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
+    valuesBucket.Put(MEDIA_DATA_DB_URI, uri);
 
     if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
@@ -268,7 +268,7 @@ int32_t MediaLibraryManager::CreateAlbum(const AlbumAsset &albumNapiObj)
 {
     int32_t albumId = E_FAIL;
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, albumNapiObj.GetAlbumPath());
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, albumNapiObj.GetAlbumPath());
 
     if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
@@ -287,8 +287,8 @@ int32_t MediaLibraryManager::ModifyAlbum(const int32_t albumId, const AlbumAsset
 {
     int32_t retVal = E_FAIL;
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutInt(MEDIA_DATA_DB_ID, albumId);
-    valuesBucket.PutString(MEDIA_DATA_DB_ALBUM_NAME, albumNapiObj.GetAlbumName());
+    valuesBucket.Put(MEDIA_DATA_DB_ID, albumId);
+    valuesBucket.Put(MEDIA_DATA_DB_ALBUM_NAME, albumNapiObj.GetAlbumName());
 
     if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;

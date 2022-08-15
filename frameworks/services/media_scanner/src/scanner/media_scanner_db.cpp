@@ -45,33 +45,33 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri = GetMediaTypeUri(mediaType);
 
-    values.PutString(MEDIA_DATA_DB_URI, mediaTypeUri);
-    values.PutString(MEDIA_DATA_DB_FILE_PATH, metadata.GetFilePath());
-    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, metadata.GetRelativePath());
-    values.PutString(MEDIA_DATA_DB_MIME_TYPE, metadata.GetFileMimeType());
-    values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    values.PutString(MEDIA_DATA_DB_NAME, metadata.GetFileName());
+    values.Put(MEDIA_DATA_DB_URI, mediaTypeUri);
+    values.Put(MEDIA_DATA_DB_FILE_PATH, metadata.GetFilePath());
+    values.Put(MEDIA_DATA_DB_RELATIVE_PATH, metadata.GetRelativePath());
+    values.Put(MEDIA_DATA_DB_MIME_TYPE, metadata.GetFileMimeType());
+    values.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    values.Put(MEDIA_DATA_DB_NAME, metadata.GetFileName());
 
-    values.PutLong(MEDIA_DATA_DB_SIZE, metadata.GetFileSize());
-    values.PutLong(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
-    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
-    values.PutString(MEDIA_DATA_DB_TITLE, ScannerUtils::GetFileTitle(metadata.GetFileName()));
-    values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
-    values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
+    values.Put(MEDIA_DATA_DB_SIZE, metadata.GetFileSize());
+    values.Put(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
+    values.Put(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
+    values.Put(MEDIA_DATA_DB_TITLE, ScannerUtils::GetFileTitle(metadata.GetFileName()));
+    values.Put(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
+    values.Put(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
 
-    values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
-    values.PutInt(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
-    values.PutInt(MEDIA_DATA_DB_DURATION, metadata.GetFileDuration());
-    values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
+    values.Put(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
+    values.Put(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
+    values.Put(MEDIA_DATA_DB_DURATION, metadata.GetFileDuration());
+    values.Put(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
 
-    values.PutString(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
-    values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
-    values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
+    values.Put(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
+    values.Put(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
+    values.Put(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
 
-    values.PutLong(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
-    values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
-    values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
-    values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
+    values.Put(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
+    values.Put(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
+    values.Put(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
+    values.Put(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
 
     Uri abilityUri(MEDIALIBRARY_DATA_URI);
     rowNum = MediaLibraryDataManager::GetInstance()->Insert(abilityUri, values);
@@ -125,34 +125,34 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri = GetMediaTypeUri(mediaType);
 
-    values.PutString(MEDIA_DATA_DB_URI, mediaTypeUri);
-    values.PutString(MEDIA_DATA_DB_FILE_PATH, metadata.GetFilePath());
-    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, metadata.GetRelativePath());
+    values.Put(MEDIA_DATA_DB_URI, mediaTypeUri);
+    values.Put(MEDIA_DATA_DB_FILE_PATH, metadata.GetFilePath());
+    values.Put(MEDIA_DATA_DB_RELATIVE_PATH, metadata.GetRelativePath());
 
-    values.PutString(MEDIA_DATA_DB_MIME_TYPE, metadata.GetFileMimeType());
-    values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    values.PutString(MEDIA_DATA_DB_NAME, metadata.GetFileName());
+    values.Put(MEDIA_DATA_DB_MIME_TYPE, metadata.GetFileMimeType());
+    values.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    values.Put(MEDIA_DATA_DB_NAME, metadata.GetFileName());
 
-    values.PutLong(MEDIA_DATA_DB_SIZE, metadata.GetFileSize());
-    values.PutLong(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
-    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
+    values.Put(MEDIA_DATA_DB_SIZE, metadata.GetFileSize());
+    values.Put(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
+    values.Put(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
 
-    values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
-    values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
+    values.Put(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
+    values.Put(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
 
-    values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
-    values.PutInt(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
-    values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
-    values.PutInt(MEDIA_DATA_DB_DURATION, metadata.GetFileDuration());
+    values.Put(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
+    values.Put(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
+    values.Put(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
+    values.Put(MEDIA_DATA_DB_DURATION, metadata.GetFileDuration());
 
-    values.PutString(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
-    values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
-    values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
+    values.Put(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
+    values.Put(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
+    values.Put(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
 
-    values.PutLong(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
-    values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
-    values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
-    values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
+    values.Put(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
+    values.Put(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
+    values.Put(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
+    values.Put(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     updateCount = MediaLibraryDataManager::GetInstance()->Update(uri, values, predicates);
