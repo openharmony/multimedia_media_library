@@ -1850,7 +1850,7 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
         case ALBUM_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.albumDataObserver_, "Failed to obtain album data observer");
             mediaType = MEDIA_TYPE_ALBUM;
-            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.albumDataObserver_);
+            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_ALBUM_URI), listObj.albumDataObserver_);
             listObj.albumDataObserver_ = nullptr;
             break;
         default:
