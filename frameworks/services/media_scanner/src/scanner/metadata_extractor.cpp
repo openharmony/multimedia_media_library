@@ -67,6 +67,9 @@ int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
     if (ret == ERR_SUCCESS) {
         int64TempMeta = convertTimeStr2TimeStamp(propertyStr);
         fileMetadata.SetDateTaken(int64TempMeta);
+    } else {
+        // use modified time as date taken time when date taken not set
+        fileMetadata.SetDateTaken(fileMetadata.GetFileDateModified());
     }
 
     int32_t intTempMeta = 0;
@@ -99,29 +102,46 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     int64_t int64TempMeta;
 
     strTemp = metadataMap.at(AV_KEY_ALBUM);
-    fileMetadata.SetAlbum(strTemp);
+    if (strTemp != "") {
+        fileMetadata.SetAlbum(strTemp);
+    }
 
     strTemp = metadataMap.at(AV_KEY_ARTIST);
-    fileMetadata.SetFileArtist(strTemp);
+    if (strTemp != "") {
+        fileMetadata.SetFileArtist(strTemp);
+    }
 
     strTemp = metadataMap.at(AV_KEY_DURATION);
-    intTempMeta = stringToNum<int32_t>(strTemp);
-    fileMetadata.SetFileDuration(intTempMeta);
+    if (strTemp != "") {
+        intTempMeta = stringToNum<int32_t>(strTemp);
+        fileMetadata.SetFileDuration(intTempMeta);
+    }
 
     strTemp = metadataMap.at(AV_KEY_VIDEO_HEIGHT);
-    intTempMeta = stringToNum<int32_t>(strTemp);
-    fileMetadata.SetFileHeight(intTempMeta);
+    if (strTemp != "") {
+        intTempMeta = stringToNum<int32_t>(strTemp);
+        fileMetadata.SetFileHeight(intTempMeta);
+    }
 
     strTemp = metadataMap.at(AV_KEY_VIDEO_WIDTH);
-    intTempMeta = stringToNum<int32_t>(strTemp);
-    fileMetadata.SetFileWidth(intTempMeta);
+    if (strTemp != "") {
+        intTempMeta = stringToNum<int32_t>(strTemp);
+        fileMetadata.SetFileWidth(intTempMeta);
+    }
 
     strTemp = metadataMap.at(AV_KEY_MIME_TYPE);
-    fileMetadata.SetFileMimeType(strTemp);
+    if (strTemp != "") {
+        fileMetadata.SetFileMimeType(strTemp);
+    }
 
     strTemp = metadataMap.at(AV_KEY_DATE_TIME);
-    int64TempMeta = convertTimeStr2TimeStamp(strTemp);
-    fileMetadata.SetDateTaken(int64TempMeta);
+    if (strTemp != "") {
+        int64TempMeta = convertTimeStr2TimeStamp(strTemp);
+        fileMetadata.SetDateTaken(int64TempMeta);
+    } else {
+        // use modified time as date taken time when date taken not set
+        fileMetadata.SetDateTaken(fileMetadata.GetFileDateModified());
+    }
 
     strTemp = metadataMap.at(AV_KEY_VIDEO_ORIENTATION);
     if (strTemp == "") {
