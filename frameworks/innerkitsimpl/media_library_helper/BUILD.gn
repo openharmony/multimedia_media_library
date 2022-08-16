@@ -79,8 +79,8 @@ ohos_shared_library("media_library") {
 
   external_deps = [
     "c_utils:utils",
-    "data_share:datashare_abilitykit",
     "data_share:datashare_common",
+    "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
@@ -136,8 +136,8 @@ ohos_static_library("media_thumbnail_helper") {
   # cflags = [ "-DOLD_KV_API" ]
   external_deps = [
     "c_utils:utils",
-    "data_share:datashare_abilitykit",
     "data_share:datashare_common",
+    "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "relational_store:native_appdatafwk",
