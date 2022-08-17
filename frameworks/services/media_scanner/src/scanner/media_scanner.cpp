@@ -26,65 +26,6 @@ using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::DataShare;
 
-MediaScannerObj::MediaScannerObj()
-{
-    if (mediaScannerDb_ == nullptr) {
-        mediaScannerDb_ = MediaScannerDb::GetDatabaseInstance();
-    }
-
-    isScannerInitDone_ = false;
-    scanExector_.SetCallbackFunction(ScanQueueCB);
-}
-
-MediaScannerObj::~MediaScannerObj()
-{
-    mediaScannerDb_ = nullptr;
-}
-
-// Get Media Scanner Instance
-MediaScannerObj *MediaScannerObj::GetMediaScannerInstance()
-{
-    static MediaScannerObj scanner;
-    return &scanner;
-}
-
-void MediaScannerObj::ScanQueueCB(ScanRequest scanReq)
-{
-    int32_t errCode = ERR_SCAN_NOT_INIT;
-
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "ScanQueueCB");
-
-    MediaScannerObj *scanner = MediaScannerObj::GetMediaScannerInstance();
-    if (scanner != nullptr) {
-        if (!scanner->isScannerInitDone_) {
-            scanner->isScannerInitDone_ = true;
-        }
-
-        string fileUri("");
-        string path = scanReq.GetPath();
-        if (scanReq.GetIsDirectory()) {
-            StartTrace(HITRACE_TAG_FILEMANAGEMENT, "ScanDirInternal");
-            errCode = scanner->ScanDirInternal(const_cast<string &>(path));
-            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-        } else {
-            StartTrace(HITRACE_TAG_FILEMANAGEMENT, "ScanFileInternal");
-            errCode = scanner->ScanFileInternal(const_cast<string &>(path));
-            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-            fileUri = scanner->mediaUri_;
-        }
-
-        scanner->ExecuteScannerClientCallback(scanReq.GetRequestId(), errCode, fileUri, path);
-    }
-
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-}
-
-bool MediaScannerObj::InitScanner(void)
-{
-    MEDIA_ERR_LOG("Success to initialize scanner");
-    return false;
-}
-
 vector<string> MediaScannerObj::GetSupportedMimeTypes()
 {
     vector<string> mimeTypeList;
@@ -96,96 +37,34 @@ vector<string> MediaScannerObj::GetSupportedMimeTypes()
     return mimeTypeList;
 }
 
-int32_t MediaScannerObj::ScanFile(string &path, const sptr<IRemoteObject> &remoteCallback)
+int32_t MediaScannerObj::ScanFile()
 {
-    MEDIA_INFO_LOG("%{private}s: %{private}s", __func__, path.c_str());
-    int32_t errCode = ERR_MEM_ALLOC_FAIL;
-    bool isDir = false;
+    MEDIA_INFO_LOG("begin");
 
-    if (path.empty()) {
-        MEDIA_ERR_LOG("Scanfile: Path is empty");
-        return ERR_EMPTY_ARGS;
+    int32_t err = ScanFileInternal(path_);
+    if (err != 0) {
+        MEDIA_ERR_LOG("ScanFileInternal err %{public}d", err);
     }
 
-    if (ScannerUtils::GetRealPath(path) != ERR_SUCCESS) {
-        MEDIA_ERR_LOG("invalid path %{private}s", path.c_str());
-        unique_ptr<Metadata> metaData = mediaScannerDb_->ReadMetadata(path);
-        if (metaData != nullptr && !metaData->GetFilePath().empty()) {
-            vector<string> idList = {to_string(metaData->GetFileId())};
-            if (mediaScannerDb_->DeleteMetadata(idList)) {
-                mediaScannerDb_->NotifyDatabaseChange(metaData->GetFileMediaType());
-            }
-        }
-        return ERR_INCORRECT_PATH;
-    }
-
-    if (ScannerUtils::IsDirectory(path)) {
-        MEDIA_ERR_LOG("ScanFile: Incorrect path %{private}s", path.c_str());
-        return ERR_INCORRECT_PATH;
-    }
-
-    unique_ptr<ScanRequest> scanReq = make_unique<ScanRequest>(path);
-    if (scanReq != nullptr) {
-        scanReq->SetIsDirectory(isDir);
-
-        int32_t reqId = GetAvailableRequestId();
-        scanReq->SetRequestId(reqId);
-
-        scanExector_.ExecuteScan(move(scanReq));
-
-        // After path validation and queue_ addition is success, add the callback object to callback map
-        sptr<IMediaScannerOperationCallback> callback = iface_cast<IMediaScannerOperationCallback>(remoteCallback);
-        if (callback != nullptr) {
-            StoreCallbackObjInMap(reqId, callback);
-            errCode = ERR_SUCCESS;
-        }
-    }
-
-    return errCode;
+    return InvokeCallback(err);
 }
 
-int32_t MediaScannerObj::ScanDir(string &path, const sptr<IRemoteObject> &remoteCallback)
+int32_t MediaScannerObj::ScanDir()
 {
-    int32_t errCode = ERR_MEM_ALLOC_FAIL;
-    bool isDir = true;
+    MEDIA_INFO_LOG("begin");
 
-    MEDIA_INFO_LOG("[MediaScannerObj::ScanDir] start, path = %{public}s", path.c_str());
-    if (path.empty()) {
-        MEDIA_ERR_LOG("ScanDir: Path is empty");
-        return ERR_EMPTY_ARGS;
+    int32_t err = ScanDirInternal(path_);
+    if (err != 0) {
+        MEDIA_ERR_LOG("ScanDirInternal err %{public}d", err);
     }
 
-    // Get Absolute path
-    if (ScannerUtils::GetRealPath(path) != ERR_SUCCESS) {
-        MEDIA_ERR_LOG("ScanDir: Incorrect path or insufficient permission %{private}s", path.c_str());
-        // If the path is not available, clear the same from database too if present
-        CleanupDirectory(path);
-        return ERR_INCORRECT_PATH;
-    }
+    return InvokeCallback(err);
+}
 
-    if (!ScannerUtils::IsDirectory(path)) {
-        MEDIA_ERR_LOG("ScanDir: Path provided is not a directory %{private}s", path.c_str());
-        return ERR_INCORRECT_PATH;
-    }
-
-    std::unique_ptr<ScanRequest> scanReq = std::make_unique<ScanRequest>(path);
-    if (scanReq != nullptr) {
-        scanReq->SetIsDirectory(isDir);
-
-        int32_t reqId = GetAvailableRequestId();
-        scanReq->SetRequestId(reqId);
-
-        scanExector_.ExecuteScan(move(scanReq));
-
-        // After path validation and queue_ addition is success, add the callback object to callback map
-        sptr<IMediaScannerOperationCallback> callback = iface_cast<IMediaScannerOperationCallback>(remoteCallback);
-        if (callback != nullptr) {
-            StoreCallbackObjInMap(reqId, callback);
-            errCode = ERR_SUCCESS;
-        }
-    }
-
-    return errCode;
+int32_t MediaScannerObj::InvokeCallback(int32_t err)
+{
+    sptr<IMediaScannerOperationCallback> callback = iface_cast<IMediaScannerOperationCallback>(callback_);
+    return callback->OnScanFinishedCallback(err, uri_, path_);
 }
 
 void MediaScannerObj::CleanupDirectory(const string &path)
@@ -206,7 +85,7 @@ void MediaScannerObj::CleanupDirectory(const string &path)
     }
 
     // convert deleted id list to vector of strings
-    vector<string> deleteIdList;
+    vector<string> deleteIdList;    
     for (auto id : toBeDeletedIds) {
         deleteIdList.push_back(to_string(id));
     }
@@ -240,7 +119,7 @@ int32_t MediaScannerObj::StartBatchProcessingToDB()
             uri = mediaScannerDb_->InsertMetadata(metaData);
             scannedIds_.insert(mediaScannerDb_->GetIdFromUri(uri));
         }
-        this->mediaUri_ = uri;
+        this->uri_ = uri;
     }
     batchUpdate_.clear();
 
@@ -640,24 +519,6 @@ int32_t MediaScannerObj::ScanDirInternal(const string &path)
     albumMap_.clear();
 
     return errCode;
-}
-
-void MediaScannerObj::ExecuteScannerClientCallback(int32_t reqId, int32_t status, const string &uri, const string &path)
-{
-    auto iter = scanResultCbMap_.find(reqId);
-    if (iter != scanResultCbMap_.end()) {
-        auto activeCb = iter->second;
-        activeCb->OnScanFinishedCallback(status, uri, path);
-        scanResultCbMap_.erase(iter);
-    }
-}
-
-void MediaScannerObj::StoreCallbackObjInMap(int32_t reqId, sptr<IMediaScannerOperationCallback>& callback)
-{
-    auto itr = scanResultCbMap_.find(reqId);
-    if (itr == scanResultCbMap_.end()) {
-        scanResultCbMap_.insert(std::make_pair(reqId, callback));
-    }
 }
 
 int32_t MediaScannerObj::GetAvailableRequestId()

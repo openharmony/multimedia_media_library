@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,34 +13,34 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_SCAN_EXECUTOR_H
-#define MEDIA_SCAN_EXECUTOR_H
+#ifndef MEDIA_SCANNER_MANAGER_H
+#define MEDIA_SCANNER_MANAGER_H
 
-#include <string>
-#include <iostream>
-#include <queue>
+#include <memory>
 
 #include "media_scanner.h"
+#include "media_scan_executor.h"
 
 namespace OHOS {
 namespace Media {
-class MediaScanExecutor {
+class MediaScannerManager final {
 public:
-    MediaScanExecutor() = default;
-    virtual ~MediaScanExecutor() = default;
+    static std::shared_ptr<MediaScannerManager> GetInstance();
 
-    int32_t Commit(std::unique_ptr<MediaScannerObj> scanner);
+    virtual ~MediaScannerManager() = default;
+
+    int32_t ScanFile(std::string &path, const sptr<IRemoteObject> &callback);
+    int32_t ScanDir(std::string &path, const sptr<IRemoteObject> &callback);
 
 private:
-    void HandleScanExecution();
+    MediaScannerManager() = default;
 
-    const size_t MAX_THREAD = 1;
-    size_t activeThread_ = 0;
+    static std::shared_ptr<MediaScannerManager> instance_;
+    static std::mutex instanceMutex_;
 
-    std::queue<unique_ptr<MediaScannerObj>> queue_;
-    std::mutex queueMutex_;
+    MediaScanExecutor executor_;
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif /* MEDIA_SCAN_EXECUTOR_H */
+#endif // MEDIA_SCANNER_MANAGER_H
