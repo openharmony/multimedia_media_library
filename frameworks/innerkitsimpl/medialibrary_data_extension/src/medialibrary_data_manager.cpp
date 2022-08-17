@@ -27,7 +27,7 @@
 #include "media_datashare_ext_ability.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "media_scanner.h"
+#include "media_scanner_manager.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_device.h"
@@ -118,7 +118,7 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
 
     // scan the media dir
     std::string srcPath = ROOT_MEDIA_DIR;
-    MediaScannerObj::GetMediaScannerInstance()->ScanDir(srcPath, nullptr);
+    MediaScannerManager::GetInstance()->ScanDir(srcPath, nullptr);
 }
 
 void MediaLibraryDataManager::InitDeviceData()
@@ -276,7 +276,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
     // boardcast operation
     if (cmd.GetOprnType() == OperationType::SCAN) {
         string scanPath = ROOT_MEDIA_DIR;
-        return MediaScannerObj::GetMediaScannerInstance()->ScanDir(scanPath, nullptr);
+        return MediaScannerManager::GetInstance()->ScanDir(scanPath, nullptr);
     } else if ((cmd.GetOprnType() == OperationType::CREATE) && !CheckFileNameValid(dataShareValue)) {
         return E_FILE_NAME_INVALID;
     }

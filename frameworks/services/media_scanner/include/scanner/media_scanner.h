@@ -35,7 +35,6 @@
 #include <vector>
 
 #include "medialibrary_type_const.h"
-#include "media_scan_executor.h"
 #include "media_scanner_const.h"
 #include "media_scanner_db.h"
 #include "metadata.h"
@@ -61,32 +60,33 @@ namespace Media {
  */
 class MediaScannerObj {
 public:
-    static MediaScannerObj *GetMediaScannerInstance();
-    int32_t ScanFile(std::string &path, const sptr<IRemoteObject> &callback);
-    int32_t ScanDir(std::string &path, const sptr<IRemoteObject> &callback);
     bool IsScannerRunning();
     void SetAbilityContext(void);
     void ReleaseAbilityHelper();
 
-private:
-    MediaScannerObj();
-    ~MediaScannerObj();
+    MediaScannerObj(std::string &path, const sptr<IRemoteObject> &callback, bool isDir) : path_(path), callback_(callback), isDir_(isDir) {}
+    virtual ~MediaScannerObj() = default;
 
-    static void ScanQueueCB(ScanRequest sr);
+    int32_t ScanFile();
+    int32_t ScanDir();
+
+    bool isDir()
+    {
+        return isDir_;
+    }
+
+private:
     std::unique_ptr<Metadata> GetFileMetadata(const std::string &path, const int32_t parentId);
     std::vector<std::string> GetSupportedMimeTypes();
 
     void InitSkipList();
     void CheckIfFolderScanCompleted(const int32_t reqId);
     void CleanupDirectory(const std::string &path);
-    void ExecuteScannerClientCallback(int32_t reqId, int32_t status, const std::string &uri, const string &path);
-    void StoreCallbackObjInMap(int32_t reqId, sptr<IMediaScannerOperationCallback> &callback);
 
     bool CheckSkipScanList(const std::string &path);
     bool IsFileScanned(Metadata &fileMetadata);
     bool IsDirHidden(const std::string &path);
     bool IsDirHiddenRecursive(const std::string &path);
-    bool InitScanner(void);
 
     int32_t VisitFile(const Metadata &fileMetadata);
     int32_t WalkFileTree(const std::string &path, int32_t parentId);
@@ -100,17 +100,22 @@ private:
     int32_t GetAvailableRequestId();
     int32_t InsertAlbumInfo(std::string &albumPath, int32_t parentId, string albumName);
 
+    int32_t InvokeCallback(int32_t err);
+
     bool isScannerInitDone_;
-    MediaScanExecutor scanExector_;
     MetadataExtractor metadataExtract_;
     std::unordered_map<std::string, Metadata> albumMap_;
 
-    std::string mediaUri_;
     std::vector<size_t> skipList_;
     std::unordered_set<int32_t> scannedIds_;
     std::vector<Metadata> batchUpdate_;
     std::unique_ptr<MediaScannerDb> mediaScannerDb_;
     std::unordered_map<int32_t, sptr<IMediaScannerOperationCallback>> scanResultCbMap_;
+
+    std::string path_;
+    std::string uri_;
+    const sptr<IRemoteObject> callback_;
+    bool isDir_;
 };
 } // namespace Media
 } // namespace OHOS
