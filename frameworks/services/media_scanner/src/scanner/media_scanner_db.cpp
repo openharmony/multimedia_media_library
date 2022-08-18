@@ -244,8 +244,7 @@ unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
     int ret = resultSet->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, nullptr, "Failed to fetch first record");
 
-    unique_ptr<Metadata> metaInfo = FillMetadata(resultSet);
-    return metaInfo;
+    return FillMetadata(resultSet);
 }
 
 /**
@@ -344,9 +343,9 @@ int32_t MediaScannerDb::GetIdFromUri(const string &uri) const
     return mediaFileId;
 }
 
-int32_t MediaScannerDb::ReadAlbumId(const string &path)
+int32_t MediaScannerDb::GetIdFromPath(const string &path)
 {
-    int32_t albumId = 0;
+    int32_t id = -1;
     int32_t columnIndex = -1;
 
     DataShare::DataSharePredicates predicates;
@@ -356,16 +355,15 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {MEDIA_DATA_DB_ID};
     auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumId, "No result found for %{private}s", path.c_str());
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
-        MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{private}s", path.c_str());
-        return albumId;
+        MEDIA_ERR_LOG("No data found for the given path %{private}s", path.c_str());
+        return id;
     }
 
     resultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndex);
-    resultSet->GetInt(columnIndex, albumId);
+    resultSet->GetInt(columnIndex, id);
 
-    return albumId;
+    return id;
 }
 
 void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap)

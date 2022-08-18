@@ -13,9 +13,12 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "Scanner"
+
 #include "media_scanner_manager.h"
 
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS {
 namespace Media {
@@ -38,23 +41,23 @@ int32_t MediaScannerManager::ScanFile(std::string &path, const sptr<IRemoteObjec
 
     if (path.empty()) {
         MEDIA_ERR_LOG("path is empty");
-        return ERR_EMPTY_ARGS;
+        return E_INVALID_PATH;
     }
 
     if (ScannerUtils::GetRealPath(path) != ERR_SUCCESS) {
         MEDIA_ERR_LOG("invalid path %{private}s", path.c_str());
-        return ERR_INCORRECT_PATH;
+        return E_INVALID_PATH;
     }
 
     if (ScannerUtils::IsDirectory(path)) {
         MEDIA_ERR_LOG("path %{private}s is a dir", path.c_str());
-        return ERR_INCORRECT_PATH;
+        return E_INVALID_PATH;
     }
 
     std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(path, callback, false);
     executor_.Commit(move(scanner));
 
-    return 0;
+    return E_OK;
 }
 
 int32_t MediaScannerManager::ScanDir(std::string &path, const sptr<IRemoteObject> &callback)
@@ -63,23 +66,23 @@ int32_t MediaScannerManager::ScanDir(std::string &path, const sptr<IRemoteObject
 
     if (path.empty()) {
         MEDIA_ERR_LOG("path is empty");
-        return ERR_EMPTY_ARGS;
+        return E_INVALID_PATH;
     }
 
     if (ScannerUtils::GetRealPath(path) != ERR_SUCCESS) {
         MEDIA_ERR_LOG("invalid path %{private}s", path.c_str());
-        return ERR_INCORRECT_PATH;
+        return E_INVALID_PATH;
     }
 
     if (!ScannerUtils::IsDirectory(path)) {
         MEDIA_ERR_LOG("path %{private}s isn't a dir", path.c_str());
-        return ERR_INCORRECT_PATH;
+        return E_INVALID_PATH;
     }
 
     std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(path, callback, true);
     executor_.Commit(move(scanner));
 
-    return 0;
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

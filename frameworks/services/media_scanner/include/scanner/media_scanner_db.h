@@ -60,10 +60,11 @@ public:
     int32_t InsertAlbum(const Metadata &metadata);
     int32_t UpdateAlbum(const Metadata &metadata);
     void ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap);
-    int32_t ReadAlbumId(const string &path);
     unique_ptr<Metadata> ReadMetadata(const string &path);
     unique_ptr<Metadata> GetFileModifiedInfo(const string &path);
     unordered_map<int32_t, MediaType> GetIdsFromFilePath(const string &path);
+
+    int32_t GetIdFromPath(const string &path);
 
 private:
     std::string GetMediaTypeUri(MediaType mediaType);

@@ -42,192 +42,181 @@ static time_t convertTimeStr2TimeStamp(string &timeStr)
     return timeStamp;
 }
 
-int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
+int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
 {
-    uint32_t errorCode = 0;
+    uint32_t err = 0;
+
     SourceOptions opts;
-    opts.formatHint = "image/" + fileMetadata.GetFileExtension();
+    opts.formatHint = "image/" + data->GetFileExtension();
     std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(fileMetadata.GetFilePath(), opts, errorCode);
-    if (errorCode != ERR_SUCCESS || imageSource == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain image source");
-        return ERR_SUCCESS;
+        ImageSource::CreateImageSource(data->GetFilePath(), opts, err);
+    if (err != 0 || imageSource == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain image source, err = %{public}d", err);
+        return E_OK;
     }
 
     ImageInfo imageInfo;
-    uint32_t ret = imageSource->GetImageInfo(0, imageInfo);
-    if (ret == ERR_SUCCESS) {
-        fileMetadata.SetFileWidth(imageInfo.size.width);
-        fileMetadata.SetFileHeight(imageInfo.size.height);
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err == 0) {
+        data->SetFileWidth(imageInfo.size.width);
+        data->SetFileHeight(imageInfo.size.height);
+    } else {
+        MEDIA_ERR_LOG("Failed to get image info, err = %{public}d", err);
     }
 
     string propertyStr;
     int64_t int64TempMeta = 0;
-    ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL, propertyStr);
-    if (ret == ERR_SUCCESS) {
+    err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL, propertyStr);
+    if (err == 0) {
         int64TempMeta = convertTimeStr2TimeStamp(propertyStr);
         if (int64TempMeta < 0) {
-            fileMetadata.SetDateTaken(fileMetadata.GetFileDateModified());
+            data->SetDateTaken(data->GetFileDateModified());
         } else {
-            fileMetadata.SetDateTaken(int64TempMeta);
+            data->SetDateTaken(int64TempMeta);
         }
     } else {
         // use modified time as date taken time when date taken not set
-        fileMetadata.SetDateTaken(fileMetadata.GetFileDateModified());
+        data->SetDateTaken(data->GetFileDateModified());
     }
 
     int32_t intTempMeta = 0;
-    ret = imageSource->GetImagePropertyInt(0, MEDIA_DATA_IMAGE_ORIENTATION, intTempMeta);
-    if (ret == ERR_SUCCESS) {
-        fileMetadata.SetOrientation(intTempMeta);
+    err = imageSource->GetImagePropertyInt(0, MEDIA_DATA_IMAGE_ORIENTATION, intTempMeta);
+    if (err == 0) {
+        data->SetOrientation(intTempMeta);
     }
 
     double dbleTempMeta = -1;
-    ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
-    if (ret == ERR_SUCCESS) {
+    err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
+    if (err == 0) {
         dbleTempMeta = stringToNum<double>(propertyStr);
-        fileMetadata.SetLongitude(dbleTempMeta);
+        data->SetLongitude(dbleTempMeta);
     }
 
-    ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE, propertyStr);
-    if (ret == ERR_SUCCESS) {
+    err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE, propertyStr);
+    if (err == 0) {
         dbleTempMeta = stringToNum<double>(propertyStr);
-        fileMetadata.SetLatitude(dbleTempMeta);
+        data->SetLatitude(dbleTempMeta);
     }
 
-    return ERR_SUCCESS;
+    return E_OK;
 }
 
-void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &metadataMap,
-                                              Metadata &fileMetadata)
+void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &resultMap,
+    std::unique_ptr<Metadata> &data)
 {
     string strTemp;
     int32_t intTempMeta;
     int64_t int64TempMeta;
 
-    strTemp = metadataMap.at(AV_KEY_ALBUM);
+    strTemp = resultMap.at(AV_KEY_ALBUM);
     if (strTemp != "") {
-        fileMetadata.SetAlbum(strTemp);
+        data->SetAlbum(strTemp);
     }
 
-    strTemp = metadataMap.at(AV_KEY_ARTIST);
+    strTemp = resultMap.at(AV_KEY_ARTIST);
     if (strTemp != "") {
-        fileMetadata.SetFileArtist(strTemp);
+        data->SetFileArtist(strTemp);
     }
 
-    strTemp = metadataMap.at(AV_KEY_DURATION);
-    if (strTemp != "") {
-        intTempMeta = stringToNum<int32_t>(strTemp);
-        fileMetadata.SetFileDuration(intTempMeta);
-    }
-
-    strTemp = metadataMap.at(AV_KEY_VIDEO_HEIGHT);
+    strTemp = resultMap.at(AV_KEY_DURATION);
     if (strTemp != "") {
         intTempMeta = stringToNum<int32_t>(strTemp);
-        fileMetadata.SetFileHeight(intTempMeta);
+        data->SetFileDuration(intTempMeta);
     }
 
-    strTemp = metadataMap.at(AV_KEY_VIDEO_WIDTH);
+    strTemp = resultMap.at(AV_KEY_VIDEO_HEIGHT);
     if (strTemp != "") {
         intTempMeta = stringToNum<int32_t>(strTemp);
-        fileMetadata.SetFileWidth(intTempMeta);
+        data->SetFileHeight(intTempMeta);
     }
 
-    strTemp = metadataMap.at(AV_KEY_MIME_TYPE);
+    strTemp = resultMap.at(AV_KEY_VIDEO_WIDTH);
     if (strTemp != "") {
-        fileMetadata.SetFileMimeType(strTemp);
+        intTempMeta = stringToNum<int32_t>(strTemp);
+        data->SetFileWidth(intTempMeta);
     }
 
-    strTemp = metadataMap.at(AV_KEY_DATE_TIME_FORMAT);
+    strTemp = resultMap.at(AV_KEY_MIME_TYPE);
+    if (strTemp != "") {
+        data->SetFileMimeType(strTemp);
+    }
+
+    strTemp = resultMap.at(AV_KEY_DATE_TIME_FORMAT);
     if (strTemp != "") {
         int64TempMeta = convertTimeStr2TimeStamp(strTemp);
         if (int64TempMeta < 0) {
-            fileMetadata.SetDateTaken(fileMetadata.GetFileDateModified());
+            data->SetDateTaken(data->GetFileDateModified());
         } else {
-            fileMetadata.SetDateTaken(int64TempMeta);
+            data->SetDateTaken(int64TempMeta);
         }
     } else {
         // use modified time as date taken time when date taken not set
-        fileMetadata.SetDateTaken(fileMetadata.GetFileDateModified());
+        data->SetDateTaken(data->GetFileDateModified());
     }
 
-    strTemp = metadataMap.at(AV_KEY_VIDEO_ORIENTATION);
+    strTemp = resultMap.at(AV_KEY_VIDEO_ORIENTATION);
     if (strTemp == "") {
         intTempMeta = 0;
     } else {
         intTempMeta = stringToNum<int32_t>(strTemp);
     }
-    fileMetadata.SetOrientation(intTempMeta);
+    data->SetOrientation(intTempMeta);
 }
 
-int32_t MetadataExtractor::ExtractMetadata(Metadata &fileMetadata, const string &uri)
+int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data)
 {
-    int32_t errCode = ERR_FAIL;
+    MediaLibraryTracer tracer;
+    tracer.Start("ExtractAVMetadata");
 
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "CreateAVMetadataHelper");
+    tracer.Start("CreateAVMetadataHelper");
     std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
+    tracer.Finish();
     if (avMetadataHelper == nullptr) {
         MEDIA_ERR_LOG("AV metadata helper is null");
-        return errCode;
+        return E_AVMETADATA;
     }
 
-    int32_t fd = open(uri.c_str(), O_RDONLY);
+    int32_t fd = open(data->GetFilePath().c_str(), O_RDONLY);
     if (fd <= 0) {
         MEDIA_ERR_LOG("Open file descriptor failed, errno = %{public}d", errno);
-        return errCode;
+        return E_SYSCALL;
     }
 
     struct stat64 st;
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed for the given fd");
         (void)close(fd);
-        return errCode;
+        return E_SYSCALL;
     }
 
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "avMetadataHelper->SetSource");
-    errCode = avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(st.st_size), AV_META_USAGE_META_ONLY);
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-    if (errCode != ERR_SUCCESS) {
-        MEDIA_ERR_LOG("SetSource failed for the given file descriptor");
+    tracer.Start("avMetadataHelper->SetSource");
+    int32_t err = avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(st.st_size), AV_META_USAGE_META_ONLY);
+    tracer.Finish();
+    if (err != 0) {
+        MEDIA_ERR_LOG("SetSource failed for the given file descriptor, err = %{public}d", err);
         (void)close(fd);
-        return errCode;
+        return E_AVMETADATA;
     } else {
-        StartTrace(HITRACE_TAG_FILEMANAGEMENT, "avMetadataHelper->ResolveMetadata");
-        std::unordered_map<int32_t, std::string> metadataMap = avMetadataHelper->ResolveMetadata();
-        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-        if (!metadataMap.empty()) {
-            FillExtractedMetadata(metadataMap, fileMetadata);
+        tracer.Start("avMetadataHelper->ResolveMetadata");
+        std::unordered_map<int32_t, std::string> resultMap = avMetadataHelper->ResolveMetadata();
+        tracer.Finish();
+        if (!resultMap.empty()) {
+            FillExtractedMetadata(resultMap, data);
         }
     }
 
     (void)close(fd);
 
-    return errCode;
+    return E_OK;
 }
 
-int32_t MetadataExtractor::Extract(Metadata &fileMetadata, const string &uri)
+int32_t MetadataExtractor::Extract(std::unique_ptr<Metadata> &data)
 {
-    int32_t errCode = ERR_SUCCESS;
-
-    auto mimeType = ScannerUtils::GetMimeTypeFromExtension(fileMetadata.GetFileExtension());
-    fileMetadata.SetFileMimeType(mimeType);
-
-    // If the file type is not audio/video/image
-    if (std::find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(), mimeType) ==
-        EXTRACTOR_SUPPORTED_MIME.end()) {
-        return errCode;
-    }
-
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "ExtractMetadata");
-    if (fileMetadata.GetFileMediaType() == MEDIA_TYPE_IMAGE) {
-        errCode = ExtractImageMetadata(fileMetadata);
+    if (data->GetFileMediaType() == MEDIA_TYPE_IMAGE) {
+        return ExtractImageMetadata(data);
     } else {
-        errCode = ExtractMetadata(fileMetadata, uri);
+        return ExtractAVMetadata(data);
     }
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-
-    return errCode;
 }
 } // namespace Media
 } // namespace OHOS

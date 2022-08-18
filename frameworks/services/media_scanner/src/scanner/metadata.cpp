@@ -92,7 +92,7 @@ void Metadata::SetUri(const VariantData &uri)
     uri_ = std::get<string>(uri);
 }
 
-std::string Metadata::GetUri() const
+const std::string &Metadata::GetUri() const
 {
     return uri_;
 }
@@ -102,7 +102,7 @@ void Metadata::SetFilePath(const VariantData &filePath)
     filePath_ = std::get<string>(filePath);
 }
 
-std::string Metadata::GetFilePath() const
+const std::string &Metadata::GetFilePath() const
 {
     return filePath_;
 }
@@ -112,7 +112,7 @@ void Metadata::SetRelativePath(const VariantData &relativePath)
     relativePath_ = std::get<string>(relativePath);
 }
 
-std::string Metadata::GetRelativePath() const
+const std::string &Metadata::GetRelativePath() const
 {
     return relativePath_;
 }
@@ -122,7 +122,7 @@ void Metadata::SetFileMimeType(const VariantData &mimeType)
     mimeType_ = std::get<string>(mimeType);
 }
 
-std::string Metadata::GetFileMimeType() const
+const std::string &Metadata::GetFileMimeType() const
 {
     return mimeType_;
 }
@@ -142,7 +142,7 @@ void Metadata::SetFileName(const VariantData &name)
     name_ = std::get<string>(name);
 }
 
-std::string Metadata::GetFileName() const
+const std::string &Metadata::GetFileName() const
 {
     return name_;
 }
@@ -182,7 +182,7 @@ void Metadata::SetFileExtension(const VariantData &fileExt)
     fileExt_ = std::get<string>(fileExt);
 }
 
-std::string Metadata::GetFileExtension() const
+const std::string &Metadata::GetFileExtension() const
 {
     return fileExt_;
 }
@@ -192,7 +192,7 @@ void Metadata::SetFileTitle(const VariantData &title)
     title_ = std::get<string>(title);
 }
 
-string Metadata::GetFileTitle() const
+const std::string &Metadata::GetFileTitle() const
 {
     return title_;
 }
@@ -202,7 +202,7 @@ void Metadata::SetFileArtist(const VariantData &artist)
     artist_ = std::get<string>(artist);
 }
 
-string Metadata::GetFileArtist() const
+const std::string &Metadata::GetFileArtist() const
 {
     return artist_;
 }
@@ -212,7 +212,7 @@ void Metadata::SetAlbum(const VariantData &album)
     album_ = std::get<string>(album);
 }
 
-std::string Metadata::GetAlbum() const
+const std::string &Metadata::GetAlbum() const
 {
     return album_;
 }
@@ -272,7 +272,7 @@ void Metadata::SetAlbumName(const VariantData &albumName)
     albumName_ = std::get<string>(albumName);
 }
 
-std::string Metadata::GetAlbumName() const
+const std::string &Metadata::GetAlbumName() const
 {
     return albumName_;
 }
@@ -292,7 +292,7 @@ void Metadata::SetRecyclePath(const VariantData &recyclePath)
     recyclePath_ = std::get<string>(recyclePath);
 }
 
-std::string Metadata::GetRecyclePath() const
+const std::string &Metadata::GetRecyclePath() const
 {
     return recyclePath_;
 }
