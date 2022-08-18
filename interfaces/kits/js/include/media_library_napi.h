@@ -35,6 +35,7 @@
 namespace OHOS {
 namespace Media {
 static const std::string MEDIA_LIB_NAPI_CLASS_NAME = "MediaLibrary";
+static const std::string USERFILE_MGR_NAPI_CLASS_NAME = "UserFileManager";
 
 enum ListenerType {
     INVALID_LISTENER = -1,
@@ -122,6 +123,7 @@ public:
 class MediaLibraryNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
+    static napi_value UserFileMgrInit(napi_env env, napi_value exports);
 
     MediaLibraryNapi();
     ~MediaLibraryNapi();
@@ -166,6 +168,8 @@ private:
     static napi_value JSStartImagePreview(napi_env env, napi_callback_info info);
     static napi_value JSGetMediaRemoteStub(napi_env env, napi_callback_info info);
 
+    static napi_value GetUserFileMgr(napi_env env, napi_callback_info info);
+
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
     void UnregisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
@@ -173,6 +177,7 @@ private:
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
+    static thread_local napi_ref ufmConstructor_;
     static thread_local napi_ref sMediaTypeEnumRef_;
     static thread_local napi_ref sFileKeyEnumRef_;
 };

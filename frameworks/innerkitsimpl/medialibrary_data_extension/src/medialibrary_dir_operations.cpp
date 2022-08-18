@@ -196,7 +196,7 @@ bool MediaLibraryDirOperations::CheckFileExtension(const unordered_map<string, D
     bool isFileExtension = true;
     for (auto &[_, dirAsset] : dirQuerySetMap) {
         if (dirAsset.GetDirType() == DIR_VIDEO ||
-            dirAsset.GetDirType() == DIR_PICTURE ||
+            dirAsset.GetDirType() == DIR_IMAGE ||
             dirAsset.GetDirType() == DIR_AUDIOS) {
             size_t extensionIndex = dirAsset.GetExtensions().find(extension);
             if (extensionIndex != string::npos) {
