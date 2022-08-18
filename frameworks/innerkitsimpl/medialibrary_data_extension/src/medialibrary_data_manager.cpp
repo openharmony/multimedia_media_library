@@ -302,13 +302,13 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
         case OperationObject::SMART_ALBUM: {
             MediaLibrarySmartAlbumOperations smartalbumOprn;
             result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore_);
-            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, SMARTALBUM_MAP_TABLE, devices);
+            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
             break;
         }
         case OperationObject::SMART_ALBUM_MAP: {
             MediaLibrarySmartAlbumMapOperations smartalbumMapOprn;
             result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, rdbStore_, dirQuerySetMap_);
-            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, CATEGORY_SMARTALBUM_MAP_TABLE, devices);
+            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
             break;
         }
         case OperationObject::KVSTORE: {
@@ -357,16 +357,21 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
     cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
 
+    vector<string> devices;
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
-            return MediaLibraryFileOperations::DeleteFileOperation(cmd, dirQuerySetMap_);
+            auto ret = MediaLibraryFileOperations::DeleteFileOperation(cmd, dirQuerySetMap_);
+            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
+            return ret;
         }
         case OperationObject::FILESYSTEM_DIR:
             // supply a DeleteDirOperation here to replace
             // delete in the HandleDirOperations in Insert function, if need
             break;
         case OperationObject::FILESYSTEM_ALBUM: {
-            return MediaLibraryAlbumOperations::DeleteAlbumOperation(cmd);
+            auto ret = MediaLibraryAlbumOperations::DeleteAlbumOperation(cmd);
+            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
+            return ret;
         }
         default:
             break;
