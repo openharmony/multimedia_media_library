@@ -67,10 +67,11 @@ enum AssetType {
 enum DirType {
     DIR_CAMERA = 0,
     DIR_VIDEO,
-    DIR_PICTURE,
+    DIR_IMAGE,
     DIR_AUDIOS,
     DIR_DOCUMENTS,
-    DIR_DOWNLOAD
+    DIR_DOWNLOAD,
+    DIR_TYPE_MAX
 };
 
 enum PrivateAlbumType {
@@ -210,7 +211,7 @@ const int VIDEO_DIRECTORY_TYPE_VALUES = DIR_VIDEO;
 const std::string VIDEO_DIR_VALUES = "Videos/";
 const std::string VIDEO_EXTENSION_VALUES = DIR_ALL_VIDEO_CONTAINER_TYPE;
 const std::string VIDEO_TYPE_VALUES = std::to_string(MEDIA_TYPE_VIDEO);
-const int PIC_DIRECTORY_TYPE_VALUES = DIR_PICTURE;
+const int PIC_DIRECTORY_TYPE_VALUES = DIR_IMAGE;
 const std::string PIC_DIR_VALUES = "Pictures/";
 const std::string PIC_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE;
 const std::string PIC_TYPE_VALUES = std::to_string(MEDIA_TYPE_IMAGE);

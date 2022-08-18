@@ -116,7 +116,7 @@ const int32_t ARGS_TWO = 2;
 const int32_t ARGS_THREE = 3;
 const int32_t ARGS_FORE = 4;
 const int32_t SIZE = 100;
-const int32_t REFERENCE_COUNT_ONE = 1;
+constexpr uint32_t NAPI_INIT_REF_COUNT = 1;
 
 // Error codes
 const int32_t ERR_DEFAULT = 0;
@@ -227,9 +227,20 @@ struct JSAsyncContextOutput {
     bool status;
 };
 
+struct NapiClassInfo {
+    std::string name;
+    napi_ref *ref;
+    napi_value (*constructor)(napi_env, napi_callback_info);
+    std::vector<napi_property_descriptor> props;
+};
+
 /* Util class used by napi asynchronous methods for making call to js callback function */
 class MediaLibraryNapiUtils {
 public:
+    static napi_value NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info);
+    static napi_value NapiAddStaticProps(napi_env env, napi_value exports,
+        const std::vector<napi_property_descriptor> &staticProps);
+
     static AssetType GetAssetType(MediaType type)
     {
         AssetType result;
@@ -373,6 +384,24 @@ public:
         }
         napi_delete_async_work(env, work);
         NAPI_DEBUG_LOG("InvokeJSAsyncMethod OUT");
+    }
+
+    template <class AsyncContext>
+    static napi_value NapiCreateAsyncWork(napi_env env, std::unique_ptr<AsyncContext> &asyncContext,
+        const std::string &resourceName,  void (*execute)(napi_env, void *),
+        void (*complete)(napi_env, napi_status, void *))
+    {
+        napi_value result = nullptr;
+        napi_value resource = nullptr;
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_API_NAME(env, resource, resourceName.c_str(), asyncContext);
+
+        NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, execute, complete,
+            static_cast<void*>(asyncContext.get()), &asyncContext->work));
+        NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
+        asyncContext.release();
+
+        return result;
     }
 
     static std::tuple<bool, std::unique_ptr<char[]>, size_t> ToUTF8String(napi_env env, napi_value value)
