@@ -33,12 +33,13 @@ public:
     MetadataExtractor() = default;
     ~MetadataExtractor() = default;
 
-    int32_t Extract(Metadata &fileMetadata, const std::string &uri);
-    int32_t ExtractMetadata(Metadata &fileMetadata, const std::string &uri);
-    int32_t ExtractImageMetadata(Metadata &fileMetadata);
-    int32_t ConvertStringToInteger(const std::string &str);
-    void FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &metadataMap,
-                               Metadata &fileMetadata);
+    static int32_t Extract(std::unique_ptr<Metadata> &data);
+    static int32_t ExtractAVMetadata(std::unique_ptr<Metadata> &data);
+    static int32_t ExtractImageMetadata(std::unique_ptr<Metadata> &data);
+
+private:
+    static void FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &metadataMap,
+        std::unique_ptr<Metadata> &data);
 };
 } // namespace Media
 } // namespace OHOS

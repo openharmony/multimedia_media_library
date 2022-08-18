@@ -60,50 +60,40 @@ namespace Media {
  */
 class MediaScannerObj {
 public:
-    bool IsScannerRunning();
-    void SetAbilityContext(void);
-    void ReleaseAbilityHelper();
-
-    MediaScannerObj(std::string &path, const sptr<IRemoteObject> &callback, bool isDir) : path_(path), callback_(callback), isDir_(isDir) {}
+    MediaScannerObj(std::string &path, const sptr<IRemoteObject> &callback, bool isDir) : path_(path),
+        callback_(callback), isDir_(isDir) {}
     virtual ~MediaScannerObj() = default;
 
     int32_t ScanFile();
     int32_t ScanDir();
 
-    bool isDir()
-    {
-        return isDir_;
-    }
+    bool isDir();
 
 private:
-    std::unique_ptr<Metadata> GetFileMetadata(const std::string &path, const int32_t parentId);
-    std::vector<std::string> GetSupportedMimeTypes();
-
     void InitSkipList();
     void CheckIfFolderScanCompleted(const int32_t reqId);
     void CleanupDirectory(const std::string &path);
 
     bool CheckSkipScanList(const std::string &path);
-    bool IsFileScanned(Metadata &fileMetadata);
     bool IsDirHidden(const std::string &path);
     bool IsDirHiddenRecursive(const std::string &path);
 
     int32_t VisitFile(const Metadata &fileMetadata);
     int32_t WalkFileTree(const std::string &path, int32_t parentId);
-    int32_t ScanFileContent(const std::string &path, const int32_t parentId);
-    int32_t ScanFileInternal(const std::string &path);
-    int32_t ScanDirInternal(const std::string &path);
-    int32_t StartBatchProcessingToDB();
-    int32_t StartBatchProcessIfFull();
-    int32_t BatchUpdateRequest(Metadata &fileMetadata);
-    int32_t RetrieveMetadata(Metadata &fileMetadata);
-    int32_t GetAvailableRequestId();
+
     int32_t InsertAlbumInfo(std::string &albumPath, int32_t parentId, string albumName);
 
-    int32_t InvokeCallback(int32_t err);
+    int32_t ScanFileInternal();
+    int32_t ScanDirInternal();
 
-    bool isScannerInitDone_;
-    MetadataExtractor metadataExtract_;
+    int32_t InvokeCallback(int32_t code);
+    int32_t GetFileMetadata();
+    int32_t GetParentDirInfo(string &path);
+    int32_t GetMediaInfo();
+
+    int32_t AddToTransaction();
+    int32_t CommitTransaction();
+
     std::unordered_map<std::string, Metadata> albumMap_;
 
     std::vector<size_t> skipList_;
@@ -116,6 +106,9 @@ private:
     std::string uri_;
     const sptr<IRemoteObject> callback_;
     bool isDir_;
+
+    unique_ptr<Metadata> data_;
+    std::vector<unique_ptr<Metadata>> dataBuffer_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #define MLOG_TAG "Scanner"
 
 #include "media_scanner.h"
@@ -19,6 +20,7 @@
 #include "hitrace_meter.h"
 
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS {
 namespace Media {
@@ -26,39 +28,33 @@ using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::DataShare;
 
-vector<string> MediaScannerObj::GetSupportedMimeTypes()
+bool MediaScannerObj::isDir()
 {
-    vector<string> mimeTypeList;
-    mimeTypeList.push_back(DEFAULT_AUDIO_MIME_TYPE);
-    mimeTypeList.push_back(DEFAULT_VIDEO_MIME_TYPE);
-    mimeTypeList.push_back(DEFAULT_IMAGE_MIME_TYPE);
-    mimeTypeList.push_back(DEFAULT_FILE_MIME_TYPE);
-
-    return mimeTypeList;
+    return isDir_;
 }
 
 int32_t MediaScannerObj::ScanFile()
 {
     MEDIA_INFO_LOG("begin");
 
-    int32_t err = ScanFileInternal(path_);
-    if (err != 0) {
-        MEDIA_ERR_LOG("ScanFileInternal err %{public}d", err);
+    int32_t ret = ScanFileInternal();
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ScanFileInternal err %{public}d", ret);
     }
 
-    return InvokeCallback(err);
+    return InvokeCallback(ret);
 }
 
 int32_t MediaScannerObj::ScanDir()
 {
     MEDIA_INFO_LOG("begin");
 
-    int32_t err = ScanDirInternal(path_);
-    if (err != 0) {
-        MEDIA_ERR_LOG("ScanDirInternal err %{public}d", err);
+    int32_t ret = ScanDirInternal();
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ScanDirInternal err %{public}d", ret);
     }
 
-    return InvokeCallback(err);
+    return InvokeCallback(ret);
 }
 
 int32_t MediaScannerObj::InvokeCallback(int32_t err)
@@ -85,7 +81,7 @@ void MediaScannerObj::CleanupDirectory(const string &path)
     }
 
     // convert deleted id list to vector of strings
-    vector<string> deleteIdList;    
+    vector<string> deleteIdList;
     for (auto id : toBeDeletedIds) {
         deleteIdList.push_back(to_string(id));
     }
@@ -94,7 +90,6 @@ void MediaScannerObj::CleanupDirectory(const string &path)
         mediaScannerDb_->DeleteMetadata(deleteIdList);
     }
 
-    // Send notify to the modified URIs
     for (const MediaType &mediaType : mediaTypeSet) {
         mediaScannerDb_->NotifyDatabaseChange(mediaType);
     }
@@ -102,204 +97,163 @@ void MediaScannerObj::CleanupDirectory(const string &path)
     scannedIds_.clear();
 }
 
-int32_t MediaScannerObj::StartBatchProcessingToDB()
+int32_t MediaScannerObj::CommitTransaction()
 {
     unordered_set<MediaType> mediaTypeSet = {};
     string uri = "";
-    Metadata metaData;
+    unique_ptr<Metadata> data;
 
-    for (uint32_t i = 0; i < batchUpdate_.size(); i++) {
-        metaData = (Metadata)batchUpdate_[i];
-        mediaTypeSet.insert(metaData.GetFileMediaType());
+    // will begin a transaction in later pr
+    for (uint32_t i = 0; i < dataBuffer_.size(); i++) {
+        data = move(dataBuffer_[i]);
 
-        if (metaData.GetFileId() != FILE_ID_DEFAULT) {
-            uri = mediaScannerDb_->UpdateMetadata(metaData);
-            scannedIds_.insert(metaData.GetFileId());
+
+        if (data->GetFileId() != FILE_ID_DEFAULT) {
+            uri = mediaScannerDb_->UpdateMetadata(*data);
+            scannedIds_.insert(data->GetFileId());
         } else {
-            uri = mediaScannerDb_->InsertMetadata(metaData);
-            scannedIds_.insert(mediaScannerDb_->GetIdFromUri(uri));
+            uri = mediaScannerDb_->InsertMetadata(*data);
+            scannedIds_.insert(data->GetFileId());
         }
-        this->uri_ = uri;
-    }
-    batchUpdate_.clear();
 
-    // Send notify to the modified URIs
+        // set uri for scan file callback
+        this->uri_ = uri;
+        mediaTypeSet.insert(data->GetFileMediaType());
+    }
+
+    dataBuffer_.clear();
+
     for (const MediaType &mediaType : mediaTypeSet) {
         mediaScannerDb_->NotifyDatabaseChange(mediaType);
     }
 
-    return ERR_SUCCESS;
+    return E_OK;
 }
 
-int32_t MediaScannerObj::StartBatchProcessIfFull()
+int32_t MediaScannerObj::AddToTransaction()
 {
-    if (batchUpdate_.size() >= MAX_BATCH_SIZE) {
-        return StartBatchProcessingToDB();
-    }
-    return ERR_SUCCESS;
-}
-
-int32_t MediaScannerObj::BatchUpdateRequest(Metadata &fileMetadata)
-{
-    batchUpdate_.push_back(fileMetadata);
-    return StartBatchProcessIfFull();
-}
-
-// Check if the file entry already exists in the DB. Compare filename, size,
-// path, and modified date.
-bool MediaScannerObj::IsFileScanned(Metadata &fileMetadata)
-{
-    string filePath = fileMetadata.GetFilePath();
-    unique_ptr<Metadata> md = mediaScannerDb_->GetFileModifiedInfo(filePath);
-    if (md != nullptr &&
-        md->GetFileDateModified() == fileMetadata.GetFileDateModified() &&
-        md->GetFileName() == fileMetadata.GetFileName() &&
-        md->GetFileSize() == fileMetadata.GetFileSize()) {
-        scannedIds_.insert(md->GetFileId());
-        return true;
+    dataBuffer_.emplace_back(move(data_));
+    if (dataBuffer_.size() >= MAX_BATCH_SIZE) {
+        return CommitTransaction();
     }
 
-    if (md != nullptr) {
-        int32_t fileId = md->GetFileId();
-        fileMetadata.SetFileId(fileId);
-        fileMetadata.SetOrientation(md->GetOrientation());
+    return E_OK;
+}
+
+int32_t MediaScannerObj::GetMediaInfo()
+{
+    if (find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(),
+        data_->GetFileMimeType()) != EXTRACTOR_SUPPORTED_MIME.end()) {
+        return MetadataExtractor::Extract(data_);
     }
 
-    MEDIA_INFO_LOG("the file hasn't been scanned yet");
-    return false;
+    return E_OK;
 }
 
-int32_t MediaScannerObj::RetrieveMetadata(Metadata &fileMetadata)
+int32_t MediaScannerObj::GetParentDirInfo(string &parentFolder)
 {
-    // Stub impl. This will be implemented by the extractor
-    return metadataExtract_.Extract(fileMetadata, fileMetadata.GetFilePath());
-}
-
-// Visit the File
-int32_t MediaScannerObj::VisitFile(const Metadata &fileMD)
-{
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "VisitFile");
-
-    auto fileMetadata = const_cast<Metadata *>(&fileMD);
-    string mimeType = DEFAULT_FILE_MIME_TYPE;
-    vector<string> supportedMimeTypes;
-    int32_t errCode = ERR_MIMETYPE_NOTSUPPORT;
-
-    mimeType = ScannerUtils::GetMimeTypeFromExtension(fileMetadata->GetFileExtension());
-    supportedMimeTypes = GetSupportedMimeTypes();
-    if (find(supportedMimeTypes.begin(), supportedMimeTypes.end(), mimeType) != supportedMimeTypes.end()) {
-        errCode = ERR_SUCCESS;
-        if (!IsFileScanned(*fileMetadata)) {
-            errCode = RetrieveMetadata(*fileMetadata);
-            if (errCode == ERR_SUCCESS) {
-                errCode = BatchUpdateRequest(*fileMetadata);
-            }
+    int32_t parentId = mediaScannerDb_->GetIdFromPath(parentFolder);
+    if (parentId < 0) {
+        if (parentFolder == ROOT_MEDIA_DIR) {
+            parentId = 0;
+        } else {
+            MEDIA_ERR_LOG("failed to get parent id");
+            return E_DATA;
         }
     }
 
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-    return errCode;
-}
+    data_->SetParentId(parentId);
 
-// Get Basic File Metadata from the file
-unique_ptr<Metadata> MediaScannerObj::GetFileMetadata(const string &path, const int32_t parentId)
-{
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GetFileMetaData");
-
-    unique_ptr<Metadata> fileMetadata = make_unique<Metadata>();
-    if (fileMetadata == nullptr) {
-        MEDIA_ERR_LOG("File metadata is null");
-        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-        return nullptr;
-    }
-
-    struct stat statInfo = { 0 };
-    if (stat(path.c_str(), &statInfo) == ERR_SUCCESS) {
-        fileMetadata->SetFileSize(static_cast<int64_t>(statInfo.st_size));
-        fileMetadata->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
-    }
-
-    fileMetadata->SetFilePath(path);
-    fileMetadata->SetFileName(ScannerUtils::GetFileNameFromUri(path));
-
-    string fileExtn = ScannerUtils::GetFileExtensionFromFileUri(path);
-    fileMetadata->SetFileExtension(fileExtn);
-
-    string mimetype = ScannerUtils::GetMimeTypeFromExtension(fileExtn);
-    fileMetadata->SetFileMimeType(mimetype);
-
-    fileMetadata->SetFileMediaType(ScannerUtils::GetMediatypeFromMimetype(mimetype));
-
-    if (parentId != NO_PARENT) {
-        fileMetadata->SetParentId(parentId);
-    }
-
-    string::size_type len = 0;
-    string rootDir;
-
-    ScannerUtils::GetRootMediaDir(rootDir);
-    if (rootDir.empty()) {
-        MEDIA_ERR_LOG("Root dir path is empty!");
-        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-        return fileMetadata;
-    }
-
-    len = rootDir.length();
-    string parentPath = ScannerUtils::GetParentPath(path) + SLASH_CHAR; // GetParentPath without slash at end
-    if (parentPath.substr(0, len).compare(rootDir) == 0) {
+    size_t len = ROOT_MEDIA_DIR.length();
+    string parentPath = parentFolder + SLASH_CHAR;
+    if (parentPath.substr(0, len).compare(ROOT_MEDIA_DIR) == 0) {
         parentPath.erase(0, len);
         if (!parentPath.empty()) {
-            fileMetadata->SetRelativePath(parentPath);
+            data_->SetRelativePath(parentPath);
             parentPath = string("/") + parentPath.substr(0, parentPath.length() - 1);
-            fileMetadata->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
+            data_->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
         }
     } else {
         MEDIA_ERR_LOG("path: %{private}s is not correct, right is begin with %{private}s",
-                      path.c_str(), rootDir.c_str());
+                      path_.c_str(), ROOT_MEDIA_DIR.c_str());
+        return E_DATA;
     }
 
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-    return fileMetadata;
+    return E_OK;
 }
 
-
-// Get the internal details of the file
-int32_t MediaScannerObj::ScanFileContent(const string &path, const int32_t parentId)
+int32_t MediaScannerObj::GetFileMetadata()
 {
-    unique_ptr<Metadata> fileMetadata = nullptr;
-    int32_t errCode = ERR_FAIL;
-
-    fileMetadata = GetFileMetadata(path, parentId);
-    if (fileMetadata != nullptr) {
-        errCode = VisitFile(*fileMetadata);
-    } else {
-        MEDIA_ERR_LOG("Failed to allocate memory for file metadata");
-        return ERR_MEM_ALLOC_FAIL;
+    struct stat statInfo = { 0 };
+    if (stat(path_.c_str(), &statInfo) != 0) {
+        MEDIA_ERR_LOG("stat syscall err %{public}d", errno);
+        return E_SYSCALL;
     }
 
-    return errCode;
+    data_ = mediaScannerDb_->GetFileModifiedInfo(path_);
+    if (data_ == nullptr) {
+        MEDIA_ERR_LOG("failed to get file db info");
+        return E_DATA;
+    }
+
+    // may need isPending here
+    if (data_ != nullptr &&
+        data_->GetFileDateModified() == statInfo.st_mtime &&
+        data_->GetFileSize() == statInfo.st_size) {
+        scannedIds_.insert(data_->GetFileId());
+        return E_SCANNED;
+    }
+
+    data_->SetFilePath(path_);
+    data_->SetFileName(ScannerUtils::GetFileNameFromUri(path_));
+
+    data_->SetFileSize(statInfo.st_size);
+    data_->SetFileDateAdded(static_cast<int64_t>(statInfo.st_ctime));
+    data_->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
+
+    string extension = ScannerUtils::GetFileExtensionFromFileUri(path_);
+    string mimeType = ScannerUtils::GetMimeTypeFromExtension(extension);
+    data_->SetFileExtension(extension);
+    data_->SetFileMimeType(mimeType);
+    data_->SetFileMediaType(ScannerUtils::GetMediatypeFromMimetype(mimeType));
+
+    return E_OK;
 }
 
-// Scan the file path
-int32_t MediaScannerObj::ScanFileInternal(const string &path)
+int32_t MediaScannerObj::ScanFileInternal()
 {
-    int32_t errCode = ERR_FAIL;
-
-    string parentFolder = ScannerUtils::GetParentPath(path);
-    if (ScannerUtils::IsFileHidden(path) || (!parentFolder.empty() && IsDirHiddenRecursive(parentFolder))) {
-        MEDIA_ERR_LOG("File Parent path not accessible");
-        return ERR_NOT_ACCESSIBLE;
+    if (ScannerUtils::IsFileHidden(path_)) {
+        MEDIA_ERR_LOG("the file is hidden");
+        return E_FILE_HIDDEN;
     }
 
-    int32_t parentId = mediaScannerDb_->ReadAlbumId(parentFolder);
-
-    errCode = ScanFileContent(path, parentId);
-    if (errCode == ERR_SUCCESS) {
-        // to write the remaining to DB
-        errCode = StartBatchProcessingToDB();
+    string parentFolder = ScannerUtils::GetParentPath(path_);
+    if ((!parentFolder.empty() && IsDirHiddenRecursive(parentFolder))) {
+        MEDIA_ERR_LOG("the dir is hidden");
+        return E_DIR_HIDDEN;
     }
 
-    return errCode;
+    int32_t err = GetFileMetadata();
+    if (err != E_OK) {
+        if (err != E_SCANNED) {
+            MEDIA_ERR_LOG("failed to get file metadata");
+        }
+        return err;
+    }
+
+    err = GetParentDirInfo(parentFolder);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("failed to get dir info");
+        return err;
+    }
+
+    err = GetMediaInfo();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("failed to get media info");
+        // no return here for fs metadata being updated or inserted
+    }
+
+    return AddToTransaction();
 }
 
 int32_t MediaScannerObj::InsertAlbumInfo(string &albumPath, int32_t parentId, string albumName)
@@ -324,7 +278,8 @@ int32_t MediaScannerObj::InsertAlbumInfo(string &albumPath, int32_t parentId, st
         }
     }
 
-    unique_ptr<Metadata> fileMetadata = GetFileMetadata(albumPath, parentId);
+    unique_ptr<Metadata> fileMetadata;
+    // unique_ptr<Metadata> fileMetadata = GetFileMetadata(albumPath, parentId);
     if (fileMetadata != nullptr) {
         fileMetadata->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_ALBUM));
         fileMetadata->SetAlbumName(albumName);
@@ -397,7 +352,7 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
 
             errCode = WalkFileTree(currentPath, albumId);
         } else if (!ScannerUtils::IsFileHidden(currentPath)) {
-            errCode = ScanFileContent(currentPath, parentId);
+            // errCode = ScanFileContent(currentPath, parentId);
         }
     }
 
@@ -494,56 +449,31 @@ bool MediaScannerObj::IsDirHiddenRecursive(const string &path)
 }
 
 // Scan the directory path recursively
-int32_t MediaScannerObj::ScanDirInternal(const string &path)
+int32_t MediaScannerObj::ScanDirInternal()
 {
     int32_t errCode = ERR_FAIL;
 
     // Check if it is hidden folder
-    if (IsDirHiddenRecursive(path)) {
-        MEDIA_ERR_LOG("MediaData %{private}s is hidden", path.c_str());
+    if (IsDirHiddenRecursive(path_)) {
+        MEDIA_ERR_LOG("MediaData %{private}s is hidden", path_.c_str());
         return ERR_NOT_ACCESSIBLE;
     }
 
-    mediaScannerDb_->ReadAlbums(path, albumMap_);
+    mediaScannerDb_->ReadAlbums(path_, albumMap_);
 
     // Walk the folder tree
-    errCode = WalkFileTree(path, NO_PARENT);
+    errCode = WalkFileTree(path_, NO_PARENT);
     if (errCode == ERR_SUCCESS) {
         // write the remaining metadata to DB
-        errCode = StartBatchProcessingToDB();
+        errCode = CommitTransaction();
         if (errCode == ERR_SUCCESS) {
-            CleanupDirectory(path);
+            CleanupDirectory(path_);
         }
     }
 
     albumMap_.clear();
 
     return errCode;
-}
-
-int32_t MediaScannerObj::GetAvailableRequestId()
-{
-    static atomic<int32_t> i(0);
-
-    return i.fetch_add(1);
-}
-
-void MediaScannerObj::SetAbilityContext(void)
-{
-}
-
-void MediaScannerObj::ReleaseAbilityHelper()
-{
-    if (mediaScannerDb_ != nullptr) {
-        mediaScannerDb_->SetRdbHelper();
-    }
-
-    isScannerInitDone_ = false;
-}
-
-bool MediaScannerObj::IsScannerRunning()
-{
-    return !scanResultCbMap_.empty();
 }
 } // namespace Media
 } // namespace OHOS
