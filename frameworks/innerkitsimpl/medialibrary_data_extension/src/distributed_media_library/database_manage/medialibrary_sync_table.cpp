@@ -58,7 +58,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
     NativeRdb::AbsRdbPredicates predicate(tableName.c_str());
     (devices.size() > 0) ? predicate.InDevices(devices) : predicate.InAllDevices();
 
-    DistributedRdb::SyncCallback callback = [&isLast](const DistributedRdb::SyncResult& syncResult) {
+    DistributedRdb::SyncCallback callback = [tableName](const DistributedRdb::SyncResult& syncResult) {
         // update device db
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
             if (iter->first.empty()) {
@@ -66,14 +66,15 @@ bool MediaLibrarySyncTable::SyncPullTable(
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPullTable device = %{public}s syncResult = %{public}d",
-                    iter->first.c_str(), iter->second);
+                MEDIA_ERR_LOG("SyncPullTable tableName = %{public}s device = %{private}s syncResult = %{public}d",
+                    tableName.c_str(), iter->first.c_str(), iter->second);
                 continue;
             }
-            if (isLast) {
+            if (tableName == MEDIALIBRARY_TABLE) {
                 MediaLibraryDevice::GetInstance()->UpdateDeviceSyncStatus(iter->first, DEVICE_SYNCSTATUS_COMPLETE);
             }
-            MEDIA_ERR_LOG("SyncPullTable device = %{public}s success", iter->first.c_str());
+            MEDIA_ERR_LOG("SyncPullTable tableName = %{public}s device = %{private}s success",
+                tableName.c_str(), iter->first.c_str());
         }
     };
 
@@ -101,7 +102,7 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
     NativeRdb::AbsRdbPredicates predicate(tableName.c_str());
     (devices.size() > 0) ? predicate.InDevices(devices) : predicate.InAllDevices();
 
-    DistributedRdb::SyncCallback callback = [&](const DistributedRdb::SyncResult& syncResult) {
+    DistributedRdb::SyncCallback callback = [tableName](const DistributedRdb::SyncResult& syncResult) {
         // update device db
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
             if (iter->first.empty()) {
@@ -109,11 +110,12 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPushTable device = %{public}s syncResult = %{public}d",
-                    iter->first.c_str(), iter->second);
+                MEDIA_ERR_LOG("SyncPushTable tableName = %{public}s device = %{private}s syncResult = %{public}d",
+                    tableName.c_str(), iter->first.c_str(), iter->second);
                 continue;
             }
-            MEDIA_INFO_LOG("SyncPushTable device = %{public}s success", iter->first.c_str());
+            MEDIA_INFO_LOG("SyncPushTable tableName = %{public}s, device = %{private}s success",
+                tableName.c_str(), iter->first.c_str());
         }
     };
 
