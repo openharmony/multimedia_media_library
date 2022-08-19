@@ -66,7 +66,11 @@ int32_t MetadataExtractor::ExtractImageMetadata(Metadata &fileMetadata)
     ret = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL, propertyStr);
     if (ret == ERR_SUCCESS) {
         int64TempMeta = convertTimeStr2TimeStamp(propertyStr);
-        fileMetadata.SetDateTaken(int64TempMeta);
+        if (int64TempMeta < 0) {
+            fileMetadata.SetDateTaken(fileMetadata.GetFileDateModified());
+        } else {
+            fileMetadata.SetDateTaken(int64TempMeta);
+        }
     } else {
         // use modified time as date taken time when date taken not set
         fileMetadata.SetDateTaken(fileMetadata.GetFileDateModified());
@@ -137,7 +141,11 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     strTemp = metadataMap.at(AV_KEY_DATE_TIME);
     if (strTemp != "") {
         int64TempMeta = convertTimeStr2TimeStamp(strTemp);
-        fileMetadata.SetDateTaken(int64TempMeta);
+        if (int64TempMeta < 0) {
+            fileMetadata.SetDateTaken(fileMetadata.GetFileDateModified());
+        } else {
+            fileMetadata.SetDateTaken(int64TempMeta);
+        }
     } else {
         // use modified time as date taken time when date taken not set
         fileMetadata.SetDateTaken(fileMetadata.GetFileDateModified());
