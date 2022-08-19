@@ -85,7 +85,8 @@ napi_value FetchFileResultNapi::Init(napi_env env, napi_value exports)
 // Constructor callback
 napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, napi_callback_info info)
 {
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "FetchFileResultNapiConstructor");
+    MediaLibraryTracer tracer;
+    tracer.Start("FetchFileResultNapiConstructor");
 
     napi_status status;
     napi_value result = nullptr;
@@ -111,7 +112,6 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 fetchRes.release();
             } else {
                 NAPI_ERR_LOG("No native instance assigned yet");
-                FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
                 return result;
             }
 
@@ -119,7 +119,6 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                                FetchFileResultNapi::FetchFileResultNapiDestructor, nullptr, nullptr);
             if (status == napi_ok) {
                 obj.release();
-                FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
                 return thisVar;
             } else {
                 NAPI_ERR_LOG("Failure wrapping js to native napi, status: %{public}d", status);
@@ -127,7 +126,6 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
         }
     }
 
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     return result;
 }
 
@@ -270,6 +268,7 @@ static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, 
             "Failed to obtain fileAsset from DB");
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -515,7 +514,7 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to obtain fileAsset array from DB");
     }
-
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
