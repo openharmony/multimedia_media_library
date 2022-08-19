@@ -134,9 +134,9 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayN
     string relativePath = albumPath.substr(ROOT_MEDIA_DIR.size()) + SLASH_CHAR;
     string destPath = albumPath + SLASH_CHAR + displayName;
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MediaAsset::GetMediaType(displayName));
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, MediaAsset::GetMediaType(displayName));
     ret = MediaLibraryDataManager::GetInstance()->Insert(createFileUri, valuesBucket);
     if (ret > 0) {
         newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", ret));
@@ -166,7 +166,7 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
     }
     relativePath = relativePath + displayName + SLASH_CHAR;
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
     if (ret > 0) {
         int32_t dirId = MediaLibraryObjectUtils::GetParentIdByIdFromDb(to_string(ret));
@@ -196,13 +196,13 @@ int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
     int errCode = 0;
     DataShareValuesBucket valuesBucket;
     if (mediaType == MEDIA_TYPE_ALBUM) {
-        valuesBucket.PutInt(MEDIA_DATA_DB_ID, fileId);
+        valuesBucket.Put(MEDIA_DATA_DB_ID, fileId);
         Uri trashAlbumUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR +
             MEDIA_DIROPRN_FMS_TRASHDIR);
         errCode = MediaLibraryDataManager::GetInstance()->Insert(trashAlbumUri, valuesBucket);
     } else {
-        valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
-        valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileId);
+        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+        valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileId);
         Uri trashAssetUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_SMARTALBUMMAPOPRN + SLASH_CHAR +
             MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
         errCode = MediaLibraryDataManager::GetInstance()->Insert(trashAssetUri, valuesBucket);

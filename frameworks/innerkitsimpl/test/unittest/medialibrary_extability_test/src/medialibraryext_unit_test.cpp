@@ -128,8 +128,8 @@ bool CreateAlbum(string displayName, unique_ptr<FileAsset> &parentAlbumAsset, un
         dirPath = parentAlbumAsset->GetPath() + "/" + displayName;
     }
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, dirPath);
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, dirPath);
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
     auto retVal = helper->Insert(createAlbumUri, valuesBucket);
     MEDIA_INFO_LOG("CreateAlbum:: %{public}s, retVal: %{public}d", dirPath.c_str(), retVal);
     EXPECT_EQ((retVal > 0), true);
@@ -152,9 +152,9 @@ bool CreateFile(string displayName, unique_ptr<FileAsset> &parentAlbumAsset, uni
     Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     DataShare::DataShareValuesBucket valuesBucket;
     string relativePath = parentAlbumAsset->GetRelativePath() + parentAlbumAsset->GetDisplayName() + "/";
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     int32_t retVal = helper->Insert(createAssetUri, valuesBucket);
     MEDIA_INFO_LOG("CreateFile:: %{public}s, retVal: %{public}d", (relativePath + displayName).c_str(), retVal);
     EXPECT_EQ((retVal > 0), true);

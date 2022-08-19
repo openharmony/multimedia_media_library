@@ -948,15 +948,15 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
     int32_t changedRows;
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
-    valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, context->objectInfo->GetFileDisplayName());
+    valuesBucket.Put(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
+    valuesBucket.Put(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, context->objectInfo->GetFileDisplayName());
     if (context->objectInfo->GetOrientation() >= 0) {
-        valuesBucket.PutInt(MEDIA_DATA_DB_ORIENTATION, context->objectInfo->GetOrientation());
+        valuesBucket.Put(MEDIA_DATA_DB_ORIENTATION, context->objectInfo->GetOrientation());
     }
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, context->objectInfo->GetRelativePath());
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, context->objectInfo->GetMediaType());
-    valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, context->objectInfo->GetRelativePath());
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, context->objectInfo->GetMediaType());
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetFileId()));
     changedRows = context->objectInfo->sDataShareHelper_->Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
@@ -1071,12 +1071,14 @@ static void JSOpenExecute(FileAssetAsyncContext *context)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        DataShare::DataShareValueObject valueObject;
         string fileUri = context->objectInfo->GetFileUri();
-        string mode = MEDIA_FILEMODE_READONLY;
 
-        if (context->valuesBucket.GetObject(MEDIA_FILEMODE, valueObject)) {
-            valueObject.GetString(mode);
+        bool isValid = false;
+        string mode = context->valuesBucket.Get(MEDIA_FILEMODE, isValid);
+        if (!isValid) {
+            context->error = ERR_INVALID_OUTPUT;
+            NAPI_ERR_LOG("getting mode invalid");
+            return;
         }
 
         Uri openFileUri(fileUri);
@@ -1148,7 +1150,7 @@ napi_value GetJSArgsForOpen(napi_env env, size_t argc, const napi_value argv[],
             NAPI_ASSERT(env, false, "type mismatch");
         }
     }
-    context->valuesBucket.PutString(MEDIA_FILEMODE, string(buffer));
+    context->valuesBucket.Put(MEDIA_FILEMODE, string(buffer));
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
     NAPI_DEBUG_LOG("GetJSArgsForOpen OUT");
@@ -1211,11 +1213,13 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
     }
     string abilityUri = MEDIALIBRARY_DATA_URI;
     Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
-    DataShare::DataShareValueObject valueObject;
-    int fd = 0;
 
-    if (context->valuesBucket.GetObject(MEDIA_FILEDESCRIPTOR, valueObject)) {
-        valueObject.GetInt(fd);
+    bool isValid = false;
+    int fd = context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid);
+    if (!isValid) {
+        context->error = ERR_INVALID_OUTPUT;
+        NAPI_ERR_LOG("getting fd is invalid");
+        return;
     }
 
     int32_t retVal = close(fd);
@@ -1283,8 +1287,8 @@ napi_value GetJSArgsForClose(napi_env env, size_t argc, const napi_value argv[],
             NAPI_ASSERT(env, false, "type mismatch");
         }
     }
-    context->valuesBucket.PutInt(MEDIA_FILEDESCRIPTOR, fd);
-    context->valuesBucket.PutString(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
+    context->valuesBucket.Put(MEDIA_FILEDESCRIPTOR, fd);
+    context->valuesBucket.Put(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
     return result;
@@ -1638,7 +1642,7 @@ static bool GetIsDirectoryiteNative(napi_env env, const FileAssetAsyncContext &f
     bool IsDirectory = false;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri isDirectoryAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_ISDIRECTORY);
-    context->valuesBucket.PutInt(Media::MEDIA_DATA_DB_ID, context->objectInfo->GetFileId());
+    context->valuesBucket.Put(Media::MEDIA_DATA_DB_ID, context->objectInfo->GetFileId());
     int retVal = context->objectInfo->sDataShareHelper_->Insert(isDirectoryAssetUri, context->valuesBucket);
     NAPI_DEBUG_LOG("GetIsDirectoryiteNative retVal = %{public}d", retVal);
     if (retVal == SUCCESS) {
@@ -1819,8 +1823,8 @@ static void JSFavouriteExecute(FileAssetAsyncContext* context)
 
     int32_t changedRows;
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
-    valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
+    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
     if (context->isFavorite) {
         Uri AddAsseturi(MEDIALIBRARY_DATA_URI + "/"
             + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
@@ -1967,8 +1971,8 @@ static void JSTrashExecute(FileAssetAsyncContext* context)
     }
 
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
-    valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
     int32_t changedRows;
     if (context->isTrash) {
         Uri AddAsseturi(MEDIALIBRARY_DATA_URI + "/"

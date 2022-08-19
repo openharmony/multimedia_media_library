@@ -138,7 +138,7 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
     std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
     Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
     auto ret = helper->Insert(scanUri, valuesBucket);
     EXPECT_EQ(ret, ERR_MEM_ALLOC_FAIL);
     sleep(SCAN_WAIT_TIME);
@@ -252,9 +252,9 @@ void CreateFile(std::string baseURI, std::string targetPath, std::string newName
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, newName);
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, targetPath);
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, newName);
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, targetPath);
 
     int32_t index = helper->Insert(createAssetUri, valuesBucket);
     string destUri = baseURI + "/" + std::to_string(index);
@@ -283,9 +283,9 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, newName);
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, targetPath);
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, newName);
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, targetPath);
     int32_t index = helper->Insert(createAssetUri, valuesBucket);
     string destUri = baseURI + "/" + std::to_string(index);
     Uri openFileUriDest(destUri);
@@ -306,7 +306,7 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
     if (sleepSecond) {
         Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
         DataShareValuesBucket valuesBucket1;
-        valuesBucket1.PutString(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+        valuesBucket1.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
         auto ret = helper->Insert(scanUri, valuesBucket1);
         EXPECT_EQ(ret, ERR_MEM_ALLOC_FAIL);
     }

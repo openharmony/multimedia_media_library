@@ -234,7 +234,7 @@ void MediaScannerNapi::DataShareScanBoardcast(const std::string &event)
     }
     Uri insertUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN + "/" + MEDIA_SCAN_OPERATION);
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, event);
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, event);
     int index = sDataShareHelper_->Insert(insertUri, valuesBucket);
     if (index < 0) {
         NAPI_ERR_LOG("[MediaScannerNapi::DataShareScanBoardcast return status %{public}d", index);

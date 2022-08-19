@@ -638,12 +638,11 @@ int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const std::string &mod
 
 bool MediaLibraryDataManager::CheckFileNameValid(const DataShareValuesBucket &value)
 {
-    DataShareValueObject valueObject;
-    string displayName("");
-    if (!value.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
+    bool isValid = false;
+    std::string displayName = value.Get(MEDIA_DATA_DB_NAME, isValid);
+    if (!isValid) {
         return false;
     }
-    valueObject.GetString(displayName);
 
     if (displayName.empty()) {
         return false;
