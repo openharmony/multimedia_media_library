@@ -62,12 +62,13 @@ public:
     int32_t count_;
     std::string networkId_;
     ResultNapiType resultNapiType_;
-    std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultset_ = nullptr;
+    std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
 
 private:
     std::unique_ptr<FileAsset> GetObject(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     std::variant<int32_t, int64_t, std::string> GetRowValFromColumn(std::string columnName,
         ResultSetDataType dataType, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    int32_t GetFileCount(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
 };
 } // namespace Media
 } // namespace OHOS
