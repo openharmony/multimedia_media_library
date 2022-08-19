@@ -455,6 +455,7 @@ void MediaLibraryRdbStoreObserver::OnChange(const vector<string> &devices)
     if (devices.empty() || bundleName_.empty()) {
         return;
     }
+    MediaLibraryDevice::GetInstance()->NotifyRemoteFileChange();
 }
 
 void MediaLibraryRdbStoreObserver::NotifyDeviceChange()
