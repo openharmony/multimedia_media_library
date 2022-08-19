@@ -138,7 +138,7 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
         fileMetadata.SetFileMimeType(strTemp);
     }
 
-    strTemp = metadataMap.at(AV_KEY_DATE_TIME);
+    strTemp = metadataMap.at(AV_KEY_DATE_TIME_FORMAT);
     if (strTemp != "") {
         int64TempMeta = convertTimeStr2TimeStamp(strTemp);
         if (int64TempMeta < 0) {
