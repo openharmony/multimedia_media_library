@@ -308,7 +308,7 @@ int32_t MediaLibraryManager::DeleteAlbum(const int32_t albumId)
 
     if (sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM +
+        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM + "/" +
             to_string(albumId));
         retVal = sDataShareHelper_->Delete(deleteAlbumUri, {});
         if (retVal < 0) {
