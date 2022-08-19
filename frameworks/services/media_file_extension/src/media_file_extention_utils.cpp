@@ -354,12 +354,12 @@ int32_t HandleFileRename(const FileAsset &srcAsset, const string &displayName, c
     Uri updateAssetUri(uri + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_MODIFYASSET);
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, srcAsset.GetMediaType());
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, srcAsset.GetUri());
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.PutString(MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(displayName));
-    valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, srcAsset.GetMediaType());
+    valuesBucket.Put(MEDIA_DATA_DB_URI, srcAsset.GetUri());
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
+    valuesBucket.Put(MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + MediaLibraryDataManagerUtils::GetIdFromUri(srcAsset.GetUri()));
     auto ret = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucket, predicates);
     if (ret > 0) {
@@ -486,11 +486,11 @@ int32_t HandleFileMove(const FileAsset &srcAsset, const string &destRelativePath
     Uri updateAssetUri(uri + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_MODIFYASSET);
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, srcAsset.GetMediaType());
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, srcAsset.GetUri());
-    valuesBucket.PutString(MEDIA_DATA_DB_NAME, srcAsset.GetDisplayName());
-    valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, srcAsset.GetMediaType());
+    valuesBucket.Put(MEDIA_DATA_DB_URI, srcAsset.GetUri());
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, srcAsset.GetDisplayName());
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + MediaLibraryDataManagerUtils::GetIdFromUri(srcAsset.GetUri()));
     auto ret = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucket, predicates);
     if (ret > 0) {

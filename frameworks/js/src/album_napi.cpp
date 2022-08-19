@@ -713,18 +713,18 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
 
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
+    valuesBucket.Put(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetAlbumId()));
-    valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
     Uri uri(MEDIALIBRARY_DATA_URI);
     int changedRows = context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, valuesBucket);
     if (changedRows > 0) {
         DataSharePredicates filePredicates;
         DataShareValuesBucket fileValuesBucket;
-        fileValuesBucket.PutString(MEDIA_DATA_DB_BUCKET_NAME, context->objectInfo->GetAlbumName());
+        fileValuesBucket.Put(MEDIA_DATA_DB_BUCKET_NAME, context->objectInfo->GetAlbumName());
         filePredicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = " +
             std::to_string(context->objectInfo->GetAlbumId()));
-        fileValuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+        fileValuesBucket.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
         Uri fileUuri(MEDIALIBRARY_DATA_URI);
         changedRows = context->objectInfo->GetMediaDataHelper()->Update(fileUuri, filePredicates, fileValuesBucket);
     }

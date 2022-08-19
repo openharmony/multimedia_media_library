@@ -161,7 +161,7 @@ int32_t main()
     }
     Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
     DataShareValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
     mediaDataShareHelper->Insert(scanUri, valuesBucket);
     return 0;
 }

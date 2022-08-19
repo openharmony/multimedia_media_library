@@ -1050,10 +1050,11 @@ static bool CheckTitlePrams(MediaLibraryAsyncContext *context)
         NAPI_ERR_LOG("Async context is null");
         return false;
     }
-    DataShare::DataShareValueObject valueObject;
-    string title = "";
-    if (context->valuesBucket.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
-        valueObject.GetString(title);
+    bool isValid = false;
+    string title = context->valuesBucket.Get(MEDIA_DATA_DB_NAME, isValid);
+    if (!isValid) {
+        NAPI_ERR_LOG("getting title is invalid");
+        return false;
     }
     if (title.empty()) {
         return false;
@@ -1130,14 +1131,18 @@ static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
         NAPI_ERR_LOG("Async context is null");
         return false;
     }
-    DataShare::DataShareValueObject valueObject;
-    string relativePath = "";
-    if (context->valuesBucket.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
-        valueObject.GetString(relativePath);
+    bool isValid = false;
+    string relativePath = context->valuesBucket.Get(MEDIA_DATA_DB_RELATIVE_PATH, isValid);
+    if (!isValid) {
+        NAPI_DEBUG_LOG("getting relativePath is invalid");
+        return false;
     }
-    int32_t fileMediaType = 0;
-    context->valuesBucket.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject);
-    valueObject.GetInt(fileMediaType);
+    isValid = false;
+    int32_t fileMediaType = context->valuesBucket.Get(MEDIA_DATA_DB_MEDIA_TYPE, isValid);
+    if (!isValid) {
+        NAPI_DEBUG_LOG("getting fileMediaType is invalid");
+        return false;
+    }
     if (relativePath.empty()) {
         NAPI_DEBUG_LOG("CheckRelativePathPrams relativePath is empty");
         return false;
@@ -1200,9 +1205,9 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
     }
     }
 
-    context->valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileMediaType);
-    context->valuesBucket.PutString(MEDIA_DATA_DB_NAME, string(titleBuffer));
-    context->valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, string(relativePathBuffer));
+    context->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileMediaType);
+    context->valuesBucket.Put(MEDIA_DATA_DB_NAME, string(titleBuffer));
+    context->valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, string(relativePathBuffer));
     NAPI_DEBUG_LOG("GetJSArgsForCreateAsset END");
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -1290,12 +1295,13 @@ static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
         return;
     }
 
-    DataShare::DataShareValueObject valueObject;
-    string notifyUri;
     string mediaType;
     string deleteId;
-    context->valuesBucket.GetObject(MEDIA_DATA_DB_URI, valueObject);
-    valueObject.GetString(notifyUri);
+    bool isValid = false;
+    string notifyUri = context->valuesBucket.Get(MEDIA_DATA_DB_RELATIVE_PATH, isValid);
+    if (!isValid) {
+        return;
+    }
     size_t index = notifyUri.rfind('/');
     if (index != string::npos) {
         deleteId = notifyUri.substr(index + 1);
@@ -1373,7 +1379,7 @@ napi_value GetJSArgsForDeleteAsset(napi_env env, size_t argc, const napi_value a
         }
     }
 
-    context->valuesBucket.PutString(MEDIA_DATA_DB_URI, string(buffer));
+    context->valuesBucket.Put(MEDIA_DATA_DB_URI, string(buffer));
 
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -1483,7 +1489,7 @@ napi_value GetJSArgsForCreateAlbum(napi_env env, size_t argc, const napi_value a
         }
     }
 
-    context->valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, albumNapiObj->GetAlbumPath());
+    context->valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, albumNapiObj->GetAlbumPath());
 
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -1536,10 +1542,11 @@ static void JSDeleteAlbumCompleteCallback(napi_env env, napi_status status,
 
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
-        DataShare::DataShareValueObject valueObject;
-        int32_t albumId = 0;
-        context->valuesBucket.GetObject(MEDIA_DATA_DB_ID, valueObject);
-        valueObject.GetInt(albumId);
+        bool isValid = false;
+        int32_t albumId = context->valuesBucket.Get(MEDIA_DATA_DB_ID, isValid);
+        if (!isValid) {
+            return;
+        }
         Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM + "/" +
             to_string(albumId));
         int retVal = context->objectInfo->sDataShareHelper_->Delete(deleteAlbumUri, {});
@@ -1590,7 +1597,7 @@ napi_value GetJSArgsForDeleteAlbum(napi_env env, size_t argc, const napi_value a
         }
     }
 
-    context->valuesBucket.PutInt(MEDIA_DATA_DB_ID, albumId);
+    context->valuesBucket.Put(MEDIA_DATA_DB_ID, albumId);
 
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
@@ -2280,7 +2287,7 @@ napi_value GetJSArgsForCreateSmartAlbum(napi_env env, size_t argc, const napi_va
             NAPI_ASSERT(env, false, "type mismatch");
         }
     }
-    context->valuesBucket.PutString(SMARTALBUM_DB_NAME, string(buffer));
+    context->valuesBucket.Put(SMARTALBUM_DB_NAME, string(buffer));
     napi_get_boolean(env, true, &result);
     return result;
 }
@@ -2392,7 +2399,7 @@ napi_value GetJSArgsForDeleteSmartAlbum(napi_env env, size_t argc, const napi_va
     std::string strRow;
     string::size_type pos = coverUri.find_last_of('/');
     strRow = coverUri.substr(pos + 1);
-    context->valuesBucket.PutInt(SMARTALBUM_DB_ID, std::stoi(strRow));
+    context->valuesBucket.Put(SMARTALBUM_DB_ID, std::stoi(strRow));
     napi_get_boolean(env, true, &result);
     return result;
 }
@@ -2423,10 +2430,10 @@ static void JSDeleteSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        DataShare::DataShareValueObject valueObject;
-        int32_t smartAlbumId = 0;
-        if (context->valuesBucket.GetObject(SMARTALBUM_DB_ID, valueObject)) {
-            valueObject.GetInt(smartAlbumId);
+        bool isValid = false;
+        int32_t smartAlbumId = context->valuesBucket.Get(SMARTALBUM_DB_ID, isValid);
+        if (!isValid) {
+            return;
         }
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri DeleteSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" +
@@ -2764,7 +2771,7 @@ static int32_t CloseAsset(MediaLibraryAsyncContext *context, string uri)
     string abilityUri = MEDIALIBRARY_DATA_URI;
     Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
     context->valuesBucket.Clear();
-    context->valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
+    context->valuesBucket.Put(MEDIA_DATA_DB_URI, uri);
     int32_t ret = context->objectInfo->sDataShareHelper_->Insert(closeAssetUri, context->valuesBucket);
     NAPI_DEBUG_LOG("File close asset %{public}d", ret);
     if (ret != E_SUCCESS) {
@@ -2921,20 +2928,20 @@ static napi_value GetStoreMediaAssetArgs(napi_env env, napi_value param,
         context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
         return nullptr;
     };
-    context->valuesBucket.PutString(MEDIA_DATA_DB_NAME, fileName);
+    context->valuesBucket.Put(MEDIA_DATA_DB_NAME, fileName);
     string mimeType;
     if (!GetStoreMediaAssetProper(env, param, "mimeType", mimeType)) {
         NAPI_ERR_LOG("param get fail");
         return nullptr;
     }
     auto mediaType = ConvertMediaType(mimeType);
-    context->valuesBucket.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    context->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     string relativePath;
     if (!GetStoreMediaAssetProper(env, param, "relativePath", relativePath)) {
         NAPI_DEBUG_LOG("optional relativePath param empty");
         relativePath = GetDefaultDirectory(mediaType);
     }
-    context->valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    context->valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     NAPI_DEBUG_LOG("src:%{public}s mime:%{public}s relp:%{private}s filename:%{private}s",
         context->storeMediaSrc.c_str(), mimeType.c_str(), relativePath.c_str(), fileName.c_str());
     napi_value result = nullptr;
