@@ -956,7 +956,6 @@ static void JSCommitModifyExecute(FileAssetAsyncContext *context)
     }
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, context->objectInfo->GetRelativePath());
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, context->objectInfo->GetMediaType());
-    valuesBucket.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetFileId()));
     changedRows = context->objectInfo->sDataShareHelper_->Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {

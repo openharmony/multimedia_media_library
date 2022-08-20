@@ -337,7 +337,6 @@ unique_ptr<Metadata> MediaScannerObj::GetFileMetadata(const string &path, const 
     struct stat statInfo = { 0 };
     if (stat(path.c_str(), &statInfo) == ERR_SUCCESS) {
         fileMetadata->SetFileSize(static_cast<int64_t>(statInfo.st_size));
-        fileMetadata->SetFileDateAdded(static_cast<int64_t>(statInfo.st_ctime));
         fileMetadata->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
     }
 
