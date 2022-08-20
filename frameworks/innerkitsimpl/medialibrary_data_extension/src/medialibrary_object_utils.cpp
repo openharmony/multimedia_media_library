@@ -128,7 +128,7 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     struct stat statInfo {};
     if (stat(fileAsset.GetPath().c_str(), &statInfo) == 0) {
         assetInfo.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
-        assetInfo.PutLong(MEDIA_DATA_DB_DATE_ADDED, statInfo.st_ctime);
+        assetInfo.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
     }
     assetInfo.PutString(MEDIA_DATA_DB_FILE_PATH, fileAsset.GetPath());
     assetInfo.PutInt(MEDIA_DATA_DB_BUCKET_ID, dirAsset.GetAlbumId());
@@ -269,7 +269,7 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
         values.PutString(MEDIA_DATA_DB_NAME, title);
         values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MediaType::MEDIA_TYPE_ALBUM);
         values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentId);
-        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::GetAlbumDateModified(path));
+        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
         values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::GetAlbumDateModified(path));
 
         MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::CREATE, values);
@@ -750,7 +750,6 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
     values.PutString(MEDIA_DATA_DB_BUCKET_NAME, bucketName);
     values.PutInt(MEDIA_DATA_DB_BUCKET_ID, bucketId);
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, bucketId);
-    values.PutLong(MEDIA_DATA_DB_DATE_ADDED, statInfo.st_ctime);
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
     cmd.SetValueBucket(values);
 
