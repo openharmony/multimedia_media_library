@@ -715,7 +715,6 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetAlbumId()));
-    valuesBucket.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
     Uri uri(MEDIALIBRARY_DATA_URI);
     int changedRows = context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, valuesBucket);
     if (changedRows > 0) {
@@ -724,7 +723,6 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
         fileValuesBucket.Put(MEDIA_DATA_DB_BUCKET_NAME, context->objectInfo->GetAlbumName());
         filePredicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = " +
             std::to_string(context->objectInfo->GetAlbumId()));
-        fileValuesBucket.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
         Uri fileUuri(MEDIALIBRARY_DATA_URI);
         changedRows = context->objectInfo->GetMediaDataHelper()->Update(fileUuri, filePredicates, fileValuesBucket);
     }

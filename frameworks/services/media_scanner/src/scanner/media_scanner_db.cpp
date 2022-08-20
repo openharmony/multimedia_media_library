@@ -18,6 +18,7 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
+#include "media_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -53,7 +54,7 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
     values.Put(MEDIA_DATA_DB_NAME, metadata.GetFileName());
 
     values.Put(MEDIA_DATA_DB_SIZE, metadata.GetFileSize());
-    values.Put(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
+    values.Put(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
     values.Put(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
     values.Put(MEDIA_DATA_DB_TITLE, ScannerUtils::GetFileTitle(metadata.GetFileName()));
     values.Put(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
@@ -134,7 +135,6 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     values.Put(MEDIA_DATA_DB_NAME, metadata.GetFileName());
 
     values.Put(MEDIA_DATA_DB_SIZE, metadata.GetFileSize());
-    values.Put(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
     values.Put(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
 
     values.Put(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
