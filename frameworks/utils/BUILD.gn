@@ -12,14 +12,30 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
 
 ohos_static_library("medialibrary_common_utils") {
   include_dirs = [
     "./include/",
     "//third_party/openssl/include/",
+    "${MEDIA_LIB_INTERFACES_DIR}/kits/js/include",
+    "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
   ]
 
   sources = [ "src/medialibrary_common_utils.cpp" ]
 
-  deps = [ "//third_party/openssl:libcrypto_shared" ]
+  deps = [
+    "//third_party/openssl:libcrypto_shared",
+    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
+  ]
+
+  external_deps = [
+    "common_event_service:cesfwk_innerkits",
+    "data_share:datashare_common",
+    "data_share:datashare_provider",
+    "hitrace_native:hitrace_meter",
+    "ipc:ipc_core",
+    "relational_store:native_appdatafwk",
+    "relational_store:rdb_data_share_adapter",
+  ]
 }
