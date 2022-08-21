@@ -15,7 +15,9 @@
 
 #include "medialibrary_common_utils.h"
 
+#include <regex>
 #include "medialibrary_errno.h"
+#include "medialibrary_napi_utils.h"
 #include "openssl/sha.h"
 
 namespace OHOS {
@@ -79,6 +81,104 @@ int32_t MediaLibraryCommonUtils::GenKeySHA256(const std::vector<uint8_t> &input,
 int32_t MediaLibraryCommonUtils::GenKeySHA256(const std::string &input, std::string &key)
 {
     return GenKey((const unsigned char *)input.c_str(), input.size(), key);
+}
+
+void MediaLibraryCommonUtils::Trim(std::string &str)
+{
+    if (!str.empty()) {
+        str.erase(0, str.find_first_not_of(" "));
+        str.erase(str.find_last_not_of(" ") + 1);
+    }
+}
+
+bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)
+{
+    std::string exp = express;
+    Trim(exp);
+    auto pos = exp.find_last_of(" ");
+    if (pos != std::string::npos) {
+        exp = exp.substr(pos + 1, exp.length());
+    }
+
+    for (auto key : fileKeyEnumValues) {
+        if (key == exp) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool MediaLibraryCommonUtils::CheckExpressValidation(std::vector<std::string> &sepratedStr)
+{
+    for (auto str : sepratedStr) {
+        if (!CheckWhiteList(str)) {
+        }
+    }
+
+    return true;
+}
+
+void MediaLibraryCommonUtils::SeprateSelection(const std::string &strCondition, std::vector<std::string> &sepratedStr)
+{
+    // seprate strCondition by where Operator
+    std::regex pattern("\\s*<=\\s*|\\s*>=\\s*|\\s*<>\\s*|\\s*=\\s*|\\s*>\\s*|" \
+                            "\\s*<\\s*|\\s*BETWEEN\\s*|\\s*LIKE\\s*|\\s*IN\\s*",
+                    std::regex_constants::ECMAScript | std::regex_constants::icase);
+    std::sregex_token_iterator iter(strCondition.begin(), strCondition.end(), pattern, -1);
+    decltype(iter) end;
+    for (; iter != end; iter++) {
+        sepratedStr.push_back(iter->str());
+    }
+}
+
+bool MediaLibraryCommonUtils::CheckKeyWord(const std::string &strCondition)
+{
+    std::regex pattern("\\s*exec\\s*|\\s*insert\\s*|\\s*delete\\s*|\\s*update\\s*|" \
+                            "\\s*join\\s*|\\s*union\\s*|\\s*master\\s*|\\s*truncate\\s*",
+                    std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+    if (regex_search(strCondition, pattern)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool MediaLibraryCommonUtils::CheckIllegalCharacter(const std::string &strCondition)
+{
+    /* if strCondition contains ';', it will be sepreate to two clause */
+    if (strCondition.find(';') == std::string::npos) {
+        return true;
+    }
+    /* other check to do */
+    return false;
+}
+
+bool MediaLibraryCommonUtils::CheckWhereClause(const std::string &whereClause)
+{
+    /* check whether query condition has illegal character */
+    if (!CheckIllegalCharacter(whereClause)) {
+        return false;
+    }
+
+    /* check whether query condition has key word */
+    if (!CheckKeyWord(whereClause)) {
+        return false;
+    }
+
+    std::vector<std::string> sepratedStr;
+    SeprateSelection(whereClause, sepratedStr);
+    /* check every query condition */
+    return CheckExpressValidation(sepratedStr);
+}
+
+void MediaLibraryCommonUtils::AppendSelections(std::string &selections)
+{
+    if (selections.empty()) {
+        return;
+    }
+    selections = "(" + selections + ")";
 }
 } // namespace Media
 } // namespace OHOS

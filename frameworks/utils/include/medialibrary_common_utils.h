@@ -29,13 +29,20 @@ class MediaLibraryCommonUtils {
 public:
     static int32_t GenKeySHA256(const std::vector<uint8_t> &input, std::string &key);
     static int32_t GenKeySHA256(const std::string &input, std::string &key);
+    static bool CheckWhereClause(const std::string &whereClause);
+    static void AppendSelections(std::string &selections);
 private:
-    MediaLibraryCommonUtils() {};
-    ~MediaLibraryCommonUtils() {};
+    MediaLibraryCommonUtils() = delete;
+    ~MediaLibraryCommonUtils() = delete;
 
     static void Char2Hex(const unsigned char *data, const size_t len, std::string &hexStr);
     static int32_t GenKey(const unsigned char *data, const size_t len, std::string &key);
-
+    static bool CheckIllegalCharacter(const std::string &strCondition);
+    static bool CheckKeyWord(const std::string &strCondition);
+    static void SeprateSelection(const std::string &strCondition, std::vector<std::string> &sepratedStr);
+    static bool CheckExpressValidation(std::vector<std::string> &sepratedStr);
+    static bool CheckWhiteList(const std::string &express);
+    static void Trim(std::string &str);
     static const std::string CHAR2HEX_TABLE[UCHAR_MAX + 1];
 };
 } // namespace Media

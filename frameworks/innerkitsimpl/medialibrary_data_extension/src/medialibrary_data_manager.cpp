@@ -29,6 +29,7 @@
 #include "media_log.h"
 #include "media_scanner.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_common_utils.h"
 #include "medialibrary_device.h"
 #include "medialibrary_device_info.h"
 #include "medialibrary_dir_operations.h"
@@ -537,8 +538,14 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         return nullptr;
     }
 
+    auto whereClause = predicates.GetWhereClause();
+    if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
+        MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
+        return nullptr;
+    }
+
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
-    cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(predicates.GetOrder());
 
