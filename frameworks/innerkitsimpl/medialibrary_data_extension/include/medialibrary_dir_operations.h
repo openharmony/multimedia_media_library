@@ -79,8 +79,8 @@ private:
                              const std::unordered_map
                              <std::string, DirAsset> &dirQuerySetMap);
 
-    int32_t GetRootDirAndExtension(std::string &displayName,
-                                   std::string &relativePath, NativeRdb::ValuesBucket &outValues);
+    int32_t GetRootDirAndExtension(std::string &displayName, std::string &relativePath,
+                                   int mediaType, NativeRdb::ValuesBucket &outValues);
 
     bool CheckMediaType(std::string mediaTypes, int mediaType);
 
