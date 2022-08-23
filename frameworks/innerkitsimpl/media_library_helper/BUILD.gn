@@ -71,7 +71,7 @@ ohos_shared_library("media_library") {
   deps = [
     ":media_library_source",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_consumer",
     "//utils/native/base:utils",
   ]
 
@@ -123,7 +123,7 @@ ohos_static_library("media_thumbnail_helper") {
   ]
   deps = [
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_abilitykit",
+    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api:datashare_consumer",
     "//foundation/distributeddatamgr/distributeddatamgr/interfaces/innerkits/distributeddata:distributeddata_inner",
     "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
     "//utils/native/base:utils",
