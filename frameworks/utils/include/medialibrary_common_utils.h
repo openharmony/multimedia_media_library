@@ -39,10 +39,12 @@ private:
     static int32_t GenKey(const unsigned char *data, const size_t len, std::string &key);
     static bool CheckIllegalCharacter(const std::string &strCondition);
     static bool CheckKeyWord(const std::string &strCondition);
-    static void SeprateSelection(const std::string &strCondition, std::vector<std::string> &sepratedStr);
+    static void SeprateSelection(std::string &strCondition, std::vector<std::string> &sepratedStr);
     static bool CheckExpressValidation(std::vector<std::string> &sepratedStr);
     static bool CheckWhiteList(const std::string &express);
-    static void Trim(std::string &str);
+    static void ExtractKeyWord(std::string &str);
+    static void removeSpecialCondition(std::string &hacker, const std::string &pattern);
+    static void removeSpecialCondition(std::string &hacker);
     static const std::string CHAR2HEX_TABLE[UCHAR_MAX + 1];
 };
 } // namespace Media
