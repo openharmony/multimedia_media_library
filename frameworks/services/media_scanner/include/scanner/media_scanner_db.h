@@ -56,19 +56,18 @@ public:
     vector<string> BatchInsert(const vector<Metadata> &metadataList);
 
     int32_t UpdateMetadata(const vector<Metadata> &metadataList);
-    int32_t GetIdFromUri(const string &path) const;
     int32_t InsertAlbum(const Metadata &metadata);
     int32_t UpdateAlbum(const Metadata &metadata);
-    void ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap);
-    unique_ptr<Metadata> ReadMetadata(const string &path);
-    unique_ptr<Metadata> GetFileModifiedInfo(const string &path);
+    int32_t ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap);
     unordered_map<int32_t, MediaType> GetIdsFromFilePath(const string &path);
 
     int32_t GetIdFromPath(const string &path);
+    int32_t GetFileBasicInfo(const string &path, unique_ptr<Metadata> &ptr);
 
 private:
     std::string GetMediaTypeUri(MediaType mediaType);
-    std::unique_ptr<Metadata> FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    int32_t FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+        unique_ptr<Metadata> &ptr);
     void ExtractMetaFromColumn(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
                                unique_ptr<Metadata> &metadata, const std::string &col);
 };

@@ -49,11 +49,7 @@ void MediaScanExecutor::HandleScanExecution()
             queue_.pop();
         }
 
-        if (scanner->isDir()) {
-            scanner->ScanDir();
-        } else {
-            scanner->ScanFile();
-        }
+        (void)scanner->Scan();
     }
 }
 } // namespace Media
