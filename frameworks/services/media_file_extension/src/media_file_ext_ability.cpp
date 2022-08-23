@@ -105,6 +105,10 @@ int MediaFileExtAbility::OpenFile(const Uri &uri, int flags)
     if (!MediaFileExtentionUtils::CheckUriValid(uri.ToString())) {
         return E_URI_INVALID;
     }
+    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri.ToString());
+    if (!networkId.empty() && flags != O_RDONLY) {
+        return E_OPENFILE_INVALID_FLAG;
+    }
     string mode;
     if (flags == O_RDONLY) {
         mode = MEDIA_FILEMODE_READONLY;

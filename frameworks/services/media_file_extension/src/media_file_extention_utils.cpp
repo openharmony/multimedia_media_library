@@ -31,6 +31,7 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
+using namespace OHOS::FileAccessFwk;
 
 namespace OHOS {
 namespace Media {
@@ -117,8 +118,7 @@ int32_t MediaFileExtentionUtils::CheckMkdirValid(MediaFileUriType uriType, const
     return E_SUCCESS;
 }
 
-void GetSingleFileInfo(const string &networkId, FileAccessFwk::FileInfo &fileInfo,
-    shared_ptr<AbsSharedResultSet> &result)
+void GetSingleFileInfo(const string &networkId, FileInfo &fileInfo, shared_ptr<AbsSharedResultSet> &result)
 {
     int fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, result, TYPE_INT32));
     string mimeType = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MIME_TYPE, result, TYPE_STRING));
@@ -136,8 +136,7 @@ void GetSingleFileInfo(const string &networkId, FileAccessFwk::FileInfo &fileInf
     }
 }
 
-void GetFileInfoFromResult(const string &networkId, shared_ptr<AbsSharedResultSet> &result,
-    vector<FileAccessFwk::FileInfo> &fileList)
+void GetFileInfoFromResult(const string &networkId, shared_ptr<AbsSharedResultSet> &result, vector<FileInfo> &fileList)
 {
     int count = 0;
     result->GetRowCount(count);
@@ -145,7 +144,7 @@ void GetFileInfoFromResult(const string &networkId, shared_ptr<AbsSharedResultSe
     auto ret = result->GoToFirstRow();
     CHECK_AND_RETURN_LOG(ret == 0, "Failed to shift at first row");
     fileList.reserve(count);
-    FileAccessFwk::FileInfo fileInfo;
+    FileInfo fileInfo;
     for (int i = 0; i < count; i++) {
         GetSingleFileInfo(networkId, fileInfo, result);
         fileList.push_back(fileInfo);
@@ -231,7 +230,7 @@ int32_t GetListFilePredicates(const string &selectUri, string &networkId, string
     return E_SUCCESS;
 }
 
-int32_t MediaFileExtentionUtils::ListFile(const string &selectUri, vector<FileAccessFwk::FileInfo> &fileList)
+int32_t MediaFileExtentionUtils::ListFile(const string &selectUri, vector<FileInfo> &fileList)
 {
     string networkId, selection;
     vector<string> selectionArgs;
@@ -251,17 +250,19 @@ int32_t MediaFileExtentionUtils::ListFile(const string &selectUri, vector<FileAc
     return errCode;
 }
 
-bool GetDeviceInfo(shared_ptr<AbsSharedResultSet> &result, FileAccessFwk::DeviceInfo &deviceInfo)
+bool GetDeviceInfo(shared_ptr<AbsSharedResultSet> &result, DeviceInfo &deviceInfo)
 {
     string networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, result, TYPE_STRING));
-    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_ROOT;
+    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_ROOT;
     deviceInfo.uri = Uri(uri);
     deviceInfo.displayName = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NAME, result, TYPE_STRING));
-    deviceInfo.type = FileAccessFwk::DEVICE_SHARED_TERMINAL;
+    deviceInfo.deviceId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_UDID, result, TYPE_STRING));
+    deviceInfo.flags = FLAG_SUPPORTS_READ;
+    deviceInfo.type = DEVICE_SHARED_TERMINAL;
     return true;
 }
 
-void GetDeviceInfoFromResult(shared_ptr<AbsSharedResultSet> &result, vector<FileAccessFwk::DeviceInfo> &deviceList)
+void GetDeviceInfoFromResult(shared_ptr<AbsSharedResultSet> &result, vector<DeviceInfo> &deviceList)
 {
     int count = 0;
     result->GetRowCount(count);
@@ -270,7 +271,7 @@ void GetDeviceInfoFromResult(shared_ptr<AbsSharedResultSet> &result, vector<File
     CHECK_AND_RETURN_LOG(ret == 0, "Failed to shift at first row");
     deviceList.reserve(count + 1);
     for (int i = 0; i < count; i++) {
-        FileAccessFwk::DeviceInfo deviceInfo;
+        DeviceInfo deviceInfo;
         GetDeviceInfo(result, deviceInfo);
         deviceList.push_back(deviceInfo);
         ret = result->GoToNextRow();
@@ -288,13 +289,15 @@ void GetActivePeer(shared_ptr<AbsSharedResultSet> &result)
     result = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
-void MediaFileExtentionUtils::GetRoots(vector<FileAccessFwk::DeviceInfo> &deviceList)
+void MediaFileExtentionUtils::GetRoots(vector<DeviceInfo> &deviceList)
 {
-    FileAccessFwk::DeviceInfo deviceInfo;
+    DeviceInfo deviceInfo;
     // add local root
     deviceInfo.uri = Uri(MEDIALIBRARY_DATA_URI + MEDIALIBRARY_ROOT);
     deviceInfo.displayName = MEDIALIBRARY_LOCAL_DEVICE_NAME;
-    deviceInfo.type = FileAccessFwk::DEVICE_LOCAL_DISK;
+    deviceInfo.flags = FLAG_SUPPORTS_WRITE | FLAG_SUPPORTS_READ | FLAG_SUPPORTS_DELETE | FLAG_SUPPORTS_RENAME |
+                       FLAG_SUPPORTS_MOVE;
+    deviceInfo.type = DEVICE_LOCAL_DISK;
     deviceList.push_back(deviceInfo);
     shared_ptr<AbsSharedResultSet> resultSet;
     GetActivePeer(resultSet);
