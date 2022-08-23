@@ -127,11 +127,13 @@ variant<int32_t, int64_t, string> ReturnDefaultOnError(string errMsg, ResultSetD
     MEDIA_ERR_LOG("%{public}s", errMsg.c_str());
     if ((dataType) == TYPE_STRING)
         return "";
+    else if (dataType == TYPE_INT64)
+        return 0LL;
     else
         return 0;
 }
 
-variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string columnName, ResultSetDataType dataType,
+variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumn(string columnName, ResultSetDataType dataType,
     shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
     int index;
@@ -162,10 +164,9 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
                 status = resultset_->GetString(index, stringVal);
             }
             if (status != NativeRdb::E_OK) {
-                cellValue = "";
-            } else {
-                cellValue = stringVal;
+                MEDIA_ERR_LOG("resultSet GetString err %{public}d", status);
             }
+            cellValue = stringVal;
             break;
         case TYPE_INT32:
             if (resultSet) {
@@ -174,10 +175,9 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
                 status = resultset_->GetInt(index, integerVal);
             }
             if (status != NativeRdb::E_OK) {
-                cellValue = -1;
-            } else {
-                cellValue = integerVal;
+                MEDIA_ERR_LOG("resultSet GetInt err %{public}d", status);
             }
+            cellValue = integerVal;
             break;
         case TYPE_INT64:
             if (resultSet) {
@@ -186,13 +186,12 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
                 status = resultset_->GetLong(index, longVal);
             }
             if (status != NativeRdb::E_OK) {
-                cellValue = -1;
-            } else {
-                cellValue = longVal;
+                MEDIA_ERR_LOG("resultSet GetInt64 err %{public}d", status);
             }
+            cellValue = longVal;
             break;
         default:
-            MEDIA_ERR_LOG("not match  dataType %{public}d!!!!!", dataType);
+            MEDIA_ERR_LOG("not match  dataType %{public}d", dataType);
             break;
     }
 
@@ -222,63 +221,63 @@ unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResu
 
     unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
 
-    fileAsset->SetId(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_ID, TYPE_INT32, resultSet)));
+    fileAsset->SetId(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_ID, TYPE_INT32, resultSet)));
 
     fileAsset->SetMediaType(static_cast<Media::MediaType>(get<ARG_INT32>(
-        GetRowValFromColumnn(MEDIA_DATA_DB_MEDIA_TYPE, TYPE_INT32, resultSet))));
+        GetRowValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, TYPE_INT32, resultSet))));
 
-    fileAsset->SetDisplayName(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_NAME, TYPE_STRING, resultSet)));
+    fileAsset->SetDisplayName(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_NAME, TYPE_STRING, resultSet)));
 
-    fileAsset->SetRelativePath(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_RELATIVE_PATH,
+    fileAsset->SetRelativePath(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
         TYPE_STRING, resultSet)));
 
-    fileAsset->SetParent(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_PARENT_ID, TYPE_INT32, resultSet)));
+    fileAsset->SetParent(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_PARENT_ID, TYPE_INT32, resultSet)));
 
-    fileAsset->SetSize(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_SIZE, TYPE_INT64, resultSet)));
+    fileAsset->SetSize(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_SIZE, TYPE_INT64, resultSet)));
 
-    fileAsset->SetDateAdded(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64, resultSet)));
+    fileAsset->SetDateAdded(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64, resultSet)));
 
-    fileAsset->SetDateModified(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_MODIFIED,
+    fileAsset->SetDateModified(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED,
         TYPE_INT64, resultSet)));
 
-    fileAsset->SetDateTaken(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64, resultSet)));
+    fileAsset->SetDateTaken(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64, resultSet)));
 
-    fileAsset->SetPath(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_FILE_PATH, TYPE_STRING, resultSet)));
+    fileAsset->SetPath(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_FILE_PATH, TYPE_STRING, resultSet)));
 
-    fileAsset->SetMimeType(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_MIME_TYPE, TYPE_STRING, resultSet)));
+    fileAsset->SetMimeType(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_MIME_TYPE, TYPE_STRING, resultSet)));
 
-    fileAsset->SetTitle(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_TITLE, TYPE_STRING, resultSet)));
+    fileAsset->SetTitle(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_TITLE, TYPE_STRING, resultSet)));
 
-    fileAsset->SetArtist(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_ARTIST, TYPE_STRING, resultSet)));
+    fileAsset->SetArtist(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_ARTIST, TYPE_STRING, resultSet)));
 
-    fileAsset->SetAlbum(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_ALBUM, TYPE_STRING, resultSet)));
+    fileAsset->SetAlbum(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_ALBUM, TYPE_STRING, resultSet)));
 
-    fileAsset->SetWidth(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_WIDTH, TYPE_INT32, resultSet)));
+    fileAsset->SetWidth(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_WIDTH, TYPE_INT32, resultSet)));
 
-    fileAsset->SetHeight(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_HEIGHT, TYPE_INT32, resultSet)));
+    fileAsset->SetHeight(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_HEIGHT, TYPE_INT32, resultSet)));
 
-    fileAsset->SetDuration(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_DURATION, TYPE_INT32, resultSet)));
+    fileAsset->SetDuration(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_DURATION, TYPE_INT32, resultSet)));
 
-    fileAsset->SetOrientation(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_ORIENTATION, TYPE_INT32, resultSet)));
+    fileAsset->SetOrientation(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_ORIENTATION, TYPE_INT32, resultSet)));
 
-    fileAsset->SetAlbumId(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32, resultSet)));
+    fileAsset->SetAlbumId(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32, resultSet)));
 
-    fileAsset->SetAlbumName(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_BUCKET_NAME, TYPE_STRING, resultSet)));
+    fileAsset->SetAlbumName(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_BUCKET_NAME, TYPE_STRING, resultSet)));
 
-    fileAsset->SetTimePending(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_TIME_PENDING, TYPE_INT64, resultSet)));
+    fileAsset->SetTimePending(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_TIME_PENDING, TYPE_INT64, resultSet)));
 
-    fileAsset->SetPending((get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_PENDING, TYPE_INT32, resultSet)) != 0));
+    fileAsset->SetPending((get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_IS_PENDING, TYPE_INT32, resultSet)) != 0));
 
-    fileAsset->SetFavorite((get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_FAV, TYPE_INT32, resultSet)) != 0));
+    fileAsset->SetFavorite((get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_IS_FAV, TYPE_INT32, resultSet)) != 0));
 
-    fileAsset->SetDateTrashed(get<ARG_INT64>(GetRowValFromColumnn(MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64, resultSet)));
+    fileAsset->SetDateTrashed(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64, resultSet)));
 
-    fileAsset->SetSelfId(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_SELF_ID, TYPE_STRING, resultSet)));
+    fileAsset->SetSelfId(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_SELF_ID, TYPE_STRING, resultSet)));
 
-    fileAsset->SetRecyclePath(get<ARG_STRING>(GetRowValFromColumnn(MEDIA_DATA_DB_RECYCLE_PATH, TYPE_STRING,
+    fileAsset->SetRecyclePath(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_RECYCLE_PATH, TYPE_STRING,
         resultSet)));
 
-    fileAsset->SetIsTrash(get<ARG_INT32>(GetRowValFromColumnn(MEDIA_DATA_DB_IS_TRASH, TYPE_INT32, resultSet)));
+    fileAsset->SetIsTrash(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_IS_TRASH, TYPE_INT32, resultSet)));
 
     fileAsset->SetUri(GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_)
         + "/" + to_string(fileAsset->GetId()));
