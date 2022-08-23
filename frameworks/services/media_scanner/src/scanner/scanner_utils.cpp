@@ -17,6 +17,7 @@
 #include "scanner_utils.h"
 
 #include <cerrno>
+#include <fstream>
 
 #include "directory_ex.h"
 
@@ -25,6 +26,9 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+
+std::vector<size_t> ScannerUtils::skipList_;
+
 // Check if file exists or not
 bool ScannerUtils::IsExists(const string &path)
 {
@@ -66,6 +70,25 @@ string ScannerUtils::GetFileExtensionFromFileUri(const string &path)
 
     MEDIA_ERR_LOG("Failed to obtain file extension because given pathname is empty");
     return "";
+}
+
+int32_t ScannerUtils::GetIdFromUri(const string &uri)
+{
+    int32_t mediaFileId = 0;
+    size_t index = 0;
+
+    if (!uri.empty()) {
+        index =  uri.find_last_of("/");
+        if (index != string::npos) {
+            mediaFileId = stoi(uri.substr(index + 1));
+        } else {
+            MEDIA_ERR_LOG("Id could not be obtained from the given uri");
+        }
+    } else {
+        MEDIA_ERR_LOG("Uri is empty");
+    }
+
+    return mediaFileId;
 }
 
 MediaType ScannerUtils::GetMediatypeFromMimetype(const string &mimetype)
@@ -181,6 +204,94 @@ string ScannerUtils::GetFileTitle(const string &displayName)
         title = displayName.substr(0, pos);
     }
     return title;
+}
+
+bool ScannerUtils::IsDirHidden(const string &path)
+{
+    bool dirHid = false;
+
+    if (!path.empty()) {
+        string dirName = ScannerUtils::GetFileNameFromUri(path);
+        if (!dirName.empty() && dirName.at(0) == '.') {
+            MEDIA_ERR_LOG("Directory is of hidden type");
+            return true;
+        }
+
+        string curPath = path;
+        string excludePath = curPath.append("/.nomedia");
+        // Check is the folder consist of .nomedia file
+        if (ScannerUtils::IsExists(excludePath)) {
+            return true;
+        }
+
+        // Check is the dir is part of skiplist
+        if (CheckSkipScanList(path)) {
+            return true;
+        }
+    }
+
+    return dirHid;
+}
+
+bool ScannerUtils::IsDirHiddenRecursive(const string &path)
+{
+    bool dirHid = false;
+    string curPath = path;
+
+    do {
+        dirHid = IsDirHidden(curPath);
+        if (dirHid) {
+            break;
+        }
+
+        curPath = ScannerUtils::GetParentPath(curPath);
+        if (curPath.empty()) {
+            break;
+        }
+    } while (true);
+
+    return dirHid;
+}
+
+// Initialize the skip list
+void ScannerUtils::InitSkipList()
+{
+    hash<string> hashStr;
+    size_t hashPath;
+    string path;
+
+    /*
+     * 1. file path: in disk or hard code? path?
+     * 2. call_once: no need to init again if it is really empty
+     */
+    ifstream skipFile(SKIPLIST_FILE_PATH.c_str());
+    if (skipFile.is_open()) {
+        while (getline(skipFile, path)) {
+            hashPath = hashStr(path);
+            skipList_.insert(skipList_.begin(), hashPath);
+        }
+        skipFile.close();
+    }
+
+    return;
+}
+
+// Check if path is part of Skip scan list
+bool ScannerUtils::CheckSkipScanList(const string &path)
+{
+    hash<string> hashStr;
+    size_t hashPath;
+
+    if (skipList_.empty()) {
+        InitSkipList();
+    }
+
+    hashPath = hashStr(path);
+    if (find(skipList_.begin(), skipList_.end(), hashPath) != skipList_.end()) {
+        return true;
+    }
+
+    return false;
 }
 } // namespace Media
 } // namespace OHOS

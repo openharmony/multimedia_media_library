@@ -60,54 +60,44 @@ namespace Media {
  */
 class MediaScannerObj {
 public:
-    MediaScannerObj(std::string &path, const sptr<IRemoteObject> &callback, bool isDir) : path_(path),
-        callback_(callback), isDir_(isDir) {}
+    MediaScannerObj(std::string &path, const sptr<IRemoteObject> &callback, bool isDir);
     virtual ~MediaScannerObj() = default;
 
-    int32_t ScanFile();
-    int32_t ScanDir();
-
-    bool isDir();
+    void Scan();
 
 private:
-    void InitSkipList();
-    void CheckIfFolderScanCompleted(const int32_t reqId);
-    void CleanupDirectory(const std::string &path);
-
-    bool CheckSkipScanList(const std::string &path);
-    bool IsDirHidden(const std::string &path);
-    bool IsDirHiddenRecursive(const std::string &path);
-
-    int32_t VisitFile(const Metadata &fileMetadata);
-    int32_t WalkFileTree(const std::string &path, int32_t parentId);
-
-    int32_t InsertAlbumInfo(std::string &albumPath, int32_t parentId, string albumName);
-
+    // file
+    int32_t  ScanFile();
     int32_t ScanFileInternal();
-    int32_t ScanDirInternal();
-
-    int32_t InvokeCallback(int32_t code);
     int32_t GetFileMetadata();
-    int32_t GetParentDirInfo(string &path);
+    int32_t GetParentDirInfo(const string &parent, int32_t parentId);
     int32_t GetMediaInfo();
 
+    // dir
+    int32_t ScanDir();
+    int32_t ScanDirInternal();
+    int32_t ScanFileInTraversal(const string &path, const string &parent, int32_t parentId);
+    int32_t WalkFileTree(const std::string &path, int32_t parentId);
+    int32_t CleanupDirectory();
+    int32_t InsertOrUpdateAlbumInfo(std::string &albumPath, int32_t parentId, string albumName);
+
+    // transaction
     int32_t AddToTransaction();
     int32_t CommitTransaction();
 
-    std::unordered_map<std::string, Metadata> albumMap_;
-
-    std::vector<size_t> skipList_;
-    std::unordered_set<int32_t> scannedIds_;
-    std::vector<Metadata> batchUpdate_;
-    std::unique_ptr<MediaScannerDb> mediaScannerDb_;
-    std::unordered_map<int32_t, sptr<IMediaScannerOperationCallback>> scanResultCbMap_;
+    // callback
+    int32_t InvokeCallback(int32_t code);
 
     std::string path_;
-    std::string uri_;
-    const sptr<IRemoteObject> callback_;
+    std::string dir_;
     bool isDir_;
+    std::string uri_;
+    std::unique_ptr<MediaScannerDb> mediaScannerDb_;
+    const sptr<IRemoteObject> callback_;
 
     unique_ptr<Metadata> data_;
+    std::unordered_map<std::string, Metadata> albumMap_;
+    std::unordered_set<int32_t> scannedIds_;
     std::vector<unique_ptr<Metadata>> dataBuffer_;
 };
 } // namespace Media

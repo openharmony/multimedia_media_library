@@ -28,9 +28,14 @@ using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::DataShare;
 
-bool MediaScannerObj::isDir()
+MediaScannerObj::MediaScannerObj(std::string &path, const sptr<IRemoteObject> &callback, bool isDir) :
+    isDir_(isDir), callback_(callback)
 {
-    return isDir_;
+    if (isDir) {
+        dir_ = path;
+    } else {
+        path_ = path;
+    }
 }
 
 int32_t MediaScannerObj::ScanFile()
@@ -57,44 +62,23 @@ int32_t MediaScannerObj::ScanDir()
     return InvokeCallback(ret);
 }
 
-int32_t MediaScannerObj::InvokeCallback(int32_t err)
+void MediaScannerObj::Scan()
 {
-    sptr<IMediaScannerOperationCallback> callback = iface_cast<IMediaScannerOperationCallback>(callback_);
-    return callback->OnScanFinishedCallback(err, uri_, path_);
+    if (isDir_) {
+        ScanDir();
+    } else {
+        ScanFile();
+    }
 }
 
-void MediaScannerObj::CleanupDirectory(const string &path)
+int32_t MediaScannerObj::InvokeCallback(int32_t err)
 {
-    vector<int32_t> toBeDeletedIds = {};
-    unordered_set<MediaType> mediaTypeSet = {};
-    unordered_map<int32_t, MediaType> prevIdMap = {};
-
-    prevIdMap = mediaScannerDb_->GetIdsFromFilePath(path);
-    for (auto itr : prevIdMap) {
-        auto it = scannedIds_.find(itr.first);
-        if (it != scannedIds_.end()) {
-            scannedIds_.erase(it);
-        } else {
-            toBeDeletedIds.push_back(itr.first);
-            mediaTypeSet.insert(itr.second);
-        }
+    if (callback_ == nullptr) {
+        return E_OK;
     }
 
-    // convert deleted id list to vector of strings
-    vector<string> deleteIdList;
-    for (auto id : toBeDeletedIds) {
-        deleteIdList.push_back(to_string(id));
-    }
-
-    if (!deleteIdList.empty()) {
-        mediaScannerDb_->DeleteMetadata(deleteIdList);
-    }
-
-    for (const MediaType &mediaType : mediaTypeSet) {
-        mediaScannerDb_->NotifyDatabaseChange(mediaType);
-    }
-
-    scannedIds_.clear();
+    sptr<IMediaScannerOperationCallback> callback = iface_cast<IMediaScannerOperationCallback>(callback_);
+    return callback->OnScanFinishedCallback(err, uri_, path_);
 }
 
 int32_t MediaScannerObj::CommitTransaction()
@@ -150,34 +134,35 @@ int32_t MediaScannerObj::GetMediaInfo()
     return E_OK;
 }
 
-int32_t MediaScannerObj::GetParentDirInfo(string &parentFolder)
+int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId)
 {
-    int32_t parentId = mediaScannerDb_->GetIdFromPath(parentFolder);
-    if (parentId < 0) {
-        if (parentFolder == ROOT_MEDIA_DIR) {
-            parentId = 0;
-        } else {
-            MEDIA_ERR_LOG("failed to get parent id");
-            return E_DATA;
-        }
-    }
-
-    data_->SetParentId(parentId);
-
     size_t len = ROOT_MEDIA_DIR.length();
-    string parentPath = parentFolder + SLASH_CHAR;
-    if (parentPath.substr(0, len).compare(ROOT_MEDIA_DIR) == 0) {
-        parentPath.erase(0, len);
-        if (!parentPath.empty()) {
-            data_->SetRelativePath(parentPath);
-            parentPath = string("/") + parentPath.substr(0, parentPath.length() - 1);
-            data_->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
-        }
-    } else {
-        MEDIA_ERR_LOG("path: %{private}s is not correct, right is begin with %{private}s",
-                      path_.c_str(), ROOT_MEDIA_DIR.c_str());
+    string parentPath = parent + SLASH_CHAR;
+
+    if (parentPath.substr(0, len).compare(ROOT_MEDIA_DIR) != 0) {
+        MEDIA_ERR_LOG("invaid path %{private}s, not managed by scanner", path_.c_str());
         return E_DATA;
     }
+
+    parentPath.erase(0, len);
+    if (!parentPath.empty()) {
+        data_->SetRelativePath(parentPath);
+        parentPath = string("/") + parentPath.substr(0, parentPath.length() - 1);
+        data_->SetAlbumName(ScannerUtils::GetFileNameFromUri(parentPath));
+    }
+
+    if (parentId == UNKNOWN_ID) {
+        parentId = mediaScannerDb_->GetIdFromPath(parent);
+        if (parentId == UNKNOWN_ID) {
+            if (parent == ROOT_MEDIA_DIR) {
+                parentId = 0;
+            } else {
+                MEDIA_ERR_LOG("failed to get parent id");
+                return E_DATA;
+            }
+        }
+    }
+    data_->SetParentId(parentId);
 
     return E_OK;
 }
@@ -190,27 +175,30 @@ int32_t MediaScannerObj::GetFileMetadata()
         return E_SYSCALL;
     }
 
-    data_ = mediaScannerDb_->GetFileModifiedInfo(path_);
-    if (data_ == nullptr) {
-        MEDIA_ERR_LOG("failed to get file db info");
-        return E_DATA;
+    data_ = make_unique<Metadata>();
+    int32_t err = mediaScannerDb_->GetFileBasicInfo(path_, data_);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("failed to get file basic info");
+        return err;
     }
 
     // may need isPending here
-    if (data_ != nullptr &&
-        data_->GetFileDateModified() == statInfo.st_mtime &&
+    if (data_ != nullptr && data_->GetFileDateModified() == statInfo.st_mtime &&
         data_->GetFileSize() == statInfo.st_size) {
         scannedIds_.insert(data_->GetFileId());
         return E_SCANNED;
     }
 
+    // file path
     data_->SetFilePath(path_);
     data_->SetFileName(ScannerUtils::GetFileNameFromUri(path_));
+    data_->SetFileTitle(ScannerUtils::GetFileTitle(data_->GetFileName()));
 
+    // statinfo
     data_->SetFileSize(statInfo.st_size);
-    data_->SetFileDateAdded(static_cast<int64_t>(statInfo.st_ctime));
     data_->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
 
+    // extension and type
     string extension = ScannerUtils::GetFileExtensionFromFileUri(path_);
     string mimeType = ScannerUtils::GetMimeTypeFromExtension(extension);
     data_->SetFileExtension(extension);
@@ -227,8 +215,8 @@ int32_t MediaScannerObj::ScanFileInternal()
         return E_FILE_HIDDEN;
     }
 
-    string parentFolder = ScannerUtils::GetParentPath(path_);
-    if ((!parentFolder.empty() && IsDirHiddenRecursive(parentFolder))) {
+    string parent = ScannerUtils::GetParentPath(path_);
+    if ((!parent.empty() && ScannerUtils::CheckSkipScanList(parent))) {
         MEDIA_ERR_LOG("the dir is hidden");
         return E_DIR_HIDDEN;
     }
@@ -241,7 +229,7 @@ int32_t MediaScannerObj::ScanFileInternal()
         return err;
     }
 
-    err = GetParentDirInfo(parentFolder);
+    err = GetParentDirInfo(parent, UNKNOWN_ID);
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get dir info");
         return err;
@@ -253,19 +241,61 @@ int32_t MediaScannerObj::ScanFileInternal()
         // no return here for fs metadata being updated or inserted
     }
 
-    return AddToTransaction();
+    err = AddToTransaction();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("failed to add to transaction err %{public}d", err);
+        return err;
+    }
+
+    return E_OK;
 }
 
-int32_t MediaScannerObj::InsertAlbumInfo(string &albumPath, int32_t parentId, string albumName)
+int32_t MediaScannerObj::ScanFileInTraversal(const string &path, const string &parent, int32_t parentId)
 {
-    int32_t albumId = ERR_FAIL;
+    path_ = path;
 
+    if (ScannerUtils::IsFileHidden(path_)) {
+        MEDIA_ERR_LOG("the file is hidden");
+        return E_FILE_HIDDEN;
+    }
+
+    int32_t err = GetFileMetadata();
+    if (err != E_OK) {
+        if (err != E_SCANNED) {
+            MEDIA_ERR_LOG("failed to get file metadata");
+        }
+        return err;
+    }
+
+    err = GetParentDirInfo(parent, parentId);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("failed to get dir info");
+        return err;
+    }
+
+    err = GetMediaInfo();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("failed to get media info");
+        // no return here for fs metadata being updated or inserted
+    }
+
+    err = AddToTransaction();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("failed to add to transaction err %{public}d", err);
+        return err;
+    }
+
+    return E_OK;
+}
+
+int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(string &albumPath, int32_t parentId, string albumName)
+{
+    int32_t albumId = UNKNOWN_ID;
     bool update = false;
 
     if (albumMap_.find(albumPath) != albumMap_.end()) {
-        // It Exists
         Metadata albumInfo = albumMap_.at(albumPath);
-        struct stat statInfo {};
+        struct stat statInfo { 0 };
         albumId = albumInfo.GetFileId();
 
         if (stat(albumPath.c_str(), &statInfo) == ERR_SUCCESS) {
@@ -278,27 +308,64 @@ int32_t MediaScannerObj::InsertAlbumInfo(string &albumPath, int32_t parentId, st
         }
     }
 
-    unique_ptr<Metadata> fileMetadata;
-    // unique_ptr<Metadata> fileMetadata = GetFileMetadata(albumPath, parentId);
-    if (fileMetadata != nullptr) {
-        fileMetadata->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_ALBUM));
-        fileMetadata->SetAlbumName(albumName);
+    Metadata metadata;
+    metadata.SetFilePath(albumPath);
+    metadata.SetFileName(ScannerUtils::GetFileNameFromUri(albumPath));
+    metadata.SetFileTitle(ScannerUtils::GetFileTitle(metadata.GetFileName()));
+    metadata.SetParentId(parentId);
+    metadata.SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_ALBUM));
+    metadata.SetAlbumName(albumName);
 
-        if (update) {
-            fileMetadata->SetFileId(albumId);
-            albumId = mediaScannerDb_->UpdateAlbum(*fileMetadata);
-        } else {
-            albumId = mediaScannerDb_->InsertAlbum(*fileMetadata);
-        }
-        scannedIds_.insert(albumId);
+    if (update) {
+            metadata.SetFileId(albumId);
+            albumId = mediaScannerDb_->UpdateAlbum(metadata);
+    } else {
+            albumId = mediaScannerDb_->InsertAlbum(metadata);
     }
+    scannedIds_.insert(albumId);
 
     return albumId;
 }
 
+int32_t MediaScannerObj::CleanupDirectory()
+{
+    vector<int32_t> toBeDeletedIds = {};
+    unordered_set<MediaType> mediaTypeSet = {};
+    unordered_map<int32_t, MediaType> prevIdMap = {};
+
+    prevIdMap = mediaScannerDb_->GetIdsFromFilePath(dir_);
+    for (auto itr : prevIdMap) {
+        auto it = scannedIds_.find(itr.first);
+        if (it != scannedIds_.end()) {
+            scannedIds_.erase(it);
+        } else {
+            toBeDeletedIds.push_back(itr.first);
+            mediaTypeSet.insert(itr.second);
+        }
+    }
+
+    // convert deleted id list to vector of strings
+    vector<string> deleteIdList;
+    for (auto id : toBeDeletedIds) {
+        deleteIdList.push_back(to_string(id));
+    }
+
+    if (!deleteIdList.empty()) {
+        mediaScannerDb_->DeleteMetadata(deleteIdList);
+    }
+
+    for (const MediaType &mediaType : mediaTypeSet) {
+        mediaScannerDb_->NotifyDatabaseChange(mediaType);
+    }
+
+    scannedIds_.clear();
+
+    return E_OK;
+}
+
 int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
 {
-    int32_t errCode = ERR_SUCCESS;
+    int err = E_OK;
     DIR *dirPath = nullptr;
     struct dirent *ent = nullptr;
     size_t len = path.length();
@@ -325,7 +392,7 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
         return ERR_NOT_ACCESSIBLE;
     }
 
-    while ((ent = readdir(dirPath)) != nullptr && errCode != ERR_MEM_ALLOC_FAIL) {
+    while ((ent = readdir(dirPath)) != nullptr && err != ERR_MEM_ALLOC_FAIL) {
         if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
             continue;
         }
@@ -340,140 +407,64 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
 
         string currentPath = fName;
         if (S_ISDIR(statInfo.st_mode)) {
-            if (IsDirHidden(currentPath)) {
+            if (ScannerUtils::IsDirHidden(currentPath)) {
                 continue;
             }
 
-            int32_t albumId = InsertAlbumInfo(currentPath, parentId, ent->d_name);
-            if (albumId == ERR_FAIL) {
-                errCode = ERR_FAIL;
+            int32_t albumId = InsertOrUpdateAlbumInfo(currentPath, parentId, ent->d_name);
+            if (albumId == UNKNOWN_ID) {
+                err = E_DATA;
                 break;
             }
 
-            errCode = WalkFileTree(currentPath, albumId);
-        } else if (!ScannerUtils::IsFileHidden(currentPath)) {
-            // errCode = ScanFileContent(currentPath, parentId);
+            err = WalkFileTree(currentPath, albumId);
+        } else {
+            err = ScanFileInTraversal(currentPath, path, parentId);
         }
     }
 
     closedir(dirPath);
     FREE_MEMORY_AND_SET_NULL(fName);
 
-    return errCode;
+    return err;
 }
 
-// Initialize the skip list
-void MediaScannerObj::InitSkipList()
-{
-    hash<string> hashStr;
-    size_t hashPath;
-    string path;
-
-    ifstream skipFile(SKIPLIST_FILE_PATH.c_str());
-    if (skipFile.is_open()) {
-        while (getline(skipFile, path)) {
-            hashPath = hashStr(path);
-            skipList_.insert(skipList_.begin(), hashPath);
-        }
-        skipFile.close();
-    }
-
-    return;
-}
-
-// Check if path is part of Skip scan list
-bool MediaScannerObj::CheckSkipScanList(const string &path)
-{
-    hash<string> hashStr;
-    size_t hashPath;
-
-    if (skipList_.empty()) {
-        InitSkipList();
-    }
-
-    hashPath = hashStr(path);
-    if (find(skipList_.begin(), skipList_.end(), hashPath) != skipList_.end()) {
-        return true;
-    }
-
-    return false;
-}
-
-// Check if the directory is hidden
-bool MediaScannerObj::IsDirHidden(const string &path)
-{
-    bool dirHid = false;
-
-    if (!path.empty()) {
-        string dirName = ScannerUtils::GetFileNameFromUri(path);
-        if (!dirName.empty() && dirName.at(0) == '.') {
-            MEDIA_ERR_LOG("Directory is of hidden type");
-            return true;
-        }
-
-        string curPath = path;
-        string excludePath = curPath.append("/.nomedia");
-        // Check is the folder consist of .nomedia file
-        if (ScannerUtils::IsExists(excludePath)) {
-            return true;
-        }
-
-        // Check is the dir is part of skiplist
-        if (CheckSkipScanList(path)) {
-            return true;
-        }
-    }
-
-    return dirHid;
-}
-
-// Check if the dir is hidden
-bool MediaScannerObj::IsDirHiddenRecursive(const string &path)
-{
-    bool dirHid = false;
-    string curPath = path;
-
-    do {
-        dirHid = IsDirHidden(curPath);
-        if (dirHid) {
-            break;
-        }
-
-        curPath = ScannerUtils::GetParentPath(curPath);
-        if (curPath.empty()) {
-            break;
-        }
-    } while (true);
-
-    return dirHid;
-}
-
-// Scan the directory path recursively
 int32_t MediaScannerObj::ScanDirInternal()
 {
-    int32_t errCode = ERR_FAIL;
-
-    // Check if it is hidden folder
-    if (IsDirHiddenRecursive(path_)) {
-        MEDIA_ERR_LOG("MediaData %{private}s is hidden", path_.c_str());
-        return ERR_NOT_ACCESSIBLE;
+    if (ScannerUtils::IsDirHiddenRecursive(dir_)) {
+        MEDIA_ERR_LOG("the dir %{private}s is hidden", dir_.c_str());
+        return E_DIR_HIDDEN;
     }
 
-    mediaScannerDb_->ReadAlbums(path_, albumMap_);
-
-    // Walk the folder tree
-    errCode = WalkFileTree(path_, NO_PARENT);
-    if (errCode == ERR_SUCCESS) {
-        // write the remaining metadata to DB
-        errCode = CommitTransaction();
-        if (errCode == ERR_SUCCESS) {
-            CleanupDirectory(path_);
-        }
+    /*
+     * 1. may query ablums in batch for the big data case
+     * 2. postpone this operation might avoid some conflicts
+     */
+    int32_t err = mediaScannerDb_->ReadAlbums(dir_, albumMap_);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("read albums err %{public}d", err);
+        return err;
     }
 
-    albumMap_.clear();
+    err = WalkFileTree(dir_, NO_PARENT);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("walk file tree err %{public}d", err);
+        return err;
+    }
 
-    return errCode;
+    err = CommitTransaction();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("commit transaction err %{public}d", err);
+        return err;
+    }
+
+    err = CleanupDirectory();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("clean up dir err %{public}d", err);
+        return err;
+    }
+
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS
