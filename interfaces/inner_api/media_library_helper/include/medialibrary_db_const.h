@@ -352,7 +352,7 @@ static const std::string CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION = "extension"
 static const std::string CREATE_MEDIATYPE_DIRECTORY_TABLE = "CREATE TABLE IF NOT EXISTS "
                                             + MEDIATYPE_DIRECTORY_TABLE + " ("
                                             + CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE + " INTEGER PRIMARY KEY, "
-                                            + CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE + " TEST, "
+                                            + CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE + " TEXT, "
                                             + CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY + " TEXT, "
                                             + CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION + " TEXT) ";
 
