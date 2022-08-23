@@ -635,20 +635,24 @@ static void GetFileAssetsNative(AlbumNapiAsyncContext *context)
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     DataShare::DataSharePredicates predicates;
-    string idPrefix = MEDIA_DATA_DB_BUCKET_ID + " = ? ";
-    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, idPrefix);
-    context->selectionArgs.insert(context->selectionArgs.begin(), std::to_string(context->objectInfo->GetAlbumId()));
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
-    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, prefix);
-    context->selectionArgs.insert(context->selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
+
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
-    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
-    context->selectionArgs.insert(context->selectionArgs.begin(), "0");
+    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
+    context->selectionArgs.emplace_back("0");
+
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
+    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, prefix);
+    context->selectionArgs.emplace_back(to_string(MEDIA_TYPE_ALBUM));
+
+    string idPrefix = MEDIA_DATA_DB_BUCKET_ID + " = ? ";
+    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, idPrefix);
+    context->selectionArgs.emplace_back(std::to_string(context->objectInfo->GetAlbumId()));
+
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
     predicates.SetOrder(context->order);
     std::vector<std::string> columns;
-    NAPI_DEBUG_LOG("GetNetworkId is = %{private}s", context->objectInfo->GetNetworkId().c_str());
+
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         context->objectInfo->GetNetworkId() + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
@@ -714,15 +718,18 @@ static void CommitModifyNative(AlbumNapiAsyncContext *context)
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_TITLE, context->objectInfo->GetAlbumName());
-    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->objectInfo->GetAlbumId()));
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
+    predicates.SetWhereArgs({ std::to_string(context->objectInfo->GetAlbumId()) });
+
     Uri uri(MEDIALIBRARY_DATA_URI);
     int changedRows = context->objectInfo->GetMediaDataHelper()->Update(uri, predicates, valuesBucket);
     if (changedRows > 0) {
         DataSharePredicates filePredicates;
         DataShareValuesBucket fileValuesBucket;
         fileValuesBucket.Put(MEDIA_DATA_DB_BUCKET_NAME, context->objectInfo->GetAlbumName());
-        filePredicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = " +
-            std::to_string(context->objectInfo->GetAlbumId()));
+        filePredicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = ? ");
+        predicates.SetWhereArgs({ std::to_string(context->objectInfo->GetAlbumId()) });
+
         Uri fileUuri(MEDIALIBRARY_DATA_URI);
         changedRows = context->objectInfo->GetMediaDataHelper()->Update(fileUuri, filePredicates, fileValuesBucket);
     }

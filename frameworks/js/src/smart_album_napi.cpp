@@ -852,10 +852,10 @@ static void GetFileAssetsNative(SmartAlbumNapiAsyncContext *context)
     } else {
         trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? AND " + SMARTALBUMMAP_DB_ALBUM_ID + " = ? ";
     }
-    MediaLibraryNapiUtils::UpdateFetchOptionSelection(context->selection, trashPrefix);
-    context->selectionArgs.insert(context->selectionArgs.begin(),
-                                  std::to_string(context->objectInfo->GetSmartAlbumId()));
-    context->selectionArgs.insert(context->selectionArgs.begin(), "0");
+    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
+    context->selectionArgs.emplace_back("0");
+    context->selectionArgs.emplace_back(std::to_string(context->objectInfo->GetSmartAlbumId()));
+
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);

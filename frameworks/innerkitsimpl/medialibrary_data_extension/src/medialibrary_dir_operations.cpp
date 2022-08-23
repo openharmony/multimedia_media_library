@@ -45,7 +45,7 @@ int32_t MediaLibraryDirOperations::DeleteDirInfoUtil(const int &parent,
     AbsRdbPredicates mediaLibDirAbsPred(MEDIALIBRARY_TABLE);
     mediaLibDirAbsPred.SetWhereClause(DIR_PARENT_WHERECLAUSE);
     mediaLibDirAbsPred.SetWhereArgs(selectionArgs);
-    queryResultSet = rdbStore -> Query(mediaLibDirAbsPred, columns);
+    queryResultSet = rdbStore->Query(mediaLibDirAbsPred, columns);
     int32_t deleteErrorCode = E_FAIL;
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
