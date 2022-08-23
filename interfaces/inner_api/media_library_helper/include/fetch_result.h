@@ -64,7 +64,7 @@ public:
 
 private:
     std::unique_ptr<FileAsset> GetObject(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
-    std::variant<int32_t, int64_t, std::string> GetRowValFromColumnn(std::string columnName,
+    std::variant<int32_t, int64_t, std::string> GetRowValFromColumn(std::string columnName,
         ResultSetDataType dataType, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
 };
 } // namespace Media
