@@ -41,7 +41,7 @@
         "srcLanguage": "ets",
         "description": "mediafileextension",
         "type": "fileAccess",
-        "uri": "datashare://fileAccess",
+        "uri": "fileAccess://media",
         "visible": true
       }
     ],
