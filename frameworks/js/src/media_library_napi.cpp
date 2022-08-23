@@ -1300,6 +1300,7 @@ static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
     bool isValid = false;
     string notifyUri = context->valuesBucket.Get(MEDIA_DATA_DB_RELATIVE_PATH, isValid);
     if (!isValid) {
+        context->error = ERR_INVALID_OUTPUT;
         return;
     }
     size_t index = notifyUri.rfind('/');
@@ -1330,7 +1331,7 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status,
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSDeleteAssetCompleteCallback");
-    
+
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -1540,13 +1541,11 @@ static void JSDeleteAlbumCompleteCallback(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
+    bool isValid = false;
+    int32_t albumId = context->valuesBucket.Get(MEDIA_DATA_DB_ID, isValid);
+
+    if (context->objectInfo->sDataShareHelper_ != nullptr && isValid) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
-        bool isValid = false;
-        int32_t albumId = context->valuesBucket.Get(MEDIA_DATA_DB_ID, isValid);
-        if (!isValid) {
-            return;
-        }
         Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM + "/" +
             to_string(albumId));
         int retVal = context->objectInfo->sDataShareHelper_->Delete(deleteAlbumUri, {});
@@ -2433,6 +2432,7 @@ static void JSDeleteSmartAlbumExecute(MediaLibraryAsyncContext *context)
         bool isValid = false;
         int32_t smartAlbumId = context->valuesBucket.Get(SMARTALBUM_DB_ID, isValid);
         if (!isValid) {
+            context->error = ERR_INVALID_OUTPUT;
             return;
         }
         string abilityUri = MEDIALIBRARY_DATA_URI;
