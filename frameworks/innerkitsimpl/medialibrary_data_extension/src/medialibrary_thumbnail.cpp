@@ -90,7 +90,6 @@ void MediaLibraryThumbnail::InitKvStore()
         .autoSync = true,
         .securityLevel = SecurityLevel::NO_LABEL,
         .area = DistributedKv::Area::EL2,
-        .syncPolicy = SyncPolicy::HIGH,
         .kvStoreType = KvStoreType::SINGLE_VERSION,
         .baseDir = context->GetDatabaseDir()
     };
