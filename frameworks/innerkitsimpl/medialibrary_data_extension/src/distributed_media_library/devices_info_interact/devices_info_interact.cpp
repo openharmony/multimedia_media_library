@@ -57,7 +57,6 @@ void DevicesInfoInteract::Init()
         .autoSync = true,
         .securityLevel = DistributedKv::SecurityLevel::NO_LABEL,
         .area = DistributedKv::Area::EL2,
-        .syncPolicy = DistributedKv::SyncPolicy::HIGH,
         .kvStoreType = DistributedKv::KvStoreType::SINGLE_VERSION,
         .baseDir = context->GetDatabaseDir()
     };
