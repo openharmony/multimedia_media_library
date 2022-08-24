@@ -241,37 +241,6 @@ const std::string CREATE_AUDIO_VIEW = "CREATE VIEW Audio AS SELECT "
 const std::string FILE_TABLE = "file";
 const std::string ABLUM_TABLE = "album";
 const std::string ABLUM_VIEW_NAME = "Album";
-const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
-                                      + " AS SELECT count( " + FILE_TABLE + "."
-                                      + MEDIA_DATA_DB_DATE_TRASHED + "= 0 OR NULL) AS "
-                                      + MEDIA_DATA_DB_COUNT + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_RELATIVE_PATH + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AS "
-                                      + MEDIA_DATA_DB_BUCKET_ID + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_FILE_PATH + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + " AS "
-                                      + MEDIA_DATA_DB_BUCKET_NAME + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_DESCRIPTION + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_ADDED + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_MODIFIED + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_THUMBNAIL + ", "
-                                      + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID
-                                      + " FROM Files " + FILE_TABLE + ", "
-                                      + " Files " + ABLUM_TABLE
-                                      + " WHERE "
-                                      + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID + " = "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AND "
-                                      + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + " <> "
-                                      + std::to_string(MEDIA_TYPE_ALBUM) + " AND "
-                                      + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + " <> "
-                                      + std::to_string(MEDIA_TYPE_FILE)
-                                      + " GROUP BY "
-                                      + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID +", "
-                                      + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_NAME + ", "
-                                      + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
 const std::string DISTRIBUTED_ABLUM_COLUMNS = "SELECT count( " + FILE_TABLE + "."
                                                + MEDIA_DATA_DB_DATE_TRASHED + "= 0 OR NULL) AS "
                                                + MEDIA_DATA_DB_COUNT + ", "
@@ -300,6 +269,11 @@ const std::string DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY = " WHERE "
                                                         + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_NAME + ", "
                                                         + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
                                                         + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
+const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
+                                      + " AS " + DISTRIBUTED_ABLUM_COLUMNS
+                                      + " FROM Files " + FILE_TABLE + ", "
+                                      + " Files " + ABLUM_TABLE
+                                      + DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY;
 const std::string SMARTALBUM_DB_ID = "album_id";
 const std::string SMARTALBUM_DB_ALBUM_TYPE = "album_type";
 const std::string SMARTALBUM_DB_NAME = "album_name";
