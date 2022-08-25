@@ -10,7 +10,10 @@
     "component": {
       "name": "media_library",
       "subsystem": "multimedia",
-      "syscap": [ "SystemCapability.Multimedia.MediaLibrary" ],
+      "syscap": [
+        "SystemCapability.Multimedia.MediaLibrary.Core",
+        "SystemCapability.Multimedia.MediaLibrary.DistributedCore"
+      ],
       "features": [],
       "adapted_system_type": [ "standard" ],
       "rom": "4068KB",
