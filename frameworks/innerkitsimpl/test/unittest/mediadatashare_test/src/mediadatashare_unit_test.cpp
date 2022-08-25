@@ -38,12 +38,12 @@ std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t system
     MEDIA_INFO_LOG("CreateDataShareHelper::CreateFileExtHelper ");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
-        MEDIA_INFO_LOG("CreateDataShareHelper Get system ability mgr failed.");
+        MEDIA_INFO_LOG("CreateDataShareHelper::CreateFileExtHelper Get system ability mgr failed.");
         return nullptr;
     }
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
     while (remoteObj == nullptr) {
-        MEDIA_INFO_LOG("CreateDataShareHelper GetSystemAbility Service Failed.");
+        MEDIA_INFO_LOG("CreateDataShareHelper::CreateFileExtHelper GetSystemAbility Service Failed.");
         return nullptr;
     }
     return DataShare::DataShareHelper::Creator(remoteObj, MEDIALIBRARY_DATA_URI);
