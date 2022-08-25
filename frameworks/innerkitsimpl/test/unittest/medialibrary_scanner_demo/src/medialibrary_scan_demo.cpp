@@ -118,7 +118,7 @@ static std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t
     MEDIA_INFO_LOG("CreateDataShareHelper::CreateFileExtHelper ");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
-        MEDIA_INFO_LOG("CreateDataShareHelper Get system ability mgr failed.");
+        MEDIA_INFO_LOG("CreateFileExtHelper Get system ability mgr failed.");
         return nullptr;
     }
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
