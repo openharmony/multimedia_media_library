@@ -72,12 +72,12 @@ std::shared_ptr<FileAccessFwk::FileAccessHelper> CreateFileExtHelper(int32_t sys
     MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateFileExtHelper ");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
-        MEDIA_INFO_LOG("DataMedialibraryRdbHelper Get system ability mgr failed.");
+        MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateFileExtHelper Get system ability mgr failed.");
         return nullptr;
     }
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
     while (remoteObj == nullptr) {
-        MEDIA_INFO_LOG("DataMedialibraryRdbHelper GetSystemAbility Service Failed.");
+        MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateFileExtHelper GetSystemAbility Service Failed.");
         return nullptr;
     }
     vector<AAFwk::Want> wantVec;
