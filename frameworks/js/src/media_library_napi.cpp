@@ -55,6 +55,7 @@ static map<string, ListenerType> ListenerTypeMaps = {
 };
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::ufmConstructor_ = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::sDataShareHelper_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
@@ -65,9 +66,7 @@ MediaLibraryNapi::MediaLibraryNapi()
     : env_(nullptr) {}
 
 MediaLibraryNapi::~MediaLibraryNapi()
-{
-    NAPI_DEBUG_LOG("MediaLibraryNapi destructor exit");
-}
+{}
 
 void MediaLibraryNapi::MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
 {
@@ -76,7 +75,6 @@ void MediaLibraryNapi::MediaLibraryNapiDestructor(napi_env env, void *nativeObje
         delete mediaLibrary;
         mediaLibrary = nullptr;
     }
-    NAPI_DEBUG_LOG("MediaLibraryNapiDestructor exit");
 }
 
 napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
@@ -122,6 +120,25 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         }
     }
     return nullptr;
+}
+
+napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
+{
+    NapiClassInfo info = {
+        USERFILE_MGR_NAPI_CLASS_NAME,
+        &ufmConstructor_,
+        MediaLibraryNapiConstructor,
+        {
+            DECLARE_NAPI_FUNCTION("getPublicDirectory", JSGetPublicDirectory)
+        }
+    };
+    MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
+
+    const std::vector<napi_property_descriptor> staticProps = {
+        DECLARE_NAPI_STATIC_FUNCTION("getUserFileMgr", GetUserFileMgr),
+    };
+    MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
+    return exports;
 }
 
 shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::GetDataShareHelper(napi_env env, napi_callback_info info)
@@ -202,6 +219,22 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     return result;
 }
 
+static napi_value CreateNewInstance(napi_env env, napi_callback_info info, napi_ref ref)
+{
+    constexpr size_t ARG_CONTEXT = 1;
+    size_t argc = ARG_CONTEXT;
+    napi_value argv[ARG_CONTEXT] = {0};
+
+    napi_value thisVar = nullptr;
+    napi_value ctor = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+    NAPI_CALL(env, napi_get_reference_value(env, ref, &ctor));
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_new_instance(env, ctor, argc, argv, &result));
+    return result;
+}
+
 napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -229,6 +262,14 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
     napi_get_undefined(env, &result);
 
     return result;
+}
+
+napi_value MediaLibraryNapi::GetUserFileMgr(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("getUserFileManager");
+
+    return CreateNewInstance(env, info, ufmConstructor_);
 }
 
 static napi_status AddIntegerNamedProperty(napi_env env, napi_value object,
@@ -496,11 +537,12 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
     return result;
 }
 
-static void GetPublicDirectoryExecute(MediaLibraryAsyncContext *context)
+static void GetPublicDirectoryExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetPublicDirectoryExecute");
 
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     shared_ptr<DataShareHelper> helper = context->objectInfo->sDataShareHelper_;
     if (helper == nullptr) {
@@ -544,11 +586,12 @@ static void GetPublicDirectoryExecute(MediaLibraryAsyncContext *context)
     }
 }
 
-static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status, MediaLibraryAsyncContext *context)
+static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetPublicDirectoryCallbackComplete");
 
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -574,7 +617,8 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {0}, thisVar = nullptr, resource = nullptr;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
     const int32_t refCount = 1;
 
     MediaLibraryTracer tracer;
@@ -600,23 +644,8 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
                 NAPI_ASSERT(env, false, "type mismatch");
             }
         }
-
-        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSGetPublicDirectory", asyncContext);
-        status = napi_create_async_work(
-            env, nullptr, resource,
-            [](napi_env env, void* data) {
-                auto context = static_cast<MediaLibraryAsyncContext*>(data);
-                GetPublicDirectoryExecute(context);
-            },
-            reinterpret_cast<CompleteCallback>(GetPublicDirectoryCallbackComplete),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
-        if (status != napi_ok) {
-            napi_get_undefined(env, &result);
-        } else {
-            napi_queue_async_work(env, asyncContext->work);
-            asyncContext.release();
-        }
+        result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPublicDirectory",
+            GetPublicDirectoryExecute, GetPublicDirectoryCallbackComplete);
     }
 
     return result;
