@@ -70,7 +70,8 @@ static napi_module g_module = {
     .nm_register_func = Export,
     .nm_modname = "multimedia.mediaLibrary",
     .nm_priv = reinterpret_cast<void *>(0),
-    .reserved = {0}};
+    .reserved = {0}
+};
 
 /*
  * module register
