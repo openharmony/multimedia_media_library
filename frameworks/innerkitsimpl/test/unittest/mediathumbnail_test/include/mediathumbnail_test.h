@@ -18,9 +18,6 @@
 
 #include "gtest/gtest.h"
 
-#include "medialibrary_thumbnail.h"
-#include "fetch_result.h"
-
 namespace OHOS {
 namespace Media {
 class MediaThumbnailTest : public testing::Test {
