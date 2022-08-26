@@ -19,7 +19,6 @@
 #include <gtest/gtest.h>
 #include "accesstoken_kit.h"
 #include "nativetoken_kit.h"
-#include "accesstoken_log.h"
 #include "token_setproc.h"
 
 namespace OHOS {
