@@ -26,9 +26,6 @@ const int32_t ROOT_PARENT_ID = 0;
 // device virtual root node
 static const std::string MEDIALIBRARY_ROOT = "/root";
 static const std::string MEDIALIBRARY_LOCAL_DEVICE_NAME = "LOCAL";
-// fileextension fileinfo mode
-static const std::string MEDIA_FILE_EXT_MODE_FOLDER = "folder";
-static const std::string MEDIA_FILE_EXT_MODE_FILE = "file";
 enum MediaFileUriType {
     URI_ROOT,
     URI_ALBUM,
@@ -51,7 +48,7 @@ public:
     static int32_t Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri);
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
     static int32_t ListFile(const std::string &selectUri, std::vector<FileAccessFwk::FileInfo> &fileList);
-    static void GetRoots(std::vector<FileAccessFwk::DeviceInfo> &deviceList);
+    static void GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList);
 };
 } // Media
 } // OHOS
