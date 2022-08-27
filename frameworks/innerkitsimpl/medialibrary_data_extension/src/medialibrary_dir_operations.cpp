@@ -15,6 +15,9 @@
 #define MLOG_TAG "DirOperation"
 
 #include "medialibrary_dir_operations.h"
+
+#include <algorithm>
+
 #include "abs_rdb_predicates.h"
 #include "datashare_predicates.h"
 #include "datashare_result_set.h"
@@ -266,6 +269,7 @@ int32_t MediaLibraryDirOperations::CheckDirInfoUtil(const ValuesBucket &values,
     if (values.GetObject(MEDIA_DATA_DB_FILE_PATH, valueObject)) {
         valueObject.GetString(path);
     }
+    transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
     if (extension.compare(MEDIA_NO_FILE) == 0) {
         if (MediaLibraryObjectUtils::IsFileExistInDb(path)) {
             MEDIA_ERR_LOG("dir is existed");
