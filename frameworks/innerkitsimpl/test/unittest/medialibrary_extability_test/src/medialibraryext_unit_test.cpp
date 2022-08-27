@@ -1420,9 +1420,9 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetRoots_test_001, TestSize.Level0)
     if (!CheckEnvironment()) {
         return;
     }
-    vector<FileAccessFwk::DeviceInfo> deviceList = g_mediaFileExtHelper->GetRoots();
-    EXPECT_EQ(deviceList.size(), 1);
-    MEDIA_DEBUG_LOG("medialib_GetRoots_test_001 deviceList.size() %{public}lu", (long)deviceList.size());
+    vector<FileAccessFwk::RootInfo> rootList = g_mediaFileExtHelper->GetRoots();
+    EXPECT_EQ(rootList.size(), 1);
+    MEDIA_DEBUG_LOG("medialib_GetRoots_test_001 rootList.size() %{public}lu", (long)rootList.size());
 }
 } // namespace Media
 } // namespace OHOS
