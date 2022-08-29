@@ -27,17 +27,17 @@ ohos_shared_library("media_library_manager") {
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager/include",
     "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
-    "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
+    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include",
+    "${MEDIA_LIB_INTERFACES_INNER_DIR}/media_library_helper/include",
     "//commonlibrary/c_utils/base/include",
   ]
 
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
-    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:permission_utils",
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}:permission_utils",
   ]
 
   external_deps = [

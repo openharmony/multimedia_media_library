@@ -147,39 +147,3 @@ ohos_static_library("media_thumbnail_helper") {
   subsystem_name = "multimedia"
   part_name = "media_library"
 }
-
-ohos_static_library("permission_utils") {
-  sources = [ "src/permission_utils.cpp" ]
-  include_dirs = [
-    "./include",
-    "$MEDIA_LIB_INNERKITS_DIR/include",
-    "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
-    "//foundation/multimedia/media_library/frameworks/utils/include",
-
-    # appexecfwk_core
-    "//foundation/bundlemanager/bundle_framework/interfaces/inner_api/appexecfwk_core/include/bundlemgr",
-    "//foundation/bundlemanager/bundle_framework/interfaces/inner_api/appexecfwk_base/include/",
-    "//third_party/json/include",
-    "//foundation/ability/ability_base/interfaces/kits/native/want/include",
-    "//foundation/ability/ability_base/interfaces/kits/native/uri/include",
-    "//foundation/ability/ability_base/interfaces/inner_api/base/include",
-    "//foundation/ability/ability_runtime/services/abilitymgr/include",
-
-    # Security stuff
-    "//base/security/access_token/interfaces/innerkits/accesstoken/include",
-    "//base/security/access_token/interfaces/innerkits/privacy/include",
-  ]
-  deps = [
-    # IBundleMgr
-    "${ABILITY_RUNTIME_SERVICES_PATH}/abilitymgr:abilityms",
-    "//base/security/access_token/interfaces/innerkits/privacy:libprivacy_sdk",
-    "//foundation/bundlemanager/bundle_framework/interfaces/inner_api/appexecfwk_core:appexecfwk_core",
-  ]
-  external_deps = [
-    "access_token:libaccesstoken_sdk",
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
-    "ipc:ipc_core",
-    "samgr:samgr_proxy",
-  ]
-}
