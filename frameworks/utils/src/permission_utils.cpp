@@ -36,7 +36,6 @@ constexpr int UID_FILEMANAGER = 1006;
 const unordered_set<int32_t> UID_FREE_CHECK {
     UID_FILEMANAGER
 };
-const unordered_set<string> SYSTEM_BUNDLE_FREE_CHECK {};
 const string FILE_USR_CREATED = ".nofile";
 const string FILE_USR_CREATED_OWNER = "fms_service";
 
@@ -116,15 +115,6 @@ bool PermissionUtils::CheckCallerPermission(const string &permission)
     int uid = IPCSkeleton::GetCallingUid();
     if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
         MEDIA_INFO_LOG("CheckCallingPermission: Pass the uid check list");
-        return true;
-    }
-
-    string bundleName = "";
-    bool isSystemApp = false;
-    GetClientBundle(uid, bundleName, isSystemApp);
-    if (!bundleName.empty() && isSystemApp &&
-        (SYSTEM_BUNDLE_FREE_CHECK.find(bundleName) != SYSTEM_BUNDLE_FREE_CHECK.end())) {
-        MEDIA_INFO_LOG("Pass the system bundle name check list, %{private}s", bundleName.c_str());
         return true;
     }
 
