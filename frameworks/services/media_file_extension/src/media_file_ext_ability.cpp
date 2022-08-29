@@ -221,11 +221,11 @@ std::vector<FileAccessFwk::FileInfo> MediaFileExtAbility::ListFile(const Uri &se
     return fileList;
 }
 
-std::vector<DeviceInfo> MediaFileExtAbility::GetRoots()
+std::vector<RootInfo> MediaFileExtAbility::GetRoots()
 {
-    vector<FileAccessFwk::DeviceInfo> deviceList;
-    MediaFileExtentionUtils::GetRoots(deviceList);
-    return deviceList;
+    vector<FileAccessFwk::RootInfo> rootList;
+    MediaFileExtentionUtils::GetRoots(rootList);
+    return rootList;
 }
 
 int MediaFileExtAbility::Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri)

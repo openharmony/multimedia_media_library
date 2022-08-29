@@ -123,16 +123,16 @@ void GetSingleFileInfo(const string &networkId, FileInfo &fileInfo, shared_ptr<A
     int fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, result, TYPE_INT32));
     string mimeType = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MIME_TYPE, result, TYPE_STRING));
     int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
-    string uri = MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
-    fileInfo.uri = Uri(uri);
+    fileInfo.uri = MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) +
+        SLASH_CHAR + to_string(fileId);
     fileInfo.fileName = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_NAME, result, TYPE_STRING));
     fileInfo.mimeType = mimeType;
     fileInfo.size =  get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, result, TYPE_INT64));
     fileInfo.mtime = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED, result, TYPE_INT64));
     if (mediaType == MEDIA_TYPE_ALBUM) {
-        fileInfo.mode = MEDIA_FILE_EXT_MODE_FOLDER;
+        fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
     } else {
-        fileInfo.mode = MEDIA_FILE_EXT_MODE_FILE;
+        fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_FILE | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
     }
 }
 
@@ -250,30 +250,28 @@ int32_t MediaFileExtentionUtils::ListFile(const string &selectUri, vector<FileIn
     return errCode;
 }
 
-bool GetDeviceInfo(shared_ptr<AbsSharedResultSet> &result, DeviceInfo &deviceInfo)
+bool GetRootInfo(shared_ptr<AbsSharedResultSet> &result, RootInfo &rootInfo)
 {
     string networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, result, TYPE_STRING));
-    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_ROOT;
-    deviceInfo.uri = Uri(uri);
-    deviceInfo.displayName = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NAME, result, TYPE_STRING));
-    deviceInfo.deviceId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_UDID, result, TYPE_STRING));
-    deviceInfo.flags = FLAG_SUPPORTS_READ;
-    deviceInfo.type = DEVICE_SHARED_TERMINAL;
+    rootInfo.uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_ROOT;
+    rootInfo.displayName = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NAME, result, TYPE_STRING));
+    rootInfo.deviceFlags = DEVICE_FLAG_SUPPORTS_READ;
+    rootInfo.deviceType = DEVICE_SHARED_TERMINAL;
     return true;
 }
 
-void GetDeviceInfoFromResult(shared_ptr<AbsSharedResultSet> &result, vector<DeviceInfo> &deviceList)
+void GetRootInfoFromResult(shared_ptr<AbsSharedResultSet> &result, vector<RootInfo> &rootList)
 {
     int count = 0;
     result->GetRowCount(count);
     CHECK_AND_RETURN_LOG(count > 0, "AbsSharedResultSet empty");
     auto ret = result->GoToFirstRow();
     CHECK_AND_RETURN_LOG(ret == 0, "Failed to shift at first row");
-    deviceList.reserve(count + 1);
+    rootList.reserve(count + 1);
     for (int i = 0; i < count; i++) {
-        DeviceInfo deviceInfo;
-        GetDeviceInfo(result, deviceInfo);
-        deviceList.push_back(deviceInfo);
+        RootInfo rootInfo;
+        GetRootInfo(result, rootInfo);
+        rootList.push_back(rootInfo);
         ret = result->GoToNextRow();
         CHECK_AND_RETURN_LOG(ret == 0, "Failed to GoToNextRow");
     }
@@ -289,19 +287,18 @@ void GetActivePeer(shared_ptr<AbsSharedResultSet> &result)
     result = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
-void MediaFileExtentionUtils::GetRoots(vector<DeviceInfo> &deviceList)
+void MediaFileExtentionUtils::GetRoots(vector<RootInfo> &rootList)
 {
-    DeviceInfo deviceInfo;
+    RootInfo rootInfo;
     // add local root
-    deviceInfo.uri = Uri(MEDIALIBRARY_DATA_URI + MEDIALIBRARY_ROOT);
-    deviceInfo.displayName = MEDIALIBRARY_LOCAL_DEVICE_NAME;
-    deviceInfo.flags = FLAG_SUPPORTS_WRITE | FLAG_SUPPORTS_READ | FLAG_SUPPORTS_DELETE | FLAG_SUPPORTS_RENAME |
-                       FLAG_SUPPORTS_MOVE;
-    deviceInfo.type = DEVICE_LOCAL_DISK;
-    deviceList.push_back(deviceInfo);
+    rootInfo.uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_ROOT;
+    rootInfo.displayName = MEDIALIBRARY_LOCAL_DEVICE_NAME;
+    rootInfo.deviceFlags = DEVICE_FLAG_SUPPORTS_READ | DEVICE_FLAG_SUPPORTS_WRITE;
+    rootInfo.deviceType = DEVICE_LOCAL_DISK;
+    rootList.push_back(rootInfo);
     shared_ptr<AbsSharedResultSet> resultSet;
     GetActivePeer(resultSet);
-    GetDeviceInfoFromResult(resultSet, deviceList);
+    GetRootInfoFromResult(resultSet, rootList);
 }
 
 bool MediaFileExtentionUtils::CheckDistributedUri(const string &uri)
