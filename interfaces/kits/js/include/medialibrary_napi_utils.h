@@ -101,6 +101,23 @@
             return;                         \
         }                                   \
     } while (0)
+
+#define CHECK_COND_RET(cond, ret, message)                          \
+    do {                                                            \
+        if (!(cond)) {                                              \
+            NAPI_ERR_LOG(message);                                  \
+            return ret;                                             \
+        }                                                           \
+    } while (0)
+
+#define CHECK_STATUS_RET(cond, message)                             \
+    do {                                                            \
+        napi_status __ret = (cond);                                 \
+        if (__ret != napi_ok) {                                     \
+            NAPI_ERR_LOG(message);                                  \
+            return __ret;                                           \
+        }                                                           \
+    } while (0)
 namespace OHOS {
 namespace Media {
 /* Constants for array index */
@@ -115,8 +132,10 @@ const int32_t ARGS_ONE = 1;
 const int32_t ARGS_TWO = 2;
 const int32_t ARGS_THREE = 3;
 const int32_t ARGS_FORE = 4;
-const int32_t SIZE = 100;
+const int32_t ARG_BUF_SIZE = 100;
 constexpr uint32_t NAPI_INIT_REF_COUNT = 1;
+
+constexpr size_t NAPI_ARGC_MAX = 4;
 
 // Error codes
 const int32_t ERR_DEFAULT = 0;
@@ -240,6 +259,137 @@ public:
     static napi_value NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info);
     static napi_value NapiAddStaticProps(napi_env env, napi_value exports,
         const std::vector<napi_property_descriptor> &staticProps);
+
+    static napi_status GetParamNumber(napi_env env, napi_value arg, uint32_t &value);
+    static napi_status GetParamBool(napi_env env, napi_value arg, bool &result);
+    static napi_status GetParamNumberArray(napi_env env, napi_value arg, std::vector<uint32_t> &param);
+    static napi_status GetParamFunction(napi_env env, napi_value arg, napi_ref &callbackRef);
+    static napi_status GetParamString(napi_env env, napi_value arg, std::string &str);
+    static napi_status GetParamStringPathMax(napi_env env, napi_value arg, std::string &str);
+    static napi_status GetProperty(napi_env env, const napi_value arg, const std::string &propName,
+        std::string &propValue);
+    static napi_status GetArrayProperty(napi_env env, napi_value arg, const std::string &propName,
+        std::vector<std::string> &array);
+    static void GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask);
+
+    template <class AsyncContext>
+    static napi_status AsyncContextSetObjectInfo(napi_env env, napi_callback_info info, AsyncContext &asyncContext,
+        const size_t minArgs, const size_t maxArgs)
+    {
+        napi_value thisVar = nullptr;
+        GET_JS_ARGS(env, info, asyncContext->argc, asyncContext->argv, thisVar);
+        CHECK_COND_RET(((asyncContext->argc >= minArgs) && (asyncContext->argc <= maxArgs)), napi_invalid_arg,
+            "Number of args is invalid");
+        CHECK_COND_RET(asyncContext->argv[0] != nullptr, napi_invalid_arg, "Argument list is empty");
+        CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)),
+            "Failed to unwrap thisVar");
+        CHECK_COND_RET(asyncContext->objectInfo != nullptr, napi_invalid_arg, "Failed to get object info");
+        return napi_ok;
+    }
+
+    template <class AsyncContext>
+    static napi_status GetFetchOption(napi_env env, napi_value arg, AsyncContext &context)
+    {
+        /* Parse the argument into fetchOption if any */
+        bool hasOpt = false;
+        CHECK_STATUS_RET(hasFetchOpt(env, arg, hasOpt), "Failed to get fetchopt");
+        if (hasOpt) {
+            CHECK_STATUS_RET(GetProperty(env, arg, "selections", context->selection), "Failed to parse selections");
+            CHECK_STATUS_RET(GetProperty(env, arg, "order", context->order), "Failed to parse order");
+            CHECK_STATUS_RET(GetArrayProperty(env, arg, "selectionArgs", context->selectionArgs),
+                "Failed to parse selectionArgs");
+            CHECK_STATUS_RET(GetProperty(env, arg, "uri", context->uri), "Failed to parse uri");
+            CHECK_STATUS_RET(GetProperty(env, arg, "networkId", context->networkId), "Failed to parse networkId");
+        }
+        return napi_ok;
+    }
+
+    template <class AsyncContext>
+    static napi_status GetParamCallback(napi_env env, AsyncContext &context)
+    {
+        /* Parse the last argument into callbackref if any */
+        bool isCallback = false;
+        CHECK_STATUS_RET(hasCallback(env, context->argc, context->argv, isCallback), "Failed to check callback");
+        if (isCallback) {
+            CHECK_STATUS_RET(GetParamFunction(env, context->argv[context->argc - 1], context->callbackRef),
+                "Failed to get callback");
+        }
+        return napi_ok;
+    }
+
+    template <class AsyncContext>
+    static napi_status ParseArgsTypeFetchOptCallback(napi_env env, napi_callback_info info, AsyncContext &context)
+    {
+        constexpr size_t MIN_ARGS = ARGS_TWO;
+        constexpr size_t MAX_ARGS = ARGS_THREE;
+        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+            "Failed to get object info");
+
+        /* Parse the first argument into typeMask */
+        std::vector<uint32_t> typeArray;
+        CHECK_STATUS_RET(GetParamNumberArray(env, context->argv[ARGS_ZERO], typeArray), "Failed to get param array");
+        CHECK_COND_RET(typeArray.size() > 0, napi_invalid_arg, "Require at least one type");
+        context->typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
+        GenTypeMaskFromArray(typeArray, context->typeMask);
+
+        CHECK_STATUS_RET(GetFetchOption(env, context->argv[ARGS_ONE], context), "Failed to get fetch option");
+        CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+        return napi_ok;
+    }
+
+    template <class AsyncContext>
+    static napi_status ParseArgsBoolCallBack(napi_env env, napi_callback_info info, AsyncContext &context, bool &param)
+    {
+        constexpr size_t MIN_ARGS = ARGS_ONE;
+        constexpr size_t MAX_ARGS = ARGS_TWO;
+        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+            "Failed to get object info");
+
+        /* Parse the first argument into param */
+        CHECK_STATUS_RET(GetParamBool(env, context->argv[ARGS_ZERO], param), "Failed to get parameter");
+        CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+        return napi_ok;
+    }
+
+    template <class AsyncContext>
+    static napi_status ParseArgsStringCallback(napi_env env, napi_callback_info info, AsyncContext &context,
+        std::string &param)
+    {
+        constexpr size_t MIN_ARGS = ARGS_ONE;
+        constexpr size_t MAX_ARGS = ARGS_TWO;
+        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+            "Failed to get object info");
+
+        CHECK_STATUS_RET(GetParamString(env, context->argv[ARGS_ZERO], param), "Failed to get string argument");
+        CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+        return napi_ok;
+    }
+
+    template <class AsyncContext>
+    static napi_status ParseArgsNumberCallback(napi_env env, napi_callback_info info, AsyncContext &context,
+        uint32_t &value)
+    {
+        constexpr size_t MIN_ARGS = ARGS_ONE;
+        constexpr size_t MAX_ARGS = ARGS_TWO;
+        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+            "Failed to get object info");
+
+        CHECK_STATUS_RET(GetParamNumber(env, context->argv[ARGS_ZERO], value), "Failed to get number argument");
+        CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+        return napi_ok;
+    }
+
+    template <class AsyncContext>
+    static napi_status ParseArgsOnlyCallBack(napi_env env, napi_callback_info info, AsyncContext &context)
+    {
+        constexpr size_t MIN_ARGS = ARGS_ZERO;
+        constexpr size_t MAX_ARGS = ARGS_ONE;
+        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+            "Failed to get object info");
+
+        CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+        return napi_ok;
+    }
 
     static AssetType GetAssetType(MediaType type)
     {
@@ -467,6 +617,10 @@ public:
         }
         return true;
     }
+private:
+    static napi_status hasCallback(napi_env env, const size_t argc, const napi_value argv[],
+        bool &isCallback);
+    static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);
 };
 } // namespace Media
 } // namespace OHOS

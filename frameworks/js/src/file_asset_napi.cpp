@@ -477,7 +477,7 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
     FileAssetNapi* obj = nullptr;
     napi_valuetype valueType = napi_undefined;
     size_t res = 0;
-    char buffer[SIZE];
+    char buffer[ARG_BUF_SIZE];
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
@@ -490,7 +490,7 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
             NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
-        status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res);
+        status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res);
         if (status == napi_ok) {
             obj->title_ = string(buffer);
         }
@@ -775,7 +775,7 @@ napi_value FileAssetNapi::JSSetRelativePath(napi_env env, napi_callback_info inf
     FileAssetNapi* obj = nullptr;
     napi_valuetype valueType = napi_undefined;
     size_t res = 0;
-    char buffer[SIZE];
+    char buffer[ARG_BUF_SIZE];
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
@@ -788,7 +788,7 @@ napi_value FileAssetNapi::JSSetRelativePath(napi_env env, napi_callback_info inf
             NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
-        status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res);
+        status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res);
         if (status == napi_ok) {
             obj->relativePath_ = string(buffer);
         }
@@ -1132,7 +1132,7 @@ napi_value GetJSArgsForOpen(napi_env env, size_t argc, const napi_value argv[],
     auto context = &asyncContext;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     size_t res = 0;
-    char buffer[SIZE];
+    char buffer[ARG_BUF_SIZE];
 
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
 
@@ -1141,7 +1141,7 @@ napi_value GetJSArgsForOpen(napi_env env, size_t argc, const napi_value argv[],
         napi_typeof(env, argv[i], &valueType);
 
         if (i == PARAM0 && valueType == napi_string) {
-            napi_get_value_string_utf8(env, argv[i], buffer, SIZE, &res);
+            napi_get_value_string_utf8(env, argv[i], buffer, ARG_BUF_SIZE, &res);
         } else if (i == PARAM1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
