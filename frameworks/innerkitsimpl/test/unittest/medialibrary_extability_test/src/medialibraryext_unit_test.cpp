@@ -83,11 +83,13 @@ std::shared_ptr<FileAccessFwk::FileAccessHelper> CreateFileExtHelper(int32_t sys
         MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateFileExtHelper GetSystemAbility Service Failed.");
         return nullptr;
     }
-    AppExecFwk::Want want;
-    want.SetElementName("com.ohos.medialibrary.medialibrarydata", "FileExtensionAbility");
-    vector<AAFwk::Want> wants {want};
-    FileAccessFwk::FileAccessHelper::GetRegisterFileAccessExtAbilityInfo();
-    return FileAccessFwk::FileAccessHelper::Creator(remoteObj, wants);
+    vector<AAFwk::Want> wantVec;
+    auto ret = FileAccessFwk::FileAccessHelper::GetRegisteredFileAccessExtAbilityInfo(wantVec);
+    if (ret == FileAccessFwk::ERR_QUERY_EXTENSIONINFOS_FAIL) {
+        MEDIA_ERR_LOG("CreateFileExtHelper::GetRegisteredFileAccessExtAbilityInfo failed");
+        return nullptr;
+    }
+    return FileAccessFwk::FileAccessHelper::Creator(remoteObj, wantVec);
 }
 
 bool GetFileAsset(const int index, unique_ptr<FileAsset> &fileAsset)
