@@ -74,7 +74,6 @@ ohos_shared_library("media_library") {
 
   deps = [
     ":media_library_source",
-    "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
   ]
 
   external_deps = [
@@ -87,6 +86,7 @@ ohos_shared_library("media_library") {
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
     "relational_store:native_rdb",
+    "ability_runtime:abilitykit_native",
   ]
 
   part_name = "media_library"
@@ -121,16 +121,12 @@ ohos_static_library("media_thumbnail_helper") {
   include_dirs = [
     "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
-    "//foundation/distributeddatamgr/kv_store/interfaces/innerkits/distributeddata/include/",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
-    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "//commonlibrary/c_utils/base/include",
     "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
   ]
   deps = [
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
     "//foundation/distributeddatamgr/kv_store/interfaces/innerkits/distributeddata:distributeddata_inner",
-    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
   ]
 
   # cflags = [ "-DOLD_KV_API" ]
@@ -143,6 +139,8 @@ ohos_static_library("media_thumbnail_helper") {
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
     "relational_store:native_rdb",
+    "kv_store:distributeddata_inner",
+    "multimedia_image_standard:image_native",
   ]
   subsystem_name = "multimedia"
   part_name = "media_library"
