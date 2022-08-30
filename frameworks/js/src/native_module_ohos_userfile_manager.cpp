@@ -22,6 +22,9 @@ namespace Media {
 static napi_value UserFileMgrExport(napi_env env, napi_value exports)
 {
     MediaLibraryNapi::UserFileMgrInit(env, exports);
+    FetchFileResultNapi::UserFileMgrInit(env, exports);
+    FileAssetNapi::UserFileMgrInit(env, exports);
+    AlbumNapi::UserFileMgrInit(env, exports);
     return exports;
 }
 

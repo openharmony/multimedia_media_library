@@ -136,6 +136,7 @@ napi_status MediaLibraryNapiUtils::GetArrayProperty(napi_env env, napi_value arg
 
 void MediaLibraryNapiUtils::GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask)
 {
+    typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
     for (auto &type : types) {
         if ((type >= MEDIA_TYPE_FILE) && (type <= MEDIA_TYPE_AUDIO)) {
             typeMask[std::get<POS_TYPE_MASK_STRING_INDEX>(MEDIA_TYPE_TUPLE_VEC[type])] = TYPE_MASK_BIT_SET;
@@ -168,6 +169,13 @@ napi_status MediaLibraryNapiUtils::hasFetchOpt(napi_env env, const napi_value ar
     CHECK_STATUS_RET(napi_has_named_property(env, arg, "selections", &hasFetchOpt),
         "Failed to get property selections");
     return napi_ok;
+}
+
+void MediaLibraryNapiUtils::UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask)
+{
+    if (!typeMask.empty()) {
+        uri += "#" + URI_PARAM_KEY_TYPE + ":" + typeMask;
+    }
 }
 } // namespace Media
 } // namespace OHOS

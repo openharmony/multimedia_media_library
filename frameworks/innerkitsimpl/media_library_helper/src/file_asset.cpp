@@ -54,7 +54,8 @@ FileAsset::FileAsset()
     parent_(DEFAULT_MEDIA_PARENT),
     albumUri_(DEFAULT_MEDIA_ALBUM_URI),
     dateTaken_(DEFAULT_MEDIA_DATE_TAKEN),
-    isPending_(DEFAULT_MEDIA_IS_PENDING)
+    isPending_(DEFAULT_MEDIA_IS_PENDING),
+    resultNapiType_(ResultNapiType::TYPE_NAPI_MAX)
 {}
 
 int32_t FileAsset::GetId() const
@@ -345,6 +346,16 @@ const string &FileAsset::GetRecyclePath() const
 void FileAsset::SetRecyclePath(const string &recyclePath)
 {
     recyclePath_ = recyclePath;
+}
+
+ResultNapiType FileAsset::GetResultNapiType() const
+{
+    return resultNapiType_;
+}
+
+void FileAsset::SetResultNapiType(const ResultNapiType type)
+{
+    resultNapiType_ = type;
 }
 
 int32_t FileAsset::CreateAsset(const string &filePath)
