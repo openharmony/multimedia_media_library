@@ -48,7 +48,7 @@ public:
     static int32_t Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri);
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
     static int32_t ListFile(const std::string &selectUri, std::vector<FileAccessFwk::FileInfo> &fileList);
-    static void GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList);
+    static int32_t GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList);
 };
 } // Media
 } // OHOS

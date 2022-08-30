@@ -100,8 +100,9 @@ sptr<IRemoteObject> MediaFileExtAbility::OnConnect(const AAFwk::Want &want)
     return remoteObject->AsObject();
 }
 
-int MediaFileExtAbility::OpenFile(const Uri &uri, int flags)
+int MediaFileExtAbility::OpenFile(const Uri &uri, const int flags, int &fd)
 {
+    fd = -1;
     if (!MediaFileExtentionUtils::CheckUriValid(uri.ToString())) {
         return E_URI_INVALID;
     }
@@ -120,7 +121,13 @@ int MediaFileExtAbility::OpenFile(const Uri &uri, int flags)
         MEDIA_ERR_LOG("invalid OpenFile flags %{private}d", flags);
         return E_OPENFILE_INVALID_FLAG;
     }
-    return MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
+    auto ret = MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
+    if (ret < 0) {
+        return ret;
+    } else {
+        fd = ret;
+        return E_SUCCESS;
+    }
 }
 
 int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayName,  Uri &newFileUri)
@@ -214,18 +221,14 @@ int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
     return errCode;
 }
 
-std::vector<FileAccessFwk::FileInfo> MediaFileExtAbility::ListFile(const Uri &selectUri)
+int MediaFileExtAbility::ListFile(const Uri &selectUri, std::vector<FileAccessFwk::FileInfo> &fileList)
 {
-    vector<FileAccessFwk::FileInfo> fileList;
-    MediaFileExtentionUtils::ListFile(selectUri.ToString(), fileList);
-    return fileList;
+    return MediaFileExtentionUtils::ListFile(selectUri.ToString(), fileList);
 }
 
-std::vector<RootInfo> MediaFileExtAbility::GetRoots()
+int MediaFileExtAbility::GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList)
 {
-    vector<FileAccessFwk::RootInfo> rootList;
-    MediaFileExtentionUtils::GetRoots(rootList);
-    return rootList;
+    return MediaFileExtentionUtils::GetRoots(rootList);
 }
 
 int MediaFileExtAbility::Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri)
