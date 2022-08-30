@@ -37,11 +37,13 @@ FetchResult::FetchResult(const shared_ptr<DataShare::DataShareResultSet>& result
     isClosed_ = false;
     resultset_ = resultset;
     networkId_ = "";
+    resultNapiType_ = ResultNapiType::TYPE_NAPI_MAX;
 }
 
 // empty constructor napi
 FetchResult::FetchResult()
-    : isContain_(false), isClosed_(false), count_(0), resultset_(nullptr) {}
+    : isContain_(false), isClosed_(false), count_(0), resultNapiType_(ResultNapiType::TYPE_NAPI_MAX),
+      resultset_(nullptr) {}
 
 FetchResult::~FetchResult() {}
 
@@ -214,6 +216,21 @@ static string GetFileMediaTypeUri(MediaType mediaType, const string &networkId)
     }
 }
 
+static void MediaTypeToMask(MediaType mediaType, std::string &typeMask)
+{
+    typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
+    if ((mediaType >= MEDIA_TYPE_FILE) && (mediaType <= MEDIA_TYPE_AUDIO)) {
+        typeMask[std::get<POS_TYPE_MASK_STRING_INDEX>(MEDIA_TYPE_TUPLE_VEC[mediaType])] = TYPE_MASK_BIT_SET;
+    }
+}
+
+static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask)
+{
+    if (!typeMask.empty()) {
+        uri += "#" + URI_PARAM_KEY_TYPE + ":" + typeMask;
+    }
+}
+
 unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
     MediaLibraryTracer tracer;
@@ -279,8 +296,16 @@ unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResu
 
     fileAsset->SetIsTrash(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_IS_TRASH, TYPE_INT32, resultSet)));
 
-    fileAsset->SetUri(GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_)
-        + "/" + to_string(fileAsset->GetId()));
+    fileAsset->SetResultNapiType(resultNapiType_);
+
+    string typeMask;
+    MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
+    string uri = GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_) + "/" + to_string(fileAsset->GetId());
+    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
+        UriAddFragmentTypeMask(uri, typeMask);
+    }
+
+    fileAsset->SetUri(uri);
 
     return fileAsset;
 }

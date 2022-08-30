@@ -131,7 +131,7 @@ const int32_t ARGS_ZERO = 0;
 const int32_t ARGS_ONE = 1;
 const int32_t ARGS_TWO = 2;
 const int32_t ARGS_THREE = 3;
-const int32_t ARGS_FORE = 4;
+const int32_t ARGS_FOUR = 4;
 const int32_t ARG_BUF_SIZE = 100;
 constexpr uint32_t NAPI_INIT_REF_COUNT = 1;
 
@@ -151,6 +151,7 @@ const int32_t JS_ERR_DISPLAYNAME_INVALID = 9;       // input display invalid
 const int32_t JS_ERR_NO_SUCH_FILE = 10;             // no such file
 const int32_t JS_ERR_FILE_EXIST = 11;               // file has exist
 const int32_t JS_ERR_WRONG_FILE_TYPE = 12;          // file type is not allow in the directory
+const int32_t JS_ERR_NO_MEMORY = 13;                // no memory left
 
 const int32_t TRASH_SMART_ALBUM_ID = 1;
 const std::string TRASH_SMART_ALBUM_NAME = "TrashAlbum";
@@ -203,6 +204,7 @@ const std::unordered_map<int, int> trans2JsError = {
     {E_FAIL, JS_ERR_INNER_FAIL},
     {E_NO_SUCH_FILE, JS_ERR_NO_SUCH_FILE},
     {E_FILE_EXIST, JS_ERR_FILE_EXIST},
+    {E_NO_MEMORY, JS_ERR_NO_MEMORY},
     {E_FILE_NAME_INVALID, JS_ERR_DISPLAYNAME_INVALID},
     {E_CHECK_EXTENSION_FAIL, JS_ERR_WRONG_FILE_TYPE},
     {E_FILE_OPER_FAIL, JS_ERR_INNER_FAIL},
@@ -271,16 +273,18 @@ public:
     static napi_status GetArrayProperty(napi_env env, napi_value arg, const std::string &propName,
         std::vector<std::string> &array);
     static void GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask);
+    static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask);
 
     template <class AsyncContext>
     static napi_status AsyncContextSetObjectInfo(napi_env env, napi_callback_info info, AsyncContext &asyncContext,
         const size_t minArgs, const size_t maxArgs)
     {
         napi_value thisVar = nullptr;
-        GET_JS_ARGS(env, info, asyncContext->argc, asyncContext->argv, thisVar);
+        CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, asyncContext->argv.data(), &thisVar, nullptr),
+            "Failed to get cb info");
         CHECK_COND_RET(((asyncContext->argc >= minArgs) && (asyncContext->argc <= maxArgs)), napi_invalid_arg,
             "Number of args is invalid");
-        CHECK_COND_RET(asyncContext->argv[0] != nullptr, napi_invalid_arg, "Argument list is empty");
+        CHECK_COND_RET(asyncContext->argv[ARGS_ZERO] != nullptr, napi_invalid_arg, "Argument list is empty");
         CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)),
             "Failed to unwrap thisVar");
         CHECK_COND_RET(asyncContext->objectInfo != nullptr, napi_invalid_arg, "Failed to get object info");
@@ -309,7 +313,7 @@ public:
     {
         /* Parse the last argument into callbackref if any */
         bool isCallback = false;
-        CHECK_STATUS_RET(hasCallback(env, context->argc, context->argv, isCallback), "Failed to check callback");
+        CHECK_STATUS_RET(hasCallback(env, context->argc, context->argv.data(), isCallback), "Failed to check callback");
         if (isCallback) {
             CHECK_STATUS_RET(GetParamFunction(env, context->argv[context->argc - 1], context->callbackRef),
                 "Failed to get callback");
@@ -326,11 +330,10 @@ public:
             "Failed to get object info");
 
         /* Parse the first argument into typeMask */
-        std::vector<uint32_t> typeArray;
-        CHECK_STATUS_RET(GetParamNumberArray(env, context->argv[ARGS_ZERO], typeArray), "Failed to get param array");
-        CHECK_COND_RET(typeArray.size() > 0, napi_invalid_arg, "Require at least one type");
-        context->typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
-        GenTypeMaskFromArray(typeArray, context->typeMask);
+        CHECK_STATUS_RET(GetParamNumberArray(env, context->argv[ARGS_ZERO], context->mediaTypes),
+            "Failed to get param array");
+        CHECK_COND_RET(context->mediaTypes.size() > 0, napi_invalid_arg, "Require at least one type");
+        GenTypeMaskFromArray(context->mediaTypes, context->typeMask);
 
         CHECK_STATUS_RET(GetFetchOption(env, context->argv[ARGS_ONE], context), "Failed to get fetch option");
         CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
@@ -360,7 +363,7 @@ public:
         CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
             "Failed to get object info");
 
-        CHECK_STATUS_RET(GetParamString(env, context->argv[ARGS_ZERO], param), "Failed to get string argument");
+        CHECK_STATUS_RET(GetParamStringPathMax(env, context->argv[ARGS_ZERO], param), "Failed to get string argument");
         CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
         return napi_ok;
     }

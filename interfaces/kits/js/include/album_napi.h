@@ -41,10 +41,12 @@
 namespace OHOS {
 namespace Media {
 static const std::string ALBUM_NAPI_CLASS_NAME = "Album";
+static const std::string USERFILEMGR_ALBUM_NAPI_CLASS_NAME = "UserFileMgrAlbum";
 
 class AlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
+    static napi_value UserFileMgrInit(napi_env env, napi_value exports);
     static napi_value CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
         std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
     int32_t GetAlbumId() const;
@@ -52,10 +54,11 @@ public:
     std::string GetAlbumName() const;
     std::string GetAlbumPath() const;
     std::string GetNetworkId() const;
+    std::string GetTypeMask() const;
     AlbumNapi();
     ~AlbumNapi();
 
-    static std::shared_ptr<DataShare::DataShareHelper> sMediaDataHelper;
+    static std::shared_ptr<DataShare::DataShareHelper> sMediaDataHelper_;
 
 private:
     static void AlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -77,6 +80,9 @@ private:
     static napi_value JSGetAlbumVirtual(napi_env env, napi_callback_info info);
     static napi_value JSSetAlbumPath(napi_env env, napi_callback_info info);
 
+    static napi_value UserFileMgrGetAssets(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
+
     int32_t albumId_;
     std::string albumName_;
     std::string albumUri_;
@@ -85,13 +91,15 @@ private:
     std::string albumRelativePath_;
     std::string coverUri_;
     bool albumVirtual_;
-    std::string albumPath_ = "";
+    std::string albumPath_;
+    std::string typeMask_;
 
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
 
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
+    static thread_local napi_ref userFileMgrConstructor_;
     static thread_local AlbumAsset *sAlbumData_;
 };
 
@@ -106,7 +114,14 @@ struct AlbumNapiAsyncContext : public NapiError {
     std::vector<std::string> selectionArgs;
     std::string order;
     std::unique_ptr<FetchResult> fetchResult;
-    std::string networkId_ = "";
+    std::string networkId;
+    std::string uri;
+
+    size_t argc;
+    std::array<napi_value, NAPI_ARGC_MAX> argv;
+    ResultNapiType resultNapiType;
+    std::vector<uint32_t> mediaTypes;
+    std::string typeMask;
 };
 } // namespace Media
 } // namespace OHOS

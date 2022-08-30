@@ -40,6 +40,7 @@ public:
     void SetCount(const int32_t count);
     void SetAlbumRelativePath(const string albumRelativePath);
     void SetCoverUri(const string coverUri);
+    void SetAlbumTypeMask(const string &typeMask);
 
     void SetAlbumPath(const string albumPath);
     void SetAlbumVirtual(const bool albumVirtual);
@@ -52,6 +53,7 @@ public:
     string GetCoverUri() const;
     string GetAlbumPath() const;
     bool GetAlbumVirtual() const;
+    string GetAlbumTypeMask() const;
 
     bool CreateAlbumAsset();
     bool DeleteAlbumAsset(const std::string &albumUri);
@@ -68,6 +70,7 @@ private:
 
     string albumPath_;
     bool albumVirtual_;
+    std::string typeMask_;
 };
 } // namespace Media
 } // namespace OHOS

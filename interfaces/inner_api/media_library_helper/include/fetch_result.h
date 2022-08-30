@@ -18,11 +18,12 @@
 
 #include <variant>
 #include "abs_shared_result_set.h"
+#include "datashare_result_set.h"
 #include "file_asset.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_db_const.h"
 #include "rdb_errno.h"
-#include "datashare_result_set.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -60,6 +61,7 @@ public:
     bool isClosed_;
     int32_t count_;
     std::string networkId_;
+    ResultNapiType resultNapiType_;
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultset_ = nullptr;
 
 private:
