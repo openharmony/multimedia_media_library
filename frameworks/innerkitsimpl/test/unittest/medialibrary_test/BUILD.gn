@@ -29,7 +29,6 @@ ohos_unittest("medialibrary_test") {
     "${MEDIA_LIB_BASE_DIR}/interfaces/innerkits/native/include",
     "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include/",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include/",
     "//commonlibrary/c_utils/base/include",
   ]
 
@@ -37,7 +36,9 @@ ohos_unittest("medialibrary_test") {
 
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
   ]
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "hiviewdfx_hilog_native:libhilog",
+  ]
 }

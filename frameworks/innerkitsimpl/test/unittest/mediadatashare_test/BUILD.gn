@@ -26,9 +26,6 @@ ohos_unittest("medialibrary_datashare_unittest") {
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
-    "//base/security/access_token/interfaces/innerkits/accesstoken/include",
-    "//base/security/access_token/interfaces/innerkits/nativetoken/include",
-    "//base/security/access_token/interfaces/innerkits/token_setproc/include",
     "//base/security/access_token/frameworks/common/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
@@ -55,12 +52,9 @@ ohos_unittest("medialibrary_datashare_unittest") {
   deps = [
     "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager:ability_manager",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "//base/security/access_token/interfaces/innerkits/accesstoken:libaccesstoken_sdk",
-    "//base/security/access_token/interfaces/innerkits/nativetoken:libnativetoken",
-    "//base/security/access_token/interfaces/innerkits/token_setproc:libtoken_setproc",
-    "//foundation/filemanagement/user_file_service/frameworks/innerkits/file_access:file_access_extension_ability_kit",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
+    "//foundation/filemanagement/user_file_service/frameworks/innerkits/file_access:file_access_extension_ability_kit",
   ]
 
   external_deps = [
@@ -76,6 +70,9 @@ ohos_unittest("medialibrary_datashare_unittest") {
     "relational_store:native_rdb",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken",
+    "access_token:libtoken_setproc",
   ]
 
   resource_config_file =
