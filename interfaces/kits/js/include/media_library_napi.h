@@ -169,6 +169,7 @@ private:
     static napi_value JSGetMediaRemoteStub(napi_env env, napi_callback_info info);
 
     static napi_value GetUserFileMgr(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrGetFileAssets(napi_env env, napi_callback_info info);
 
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
@@ -210,6 +211,11 @@ struct MediaLibraryAsyncContext : public NapiError {
     Ability *ability_;
     std::string storeMediaSrc;
     int32_t imagePreviewIndex;
+
+    size_t argc;
+    napi_value argv[NAPI_ARGC_MAX];
+    ResultNapiType resultNapiType;
+    std::string typeMask;
 };
 } // namespace Media
 } // namespace OHOS

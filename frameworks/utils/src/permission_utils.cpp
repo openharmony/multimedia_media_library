@@ -134,6 +134,37 @@ bool PermissionUtils::CheckCallerPermission(const string &permission)
     return true;
 }
 
+bool PermissionUtils::CheckCallerPermission(const std::vector<std::string> perms, const uint32_t typeMask)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckCallerPermissionWithTypeMask");
+
+    if (typeMask == 0) {
+        return false;
+    }
+
+    uint32_t resultMask = 0;
+    for (auto &perm : perms) {
+        uint32_t bit = (uint32_t)PERM_MASK_MAP.at(perm);
+        if ((bit & typeMask)) {
+            if (PermissionUtils::CheckCallerPermission(perm)) {
+                resultMask |= bit;
+            } else {
+                return false;
+            }
+        }
+    }
+    /*
+     * Grant if all non-zero bit in typeMask passed permission check,
+     * in that case, resultMask should be the same with typeMask
+     */
+    if (resultMask == typeMask) {
+        return true;
+    }
+
+    return false;
+}
+
 bool PermissionUtils::CheckCallerSpecialFilePerm(const string &displayName)
 {
     string bundleName = "";
