@@ -1327,7 +1327,7 @@ static void JSDeleteAssetExecute(MediaLibraryAsyncContext *context)
     string mediaType;
     string deleteId;
     bool isValid = false;
-    string notifyUri = context->valuesBucket.Get(MEDIA_DATA_DB_RELATIVE_PATH, isValid);
+    string notifyUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
         context->error = ERR_INVALID_OUTPUT;
         return;
