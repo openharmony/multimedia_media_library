@@ -129,7 +129,8 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         &ufmConstructor_,
         MediaLibraryNapiConstructor,
         {
-            DECLARE_NAPI_FUNCTION("getPublicDirectory", JSGetPublicDirectory)
+            DECLARE_NAPI_FUNCTION("getPublicDirectory", JSGetPublicDirectory),
+            DECLARE_NAPI_FUNCTION("getFileAssets", UserFileMgrGetFileAssets)
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -651,11 +652,12 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     return result;
 }
 
-static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
+static void GetFileAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetFileAssetsExecute");
 
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     shared_ptr<DataShareHelper> helper = context->objectInfo->sDataShareHelper_;
     if (helper == nullptr) {
@@ -708,12 +710,12 @@ static void GetFileAssetsExecute(MediaLibraryAsyncContext *context)
     }
 }
 
-static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
-                                               MediaLibraryAsyncContext *context)
+static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetFileAssetsAsyncCallbackComplete");
 
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
@@ -760,7 +762,6 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
     size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = {0};
     napi_value thisVar = nullptr;
-    napi_value resource = nullptr;
 
     MediaLibraryTracer tracer;
     tracer.Start("JSGetFileAssets");
@@ -775,23 +776,8 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
-        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSGetFileAssets", asyncContext);
-
-        status = napi_create_async_work(
-            env, nullptr, resource,
-            [](napi_env env, void* data) {
-                auto context = static_cast<MediaLibraryAsyncContext*>(data);
-                GetFileAssetsExecute(context);
-            },
-            reinterpret_cast<CompleteCallback>(GetFileAssetsAsyncCallbackComplete),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
-        if (status != napi_ok) {
-            napi_get_undefined(env, &result);
-        } else {
-            napi_queue_async_work(env, asyncContext->work);
-            asyncContext.release();
-        }
+        result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetFileAssets", GetFileAssetsExecute,
+            GetFileAssetsAsyncCallbackComplete);
     }
 
     return result;
@@ -1790,7 +1776,7 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
     napi_value argv[ARGS_TWO] = {nullptr};
     napi_value thisVar = nullptr;
     size_t res = 0;
-    char buffer[SIZE];
+    char buffer[ARG_BUF_SIZE];
     string type;
     const int32_t refCount = 1;
     MediaLibraryNapi *obj = nullptr;
@@ -1815,7 +1801,7 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
             return undefinedResult;
         }
 
-        if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res) != napi_ok) {
+        if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
             NAPI_ERR_LOG("Failed to get value string utf8 for type");
             return undefinedResult;
         }
@@ -1907,7 +1893,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
     napi_value argv[ARGS_TWO] = {nullptr};
     napi_value thisVar = nullptr;
     size_t res = 0;
-    char buffer[SIZE];
+    char buffer[ARG_BUF_SIZE];
     const int32_t refCount = 1;
     string type;
     MediaLibraryNapi *obj = nullptr;
@@ -1931,7 +1917,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
             return undefinedResult;
         }
 
-        if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, SIZE, &res) != napi_ok) {
+        if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
             NAPI_ERR_LOG("Failed to get value string utf8 for type");
             return undefinedResult;
         }
@@ -3171,6 +3157,22 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
         }
     }
     return result;
+}
+
+napi_value MediaLibraryNapi::UserFileMgrGetFileAssets(napi_env env, napi_callback_info info)
+{
+    napi_value ret = nullptr;
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsTypeFetchOptCallback(env, info, asyncContext) != napi_ok,
+        "Failed to parse js args");
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UFMJSGetTypeAssets", GetFileAssetsExecute,
+        GetFileAssetsAsyncCallbackComplete);
+
+    return ret;
 }
 } // namespace Media
 } // namespace OHOS

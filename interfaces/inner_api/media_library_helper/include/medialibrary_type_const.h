@@ -18,6 +18,8 @@
 
 #include <unordered_set>
 
+#include "userfile_manager_types.h"
+
 namespace OHOS {
 namespace Media {
 enum {
@@ -34,22 +36,6 @@ enum {
     MEDIA_CREATE_MEDIA_ALBUM_ASSET  = 10,
     MEDIA_DELETE_MEDIA_ALBUM_ASSET  = 11,
     MEDIA_MODIFY_MEDIA_ALBUM_ASSET  = 12,
-};
-
-enum MediaType {
-    MEDIA_TYPE_FILE,
-    MEDIA_TYPE_IMAGE,
-    MEDIA_TYPE_VIDEO,
-    MEDIA_TYPE_AUDIO,
-    MEDIA_TYPE_MEDIA,
-    MEDIA_TYPE_ALBUM_LIST,
-    MEDIA_TYPE_ALBUM_LIST_INFO,
-    MEDIA_TYPE_ALBUM,
-    MEDIA_TYPE_SMARTALBUM,
-    MEDIA_TYPE_DEVICE,
-    MEDIA_TYPE_REMOTEFILE,
-    MEDIA_TYPE_NOFILE,
-    MEDIA_TYPE_ALL,
 };
 
 /* ENUM Asset types */
