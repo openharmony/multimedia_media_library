@@ -41,16 +41,17 @@ void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &tok
     }
 }
 
-static void UpdateFetchOptionSelection(std::string &selection, const std::string &prefix)
+static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition)
 {
-    if (!prefix.empty()) {
+    if (!newCondition.empty()) {
         if (!selection.empty()) {
-            selection = prefix + "AND (" + selection + ")";
+            selection = "(" + selection + ") AND " + newCondition;
         } else {
-            selection = prefix;
+            selection = newCondition;
         }
     }
 }
+
 unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptions &fetchOps)
 {
     unique_ptr<FetchResult> fetchFileResult = nullptr;
@@ -58,9 +59,9 @@ unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptio
     DataShare::DataSharePredicates predicates;
     MediaFetchOptions fetchOptions = const_cast<MediaFetchOptions &>(fetchOps);
 
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
-    UpdateFetchOptionSelection(fetchOptions.selections, prefix);
-    fetchOptions.selectionArgs.insert(fetchOptions.selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
+    string newCondition = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
+    AppendFetchOptionSelection(fetchOptions.selections, newCondition);
+    fetchOptions.selectionArgs.emplace_back(to_string(MEDIA_TYPE_ALBUM));
 
     predicates.SetWhereClause(fetchOptions.selections);
     predicates.SetWhereArgs(fetchOptions.selectionArgs);
@@ -94,8 +95,8 @@ vector<unique_ptr<AlbumAsset>> MediaLibraryManager::GetAlbums(const MediaFetchOp
         return albums;
     }
 
-    UpdateFetchOptionSelection(fetchOptions.selections, MEDIA_DATA_DB_MEDIA_TYPE + " = ? ");
-    fetchOptions.selectionArgs.insert(fetchOptions.selectionArgs.begin(), to_string(MEDIA_TYPE_ALBUM));
+    AppendFetchOptionSelection(fetchOptions.selections, MEDIA_DATA_DB_MEDIA_TYPE + " = ? ");
+    fetchOptions.selectionArgs.emplace_back(to_string(MEDIA_TYPE_ALBUM));
 
     predicates.SetWhereClause(fetchOptions.selections);
     predicates.SetWhereArgs(fetchOptions.selectionArgs);
@@ -327,9 +328,9 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
 
     if (sDataShareHelper_ != nullptr) {
         string prefix = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
-        UpdateFetchOptionSelection(fetchOptions.selections, prefix);
-        fetchOptions.selectionArgs.insert(fetchOptions.selectionArgs.begin(), std::to_string(MEDIA_TYPE_ALBUM));
-        fetchOptions.selectionArgs.insert(fetchOptions.selectionArgs.begin(), std::to_string(albumId));
+        AppendFetchOptionSelection(fetchOptions.selections, prefix);
+        fetchOptions.selectionArgs.emplace_back(std::to_string(albumId));
+        fetchOptions.selectionArgs.emplace_back(std::to_string(MEDIA_TYPE_ALBUM));
 
         predicates.SetWhereClause(fetchOptions.selections);
         predicates.SetWhereArgs(fetchOptions.selectionArgs);
