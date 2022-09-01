@@ -182,6 +182,9 @@ std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &u
         return nullptr;
     }
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(uri, columns, predicates);
+    if (queryResultSet == nullptr) {
+        return nullptr;
+    }
     std::shared_ptr<DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(queryResultSet);
     return resultSet;
 }

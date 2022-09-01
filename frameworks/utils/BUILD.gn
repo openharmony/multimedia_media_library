@@ -18,11 +18,17 @@ ohos_static_library("medialibrary_common_utils") {
   include_dirs = [
     "./include/",
     "//third_party/openssl/include/",
+    "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
   ]
 
   sources = [ "src/medialibrary_common_utils.cpp" ]
 
   deps = [ "//third_party/openssl:libcrypto_shared" ]
+
+  external_deps = [
+    "hitrace_native:hitrace_meter",
+    "hiviewdfx_hilog_native:libhilog",
+  ]
 }
 
 ohos_static_library("permission_utils") {

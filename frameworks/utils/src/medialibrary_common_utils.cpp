@@ -15,11 +15,18 @@
 
 #include "medialibrary_common_utils.h"
 
+#include <algorithm>
+#include <regex>
+#include <unordered_set>
 #include "medialibrary_errno.h"
+#include "medialibrary_db_const.h"
+#include "media_library_tracer.h"
+#include "media_log.h"
 #include "openssl/sha.h"
 
 namespace OHOS {
 namespace Media {
+using namespace std;
 const std::string MediaLibraryCommonUtils::CHAR2HEX_TABLE[UCHAR_MAX + 1] = {
     "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1A", "1B", "1C", "1D", "1E", "1F",
@@ -40,6 +47,33 @@ const std::string MediaLibraryCommonUtils::CHAR2HEX_TABLE[UCHAR_MAX + 1] = {
     "D0", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "DA", "DB", "DC", "DD", "DE", "DF",
     "E0", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "EA", "EB", "EC", "ED", "EE", "EF",
     "F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "FA", "FB", "FC", "FD", "FE", "FF"
+};
+
+const std::unordered_set<std::string> fileKeyWhiteListUSet {
+    MEDIA_DATA_DB_ID,
+    MEDIA_DATA_DB_RELATIVE_PATH,
+    MEDIA_DATA_DB_NAME,
+    MEDIA_DATA_DB_PARENT_ID,
+    MEDIA_DATA_DB_MIME_TYPE,
+    MEDIA_DATA_DB_MEDIA_TYPE,
+    MEDIA_DATA_DB_SIZE,
+    MEDIA_DATA_DB_DATE_ADDED,
+    MEDIA_DATA_DB_DATE_MODIFIED,
+    MEDIA_DATA_DB_DATE_TAKEN,
+    MEDIA_DATA_DB_TITLE,
+    MEDIA_DATA_DB_ARTIST,
+    MEDIA_DATA_DB_AUDIO_ALBUM,
+    MEDIA_DATA_DB_DURATION,
+    MEDIA_DATA_DB_WIDTH,
+    MEDIA_DATA_DB_HEIGHT,
+    MEDIA_DATA_DB_ORIENTATION,
+    MEDIA_DATA_DB_BUCKET_ID,
+    MEDIA_DATA_DB_BUCKET_NAME,
+    CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE,
+    MEDIA_DATA_DB_DATE_TRASHED,
+    MEDIA_DATA_DB_BUCKET_ID,
+    MEDIA_DATA_DB_ALBUM_ID,
+    DEVICE_DB_NETWORK_ID
 };
 
 void MediaLibraryCommonUtils::Char2Hex(const unsigned char *data, const size_t len, std::string &hexStr)
@@ -79,6 +113,149 @@ int32_t MediaLibraryCommonUtils::GenKeySHA256(const std::vector<uint8_t> &input,
 int32_t MediaLibraryCommonUtils::GenKeySHA256(const std::string &input, std::string &key)
 {
     return GenKey((const unsigned char *)input.c_str(), input.size(), key);
+}
+
+void MediaLibraryCommonUtils::ExtractKeyWord(std::string &str)
+{
+    if (str.empty()) {
+        return;
+    }
+    // add seprate space symbol,like file_id=?
+    std::regex spacePattern("\\=|\\<>|\\>|\\>=|\\<|\\<=|\\!=",
+        std::regex_constants::ECMAScript | std::regex_constants::icase);
+    str = regex_replace(str, spacePattern, " ");
+    // remove front space of key word
+    auto pos = str.find_first_not_of(" ");
+    if (pos != std::string::npos) {
+        str.erase(0, pos);
+    }
+    // remove back space of key word
+    pos = str.find_first_of(" ");
+    if (pos != std::string::npos) {
+        str = str.substr(0, pos);
+    }
+}
+
+bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)
+{
+    if (fileKeyWhiteListUSet.find(express) != fileKeyWhiteListUSet.end()) {
+        return true;
+    }
+
+    return false;
+}
+
+bool MediaLibraryCommonUtils::CheckExpressValidation(std::vector<std::string> &sepratedStr)
+{
+    for (auto &str : sepratedStr) {
+        ExtractKeyWord(str);
+        if (str.empty() || (str.size() == 1 && str == " ")) {
+            continue;
+        }
+        if (!CheckWhiteList(str)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void MediaLibraryCommonUtils::removeSpecialCondition(std::string &hacker, const std::string &pattern)
+{
+    auto pos = hacker.find(pattern);
+    while (pos != std::string::npos) {
+        hacker.replace(pos, pos + pattern.size(), " ");
+        pos = hacker.find(pattern);
+    }
+}
+
+void MediaLibraryCommonUtils::removeSpecialCondition(std::string &hacker)
+{
+    const std::string S1 = "not between ? and ?";
+    const std::string S2 = "between ? and ?";
+    removeSpecialCondition(hacker, S1);
+    removeSpecialCondition(hacker, S2);
+}
+
+void MediaLibraryCommonUtils::SeprateSelection(std::string &strCondition, std::vector<std::string> &sepratedStr)
+{
+    // 0. transform to lower
+    std::transform(strCondition.begin(), strCondition.end(), strCondition.begin(), ::tolower);
+    // 1.remove brackets
+    std::regex bracketsPattern("\\(|\\)", std::regex_constants::ECMAScript | std::regex_constants::icase);
+    strCondition = regex_replace(strCondition, bracketsPattern, "");
+
+    // 2.remove redundant space
+    std::regex spacePattern("\\s+", std::regex_constants::ECMAScript | std::regex_constants::icase);
+    strCondition = regex_replace(strCondition, spacePattern, " ");
+
+    // 3. remove special condition
+    removeSpecialCondition(strCondition);
+
+    // 4. seprate core: according bound symbol,for example: and or ..
+    std::regex conditionPattern("\\s*and\\s+|\\s*or\\s+",
+        std::regex_constants::ECMAScript | std::regex_constants::icase);
+    std::sregex_token_iterator iter(strCondition.begin(), strCondition.end(), conditionPattern, -1);
+    decltype(iter) end;
+    while (iter != end) {
+        sepratedStr.push_back(iter->str());
+        ++iter;
+    }
+}
+
+bool MediaLibraryCommonUtils::CheckKeyWord(const std::string &strCondition)
+{
+    std::regex pattern("\\s*exec\\s*|\\s*insert\\s*|\\s*delete\\s*|\\s*update\\s*|" \
+                            "\\s*join\\s*|\\s*union\\s*|\\s*master\\s*|\\s*truncate\\s*",
+                    std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+    if (regex_search(strCondition, pattern)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool MediaLibraryCommonUtils::CheckIllegalCharacter(const std::string &strCondition)
+{
+    /* if strCondition contains ';', it will be sepreate to two clause */
+    if (strCondition.find(';') == std::string::npos) {
+        return true;
+    }
+    /* other check to do */
+    return false;
+}
+
+bool MediaLibraryCommonUtils::CheckWhereClause(const std::string &whereClause)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CommonUtils::CheckWhereClause");
+    if (whereClause.empty() || (whereClause.size() == 1 && whereClause == " ")) {
+        return true;
+    }
+    /* check whether query condition has illegal character */
+    if (!CheckIllegalCharacter(whereClause)) {
+        return false;
+    }
+
+    /* check whether query condition has key word */
+    if (!CheckKeyWord(whereClause)) {
+        return false;
+    }
+
+    std::vector<std::string> sepratedStr;
+    auto args = whereClause;
+    SeprateSelection(args, sepratedStr);
+    /* check every query condition */
+    return CheckExpressValidation(sepratedStr);
+}
+
+void MediaLibraryCommonUtils::AppendSelections(std::string &selections)
+{
+    if (selections.empty()) {
+        return;
+    }
+    selections = "(" + selections + ")";
 }
 } // namespace Media
 } // namespace OHOS

@@ -415,13 +415,14 @@ public:
 
         return result;
     }
-    static void UpdateFetchOptionSelection(std::string &selection, const std::string &prefix)
+
+    static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition)
     {
-        if (!prefix.empty()) {
+        if (!newCondition.empty()) {
             if (!selection.empty()) {
-                selection = prefix + "AND (" + selection + ")";
+                selection = "(" + selection + ") AND " + newCondition;
             } else {
-                selection = prefix;
+                selection = newCondition;
             }
         }
     }
