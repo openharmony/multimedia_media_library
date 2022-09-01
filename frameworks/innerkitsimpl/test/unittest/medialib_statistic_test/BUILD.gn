@@ -58,6 +58,11 @@ ohos_unittest("medialibrary_statistic_unittest") {
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
+    "ability_runtime:ability_manager",
+    "ability_runtime:abilitykit_native",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken",
+    "access_token:libtoken_setproc",
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
@@ -69,10 +74,5 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "relational_store:native_rdb",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
-    "ability_runtime:ability_manager",
-    "ability_runtime:abilitykit_native",
-    "access_token:libaccesstoken_sdk",
-    "access_token:libnativetoken",
-    "access_token:libtoken_setproc",
   ]
 }

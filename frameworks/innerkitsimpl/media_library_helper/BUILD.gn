@@ -72,11 +72,10 @@ ohos_source_set("media_library_source") {
 ohos_shared_library("media_library") {
   install_enable = true
 
-  deps = [
-    ":media_library_source",
-  ]
+  deps = [ ":media_library_source" ]
 
   external_deps = [
+    "ability_runtime:abilitykit_native",
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
@@ -86,7 +85,6 @@ ohos_shared_library("media_library") {
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
     "relational_store:native_rdb",
-    "ability_runtime:abilitykit_native",
   ]
 
   part_name = "media_library"
@@ -136,11 +134,11 @@ ohos_static_library("media_thumbnail_helper") {
     "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
+    "kv_store:distributeddata_inner",
+    "multimedia_image_standard:image_native",
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
     "relational_store:native_rdb",
-    "kv_store:distributeddata_inner",
-    "multimedia_image_standard:image_native",
   ]
   subsystem_name = "multimedia"
   part_name = "media_library"
