@@ -34,9 +34,7 @@ ohos_unittest("medialibrary_test") {
 
   sources = [ "src/medialibrary_unit_test.cpp" ]
 
-  deps = [
-    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
-  ]
+  deps = [ "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library" ]
   external_deps = [
     "c_utils:utils",
     "hiviewdfx_hilog_native:libhilog",
