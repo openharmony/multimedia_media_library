@@ -287,7 +287,7 @@ void GetActivePeer(shared_ptr<AbsSharedResultSet> &result)
     result = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
-void MediaFileExtentionUtils::GetRoots(vector<RootInfo> &rootList)
+int32_t MediaFileExtentionUtils::GetRoots(vector<RootInfo> &rootList)
 {
     RootInfo rootInfo;
     // add local root
@@ -299,6 +299,7 @@ void MediaFileExtentionUtils::GetRoots(vector<RootInfo> &rootList)
     shared_ptr<AbsSharedResultSet> resultSet;
     GetActivePeer(resultSet);
     GetRootInfoFromResult(resultSet, rootList);
+    return E_SUCCESS;
 }
 
 bool MediaFileExtentionUtils::CheckDistributedUri(const string &uri)
