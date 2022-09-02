@@ -37,7 +37,8 @@ public:
     int CreateFile(const Uri &parentUri, const std::string &displayName,  Uri &newFileUri) override;
     int Mkdir(const Uri &parentUri, const std::string &displayName, Uri &newFileUri) override;
     int Delete(const Uri &sourceFileUri) override;
-    int ListFile(const Uri &selectUri, std::vector<FileAccessFwk::FileInfo> &fileList) override;
+    int ListFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
+        std::vector<FileAccessFwk::FileInfo> &fileList) override;
     int GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList) override;
     int Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri) override;
     int Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri) override;
