@@ -163,10 +163,10 @@ std::shared_ptr<FetchResult> FetchFileResultNapi::GetFetchFileResult() const
 napi_value FetchFileResultNapi::UserFileMgrInit(napi_env env, napi_value exports)
 {
     NapiClassInfo info = {
-        UFM_FETCH_FILE_RESULT_CLASS_NAME,
-        &userFileMgrConstructor_,
-        FetchFileResultNapiConstructor,
-        {
+        .name = UFM_FETCH_FILE_RESULT_CLASS_NAME,
+        .ref = &userFileMgrConstructor_,
+        .constructor = FetchFileResultNapiConstructor,
+        .props = {
             DECLARE_NAPI_FUNCTION("getCount", JSGetCount),
             DECLARE_NAPI_FUNCTION("isAfterLast", JSIsAfterLast),
             DECLARE_NAPI_FUNCTION("getFirstObject", JSGetFirstObject),

@@ -113,6 +113,8 @@ private:
     static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrFavorite(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrTrash(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrIsDirectory(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrGetThumbnail(napi_env env, napi_callback_info info);
 
     int32_t fileId_;
     std::string fileUri_;
@@ -172,7 +174,7 @@ struct FileAssetAsyncContext : public NapiError {
     std::shared_ptr<PixelMap> pixelmap;
 
     size_t argc;
-    std::array<napi_value, NAPI_ARGC_MAX> argv;
+    napi_value argv[NAPI_ARGC_MAX];
     std::string typeMask;
 };
 } // namespace Media

@@ -77,6 +77,11 @@ void SmartAlbumAsset::SetCoverUri(const string coverUri)
     coverUri_ = coverUri;
 }
 
+void SmartAlbumAsset::SetTypeMask(const string &typeMask)
+{
+    typeMask_ = typeMask;
+}
+
 void SmartAlbumAsset::SetAlbumPrivateType(const PrivateAlbumType albumPrivateType)
 {
     albumPrivateType_ = albumPrivateType;
@@ -120,6 +125,11 @@ string SmartAlbumAsset::GetCategoryName() const
 string SmartAlbumAsset::GetCoverUri() const
 {
     return coverUri_;
+}
+
+string SmartAlbumAsset::GetTypeMask() const
+{
+    return typeMask_;
 }
 
 PrivateAlbumType SmartAlbumAsset::GetAlbumPrivateType() const
