@@ -27,6 +27,7 @@ namespace OHOS {
 namespace Media {
 const std::string PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
 const std::string PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
+const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
 const std::string PERM_READ_IMAGEVIDEO = "ohos.permission.READ_IMAGEVIDEO";
 const std::string PERM_READ_AUDIO = "ohos.permission.READ_AUDIO";
 const std::string PERM_READ_DOCUMENT = "ohos.permission.READ_DOCUMENT";

@@ -27,7 +27,6 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
 
-
 using namespace std;
 
 namespace OHOS {
@@ -443,48 +442,7 @@ int32_t FileAsset::DeleteAsset(const string &filePath)
 
 int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
 {
-    int32_t errCode = E_ERR;
-
-    if (filePath.empty() || mode.empty()) {
-        return errCode;
-    }
-
-    static const unordered_map<string, int32_t> MEDIA_OPEN_MODE_MAP = {
-        { MEDIA_FILEMODE_READONLY, O_RDONLY },
-        { MEDIA_FILEMODE_WRITEONLY, O_WRONLY },
-        { MEDIA_FILEMODE_READWRITE, O_RDWR },
-        { MEDIA_FILEMODE_WRITETRUNCATE, O_WRONLY | O_TRUNC },
-        { MEDIA_FILEMODE_WRITEAPPEND, O_WRONLY | O_APPEND },
-        { MEDIA_FILEMODE_READWRITETRUNCATE, O_RDWR | O_TRUNC },
-        { MEDIA_FILEMODE_READWRITEAPPEND, O_RDWR | O_APPEND },
-    };
-    if (MEDIA_OPEN_MODE_MAP.find(mode) == MEDIA_OPEN_MODE_MAP.end()) {
-        return E_ERR;
-    }
-
-    if (filePath.size() >= PATH_MAX) {
-        MEDIA_ERR_LOG("File path too long %{public}d", (int)filePath.size());
-        return errCode;
-    }
-    MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
-    std::string absFilePath = "";
-    if (!PathToRealPath(filePath, absFilePath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
-        return errCode;
-    }
-    if (absFilePath.empty()) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{private}s %{public}d",
-                      filePath.c_str(), errno);
-        return errCode;
-    }
-
-    MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath.c_str());
-    return open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
-}
-
-int32_t FileAsset::CloseAsset(int32_t fd)
-{
-    return close(fd);
+    return MediaFileUtils::OpenFile(filePath, mode);
 }
 
 std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> &FileAsset::GetMemberMap()
