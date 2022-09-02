@@ -33,9 +33,7 @@ MediaScannerNapi::MediaScannerNapi()
     : env_(nullptr) {}
 
 MediaScannerNapi::~MediaScannerNapi()
-{
-    NAPI_DEBUG_LOG("MediaScannerNapi destructor exit");
-}
+{}
 
 napi_value MediaScannerNapi::Init(napi_env env, napi_value exports)
 {

@@ -42,10 +42,7 @@ SmartAlbumNapi::SmartAlbumNapi()
     albumCategoryName_ = DEFAULT_SMART_ALBUM_CATEGORYNAME;
     albumCoverUri_ = DEFAULT_COVERURI;
 }
-SmartAlbumNapi::~SmartAlbumNapi()
-{
-    NAPI_DEBUG_LOG("SmartAlbumNapi destructor exit");
-}
+SmartAlbumNapi::~SmartAlbumNapi() = default;
 
 void SmartAlbumNapi::SmartAlbumNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
 {
@@ -54,7 +51,6 @@ void SmartAlbumNapi::SmartAlbumNapiDestructor(napi_env env, void *nativeObject, 
         delete album;
         album = nullptr;
     }
-    NAPI_DEBUG_LOG("SmartAlbumNapiDestructor exit");
 }
 
 napi_value SmartAlbumNapi::Init(napi_env env, napi_value exports)

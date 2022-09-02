@@ -32,6 +32,7 @@
 namespace OHOS {
 namespace Media {
 static const std::string FILE_ASSET_NAPI_CLASS_NAME = "FileAsset";
+static const std::string USERFILEMGR_FILEASSET_NAPI_CLASS_NAME = "UserFileMgrFileAsset";
 
 class FileAssetNapi {
 public:
@@ -39,17 +40,23 @@ public:
     ~FileAssetNapi();
 
     static napi_value Init(napi_env env, napi_value exports);
+    static napi_value UserFileMgrInit(napi_env env, napi_value exports);
     static napi_value CreateFileAsset(napi_env env, FileAsset &iAsset,
                                       std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
+    static napi_value UserFileMgrCreateAsset(napi_env env, FileAsset &iAsset,
+        std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
 
     std::string GetFileDisplayName() const;
     std::string GetRelativePath() const;
+    std::string GetFilePath() const;
     std::string GetTitle() const;
     std::string GetFileUri() const;
     int32_t GetFileId() const;
     int32_t GetOrientation() const;
     MediaType GetMediaType() const;
     std::string GetNetworkId() const;
+    std::string GetTypeMask() const;
+    void SetTypeMask(const std::string &typeMask);
     bool IsFavorite() const;
     void SetFavorite(bool isFavorite);
     bool IsTrash() const;
@@ -102,6 +109,11 @@ private:
     static napi_value JSIsTrash(napi_env env, napi_callback_info info);
     void UpdateFileAssetInfo();
 
+    static napi_value UserFileMgrOpen(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrFavorite(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrTrash(napi_env env, napi_callback_info info);
+
     int32_t fileId_;
     std::string fileUri_;
     MediaType mediaType_;
@@ -118,6 +130,7 @@ private:
     std::string mimeType_;
     bool isFavorite_;
     bool isTrash_;
+    std::string typeMask_;
 
     // audio
     std::string title_;
@@ -138,6 +151,7 @@ private:
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
+    static thread_local napi_ref userFileMgrConstructor_;
     static thread_local FileAsset *sFileAsset_;
 };
 struct FileAssetAsyncContext : public NapiError {
@@ -156,6 +170,10 @@ struct FileAssetAsyncContext : public NapiError {
     bool isTrash = false;
     std::string networkId;
     std::shared_ptr<PixelMap> pixelmap;
+
+    size_t argc;
+    std::array<napi_value, NAPI_ARGC_MAX> argv;
+    std::string typeMask;
 };
 } // namespace Media
 } // namespace OHOS

@@ -131,6 +131,8 @@ public:
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);
     static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
 
+    ResultNapiType resultNapiType_;
+
 private:
     static void MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
     static napi_value MediaLibraryNapiConstructor(napi_env env, napi_callback_info info);
@@ -169,6 +171,9 @@ private:
     static napi_value JSGetMediaRemoteStub(napi_env env, napi_callback_info info);
 
     static napi_value GetUserFileMgr(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrCreateAsset(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrGetAlbums(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetFileAssets(napi_env env, napi_callback_info info);
 
     int32_t GetListenerType(const std::string &str) const;
@@ -178,7 +183,7 @@ private:
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
-    static thread_local napi_ref ufmConstructor_;
+    static thread_local napi_ref userFileMgrConstructor_;
     static thread_local napi_ref sMediaTypeEnumRef_;
     static thread_local napi_ref sFileKeyEnumRef_;
 };
@@ -213,9 +218,10 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t imagePreviewIndex;
 
     size_t argc;
-    napi_value argv[NAPI_ARGC_MAX];
+    std::array<napi_value, NAPI_ARGC_MAX> argv;
     ResultNapiType resultNapiType;
     std::string typeMask;
+    std::vector<uint32_t> mediaTypes;
 };
 } // namespace Media
 } // namespace OHOS
