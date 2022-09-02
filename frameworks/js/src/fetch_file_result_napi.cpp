@@ -28,6 +28,8 @@ thread_local napi_ref FetchFileResultNapi::sConstructor_ = nullptr;
 thread_local FetchResult *FetchFileResultNapi::sFetchFileResult_ = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> FetchFileResultNapi::sMediaDataHelper = nullptr;
 
+thread_local napi_ref FetchFileResultNapi::userFileMgrConstructor_ = nullptr;
+
 FetchFileResultNapi::FetchFileResultNapi()
     : env_(nullptr) {}
 
@@ -35,7 +37,6 @@ FetchFileResultNapi::~FetchFileResultNapi()
 {
     fetchFileResult_ = nullptr;
     abilityHelper_ = nullptr;
-    NAPI_DEBUG_LOG("FetchFileResult destructor exit");
 }
 
 void FetchFileResultNapi::FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
@@ -45,7 +46,6 @@ void FetchFileResultNapi::FetchFileResultNapiDestructor(napi_env env, void *nati
         delete fetchFileResultObj;
         fetchFileResultObj = nullptr;
     }
-    NAPI_DEBUG_LOG("FetchFileResultNapiDestructor exit");
 }
 
 napi_value FetchFileResultNapi::Init(napi_env env, napi_value exports)
@@ -106,6 +106,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 obj->fetchFileResult_->isClosed_ = sFetchFileResult_->isClosed_;
                 obj->fetchFileResult_->count_ = sFetchFileResult_->count_;
                 obj->fetchFileResult_->networkId_ = sFetchFileResult_->networkId_;
+                obj->fetchFileResult_->resultNapiType_ = sFetchFileResult_->resultNapiType_;
                 obj->abilityHelper_ = sMediaDataHelper;
                 fetchRes.release();
             } else {
@@ -133,35 +134,50 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
 napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult &fileResult,
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "CreateFetchFileResult");
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateFetchFileResult");
 
-    napi_status status;
-    napi_value result = nullptr;
     napi_value constructor;
+    napi_ref constructorRef = (fileResult.resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) ?
+        (userFileMgrConstructor_) : (sConstructor_);
+    NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
-    status = napi_get_reference_value(env, sConstructor_, &constructor);
-    if (status == napi_ok) {
-        sMediaDataHelper = abilityHelper;
-        sFetchFileResult_ = &fileResult;
-        status = napi_new_instance(env, constructor, 0, nullptr, &result);
-        sFetchFileResult_ = nullptr;
-        if (status == napi_ok && result != nullptr) {
-            FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-            return result;
-        } else {
-            NAPI_ERR_LOG("Failed to create fetch file result instance, status: %{public}d", status);
-        }
-    }
-
-    napi_get_undefined(env, &result);
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-
+    napi_value result = nullptr;
+    sMediaDataHelper = abilityHelper;
+    sFetchFileResult_ = &fileResult;
+    NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
+    sFetchFileResult_ = nullptr;
     return result;
 }
 
 std::shared_ptr<DataShare::DataShareHelper> FetchFileResultNapi::GetMediaDataHelper() const
 {
     return abilityHelper_;
+}
+
+std::shared_ptr<FetchResult> FetchFileResultNapi::GetFetchFileResult() const
+{
+    return fetchFileResult_;
+}
+
+napi_value FetchFileResultNapi::UserFileMgrInit(napi_env env, napi_value exports)
+{
+    NapiClassInfo info = {
+        UFM_FETCH_FILE_RESULT_CLASS_NAME,
+        &userFileMgrConstructor_,
+        FetchFileResultNapiConstructor,
+        {
+            DECLARE_NAPI_FUNCTION("getCount", JSGetCount),
+            DECLARE_NAPI_FUNCTION("isAfterLast", JSIsAfterLast),
+            DECLARE_NAPI_FUNCTION("getFirstObject", JSGetFirstObject),
+            DECLARE_NAPI_FUNCTION("getNextObject", JSGetNextObject),
+            DECLARE_NAPI_FUNCTION("getLastObject", JSGetLastObject),
+            DECLARE_NAPI_FUNCTION("getPositionObject", JSGetPositionObject),
+            DECLARE_NAPI_FUNCTION("close", JSClose)
+        }
+    };
+    MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
+    return exports;
 }
 
 napi_value FetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info)

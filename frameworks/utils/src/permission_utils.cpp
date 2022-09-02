@@ -134,7 +134,8 @@ bool PermissionUtils::CheckCallerPermission(const string &permission)
     return true;
 }
 
-bool PermissionUtils::CheckCallerPermission(const std::vector<std::string> perms, const uint32_t typeMask)
+bool PermissionUtils::CheckCallerPermission(const std::array<std::string, PERM_GRP_SIZE> &perms,
+    const uint32_t typeMask)
 {
     MediaLibraryTracer tracer;
     tracer.Start("CheckCallerPermissionWithTypeMask");
@@ -145,7 +146,7 @@ bool PermissionUtils::CheckCallerPermission(const std::vector<std::string> perms
 
     uint32_t resultMask = 0;
     for (auto &perm : perms) {
-        uint32_t bit = (uint32_t)PERM_MASK_MAP.at(perm);
+        uint32_t bit = static_cast<uint32_t>(PERM_MASK_MAP.at(perm));
         if ((bit & typeMask)) {
             if (PermissionUtils::CheckCallerPermission(perm)) {
                 resultMask |= bit;

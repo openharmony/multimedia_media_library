@@ -25,17 +25,21 @@
 namespace OHOS {
 namespace Media {
 static const std::string FETCH_FILE_RESULT_CLASS_NAME = "FetchFileResult";
+static const std::string UFM_FETCH_FILE_RESULT_CLASS_NAME = "UserFileMgrFetchFileResult";
 class FetchFileResultNapi {
 public:
     FetchFileResultNapi();
     ~FetchFileResultNapi();
 
     static napi_value Init(napi_env env, napi_value exports);
+    static napi_value UserFileMgrInit(napi_env env, napi_value exports);
     static napi_value CreateFetchFileResult(napi_env env, FetchResult &fileResult,
                                             std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
     std::shared_ptr<FetchResult> GetFetchResultObject();
 
     std::shared_ptr<DataShare::DataShareHelper> GetMediaDataHelper() const;
+
+    std::shared_ptr<FetchResult> GetFetchFileResult() const;
 
     static std::shared_ptr<DataShare::DataShareHelper> sMediaDataHelper;
 
@@ -56,6 +60,7 @@ private:
     std::shared_ptr<FetchResult> fetchFileResult_;
 
     static thread_local napi_ref sConstructor_;
+    static thread_local napi_ref userFileMgrConstructor_;
     static thread_local FetchResult *sFetchFileResult_;
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
 };

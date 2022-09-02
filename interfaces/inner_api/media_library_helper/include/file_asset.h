@@ -114,6 +114,9 @@ public:
     const std::string &GetRecyclePath() const;
     void SetRecyclePath(const std::string &recyclePath);
 
+    ResultNapiType GetResultNapiType() const;
+    void SetResultNapiType(const ResultNapiType type);
+
     int32_t CreateAsset(const std::string &filePath);
     int32_t ModifyAsset(const std::string &oldPath, const std::string &newPath);
     int32_t DeleteAsset(const std::string &filePath);
@@ -160,6 +163,8 @@ private:
     std::string selfId_;
     int32_t isTrash_;
     std::string recyclePath_;
+
+    ResultNapiType resultNapiType_;
 };
 } // namespace Media
 } // namespace OHOS

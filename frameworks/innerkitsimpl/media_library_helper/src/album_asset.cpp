@@ -35,6 +35,7 @@ AlbumAsset::AlbumAsset()
     coverUri_ = DEFAULT_COVERURI;
     albumPath_ = DEFAULT_ALBUM_PATH;
     albumVirtual_ = DEFAULT_ALBUM_VIRTUAL;
+    typeMask_ = DEFAULT_TYPE_MASK;
 }
 
 AlbumAsset::~AlbumAsset() = default;
@@ -84,6 +85,11 @@ void AlbumAsset::SetAlbumVirtual(const bool albumVirtual)
     albumVirtual_ = albumVirtual;
 }
 
+void AlbumAsset::SetAlbumTypeMask(const string &typeMask)
+{
+    typeMask_ = typeMask;
+}
+
 int32_t AlbumAsset::GetAlbumId() const
 {
     return albumId_;
@@ -127,6 +133,11 @@ string AlbumAsset::GetAlbumPath() const
 bool AlbumAsset::GetAlbumVirtual() const
 {
     return albumVirtual_;
+}
+
+string AlbumAsset::GetAlbumTypeMask() const
+{
+    return typeMask_;
 }
 
 bool AlbumAsset::CreateAlbumAsset()
