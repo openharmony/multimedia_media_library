@@ -16,7 +16,6 @@
 
 #include "media_file_utils.h"
 
-#include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
 #include <fstream>
@@ -26,6 +25,7 @@
 #include <sys/sendfile.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <unordered_map>
 
 #include "directory_ex.h"
 #include "media_log.h"
@@ -446,6 +446,62 @@ MediaType MediaFileUtils::GetMediaType(const std::string &filePath)
     }
 
     return mediaType;
+}
+
+string MediaFileUtils::SplitByChar(const string &str, const char split)
+{
+    size_t splitIndex = str.find_last_of(split);
+    return (splitIndex == string::npos) ? ("") : (str.substr(splitIndex + 1));
+}
+
+string MediaFileUtils::GetExtensionFromPath(const string &path)
+{
+    string extension = SplitByChar(path, '.');
+    if (!extension.empty()) {
+        transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+    }
+    return extension;
+}
+
+int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
+{
+    int32_t errCode = E_ERR;
+
+    if (filePath.empty() || mode.empty()) {
+        MEDIA_ERR_LOG("Invalid open argument! mode: %{public}s, path: %{private}s", mode.c_str(), filePath.c_str());
+        return errCode;
+    }
+
+    static const unordered_map<string, int32_t> MEDIA_OPEN_MODE_MAP = {
+        { MEDIA_FILEMODE_READONLY, O_RDONLY },
+        { MEDIA_FILEMODE_WRITEONLY, O_WRONLY },
+        { MEDIA_FILEMODE_READWRITE, O_RDWR },
+        { MEDIA_FILEMODE_WRITETRUNCATE, O_WRONLY | O_TRUNC },
+        { MEDIA_FILEMODE_WRITEAPPEND, O_WRONLY | O_APPEND },
+        { MEDIA_FILEMODE_READWRITETRUNCATE, O_RDWR | O_TRUNC },
+        { MEDIA_FILEMODE_READWRITEAPPEND, O_RDWR | O_APPEND },
+    };
+    if (MEDIA_OPEN_MODE_MAP.find(mode) == MEDIA_OPEN_MODE_MAP.end()) {
+        return E_ERR;
+    }
+
+    if (filePath.size() >= PATH_MAX) {
+        MEDIA_ERR_LOG("File path too long %{public}d", (int)filePath.size());
+        return errCode;
+    }
+    string absFilePath;
+    if (!PathToRealPath(filePath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
+        return errCode;
+    }
+    if (absFilePath.empty()) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{public}d %{private}s",
+                      errno, filePath.c_str());
+        return errCode;
+    }
+
+    MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath.c_str());
+    return open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
 }
 } // namespace Media
 } // namespace OHOS
