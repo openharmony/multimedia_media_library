@@ -21,6 +21,7 @@
 #include "image_packer.h"
 #include "image_source.h"
 #include "mtp_data_utils.h"
+#include "media_file_utils.h"
 #include "media_mtp_utils.h"
 #include "mtp_error_utils.h"
 #include "media_thumbnail_helper.h"
