@@ -15,6 +15,7 @@
 #define MLOG_TAG "FileExtension"
 
 #include "media_file_extention_utils.h"
+
 #include "media_asset.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -26,6 +27,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_smartalbum_map_db.h"
 #include "result_set_utils.h"
+#include "scanner_utils.h"
 #include "uri_helper.h"
 
 using namespace std;
@@ -74,19 +76,69 @@ int32_t MediaFileExtentionUtils::CheckUriSupport(const string &uri)
     return E_SUCCESS;
 }
 
-MediaFileUriType MediaFileExtentionUtils::ResolveUri(const std::string &uri)
+int32_t ResolveRootUri(string uri, MediaFileUriType &uriType)
 {
-    size_t slashIndex = uri.rfind(SLASH_CHAR);
-    if (slashIndex != std::string::npos) {
-        std::string type = uri.substr(slashIndex);
-        if (type == MEDIALIBRARY_ROOT) {
-            return MediaFileUriType::URI_ROOT;
-        } else {
-            return MediaFileUriType::URI_DIR;
-        }
-    } else {
-        return MediaFileUriType::URI_FILE;
+    int32_t ret = E_INVALID_URI;
+    uri = uri.substr(MEDIALIBRARY_ROOT.length());
+    if (uri == MEDIALIBRARY_TYPE_FILE_URI) {
+        uriType = MediaFileUriType::URI_FILE_ROOT;
+        ret = E_SUCCESS;
+    } else if (uri == MEDIALIBRARY_TYPE_IMAGE_URI ||
+               uri == MEDIALIBRARY_TYPE_VIDEO_URI ||
+               uri == MEDIALIBRARY_TYPE_AUDIO_URI) {
+        uriType = MediaFileUriType::URI_MEDIA_ROOT;
+        ret = E_SUCCESS;
     }
+    return ret;
+}
+
+int32_t ResolveUriWithType(const string &mimeType, MediaFileUriType &uriType)
+{
+    if (mimeType.find(DEFAULT_IMAGE_MIME_TYPE_PREFIX) == 0 ||
+        mimeType.find(DEFAULT_VIDEO_MIME_TYPE_PREFIX) == 0 ||
+        mimeType.find(DEFAULT_AUDIO_MIME_TYPE_PREFIX) == 0) {
+        uriType = MediaFileUriType::URI_ALBUM;
+        return E_SUCCESS;
+    }
+    uriType = MediaFileUriType::URI_DIR;
+    return E_SUCCESS;
+}
+
+/**
+ * URI_ROOT Return four uri of media type(images, audios, videos and file).
+ *  datashare:///media/root
+ * URI_MEDIA_ROOT Return all albums of the specified type.
+ *  datashare:///media/root/image|audio|video
+ * URI_FILE_ROOT Return the files and folders under the root directory.
+ *  datashare:///media/root/file
+ * URI_DIR Return the files and folders in the directory.
+ *  datashare:///media/file/1
+ * URI_ALBUM Return the specified media type assets in the Album.
+ *  datashare:///media/file/1
+ */
+int32_t MediaFileExtentionUtils::ResolveUri(const FileInfo &fileInfo, MediaFileUriType &uriType)
+{
+    string uri = fileInfo.uri;
+    if (uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX) != 0) {
+        return E_INVALID_URI;
+    }
+    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
+    uri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length() + networkId.length());
+    if (uri.find(MEDIALIBRARY_DATA_URI_IDENTIFIER) != 0) {
+        return E_INVALID_URI;
+    }
+    uri = uri.substr(MEDIALIBRARY_DATA_URI_IDENTIFIER.length());
+    if (uri == MEDIALIBRARY_ROOT) {
+        uriType = MediaFileUriType::URI_ROOT;
+        return E_SUCCESS;
+    }
+    if (uri.find(MEDIALIBRARY_ROOT) == 0) {
+        return ResolveRootUri(uri, uriType);
+    }
+    if (uri.find(MEDIALIBRARY_TYPE_FILE_URI) == 0) {
+        return ResolveUriWithType(fileInfo.mimeType, uriType);
+    }
+    return E_INVALID_URI;
 }
 
 bool MediaFileExtentionUtils::CheckValidDirName(const std::string &displayName)
@@ -104,7 +156,7 @@ bool MediaFileExtentionUtils::CheckValidDirName(const std::string &displayName)
 int32_t MediaFileExtentionUtils::CheckMkdirValid(MediaFileUriType uriType, const string &parentUriStr,
     const string &displayName)
 {
-    if (uriType == MediaFileUriType::URI_ROOT) {
+    if (uriType == MediaFileUriType::URI_FILE_ROOT) {
         CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckDistributedUri(parentUriStr),
             E_DISTIBUTED_URI_NO_SUPPORT, "Mkdir not support distributed operation");
         CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckValidDirName(displayName + SLASH_CHAR),
@@ -116,52 +168,6 @@ int32_t MediaFileExtentionUtils::CheckMkdirValid(MediaFileUriType uriType, const
             E_INVAVLID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
     }
     return E_SUCCESS;
-}
-
-void GetSingleFileInfo(const string &networkId, FileInfo &fileInfo, shared_ptr<AbsSharedResultSet> &result)
-{
-    int fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, result, TYPE_INT32));
-    string mimeType = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MIME_TYPE, result, TYPE_STRING));
-    int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
-    fileInfo.uri = MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) +
-        SLASH_CHAR + to_string(fileId);
-    fileInfo.fileName = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_NAME, result, TYPE_STRING));
-    fileInfo.mimeType = mimeType;
-    fileInfo.size =  get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, result, TYPE_INT64));
-    fileInfo.mtime = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED, result, TYPE_INT64));
-    if (mediaType == MEDIA_TYPE_ALBUM) {
-        fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
-    } else {
-        fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_FILE | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
-    }
-}
-
-void GetFileInfoFromResult(const string &networkId, shared_ptr<AbsSharedResultSet> &result, vector<FileInfo> &fileList)
-{
-    int count = 0;
-    result->GetRowCount(count);
-    CHECK_AND_RETURN_LOG(count > 0, "AbsSharedResultSet empty");
-    auto ret = result->GoToFirstRow();
-    CHECK_AND_RETURN_LOG(ret == 0, "Failed to shift at first row");
-    fileList.reserve(count);
-    FileInfo fileInfo;
-    for (int i = 0; i < count; i++) {
-        GetSingleFileInfo(networkId, fileInfo, result);
-        fileList.push_back(fileInfo);
-        ret = result->GoToNextRow();
-        CHECK_AND_RETURN_LOG(ret == 0, "Failed to GoToNextRow");
-    }
-}
-
-std::shared_ptr<AbsSharedResultSet> GetListFileResult(const string &queryUri, const string &selection,
-    vector<string> &selectionArgs)
-{
-    Uri uri(queryUri);
-    DataSharePredicates predicates;
-    predicates.SetWhereClause(selection);
-    predicates.SetWhereArgs(selectionArgs);
-    vector<string> columns;
-    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
 shared_ptr<AbsSharedResultSet> MediaFileExtentionUtils::GetFileFromDB(const string &selectUri, const string &networkId)
@@ -199,55 +205,230 @@ bool MediaFileExtentionUtils::GetAlbumRelativePathFromDB(const string &selectUri
     return true;
 }
 
-int32_t GetListFilePredicates(const string &selectUri, string &networkId, string &selection,
-    vector<string> &selectionArgs)
+string GetQueryUri(const FileInfo &parentInfo, MediaFileUriType uriType)
 {
-    MediaFileUriType uriType = MediaFileExtentionUtils::ResolveUri(selectUri);
-    MEDIA_DEBUG_LOG("selectUri %{public}s istFileType %{public}d", selectUri.c_str(), uriType);
-    networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(selectUri);
-    if (uriType == MediaFileUriType::URI_ROOT) {
-        selection = MEDIA_DATA_DB_PARENT_ID + " = ?";
-        selectionArgs = { to_string(ROOT_PARENT_ID) };
-    } else if (uriType == MediaFileUriType::URI_DIR) {
-        if (!MediaFileExtentionUtils::CheckUriValid(selectUri)) {
-            MEDIA_ERR_LOG("selectUri is not valid uri %{private}s", selectUri.c_str());
-            return E_URI_INVALID;
-        }
-        string relativePath;
-        if (!MediaFileExtentionUtils::GetAlbumRelativePathFromDB(selectUri, networkId, relativePath)) {
-            MEDIA_ERR_LOG("selectUri is not valid album uri %{private}s", selectUri.c_str());
-            return E_URI_IS_NOT_ALBUM;
-        }
-        selection = MEDIA_DATA_DB_RELATIVE_PATH + " = ?";
-        selectionArgs = { relativePath };
-    } else {
-        return E_URI_INVALID;
-    }
-    selection += " AND " + MEDIA_DATA_DB_IS_TRASH + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + "<> ? ";
-    selectionArgs.push_back(to_string(NOT_ISTRASH));
-    selectionArgs.push_back(to_string(MEDIA_TYPE_NOFILE));
-    MEDIA_DEBUG_LOG("GetListFilePredicates selection %{public}s", selection.c_str());
-    return E_SUCCESS;
-}
-
-int32_t MediaFileExtentionUtils::ListFile(const string &selectUri, vector<FileInfo> &fileList)
-{
-    string networkId, selection;
-    vector<string> selectionArgs;
-    int32_t errCode = GetListFilePredicates(selectUri, networkId, selection, selectionArgs);
-    if (errCode != E_SUCCESS) {
-        return errCode;
-    }
+    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
     string queryUri;
     if (!networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     } else {
         queryUri = MEDIALIBRARY_DATA_URI;
     }
-    std::shared_ptr<AbsSharedResultSet> resultSet = GetListFileResult(queryUri, selection, selectionArgs);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "GetListFileResult Get fail");
-    GetFileInfoFromResult(networkId, resultSet, fileList);
-    return errCode;
+    if (uriType == URI_MEDIA_ROOT) {
+        queryUri += SLASH_CHAR + MEDIA_ALBUMOPRN_QUERYALBUM;
+    }
+    return queryUri;
+}
+
+int32_t GetListFilePredicates(const FileInfo &parentInfo, string &selection, vector<string> &selectionArgs)
+{
+    string selectUri = parentInfo.uri;
+    if (!MediaFileExtentionUtils::CheckUriValid(selectUri)) {
+        MEDIA_ERR_LOG("selectUri is not valid uri %{private}s", selectUri.c_str());
+        return E_URI_INVALID;
+    }
+    string relativePath;
+    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
+    if (!MediaFileExtentionUtils::GetAlbumRelativePathFromDB(selectUri, networkId, relativePath)) {
+        MEDIA_ERR_LOG("selectUri is not valid album uri %{private}s", selectUri.c_str());
+        return E_URI_IS_NOT_ALBUM;
+    }
+    selection = MEDIA_DATA_DB_RELATIVE_PATH + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? ";
+    selectionArgs = { relativePath, to_string(NOT_ISTRASH) };
+    return E_SUCCESS;
+}
+
+static int32_t RootListFile(const FileInfo &parentInfo, vector<FileInfo> &fileList)
+{
+    FileInfo fileInfo;
+    fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ;
+    string selectUri = parentInfo.uri;
+    fileInfo.fileName = "MEDIA_TYPE_FILE";
+    fileInfo.uri = selectUri + MEDIALIBRARY_TYPE_FILE_URI;
+    fileInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
+    fileList.push_back(fileInfo);
+    fileInfo.fileName = "MEDIA_TYPE_IMAGE";
+    fileInfo.uri = selectUri + MEDIALIBRARY_TYPE_IMAGE_URI;
+    fileInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE;
+    fileList.push_back(fileInfo);
+    fileInfo.fileName = "MEDIA_TYPE_VIDEO";
+    fileInfo.uri = selectUri + MEDIALIBRARY_TYPE_VIDEO_URI;
+    fileInfo.mimeType = DEFAULT_VIDEO_MIME_TYPE;
+    fileList.push_back(fileInfo);
+    fileInfo.fileName = "MEDIA_TYPE_AUDIO";
+    fileInfo.uri = selectUri + MEDIALIBRARY_TYPE_AUDIO_URI;
+    fileInfo.mimeType = DEFAULT_AUDIO_MIME_TYPE;
+    fileList.push_back(fileInfo);
+    return E_SUCCESS;
+}
+
+std::shared_ptr<AbsSharedResultSet> GetResult(const Uri &uri, MediaFileUriType uriType, const string &selection,
+    const vector<string> &selectionArgs)
+{
+    DataSharePredicates predicates;
+    predicates.SetWhereClause(selection);
+    predicates.SetWhereArgs(selectionArgs);
+    vector<string> columns = {};
+    if (uriType == URI_MEDIA_ROOT) {
+        columns.push_back(MEDIA_DATA_DB_BUCKET_ID);
+        columns.push_back(MEDIA_DATA_DB_TITLE);
+        columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
+    } else {
+        columns.push_back(MEDIA_DATA_DB_ID);
+        columns.push_back(MEDIA_DATA_DB_SIZE);
+        columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
+        columns.push_back(MEDIA_DATA_DB_MIME_TYPE);
+        columns.push_back(MEDIA_DATA_DB_NAME);
+        columns.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
+    }
+    
+    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+}
+
+std::shared_ptr<AbsSharedResultSet> GetMediaRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
+    const int64_t offset, const int64_t maxCount)
+{
+    string selection = MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT ?, ?";
+    vector<string> selectionArgs = { parentInfo.mimeType, to_string(NOT_ISTRASH), to_string(offset),
+        to_string(maxCount) };
+    Uri uri(GetQueryUri(parentInfo, uriType));
+    return GetResult(uri, uriType, selection, selectionArgs);
+}
+
+std::shared_ptr<AbsSharedResultSet> GetListRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
+    const int64_t offset, const int64_t maxCount)
+{
+    string selection = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? AND " +
+        MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT ?, ?";
+    vector<string> selectionArgs = { to_string(ROOT_PARENT_ID), to_string(MEDIA_TYPE_NOFILE), to_string(NOT_ISTRASH),
+        to_string(offset), to_string(maxCount) };
+    Uri uri(GetQueryUri(parentInfo, uriType));
+    return GetResult(uri, uriType, selection, selectionArgs);
+}
+
+std::shared_ptr<AbsSharedResultSet> GetListDirResult(const FileInfo &parentInfo, MediaFileUriType uriType,
+    const int64_t offset, const int64_t maxCount)
+{
+    string selection;
+    vector<string> selectionArgs;
+    int32_t ret = GetListFilePredicates(parentInfo, selection, selectionArgs);
+    if (ret != E_SUCCESS) {
+        return nullptr;
+    }
+    selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? LIMIT ?, ?";
+    selectionArgs.push_back(to_string(MEDIA_TYPE_NOFILE));
+    selectionArgs.push_back(to_string(offset));
+    selectionArgs.push_back(to_string(maxCount));
+    Uri uri(GetQueryUri(parentInfo, uriType));
+    return GetResult(uri, uriType, selection, selectionArgs);
+}
+
+std::shared_ptr<AbsSharedResultSet> GetListAlbumResult(const FileInfo &parentInfo, MediaFileUriType uriType,
+    const int64_t offset, const int64_t maxCount)
+{
+    string selection;
+    vector<string> selectionArgs;
+    int32_t ret = GetListFilePredicates(parentInfo, selection, selectionArgs);
+    if (ret != E_SUCCESS) {
+        return nullptr;
+    }
+    selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " = ? LIMIT ?, ?";
+    if (parentInfo.mimeType.find(DEFAULT_IMAGE_MIME_TYPE_PREFIX) == 0) {
+        selectionArgs.push_back(to_string(MEDIA_TYPE_IMAGE));
+    } else if (parentInfo.mimeType.find(DEFAULT_VIDEO_MIME_TYPE_PREFIX) == 0) {
+        selectionArgs.push_back(to_string(MEDIA_TYPE_VIDEO));
+    } else if (parentInfo.mimeType.find(DEFAULT_AUDIO_MIME_TYPE_PREFIX) == 0) {
+        selectionArgs.push_back(to_string(MEDIA_TYPE_AUDIO));
+    } else {
+        MEDIA_ERR_LOG("ListFile::GetListAlbumResult: invalid mimeType: %{public}s", parentInfo.mimeType.c_str());
+        return nullptr;
+    }
+    selectionArgs.push_back(to_string(offset));
+    selectionArgs.push_back(to_string(maxCount));
+    Uri uri(GetQueryUri(parentInfo, uriType));
+    return GetResult(uri, uriType, selection, selectionArgs);
+}
+
+int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedResultSet> &result,
+    vector<FileInfo> &fileList)
+{
+    if (!result) {
+        return E_FAIL;
+    }
+    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
+    FileInfo fileInfo;
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        int fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, result, TYPE_INT32));
+        fileInfo.fileName = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_TITLE, result, TYPE_STRING));
+        fileInfo.mimeType = parentInfo.mimeType;
+        fileInfo.uri =
+            MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) + SLASH_CHAR + to_string(fileId);
+        fileInfo.mtime =
+            get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED, result, TYPE_INT64));
+        fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
+        fileList.push_back(fileInfo);
+    }
+    return E_SUCCESS;
+}
+
+int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedResultSet> &result,
+    vector<FileInfo> &fileList)
+{
+    if (!result) {
+        return E_FAIL;
+    }
+    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
+    FileInfo fileInfo;
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        int fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, result, TYPE_INT32));
+        string mimeType = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MIME_TYPE, result, TYPE_STRING));
+        int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
+        fileInfo.fileName = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_NAME, result, TYPE_STRING));
+        fileInfo.mimeType = mimeType;
+        fileInfo.size =  get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, result, TYPE_INT64));
+        fileInfo.uri =
+            MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
+        fileInfo.mtime =
+            get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED, result, TYPE_INT64));
+        if (mediaType == MEDIA_TYPE_ALBUM) {
+            fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
+        } else {
+            fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_FILE | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
+        }
+        fileList.push_back(fileInfo);
+    }
+    return E_SUCCESS;
+}
+
+int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
+    vector<FileInfo> &fileList)
+{
+    MediaFileUriType uriType;
+    auto ret = MediaFileExtentionUtils::ResolveUri(parentInfo, uriType);
+    MEDIA_DEBUG_LOG("ListFile:: uriType: %d", uriType);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("ResolveUri::invalid input fileInfo");
+        return ret;
+    }
+    std::shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    switch (uriType) {
+        case URI_ROOT:
+            return RootListFile(parentInfo, fileList);
+        case URI_MEDIA_ROOT:
+            resultSet = GetMediaRootResult(parentInfo, uriType, offset, maxCount);
+            return GetAlbumInfoFromResult(parentInfo, resultSet, fileList);
+        case URI_FILE_ROOT:
+            resultSet = GetListRootResult(parentInfo, uriType, offset, maxCount);
+            return GetFileInfoFromResult(parentInfo, resultSet, fileList);
+        case URI_DIR:
+            resultSet = GetListDirResult(parentInfo, uriType, offset, maxCount);
+            return GetFileInfoFromResult(parentInfo, resultSet, fileList);
+        case URI_ALBUM:
+            resultSet = GetListAlbumResult(parentInfo, uriType, offset, maxCount);
+            return GetFileInfoFromResult(parentInfo, resultSet, fileList);
+        default:
+            return E_FAIL;
+    }
 }
 
 bool GetRootInfo(shared_ptr<AbsSharedResultSet> &result, RootInfo &rootInfo)

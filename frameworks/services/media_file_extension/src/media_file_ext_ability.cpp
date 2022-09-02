@@ -161,11 +161,18 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayN
 int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, Uri &newFileUri)
 {
     string parentUriStr = parentUri.ToString();
-    MediaFileUriType uriType = MediaFileExtentionUtils::ResolveUri(parentUriStr);
+    MediaFileUriType uriType;
+    FileAccessFwk::FileInfo parentInfo;
+    parentInfo.uri = parentUriStr;
+    auto ret = MediaFileExtentionUtils::ResolveUri(parentInfo, uriType);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("Mkdir::invalid input fileInfo");
+        return ret;
+    }
     string relativePath;
-    auto ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
+    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
-    if (uriType != MediaFileUriType::URI_ROOT) {
+    if (uriType != MediaFileUriType::URI_FILE_ROOT) {
         CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::GetAlbumRelativePathFromDB(parentUriStr, "", relativePath),
             E_URI_IS_NOT_ALBUM, "selectUri is not valid album uri %{private}s", parentUriStr.c_str());
     }
@@ -221,9 +228,10 @@ int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
     return errCode;
 }
 
-int MediaFileExtAbility::ListFile(const Uri &selectUri, std::vector<FileAccessFwk::FileInfo> &fileList)
+int MediaFileExtAbility::ListFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
+    std::vector<FileInfo> &fileList)
 {
-    return MediaFileExtentionUtils::ListFile(selectUri.ToString(), fileList);
+    return MediaFileExtentionUtils::ListFile(parentInfo, offset, maxCount, fileList);
 }
 
 int MediaFileExtAbility::GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList)
