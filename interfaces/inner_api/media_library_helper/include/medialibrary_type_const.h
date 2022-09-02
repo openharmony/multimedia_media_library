@@ -137,6 +137,8 @@ const std::string DEFAULT_STRING_MEDIA_TYPE = "";
 const std::string DEFAULT_EXTENSION = "";
 const int32_t DEFAULT_MEDIAVOLUME = 0;
 const std::string ROOT_MEDIA_DIR = "/storage/media/local/files/";
+const std::string FS_TYPE_EPFS = "epfs";
+const std::string EPFS_MOUNT_POINT = "/storage/media/local/epfs";
 const char SLASH_CHAR = '/';
 
 const std::string SKIPLIST_FILE_PATH = "/data/SkipScanFile.txt";
