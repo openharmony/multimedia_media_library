@@ -47,6 +47,15 @@ std::shared_ptr<DataShare::DataShareHelper> FileAssetNapi::sDataShareHelper_ = n
 std::shared_ptr<MediaThumbnailHelper> FileAssetNapi::sThumbnailHelper_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
+struct ThumbnailQueryInfo {
+    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper;
+    std::shared_ptr<MediaThumbnailHelper> thumbnailHelper;
+    int32_t width;
+    int32_t height;
+    std::string uri;
+    std::string typeMask;
+};
+
 thread_local napi_ref FileAssetNapi::userFileMgrConstructor_ = nullptr;
 
 FileAssetNapi::FileAssetNapi()
@@ -144,10 +153,10 @@ napi_value FileAssetNapi::Init(napi_env env, napi_value exports)
 napi_value FileAssetNapi::UserFileMgrInit(napi_env env, napi_value exports)
 {
     NapiClassInfo info = {
-        USERFILEMGR_FILEASSET_NAPI_CLASS_NAME,
-        &userFileMgrConstructor_,
-        FileAssetNapiConstructor,
-        {
+        .name = USERFILEMGR_FILEASSET_NAPI_CLASS_NAME,
+        .ref = &userFileMgrConstructor_,
+        .constructor = FileAssetNapiConstructor,
+        .props = {
             DECLARE_NAPI_FUNCTION("open", UserFileMgrOpen),
             DECLARE_NAPI_FUNCTION("close", JSClose),
             DECLARE_NAPI_FUNCTION("commitModify", UserFileMgrCommitModify),
@@ -155,7 +164,11 @@ napi_value FileAssetNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("trash", UserFileMgrTrash),
             DECLARE_NAPI_GETTER("uri", JSGetFileUri),
             DECLARE_NAPI_GETTER("mediaType", JSGetMediaType),
-            DECLARE_NAPI_GETTER_SETTER("displayName", JSGetFileDisplayName, JSSetFileDisplayName)
+            DECLARE_NAPI_GETTER_SETTER("displayName", JSGetFileDisplayName, JSSetFileDisplayName),
+            DECLARE_NAPI_FUNCTION("isFavorite", JSIsFavorite),
+            DECLARE_NAPI_FUNCTION("isTrash", JSIsTrash),
+            DECLARE_NAPI_FUNCTION("isDirectory", UserFileMgrIsDirectory),
+            DECLARE_NAPI_FUNCTION("getThumbnail", UserFileMgrGetThumbnail),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -1342,23 +1355,25 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     return result;
 }
 
-static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper> &abilityHelper,
-    shared_ptr<MediaThumbnailHelper> &thumbnailHelper, int32_t &fileId,
-    std::string &uri, int32_t &width, int32_t &height)
+static unique_ptr<PixelMap> QueryThumbnail(ThumbnailQueryInfo &info)
 {
+    int32_t width = info.width;
+    int32_t height = info.height;
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "QueryThumbnail");
-    if ((abilityHelper == nullptr) || (thumbnailHelper == nullptr)) {
+    if ((info.dataShareHelper == nullptr) || (info.thumbnailHelper == nullptr)) {
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
-    Uri queryUri1(uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH + "=" +
-        to_string(width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(height));
+    string queryUriStr = info.uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH + "=" +
+        to_string(width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(height);
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUriStr, info.typeMask);
+    Uri queryUri(queryUriStr);
 
     vector<string> columns;
     Size size = { .width = width, .height = height };
     columns.push_back(MEDIA_DATA_DB_ID);
-    if (thumbnailHelper->isThumbnailFromLcd(size)) {
+    if (info.thumbnailHelper->isThumbnailFromLcd(size)) {
         columns.push_back(MEDIA_DATA_DB_LCD);
     } else {
         columns.push_back(MEDIA_DATA_DB_THUMBNAIL);
@@ -1366,7 +1381,7 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
 
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "abilityHelper->Query");
     DataShare::DataSharePredicates predicates;
-    shared_ptr<DataShare::DataShareResultSet> resultSet = abilityHelper->Query(queryUri1, predicates, columns);
+    auto resultSet = info.dataShareHelper->Query(queryUri, predicates, columns);
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("Query thumbnail error");
@@ -1381,7 +1396,7 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
 
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "thumbnailHelper->GetThumbnail");
     unique_ptr<PixelMap> pixelMap;
-    thumbnailHelper->ResizeImage(image, size, pixelMap);
+    info.thumbnailHelper->ResizeImage(image, size, pixelMap);
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
@@ -1396,11 +1411,15 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectInfo->sDataShareHelper_ != nullptr &&
         context->objectInfo->sThumbnailHelper_ != nullptr) {
-        int32_t fileId = context->objectInfo->GetFileId();
-        std::string uri = context->objectInfo->GetFileUri();
-        context->pixelmap = QueryThumbnail(context->objectInfo->sDataShareHelper_,
-            context->objectInfo->sThumbnailHelper_, fileId, uri,
-            context->thumbWidth, context->thumbHeight);
+        ThumbnailQueryInfo info = {
+            .dataShareHelper = context->objectInfo->sDataShareHelper_,
+            .thumbnailHelper = context->objectInfo->sThumbnailHelper_,
+            .width = context->thumbWidth,
+            .height = context->thumbHeight,
+            .uri = context->objectInfo->GetFileUri(),
+            .typeMask = context->typeMask,
+        };
+        context->pixelmap = QueryThumbnail(info);
     } else {
         context->error = ERR_INVALID_OUTPUT;
         NAPI_INFO_LOG("Ability helper is null");
@@ -1580,8 +1599,6 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     }
     auto fileUri = uri.substr(0, index - 1);
     tmpIdx = fileUri.rfind("/");
-    int32_t fileId = 0;
-    StrToInt(fileUri.substr(tmpIdx + 1), fileId);
     index += strlen("thumbnail");
     index = uri.find("/", index);
     if (index == string::npos) {
@@ -1604,7 +1621,14 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     if (sThumbnailHelper_ == nullptr) {
         sThumbnailHelper_ = std::make_shared<MediaThumbnailHelper>();
     }
-    return QueryThumbnail(dataAbilityHelper, sThumbnailHelper_, fileId, fileUri, width, height);
+    ThumbnailQueryInfo info = {
+        .dataShareHelper = dataAbilityHelper,
+        .thumbnailHelper = sThumbnailHelper_,
+        .width = width,
+        .height = height,
+        .uri = fileUri,
+    };
+    return QueryThumbnail(info);
 }
 
 static void JSFavoriteCallbackComplete(napi_env env, napi_status status, void *data)
@@ -2250,6 +2274,57 @@ napi_value FileAssetNapi::UserFileMgrTrash(napi_env env, napi_callback_info info
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrTrash", JSTrashExecute,
         JSTrashCallbackComplete);
+}
+
+napi_value FileAssetNapi::UserFileMgrIsDirectory(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrIsDirectory");
+
+    napi_value ret = nullptr;
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    NAPI_ASSERT(env,  MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
+        "Failed to parse js args");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrIsDirectory",
+        [](napi_env env, void* data) {
+            FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
+            if (context->objectInfo->sDataShareHelper_ != nullptr) {
+                context->isDirectory = MediaFileUtils::IsDirectory(context->objectInfo->GetFilePath());
+                context->status = true;
+            } else {
+                context->status = false;
+            }
+        },
+        reinterpret_cast<CompleteCallback>(JSIsDirectoryCallbackComplete));
+}
+
+napi_value FileAssetNapi::UserFileMgrGetThumbnail(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrGetThumbnail");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &result));
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
+
+    CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_TWO) ==
+        napi_ok, result, "Failed to get object info");
+    result = GetJSArgsForGetThumbnail(env, asyncContext->argc, asyncContext->argv, *asyncContext);
+    ASSERT_NULLPTR_CHECK(env, result);
+    const std::vector<uint32_t> types = { asyncContext->objectInfo->GetMediaType() };
+    MediaLibraryNapiUtils::GenTypeMaskFromArray(types, asyncContext->typeMask);
+
+    result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetThumbnail",
+        [](napi_env env, void* data) {
+            auto context = static_cast<FileAssetAsyncContext*>(data);
+            JSGetThumbnailExecute(context);
+        },
+        reinterpret_cast<CompleteCallback>(JSGetThumbnailCompleteCallback));
+
+    return result;
 }
 } // namespace Media
 } // namespace OHOS
