@@ -83,9 +83,9 @@ int32_t ResolveRootUri(string uri, MediaFileUriType &uriType)
     if (uri == MEDIALIBRARY_TYPE_FILE_URI) {
         uriType = MediaFileUriType::URI_FILE_ROOT;
         ret = E_SUCCESS;
-    } else if (uri == MEDIALIBRARY_TYPE_IMAGE_URI ||
-               uri == MEDIALIBRARY_TYPE_VIDEO_URI ||
-               uri == MEDIALIBRARY_TYPE_AUDIO_URI) {
+    } else if ((uri == MEDIALIBRARY_TYPE_IMAGE_URI) ||
+               (uri == MEDIALIBRARY_TYPE_VIDEO_URI) ||
+               (uri == MEDIALIBRARY_TYPE_AUDIO_URI)) {
         uriType = MediaFileUriType::URI_MEDIA_ROOT;
         ret = E_SUCCESS;
     }
@@ -94,9 +94,9 @@ int32_t ResolveRootUri(string uri, MediaFileUriType &uriType)
 
 int32_t ResolveUriWithType(const string &mimeType, MediaFileUriType &uriType)
 {
-    if (mimeType.find(DEFAULT_IMAGE_MIME_TYPE_PREFIX) == 0 ||
-        mimeType.find(DEFAULT_VIDEO_MIME_TYPE_PREFIX) == 0 ||
-        mimeType.find(DEFAULT_AUDIO_MIME_TYPE_PREFIX) == 0) {
+    if ((mimeType.find(DEFAULT_IMAGE_MIME_TYPE_PREFIX) == 0) ||
+        (mimeType.find(DEFAULT_VIDEO_MIME_TYPE_PREFIX) == 0) ||
+        (mimeType.find(DEFAULT_AUDIO_MIME_TYPE_PREFIX) == 0)) {
         uriType = MediaFileUriType::URI_ALBUM;
         return E_SUCCESS;
     }
