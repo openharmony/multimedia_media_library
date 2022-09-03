@@ -344,8 +344,8 @@ public:
         const size_t minArgs, const size_t maxArgs)
     {
         napi_value thisVar = nullptr;
-        CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, asyncContext->argv, &thisVar, nullptr),
-            "Failed to get cb info");
+        CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]), &thisVar,
+            nullptr), "Failed to get cb info");
         CHECK_COND_RET(((asyncContext->argc >= minArgs) && (asyncContext->argc <= maxArgs)), napi_invalid_arg,
             "Number of args is invalid");
         if (minArgs > 0) {

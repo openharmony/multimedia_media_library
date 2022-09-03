@@ -40,7 +40,6 @@ using namespace OHOS::DataShare;
 namespace OHOS {
 namespace Media {
 thread_local unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
-bool g_isNewApi = false;
 const int32_t NUM_2 = 2;
 const int32_t NUM_3 = 3;
 
@@ -205,7 +204,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
 
     tracer.Start("MediaLibraryNapiConstructor");
 
-    napi_get_undefined(env, &result);
+    NAPI_CALL(env, napi_get_undefined(env, &result));
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     if (status != napi_ok || thisVar == nullptr) {
         NAPI_ERR_LOG("Error while obtaining js environment information, status: %{public}d", status);
@@ -213,28 +212,27 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     }
 
     unique_ptr<MediaLibraryNapi> obj = make_unique<MediaLibraryNapi>();
-    if (obj != nullptr) {
-        obj->env_ = env;
-        if (g_isNewApi) {
-            // Initialize the ChangeListener object
-            if (g_listObj == nullptr) {
-                g_listObj = make_unique<ChangeListenerNapi>(env);
-            }
+    if (obj == nullptr) {
+        return result;
+    }
+    obj->env_ = env;
+    // Initialize the ChangeListener object
+    if (g_listObj == nullptr) {
+        g_listObj = make_unique<ChangeListenerNapi>(env);
+    }
 
-            if (obj->sDataShareHelper_ == nullptr) {
-                obj->sDataShareHelper_ = GetDataShareHelper(env, info);
-                CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sDataShareHelper_, result, "Helper creation failed");
-            }
-        }
+    if (obj->sDataShareHelper_ == nullptr) {
+        obj->sDataShareHelper_ = GetDataShareHelper(env, info);
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sDataShareHelper_, result, "Helper creation failed");
+    }
 
-        status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
-                           MediaLibraryNapi::MediaLibraryNapiDestructor, nullptr, nullptr);
-        if (status == napi_ok) {
-            obj.release();
-            return thisVar;
-        } else {
-            NAPI_ERR_LOG("Failed to wrap the native media lib client object with JS, status: %{public}d", status);
-        }
+    status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
+                       MediaLibraryNapi::MediaLibraryNapiDestructor, nullptr, nullptr);
+    if (status == napi_ok) {
+        obj.release();
+        return thisVar;
+    } else {
+        NAPI_ERR_LOG("Failed to wrap the native media lib client object with JS, status: %{public}d", status);
     }
 
     return result;
@@ -269,7 +267,6 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     napi_status status = napi_get_reference_value(env, sConstructor_, &ctor);
     if (status == napi_ok) {
-        g_isNewApi = true;
         status = napi_new_instance(env, ctor, argc, argv, &result);
         if (status == napi_ok) {
             return result;
