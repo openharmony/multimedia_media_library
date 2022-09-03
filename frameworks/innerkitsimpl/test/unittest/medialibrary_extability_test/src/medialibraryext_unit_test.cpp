@@ -20,6 +20,7 @@
 #include "file_access_extension_info.h"
 #include "file_access_framework_errno.h"
 #include "file_access_helper.h"
+#include "file_filter.h"
 #include "iservice_registry.h"
 #include "medialibrary_errno.h"
 #include "media_library_manager.h"
@@ -1387,10 +1388,11 @@ void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList) {
 
 void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int offset, int maxCount)
 {
+    DistributedFS::FileFilter filter;
     // URI_FILE_ROOT & URI_MEDIA_ROOT
     for (auto mediaRootInfo : rootFileList) {
         vector<FileAccessFwk::FileInfo> fileList;
-        auto ret = g_mediaFileExtHelper->ListFile(mediaRootInfo, offset, maxCount, fileList);
+        auto ret = g_mediaFileExtHelper->ListFile(mediaRootInfo, offset, maxCount, filter, fileList);
         EXPECT_EQ(ret, E_SUCCESS);
 
         // URI_FILE_ROOT
@@ -1448,13 +1450,14 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_001, TestSize.Level0)
     }
     int64_t offset = 0;
     int64_t maxCount = 100;
+    DistributedFS::FileFilter filter;
 
     // URI_ROOT
     FileAccessFwk::FileInfo rootInfo;
     rootInfo.uri = g_commonPrefix + g_rootUri;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ROOT uri: %{public}s", rootInfo.uri.c_str());
     vector<FileAccessFwk::FileInfo> rootFileList;
-    auto ret = g_mediaFileExtHelper->ListFile(rootInfo, offset, maxCount, rootFileList);
+    auto ret = g_mediaFileExtHelper->ListFile(rootInfo, offset, maxCount, filter, rootFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ROOT fileList.size(): %{public}d", rootFileList.size());
     DisplayFileList(rootFileList);
@@ -1468,7 +1471,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_001, TestSize.Level0)
     dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
     vector<FileAccessFwk::FileInfo> dirFileList;
-    ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, maxCount, dirFileList);
+    ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, maxCount, filter, dirFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_DIR fileList.size(): %{public}d", dirFileList.size());
     DisplayFileList(dirFileList);
@@ -1480,7 +1483,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_001, TestSize.Level0)
     albumInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ALBUM uri: %{public}s", albumInfo.uri.c_str());
     vector<FileAccessFwk::FileInfo> albumFileList;
-    ret = g_mediaFileExtHelper->ListFile(albumInfo, offset, maxCount, albumFileList);
+    ret = g_mediaFileExtHelper->ListFile(albumInfo, offset, maxCount, filter, albumFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ALBUM fileList.size(): %{public}d", albumFileList.size());
     DisplayFileList(albumFileList);
@@ -1551,6 +1554,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_002, TestSize.Level0)
 
     int64_t offset = 0;
     int64_t maxCount = 100;
+    DistributedFS::FileFilter filter;
 
     // URI_DIR
     FileAccessFwk::FileInfo dirInfo;
@@ -1558,17 +1562,17 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_002, TestSize.Level0)
     dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
     vector<FileAccessFwk::FileInfo> dirFileList;
-    auto ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, maxCount, dirFileList);
+    auto ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, maxCount, filter, dirFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(dirFileList.size(), 8);
 
     vector<FileAccessFwk::FileInfo> limitDirFileList1;
-    ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, 5, limitDirFileList1);
+    ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, 5, filter, limitDirFileList1);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(limitDirFileList1.size(), 5);
 
     vector<FileAccessFwk::FileInfo> limitDirFileList2;
-    ret = g_mediaFileExtHelper->ListFile(dirInfo, 5, maxCount, limitDirFileList2);
+    ret = g_mediaFileExtHelper->ListFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(limitDirFileList2.size(), 3);
 
@@ -1578,7 +1582,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_002, TestSize.Level0)
     albumInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_ALBUM uri: %{public}s", albumInfo.uri.c_str());
     vector<FileAccessFwk::FileInfo> albumFileList;
-    ret = g_mediaFileExtHelper->ListFile(albumInfo, offset, maxCount, albumFileList);
+    ret = g_mediaFileExtHelper->ListFile(albumInfo, offset, maxCount, filter, albumFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(albumFileList.size(), 6);
 }
