@@ -303,7 +303,9 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
     rowId = GetIdByPathFromDb(dirPath);
     MEDIA_DEBUG_LOG("dirPath %{private}s id in database is %{private}d", dirPath.c_str(), static_cast<int>(rowId));
     if (rowId < 0) {
-        dirAsset.CreateAlbumAsset();
+        if (!dirAsset.CreateAlbumAsset()) {
+            return E_FAIL;
+        }
         return InsertDirToDbRecursively(dirPath, rowId);
     }
 
