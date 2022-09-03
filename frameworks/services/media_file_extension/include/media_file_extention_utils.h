@@ -17,6 +17,7 @@
 
 #include "abs_shared_result_set.h"
 #include "file_access_extension_info.h"
+#include "file_filter.h"
 #include "uri.h"
 
 namespace OHOS {
@@ -54,7 +55,7 @@ public:
     static int32_t Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri);
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
     static int32_t ListFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-        std::vector<FileAccessFwk::FileInfo> &fileList);
+        const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
     static int32_t GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList);
 };
 } // Media
