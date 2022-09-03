@@ -242,7 +242,7 @@ const std::string FILE_TABLE = "file";
 const std::string ABLUM_TABLE = "album";
 const std::string ABLUM_VIEW_NAME = "Album";
 const std::string DISTRIBUTED_ABLUM_COLUMNS = "SELECT count( " + FILE_TABLE + "."
-                                               + MEDIA_DATA_DB_DATE_TRASHED + "= 0 OR NULL) AS "
+                                               + MEDIA_DATA_DB_DATE_TRASHED + " = 0 OR NULL) AS "
                                                + MEDIA_DATA_DB_COUNT + ", "
                                                + ABLUM_TABLE + "." + MEDIA_DATA_DB_RELATIVE_PATH + ", "
                                                + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AS "
@@ -256,7 +256,8 @@ const std::string DISTRIBUTED_ABLUM_COLUMNS = "SELECT count( " + FILE_TABLE + ".
                                                + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_MODIFIED + ", "
                                                + ABLUM_TABLE + "." + MEDIA_DATA_DB_THUMBNAIL + ", "
                                                + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_IS_TRASH;
 const std::string DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY = " WHERE "
                                                         + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID + " = "
                                                         + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AND "
