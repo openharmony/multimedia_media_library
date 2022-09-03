@@ -16,6 +16,7 @@
 #define FRAMEWORKS_SERVICES_MEDIA_FILE_EXTENTION_ABILITY_H_
 
 #include "file_access_ext_ability.h"
+#include "file_filter.h"
 #include "js_runtime.h"
 
 namespace OHOS {
@@ -38,7 +39,7 @@ public:
     int Mkdir(const Uri &parentUri, const std::string &displayName, Uri &newFileUri) override;
     int Delete(const Uri &sourceFileUri) override;
     int ListFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-        std::vector<FileAccessFwk::FileInfo> &fileList) override;
+        const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList) override;
     int GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList) override;
     int Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri) override;
     int Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri) override;
