@@ -229,9 +229,9 @@ int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
 }
 
 int MediaFileExtAbility::ListFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-    std::vector<FileInfo> &fileList)
+    const DistributedFS::FileFilter &filter, std::vector<FileInfo> &fileList)
 {
-    return MediaFileExtentionUtils::ListFile(parentInfo, offset, maxCount, fileList);
+    return MediaFileExtentionUtils::ListFile(parentInfo, offset, maxCount, filter, fileList);
 }
 
 int MediaFileExtAbility::GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList)

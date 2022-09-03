@@ -220,7 +220,15 @@ string GetQueryUri(const FileInfo &parentInfo, MediaFileUriType uriType)
     return queryUri;
 }
 
-int32_t GetListFilePredicates(const FileInfo &parentInfo, string &selection, vector<string> &selectionArgs)
+void ChangeToLowerCase(vector<string> &vec)
+{
+    for (auto &s : vec) {
+        std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return std::tolower(c); });
+    }
+}
+
+int32_t GetListFilePredicates(const FileInfo &parentInfo, const DistributedFS::FileFilter &filter, string &selection,
+    vector<string> &selectionArgs)
 {
     string selectUri = parentInfo.uri;
     if (!MediaFileExtentionUtils::CheckUriValid(selectUri)) {
@@ -235,6 +243,31 @@ int32_t GetListFilePredicates(const FileInfo &parentInfo, string &selection, vec
     }
     selection = MEDIA_DATA_DB_RELATIVE_PATH + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? ";
     selectionArgs = { relativePath, to_string(NOT_ISTRASH) };
+    if (!filter.GetHasFilter()) {
+        return E_SUCCESS;
+    }
+    vector<string> displayName = filter.GetDisplayName();
+    ChangeToLowerCase(displayName);
+    if (!displayName.empty()) {
+        selection += " AND (" + MEDIA_DATA_DB_TITLE + " = ? ";
+        selectionArgs.push_back(displayName[0]);
+        for (size_t i = 1; i < selectionArgs.size(); i++) {
+            selection += " OR " + MEDIA_DATA_DB_TITLE + " = ? ";
+            selectionArgs.push_back(displayName[i]);
+        }
+        selection += ") ";
+    }
+    vector<string> suffix = filter.GetSuffix();
+    ChangeToLowerCase(suffix);
+    if (!suffix.empty()) {
+        selection += " AND (" + MEDIA_DATA_DB_NAME + " LIKE %? ";
+        selectionArgs.push_back(suffix[0]);
+        for (size_t i = 1; i < selectionArgs.size(); i++) {
+            selection += " OR " + MEDIA_DATA_DB_NAME + " LIKE %? ";
+            selectionArgs.push_back(suffix[i]);
+        }
+        selection += ") ";
+    }
     return E_SUCCESS;
 }
 
@@ -307,11 +340,11 @@ std::shared_ptr<AbsSharedResultSet> GetListRootResult(const FileInfo &parentInfo
 }
 
 std::shared_ptr<AbsSharedResultSet> GetListDirResult(const FileInfo &parentInfo, MediaFileUriType uriType,
-    const int64_t offset, const int64_t maxCount)
+    const int64_t offset, const int64_t maxCount, const DistributedFS::FileFilter &filter)
 {
     string selection;
     vector<string> selectionArgs;
-    int32_t ret = GetListFilePredicates(parentInfo, selection, selectionArgs);
+    int32_t ret = GetListFilePredicates(parentInfo, filter, selection, selectionArgs);
     if (ret != E_SUCCESS) {
         return nullptr;
     }
@@ -324,11 +357,11 @@ std::shared_ptr<AbsSharedResultSet> GetListDirResult(const FileInfo &parentInfo,
 }
 
 std::shared_ptr<AbsSharedResultSet> GetListAlbumResult(const FileInfo &parentInfo, MediaFileUriType uriType,
-    const int64_t offset, const int64_t maxCount)
+    const int64_t offset, const int64_t maxCount, const DistributedFS::FileFilter &filter)
 {
     string selection;
     vector<string> selectionArgs;
-    int32_t ret = GetListFilePredicates(parentInfo, selection, selectionArgs);
+    int32_t ret = GetListFilePredicates(parentInfo, filter, selection, selectionArgs);
     if (ret != E_SUCCESS) {
         return nullptr;
     }
@@ -401,7 +434,7 @@ int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedRe
 }
 
 int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-    vector<FileInfo> &fileList)
+    const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
 {
     MediaFileUriType uriType;
     auto ret = MediaFileExtentionUtils::ResolveUri(parentInfo, uriType);
@@ -421,10 +454,10 @@ int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int6
             resultSet = GetListRootResult(parentInfo, uriType, offset, maxCount);
             return GetFileInfoFromResult(parentInfo, resultSet, fileList);
         case URI_DIR:
-            resultSet = GetListDirResult(parentInfo, uriType, offset, maxCount);
+            resultSet = GetListDirResult(parentInfo, uriType, offset, maxCount, filter);
             return GetFileInfoFromResult(parentInfo, resultSet, fileList);
         case URI_ALBUM:
-            resultSet = GetListAlbumResult(parentInfo, uriType, offset, maxCount);
+            resultSet = GetListAlbumResult(parentInfo, uriType, offset, maxCount, filter);
             return GetFileInfoFromResult(parentInfo, resultSet, fileList);
         default:
             return E_FAIL;
