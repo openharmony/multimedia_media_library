@@ -301,7 +301,7 @@ std::shared_ptr<AbsSharedResultSet> GetResult(const Uri &uri, MediaFileUriType u
     DataSharePredicates predicates;
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
-    vector<string> columns = {};
+    vector<string> columns;
     if (uriType == URI_MEDIA_ROOT) {
         columns.push_back(MEDIA_DATA_DB_BUCKET_ID);
         columns.push_back(MEDIA_DATA_DB_TITLE);
@@ -314,15 +314,26 @@ std::shared_ptr<AbsSharedResultSet> GetResult(const Uri &uri, MediaFileUriType u
         columns.push_back(MEDIA_DATA_DB_NAME);
         columns.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
     }
-    
     return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+}
+
+static string MimeType2MediaType(const string &mimeType)
+{
+    // album view not support file type, so image as default
+    int res = MEDIA_TYPE_IMAGE;
+    if (mimeType.find(DEFAULT_VIDEO_MIME_TYPE_PREFIX) == 0) {
+        res = MEDIA_TYPE_VIDEO;
+    } else if (mimeType.find(DEFAULT_AUDIO_MIME_TYPE_PREFIX) == 0) {
+        res = MEDIA_TYPE_AUDIO;
+    }
+    return to_string(res);
 }
 
 std::shared_ptr<AbsSharedResultSet> GetMediaRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
     const int64_t offset, const int64_t maxCount)
 {
     string selection = MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT ?, ?";
-    vector<string> selectionArgs = { parentInfo.mimeType, to_string(NOT_ISTRASH), to_string(offset),
+    vector<string> selectionArgs = { MimeType2MediaType(parentInfo.mimeType), to_string(NOT_ISTRASH), to_string(offset),
         to_string(maxCount) };
     Uri uri(GetQueryUri(parentInfo, uriType));
     return GetResult(uri, uriType, selection, selectionArgs);
@@ -366,16 +377,7 @@ std::shared_ptr<AbsSharedResultSet> GetListAlbumResult(const FileInfo &parentInf
         return nullptr;
     }
     selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " = ? LIMIT ?, ?";
-    if (parentInfo.mimeType.find(DEFAULT_IMAGE_MIME_TYPE_PREFIX) == 0) {
-        selectionArgs.push_back(to_string(MEDIA_TYPE_IMAGE));
-    } else if (parentInfo.mimeType.find(DEFAULT_VIDEO_MIME_TYPE_PREFIX) == 0) {
-        selectionArgs.push_back(to_string(MEDIA_TYPE_VIDEO));
-    } else if (parentInfo.mimeType.find(DEFAULT_AUDIO_MIME_TYPE_PREFIX) == 0) {
-        selectionArgs.push_back(to_string(MEDIA_TYPE_AUDIO));
-    } else {
-        MEDIA_ERR_LOG("ListFile::GetListAlbumResult: invalid mimeType: %{public}s", parentInfo.mimeType.c_str());
-        return nullptr;
-    }
+    selectionArgs.push_back(MimeType2MediaType(parentInfo.mimeType));
     selectionArgs.push_back(to_string(offset));
     selectionArgs.push_back(to_string(maxCount));
     Uri uri(GetQueryUri(parentInfo, uriType));
