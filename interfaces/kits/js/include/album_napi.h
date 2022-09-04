@@ -118,7 +118,7 @@ struct AlbumNapiAsyncContext : public NapiError {
     std::string uri;
 
     size_t argc;
-    std::array<napi_value, NAPI_ARGC_MAX> argv;
+    napi_value argv[NAPI_ARGC_MAX];
     ResultNapiType resultNapiType;
     std::vector<uint32_t> mediaTypes;
     std::string typeMask;

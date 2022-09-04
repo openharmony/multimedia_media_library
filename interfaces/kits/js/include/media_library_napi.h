@@ -175,6 +175,11 @@ private:
     static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetAlbums(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetFileAssets(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrGetPrivateAlbum(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrCreateFileKeyEnum(napi_env env);
+    static napi_value CreateAudioKeyEnum(napi_env env);
+    static napi_value CreateImageVideoKeyEnum(napi_env env);
+    static napi_value CreateAlbumKeyEnum(napi_env env);
 
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
@@ -185,7 +190,14 @@ private:
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
     static thread_local napi_ref sMediaTypeEnumRef_;
+    static thread_local napi_ref sDirectoryEnumRef_;
     static thread_local napi_ref sFileKeyEnumRef_;
+    static thread_local napi_ref sPrivateAlbumEnumRef_;
+
+    static thread_local napi_ref sUserFileMgrFileKeyEnumRef_;
+    static thread_local napi_ref sAudioKeyEnumRef_;
+    static thread_local napi_ref sImageVideoKeyEnumRef_;
+    static thread_local napi_ref sAlbumKeyEnumRef_;
 };
 
 const int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
@@ -218,7 +230,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t imagePreviewIndex;
 
     size_t argc;
-    std::array<napi_value, NAPI_ARGC_MAX> argv;
+    napi_value argv[NAPI_ARGC_MAX];
     ResultNapiType resultNapiType;
     std::string typeMask;
     std::vector<uint32_t> mediaTypes;

@@ -94,6 +94,28 @@ napi_value AlbumNapi::Init(napi_env env, napi_value exports)
     return nullptr;
 }
 
+napi_value AlbumNapi::UserFileMgrInit(napi_env env, napi_value exports)
+{
+    NapiClassInfo info = {
+        .name = USERFILEMGR_ALBUM_NAPI_CLASS_NAME,
+        .ref = &userFileMgrConstructor_,
+        .constructor = AlbumNapiConstructor,
+        .props = {
+            DECLARE_NAPI_FUNCTION("getFileAssets", UserFileMgrGetAssets),
+            DECLARE_NAPI_FUNCTION("commitModify", UserFileMgrCommitModify),
+            DECLARE_NAPI_GETTER_SETTER("albumName", JSGetAlbumName, JSAlbumNameSetter),
+            DECLARE_NAPI_GETTER("albumUri", JSGetAlbumUri),
+            DECLARE_NAPI_GETTER("dateModified", JSGetAlbumDateModified),
+            DECLARE_NAPI_GETTER("count", JSGetCount),
+            DECLARE_NAPI_GETTER("relativePath", JSGetAlbumRelativePath),
+            DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri)
+        }
+    };
+
+    MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
+    return exports;
+}
+
 void AlbumNapi::SetAlbumNapiProperties(const AlbumAsset &albumData)
 {
     this->albumId_ = albumData.GetAlbumId();
@@ -184,22 +206,6 @@ std::string AlbumNapi::GetNetworkId() const
 std::string AlbumNapi::GetTypeMask() const
 {
     return typeMask_;
-}
-
-napi_value AlbumNapi::UserFileMgrInit(napi_env env, napi_value exports)
-{
-    NapiClassInfo info = {
-        USERFILEMGR_ALBUM_NAPI_CLASS_NAME,
-        &userFileMgrConstructor_,
-        AlbumNapiConstructor,
-        {
-            DECLARE_NAPI_FUNCTION("getFileAssets", UserFileMgrGetAssets),
-            DECLARE_NAPI_FUNCTION("commitModify", UserFileMgrCommitModify)
-        }
-    };
-
-    MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
-    return exports;
 }
 
 napi_value AlbumNapi::JSGetAlbumId(napi_env env, napi_callback_info info)
