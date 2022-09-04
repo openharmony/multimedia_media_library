@@ -56,6 +56,8 @@ public:
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
     static int32_t ListFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
         const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
+    static int32_t ScanFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
+        const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
     static int32_t GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList);
 };
 } // Media
