@@ -860,7 +860,7 @@ napi_value AlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info info
     napi_value ret = nullptr;
     unique_ptr<AlbumNapiAsyncContext> asyncContext = make_unique<AlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsTypeFetchOptCallback(env, info, asyncContext) != napi_ok,
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsTypeFetchOptCallback(env, info, asyncContext) == napi_ok,
         "Failed to parse js args");
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
 
@@ -876,7 +876,7 @@ napi_value AlbumNapi::UserFileMgrCommitModify(napi_env env, napi_callback_info i
     napi_value ret = nullptr;
     unique_ptr<AlbumNapiAsyncContext> asyncContext = make_unique<AlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) != napi_ok,
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
         "Failed to parse js args");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrCommitModify", CommitModifyNative,

@@ -344,6 +344,7 @@ public:
         const size_t minArgs, const size_t maxArgs)
     {
         napi_value thisVar = nullptr;
+        asyncContext->argc = maxArgs;
         CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]), &thisVar,
             nullptr), "Failed to get cb info");
         CHECK_COND_RET(((asyncContext->argc >= minArgs) && (asyncContext->argc <= maxArgs)), napi_invalid_arg,
@@ -394,13 +395,11 @@ public:
         constexpr size_t MAX_ARGS = ARGS_THREE;
         CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
             "Failed to get object info");
-
         /* Parse the first argument into typeMask */
         CHECK_STATUS_RET(GetParamNumberArray(env, context->argv[ARGS_ZERO], context->mediaTypes),
             "Failed to get param array");
         CHECK_COND_RET(context->mediaTypes.size() > 0, napi_invalid_arg, "Require at least one type");
         GenTypeMaskFromArray(context->mediaTypes, context->typeMask);
-
         CHECK_STATUS_RET(GetFetchOption(env, context->argv[ARGS_ONE], context), "Failed to get fetch option");
         CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
         return napi_ok;

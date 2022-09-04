@@ -295,7 +295,8 @@ std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &u
     const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
     string uriStr = uri.ToString();
-    if (!CheckPermFromUri(uriStr, false)) {
+    string directoryQueryUri = MEDIALIBRARY_DIRECTORY_URI;
+    if ((uriStr != directoryQueryUri) && !CheckPermFromUri(uriStr, false)) {
         return nullptr;
     }
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(Uri(uriStr), columns, predicates);
