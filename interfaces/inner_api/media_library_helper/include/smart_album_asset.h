@@ -42,6 +42,7 @@ public:
     void SetCategoryId(const int32_t categoryId);
     void SetCategoryName(const string categoryName);
     void SetCoverUri(const string coverUri);
+    void SetTypeMask(const string &typeMask);
     void SetAlbumPrivateType(const PrivateAlbumType albumPrivateType);
 
     int32_t GetAlbumId() const;
@@ -52,6 +53,7 @@ public:
     int32_t GetCategoryId() const;
     string GetCategoryName() const;
     string GetCoverUri() const;
+    string GetTypeMask() const;
     PrivateAlbumType GetAlbumPrivateType() const;
 
 private:
@@ -64,6 +66,7 @@ private:
     int32_t categoryId_;
     string categoryName_;
     string coverUri_;
+    string typeMask_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -242,6 +242,70 @@ const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_BUCKET_NAME
 };
 
+const std::vector<std::pair<std::string, std::string>> FILE_KEY_ENUM_PROPERTIES = {
+    std::make_pair("ID",                        MEDIA_DATA_DB_ID),
+    std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),
+    std::make_pair("DISPLAY_NAME",              MEDIA_DATA_DB_NAME),
+    std::make_pair("PARENT",                    MEDIA_DATA_DB_PARENT_ID),
+    std::make_pair("MIME_TYPE",                 MEDIA_DATA_DB_MIME_TYPE),
+    std::make_pair("MEDIA_TYPE",                MEDIA_DATA_DB_MEDIA_TYPE),
+    std::make_pair("SIZE",                      MEDIA_DATA_DB_SIZE),
+    std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
+    std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED),
+    std::make_pair("DATE_TAKEN",                MEDIA_DATA_DB_DATE_TAKEN),
+    std::make_pair("TITLE",                     MEDIA_DATA_DB_TITLE),
+    std::make_pair("ARTIST",                    MEDIA_DATA_DB_ARTIST),
+    std::make_pair("AUDIOALBUM",                MEDIA_DATA_DB_AUDIO_ALBUM),
+    std::make_pair("DURATION",                  MEDIA_DATA_DB_DURATION),
+    std::make_pair("WIDTH",                     MEDIA_DATA_DB_WIDTH),
+    std::make_pair("HEIGHT",                    MEDIA_DATA_DB_HEIGHT),
+    std::make_pair("ORIENTATION",               MEDIA_DATA_DB_ORIENTATION),
+    std::make_pair("ALBUM_ID",                  MEDIA_DATA_DB_BUCKET_ID),
+    std::make_pair("ALBUM_NAME",                MEDIA_DATA_DB_BUCKET_NAME)
+};
+
+const std::vector<std::pair<std::string, std::string>> USERFILEMGR_FILEKEY_ENUM_PROPERTIES = {
+    std::make_pair("URI",                       MEDIA_DATA_DB_URI),
+    std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),
+    std::make_pair("DISPLAY_NAME",              MEDIA_DATA_DB_NAME),
+    std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
+    std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED),
+    std::make_pair("TITLE",                     MEDIA_DATA_DB_TITLE)
+};
+
+const std::vector<std::pair<std::string, std::string>> AUDIOKEY_ENUM_PROPERTIES = {
+    std::make_pair("URI",                       MEDIA_DATA_DB_URI),
+    std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),
+    std::make_pair("DISPLAY_NAME",              MEDIA_DATA_DB_NAME),
+    std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
+    std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED),
+    std::make_pair("TITLE",                     MEDIA_DATA_DB_TITLE),
+    std::make_pair("ARTIST",                    MEDIA_DATA_DB_ARTIST),
+    std::make_pair("AUDIOALBUM",                MEDIA_DATA_DB_AUDIO_ALBUM),
+    std::make_pair("DURATION",                  MEDIA_DATA_DB_DURATION)
+};
+
+const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPERTIES = {
+    std::make_pair("URI",                       MEDIA_DATA_DB_URI),
+    std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),
+    std::make_pair("DISPLAY_NAME",              MEDIA_DATA_DB_NAME),
+    std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
+    std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED),
+    std::make_pair("TITLE",                     MEDIA_DATA_DB_TITLE),
+    std::make_pair("DURATION",                  MEDIA_DATA_DB_DURATION),
+    std::make_pair("WIDTH",                     MEDIA_DATA_DB_WIDTH),
+    std::make_pair("HEIGHT",                    MEDIA_DATA_DB_HEIGHT),
+    std::make_pair("DATE_TAKEN",                MEDIA_DATA_DB_DATE_TAKEN)
+};
+
+const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
+    std::make_pair("URI",                       MEDIA_DATA_DB_URI),
+    std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),
+    std::make_pair("DISPLAY_NAME",              MEDIA_DATA_DB_NAME),
+    std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
+    std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED)
+};
+
 struct JSAsyncContextOutput {
     napi_value error;
     napi_value data;
@@ -280,11 +344,13 @@ public:
         const size_t minArgs, const size_t maxArgs)
     {
         napi_value thisVar = nullptr;
-        CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, asyncContext->argv.data(), &thisVar, nullptr),
-            "Failed to get cb info");
+        CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]), &thisVar,
+            nullptr), "Failed to get cb info");
         CHECK_COND_RET(((asyncContext->argc >= minArgs) && (asyncContext->argc <= maxArgs)), napi_invalid_arg,
             "Number of args is invalid");
-        CHECK_COND_RET(asyncContext->argv[ARGS_ZERO] != nullptr, napi_invalid_arg, "Argument list is empty");
+        if (minArgs > 0) {
+            CHECK_COND_RET(asyncContext->argv[ARGS_ZERO] != nullptr, napi_invalid_arg, "Argument list is empty");
+        }
         CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)),
             "Failed to unwrap thisVar");
         CHECK_COND_RET(asyncContext->objectInfo != nullptr, napi_invalid_arg, "Failed to get object info");
@@ -313,7 +379,7 @@ public:
     {
         /* Parse the last argument into callbackref if any */
         bool isCallback = false;
-        CHECK_STATUS_RET(hasCallback(env, context->argc, context->argv.data(), isCallback), "Failed to check callback");
+        CHECK_STATUS_RET(hasCallback(env, context->argc, context->argv, isCallback), "Failed to check callback");
         if (isCallback) {
             CHECK_STATUS_RET(GetParamFunction(env, context->argv[context->argc - 1], context->callbackRef),
                 "Failed to get callback");

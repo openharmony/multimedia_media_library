@@ -40,10 +40,12 @@
 namespace OHOS {
 namespace Media {
 static const std::string SMART_ALBUM_NAPI_CLASS_NAME = "SmartAlbum";
+static const std::string USERFILEMGR_SMART_ALBUM_NAPI_CLASS_NAME = "UserFileMgrSmartAlbum";
 
 class SmartAlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
+    static napi_value UserFileMgrInit(napi_env env, napi_value exports);
     static napi_value CreateSmartAlbumNapi(napi_env env, SmartAlbumAsset &albumData,
         std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
     int32_t GetSmartAlbumId() const;
@@ -75,6 +77,7 @@ private:
     static napi_value JSAddAsset(napi_env env, napi_callback_info info);
     static napi_value JSRemoveAsset(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumFileAssets(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrGetAssets(napi_env env, napi_callback_info info);
     int32_t albumId_;
     std::string albumName_;
     std::string albumUri_;
@@ -90,9 +93,10 @@ private:
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
+    static thread_local napi_ref userFileMgrConstructor_;
 };
 
-struct SmartAlbumNapiAsyncContext {
+struct SmartAlbumNapiAsyncContext : public NapiError {
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
@@ -103,8 +107,16 @@ struct SmartAlbumNapiAsyncContext {
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     std::vector<std::string> selectionArgs;
     std::string order;
+    std::string uri;
+    std::string networkId;
     std::unique_ptr<FetchResult> fetchResult;
     std::vector<int32_t> assetIds;
+
+    size_t argc;
+    napi_value argv[NAPI_ARGC_MAX];
+    ResultNapiType resultNapiType;
+    std::vector<uint32_t> mediaTypes;
+    std::string typeMask;
 };
 } // namespace Media
 } // namespace OHOS
