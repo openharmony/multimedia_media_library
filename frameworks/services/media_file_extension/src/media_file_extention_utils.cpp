@@ -466,6 +466,107 @@ int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int6
     }
 }
 
+int32_t GetScanFileFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedResultSet> &result,
+    vector<FileInfo> &fileList)
+{
+    if (result == nullptr) {
+        return E_FAIL;
+    }
+    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
+    FileInfo fileInfo;
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
+        int fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, result, TYPE_INT32));
+        string mimeType = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MIME_TYPE, result, TYPE_STRING));
+        fileInfo.uri =
+            MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
+        fileInfo.fileName = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_NAME, result, TYPE_STRING));
+        fileInfo.mimeType = mimeType;
+        fileInfo.size =  get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, result, TYPE_INT64));
+        fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_FILE | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
+        fileInfo.mtime =
+            get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED, result, TYPE_INT64));
+        fileList.push_back(fileInfo);
+    }
+    return E_SUCCESS;
+}
+
+std::shared_ptr<AbsSharedResultSet> GetScanFileResult(const Uri &uri, MediaFileUriType uriType, const string &selection,
+    const vector<string> &selectionArgs)
+{
+    DataSharePredicates predicates;
+    predicates.SetWhereClause(selection);
+    predicates.SetWhereArgs(selectionArgs);
+    vector<string> columns {
+        MEDIA_DATA_DB_BUCKET_ID,
+        MEDIA_DATA_DB_TITLE,
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_SIZE,
+        MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_MIME_TYPE,
+        MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_MEDIA_TYPE
+    };
+    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+}
+
+std::shared_ptr<AbsSharedResultSet> SetScanFileSelection(const FileInfo &parentInfo, MediaFileUriType uriType,
+    const int64_t offset, const int64_t maxCount, const DistributedFS::FileFilter &filter)
+{
+    string filePath;
+    vector<string> selectionArgs;
+    if (uriType == MediaFileUriType::URI_ROOT) {
+        filePath = ROOT_MEDIA_DIR;
+        selectionArgs.push_back(filePath + "%");
+    } else {
+        string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
+        auto result = MediaFileExtentionUtils::GetFileFromDB(parentInfo.uri, networkId);
+        CHECK_AND_RETURN_RET_LOG(result != nullptr, nullptr, "GetFileFromDB Get fail");
+        int count = 0;
+        result->GetRowCount(count);
+        CHECK_AND_RETURN_RET_LOG(count > 0, nullptr, "AbsSharedResultSet empty");
+        auto ret = result->GoToFirstRow();
+        CHECK_AND_RETURN_RET_LOG(ret == 0, nullptr, "Failed to shift at first row");
+        filePath = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_FILE_PATH, result, TYPE_STRING));
+        selectionArgs.push_back(filePath + "/%");
+    }
+    MEDIA_DEBUG_LOG("ScanFile filepath: %{private}s", filePath.c_str());
+    string selection = MEDIA_DATA_DB_FILE_PATH + " LIKE ? ";
+    if (filter.GetSuffix().size() > 0) {
+        selection += " AND ( " + Media::MEDIA_DATA_DB_NAME + " LIKE ? ";
+        selectionArgs.emplace_back("%" + filter.GetSuffix()[0]);
+    }
+    for (size_t i = 1; i < filter.GetSuffix().size(); i++) {
+        selection += " OR " + Media::MEDIA_DATA_DB_NAME + " LIKE ? ";
+        selectionArgs.emplace_back("%" + filter.GetSuffix()[i]);
+    }
+    if (filter.GetSuffix().size() > 0) {
+        selection += ")";
+    }
+    selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    selection += " AND " + MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT ?, ?";
+    selectionArgs.push_back(to_string(NOT_ISTRASH));
+    selectionArgs.push_back(to_string(offset));
+    selectionArgs.push_back(to_string(maxCount));
+    Uri uri(GetQueryUri(parentInfo, uriType));
+    return GetScanFileResult(uri, uriType, selection, selectionArgs);
+}
+
+int32_t MediaFileExtentionUtils::ScanFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
+    const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
+{
+    MediaFileUriType uriType;
+    auto ret = MediaFileExtentionUtils::ResolveUri(parentInfo, uriType);
+    MEDIA_DEBUG_LOG("ScanFile:: uriType: %d", uriType);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("ResolveUri::invalid input fileInfo");
+        return ret;
+    }
+    std::shared_ptr<AbsSharedResultSet> resultSet = SetScanFileSelection(parentInfo, uriType, offset, maxCount,
+        filter);
+    return GetScanFileFileInfoFromResult(parentInfo, resultSet, fileList);
+}
+
 bool GetRootInfo(shared_ptr<AbsSharedResultSet> &result, RootInfo &rootInfo)
 {
     string networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, result, TYPE_STRING));
