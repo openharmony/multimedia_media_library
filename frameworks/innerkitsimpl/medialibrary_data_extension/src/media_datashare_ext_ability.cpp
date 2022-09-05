@@ -224,6 +224,7 @@ static int CheckOpenFilePermission(string &uri, string mode)
         }
     }
     if ((rPos == string::npos) && (wPos == string::npos)) {
+        MEDIA_INFO_LOG("Mode is invalid: %{public}s, return err: %{public}d", mode.c_str(), E_PERMISSION_DENIED);
         return E_PERMISSION_DENIED;
     }
 
@@ -248,11 +249,13 @@ static bool CheckPermFromUri(std::string &uri, bool isWrite)
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
 {
     string uriStr = uri.ToString();
-    int err = CheckOpenFilePermission(uriStr, mode);
+    string unifyMode = mode;
+    transform(unifyMode.begin(), unifyMode.end(), unifyMode.begin(), ::tolower);
+    int err = CheckOpenFilePermission(uriStr, unifyMode);
     if (err < 0) {
         return err;
     }
-    return MediaLibraryDataManager::GetInstance()->OpenFile(Uri(uriStr), mode);
+    return MediaLibraryDataManager::GetInstance()->OpenFile(Uri(uriStr), unifyMode);
 }
 
 int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const std::string &mode)
