@@ -3094,7 +3094,6 @@ napi_value MediaLibraryNapi::UserFileMgrGetAlbums(napi_env env, napi_callback_in
     napi_value ret = nullptr;
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-
     NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsTypeFetchOptCallback(env, info, asyncContext) == napi_ok,
         "Failed to parse js args");
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
@@ -3111,7 +3110,7 @@ napi_value MediaLibraryNapi::UserFileMgrCreateAsset(napi_env env, napi_callback_
     NAPI_ASSERT(env, ParseArgsCreateAsset(env, info, asyncContext), "Failed to parse js args");
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
 
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAlbums", JSCreateAssetExecute,
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrCreateAsset", JSCreateAssetExecute,
         JSCreateAssetCompleteCallback);
 }
 

@@ -329,7 +329,6 @@ string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
     if (pos == string::npos) {
         return networkId;
     }
-
     string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
     if (tempUri.empty()) {
         return networkId;
