@@ -121,7 +121,7 @@ napi_status MediaLibraryNapiUtils::GetArrayProperty(napi_env env, napi_value arg
     bool present = false;
     CHECK_STATUS_RET(napi_has_named_property(env, arg, propName.c_str(), &present), "Failed to check property name");
     if (present) {
-        size_t len = 0;
+        uint32_t len = 0;
         napi_value property = nullptr;
         bool isArray = false;
         CHECK_STATUS_RET(napi_get_named_property(env, arg, propName.c_str(), &property),
@@ -129,7 +129,7 @@ napi_status MediaLibraryNapiUtils::GetArrayProperty(napi_env env, napi_value arg
         CHECK_STATUS_RET(napi_is_array(env, property, &isArray), "Failed to check array type");
         CHECK_COND_RET(isArray, napi_array_expected, "Expected array type");
         CHECK_STATUS_RET(napi_get_array_length(env, property, &len), "Failed to get array length");
-        for (size_t i = 0; i < len; i++) {
+        for (uint32_t i = 0; i < len; i++) {
             napi_value item = nullptr;
             std::string val = "";
             CHECK_STATUS_RET(napi_get_element(env, property, i, &item), "Failed to get array item");
