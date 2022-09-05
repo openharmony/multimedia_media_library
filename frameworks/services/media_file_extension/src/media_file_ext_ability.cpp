@@ -234,6 +234,12 @@ int MediaFileExtAbility::ListFile(const FileInfo &parentInfo, const int64_t offs
     return MediaFileExtentionUtils::ListFile(parentInfo, offset, maxCount, filter, fileList);
 }
 
+int MediaFileExtAbility::ScanFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
+    const DistributedFS::FileFilter &filter, std::vector<FileInfo> &fileList)
+{
+    return MediaFileExtentionUtils::ScanFile(parentInfo, offset, maxCount, filter, fileList);
+}
+
 int MediaFileExtAbility::GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList)
 {
     return MediaFileExtentionUtils::GetRoots(rootList);
