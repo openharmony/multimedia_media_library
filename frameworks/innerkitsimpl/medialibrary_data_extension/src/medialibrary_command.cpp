@@ -296,6 +296,7 @@ void MediaLibraryCommand::ParseFileId()
     if (uriInValue.empty()) {
         uriInValue = uri_.ToString();
     }
+    MediaLibraryDataManagerUtils::RemoveTypeValueFromUri(uriInValue);
     MEDIA_DEBUG_LOG("ParseFileId: uriInValue is %{private}s", uriInValue.c_str());
     string idFromUri = MediaLibraryDataManagerUtils::GetIdFromUri(uriInValue);
     if (!MediaLibraryDataManagerUtils::IsNumber(idFromUri)) {

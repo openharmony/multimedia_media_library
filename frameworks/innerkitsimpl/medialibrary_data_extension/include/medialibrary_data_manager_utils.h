@@ -37,6 +37,7 @@ public:
     static void SplitKeyValue(const std::string &keyValue, std::string &key, std::string &value);
     static void SplitKeys(const std::string &query, std::vector<std::string> &keys);
     static std::string ObtionCondition(std::string &strQueryCondition, const std::vector<std::string> &whereArgs);
+    static void RemoveTypeValueFromUri(std::string &uri);
 };
 } // namespace Media
 } // namespace OHOS

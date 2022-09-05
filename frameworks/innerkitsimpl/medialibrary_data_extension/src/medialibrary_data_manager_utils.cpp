@@ -108,7 +108,6 @@ string MediaLibraryDataManagerUtils::GetNetworkIdFromUri(const string &uri)
     if (pos == string::npos) {
         return networkId;
     }
-
     string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
     if (tempUri.empty()) {
         return networkId;
@@ -165,6 +164,14 @@ string MediaLibraryDataManagerUtils::ObtionCondition(string &strQueryCondition, 
         }
     }
     return strQueryCondition;
+}
+
+void MediaLibraryDataManagerUtils::RemoveTypeValueFromUri(std::string &uri)
+{
+    size_t typeIndex = uri.find('#');
+    if (typeIndex != std::string::npos) {
+        uri = uri.substr(0, typeIndex);
+    }
 }
 } // namespace Media
 } // namespace OHOS
