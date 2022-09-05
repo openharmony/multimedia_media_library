@@ -175,6 +175,17 @@ bool CreateFile(string displayName, unique_ptr<FileAsset> &parentAlbumAsset, uni
     return true;
 }
 
+void DeleteAllDataInDb()
+{
+    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
+    DataShare::DataSharePredicates predicates;
+    string selections = MEDIA_DATA_DB_ID + " <> 0 ";
+    predicates.SetWhereClause(selections);
+    int retVal = g_mediaDataShareHelper->Delete(deleteAssetUri, predicates);
+    MEDIA_INFO_LOG("SetUpTestCase Delete retVal: %{public}d", retVal);
+    EXPECT_EQ((retVal >= 0), true);
+}
+
 void CreateRootDir()
 {
     unique_ptr<FileAsset> rootAsset = nullptr;
@@ -197,16 +208,6 @@ void MediaLibraryExtUnitTest::SetUpTestCase(void)
         MEDIA_DEBUG_LOG("g_mediaDataShareHelper fail");
         return;
     }
-
-    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
-    DataShare::DataSharePredicates predicates;
-    string selections = MEDIA_DATA_DB_ID + " <> 0 ";
-    predicates.SetWhereClause(selections);
-    int retVal = g_mediaDataShareHelper->Delete(deleteAssetUri, predicates);
-    MEDIA_INFO_LOG("SetUpTestCase Delete retVal: %{public}d", retVal);
-    EXPECT_EQ((retVal >= 0), true);
-
-    CreateRootDir();
 }
 
 void MediaLibraryExtUnitTest::TearDownTestCase(void)
@@ -215,7 +216,12 @@ void MediaLibraryExtUnitTest::TearDownTestCase(void)
 }
 
 // SetUp:Execute before each test case
-void MediaLibraryExtUnitTest::SetUp() {}
+void MediaLibraryExtUnitTest::SetUp()
+{
+    system("rm -rf /storage/media/100/local/files/*");
+    DeleteAllDataInDb();
+    CreateRootDir();
+}
 
 void MediaLibraryExtUnitTest::TearDown(void) {}
 
@@ -1389,10 +1395,10 @@ bool InitListFileTest1(unique_ptr<FileAsset> &albumAsset)
 
 void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int offset, int maxCount)
 {
-    const int32_t URI_FILE_ROOT_FILE_SIZE = 5;
-    const int32_t URI_MEDIA_ROOT_IMAGE_SIZE = 1;
-    const int32_t URI_MEDIA_ROOT_VIDEO_SIZE = 1;
-    const int32_t URI_MEDIA_ROOT_AUDIO_SIZE = 0;
+    const size_t URI_FILE_ROOT_FILE_SIZE = 5;
+    const size_t URI_MEDIA_ROOT_IMAGE_SIZE = 1;
+    const size_t URI_MEDIA_ROOT_VIDEO_SIZE = 1;
+    const size_t URI_MEDIA_ROOT_AUDIO_SIZE = 0;
     DistributedFS::FileFilter filter;
     // URI_FILE_ROOT & URI_MEDIA_ROOT
     for (auto mediaRootInfo : rootFileList) {
@@ -1405,7 +1411,7 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_FILE_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_FILE_ROOT fileList.size(): %{public}d", fileList.size());
             DisplayFileList(fileList);
-            EXPECT_EQ(((int)fileList.size() >= URI_FILE_ROOT_FILE_SIZE), true);
+            EXPECT_EQ(fileList.size(), URI_FILE_ROOT_FILE_SIZE);
             continue;
         }
 
@@ -1414,7 +1420,7 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", fileList.size());
             DisplayFileList(fileList);
-            EXPECT_EQ(((int)fileList.size() >= URI_MEDIA_ROOT_IMAGE_SIZE), true);
+            EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_IMAGE_SIZE);
         }
 
         // URI_MEDIA_ROOT video
@@ -1422,7 +1428,7 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", fileList.size());
             DisplayFileList(fileList);
-            EXPECT_EQ(((int)fileList.size() >= URI_MEDIA_ROOT_VIDEO_SIZE), true);
+            EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_VIDEO_SIZE);
         }
 
         // URI_MEDIA_ROOT audio
@@ -1430,7 +1436,7 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", fileList.size());
             DisplayFileList(fileList);
-            EXPECT_EQ(((int)fileList.size() >= URI_MEDIA_ROOT_AUDIO_SIZE), true);
+            EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_AUDIO_SIZE);
         }
     }
 }
