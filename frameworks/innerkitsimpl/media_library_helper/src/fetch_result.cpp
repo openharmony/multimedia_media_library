@@ -127,6 +127,8 @@ variant<int32_t, int64_t, string> ReturnDefaultOnError(string errMsg, ResultSetD
     MEDIA_ERR_LOG("%{public}s", errMsg.c_str());
     if ((dataType) == TYPE_STRING)
         return "";
+    else if (dataType == TYPE_INT64)
+        return static_cast<int64_t>(0);
     else
         return 0;
 }
@@ -162,10 +164,9 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
                 status = resultset_->GetString(index, stringVal);
             }
             if (status != NativeRdb::E_OK) {
-                cellValue = "";
-            } else {
-                cellValue = stringVal;
+                MEDIA_ERR_LOG("resultSet GetString err %{public}d", status);
             }
+            cellValue = stringVal;
             break;
         case TYPE_INT32:
             if (resultSet) {
@@ -174,10 +175,9 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
                 status = resultset_->GetInt(index, integerVal);
             }
             if (status != NativeRdb::E_OK) {
-                cellValue = -1;
-            } else {
-                cellValue = integerVal;
+                MEDIA_ERR_LOG("resultSet GetInt err %{public}d", status);
             }
+            cellValue = integerVal;
             break;
         case TYPE_INT64:
             if (resultSet) {
@@ -186,13 +186,12 @@ variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumnn(string colum
                 status = resultset_->GetLong(index, longVal);
             }
             if (status != NativeRdb::E_OK) {
-                cellValue = -1;
-            } else {
-                cellValue = longVal;
+                MEDIA_ERR_LOG("resultSet GetInt64 err %{public}d", status);
             }
+            cellValue = longVal;
             break;
         default:
-            MEDIA_ERR_LOG("not match  dataType %{public}d!!!!!", dataType);
+            MEDIA_ERR_LOG("not match  dataType %{public}d", dataType);
             break;
     }
 
