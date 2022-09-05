@@ -28,8 +28,8 @@ using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::DataShare;
 
-MediaScannerObj::MediaScannerObj(std::string &path, const sptr<IRemoteObject> &callback, bool isDir) :
-    isDir_(isDir), callback_(callback)
+MediaScannerObj::MediaScannerObj(std::string &path, const sptr<IRemoteObject> &callback, bool isDir)
+    : isDir_(isDir), callback_(callback)
 {
     if (isDir) {
         dir_ = path;
@@ -91,13 +91,12 @@ int32_t MediaScannerObj::CommitTransaction()
     for (uint32_t i = 0; i < dataBuffer_.size(); i++) {
         data = move(dataBuffer_[i]);
 
-
         if (data->GetFileId() != FILE_ID_DEFAULT) {
             uri = mediaScannerDb_->UpdateMetadata(*data);
             scannedIds_.insert(data->GetFileId());
         } else {
             uri = mediaScannerDb_->InsertMetadata(*data);
-            scannedIds_.insert(data->GetFileId());
+            scannedIds_.insert(ScannerUtils::GetIdFromUri(uri));
         }
 
         // set uri for scan file callback
@@ -290,12 +289,12 @@ int32_t MediaScannerObj::ScanFileInTraversal(const string &path, const string &p
 
 int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(string &albumPath, int32_t parentId, string albumName)
 {
+    struct stat statInfo { 0 };
     int32_t albumId = UNKNOWN_ID;
     bool update = false;
 
     if (albumMap_.find(albumPath) != albumMap_.end()) {
         Metadata albumInfo = albumMap_.at(albumPath);
-        struct stat statInfo { 0 };
         albumId = albumInfo.GetFileId();
 
         if (stat(albumPath.c_str(), &statInfo) == ERR_SUCCESS) {
@@ -312,9 +311,11 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(string &albumPath, int32_t pare
     metadata.SetFilePath(albumPath);
     metadata.SetFileName(ScannerUtils::GetFileNameFromUri(albumPath));
     metadata.SetFileTitle(ScannerUtils::GetFileTitle(metadata.GetFileName()));
-    metadata.SetParentId(parentId);
     metadata.SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_ALBUM));
+    metadata.SetParentId(parentId);
     metadata.SetAlbumName(albumName);
+    metadata.SetFileSize(statInfo.st_size);
+    metadata.SetFileDateModified(statInfo.st_mtime);
 
     if (update) {
             metadata.SetFileId(albumId);

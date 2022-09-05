@@ -16,7 +16,7 @@
 #include "mediascanner_unit_test.h"
 #include "media_log.h"
 #include "scanner_utils.h"
-#include "media_scanner.h"
+#include "media_scanner_manager.h"
 #include "media_scanner_operation_callback_stub.h"
 #include "medialibrary_errno.h"
 
@@ -90,7 +90,7 @@ bool CreateFile(const string &filePath)
 void MediaScannerUnitTest::SetUpTestCase(void)
 {
     HiLog::Info(LABEL, "SetUpTestCase invoked");
-    if (MediaScannerObj::GetMediaScannerInstance() == nullptr) {
+    if (MediaScannerManager::GetInstance() == nullptr) {
         HiLog::Error(LABEL, "Scanner instance not available");
     }
     int createRes = mkdir("/storage/media/100/local/files/Pictures", S_IRWXU | S_IRWXG | S_IRWXO);
@@ -139,7 +139,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
     string path = g_prefixPath;
     HiLog::Info(LABEL, "ScanDir test case for: %{public}s", path.c_str());
 
-    EXPECT_EQ((MediaScannerObj::GetMediaScannerInstance() != nullptr), true);
+    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
     int result;
     std::string testcaseName("mediascanner_ScanDir_test_001");
     g_isCallbackReceived = false;
@@ -149,7 +149,7 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
     path = ConvertPath(path);
     sptr<MediaScannerOperationCallbackStub> callbackStub = new MediaScannerOperationCallbackStub();
     callbackStub->SetApplicationCallback(appCallback);
-    result = MediaScannerObj::GetMediaScannerInstance()->ScanDir(path, callbackStub->AsObject());
+    result = MediaScannerManager::GetInstance()->ScanDir(path, callbackStub->AsObject());
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
@@ -184,11 +184,11 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((MediaScannerObj::GetMediaScannerInstance() != nullptr), true);
+    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
     path = ConvertPath(path);
     sptr<MediaScannerOperationCallbackStub> callbackStub = new MediaScannerOperationCallbackStub();
     callbackStub->SetApplicationCallback(appCallback);
-    result = MediaScannerObj::GetMediaScannerInstance()->ScanFile(path, callbackStub->AsObject());
+    result = MediaScannerManager::GetInstance()->ScanFile(path, callbackStub->AsObject());
     EXPECT_EQ(result, g_filescanstatus);
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -221,11 +221,11 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_002, TestSize.Level0)
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((MediaScannerObj::GetMediaScannerInstance() != nullptr), true);
+    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
     path = ConvertPath(path);
     sptr<MediaScannerOperationCallbackStub> callbackStub = new MediaScannerOperationCallbackStub();
     callbackStub->SetApplicationCallback(appCallback);
-    result = MediaScannerObj::GetMediaScannerInstance()->ScanFile(path, callbackStub->AsObject());
+    result = MediaScannerManager::GetInstance()->ScanFile(path, callbackStub->AsObject());
     EXPECT_EQ(result, g_filescanstatus);
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -258,11 +258,11 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_003, TestSize.Level0)
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((MediaScannerObj::GetMediaScannerInstance() != nullptr), true);
+    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
     path = ConvertPath(path);
     sptr<MediaScannerOperationCallbackStub> callbackStub = new MediaScannerOperationCallbackStub();
     callbackStub->SetApplicationCallback(appCallback);
-    result = MediaScannerObj::GetMediaScannerInstance()->ScanFile(path, callbackStub->AsObject());
+    result = MediaScannerManager::GetInstance()->ScanFile(path, callbackStub->AsObject());
     EXPECT_EQ(result, g_filescanstatus);
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -296,11 +296,11 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanTextFile_Test_001, TestSize.Leve
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((MediaScannerObj::GetMediaScannerInstance() != nullptr), true);
+    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
     path = ConvertPath(path);
     sptr<MediaScannerOperationCallbackStub> callbackStub = new MediaScannerOperationCallbackStub();
     callbackStub->SetApplicationCallback(appCallback);
-    result = MediaScannerObj::GetMediaScannerInstance()->ScanFile(path, callbackStub->AsObject());
+    result = MediaScannerManager::GetInstance()->ScanFile(path, callbackStub->AsObject());
     EXPECT_EQ(result, g_filescanstatus);
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -334,11 +334,11 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanHiddenFile_Test_001, TestSize.Le
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((MediaScannerObj::GetMediaScannerInstance() != nullptr), true);
+    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
     path = ConvertPath(path);
     sptr<MediaScannerOperationCallbackStub> callbackStub = new MediaScannerOperationCallbackStub();
     callbackStub->SetApplicationCallback(appCallback);
-    result = MediaScannerObj::GetMediaScannerInstance()->ScanFile(path, callbackStub->AsObject());
+    result = MediaScannerManager::GetInstance()->ScanFile(path, callbackStub->AsObject());
     EXPECT_EQ(result, g_filescanstatus);
     if (result == 0) {
         // Wait here for callback. If not callback for 2 mintues, will skip this step
@@ -368,11 +368,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_002, TestSize.Level0)
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((MediaScannerObj::GetMediaScannerInstance() != nullptr), true);
+    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
     path = ConvertPath(path);
     sptr<MediaScannerOperationCallbackStub> callbackStub = new MediaScannerOperationCallbackStub();
     callbackStub->SetApplicationCallback(appCallback);
-    result = MediaScannerObj::GetMediaScannerInstance()->ScanDir(path, callbackStub->AsObject());
+    result = MediaScannerManager::GetInstance()->ScanDir(path, callbackStub->AsObject());
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
@@ -403,11 +403,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_CononicalPathtest_001, Test
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((MediaScannerObj::GetMediaScannerInstance() != nullptr), true);
+    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
     path = ConvertPath(path);
     sptr<MediaScannerOperationCallbackStub> callbackStub = new MediaScannerOperationCallbackStub();
     callbackStub->SetApplicationCallback(appCallback);
-    result = MediaScannerObj::GetMediaScannerInstance()->ScanDir(path, callbackStub->AsObject());
+    result = MediaScannerManager::GetInstance()->ScanDir(path, callbackStub->AsObject());
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
@@ -438,11 +438,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_001, Tes
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((MediaScannerObj::GetMediaScannerInstance() != nullptr), true);
+    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
     path = ConvertPath(path);
     sptr<MediaScannerOperationCallbackStub> callbackStub = new MediaScannerOperationCallbackStub();
     callbackStub->SetApplicationCallback(appCallback);
-    result = MediaScannerObj::GetMediaScannerInstance()->ScanFile(path, callbackStub->AsObject());
+    result = MediaScannerManager::GetInstance()->ScanFile(path, callbackStub->AsObject());
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {
@@ -474,11 +474,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_002, Tes
     g_callbackName = "";
     auto appCallback = make_shared<ApplicationCallback>(testcaseName);
 
-    EXPECT_EQ((MediaScannerObj::GetMediaScannerInstance() != nullptr), true);
+    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
     path = ConvertPath(path);
     sptr<MediaScannerOperationCallbackStub> callbackStub = new MediaScannerOperationCallbackStub();
     callbackStub->SetApplicationCallback(appCallback);
-    result = MediaScannerObj::GetMediaScannerInstance()->ScanFile(path, callbackStub->AsObject());
+    result = MediaScannerManager::GetInstance()->ScanFile(path, callbackStub->AsObject());
     EXPECT_EQ(result, g_filescanstatus);
 
     if (result == 0) {

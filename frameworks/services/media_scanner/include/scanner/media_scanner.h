@@ -67,7 +67,7 @@ public:
 
 private:
     // file
-    int32_t  ScanFile();
+    int32_t ScanFile();
     int32_t ScanFileInternal();
     int32_t GetFileMetadata();
     int32_t GetParentDirInfo(const string &parent, int32_t parentId);
