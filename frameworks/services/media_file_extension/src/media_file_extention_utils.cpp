@@ -223,7 +223,7 @@ string GetQueryUri(const FileInfo &parentInfo, MediaFileUriType uriType)
 void ChangeToLowerCase(vector<string> &vec)
 {
     for (auto &s : vec) {
-        std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return std::tolower(c); });
+        std::transform(s.begin(), s.end(), s.begin(), ::tolower);
     }
 }
 
@@ -251,7 +251,7 @@ int32_t GetListFilePredicates(const FileInfo &parentInfo, const DistributedFS::F
     if (!displayName.empty()) {
         selection += " AND (" + MEDIA_DATA_DB_TITLE + " = ? ";
         selectionArgs.push_back(displayName[0]);
-        for (size_t i = 1; i < selectionArgs.size(); i++) {
+        for (size_t i = 1; i < displayName.size(); i++) {
             selection += " OR " + MEDIA_DATA_DB_TITLE + " = ? ";
             selectionArgs.push_back(displayName[i]);
         }
@@ -260,11 +260,11 @@ int32_t GetListFilePredicates(const FileInfo &parentInfo, const DistributedFS::F
     vector<string> suffix = filter.GetSuffix();
     ChangeToLowerCase(suffix);
     if (!suffix.empty()) {
-        selection += " AND (" + MEDIA_DATA_DB_NAME + " LIKE %? ";
-        selectionArgs.push_back(suffix[0]);
-        for (size_t i = 1; i < selectionArgs.size(); i++) {
-            selection += " OR " + MEDIA_DATA_DB_NAME + " LIKE %? ";
-            selectionArgs.push_back(suffix[i]);
+        selection += " AND ( " + MEDIA_DATA_DB_NAME + " LIKE ? ";
+        selectionArgs.push_back("%" + suffix[0]);
+        for (size_t i = 1; i < suffix.size(); i++) {
+            selection += " OR " + MEDIA_DATA_DB_NAME + " LIKE ? ";
+            selectionArgs.push_back("%" + suffix[i]);
         }
         selection += ") ";
     }
@@ -387,9 +387,7 @@ std::shared_ptr<AbsSharedResultSet> GetListAlbumResult(const FileInfo &parentInf
 int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedResultSet> &result,
     vector<FileInfo> &fileList)
 {
-    if (!result) {
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "AbsSharedResultSet is nullptr");
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
     FileInfo fileInfo;
     while (result->GoToNextRow() == NativeRdb::E_OK) {
@@ -409,9 +407,7 @@ int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedR
 int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedResultSet> &result,
     vector<FileInfo> &fileList)
 {
-    if (!result) {
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "AbsSharedResultSet is nullptr");
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
     FileInfo fileInfo;
     while (result->GoToNextRow() == NativeRdb::E_OK) {
