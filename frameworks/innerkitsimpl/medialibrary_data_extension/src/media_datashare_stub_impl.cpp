@@ -51,7 +51,7 @@ int MediaDataShareStubImpl::OpenFile(const Uri &uri, const std::string &mode)
         return ret;
     }
     ret = extension->OpenFile(uri, mode);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
@@ -66,7 +66,7 @@ int MediaDataShareStubImpl::OpenRawFile(const Uri &uri, const std::string &mode)
             return ret;
     }
     ret = extension->OpenRawFile(uri, mode);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
@@ -81,7 +81,7 @@ int MediaDataShareStubImpl::Insert(const Uri &uri, const DataShareValuesBucket &
         return ret;
     }
     ret = extension->Insert(uri, value);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
@@ -97,7 +97,7 @@ int MediaDataShareStubImpl::Update(const Uri &uri, const DataSharePredicates &pr
         return ret;
     }
     ret = extension->Update(uri, predicates, value);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
@@ -112,7 +112,7 @@ int MediaDataShareStubImpl::Delete(const Uri &uri, const DataSharePredicates &pr
         return ret;
     }
     ret = extension->Delete(uri, predicates);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
@@ -173,7 +173,7 @@ bool MediaDataShareStubImpl::RegisterObserver(const Uri &uri, const sptr<AAFwk::
         return ret;
     }
     ret = extension->RegisterObserver(uri, dataObserver);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
@@ -188,7 +188,7 @@ bool MediaDataShareStubImpl::UnregisterObserver(const Uri &uri, const sptr<AAFwk
         return ret;
     }
     ret = extension->UnregisterObserver(uri, dataObserver);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
@@ -203,7 +203,7 @@ bool MediaDataShareStubImpl::NotifyChange(const Uri &uri)
         return ret;
     }
     ret = extension->NotifyChange(uri);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
