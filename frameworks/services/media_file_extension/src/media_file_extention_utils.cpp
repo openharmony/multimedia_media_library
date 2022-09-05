@@ -540,6 +540,7 @@ std::shared_ptr<AbsSharedResultSet> SetScanFileSelection(const FileInfo &parentI
         selection += ")";
     }
     selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_NOFILE);
     selection += " AND " + MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT ?, ?";
     selectionArgs.push_back(to_string(NOT_ISTRASH));
     selectionArgs.push_back(to_string(offset));
