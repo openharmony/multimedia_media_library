@@ -37,7 +37,7 @@ private:
     const size_t MAX_THREAD = 1;
     size_t activeThread_ = 0;
 
-    std::queue<unique_ptr<MediaScannerObj>> queue_;
+    std::queue<std::unique_ptr<MediaScannerObj>> queue_;
     std::mutex queueMutex_;
 };
 } // namespace Media

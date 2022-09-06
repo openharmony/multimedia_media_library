@@ -40,7 +40,7 @@ enum ErrorCodes {
 
 const int32_t MAX_BATCH_SIZE = 5;
 
-const int32_t UNKNOWN_ID = -1;
+constexpr int32_t UNKNOWN_ID = -1;
 
 // Const for File Metadata defaults
 const std::string FILE_PATH_DEFAULT = "";
@@ -192,7 +192,6 @@ public:
     static bool IsDirHidden(const std::string &path);
     static void InitSkipList();
     static bool CheckSkipScanList(const std::string &path);
-    static int32_t GetIdFromUri(const std::string &uri);
 
 private:
     static std::vector<size_t> skipList_;

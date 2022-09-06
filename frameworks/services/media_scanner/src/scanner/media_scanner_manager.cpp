@@ -25,19 +25,19 @@ namespace Media {
 std::shared_ptr<MediaScannerManager> MediaScannerManager::instance_ = nullptr;
 std::mutex MediaScannerManager::instanceMutex_;
 
-shared_ptr<MediaScannerManager> MediaScannerManager::GetInstance()
+std::shared_ptr<MediaScannerManager> MediaScannerManager::GetInstance()
 {
     if (instance_ == nullptr) {
         std::lock_guard<std::mutex> guard(instanceMutex_);
-        instance_ = shared_ptr<MediaScannerManager>(new MediaScannerManager());
+        instance_ = std::shared_ptr<MediaScannerManager>(new MediaScannerManager());
     }
 
     return instance_;
 }
 
-int32_t MediaScannerManager::ScanFile(std::string &path, const sptr<IRemoteObject> &callback)
+int32_t MediaScannerManager::ScanFile(std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
 {
-    MEDIA_INFO_LOG("ScanFile begin");
+    MEDIA_DEBUG_LOG("scan file %{private}s", path.c_str());
 
     if (path.empty()) {
         MEDIA_ERR_LOG("path is empty");
@@ -60,9 +60,9 @@ int32_t MediaScannerManager::ScanFile(std::string &path, const sptr<IRemoteObjec
     return E_OK;
 }
 
-int32_t MediaScannerManager::ScanDir(std::string &path, const sptr<IRemoteObject> &callback)
+int32_t MediaScannerManager::ScanDir(std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
 {
-    MEDIA_INFO_LOG("begin");
+    MEDIA_DEBUG_LOG("scan dir %{private}s", path.c_str());
 
     if (path.empty()) {
         MEDIA_ERR_LOG("path is empty");

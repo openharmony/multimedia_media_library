@@ -13,16 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef IMEDIA_SCANNER_APP_CALLBACK_H
-#define IMEDIA_SCANNER_APP_CALLBACK_H
+#ifndef IMEDIA_SCANNER_CALLBACK_H
+#define IMEDIA_SCANNER_CALLBACK_H
 
 #include <string>
 
 namespace OHOS {
 namespace Media {
-class IMediaScannerAppCallback {
+class IMediaScannerCallback {
 public:
-    virtual ~IMediaScannerAppCallback() = default;
+    virtual ~IMediaScannerCallback() = default;
 
     /**
      * @brief OnScanFinished will be executed when client receives callback from service after scan is finished/error
@@ -31,7 +31,7 @@ public:
      * @param uri file uri generated after database updation. For scanDir(), uri will be empty
      * @param path The path which was requested for scanning
      */
-    virtual void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) = 0;
+    virtual int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) = 0;
 };
 } // namespace Media
 } // namespace OHOS

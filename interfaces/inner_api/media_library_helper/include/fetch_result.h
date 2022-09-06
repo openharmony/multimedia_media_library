@@ -28,9 +28,11 @@
 namespace OHOS {
 namespace Media {
 enum ResultSetDataType {
+    TYPE_NULL = 0,
     TYPE_STRING,
     TYPE_INT32,
-    TYPE_INT64
+    TYPE_INT64,
+    TYPE_DOUBLE
 };
 
 /**
