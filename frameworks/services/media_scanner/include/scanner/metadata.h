@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <variant>
 #include "scanner_utils.h"
+#include "fetch_result.h"
 #include "abs_shared_result_set.h"
 
 namespace OHOS {
@@ -27,7 +28,7 @@ class Metadata {
 public:
     Metadata();
     ~Metadata() = default;
-    using VariantData = std::variant<int32_t, int64_t, double, std::string>;
+    using VariantData = std::variant<int32_t, std::string, int64_t, double>;
 
     void SetFileId(const VariantData &id);
     int32_t GetFileId() const;
@@ -107,7 +108,7 @@ public:
     void Init();
 
     using MetadataFnPtr = void (Metadata::*)(const VariantData &);
-    std::unordered_map<std::string, std::pair<DataType, MetadataFnPtr>> memberFuncMap_;
+    std::unordered_map<std::string, std::pair<ResultSetDataType, MetadataFnPtr>> memberFuncMap_;
 
 private:
     int32_t id_;

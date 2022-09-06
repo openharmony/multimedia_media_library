@@ -15,6 +15,7 @@
 #define MLOG_TAG "Scanner"
 
 #include "media_scanner_db.h"
+
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_data_manager.h"
@@ -400,7 +401,7 @@ int32_t MediaScannerDb::InsertAlbum(const Metadata &metadata)
     int32_t id = 0;
 
     string uri = InsertMetadata(metadata);
-    id = ScannerUtils::GetIdFromUri(uri);
+    id = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri));
 
     return id;
 }
@@ -410,7 +411,7 @@ int32_t MediaScannerDb::UpdateAlbum(const Metadata &metadata)
     int32_t id = 0;
 
     string uri = UpdateMetadata(metadata);
-    id = ScannerUtils::GetIdFromUri(uri);
+    id = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri));
 
     return id;
 }
@@ -441,63 +442,19 @@ void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)
 void MediaScannerDb::ExtractMetaFromColumn(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
                                            unique_ptr<Metadata> &metadata, const std::string &col)
 {
-    int32_t columnIndex(0);
-    int32_t err = resultSet->GetColumnIndex(col, columnIndex);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("failed to get column index");
-    }
-
-    auto dataType = DataType::TYPE_NULL;
+    ResultSetDataType dataType = ResultSetDataType::TYPE_NULL;
     Metadata::MetadataFnPtr requestFunc = nullptr;
     auto itr = metadata->memberFuncMap_.find(col);
     if (itr != metadata->memberFuncMap_.end()) {
         dataType = itr->second.first;
         requestFunc = itr->second.second;
+    } else {
+        MEDIA_ERR_LOG("invalid column name %{private}s", col.c_str());
+        return;
     }
 
-    int32_t ret(0);
-    std::variant<int32_t, int64_t, double, std::string> data;
-
-    switch (dataType) {
-        case DataType::TYPE_INT: {
-            int32_t intValue(0);
-            ret = resultSet->GetInt(columnIndex, intValue);
-            if (ret != NativeRdb::E_OK) {
-                MEDIA_ERR_LOG("failed to get int");
-            }
-            data = intValue;
-            break;
-        }
-        case DataType::TYPE_LONG: {
-            int64_t longValue(0);
-            ret = resultSet->GetLong(columnIndex, longValue);
-            if (ret != NativeRdb::E_OK) {
-                MEDIA_ERR_LOG("failed to get long");
-            }
-            data = longValue;
-            break;
-        }
-        case DataType::TYPE_STRING: {
-            string strValue("");
-            ret = resultSet->GetString(columnIndex, strValue);
-            if (ret != NativeRdb::E_OK) {
-                MEDIA_ERR_LOG("failed to get string");
-            }
-            data = strValue;
-            break;
-        }
-        case DataType::TYPE_DOUBLE: {
-            double doubleVal(0);
-            ret = resultSet->GetDouble(columnIndex, doubleVal);
-            if (ret != NativeRdb::E_OK) {
-                MEDIA_ERR_LOG("failed to get double");
-            }
-            data = doubleVal;
-            break;
-        }
-        default:
-            break;
-    }
+    std::variant<int32_t, std::string, int64_t, double> data =
+        ResultSetUtils::GetValFromColumn<const shared_ptr<NativeRdb::AbsSharedResultSet>>(col, resultSet, dataType);
 
     // Use the function pointer from map and pass data to fn ptr
     if (requestFunc != nullptr) {

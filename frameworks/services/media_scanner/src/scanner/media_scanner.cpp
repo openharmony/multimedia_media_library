@@ -21,6 +21,7 @@
 
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_data_manager_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -28,8 +29,8 @@ using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::DataShare;
 
-MediaScannerObj::MediaScannerObj(std::string &path, const sptr<IRemoteObject> &callback, bool isDir)
-    : isDir_(isDir), callback_(callback)
+MediaScannerObj::MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
+    bool isDir) : isDir_(isDir), callback_(callback)
 {
     if (isDir) {
         dir_ = path;
@@ -40,26 +41,30 @@ MediaScannerObj::MediaScannerObj(std::string &path, const sptr<IRemoteObject> &c
 
 int32_t MediaScannerObj::ScanFile()
 {
-    MEDIA_INFO_LOG("begin");
+    MEDIA_DEBUG_LOG("scan file %{private}s", path_.c_str());
 
     int32_t ret = ScanFileInternal();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("ScanFileInternal err %{public}d", ret);
     }
 
-    return InvokeCallback(ret);
+    (void)InvokeCallback(ret);
+
+    return ret;
 }
 
 int32_t MediaScannerObj::ScanDir()
 {
-    MEDIA_INFO_LOG("begin");
+    MEDIA_INFO_LOG("scan dir %{private}s", path_.c_str());
 
     int32_t ret = ScanDirInternal();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("ScanDirInternal err %{public}d", ret);
     }
 
-    return InvokeCallback(ret);
+    (void)InvokeCallback(ret);
+
+    return ret;
 }
 
 void MediaScannerObj::Scan()
@@ -77,14 +82,13 @@ int32_t MediaScannerObj::InvokeCallback(int32_t err)
         return E_OK;
     }
 
-    sptr<IMediaScannerOperationCallback> callback = iface_cast<IMediaScannerOperationCallback>(callback_);
-    return callback->OnScanFinishedCallback(err, uri_, path_);
+    return callback_->OnScanFinished(err, uri_, path_);
 }
 
 int32_t MediaScannerObj::CommitTransaction()
 {
     unordered_set<MediaType> mediaTypeSet = {};
-    string uri = "";
+    string uri;
     unique_ptr<Metadata> data;
 
     // will begin a transaction in later pr
@@ -96,11 +100,11 @@ int32_t MediaScannerObj::CommitTransaction()
             scannedIds_.insert(data->GetFileId());
         } else {
             uri = mediaScannerDb_->InsertMetadata(*data);
-            scannedIds_.insert(ScannerUtils::GetIdFromUri(uri));
+            scannedIds_.insert(stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri)));
         }
 
-        // set uri for scan file callback
-        this->uri_ = uri;
+        // set uri for callback
+        uri_ = uri;
         mediaTypeSet.insert(data->GetFileMediaType());
     }
 
@@ -123,6 +127,21 @@ int32_t MediaScannerObj::AddToTransaction()
     return E_OK;
 }
 
+int32_t MediaScannerObj::Commit()
+{
+    if (data_->GetFileId() != FILE_ID_DEFAULT) {
+        uri_ = mediaScannerDb_->UpdateMetadata(*data_);
+    } else {
+        uri_ = mediaScannerDb_->InsertMetadata(*data_);
+    }
+
+    // notify change
+    mediaScannerDb_->NotifyDatabaseChange(data_->GetFileMediaType());
+    data_ = nullptr;
+
+    return E_OK;
+}
+
 int32_t MediaScannerObj::GetMediaInfo()
 {
     if (find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(),
@@ -138,7 +157,7 @@ int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId
     size_t len = ROOT_MEDIA_DIR.length();
     string parentPath = parent + SLASH_CHAR;
 
-    if (parentPath.substr(0, len).compare(ROOT_MEDIA_DIR) != 0) {
+    if (parentPath.find(ROOT_MEDIA_DIR) != 0) {
         MEDIA_ERR_LOG("invaid path %{private}s, not managed by scanner", path_.c_str());
         return E_DATA;
     }
@@ -175,6 +194,11 @@ int32_t MediaScannerObj::GetFileMetadata()
     }
 
     data_ = make_unique<Metadata>();
+    if (data_ == nullptr) {
+        MEDIA_ERR_LOG("failed to make unique ptr for metadata");
+        return E_DATA;
+    }
+
     int32_t err = mediaScannerDb_->GetFileBasicInfo(path_, data_);
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get file basic info");
@@ -182,8 +206,7 @@ int32_t MediaScannerObj::GetFileMetadata()
     }
 
     // may need isPending here
-    if (data_ != nullptr && data_->GetFileDateModified() == statInfo.st_mtime &&
-        data_->GetFileSize() == statInfo.st_size) {
+    if ((data_->GetFileDateModified() == statInfo.st_mtime) && (data_->GetFileSize() == statInfo.st_size)) {
         scannedIds_.insert(data_->GetFileId());
         return E_SCANNED;
     }
@@ -240,9 +263,9 @@ int32_t MediaScannerObj::ScanFileInternal()
         // no return here for fs metadata being updated or inserted
     }
 
-    err = AddToTransaction();
+    err = Commit();
     if (err != E_OK) {
-        MEDIA_ERR_LOG("failed to add to transaction err %{public}d", err);
+        MEDIA_ERR_LOG("failed to commit err %{public}d", err);
         return err;
     }
 
@@ -287,23 +310,27 @@ int32_t MediaScannerObj::ScanFileInTraversal(const string &path, const string &p
     return E_OK;
 }
 
-int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(string &albumPath, int32_t parentId, string albumName)
+int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_t parentId,
+    const string &albumName)
 {
-    struct stat statInfo { 0 };
+    struct stat statInfo;
     int32_t albumId = UNKNOWN_ID;
     bool update = false;
+
+    if (stat(albumPath.c_str(), &statInfo)) {
+        MEDIA_ERR_LOG("stat dir error %{public}d", errno);
+        return UNKNOWN_ID;
+    }
 
     if (albumMap_.find(albumPath) != albumMap_.end()) {
         Metadata albumInfo = albumMap_.at(albumPath);
         albumId = albumInfo.GetFileId();
 
-        if (stat(albumPath.c_str(), &statInfo) == ERR_SUCCESS) {
-            if (albumInfo.GetFileDateModified() == statInfo.st_mtime) {
-                scannedIds_.insert(albumId);
-                return albumId;
-            } else {
-                update = true;
-            }
+        if (albumInfo.GetFileDateModified() == statInfo.st_mtime) {
+            scannedIds_.insert(albumId);
+            return albumId;
+        } else {
+            update = true;
         }
     }
 
@@ -318,10 +345,10 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(string &albumPath, int32_t pare
     metadata.SetFileDateModified(statInfo.st_mtime);
 
     if (update) {
-            metadata.SetFileId(albumId);
-            albumId = mediaScannerDb_->UpdateAlbum(metadata);
+        metadata.SetFileId(albumId);
+        albumId = mediaScannerDb_->UpdateAlbum(metadata);
     } else {
-            albumId = mediaScannerDb_->InsertAlbum(metadata);
+        albumId = mediaScannerDb_->InsertAlbum(metadata);
     }
     scannedIds_.insert(albumId);
 
@@ -330,9 +357,9 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(string &albumPath, int32_t pare
 
 int32_t MediaScannerObj::CleanupDirectory()
 {
-    vector<int32_t> toBeDeletedIds = {};
-    unordered_set<MediaType> mediaTypeSet = {};
-    unordered_map<int32_t, MediaType> prevIdMap = {};
+    vector<int32_t> toBeDeletedIds;
+    unordered_set<MediaType> mediaTypeSet;
+    unordered_map<int32_t, MediaType> prevIdMap;
 
     prevIdMap = mediaScannerDb_->GetIdsFromFilePath(dir_);
     for (auto itr : prevIdMap) {
@@ -415,19 +442,20 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
             int32_t albumId = InsertOrUpdateAlbumInfo(currentPath, parentId, ent->d_name);
             if (albumId == UNKNOWN_ID) {
                 err = E_DATA;
-                break;
+                // might break in later pr for a rescan
+                continue;
             }
 
-            err = WalkFileTree(currentPath, albumId);
+            (void)WalkFileTree(currentPath, albumId);
         } else {
-            err = ScanFileInTraversal(currentPath, path, parentId);
+            (void)ScanFileInTraversal(currentPath, path, parentId);
         }
     }
 
     closedir(dirPath);
     FREE_MEMORY_AND_SET_NULL(fName);
 
-    return err;
+    return E_OK;
 }
 
 int32_t MediaScannerObj::ScanDirInternal()

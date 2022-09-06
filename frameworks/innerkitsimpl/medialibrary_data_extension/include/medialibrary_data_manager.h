@@ -23,7 +23,7 @@
 #include "context/context.h"
 #include "dir_asset.h"
 #include "distributed_kv_data_manager.h"
-#include "imedia_scanner_client.h"
+#include "imedia_scanner_callback.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
@@ -91,11 +91,14 @@ private:
 };
 
 // Scanner callback objects
-class ScanFileCallback : public IMediaScannerAppCallback {
+class ScanFileCallback : public IMediaScannerCallback {
 public:
     ScanFileCallback() = default;
     ~ScanFileCallback() = default;
-    void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override {};
+    int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override
+    {
+        return 0;
+    }
 };
 } // namespace Media
 } // namespace OHOS

@@ -16,26 +16,27 @@
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LOG_H_
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LOG_H_
 
-#ifndef MLOG_TAG
-#define MLOG_TAG "Common"
+#ifndef M_MLOG_TAG
+#define M_MLOG_TAG "Common"
 #endif
-#undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002B70
-#undef LOG_TAG
-#define LOG_TAG "MediaLibrary"
+
+#undef M_LOG_DOMAIN
+#define M_LOG_DOMAIN 0xD002B70
+
+#undef M_LOG_TAG
+#define M_LOG_TAG "MediaLibrary"
+
+#ifndef M_LOG_LABEL
+#define M_LOG_LABEL { LOG_CORE, M_LOG_DOMAIN, M_LOG_TAG }
+#endif
 
 #include "hilog/log.h"
 
 #include "media_library_tracer.h"
 
-static inline OHOS::HiviewDFX::HiLogLabel LogLable()
-{
-    return { LOG_CORE, LOG_DOMAIN, LOG_TAG };
-}
-
 #define MEDIA_HILOG(op, fmt, args...) \
     do {                                  \
-        op(LogLable(), MLOG_TAG ":{%{public}s:%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);  \
+        op(M_LOG_LABEL, M_MLOG_TAG ":{%{public}s:%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);  \
     } while (0)
 
 #define MEDIA_DEBUG_LOG(fmt, ...) MEDIA_HILOG(OHOS::HiviewDFX::HiLog::Debug, fmt, ##__VA_ARGS__)

@@ -35,9 +35,6 @@
 
 namespace OHOS {
 namespace Media {
-using namespace std;
-using namespace DataShare;
-
 class MediaScannerDb {
 public:
     MediaScannerDb();
@@ -45,31 +42,31 @@ public:
     void operator=(const MediaScannerDb &) = delete;
     ~MediaScannerDb() = default;
 
-    static unique_ptr<MediaScannerDb> GetDatabaseInstance();
-    bool DeleteMetadata(const vector<string> &idList);
+    static std::unique_ptr<MediaScannerDb> GetDatabaseInstance();
+    bool DeleteMetadata(const std::vector<std::string> &idList);
     void NotifyDatabaseChange(const MediaType mediaType);
     void SetRdbHelper(void);
 
-    string InsertMetadata(const Metadata &metadata);
-    string UpdateMetadata(const Metadata &metadata);
-    string GetFileDBUriFromPath(const string &path);
-    vector<string> BatchInsert(const vector<Metadata> &metadataList);
+    std::string InsertMetadata(const Metadata &metadata);
+    std::string UpdateMetadata(const Metadata &metadata);
+    std::string GetFileDBUriFromPath(const std::string &path);
+    std::vector<std::string> BatchInsert(const std::vector<Metadata> &metadataList);
 
-    int32_t UpdateMetadata(const vector<Metadata> &metadataList);
+    int32_t UpdateMetadata(const std::vector<Metadata> &metadataList);
     int32_t InsertAlbum(const Metadata &metadata);
     int32_t UpdateAlbum(const Metadata &metadata);
-    int32_t ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap);
-    unordered_map<int32_t, MediaType> GetIdsFromFilePath(const string &path);
+    int32_t ReadAlbums(const std::string &path, std::unordered_map<std::string, Metadata> &albumMap);
+    std::unordered_map<int32_t, MediaType> GetIdsFromFilePath(const std::string &path);
 
-    int32_t GetIdFromPath(const string &path);
-    int32_t GetFileBasicInfo(const string &path, unique_ptr<Metadata> &ptr);
+    int32_t GetIdFromPath(const std::string &path);
+    int32_t GetFileBasicInfo(const std::string &path, std::unique_ptr<Metadata> &ptr);
 
 private:
     std::string GetMediaTypeUri(MediaType mediaType);
-    int32_t FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
-        unique_ptr<Metadata> &ptr);
-    void ExtractMetaFromColumn(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
-                               unique_ptr<Metadata> &metadata, const std::string &col);
+    int32_t FillMetadata(const std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+        std::unique_ptr<Metadata> &ptr);
+    void ExtractMetaFromColumn(const std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+        std::unique_ptr<Metadata> &metadata, const std::string &col);
 };
 } // namespace Media
 } // namespace OHOS

@@ -72,25 +72,6 @@ string ScannerUtils::GetFileExtensionFromFileUri(const string &path)
     return "";
 }
 
-int32_t ScannerUtils::GetIdFromUri(const string &uri)
-{
-    int32_t mediaFileId = 0;
-    size_t index = 0;
-
-    if (!uri.empty()) {
-        index =  uri.find_last_of("/");
-        if (index != string::npos) {
-            mediaFileId = stoi(uri.substr(index + 1));
-        } else {
-            MEDIA_ERR_LOG("Id could not be obtained from the given uri");
-        }
-    } else {
-        MEDIA_ERR_LOG("Uri is empty");
-    }
-
-    return mediaFileId;
-}
-
 MediaType ScannerUtils::GetMediatypeFromMimetype(const string &mimetype)
 {
     MediaType mediaType = MEDIA_TYPE_FILE;
@@ -263,6 +244,7 @@ void ScannerUtils::InitSkipList()
     /*
      * 1. file path: in disk or hard code? path?
      * 2. call_once: no need to init again if it is really empty
+     * 3. add lock
      */
     ifstream skipFile(SKIPLIST_FILE_PATH.c_str());
     if (skipFile.is_open()) {

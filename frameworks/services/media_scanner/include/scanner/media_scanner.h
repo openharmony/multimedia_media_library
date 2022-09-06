@@ -40,7 +40,7 @@
 #include "metadata.h"
 #include "metadata_extractor.h"
 #include "scanner_utils.h"
-#include "imedia_scanner_operation_callback.h"
+#include "imedia_scanner_callback.h"
 #include "iremote_object.h"
 
 #define FREE_MEMORY_AND_SET_NULL(fName)      \
@@ -60,7 +60,7 @@ namespace Media {
  */
 class MediaScannerObj {
 public:
-    MediaScannerObj(std::string &path, const sptr<IRemoteObject> &callback, bool isDir);
+    MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback, bool isDir);
     virtual ~MediaScannerObj() = default;
 
     void Scan();
@@ -70,18 +70,19 @@ private:
     int32_t ScanFile();
     int32_t ScanFileInternal();
     int32_t GetFileMetadata();
-    int32_t GetParentDirInfo(const string &parent, int32_t parentId);
+    int32_t GetParentDirInfo(const std::string &parent, int32_t parentId);
     int32_t GetMediaInfo();
 
     // dir
     int32_t ScanDir();
     int32_t ScanDirInternal();
-    int32_t ScanFileInTraversal(const string &path, const string &parent, int32_t parentId);
+    int32_t ScanFileInTraversal(const std::string &path, const std::string &parent, int32_t parentId);
     int32_t WalkFileTree(const std::string &path, int32_t parentId);
     int32_t CleanupDirectory();
-    int32_t InsertOrUpdateAlbumInfo(std::string &albumPath, int32_t parentId, string albumName);
+    int32_t InsertOrUpdateAlbumInfo(const std::string &albumPath, int32_t parentId, const std::string &albumName);
 
-    // transaction
+    // database operation
+    int32_t Commit();
     int32_t AddToTransaction();
     int32_t CommitTransaction();
 
@@ -93,12 +94,12 @@ private:
     bool isDir_;
     std::string uri_;
     std::unique_ptr<MediaScannerDb> mediaScannerDb_;
-    const sptr<IRemoteObject> callback_;
+    const std::shared_ptr<IMediaScannerCallback> callback_;
 
-    unique_ptr<Metadata> data_;
+    std::unique_ptr<Metadata> data_;
     std::unordered_map<std::string, Metadata> albumMap_;
     std::unordered_set<int32_t> scannedIds_;
-    std::vector<unique_ptr<Metadata>> dataBuffer_;
+    std::vector<std::unique_ptr<Metadata>> dataBuffer_;
 };
 } // namespace Media
 } // namespace OHOS
