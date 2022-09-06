@@ -12,7 +12,9 @@
       "subsystem": "multimedia",
       "syscap": [
         "SystemCapability.Multimedia.MediaLibrary.Core",
-        "SystemCapability.Multimedia.MediaLibrary.DistributedCore"
+        "SystemCapability.Multimedia.MediaLibrary.DistributedCore",
+        "SystemCapability.FileManagement.UserFileManager.Core",
+        "SystemCapability.FileManagement.UserFileManager.DistributedCore" 
       ],
       "features": [],
       "adapted_system_type": [ "standard" ],
