@@ -1409,7 +1409,7 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
         // URI_FILE_ROOT
         if (mediaRootInfo.mimeType == DEFAULT_FILE_MIME_TYPE) {
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_FILE_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
-            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_FILE_ROOT fileList.size(): %{public}d", fileList.size());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_FILE_ROOT fileList.size(): %{public}d", (int)fileList.size());
             DisplayFileList(fileList);
             EXPECT_EQ(fileList.size(), URI_FILE_ROOT_FILE_SIZE);
             continue;
@@ -1418,7 +1418,7 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
         // URI_MEDIA_ROOT image
         if (mediaRootInfo.mimeType == DEFAULT_IMAGE_MIME_TYPE) {
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
-            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", fileList.size());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", (int)fileList.size());
             DisplayFileList(fileList);
             EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_IMAGE_SIZE);
         }
@@ -1426,7 +1426,7 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
         // URI_MEDIA_ROOT video
         if (mediaRootInfo.mimeType == DEFAULT_VIDEO_MIME_TYPE) {
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
-            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", fileList.size());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", (int)fileList.size());
             DisplayFileList(fileList);
             EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_VIDEO_SIZE);
         }
@@ -1434,7 +1434,7 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
         // URI_MEDIA_ROOT audio
         if (mediaRootInfo.mimeType == DEFAULT_AUDIO_MIME_TYPE) {
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
-            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", fileList.size());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", (int)fileList.size());
             DisplayFileList(fileList);
             EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_AUDIO_SIZE);
         }
@@ -1470,7 +1470,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_001, TestSize.Level0)
     vector<FileAccessFwk::FileInfo> rootFileList;
     auto ret = g_mediaFileExtHelper->ListFile(rootInfo, offset, maxCount, filter, rootFileList);
     EXPECT_EQ(ret, E_SUCCESS);
-    MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ROOT fileList.size(): %{public}d", rootFileList.size());
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ROOT fileList.size(): %{public}d", (int)rootFileList.size());
     DisplayFileList(rootFileList);
     EXPECT_EQ(rootFileList.size(), 4);
 
@@ -1621,7 +1621,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_002, TestSize.Level0)
     vector<FileAccessFwk::FileInfo> dirFileList;
     auto ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, maxCount, filter, dirFileList);
     EXPECT_EQ(ret, E_SUCCESS);
-    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_DIR fileList.size(): %{public}d", dirFileList.size());
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_DIR fileList.size(): %{public}d", (int)dirFileList.size());
     DisplayFileList(dirFileList);
     EXPECT_EQ(dirFileList.size(), DIR_RESULT);
 
@@ -1633,7 +1633,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_002, TestSize.Level0)
     vector<FileAccessFwk::FileInfo> albumFileList;
     ret = g_mediaFileExtHelper->ListFile(albumInfo, offset, maxCount, filter, albumFileList);
     EXPECT_EQ(ret, E_SUCCESS);
-    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_ALBUM fileList.size(): %{public}d", albumFileList.size());
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_ALBUM fileList.size(): %{public}d", (int)albumFileList.size());
     DisplayFileList(albumFileList);
     EXPECT_EQ(albumFileList.size(), ALBUM_RESULT);
 
