@@ -1224,14 +1224,27 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
     }
 
     int32_t retVal = close(fd);
-    if (retVal == E_SUCCESS) {
-        retVal = context->objectInfo->sDataShareHelper_->Insert(closeAssetUri, context->valuesBucket);
-        if (retVal == E_SUCCESS) {
-            return;
-        }
+    if (retVal != E_SUCCESS)  {
+        context->SaveError(retVal);
+        NAPI_ERR_LOG("call close failed %{public}d", retVal);
+        return;
     }
-    context->SaveError(retVal);
-    NAPI_ERR_LOG("File close asset failed %{public}d", retVal);
+
+    string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
+    if (!isValid) {
+        context->error = ERR_INVALID_OUTPUT;
+        NAPI_ERR_LOG("getting file uri is invalid");
+        return;
+    }
+    if (!MediaFileUtils::GetNetworkIdFromUri(fileUri).empty()) {
+        return;
+    }
+
+    retVal = context->objectInfo->sDataShareHelper_->Insert(closeAssetUri, context->valuesBucket);
+    if (retVal != E_SUCCESS) {
+        context->SaveError(retVal);
+        NAPI_ERR_LOG("File close asset failed %{public}d", retVal);
+    }
 }
 
 static void JSCloseCompleteCallback(napi_env env, napi_status status,

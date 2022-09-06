@@ -557,7 +557,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     shared_ptr<ResultSetBridge> queryResultSet;
     Size size;
     bool thumbnailQuery = ParseThumbnailInfo(uriString, size);
-    MEDIA_DEBUG_LOG("uriString = %{private}s, thumbnailQuery %{private}d, Rdb Verison %{private}d",
+    MEDIA_DEBUG_LOG("uriString = %{public}s, thumbnailQuery %{private}d, Rdb Verison %{private}d",
         uriString.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
     if (thumbnailQuery) {
         StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GenThumbnail");

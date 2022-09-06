@@ -113,7 +113,7 @@ string MediaLibraryDataManagerUtils::GetNetworkIdFromUri(const string &uri)
     if (tempUri.empty()) {
         return networkId;
     }
-    MEDIA_INFO_LOG("MediaLibraryDataManagerUtils::GetNetworkIdFromUri tempUri = %{private}s", tempUri.c_str());
+    MEDIA_INFO_LOG("tempUri = %{public}s", tempUri.c_str());
     pos = tempUri.find_first_of('/');
     if (pos == 0 || pos == string::npos) {
         return networkId;
