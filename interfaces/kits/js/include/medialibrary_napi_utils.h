@@ -321,9 +321,10 @@ public:
     static napi_value NapiAddStaticProps(napi_env env, napi_value exports,
         const std::vector<napi_property_descriptor> &staticProps);
 
-    static napi_status GetParamNumber(napi_env env, napi_value arg, uint32_t &value);
+    static napi_status GetUInt32(napi_env env, napi_value arg, uint32_t &value);
+    static napi_status GetInt32(napi_env env, napi_value arg, int32_t &value);
     static napi_status GetParamBool(napi_env env, napi_value arg, bool &result);
-    static napi_status GetParamNumberArray(napi_env env, napi_value arg, std::vector<uint32_t> &param);
+    static napi_status GetUInt32Array(napi_env env, napi_value arg, std::vector<uint32_t> &param);
     static napi_status GetParamFunction(napi_env env, napi_value arg, napi_ref &callbackRef);
     static napi_status GetParamString(napi_env env, napi_value arg, std::string &str);
     static napi_status GetParamStringPathMax(napi_env env, napi_value arg, std::string &str);
@@ -391,7 +392,7 @@ public:
         CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
             "Failed to get object info");
         /* Parse the first argument into typeMask */
-        CHECK_STATUS_RET(GetParamNumberArray(env, context->argv[ARGS_ZERO], context->mediaTypes),
+        CHECK_STATUS_RET(GetUInt32Array(env, context->argv[ARGS_ZERO], context->mediaTypes),
             "Failed to get param array");
         CHECK_COND_RET(context->mediaTypes.size() > 0, napi_invalid_arg, "Require at least one type");
         GenTypeMaskFromArray(context->mediaTypes, context->typeMask);
@@ -430,14 +431,14 @@ public:
 
     template <class AsyncContext>
     static napi_status ParseArgsNumberCallback(napi_env env, napi_callback_info info, AsyncContext &context,
-        uint32_t &value)
+        int32_t &value)
     {
         constexpr size_t MIN_ARGS = ARGS_ONE;
         constexpr size_t MAX_ARGS = ARGS_TWO;
         CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
             "Failed to get object info");
 
-        CHECK_STATUS_RET(GetParamNumber(env, context->argv[ARGS_ZERO], value), "Failed to get number argument");
+        CHECK_STATUS_RET(GetInt32(env, context->argv[ARGS_ZERO], value), "Failed to get number argument");
         CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
         return napi_ok;
     }

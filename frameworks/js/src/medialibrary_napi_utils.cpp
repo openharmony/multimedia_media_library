@@ -35,12 +35,21 @@ napi_value MediaLibraryNapiUtils::NapiAddStaticProps(napi_env env, napi_value ex
     return exports;
 }
 
-napi_status MediaLibraryNapiUtils::GetParamNumber(napi_env env, napi_value arg, uint32_t &value)
+napi_status MediaLibraryNapiUtils::GetUInt32(napi_env env, napi_value arg, uint32_t &value)
 {
     napi_valuetype valueType = napi_undefined;
     CHECK_STATUS_RET(napi_typeof(env, arg, &valueType), "Failed to get type");
     CHECK_COND_RET(valueType == napi_number, napi_number_expected, "Type is not as expected number");
-    CHECK_STATUS_RET(napi_get_value_uint32(env, arg, &value), "Failed to get param");
+    CHECK_STATUS_RET(napi_get_value_uint32(env, arg, &value), "Failed to get uint32 value");
+    return napi_ok;
+}
+
+napi_status MediaLibraryNapiUtils::GetInt32(napi_env env, napi_value arg, int32_t &value)
+{
+    napi_valuetype valueType = napi_undefined;
+    CHECK_STATUS_RET(napi_typeof(env, arg, &valueType), "Failed to get type");
+    CHECK_COND_RET(valueType == napi_number, napi_number_expected, "Type is not as expected number");
+    CHECK_STATUS_RET(napi_get_value_int32(env, arg, &value), "Failed to get int32 value");
     return napi_ok;
 }
 
@@ -53,7 +62,7 @@ napi_status MediaLibraryNapiUtils::GetParamBool(napi_env env, napi_value arg, bo
     return napi_ok;
 }
 
-napi_status MediaLibraryNapiUtils::GetParamNumberArray(napi_env env, napi_value arg, std::vector<uint32_t> &result)
+napi_status MediaLibraryNapiUtils::GetUInt32Array(napi_env env, napi_value arg, std::vector<uint32_t> &result)
 {
     uint32_t arraySize = 0;
     CHECK_COND_RET(IsArrayForNapiValue(env, arg, arraySize), napi_array_expected, "Failed to check array type");
@@ -61,7 +70,7 @@ napi_status MediaLibraryNapiUtils::GetParamNumberArray(napi_env env, napi_value 
         napi_value val = nullptr;
         CHECK_STATUS_RET(napi_get_element(env, arg, i, &val), "Failed to get element");
         uint32_t value = 0;
-        CHECK_STATUS_RET(GetParamNumber(env, val, value), "Failed to get element value");
+        CHECK_STATUS_RET(GetUInt32(env, val, value), "Failed to get element value");
         result.push_back(value);
     }
     return napi_ok;
