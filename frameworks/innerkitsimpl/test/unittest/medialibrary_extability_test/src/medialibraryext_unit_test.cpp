@@ -1663,5 +1663,186 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetRoots_test_001, TestSize.Level0)
     EXPECT_EQ(rootList.size(), 1);
     MEDIA_DEBUG_LOG("medialib_GetRoots_test_001 rootList.size() %{public}lu", (long)rootList.size());
 }
+
+bool InitScanFile(unique_ptr<FileAsset> &albumAsset)
+{
+    unique_ptr<FileAsset> tempAsset = nullptr;
+    unique_ptr<FileAsset> albumAsset2 = nullptr;
+    if (!CreateAlbum("ScanFile_test_001", g_pictures, albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateAlbum("ScanFile_test_001", albumAsset, albumAsset2)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_1.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_2.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_3.png", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_4.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_5.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_6.jpg", albumAsset2, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_7.png", albumAsset2, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_8.jpg", albumAsset2, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    return true;
+}
+
+/*
+ * Feature: MediaLibraryExtUnitTest
+ * Function: check scanfile
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription:
+ */
+HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_001, TestSize.Level0)
+{
+    if (!CheckEnvironment()) {
+        return;
+    }
+
+    unique_ptr<FileAsset> albumAsset = nullptr;
+    if (!InitScanFile(albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return;
+    }
+
+    int64_t offset = 0;
+    int64_t maxCount = 100;
+    DistributedFS::FileFilter filter;
+
+    // URI_DIR
+    FileAccessFwk::FileInfo dirInfo;
+    dirInfo.uri = albumAsset->GetUri();
+    dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
+    vector<FileAccessFwk::FileInfo> dirFileList;
+    auto ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, maxCount, filter, dirFileList);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(dirFileList.size(), 8);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList1;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, 5, filter, limitDirFileList1);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList1.size(), 5);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList2;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList2.size(), 3);
+}
+
+/*
+ * Feature: MediaLibraryExtUnitTest
+ * Function: check scanfile
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription:
+ */
+HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_002, TestSize.Level0)
+{
+    if (!CheckEnvironment()) {
+        return;
+    }
+    unique_ptr<FileAsset> albumAsset = nullptr;
+    if (!InitScanFile(albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return;
+    }
+    int64_t offset = 0;
+    int64_t maxCount = 100;
+    DistributedFS::FileFilter filter;
+
+    // URI_DIR
+    FileAccessFwk::FileInfo dirInfo;
+    dirInfo.uri = "datashare:///media/root";
+    dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
+    vector<FileAccessFwk::FileInfo> dirFileList;
+    auto ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, maxCount, filter, dirFileList);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(dirFileList.size(), 8);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList1;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, 5, filter, limitDirFileList1);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList1.size(), 5);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList2;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList2.size(), 3);
+}
+
+/*
+ * Feature: MediaLibraryExtUnitTest
+ * Function: check scanfile
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription:
+ */
+HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_003, TestSize.Level0)
+{
+    if (!CheckEnvironment()) {
+        return;
+    }
+
+    unique_ptr<FileAsset> albumAsset = nullptr;
+    if (!InitScanFile(albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return;
+    }
+
+    int64_t offset = 0;
+    int64_t maxCount = 100;
+    DistributedFS::FileFilter filter;
+    vector<string> suffix { ".jpg" };
+    filter.SetSuffix(suffix);
+    // URI_DIR
+    FileAccessFwk::FileInfo dirInfo;
+    dirInfo.uri = albumAsset->GetUri();
+    dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_003 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
+    vector<FileAccessFwk::FileInfo> dirFileList;
+    auto ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, maxCount, filter, dirFileList);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(dirFileList.size(), 6);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList1;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, 5, filter, limitDirFileList1);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList1.size(), 5);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList2;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList2.size(), 1);
+}
 } // namespace Media
 } // namespace OHOS
