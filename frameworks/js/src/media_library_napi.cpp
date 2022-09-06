@@ -920,24 +920,33 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
     predicates.SetWhereArgs({ std::to_string(id) });
 
-    Uri uri(MEDIALIBRARY_DATA_URI);
-    shared_ptr<DataShare::DataShareResultSet> resultSet;
+    string queryUri = MEDIALIBRARY_DATA_URI;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
+    Uri uri(queryUri);
+    auto helper = context->objectInfo->sDataShareHelper_;
+    CHECK_NULL_PTR_RETURN_VOID(helper, "Failed to get file asset by id, helper is nullptr");
 
-    if (context->objectInfo->sDataShareHelper_ != nullptr
-        && ((resultSet = context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns)) != nullptr)) {
-        // Create FetchResult object using the contents of resultSet
-        context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
-        context->fetchFileResult->networkId_ = networkId;
-        if (context->fetchFileResult != nullptr && context->fetchFileResult->GetCount() >= 1) {
-            unique_ptr<FileAsset> fileAsset = context->fetchFileResult->GetFirstObject();
-            CHECK_NULL_PTR_RETURN_VOID(fileAsset, "getFileAssetById: fileAsset is nullptr");
-            context->fileAsset = std::move(fileAsset);
-            Media::MediaType mediaType = context->fileAsset->GetMediaType();
-            string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
-            Uri modifyNotify(notifyUri);
-            context->objectInfo->sDataShareHelper_->NotifyChange(modifyNotify);
-        }
+    auto resultSet = helper->Query(uri, predicates, columns);
+    CHECK_NULL_PTR_RETURN_VOID(resultSet, "Failed to get file asset by id, query resultSet is nullptr");
+
+    // Create FetchResult object using the contents of resultSet
+    context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    CHECK_NULL_PTR_RETURN_VOID(context->fetchFileResult, "Failed to get file asset by id, fetchFileResult is nullptr");
+    context->fetchFileResult->networkId_ = networkId;
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        context->fetchFileResult->resultNapiType_ = context->resultNapiType;
     }
+    if (context->fetchFileResult->GetCount() < 1) {
+        NAPI_ERR_LOG("Failed to query file by id: %{public}d, query count is 0", id);
+        return;
+    }
+    unique_ptr<FileAsset> fileAsset = context->fetchFileResult->GetFirstObject();
+    CHECK_NULL_PTR_RETURN_VOID(fileAsset, "getFileAssetById: fileAsset is nullptr");
+    context->fileAsset = std::move(fileAsset);
+    Media::MediaType mediaType = context->fileAsset->GetMediaType();
+    string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+    Uri modifyNotify(notifyUri);
+    context->objectInfo->sDataShareHelper_->NotifyChange(modifyNotify);
 }
 
 static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void *data)
@@ -1176,7 +1185,9 @@ static void JSCreateAssetExecute(napi_env env, void *data)
         context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
         return;
     }
-    Uri createFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
+    string uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->typeMask);
+    Uri createFileUri(uri);
     int index = context->objectInfo->sDataShareHelper_->Insert(createFileUri, context->valuesBucket);
     if (index < 0) {
         context->SaveError(index);
@@ -3052,7 +3063,7 @@ static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
 
     /* Parse the first argument into mediaType */
     uint32_t mediaType = MEDIA_TYPE_ALL;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamNumber(env, context->argv[ARGS_ZERO], mediaType) == napi_ok,
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetUInt32(env, context->argv[ARGS_ZERO], mediaType) == napi_ok,
         "Failed to get parameter");
     /* Parse the second argument into displayName */
     string displayName;
@@ -3067,6 +3078,10 @@ static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
     context->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
     context->valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
     context->valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        vector<uint32_t> types = { mediaType };
+        MediaLibraryNapiUtils::GenTypeMaskFromArray(types, context->typeMask);
+    }
 
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
 
@@ -3107,8 +3122,8 @@ napi_value MediaLibraryNapi::UserFileMgrCreateAsset(napi_env env, napi_callback_
     napi_value ret = nullptr;
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-    NAPI_ASSERT(env, ParseArgsCreateAsset(env, info, asyncContext), "Failed to parse js args");
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    NAPI_ASSERT(env, ParseArgsCreateAsset(env, info, asyncContext), "Failed to parse js args");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrCreateAsset", JSCreateAssetExecute,
         JSCreateAssetCompleteCallback);
