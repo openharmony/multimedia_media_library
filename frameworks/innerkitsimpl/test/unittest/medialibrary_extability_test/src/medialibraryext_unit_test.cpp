@@ -15,14 +15,18 @@
 #define MLOG_TAG "FileExtUnitTest"
 
 #include "medialibraryext_unit_test.h"
-#include "iservice_registry.h"
-#include "media_library_manager.h"
-#include "file_access_helper.h"
+
 #include "datashare_helper.h"
-#include "media_log.h"
+#include "file_access_extension_info.h"
 #include "file_access_framework_errno.h"
+#include "file_access_helper.h"
+#include "file_filter.h"
+#include "iservice_registry.h"
 #include "medialibrary_errno.h"
+#include "media_library_manager.h"
+#include "media_log.h"
 #include "result_set_utils.h"
+#include "scanner_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -56,12 +60,12 @@ std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t system
     MEDIA_INFO_LOG("CreateDataShareHelper::CreateFileExtHelper ");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
-        MEDIA_INFO_LOG("CreateDataShareHelper Get system ability mgr failed.");
+        MEDIA_INFO_LOG("CreateFileExtHelper CreateDataShareHelper Get system ability mgr failed.");
         return nullptr;
     }
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
     while (remoteObj == nullptr) {
-        MEDIA_INFO_LOG("CreateDataShareHelper GetSystemAbility Service Failed.");
+        MEDIA_INFO_LOG("CreateFileExtHelper GetSystemAbility Service Failed.");
         return nullptr;
     }
     return DataShare::DataShareHelper::Creator(remoteObj, MEDIALIBRARY_DATA_URI);
@@ -72,18 +76,23 @@ std::shared_ptr<FileAccessFwk::FileAccessHelper> CreateFileExtHelper(int32_t sys
     MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateFileExtHelper ");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
-        MEDIA_INFO_LOG("DataMedialibraryRdbHelper Get system ability mgr failed.");
+        MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateFileExtHelper Get system ability mgr failed.");
         return nullptr;
     }
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
     while (remoteObj == nullptr) {
-        MEDIA_INFO_LOG("DataMedialibraryRdbHelper GetSystemAbility Service Failed.");
+        MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateFileExtHelper GetSystemAbility Service Failed.");
+        return nullptr;
+    }
+    vector<AAFwk::Want> wantVec;
+    auto ret = FileAccessFwk::FileAccessHelper::GetRegisteredFileAccessExtAbilityInfo(wantVec);
+    if (ret == FileAccessFwk::ERR_QUERY_EXTENSIONINFOS_FAIL) {
+        MEDIA_ERR_LOG("CreateFileExtHelper::GetRegisteredFileAccessExtAbilityInfo failed");
         return nullptr;
     }
     AppExecFwk::Want want;
     want.SetElementName("com.ohos.medialibrary.medialibrarydata", "FileExtensionAbility");
     vector<AAFwk::Want> wants {want};
-    FileAccessFwk::FileAccessHelper::GetRegisterFileAccessExtAbilityInfo();
     return FileAccessFwk::FileAccessHelper::Creator(remoteObj, wants);
 }
 
@@ -166,6 +175,17 @@ bool CreateFile(string displayName, unique_ptr<FileAsset> &parentAlbumAsset, uni
     return true;
 }
 
+void DeleteAllDataInDb()
+{
+    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
+    DataShare::DataSharePredicates predicates;
+    string selections = MEDIA_DATA_DB_ID + " <> 0 ";
+    predicates.SetWhereClause(selections);
+    int retVal = g_mediaDataShareHelper->Delete(deleteAssetUri, predicates);
+    MEDIA_INFO_LOG("SetUpTestCase Delete retVal: %{public}d", retVal);
+    EXPECT_EQ((retVal >= 0), true);
+}
+
 void CreateRootDir()
 {
     unique_ptr<FileAsset> rootAsset = nullptr;
@@ -178,7 +198,6 @@ void CreateRootDir()
 
 void MediaLibraryExtUnitTest::SetUpTestCase(void)
 {
-    MEDIA_DEBUG_LOG("SetUpTestCase invoked");
     g_mediaFileExtHelper = CreateFileExtHelper(g_uid);
     g_mediaDataShareHelper = CreateDataShareHelper(g_uid);
     if (g_mediaFileExtHelper == nullptr) {
@@ -189,16 +208,6 @@ void MediaLibraryExtUnitTest::SetUpTestCase(void)
         MEDIA_DEBUG_LOG("g_mediaDataShareHelper fail");
         return;
     }
-
-    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
-    DataShare::DataSharePredicates predicates;
-    string selections = MEDIA_DATA_DB_ID + " <> 0 ";
-    predicates.SetWhereClause(selections);
-    int retVal = g_mediaDataShareHelper->Delete(deleteAssetUri, predicates);
-    MEDIA_INFO_LOG("SetUpTestCase Delete retVal: %{public}d", retVal);
-    EXPECT_EQ((retVal >= 0), true);
-
-    CreateRootDir();
 }
 
 void MediaLibraryExtUnitTest::TearDownTestCase(void)
@@ -207,7 +216,12 @@ void MediaLibraryExtUnitTest::TearDownTestCase(void)
 }
 
 // SetUp:Execute before each test case
-void MediaLibraryExtUnitTest::SetUp() {}
+void MediaLibraryExtUnitTest::SetUp()
+{
+    system("rm -rf /storage/media/100/local/files/*");
+    DeleteAllDataInDb();
+    CreateRootDir();
+}
 
 void MediaLibraryExtUnitTest::TearDown(void) {}
 
@@ -291,10 +305,11 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_OpenFile_test_001, TestSize.Level0)
         return;
     }
     Uri uri(fileAsset->GetUri());
-    int fd = g_mediaFileExtHelper->OpenFile(uri, O_RDWR);
+    int fd = -1;
+    auto ret = g_mediaFileExtHelper->OpenFile(uri, O_RDWR, fd);
     MEDIA_DEBUG_LOG("medialib_OpenFile_test_001 uri: %{public}s, fd: %{public}d", uri.ToString().c_str(), fd);
-    EXPECT_EQ(fd != FileAccessFwk::ERR_IPC_ERROR, TRUE);
-    if (fd != FileAccessFwk::ERR_IPC_ERROR) {
+    EXPECT_EQ(ret == E_SUCCESS, true);
+    if (ret == E_SUCCESS) {
         char str[] = "Hello World!";
         int size_written = -1, size_read = -1, strLen = strlen(str);
         size_written = write(fd, str, strLen);
@@ -334,12 +349,13 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_OpenFile_test_002, TestSize.Level0)
     }
     Uri uri(g_pictures->GetUri());
     MEDIA_DEBUG_LOG("medialib_OpenFile_test_002 uri %{public}s", uri.ToString().c_str());
-    int fd = g_mediaFileExtHelper->OpenFile(uri, O_RDWR);
-    if (fd == FileAccessFwk::ERR_IPC_ERROR) {
+    int fd = -1;
+    auto ret = g_mediaFileExtHelper->OpenFile(uri, O_RDWR, fd);
+    if (ret == E_HAS_FS_ERROR) {
         MEDIA_DEBUG_LOG("medialib_OpenFile_test_002 OpenFile errno: %{public}d, errmsg: %{public}s",
             errno, strerror(errno));
     }
-    EXPECT_EQ(fd, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_HAS_FS_ERROR);
 }
 
 /*
@@ -397,7 +413,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateFile_test_002, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_002 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     int32_t ret = g_mediaFileExtHelper->CreateFile(parentUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_INVAVLID_DISPLAY_NAME);
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_002 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -420,7 +436,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateFile_test_003, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_003 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     int32_t ret = g_mediaFileExtHelper->CreateFile(parentUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_URI_INVALID);
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_003 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -443,7 +459,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateFile_test_004, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_004 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     int32_t ret = g_mediaFileExtHelper->CreateFile(parentUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_004 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -476,7 +492,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateFile_test_005, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_005 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     int32_t ret = g_mediaFileExtHelper->CreateFile(parentUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_FILE_EXIST);
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_005 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -493,7 +509,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Mkdir_test_001, TestSize.Level0)
     if (!CheckEnvironment()) {
         return;
     }
-    Uri parentUri(g_commonPrefix + g_rootUri);
+    Uri parentUri(g_commonPrefix + g_rootUri + MEDIALIBRARY_TYPE_FILE_URI);
     string displayName = "Audios";
     string dirPath = ROOT_MEDIA_DIR + displayName;
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_001 parentUri: %{public}s, displayName: %{public}s",
@@ -518,13 +534,13 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Mkdir_test_002, TestSize.Level0)
     if (!CheckEnvironment()) {
         return;
     }
-    Uri parentUri(g_distributedPrefix + g_rootUri);
+    Uri parentUri(g_distributedPrefix + g_rootUri + MEDIALIBRARY_TYPE_FILE_URI);
     string displayName = "Mkdir_test_002";
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_002 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     Uri newUri("");
     int32_t ret = g_mediaFileExtHelper->Mkdir(parentUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_002 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -541,13 +557,13 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Mkdir_test_003, TestSize.Level0)
     if (!CheckEnvironment()) {
         return;
     }
-    Uri parentUri(g_commonPrefix + g_rootUri);
+    Uri parentUri(g_commonPrefix + g_rootUri + MEDIALIBRARY_TYPE_FILE_URI);
     string displayName = "Mkdir_test_003";
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_003 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     Uri newUri("");
     int32_t ret = g_mediaFileExtHelper->Mkdir(parentUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_INVAVLID_DISPLAY_NAME);
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_003 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -595,7 +611,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Mkdir_test_005, TestSize.Level0)
         parentUri.ToString().c_str(), displayName.c_str());
     Uri newUri("");
     int32_t ret = g_mediaFileExtHelper->Mkdir(parentUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_URI_INVALID);
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_005 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -618,7 +634,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Mkdir_test_006, TestSize.Level0)
         parentUri.ToString().c_str(), displayName.c_str());
     Uri newUri("");
     int32_t ret = g_mediaFileExtHelper->Mkdir(parentUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_006 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -641,7 +657,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Mkdir_test_007, TestSize.Level0)
         parentUri.ToString().c_str(), displayName.c_str());
     Uri newUri("");
     int32_t ret = g_mediaFileExtHelper->Mkdir(parentUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_INVAVLID_DISPLAY_NAME);
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_007 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -669,7 +685,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Mkdir_test_008, TestSize.Level0)
         parentUri.ToString().c_str(), displayName.c_str());
     Uri newUri("");
     int32_t ret = g_mediaFileExtHelper->Mkdir(parentUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_FILE_EXIST);
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_008 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -720,7 +736,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Delete_test_002, TestSize.Level0)
     Uri sourceUri(g_distributedPrefix + g_commonUri);
     MEDIA_DEBUG_LOG("medialib_Delete_test_002 sourceUri %{public}s", sourceUri.ToString().c_str());
     int32_t ret = g_mediaFileExtHelper->Delete(sourceUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
     MEDIA_DEBUG_LOG("medialib_Delete_test_002 ret: %{public}d", ret);
 }
 
@@ -840,7 +856,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_003, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_003 sourceUri: %{public}s, targetUri: %{public}s",
         sourceUri.ToString().c_str(), targetUri.ToString().c_str());
     int32_t ret = g_mediaFileExtHelper->Move(sourceUri, targetUri, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_URI_INVALID);
     MEDIA_DEBUG_LOG("medialib_Move_test_003 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -868,7 +884,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_004, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_004 sourceUri: %{public}s, targetUri: %{public}s",
         sourceUri.ToString().c_str(), targetUri.ToString().c_str());
     int32_t ret = g_mediaFileExtHelper->Move(sourceUri, targetUri, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
     MEDIA_DEBUG_LOG("medialib_Move_test_004 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -896,7 +912,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_005, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_005 sourceUri: %{public}s, targetUri: %{public}s",
         sourceUri.ToString().c_str(), targetUri.ToString().c_str());
     int32_t ret = g_mediaFileExtHelper->Move(sourceUri, targetUri, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_URI_INVALID);
     MEDIA_DEBUG_LOG("medialib_Move_test_005 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -924,7 +940,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_006, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_006 sourceUri: %{public}s, targetUri: %{public}s",
         sourceUri.ToString().c_str(), targetUri.ToString().c_str());
     int32_t ret = g_mediaFileExtHelper->Move(sourceUri, targetUri, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
     MEDIA_DEBUG_LOG("medialib_Move_test_006 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -962,7 +978,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_007, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_007 sourceUri: %{public}s, targetUri: %{public}s",
         sourceUri.ToString().c_str(), targetUri.ToString().c_str());
     int32_t ret = g_mediaFileExtHelper->Move(sourceUri, targetUri, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_FILE_EXIST);
     MEDIA_DEBUG_LOG("medialib_Move_test_007 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -1036,7 +1052,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_009, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_009 sourceUri: %{public}s, targetUri: %{public}s",
         sourceUri.ToString().c_str(), targetUri.ToString().c_str());
     int32_t ret = g_mediaFileExtHelper->Move(sourceUri, targetUri, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_CHECK_MEDIATYPE_FAIL);
     MEDIA_DEBUG_LOG("medialib_Move_test_009 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -1125,7 +1141,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_011, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_011 sourceUri: %{public}s, targetUri: %{public}s",
         sourceUri.ToString().c_str(), targetUri.ToString().c_str());
     int32_t ret = g_mediaFileExtHelper->Move(sourceUri, targetUri, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_DENIED_MOVE);
     MEDIA_DEBUG_LOG("medialib_Move_test_011 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -1223,7 +1239,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_003, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_003 sourceUri: %{public}s, displayName: %{public}s",
         sourceUri.ToString().c_str(), displayName.c_str());
     int32_t ret = g_mediaFileExtHelper->Rename(sourceUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_URI_INVALID);
     MEDIA_DEBUG_LOG("medialib_Rename_test_003 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -1246,7 +1262,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_004, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_004 sourceUri: %{public}s, displayName: %{public}s",
         sourceUri.ToString().c_str(), displayName.c_str());
     int32_t ret = g_mediaFileExtHelper->Rename(sourceUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
     MEDIA_DEBUG_LOG("medialib_Rename_test_004 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -1274,7 +1290,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_005, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_005 sourceUri: %{public}s, displayName: %{public}s",
         sourceUri.ToString().c_str(), displayName.c_str());
     int32_t ret = g_mediaFileExtHelper->Rename(sourceUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_INVAVLID_DISPLAY_NAME);
     MEDIA_DEBUG_LOG("medialib_Rename_test_005 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -1307,7 +1323,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_006, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_006 sourceUri: %{public}s, displayName: %{public}s",
         sourceUri.ToString().c_str(), displayName.c_str());
     int32_t ret = g_mediaFileExtHelper->Rename(sourceUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_FILE_EXIST);
     MEDIA_DEBUG_LOG("medialib_Rename_test_006 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -1335,8 +1351,98 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_007, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_007 sourceUri: %{public}s, displayName: %{public}s",
         sourceUri.ToString().c_str(), displayName.c_str());
     int32_t ret = g_mediaFileExtHelper->Rename(sourceUri, displayName, newUri);
-    EXPECT_EQ(ret, FileAccessFwk::ERR_IPC_ERROR);
+    EXPECT_EQ(ret, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
     MEDIA_DEBUG_LOG("medialib_Rename_test_007 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+}
+
+void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
+{
+    for (auto t : fileList) {
+        MEDIA_DEBUG_LOG("medialib_ListFile_test_001 file.uri: %s, file.fileName: %s, file.mode: %d, file.mimeType: %s",
+            t.uri.c_str(), t.fileName.c_str(), t.mode, t.mimeType.c_str());
+    }
+}
+
+bool InitListFileTest1(unique_ptr<FileAsset> &albumAsset)
+{
+    if (!CreateAlbum("ListFile_test_001", g_pictures, albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    unique_ptr<FileAsset> tempAsset = nullptr;
+    if (!CreateAlbum("ListFile_test_001", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ListFile_test_001_1.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ListFile_test_001_2.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ListFile_test_001_3.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ListFile_test_001_1.mp4", g_videos, tempAsset, MEDIA_TYPE_VIDEO)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    return true;
+}
+
+void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int offset, int maxCount)
+{
+    const size_t URI_FILE_ROOT_FILE_SIZE = 5;
+    const size_t URI_MEDIA_ROOT_IMAGE_SIZE = 1;
+    const size_t URI_MEDIA_ROOT_VIDEO_SIZE = 1;
+    const size_t URI_MEDIA_ROOT_AUDIO_SIZE = 0;
+    DistributedFS::FileFilter filter;
+    // URI_FILE_ROOT & URI_MEDIA_ROOT
+    for (auto mediaRootInfo : rootFileList) {
+        vector<FileAccessFwk::FileInfo> fileList;
+        auto ret = g_mediaFileExtHelper->ListFile(mediaRootInfo, offset, maxCount, filter, fileList);
+        EXPECT_EQ(ret, E_SUCCESS);
+
+        // URI_FILE_ROOT
+        if (mediaRootInfo.mimeType == DEFAULT_FILE_MIME_TYPE) {
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_FILE_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_FILE_ROOT fileList.size(): %{public}d",
+                (int)fileList.size());
+            DisplayFileList(fileList);
+            EXPECT_EQ(fileList.size(), URI_FILE_ROOT_FILE_SIZE);
+            continue;
+        }
+
+        // URI_MEDIA_ROOT image
+        if (mediaRootInfo.mimeType == DEFAULT_IMAGE_MIME_TYPE) {
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d",
+                (int)fileList.size());
+            DisplayFileList(fileList);
+            EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_IMAGE_SIZE);
+        }
+
+        // URI_MEDIA_ROOT video
+        if (mediaRootInfo.mimeType == DEFAULT_VIDEO_MIME_TYPE) {
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d",
+                (int)fileList.size());
+            DisplayFileList(fileList);
+            EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_VIDEO_SIZE);
+        }
+
+        // URI_MEDIA_ROOT audio
+        if (mediaRootInfo.mimeType == DEFAULT_AUDIO_MIME_TYPE) {
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d",
+                (int)fileList.size());
+            DisplayFileList(fileList);
+            EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_AUDIO_SIZE);
+        }
+    }
 }
 
 /*
@@ -1352,12 +1458,140 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_001, TestSize.Level0)
     if (!CheckEnvironment()) {
         return;
     }
-    Uri selectUri(g_commonPrefix + g_rootUri);
-    MEDIA_DEBUG_LOG("medialib_ListFile_test_001 selectUri %{public}s", selectUri.ToString().c_str());
-    vector<FileAccessFwk::FileInfo> fileList = g_mediaFileExtHelper->ListFile(selectUri);
-    // Camera, Videos, Pictures, Audios, Documents, Download
-    EXPECT_EQ(fileList.size(), 6);
-    MEDIA_DEBUG_LOG("medialib_ListFile_test_001 fileList.size() %{public}lu", (long)fileList.size());
+    unique_ptr<FileAsset> albumAsset = nullptr;
+    if (!InitListFileTest1(albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return;
+    }
+    const int64_t offset = 0;
+    const int64_t maxCount = 100;
+    DistributedFS::FileFilter filter;
+
+    // URI_ROOT
+    FileAccessFwk::FileInfo rootInfo;
+    rootInfo.uri = g_commonPrefix + g_rootUri;
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ROOT uri: %{public}s", rootInfo.uri.c_str());
+    vector<FileAccessFwk::FileInfo> rootFileList;
+    auto ret = g_mediaFileExtHelper->ListFile(rootInfo, offset, maxCount, filter, rootFileList);
+    EXPECT_EQ(ret, E_SUCCESS);
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ROOT fileList.size(): %{public}d", (int)rootFileList.size());
+    DisplayFileList(rootFileList);
+    EXPECT_EQ(rootFileList.size(), 4);
+
+    ListFileFromRootResult(rootFileList, offset, maxCount);
+}
+
+bool InitListFileTest2(unique_ptr<FileAsset> &albumAsset)
+{
+    if (!CreateAlbum("ListFile_test_002", g_pictures, albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    unique_ptr<FileAsset> tempAsset = nullptr;
+    if (!CreateAlbum("ListFile_test_002", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateAlbum("ListFile_002", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ListFile_test_002.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ListFile_test_002_1.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ListFile_test_002.png", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ListFile_002.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ListFile_002_1.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ListFile_002.png", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    return true;
+}
+
+void ListFileTestLimit(FileAccessFwk::FileInfo dirInfo)
+{
+    const int64_t OFFSET_1 = 0;
+    const int64_t OFFSET_2 = 5;
+    const int64_t MAX_COUNT_1 = 5;
+    const int64_t MAX_COUNT_2 = 100;
+    vector<pair<int64_t, int64_t>> limits = { make_pair(OFFSET_1, MAX_COUNT_1),
+        make_pair(OFFSET_2, MAX_COUNT_1), make_pair(OFFSET_1, MAX_COUNT_2), make_pair(OFFSET_2, MAX_COUNT_2) };
+    const int DIR_RESULT = 8;
+    const int ALBUM_RESULT = 6;
+
+    DistributedFS::FileFilter filter;
+    for (auto limit : limits) {
+        // URI_DIR
+        dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
+        vector<FileAccessFwk::FileInfo> dirFileList;
+        auto ret = g_mediaFileExtHelper->ListFile(dirInfo, limit.first, limit.second, filter, dirFileList);
+        EXPECT_EQ(ret, E_SUCCESS);
+        EXPECT_EQ(dirFileList.size(), min((DIR_RESULT - limit.first), limit.second));
+        // URI_ALBUM
+        dirInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE;
+        vector<FileAccessFwk::FileInfo> albumFileList;
+        ret = g_mediaFileExtHelper->ListFile(dirInfo, limit.first, limit.second, filter, albumFileList);
+        EXPECT_EQ(ret, E_SUCCESS);
+        EXPECT_EQ(albumFileList.size(), min((ALBUM_RESULT - limit.first), limit.second));
+    }
+}
+
+void ListFileTestFilter(FileAccessFwk::FileInfo dirInfo)
+{
+    const int FILTER_COUNT = 3;
+    const string SUFFIX_1 = ".jpg";
+    const string SUFFIX_2 = ".png";
+    const int32_t JPG_COUNT = 4;
+    const int32_t PNG_COUNT = 2;
+    const vector<int32_t> DIR_RESULT = {JPG_COUNT, PNG_COUNT, JPG_COUNT + PNG_COUNT};
+    const vector<int32_t> ALBUM_RESULT = {JPG_COUNT, PNG_COUNT, JPG_COUNT + PNG_COUNT};
+    vector<DistributedFS::FileFilter> filters;
+    DistributedFS::FileFilter tempFilter;
+    tempFilter.SetHasFilter(true);
+    tempFilter.SetSuffix({ SUFFIX_1 });
+    filters.push_back(tempFilter);
+    tempFilter.SetSuffix({ SUFFIX_2 });
+    filters.push_back(tempFilter);
+    tempFilter.SetSuffix({ SUFFIX_1, SUFFIX_2 });
+    filters.push_back(tempFilter);
+
+    const int64_t offset = 0;
+    const int64_t maxCount = 100;
+    for (size_t i = 0; i < FILTER_COUNT; i++) {
+        MEDIA_ERR_LOG("medialib_ListFile_test_002:: filter.hasFilter: %d, filter.suffix: %s",
+            (int)filters[i].GetHasFilter(), filters[i].GetSuffix()[0].c_str());
+        // URI_DIR
+        dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
+        vector<FileAccessFwk::FileInfo> dirFileList;
+        auto ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, maxCount, filters[i], dirFileList);
+        MEDIA_ERR_LOG("medialib_ListFile_test_002:: dirFileList.size(): %d", (int)dirFileList.size());
+        DisplayFileList(dirFileList);
+        EXPECT_EQ(ret, E_SUCCESS);
+        EXPECT_EQ(dirFileList.size(), DIR_RESULT[i]);
+        // URI_ALBUM
+        dirInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE;
+        vector<FileAccessFwk::FileInfo> albumFileList;
+        ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, maxCount, filters[i], albumFileList);
+        MEDIA_ERR_LOG("medialib_ListFile_test_002:: albumFileList.size(): %d", (int)albumFileList.size());
+        DisplayFileList(albumFileList);
+        EXPECT_EQ(ret, E_SUCCESS);
+        EXPECT_EQ(albumFileList.size(), ALBUM_RESULT[i]);
+    }
 }
 
 /*
@@ -1373,33 +1607,48 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_002, TestSize.Level0)
     if (!CheckEnvironment()) {
         return;
     }
+
     unique_ptr<FileAsset> albumAsset = nullptr;
-    if (!CreateAlbum("ListFile_test_002", g_pictures, albumAsset)) {
+    if (!InitListFileTest2(albumAsset)) {
         EXPECT_EQ(g_createAssetFailed, true);
         return;
     }
-    unique_ptr<FileAsset> tempAsset = nullptr;
-    if (!CreateAlbum("ListFile_test_002", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
-        return;
-    }
-    if (!CreateFile("ListFile_test_002_1.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
-        return;
-    }
-    if (!CreateFile("ListFile_test_002_2.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
-        return;
-    }
-    if (!CreateFile("ListFile_test_002_3.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
-        return;
-    }
-    Uri selectUri(albumAsset->GetUri());
-    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 selectUri %{public}s", selectUri.ToString().c_str());
-    vector<FileAccessFwk::FileInfo> fileList = g_mediaFileExtHelper->ListFile(selectUri);
-    EXPECT_EQ(fileList.size(), 4);
-    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 fileList.size() %{public}lu", (long)fileList.size());
+
+    const int32_t DIR_RESULT = 8;
+    const int32_t ALBUM_RESULT = 6;
+    const int64_t offset = 0;
+    const int64_t maxCount = 100;
+    DistributedFS::FileFilter filter;
+
+    // URI_DIR
+    FileAccessFwk::FileInfo dirInfo;
+    dirInfo.uri = albumAsset->GetUri();
+    dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
+    vector<FileAccessFwk::FileInfo> dirFileList;
+    auto ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, maxCount, filter, dirFileList);
+    EXPECT_EQ(ret, E_SUCCESS);
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_DIR fileList.size(): %{public}d", (int)dirFileList.size());
+    DisplayFileList(dirFileList);
+    EXPECT_EQ(dirFileList.size(), DIR_RESULT);
+
+    // URI_ALBUM
+    FileAccessFwk::FileInfo albumInfo;
+    albumInfo.uri = albumAsset->GetUri();
+    albumInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE;
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_ALBUM uri: %{public}s", albumInfo.uri.c_str());
+    vector<FileAccessFwk::FileInfo> albumFileList;
+    ret = g_mediaFileExtHelper->ListFile(albumInfo, offset, maxCount, filter, albumFileList);
+    EXPECT_EQ(ret, E_SUCCESS);
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_ALBUM fileList.size(): %{public}d", (int)albumFileList.size());
+    DisplayFileList(albumFileList);
+    EXPECT_EQ(albumFileList.size(), ALBUM_RESULT);
+
+    // test limit and filter
+    FileAccessFwk::FileInfo fileInfo;
+    fileInfo.uri = albumAsset->GetUri();
+    ListFileTestLimit(fileInfo);
+    ListFileTestFilter(fileInfo);
 }
 
 /*
@@ -1415,9 +1664,230 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetRoots_test_001, TestSize.Level0)
     if (!CheckEnvironment()) {
         return;
     }
-    vector<FileAccessFwk::DeviceInfo> deviceList = g_mediaFileExtHelper->GetRoots();
-    EXPECT_EQ(deviceList.size(), 1);
-    MEDIA_DEBUG_LOG("medialib_GetRoots_test_001 deviceList.size() %{public}lu", (long)deviceList.size());
+    vector<FileAccessFwk::RootInfo> rootList;
+    auto ret = g_mediaFileExtHelper->GetRoots(rootList);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(rootList.size(), 1);
+    MEDIA_DEBUG_LOG("medialib_GetRoots_test_001 rootList.size() %{public}lu", (long)rootList.size());
+}
+
+bool InitScanFile(unique_ptr<FileAsset> &albumAsset)
+{
+    unique_ptr<FileAsset> tempAsset = nullptr;
+    unique_ptr<FileAsset> albumAsset2 = nullptr;
+    if (!CreateAlbum("ScanFile_test_001", g_pictures, albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateAlbum("ScanFile_test_001", albumAsset, albumAsset2)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_1.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_2.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_3.png", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_4.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_5.jpg", albumAsset, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_6.jpg", albumAsset2, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_7.png", albumAsset2, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    if (!CreateFile("ScanFile_test_001_8.jpg", albumAsset2, tempAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return false;
+    }
+    return true;
+}
+
+/*
+ * Feature: MediaLibraryExtUnitTest
+ * Function: check scanfile
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription:
+ */
+HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_001, TestSize.Level0)
+{
+    if (!CheckEnvironment()) {
+        return;
+    }
+
+    unique_ptr<FileAsset> albumAsset = nullptr;
+    if (!InitScanFile(albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return;
+    }
+
+    int64_t offset = 0;
+    int64_t maxCount = 100;
+    DistributedFS::FileFilter filter;
+
+    // URI_DIR
+    FileAccessFwk::FileInfo dirInfo;
+    dirInfo.uri = albumAsset->GetUri();
+    dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
+    vector<FileAccessFwk::FileInfo> dirFileList;
+    auto ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, maxCount, filter, dirFileList);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(dirFileList.size(), 8);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList1;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, 5, filter, limitDirFileList1);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList1.size(), 5);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList2;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList2.size(), 3);
+}
+
+/*
+ * Feature: MediaLibraryExtUnitTest
+ * Function: check scanfile
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription:
+ */
+HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_002, TestSize.Level0)
+{
+    if (!CheckEnvironment()) {
+        return;
+    }
+    unique_ptr<FileAsset> albumAsset = nullptr;
+    if (!InitScanFile(albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return;
+    }
+    int64_t offset = 0;
+    int64_t maxCount = 100;
+    DistributedFS::FileFilter filter;
+
+    // URI_DIR
+    FileAccessFwk::FileInfo dirInfo;
+    dirInfo.uri = "datashare:///media/root";
+    dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
+    vector<FileAccessFwk::FileInfo> dirFileList;
+    auto ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, maxCount, filter, dirFileList);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(dirFileList.size(), 8);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList1;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, 5, filter, limitDirFileList1);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList1.size(), 5);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList2;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList2.size(), 3);
+}
+
+/*
+ * Feature: MediaLibraryExtUnitTest
+ * Function: check scanfile
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription:
+ */
+HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_003, TestSize.Level0)
+{
+    if (!CheckEnvironment()) {
+        return;
+    }
+
+    unique_ptr<FileAsset> albumAsset = nullptr;
+    if (!InitScanFile(albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return;
+    }
+
+    int64_t offset = 0;
+    int64_t maxCount = 100;
+    DistributedFS::FileFilter filter;
+    vector<string> suffix { ".jpg" };
+    filter.SetSuffix(suffix);
+    // URI_DIR
+    FileAccessFwk::FileInfo dirInfo;
+    dirInfo.uri = albumAsset->GetUri();
+    dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
+    MEDIA_DEBUG_LOG("medialib_ListFile_test_003 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
+    vector<FileAccessFwk::FileInfo> dirFileList;
+    auto ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, maxCount, filter, dirFileList);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(dirFileList.size(), 6);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList1;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, 5, filter, limitDirFileList1);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList1.size(), 5);
+
+    vector<FileAccessFwk::FileInfo> limitDirFileList2;
+    ret = g_mediaFileExtHelper->ScanFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(limitDirFileList2.size(), 1);
+}
+
+/*
+ * Feature: MediaLibraryExtUnitTest
+ * Function: check access
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription:
+ */
+HWTEST_F(MediaLibraryExtUnitTest, medialib_Access_test_001, TestSize.Level0)
+{
+    if (!CheckEnvironment()) {
+        return;
+    }
+    unique_ptr<FileAsset> albumAsset = nullptr;
+    if (!CreateAlbum("Access_test_001", g_pictures, albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return;
+    }
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!CreateFile("Access_test_001.jpg", albumAsset, fileAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return;
+    }
+    bool isExist = false;
+    Uri uri(fileAsset->GetUri());
+    auto ret = g_mediaFileExtHelper->Access(uri, isExist);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(isExist, true);
+
+    // delete the file
+    g_mediaFileExtHelper->Delete(uri);
+
+    isExist = false;
+    ret = g_mediaFileExtHelper->Access(uri, isExist);
+    EXPECT_EQ(ret, E_INVALID_URI);
+    EXPECT_EQ(isExist, false);
 }
 } // namespace Media
 } // namespace OHOS

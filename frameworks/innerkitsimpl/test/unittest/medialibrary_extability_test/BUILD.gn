@@ -40,12 +40,14 @@ ohos_unittest("medialibrary_extability_unittest") {
     "//utils/system/safwk/native/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
+    "${MEDIA_LIB_SERVICES_DIR}/media_scanner/include/scanner",
     "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include",
     "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
     "${MEDIA_LIB_BASE_DIR}/interfaces/innerkits/native/include",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include",
     "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
     "//third_party/json/include",
+    "//foundation/distributeddatamgr/distributedfile/interfaces/kits/js/src/common",
   ]
 
   sources = [
