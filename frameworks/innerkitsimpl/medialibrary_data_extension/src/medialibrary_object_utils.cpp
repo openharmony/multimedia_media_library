@@ -453,7 +453,7 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
     }
     if (srcFilePath.compare(dstFilePath) == 0) {
         MEDIA_DEBUG_LOG("Skip modify the file, the path of new file is the same as old");
-        return E_SUCCESS;
+        return E_FILE_EXIST;
     }
 
     MediaLibraryDirOperations dirOprn;
