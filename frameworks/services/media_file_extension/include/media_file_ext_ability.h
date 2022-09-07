@@ -45,6 +45,7 @@ public:
     int GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList) override;
     int Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri) override;
     int Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri) override;
+    int Access(const Uri &uri, bool &isExist) override;
 private:
      AbilityRuntime::JsRuntime& jsRuntime_;
 };

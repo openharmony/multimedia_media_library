@@ -254,5 +254,10 @@ int MediaFileExtAbility::Rename(const Uri &sourceFileUri, const string &displayN
 {
     return MediaFileExtentionUtils::Rename(sourceFileUri, displayName, newFileUri);
 }
+
+int MediaFileExtAbility::Access(const Uri &uri, bool &isExist)
+{
+    return MediaFileExtentionUtils::Access(uri, isExist);
+}
 } // Media
 } // OHOS
