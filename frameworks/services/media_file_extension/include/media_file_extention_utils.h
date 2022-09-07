@@ -17,6 +17,7 @@
 
 #include "abs_shared_result_set.h"
 #include "file_access_extension_info.h"
+#include "file_filter.h"
 #include "uri.h"
 
 namespace OHOS {
@@ -26,21 +27,24 @@ const int32_t ROOT_PARENT_ID = 0;
 // device virtual root node
 static const std::string MEDIALIBRARY_ROOT = "/root";
 static const std::string MEDIALIBRARY_LOCAL_DEVICE_NAME = "LOCAL";
-// fileextension fileinfo mode
-static const std::string MEDIA_FILE_EXT_MODE_FOLDER = "folder";
-static const std::string MEDIA_FILE_EXT_MODE_FILE = "file";
+// mimetype prefix
+const std::string DEFAULT_AUDIO_MIME_TYPE_PREFIX = "audio/";
+const std::string DEFAULT_VIDEO_MIME_TYPE_PREFIX = "video/";
+const std::string DEFAULT_IMAGE_MIME_TYPE_PREFIX = "image/";
+const std::string DEFAULT_FILE_MIME_TYPE_PREFIX = "file/";
 enum MediaFileUriType {
     URI_ROOT,
-    URI_ALBUM,
-    URI_FILE,
+    URI_MEDIA_ROOT,
+    URI_FILE_ROOT,
     URI_DIR,
+    URI_ALBUM,
 };
 class MediaFileExtentionUtils {
 public:
     static bool CheckUriValid(const std::string &uri);
     static bool CheckDistributedUri(const std::string &uri);
     static int32_t CheckUriSupport(const std::string &uri);
-    static MediaFileUriType ResolveUri(const std::string &uri);
+    static int32_t ResolveUri(const FileAccessFwk::FileInfo &fileInfo, MediaFileUriType &uriType);
     static bool CheckValidDirName(const std::string &displayName);
     static int32_t CheckMkdirValid(MediaFileUriType uriType, const std::string &parentUriStr,
         const std::string &displayName);
@@ -50,8 +54,12 @@ public:
         const std::string &networkId);
     static int32_t Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri);
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
-    static int32_t ListFile(const std::string &selectUri, std::vector<FileAccessFwk::FileInfo> &fileList);
-    static void GetRoots(std::vector<FileAccessFwk::DeviceInfo> &deviceList);
+    static int32_t ListFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
+        const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
+    static int32_t ScanFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
+        const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
+    static int32_t GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList);
+    static int Access(const Uri &uri, bool &isExist);
 };
 } // Media
 } // OHOS

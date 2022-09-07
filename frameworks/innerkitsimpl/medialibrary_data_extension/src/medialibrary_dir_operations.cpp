@@ -142,8 +142,8 @@ bool MediaLibraryDirOperations::CheckMediaTypeMatchExtension(int mediaType, stri
     mediaTypeAudioIndex = DIR_ALL_AUDIO_CONTAINER_TYPE.find(extensions);
     switch (mediaType) {
         case MEDIA_TYPE_FILE:
-            if (mediaTypeImageIndex == string::npos
-                && mediaTypeVideoIndex == string::npos && mediaTypeAudioIndex == string::npos) {
+            if (extensions.empty() || (mediaTypeImageIndex == string::npos
+                && mediaTypeVideoIndex == string::npos && mediaTypeAudioIndex == string::npos)) {
                 return true;
             } else {
                 MEDIA_ERR_LOG("Check CheckMediaTypeMatchExtension file failed");
@@ -288,7 +288,7 @@ int32_t MediaLibraryDirOperations::CheckDirInfoUtil(const ValuesBucket &values,
         return E_CHECK_MEDIATYPE_FAIL;
     }
     if (mediaType == MEDIA_TYPE_FILE) {
-        if (!CheckFileExtension(dirQuerySetMap, extension)) {
+        if (!extension.empty() && !CheckFileExtension(dirQuerySetMap, extension)) {
             return E_CHECK_EXTENSION_FAIL;
         }
     } else {
@@ -324,8 +324,8 @@ int32_t MediaLibraryDirOperations::HandleFMSTrashDir(const ValuesBucket &values,
     return smartAlbumMapOprn.HandleAddAssetOperations(TRASH_ALBUM_ID_VALUES, dirId, smartAlbumMapQueryData);
 }
 
-int32_t MediaLibraryDirOperations::GetRootDirAndExtension(string &displayName,
-                                                          string &relativePath, ValuesBucket &outValues)
+int32_t MediaLibraryDirOperations::GetRootDirAndExtension(string &displayName, string &relativePath,
+                                                          int mediaType, ValuesBucket &outValues)
 {
     string extension, rootDir;
     int32_t errorCode = E_FAIL;
@@ -333,13 +333,13 @@ int32_t MediaLibraryDirOperations::GetRootDirAndExtension(string &displayName,
         return E_FILE_NAME_INVALID;
     }
     size_t displayNameIndex = displayName.find(".");
+    if ((displayNameIndex == string::npos) && (mediaType != MEDIA_TYPE_FILE)) {
+        MEDIA_ERR_LOG("get displayNameIndex failed");
+        return E_FILE_NAME_INVALID;
+    }
     if (displayNameIndex != string::npos) {
         extension = displayName.substr(displayNameIndex);
         MEDIA_INFO_LOG("extension = %{public}s", extension.c_str());
-    } else {
-        MEDIA_ERR_LOG("get displayNameIndex failed");
-        errorCode = E_FILE_NAME_INVALID;
-        return errorCode;
     }
     size_t dirIndex = relativePath.find("/");
     if (dirIndex != string::npos) {
@@ -419,7 +419,7 @@ int32_t MediaLibraryDirOperations::HandleCheckDirExtension(const ValuesBucket &v
         return E_SUCCESS;
     }
     ValuesBucket GetDirAndExtensionValues;
-    int errorCode = GetRootDirAndExtension(displayName, relativePath, GetDirAndExtensionValues);
+    int errorCode = GetRootDirAndExtension(displayName, relativePath, mediaType, GetDirAndExtensionValues);
     if (errorCode != E_SUCCESS) {
         MEDIA_ERR_LOG("GetDirAndExtension fail");
         return errorCode;

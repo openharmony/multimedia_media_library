@@ -243,7 +243,7 @@ static const std::string ABLUM_TABLE = "album";
 static const std::string ABLUM_VIEW_NAME = "Album";
 static const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + " AS SELECT count( " + FILE_TABLE + "."
-                                      + MEDIA_DATA_DB_DATE_TRASHED + "= 0 OR NULL) AS "
+                                      + MEDIA_DATA_DB_DATE_TRASHED + " = 0 OR NULL) AS "
                                       + MEDIA_DATA_DB_COUNT + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_RELATIVE_PATH + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AS "
@@ -257,7 +257,8 @@ static const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_MODIFIED + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_THUMBNAIL + ", "
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID
+                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID + ", "
+                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_IS_TRASH
                                       + " FROM Files " + FILE_TABLE + ", "
                                       + " Files " + ABLUM_TABLE
                                       + " WHERE "
@@ -273,7 +274,7 @@ static const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
 static const std::string DISTRIBUTED_ABLUM_COLUMNS = "SELECT count( " + FILE_TABLE + "."
-                                               + MEDIA_DATA_DB_DATE_TRASHED + "= 0 OR NULL) AS "
+                                               + MEDIA_DATA_DB_DATE_TRASHED + " = 0 OR NULL) AS "
                                                + MEDIA_DATA_DB_COUNT + ", "
                                                + ABLUM_TABLE + "." + MEDIA_DATA_DB_RELATIVE_PATH + ", "
                                                + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AS "
@@ -287,7 +288,8 @@ static const std::string DISTRIBUTED_ABLUM_COLUMNS = "SELECT count( " + FILE_TAB
                                                + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_MODIFIED + ", "
                                                + ABLUM_TABLE + "." + MEDIA_DATA_DB_THUMBNAIL + ", "
                                                + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID + ", "
+                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_IS_TRASH;
 static const std::string DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY = " WHERE "
                                                         + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID + " = "
                                                         + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AND "

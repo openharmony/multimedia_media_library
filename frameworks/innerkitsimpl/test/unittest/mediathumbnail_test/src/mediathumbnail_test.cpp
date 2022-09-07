@@ -58,12 +58,12 @@ std::shared_ptr<AppExecFwk::DataAbilityHelper> CreateDataHelper(
     MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateDataHelper ");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
-        MEDIA_INFO_LOG("DataMedialibraryRdbHelper Get system ability mgr failed.");
+        MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateDataHelper Get system ability mgr failed.");
         return nullptr;
     }
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
     while (remoteObj == nullptr) {
-        MEDIA_INFO_LOG("DataMedialibraryRdbHelper GetSystemAbility Service Failed.");
+        MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateDataHelper GetSystemAbility Service Failed.");
         return nullptr;
     }
     return AppExecFwk::DataAbilityHelper::Creator(remoteObj, dataAbilityUri);

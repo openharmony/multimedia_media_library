@@ -147,13 +147,14 @@ int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd
 
     string strFileId = cmd.GetOprnFileId();
     if (strFileId.empty()) {
-        MEDIA_ERR_LOG("Get id from uri or valuesBucket failed!");
+        MEDIA_ERR_LOG("MediaLibraryFileOperations::ModifyFileOperation Get id from uri or valuesBucket failed!");
         return E_INVALID_FILEID;
     }
 
     string srcPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strFileId);
     if (srcPath.empty()) {
-        MEDIA_ERR_LOG("Get path of id %{private}s from database file!", strFileId.c_str());
+        MEDIA_ERR_LOG("MediaLibraryFileOperations::ModifyFileOperation Get path of id %{private}s from database file!",
+            strFileId.c_str());
         return E_INVALID_FILEID;
     }
 
@@ -176,13 +177,14 @@ int32_t MediaLibraryFileOperations::DeleteFileOperation(MediaLibraryCommand &cmd
 {
     string strFileId = cmd.GetOprnFileId();
     if (strFileId.empty()) {
-        MEDIA_ERR_LOG("Get id from uri or valuesBucket failed!");
+        MEDIA_ERR_LOG("MediaLibraryFileOperations::DeleteFileOperation Get id from uri or valuesBucket failed!");
         return E_INVALID_FILEID;
     }
 
     string srcPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strFileId);
     if (srcPath.empty()) {
-        MEDIA_ERR_LOG("Get path of id %{private}s from database file!", strFileId.c_str());
+        MEDIA_ERR_LOG("MediaLibraryFileOperations::DeleteFileOperation Get path of id %{private}s from database file!",
+            strFileId.c_str());
         return E_INVALID_FILEID;
     }
 
