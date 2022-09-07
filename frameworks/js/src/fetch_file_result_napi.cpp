@@ -25,7 +25,6 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 thread_local napi_ref FetchFileResultNapi::sConstructor_ = nullptr;
-thread_local FetchResult *FetchFileResultNapi::sFetchFileResult_ = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> FetchFileResultNapi::sMediaDataHelper = nullptr;
 
 thread_local napi_ref FetchFileResultNapi::userFileMgrConstructor_ = nullptr;
@@ -100,14 +99,10 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
             obj->env_ = env;
 
             if (sFetchFileResult_ != nullptr) {
-                unique_ptr<FetchResult> fetchRes = make_unique<FetchResult>(
+                unique_ptr<FetchResult<FileAsset>> fetchRes = make_unique<FetchResult<FileAsset>>(
                     move(sFetchFileResult_->resultset_));
                 obj->fetchFileResult_ = std::move(fetchRes);
-                obj->fetchFileResult_->isContain_ = sFetchFileResult_->isContain_;
-                obj->fetchFileResult_->isClosed_ = sFetchFileResult_->isClosed_;
-                obj->fetchFileResult_->count_ = sFetchFileResult_->count_;
-                obj->fetchFileResult_->networkId_ = sFetchFileResult_->networkId_;
-                obj->fetchFileResult_->resultNapiType_ = sFetchFileResult_->resultNapiType_;
+                obj->fetchFileResult_->SetInfo(sFetchFileResult_);
                 obj->abilityHelper_ = sMediaDataHelper;
                 fetchRes.release();
             } else {
@@ -129,20 +124,21 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
     return result;
 }
 
-napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult &fileResult,
+template<class T>
+napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<FetchResult<T>> fileResult,
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
 
     napi_value constructor;
-    napi_ref constructorRef = (fileResult.resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) ?
+    napi_ref constructorRef = (fileResult->resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) ?
         (userFileMgrConstructor_) : (sConstructor_);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
     napi_value result = nullptr;
     sMediaDataHelper = abilityHelper;
-    sFetchFileResult_ = &fileResult;
+    sFetchFileResult_ = move(fileResult);
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
     sFetchFileResult_ = nullptr;
     return result;
@@ -153,7 +149,7 @@ std::shared_ptr<DataShare::DataShareHelper> FetchFileResultNapi::GetMediaDataHel
     return abilityHelper_;
 }
 
-std::shared_ptr<FetchResult> FetchFileResultNapi::GetFetchFileResult() const
+std::shared_ptr<FetchResult<FileAsset>> FetchFileResultNapi::GetFetchFileResult() const
 {
     return fetchFileResult_;
 }
@@ -523,7 +519,7 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
     delete context;
 }
 
-std::shared_ptr<FetchResult> FetchFileResultNapi::GetFetchResultObject()
+std::shared_ptr<FetchResult<FileAsset>> FetchFileResultNapi::GetFetchResultObject()
 {
     return fetchFileResult_;
 }
@@ -617,5 +613,8 @@ napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
     NAPI_DEBUG_LOG("JSClose OUT!");
     return jsResult;
 }
+
+template napi_value FetchFileResultNapi::CreateFetchFileResult<FileAsset>(napi_env env,
+    unique_ptr<FetchResult<FileAsset>> fileResult, std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
 } // namespace Media
 } // namespace OHOS

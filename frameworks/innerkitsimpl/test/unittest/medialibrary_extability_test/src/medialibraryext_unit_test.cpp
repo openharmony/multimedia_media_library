@@ -109,7 +109,7 @@ bool GetFileAsset(const int index, unique_ptr<FileAsset> &fileAsset)
         MEDIA_ERR_LOG("GetFileAsset::resultSet == nullptr");
         return false;
     }
-    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     if (fetchFileResult->GetCount() <= 0) {
         MEDIA_ERR_LOG("GetFileAsset::GetCount <= 0");
         return false;

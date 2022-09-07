@@ -113,7 +113,7 @@ struct AlbumNapiAsyncContext : public NapiError {
     std::string selection;
     std::vector<std::string> selectionArgs;
     std::string order;
-    std::unique_ptr<FetchResult> fetchResult;
+    std::unique_ptr<FetchResult<FileAsset>> fetchResult;
     std::string networkId;
     std::string uri;
 

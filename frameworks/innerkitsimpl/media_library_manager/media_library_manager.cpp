@@ -52,9 +52,9 @@ static void AppendFetchOptionSelection(std::string &selection, const std::string
     }
 }
 
-unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptions &fetchOps)
+unique_ptr<FetchResult<FileAsset>> MediaLibraryManager::GetFileAssets(const MediaFetchOptions &fetchOps)
 {
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
+    unique_ptr<FetchResult<FileAsset>> fetchFileResult = nullptr;
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
     MediaFetchOptions fetchOptions = const_cast<MediaFetchOptions &>(fetchOps);
@@ -75,7 +75,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetFileAssets(const MediaFetchOptio
         MEDIA_ERR_LOG("Resultset retrieval failure caused Query operation to fail");
     } else {
         // Create FetchResult object using the contents of resultSet
-        fetchFileResult = make_unique<FetchResult>(move(resultSet));
+        fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
         if (fetchFileResult == nullptr) {
             MEDIA_ERR_LOG("No fetch file result found!");
         }
@@ -320,9 +320,9 @@ int32_t MediaLibraryManager::DeleteAlbum(const int32_t albumId)
     return retVal;
 }
 
-unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t albumId, const MediaFetchOptions &option)
+unique_ptr<FetchResult<FileAsset>> MediaLibraryManager::GetAlbumFileAssets(const int32_t albumId, const MediaFetchOptions &option)
 {
-    unique_ptr<FetchResult> fetchFileResult = nullptr;
+    unique_ptr<FetchResult<FileAsset>> fetchFileResult = nullptr;
     DataSharePredicates predicates;
     MediaFetchOptions fetchOptions = const_cast<MediaFetchOptions &>(option);
 
@@ -342,7 +342,7 @@ unique_ptr<FetchResult> MediaLibraryManager::GetAlbumFileAssets(const int32_t al
         auto resultSet =
             sDataShareHelper_->Query(uri, predicates, columns);
 
-        fetchFileResult = make_unique<FetchResult>(resultSet);
+        fetchFileResult = make_unique<FetchResult<FileAsset>>(resultSet);
         if (fetchFileResult == nullptr) {
             MEDIA_ERR_LOG("Failed to obtain fetch file result");
         }
