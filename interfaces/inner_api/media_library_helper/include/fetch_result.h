@@ -18,6 +18,7 @@
 
 #include <variant>
 #include "abs_shared_result_set.h"
+#include "album_asset.h"
 #include "datashare_result_set.h"
 #include "file_asset.h"
 #include "medialibrary_type_const.h"
@@ -41,9 +42,10 @@ enum ResultSetDataType {
  * @since 1.0
  * @version 1.0
  */
+template <class T>
 class FetchResult {
 public:
-    explicit FetchResult(const std::shared_ptr<DataShare::DataShareResultSet>& resultset);
+    explicit FetchResult(const std::shared_ptr<DataShare::DataShareResultSet> &resultset);
     FetchResult();
     virtual ~FetchResult();
 
@@ -52,12 +54,13 @@ public:
     bool IsContain();
     bool IsClosed();
     bool IsAtLastRow();
-    std::unique_ptr<FileAsset> GetObjectAtPosition(int32_t index);
-    std::unique_ptr<FileAsset> GetFirstObject();
-    std::unique_ptr<FileAsset> GetObjectFromRdb(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, int idx);
-    std::unique_ptr<FileAsset> GetNextObject();
-    std::unique_ptr<FileAsset> GetLastObject();
-    std::unique_ptr<FileAsset> GetObject();
+    void SetInfo(unique_ptr<FetchResult<T>> &fetch);
+    std::unique_ptr<T> GetObjectAtPosition(int32_t index);
+    std::unique_ptr<T> GetFirstObject();
+    std::unique_ptr<T> GetObjectFromRdb(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, int idx);
+    std::unique_ptr<T> GetNextObject();
+    std::unique_ptr<T> GetLastObject();
+    std::unique_ptr<T> GetObject();
 
     bool isContain_;
     bool isClosed_;
@@ -67,10 +70,12 @@ public:
     std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
 
 private:
-    std::unique_ptr<FileAsset> GetObject(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     std::variant<int32_t, int64_t, std::string> GetRowValFromColumn(std::string columnName,
         ResultSetDataType dataType, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     int32_t GetFileCount(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
+    void SetFileAsset(FileAsset *fileAsset, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    void SetAlbumAsset(AlbumAsset* albumData, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
 };
 } // namespace Media
 } // namespace OHOS

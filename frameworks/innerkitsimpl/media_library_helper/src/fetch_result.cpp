@@ -15,6 +15,7 @@
 #define MLOG_TAG "FetchResult"
 
 #include "fetch_result.h"
+#include "album_asset.h"
 #include "media_log.h"
 
 using namespace std;
@@ -27,7 +28,8 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-FetchResult::FetchResult(const shared_ptr<DataShare::DataShareResultSet>& resultset)
+template <class T>
+FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &resultset)
 {
     count_ = 0;
     if (resultset != nullptr) {
@@ -40,34 +42,51 @@ FetchResult::FetchResult(const shared_ptr<DataShare::DataShareResultSet>& result
     resultNapiType_ = ResultNapiType::TYPE_NAPI_MAX;
 }
 
+template <class T>
 // empty constructor napi
-FetchResult::FetchResult()
+FetchResult<T>::FetchResult()
     : isContain_(false), isClosed_(false), count_(0), resultNapiType_(ResultNapiType::TYPE_NAPI_MAX),
       resultset_(nullptr) {}
 
-FetchResult::~FetchResult() {}
+template <class T>
+FetchResult<T>::~FetchResult() {}
 
-void FetchResult::Close()
+template <class T>
+void FetchResult<T>::Close()
 {
     isClosed_ = true;
 }
 
-bool FetchResult::IsContain()
+template <class T>
+bool FetchResult<T>::IsContain()
 {
     return isContain_;
 }
 
-int32_t FetchResult::GetCount()
+template <class T>
+int32_t FetchResult<T>::GetCount()
 {
     return count_;
 }
 
-bool FetchResult::IsClosed()
+template <class T>
+bool FetchResult<T>::IsClosed()
 {
     return isClosed_;
 }
 
-unique_ptr<FileAsset> FetchResult::GetObjectAtPosition(int32_t index)
+template <class T>
+void FetchResult<T>::SetInfo(unique_ptr<FetchResult<T>> &fetch)
+{
+    isContain_ = fetch->isContain_;
+    isClosed_ = fetch->isClosed_;
+    count_ = fetch->count_;
+    networkId_ = fetch->networkId_;
+    resultNapiType_ = fetch->resultNapiType_;
+}
+
+template <class T>
+unique_ptr<T> FetchResult<T>::GetObjectAtPosition(int32_t index)
 {
     if ((index < 0) || (index > (count_ - 1)) || (resultset_ == nullptr)) {
         MEDIA_ERR_LOG("index not proper or rs is null");
@@ -82,7 +101,8 @@ unique_ptr<FileAsset> FetchResult::GetObjectAtPosition(int32_t index)
     return GetObject();
 }
 
-unique_ptr<FileAsset> FetchResult::GetFirstObject()
+template <class T>
+unique_ptr<T> FetchResult<T>::GetFirstObject()
 {
     if ((resultset_ == nullptr) || (resultset_->GoToFirstRow() != 0)) {
         MEDIA_ERR_LOG("resultset is null|first row failed");
@@ -92,7 +112,8 @@ unique_ptr<FileAsset> FetchResult::GetFirstObject()
     return GetObject();
 }
 
-unique_ptr<FileAsset> FetchResult::GetNextObject()
+template <class T>
+unique_ptr<T> FetchResult<T>::GetNextObject()
 {
     if ((resultset_ == nullptr) || (resultset_->GoToNextRow() != 0)) {
         MEDIA_ERR_LOG("resultset is null|go to next row failed");
@@ -102,7 +123,8 @@ unique_ptr<FileAsset> FetchResult::GetNextObject()
     return GetObject();
 }
 
-unique_ptr<FileAsset> FetchResult::GetLastObject()
+template <class T>
+unique_ptr<T> FetchResult<T>::GetLastObject()
 {
     if ((resultset_ == nullptr) || (resultset_->GoToLastRow() != 0)) {
         MEDIA_ERR_LOG("resultset is null|go to last row failed");
@@ -112,7 +134,8 @@ unique_ptr<FileAsset> FetchResult::GetLastObject()
     return GetObject();
 }
 
-bool FetchResult::IsAtLastRow()
+template <class T>
+bool FetchResult<T>::IsAtLastRow()
 {
     if (resultset_ == nullptr) {
         MEDIA_ERR_LOG("resultset null");
@@ -135,7 +158,8 @@ variant<int32_t, int64_t, string> ReturnDefaultOnError(string errMsg, ResultSetD
         return 0;
 }
 
-variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumn(string columnName, ResultSetDataType dataType,
+template <class T>
+variant<int32_t, int64_t, string> FetchResult<T>::GetRowValFromColumn(string columnName, ResultSetDataType dataType,
     shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
     int index;
@@ -231,7 +255,8 @@ static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask
     }
 }
 
-int32_t FetchResult::GetFileCount(const shared_ptr<DataShare::DataShareResultSet> &resultSet)
+template<class T>
+int32_t FetchResult<T>::GetFileCount(const shared_ptr<DataShare::DataShareResultSet> &resultSet)
 {
     int32_t count = 1;
     if (resultSet) {
@@ -244,13 +269,9 @@ int32_t FetchResult::GetFileCount(const shared_ptr<DataShare::DataShareResultSet
     return count;
 }
 
-unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+template<class T>
+void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("FetchResult::GetObject");
-
-    unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
-
     fileAsset->SetId(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_ID, TYPE_INT32, resultSet)));
     fileAsset->SetCount(GetFileCount(resultset_));
 
@@ -320,17 +341,31 @@ unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResu
     }
 
     fileAsset->SetUri(uri);
+}
 
+template<class T>
+unique_ptr<T> FetchResult<T>::GetObject(shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("FetchResult::GetObject");
+    unique_ptr<T> fileAsset = make_unique<T>();
+    if (std::is_same<T, FileAsset>::value) {
+        SetFileAsset(reinterpret_cast<FileAsset *>(fileAsset.get()), resultSet);
+    } else {
+        MEDIA_ERR_LOG("GetObject failed");
+    }
     return fileAsset;
 }
 
-unique_ptr<FileAsset> FetchResult::GetObject()
+template <class T>
+unique_ptr<T> FetchResult<T>::GetObject()
 {
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = nullptr;
     return GetObject(resultSet);
 }
 
-unique_ptr<FileAsset> FetchResult::GetObjectFromRdb(shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, int idx)
+template <class T>
+unique_ptr<T> FetchResult<T>::GetObjectFromRdb(shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, int idx)
 {
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != 0) || (resultSet->GoTo(idx))) {
         MEDIA_ERR_LOG("resultset is null|first row failed");
@@ -339,5 +374,7 @@ unique_ptr<FileAsset> FetchResult::GetObjectFromRdb(shared_ptr<NativeRdb::AbsSha
 
     return GetObject(resultSet);
 }
+
+template class FetchResult<FileAsset>;
 }  // namespace Media
 }  // namespace OHOS

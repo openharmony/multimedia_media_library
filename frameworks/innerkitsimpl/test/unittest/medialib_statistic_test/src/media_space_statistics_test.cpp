@@ -205,7 +205,7 @@ std::unique_ptr<FileAsset> GetFile(int mediaTypeId)
     resultSet = helper->Query(queryFileUri, predicates, columns);
     EXPECT_NE((resultSet == nullptr), true);
 
-    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
 
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetLastObject();
@@ -234,7 +234,7 @@ void ClearFile()
     resultSet = helper->Query(queryFileUri, predicates, columns);
     EXPECT_NE((resultSet == nullptr), true);
 
-    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     EXPECT_NE((fetchFileResult->GetCount() < 0), true);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     while (fileAsset != nullptr) {

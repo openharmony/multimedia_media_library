@@ -129,7 +129,7 @@ bool GetFileAsset(unique_ptr<FileAsset> &fileAsset, bool isAlbum, string display
     }
 
     // Create FetchResult object using the contents of resultSet
-    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     if (fetchFileResult->GetCount() <= 0) {
         MEDIA_ERR_LOG("GetFileAsset::GetCount <= 0");
         return false;

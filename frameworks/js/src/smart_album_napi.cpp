@@ -874,7 +874,7 @@ static void GetFileAssetsNative(napi_env env, void *data)
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
         context->objectInfo->GetMediaDataHelper()->Query(uri, predicates, columns);
 
-    context->fetchResult = std::make_unique<FetchResult>(move(resultSet));
+    context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->resultNapiType_ = context->resultNapiType;
 }
 
@@ -888,7 +888,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status, vo
 
     napi_value fetchRes = nullptr;
     if (context->fetchResult != nullptr) {
-        fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult),
+        fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchResult),
                                                               context->objectInfo->sMediaDataHelper);
         if (fetchRes == nullptr) {
             NAPI_ERR_LOG("Failed to get file asset napi object");
