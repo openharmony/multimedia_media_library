@@ -1409,7 +1409,8 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
         // URI_FILE_ROOT
         if (mediaRootInfo.mimeType == DEFAULT_FILE_MIME_TYPE) {
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_FILE_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
-            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_FILE_ROOT fileList.size(): %{public}d", (int)fileList.size());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_FILE_ROOT fileList.size(): %{public}d",
+                (int)fileList.size());
             DisplayFileList(fileList);
             EXPECT_EQ(fileList.size(), URI_FILE_ROOT_FILE_SIZE);
             continue;
@@ -1418,7 +1419,8 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
         // URI_MEDIA_ROOT image
         if (mediaRootInfo.mimeType == DEFAULT_IMAGE_MIME_TYPE) {
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
-            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", (int)fileList.size());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d",
+                (int)fileList.size());
             DisplayFileList(fileList);
             EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_IMAGE_SIZE);
         }
@@ -1426,7 +1428,8 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
         // URI_MEDIA_ROOT video
         if (mediaRootInfo.mimeType == DEFAULT_VIDEO_MIME_TYPE) {
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
-            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", (int)fileList.size());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d",
+                (int)fileList.size());
             DisplayFileList(fileList);
             EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_VIDEO_SIZE);
         }
@@ -1434,7 +1437,8 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
         // URI_MEDIA_ROOT audio
         if (mediaRootInfo.mimeType == DEFAULT_AUDIO_MIME_TYPE) {
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT uri: %{public}s", mediaRootInfo.uri.c_str());
-            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d", (int)fileList.size());
+            MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d",
+                (int)fileList.size());
             DisplayFileList(fileList);
             EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_AUDIO_SIZE);
         }
@@ -1556,18 +1560,21 @@ void ListFileTestFilter(FileAccessFwk::FileInfo dirInfo)
     const int32_t PNG_COUNT = 2;
     const vector<int32_t> DIR_RESULT = {JPG_COUNT, PNG_COUNT, JPG_COUNT + PNG_COUNT};
     const vector<int32_t> ALBUM_RESULT = {JPG_COUNT, PNG_COUNT, JPG_COUNT + PNG_COUNT};
-    vector<DistributedFS::FileFilter> filters(FILTER_COUNT);
-    filters[0].SetSuffix( {SUFFIX_1} );
-    filters[0].SetHasFilter(true);
-    filters[1].SetSuffix( {SUFFIX_2} );
-    filters[1].SetHasFilter(true);
-    filters[2].SetSuffix( {SUFFIX_1, SUFFIX_2} );
-    filters[2].SetHasFilter(true);
+    vector<DistributedFS::FileFilter> filters;
+    DistributedFS::FileFilter tempFilter;
+    tempFilter.SetHasFilter(true);
+    tempFilter.SetSuffix({ SUFFIX_1 });
+    filters.push_back(tempFilter);
+    tempFilter.SetSuffix({ SUFFIX_2 });
+    filters.push_back(tempFilter);
+    tempFilter.SetSuffix({ SUFFIX_1, SUFFIX_2 });
+    filters.push_back(tempFilter);
 
     const int64_t offset = 0;
     const int64_t maxCount = 100;
     for (size_t i = 0; i < FILTER_COUNT; i++) {
-        MEDIA_ERR_LOG("medialib_ListFile_test_002:: filter.hasFilter: %d, filter.suffix: %s", (int)filters[i].GetHasFilter(), filters[i].GetSuffix()[0].c_str());
+        MEDIA_ERR_LOG("medialib_ListFile_test_002:: filter.hasFilter: %d, filter.suffix: %s",
+            (int)filters[i].GetHasFilter(), filters[i].GetSuffix()[0].c_str());
         // URI_DIR
         dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
         vector<FileAccessFwk::FileInfo> dirFileList;
@@ -1843,6 +1850,44 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_003, TestSize.Level0)
     ret = g_mediaFileExtHelper->ScanFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(limitDirFileList2.size(), 1);
+}
+
+/*
+ * Feature: MediaLibraryExtUnitTest
+ * Function: check access
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription:
+ */
+HWTEST_F(MediaLibraryExtUnitTest, medialib_Access_test_001, TestSize.Level0)
+{
+    if (!CheckEnvironment()) {
+        return;
+    }
+    unique_ptr<FileAsset> albumAsset = nullptr;
+    if (!CreateAlbum("Access_test_001", g_pictures, albumAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return;
+    }
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!CreateFile("Access_test_001.jpg", albumAsset, fileAsset)) {
+        EXPECT_EQ(g_createAssetFailed, true);
+        return;
+    }
+    bool isExist = false;
+    Uri uri(fileAsset->GetUri());
+    auto ret = g_mediaFileExtHelper->Access(uri, isExist);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(isExist, true);
+
+    // delete the file
+    g_mediaFileExtHelper->Delete(uri);
+
+    isExist = false;
+    ret = g_mediaFileExtHelper->Access(uri, isExist);
+    EXPECT_EQ(ret, E_INVALID_URI);
+    EXPECT_EQ(isExist, false);
 }
 } // namespace Media
 } // namespace OHOS
