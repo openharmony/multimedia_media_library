@@ -129,7 +129,7 @@ const std::string MEDIA_DATA_IMAGE_GPS_LATITUDE = "GPSLatitude";
 const std::string MEDIA_DATA_IMAGE_GPS_LONGITUDE = "GPSLongitude";
 const std::string MEDIA_DATA_IMAGE_GPS_LATITUDE_REF = "GPSLatitudeRef";
 const std::string MEDIA_DATA_IMAGE_GPS_LONGITUDE_REF = "GPSLongitudeRef";
-const std::string MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL = "DateTimeOriginal";
+const std::string MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL = "DateTimeOriginalForMedia";
 const std::string MEDIA_DATA_IMAGE_EXPOSURE_TIME = "ExposureTime";
 const std::string MEDIA_DATA_IMAGE_F_NUMBER = "FNumber";
 const std::string MEDIA_DATA_IMAGE_ISO_SPEED_RATINGS = "ISOSpeedRatings";
@@ -243,7 +243,7 @@ static const std::string ABLUM_TABLE = "album";
 static const std::string ABLUM_VIEW_NAME = "Album";
 static const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + " AS SELECT count( " + FILE_TABLE + "."
-                                      + MEDIA_DATA_DB_DATE_TRASHED + "= 0 OR NULL) AS "
+                                      + MEDIA_DATA_DB_DATE_TRASHED + " = 0 OR NULL) AS "
                                       + MEDIA_DATA_DB_COUNT + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_RELATIVE_PATH + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AS "
@@ -257,7 +257,8 @@ static const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_MODIFIED + ", "
                                       + ABLUM_TABLE + "." + MEDIA_DATA_DB_THUMBNAIL + ", "
                                       + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
-                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID
+                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID + ", "
+                                      + ABLUM_TABLE + "." + MEDIA_DATA_DB_IS_TRASH
                                       + " FROM Files " + FILE_TABLE + ", "
                                       + " Files " + ABLUM_TABLE
                                       + " WHERE "
