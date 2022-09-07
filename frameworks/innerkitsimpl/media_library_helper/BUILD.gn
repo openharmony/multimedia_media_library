@@ -72,12 +72,10 @@ ohos_source_set("media_library_source") {
 ohos_shared_library("media_library") {
   install_enable = true
 
-  deps = [
-    ":media_library_source",
-    "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-  ]
+  deps = [ ":media_library_source" ]
 
   external_deps = [
+    "ability_runtime:abilitykit_native",
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
@@ -121,16 +119,12 @@ ohos_static_library("media_thumbnail_helper") {
   include_dirs = [
     "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
-    "//foundation/distributeddatamgr/kv_store/interfaces/innerkits/distributeddata/include/",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include/",
-    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "//commonlibrary/c_utils/base/include",
     "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
   ]
   deps = [
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
     "//foundation/distributeddatamgr/kv_store/interfaces/innerkits/distributeddata:distributeddata_inner",
-    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
   ]
 
   # cflags = [ "-DOLD_KV_API" ]
@@ -140,6 +134,8 @@ ohos_static_library("media_thumbnail_helper") {
     "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
+    "kv_store:distributeddata_inner",
+    "multimedia_image_standard:image_native",
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
     "relational_store:native_rdb",

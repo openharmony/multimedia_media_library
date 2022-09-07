@@ -119,10 +119,7 @@ ohos_shared_library("medialibrary") {
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
-    "//foundation/arkui/napi:ace_napi",
-    "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library",
-    "//foundation/multimedia/player_framework/interfaces/inner_api/native:media_client",
   ]
 
   external_deps = [
@@ -137,6 +134,9 @@ ohos_shared_library("medialibrary") {
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "ipc_js:rpc",
+    "multimedia_image_standard:image",
+    "multimedia_player_framework:media_client",
+    "napi:ace_napi",
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
     "relational_store:native_rdb",
@@ -157,10 +157,7 @@ ohos_shared_library("userfile_manager") {
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
-    "//foundation/arkui/napi:ace_napi",
-    "//foundation/multimedia/image_standard/interfaces/innerkits:image",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library",
-    "//foundation/multimedia/player_framework/interfaces/inner_api/native:media_client",
   ]
 
   external_deps = [
@@ -175,6 +172,9 @@ ohos_shared_library("userfile_manager") {
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "ipc_js:rpc",
+    "multimedia_image_standard:image",
+    "multimedia_player_framework:media_client",
+    "napi:ace_napi",
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
     "relational_store:native_rdb",
