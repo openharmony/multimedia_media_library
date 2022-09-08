@@ -576,7 +576,7 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
 
     string srcPath = GetPathByIdFromDb(strFileId);
     if (srcPath.empty()) {
-        MEDIA_ERR_LOG("Get path of id %{private}s from database file!", strFileId.c_str());
+        MEDIA_ERR_LOG("Get path of id %{public}s from database file!", strFileId.c_str());
         return E_INVALID_FILEID;
     }
 
