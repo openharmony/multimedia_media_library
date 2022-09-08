@@ -1436,7 +1436,7 @@ napi_value MediaLibraryNapi::JSCreateAlbum(napi_env env, napi_callback_info info
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCreateAlbum");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCreateAlbum", asyncContext);
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
@@ -1542,7 +1542,7 @@ napi_value MediaLibraryNapi::JSDeleteAlbum(napi_env env, napi_callback_info info
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSDeleteAlbum");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSDeleteAlbum", asyncContext);
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
@@ -1906,7 +1906,7 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRelease");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRelease", asyncContext);
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
@@ -2223,7 +2223,7 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
         result = GetJSArgsForCreateSmartAlbum(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSDeleteAsset");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCreateSmartAlbum", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
@@ -2353,7 +2353,7 @@ napi_value MediaLibraryNapi::JSDeleteSmartAlbum(napi_env env, napi_callback_info
         result = GetJSArgsForDeleteSmartAlbum(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSDeleteAsset");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSDeleteSmartAlbum", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
@@ -2593,7 +2593,7 @@ napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info i
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetActivePeers");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetActivePeers", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
             reinterpret_cast<CompleteCallback>(JSGetActivePeersCompleteCallback),
@@ -2634,7 +2634,7 @@ napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAllPeers");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAllPeers", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
             reinterpret_cast<CompleteCallback>(JSGetAllPeersCompleteCallback),
@@ -2867,7 +2867,7 @@ napi_value MediaLibraryNapi::JSStoreMediaAsset(napi_env env, napi_callback_info 
         }
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         napi_value resource = nullptr;
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSStoreMediaAsset");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSStoreMediaAsset", asyncContext);
         status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
                 JSGetStoreMediaAssetExecute(context);
@@ -3025,7 +3025,7 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
         }
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         napi_value resource = nullptr;
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSStartImagePreview");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSStartImagePreview", asyncContext);
         status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
                 JSStartImagePreviewExecute(context);
