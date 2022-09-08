@@ -1327,7 +1327,7 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
         result = GetJSArgsForClose(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_API_NAME(env, resource, "JSClose", asyncContext);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -1530,7 +1530,7 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
         result = GetJSArgsForGetThumbnail(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetThumbnail");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetThumbnail", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -1740,7 +1740,7 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
         result = GetJSArgsForIsDirectory(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsDirectory");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsDirectory", asyncContext);
         status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
                 FileAssetAsyncContext* context = static_cast<FileAssetAsyncContext*>(data);
                 if (context->objectInfo->sDataShareHelper_ != nullptr) {
@@ -1926,7 +1926,7 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
         result = GetJSArgsForIsFavorite(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsFavorite");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsFavorite", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -2138,7 +2138,7 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
         result = GetJSArgsForIsTrash(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsTrash");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsTrash", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);

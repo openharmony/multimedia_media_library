@@ -303,8 +303,7 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetFirstObject");
-
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetFirstObject", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
@@ -351,7 +350,7 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetNextObject");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetNextObject", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
@@ -398,7 +397,7 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetLastObject");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetLastObject", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
@@ -455,7 +454,7 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetPositionObject");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetPositionObject", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
@@ -570,8 +569,7 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAllObject");
-
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAllObject", asyncContext);
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);

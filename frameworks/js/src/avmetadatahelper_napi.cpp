@@ -18,6 +18,7 @@
 #include <climits>
 #include "medialibrary_napi_log.h"
 #include "pixel_map_napi.h"
+#include "napi_error.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -26,7 +27,7 @@ namespace OHOS {
 namespace Media {
 thread_local napi_ref AVMetadataHelperNapi::constructor_ = nullptr;
 static const char CLASS_NAME[] = "AVMetadataHelper";
-struct AVMetadataHelperAsyncContext {
+struct AVMetadataHelperAsyncContext : public NapiError {
     napi_env env;
     napi_async_work work;
     napi_deferred deferred;
@@ -422,7 +423,7 @@ napi_value AVMetadataHelperNapi::SetSource(napi_env env, napi_callback_info info
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, undefinedResult);
 
     napi_value resource = nullptr;
-    NAPI_CREATE_RESOURCE_NAME(env, resource, "SetSource");
+    NAPI_CREATE_RESOURCE_NAME(env, resource, "SetSource", asyncContext);
 
     asyncContext->debugInfo = std::string("Failed to set source: ") + asyncContext->uriStr;
     asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;
@@ -483,7 +484,7 @@ napi_value AVMetadataHelperNapi::ResolveMetadata(napi_env env, napi_callback_inf
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, undefinedResult);
 
     napi_value resource = nullptr;
-    NAPI_CREATE_RESOURCE_NAME(env, resource, "ResolveMetadata");
+    NAPI_CREATE_RESOURCE_NAME(env, resource, "ResolveMetadata", asyncContext);
 
     asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;
     status = napi_create_async_work(
@@ -545,7 +546,7 @@ napi_value AVMetadataHelperNapi::FetchVideoScaledPixelMapByTime(napi_env env, na
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, undefinedResult);
 
     napi_value resource = nullptr;
-    NAPI_CREATE_RESOURCE_NAME(env, resource, "FetchVideoScaledPixelMapByTime");
+    NAPI_CREATE_RESOURCE_NAME(env, resource, "FetchVideoScaledPixelMapByTime", asyncContext);
 
     asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;
     status = napi_create_async_work(
@@ -606,7 +607,7 @@ napi_value AVMetadataHelperNapi::FetchVideoPixelMapByTime(napi_env env, napi_cal
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, undefinedResult);
 
     napi_value resource = nullptr;
-    NAPI_CREATE_RESOURCE_NAME(env, resource, "FetchVideoPixelMapByTime");
+    NAPI_CREATE_RESOURCE_NAME(env, resource, "FetchVideoPixelMapByTime", asyncContext);
 
     asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;
     status = napi_create_async_work(
@@ -665,7 +666,7 @@ napi_value AVMetadataHelperNapi::Release(napi_env env, napi_callback_info info)
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, undefinedResult);
 
     napi_value resource = nullptr;
-    NAPI_CREATE_RESOURCE_NAME(env, resource, "Release");
+    NAPI_CREATE_RESOURCE_NAME(env, resource, "Release", asyncContext);
 
     asyncContext->debugInfo = "Failed to release";
     asyncContext->nativeAVMetadataHelper = asyncContext->objectInfo->nativeAVMetadataHelper_;

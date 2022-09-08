@@ -67,15 +67,10 @@
         }                                                           \
     } while (0)
 
-#define NAPI_CREATE_RESOURCE_API_NAME(env, resource, resourceName, context)         \
+#define NAPI_CREATE_RESOURCE_NAME(env, resource, resourceName, context)         \
     do {                                                                            \
         napi_create_string_utf8(env, resourceName, NAPI_AUTO_LENGTH, &(resource));  \
         context->SetApiName(resourceName);                                          \
-    } while (0)
-
-#define NAPI_CREATE_RESOURCE_NAME(env, resource, resourceName)                      \
-    do {                                                                            \
-        napi_create_string_utf8(env, resourceName, NAPI_AUTO_LENGTH, &(resource));  \
     } while (0)
 
 #define CHECK_NULL_PTR_RETURN_UNDEFINED(env, ptr, ret, message)     \
@@ -613,7 +608,7 @@ public:
         napi_value result = nullptr;
         napi_value resource = nullptr;
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_API_NAME(env, resource, resourceName.c_str(), asyncContext);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, resourceName.c_str(), asyncContext);
 
         NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, execute, complete,
             static_cast<void*>(asyncContext.get()), &asyncContext->work));

@@ -65,7 +65,7 @@ private:
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
 };
 
-class FetchFileResultAsyncContext {
+class FetchFileResultAsyncContext : public NapiError {
 public:
     napi_async_work work;
     napi_ref callbackRef;
