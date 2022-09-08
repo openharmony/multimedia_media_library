@@ -110,6 +110,7 @@ private:
     void UpdateFileAssetInfo();
 
     static napi_value UserFileMgrOpen(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrClose(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrFavorite(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrTrash(napi_env env, napi_callback_info info);
@@ -176,6 +177,7 @@ struct FileAssetAsyncContext : public NapiError {
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
     std::string typeMask;
+    ResultNapiType resultNapiType;
 };
 } // namespace Media
 } // namespace OHOS
