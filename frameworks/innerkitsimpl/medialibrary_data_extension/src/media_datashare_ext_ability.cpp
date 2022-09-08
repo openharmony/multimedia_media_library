@@ -184,13 +184,6 @@ static bool CheckPerms(bool shouldCheckType, bool isWrite, const std::string &ty
     return false;
 }
 
-static bool CheckPermFromValueBucket(const DataShareValuesBucket &valueBucket, bool isWrite)
-{
-    bool shouldCheckType = false;
-    std::string typeMask = valueBucket.Get(URI_PARAM_KEY_TYPE, shouldCheckType);
-    return CheckPerms(shouldCheckType, isWrite, typeMask);
-}
-
 std::vector<std::string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter)
 {
     std::vector<std::string> ret;
@@ -265,22 +258,25 @@ int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const std::string &mod
 
 int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket &value)
 {
-    string tmpUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
-    if ((uri.ToString() != tmpUri) && (!CheckPermFromValueBucket(value, true))) {
+    string closeUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
+    string insertUri = uri.ToString();
+    bool isWrite = (insertUri == closeUri) ? false : true;
+    if (!CheckPermFromUri(insertUri, isWrite)) {
         return E_PERMISSION_DENIED;
     }
 
-    return MediaLibraryDataManager::GetInstance()->Insert(uri, value);
+    return MediaLibraryDataManager::GetInstance()->Insert(Uri(insertUri), value);
 }
 
 int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &predicates,
     const DataShareValuesBucket &value)
 {
-    if (!CheckPermFromValueBucket(value, true)) {
+    string updateUri = uri.ToString();
+    if (!CheckPermFromUri(updateUri, true)) {
         return E_PERMISSION_DENIED;
     }
 
-    return MediaLibraryDataManager::GetInstance()->Update(uri, value, predicates);
+    return MediaLibraryDataManager::GetInstance()->Update(Uri(updateUri), value, predicates);
 }
 
 int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &predicates)
