@@ -656,7 +656,7 @@ napi_value SmartAlbumNapi::JSAddAsset(napi_env env, napi_callback_info info)
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSAddAsset fail ");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSAddAsset");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSAddAsset", asyncContext);
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -695,7 +695,7 @@ napi_value SmartAlbumNapi::JSRemoveAsset(napi_env env, napi_callback_info info)
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSRemoveAsset fail ");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRemoveAsset");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRemoveAsset", asyncContext);
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -734,7 +734,7 @@ napi_value SmartAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSCommitModify fail ");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAlbumFileAssets");
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCommitModify", asyncContext);
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
