@@ -24,7 +24,6 @@ ohos_shared_library("media_library_manager") {
     "//drivers/peripheral/base",
     "//drivers/peripheral/display/interfaces/include",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
-    "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager/include",
     "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include",
@@ -34,9 +33,7 @@ ohos_shared_library("media_library_manager") {
 
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
-    "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
     "${MEDIA_LIB_COMMON_UTILS_DIR}:permission_utils",
   ]
 
@@ -50,9 +47,6 @@ ohos_shared_library("media_library_manager") {
     "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
-    "relational_store:native_appdatafwk",
-    "relational_store:native_dataability",
-    "relational_store:native_rdb",
   ]
 
   part_name = "media_library"
