@@ -118,7 +118,6 @@ ohos_shared_library("medialibrary") {
     ":medialibraryinf_js",
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library",
   ]
 
@@ -137,8 +136,6 @@ ohos_shared_library("medialibrary") {
     "multimedia_image_standard:image",
     "multimedia_player_framework:media_client",
     "napi:ace_napi",
-    "relational_store:native_appdatafwk",
-    "relational_store:native_dataability",
     "relational_store:native_rdb",
   ]
 
@@ -154,28 +151,18 @@ ohos_shared_library("userfile_manager") {
 
   deps = [
     ":medialibrary",
-    "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library",
   ]
 
   external_deps = [
-    "ability_base:want",
-    "ability_base:zuri",
-    "ability_runtime:ability_manager",
     "ability_runtime:napi_base_context",
     "c_utils:utils",
-    "data_share:datashare_common",
     "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
-    "ipc:ipc_core",
     "ipc_js:rpc",
     "multimedia_image_standard:image",
     "multimedia_player_framework:media_client",
     "napi:ace_napi",
-    "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
     "relational_store:native_rdb",
   ]

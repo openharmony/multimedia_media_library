@@ -174,11 +174,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "kv_store:distributeddata_inner",
     "multimedia_image_standard:image_native",
     "multimedia_player_framework:media_client",
-    "relational_store:native_appdatafwk",
-    "relational_store:native_dataability",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "samgr:samgr_proxy",
   ]
 
   subsystem_name = "multimedia"
