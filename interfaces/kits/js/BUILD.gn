@@ -88,8 +88,8 @@ config("napi_config") {
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager/include",
     "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
-    "//foundation/multimedia/image_standard/interfaces/kits/js/common/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/interfaces/kits/js/common/include",
     "//foundation/distributedhardware/device_manager/interfaces/inner_kits/native_cpp/include",
   ]
 
