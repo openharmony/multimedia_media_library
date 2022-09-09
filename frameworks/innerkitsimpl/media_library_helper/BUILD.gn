@@ -75,16 +75,9 @@ ohos_shared_library("media_library") {
   deps = [ ":media_library_source" ]
 
   external_deps = [
-    "ability_runtime:abilitykit_native",
     "c_utils:utils",
-    "data_share:datashare_common",
-    "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
-    "ipc:ipc_core",
-    "relational_store:native_appdatafwk",
-    "relational_store:native_dataability",
-    "relational_store:native_rdb",
   ]
 
   part_name = "media_library"
