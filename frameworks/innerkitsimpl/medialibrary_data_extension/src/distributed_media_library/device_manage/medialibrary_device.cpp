@@ -20,8 +20,6 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_sync_table.h"
-#include "parameter.h"
-#include "parameters.h"
 
 namespace OHOS {
 namespace Media {
@@ -44,7 +42,7 @@ void MediaLibraryDevice::Start()
 {
     MEDIA_DEBUG_LOG("MediaLibraryDevice::start");
     bundleName_ = BUNDLE_NAME;
-
+    RegisterToDM();
     if (deviceHandler_ == nullptr) {
         auto runner = AppExecFwk::EventRunner::Create("MediaLibraryDevice");
         deviceHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
@@ -52,11 +50,10 @@ void MediaLibraryDevice::Start()
     devsInfoInter_ = make_shared<DevicesInfoInteract>();
     if (devsInfoInter_ != nullptr) {
         devsInfoInter_->Init();
-        const std::string local = "";
+        std::string local = "";
         localUdid_ = GetUdidByNetworkId(local);
         devsInfoInter_->PutMLDeviceInfos(localUdid_);
     }
-    RegisterToDM();
 }
 
 void MediaLibraryDevice::Stop()
@@ -343,23 +340,23 @@ bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &networkId, int3
     return MediaLibraryDeviceOperations::GetSyncStatusById(rdbStore_, udid, syncStatus);
 }
 
-std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &networkId)
+std::string MediaLibraryDevice::GetUdidByNetworkId(std::string &networkId)
 {
-    if (networkId.empty()) {
-        constexpr int32_t DEVICE_ID_SIZE = 65;
-        char localDeviceId[DEVICE_ID_SIZE] = {0};
-        GetDevUdid(localDeviceId, DEVICE_ID_SIZE);
-        std::string localUdid = std::string(localDeviceId);
-        if (localUdid.empty()) {
-            MEDIA_ERR_LOG("get local udid failed");
-        }
-        return localUdid;
-    }
     auto &deviceManager = DistributedHardware::DeviceManager::GetInstance();
+    if (networkId.empty()) {
+        OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
+        auto ret = deviceManager.GetLocalDeviceInfo(bundleName_, deviceInfo);
+        if (ret != ERR_OK) {
+            MEDIA_ERR_LOG("get local device info failed, ret %{public}d", ret);
+            return "";
+        }
+        networkId = deviceInfo.networkId;
+    }
+
     std::string deviceUdid;
     auto ret = deviceManager.GetUdidByNetworkId(bundleName_, networkId, deviceUdid);
     if (ret != 0) {
-        MEDIA_INFO_LOG("GetDeviceUdid error networkId = %{private}s", networkId.c_str());
+        MEDIA_INFO_LOG("GetDeviceUdid error networkId = %{private}s, ret %{public}d", networkId.c_str(), ret);
         return std::string();
     }
     return deviceUdid;
