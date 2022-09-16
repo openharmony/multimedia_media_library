@@ -241,7 +241,7 @@ void MediaScannerNapi::DataShareScanBoardcast(const std::string &event)
     }
 }
 
-void MediaScannerNapiCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)
+int32_t MediaScannerNapiCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)
 {
     auto itr = scannerMap_.find(path);
     if (itr != scannerMap_.end()) {
@@ -250,6 +250,8 @@ void MediaScannerNapiCallback::OnScanFinished(const int32_t status, const std::s
         scannerMap_.erase(path);
         NAPI_DEBUG_LOG("OnScanFinished exit");
     }
+
+    return 0;
 }
 
 void MediaScannerNapiCallback::SetToMap(const std::string &path, const napi_ref &cbRef)

@@ -18,18 +18,18 @@
 #include <unordered_map>
 
 #include "medialibrary_napi_utils.h"
+#include "imedia_scanner_callback.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "imedia_scanner_app_callback.h"
 #include "datashare_helper.h"
 
 namespace OHOS {
 namespace Media {
 static const std::string SCANNER_HELPER_NAPI_CLASS_NAME = "ScannerInstance";
 
-class MediaScannerNapiCallback : public IMediaScannerAppCallback {
+class MediaScannerNapiCallback : public IMediaScannerCallback {
 public:
-    void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
+    int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
     void SetToMap(const std::string &path, const napi_ref &cbRef);
 
     explicit MediaScannerNapiCallback(napi_env env) : env_(env) {}

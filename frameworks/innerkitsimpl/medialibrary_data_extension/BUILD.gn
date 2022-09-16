@@ -100,10 +100,9 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   media_scan_source = [
-    "${MEDIA_SCANNER_SOURCE_DIR}/src/callback/media_scanner_operation_callback_proxy.cpp",
-    "${MEDIA_SCANNER_SOURCE_DIR}/src/callback/media_scanner_operation_callback_stub.cpp",
     "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scan_executor.cpp",
     "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scanner.cpp",
+    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scanner_manager.cpp",
     "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scanner_db.cpp",
     "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/metadata.cpp",
     "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/metadata_extractor.cpp",

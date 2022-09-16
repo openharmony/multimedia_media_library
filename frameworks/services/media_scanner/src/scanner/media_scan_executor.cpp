@@ -20,39 +20,36 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-void MediaScanExecutor::SetCallbackFunction(callback_func cb_function)
+int32_t MediaScanExecutor::Commit(std::unique_ptr<MediaScannerObj> scanner)
 {
-    cb_function_ = cb_function;
-}
+    lock_guard<mutex> lock(queueMutex_);
 
-void MediaScanExecutor::ExecuteScan(unique_ptr<ScanRequest> request)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-
-    requestQueue_.push(move(request));
+    queue_.push(move(scanner));
 
     if (activeThread_ < MAX_THREAD) {
-        std::thread(&MediaScanExecutor::HandleScanExecution, this).detach();
+        thread(&MediaScanExecutor::HandleScanExecution, this).detach();
         activeThread_++;
     }
+
+    return 0;
 }
 
 void MediaScanExecutor::HandleScanExecution()
 {
-    unique_ptr<ScanRequest> request;
+    unique_ptr<MediaScannerObj> scanner;
     while (true) {
         {
-            std::lock_guard<std::mutex> lock(mutex_);
-            if (requestQueue_.empty()) {
+            std::lock_guard<std::mutex> lock(queueMutex_);
+            if (queue_.empty()) {
                 activeThread_--;
                 break;
             }
 
-            request = std::move(requestQueue_.front());
-            requestQueue_.pop();
+            scanner = std::move(queue_.front());
+            queue_.pop();
         }
 
-        cb_function_(*request);
+        (void)scanner->Scan();
     }
 }
 } // namespace Media

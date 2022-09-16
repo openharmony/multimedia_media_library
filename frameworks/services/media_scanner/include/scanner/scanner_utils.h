@@ -40,6 +40,8 @@ enum ErrorCodes {
 
 const int32_t MAX_BATCH_SIZE = 5;
 
+constexpr int32_t UNKNOWN_ID = -1;
+
 // Const for File Metadata defaults
 const std::string FILE_PATH_DEFAULT = "";
 const std::string FILE_NAME_DEFAULT = "";
@@ -169,6 +171,7 @@ static const std::unordered_map<std::string, std::string> SUPPORTED_EXTN_MAP = {
     {"yaml", "text/yaml"},
     {"zip", "application/zip"},
 };
+
 class ScannerUtils {
 public:
     ScannerUtils();
@@ -185,6 +188,13 @@ public:
     static MediaType GetMediatypeFromMimetype(const std::string &mimetype);
     static void GetRootMediaDir(std::string &dir);
     static std::string GetFileTitle(const std::string &displayName);
+    static bool IsDirHiddenRecursive(const std::string &path);
+    static bool IsDirHidden(const std::string &path);
+    static void InitSkipList();
+    static bool CheckSkipScanList(const std::string &path);
+
+private:
+    static std::vector<size_t> skipList_;
 };
 } // namespace Media
 } // namespace OHOS

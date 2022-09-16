@@ -23,7 +23,7 @@
 #include "fetch_result.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "media_scanner.h"
+#include "media_scanner_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_dir_operations.h"
@@ -606,7 +606,7 @@ void MediaLibraryObjectUtils::ScanFile(string &path)
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
     }
-    int ret = MediaScannerObj::GetMediaScannerInstance()->ScanFile(path, nullptr);
+    int ret = MediaScannerManager::GetInstance()->ScanFile(path, nullptr);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }

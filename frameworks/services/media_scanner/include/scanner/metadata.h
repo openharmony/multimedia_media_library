@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <variant>
 #include "scanner_utils.h"
+#include "fetch_result.h"
 #include "abs_shared_result_set.h"
 
 namespace OHOS {
@@ -27,28 +28,28 @@ class Metadata {
 public:
     Metadata();
     ~Metadata() = default;
-    using VariantData = std::variant<int32_t, int64_t, double, std::string>;
+    using VariantData = std::variant<int32_t, std::string, int64_t, double>;
 
     void SetFileId(const VariantData &id);
     int32_t GetFileId() const;
 
     void SetFilePath(const VariantData &path);
-    std::string GetFilePath() const;
+    const std::string &GetFilePath() const;
 
     void SetUri(const VariantData &uri);
-    std::string GetUri() const;
+    const std::string &GetUri() const;
 
     void SetRelativePath(const VariantData &relativePath);
-    std::string GetRelativePath() const;
+    const std::string &GetRelativePath() const;
 
     void SetFileMimeType(const VariantData &mimeType);
-    std::string GetFileMimeType() const;
+    const std::string &GetFileMimeType() const;
 
     void SetFileMediaType(const VariantData &mediaType);
     MediaType GetFileMediaType() const;
 
     void SetFileName(const VariantData &name);
-    std::string GetFileName() const;
+    const std::string &GetFileName() const;
 
     void SetFileSize(const VariantData &size);
     int64_t GetFileSize() const;
@@ -60,16 +61,16 @@ public:
     int64_t GetFileDateModified() const;
 
     void SetFileExtension(const VariantData &fileExt);
-    std::string GetFileExtension() const;
+    const std::string &GetFileExtension() const;
 
     void SetFileTitle(const VariantData &title);
-    std::string GetFileTitle() const;
+    const std::string &GetFileTitle() const;
 
     void SetFileArtist(const VariantData &artist);
-    std::string GetFileArtist() const;
+    const std::string &GetFileArtist() const;
 
     void SetAlbum(const VariantData &album);
-    std::string GetAlbum() const;
+    const std::string &GetAlbum() const;
 
     void SetFileHeight(const VariantData &height);
     int32_t GetFileHeight() const;
@@ -90,10 +91,10 @@ public:
     int32_t GetAlbumId() const;
 
     void SetAlbumName(const VariantData &album);
-    std::string GetAlbumName() const;
+    const std::string &GetAlbumName() const;
 
     void SetRecyclePath(const VariantData &recyclePath);
-    std::string GetRecyclePath() const;
+    const std::string &GetRecyclePath() const;
 
     void SetDateTaken(const VariantData &dateTaken);
     int64_t GetDateTaken() const;
@@ -107,7 +108,7 @@ public:
     void Init();
 
     using MetadataFnPtr = void (Metadata::*)(const VariantData &);
-    std::unordered_map<std::string, std::pair<DataType, MetadataFnPtr>> memberFuncMap_;
+    std::unordered_map<std::string, std::pair<ResultSetDataType, MetadataFnPtr>> memberFuncMap_;
 
 private:
     int32_t id_;
