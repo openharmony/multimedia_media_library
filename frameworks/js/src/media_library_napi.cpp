@@ -57,6 +57,7 @@ thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::sDataShareHelper_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDirectoryEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sVirtualAlbumTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPrivateAlbumEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
@@ -155,7 +156,9 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("FileKey", UserFileMgrCreateFileKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AudioKey", CreateAudioKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("ImageVideoKey", CreateImageVideoKeyEnum(env)),
-        DECLARE_NAPI_PROPERTY("AlbumKey", CreateAlbumKeyEnum(env))
+        DECLARE_NAPI_PROPERTY("AlbumKey", CreateAlbumKeyEnum(env)),
+        DECLARE_NAPI_PROPERTY("DirectoryType", CreateDirectoryTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("VirtualAlbumType", CreateVirtualAlbumTypeEnum(env))
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -3168,6 +3171,11 @@ napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateDirectoryTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, directoryEnum, sDirectoryEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateVirtualAlbumTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, virtualAlbumTypeEnum, sVirtualAlbumTypeEnumRef_);
 }
 
 napi_value MediaLibraryNapi::CreatePrivateAlbumTypeEnum(napi_env env)
