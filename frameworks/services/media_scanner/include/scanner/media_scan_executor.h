@@ -20,64 +20,25 @@
 #include <iostream>
 #include <queue>
 
+#include "media_scanner.h"
+
 namespace OHOS {
 namespace Media {
-using namespace std;
-
-class ScanRequest {
-public:
-    ScanRequest(string path) : requestId_(0), path_(path), isDir_(false) {}
-    ScanRequest() : ScanRequest("") {}
-    ~ScanRequest() = default;
-
-    int32_t GetRequestId() const
-    {
-        return requestId_;
-    };
-
-    void SetRequestId(int32_t requestId)
-    {
-        requestId_ = requestId;
-    }
-
-    const string &GetPath() const
-    {
-        return path_;
-    }
-
-    void SetIsDirectory(bool isDir)
-    {
-        isDir_ = isDir;
-    }
-
-    bool GetIsDirectory() const
-    {
-        return isDir_;
-    }
-
-private:
-    int32_t requestId_;
-    string path_;
-    bool isDir_;
-};
-
 class MediaScanExecutor {
-typedef void (*callback_func)(ScanRequest);
 public:
     MediaScanExecutor() = default;
-    ~MediaScanExecutor() = default;
+    virtual ~MediaScanExecutor() = default;
 
-    void ExecuteScan(unique_ptr<ScanRequest> request);
-    void SetCallbackFunction(callback_func cb_function);
+    int32_t Commit(std::unique_ptr<MediaScannerObj> scanner);
 
 private:
     void HandleScanExecution();
 
-    std::queue<unique_ptr<ScanRequest>> requestQueue_;
-    callback_func cb_function_ = nullptr;
-    std::mutex mutex_;
     const size_t MAX_THREAD = 1;
     size_t activeThread_ = 0;
+
+    std::queue<std::unique_ptr<MediaScannerObj>> queue_;
+    std::mutex queueMutex_;
 };
 } // namespace Media
 } // namespace OHOS

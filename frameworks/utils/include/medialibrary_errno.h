@@ -72,6 +72,16 @@ constexpr int32_t E_DEVICE_OPER_ERR = MEDIA_LIBRARY_ERR(E_DISTRIBUTED_OFFSET, 0)
 // medialibary thumbanail { 2300, 2399 }
 
 // medialibary scanner { 2400, 2499 }
+constexpr int32_t E_SCANNER_OFFSET = 2400;
+constexpr int32_t E_FILE_HIDDEN = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 0);
+constexpr int32_t E_DIR_HIDDEN = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 1);
+constexpr int32_t E_RDB = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 2);
+constexpr int32_t E_DATA = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 3);
+constexpr int32_t E_SYSCALL = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 4);
+constexpr int32_t E_SCANNED = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 5);
+constexpr int32_t E_AVMETADATA = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 6);
+constexpr int32_t E_IMAGE = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 7);
+constexpr int32_t E_NO_RESULT = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 8);
 
 // media file extension module error code { 3000, 3099 }
 constexpr int32_t E_MEDIA_FILE_OFFSET = 3000;

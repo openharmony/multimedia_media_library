@@ -23,7 +23,7 @@
 #include "want.h"
 
 #include "media_log.h"
-#include "media_scanner.h"
+#include "media_scanner_manager.h"
 
 using namespace OHOS::AAFwk;
 
@@ -62,7 +62,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
 
     std::string srcPath = "/storage/media/local/files";
-    Media::MediaScannerObj::GetMediaScannerInstance()->ScanDir(srcPath, nullptr);
+    MediaScannerManager::GetInstance()->ScanDir(srcPath, nullptr);
 }
 }  // namespace Media
 }  // namespace OHOS

@@ -15,7 +15,9 @@
 #define MLOG_TAG "Scanner"
 
 #include "media_scanner_db.h"
+
 #include "media_log.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
 #include "media_file_utils.h"
@@ -92,21 +94,6 @@ vector<string> MediaScannerDb::BatchInsert(const vector<Metadata> &metadataList)
     }
 
     return insertUriList;
-}
-
-unique_ptr<Metadata> MediaScannerDb::ReadMetadata(const string &path)
-{
-    DataShare::DataSharePredicates predicates = {};
-    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = ?");
-    predicates.SetWhereArgs(vector<string>({ path }));
-
-    Uri uri(MEDIALIBRARY_DATA_URI);
-    vector<string> columns = {};
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{private}s", path.c_str());
-    unique_ptr<Metadata> metadata = FillMetadata(resultSet);
-
-    return metadata;
 }
 
 /**
@@ -223,29 +210,43 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
  * @param path The file path for which to obtain the latest modification info from the db
  * @return unique_ptr<Metadata> The metadata object representing the latest info for the given filepath
  */
-unique_ptr<Metadata> MediaScannerDb::GetFileModifiedInfo(const string &path)
+int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata> &ptr)
 {
-    // Columns to be returned in resultset
-    vector<string> columns = {};
-    columns.push_back(MEDIA_DATA_DB_ID);
-    columns.push_back(MEDIA_DATA_DB_SIZE);
-    columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
-    columns.push_back(MEDIA_DATA_DB_NAME);
-    columns.push_back(MEDIA_DATA_DB_RECYCLE_PATH);
-    columns.push_back(MEDIA_DATA_DB_ORIENTATION);
+    Uri abilityUri(MEDIALIBRARY_DATA_URI);
+
+    static vector<string> columns = {
+        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_RECYCLE_PATH, MEDIA_DATA_DB_ORIENTATION
+    };
 
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = ?");
     predicates.SetWhereArgs(vector<string>({ path }));
 
-    Uri abilityUri(MEDIALIBRARY_DATA_URI);
     auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(abilityUri, columns, predicates);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "No result found for %{private}s", path.c_str());
-    int ret = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, nullptr, "Failed to fetch first record");
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("return nullptr when query rdb");
+        return E_RDB;
+    }
 
-    unique_ptr<Metadata> metaInfo = FillMetadata(resultSet);
-    return metaInfo;
+    int32_t rowCount = 0;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("failed to get row count");
+        return E_RDB;
+    }
+
+    if (rowCount == 0) {
+        return E_OK;
+    }
+
+    ret = resultSet->GoToFirstRow();
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("failed to go to first row");
+        return E_RDB;
+    }
+
+    return FillMetadata(resultSet, ptr);
 }
 
 /**
@@ -325,28 +326,9 @@ string MediaScannerDb::GetFileDBUriFromPath(const string &path)
     return uri;
 }
 
-int32_t MediaScannerDb::GetIdFromUri(const string &uri) const
+int32_t MediaScannerDb::GetIdFromPath(const string &path)
 {
-    int32_t mediaFileId = 0;
-    size_t index = 0;
-
-    if (!uri.empty()) {
-        index =  uri.find_last_of("/");
-        if (index != string::npos) {
-            mediaFileId = stoi(uri.substr(index + 1));
-        } else {
-            MEDIA_ERR_LOG("Id could not be obtained from the given uri");
-        }
-    } else {
-        MEDIA_ERR_LOG("Uri is empty");
-    }
-
-    return mediaFileId;
-}
-
-int32_t MediaScannerDb::ReadAlbumId(const string &path)
-{
-    int32_t albumId = 0;
+    int32_t id = UNKNOWN_ID;
     int32_t columnIndex = -1;
 
     DataShare::DataSharePredicates predicates;
@@ -356,19 +338,18 @@ int32_t MediaScannerDb::ReadAlbumId(const string &path)
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {MEDIA_DATA_DB_ID};
     auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumId, "No result found for %{private}s", path.c_str());
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
-        MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{private}s", path.c_str());
-        return albumId;
+        MEDIA_ERR_LOG("No data found for the given path %{private}s", path.c_str());
+        return id;
     }
 
     resultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndex);
-    resultSet->GetInt(columnIndex, albumId);
+    resultSet->GetInt(columnIndex, id);
 
-    return albumId;
+    return id;
 }
 
-void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap)
+int32_t MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap)
 {
     DataShare::DataSharePredicates predicates;
     string queryCmd = MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND " + MEDIA_DATA_DB_FILE_PATH + " like ? ";
@@ -380,10 +361,9 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_DATE_MODIFIED};
     auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
-    CHECK_AND_RETURN_LOG(resultSet != nullptr, "No result found for %{private}s", path.c_str());
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerDb:: No Data found for the given path %{private}s", path.c_str());
-        return;
+        MEDIA_ERR_LOG("query %{private}s get nullptr result", path.c_str());
+        return E_RDB;
     }
 
     int32_t intValue(0);
@@ -398,6 +378,7 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
     resultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, columnIndexPath);
     resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_MODIFIED, columnIndexDateModified);
 
+    albumMap.clear();
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         Metadata metadata;
         resultSet->GetInt(columnIndexId, intValue);
@@ -412,7 +393,7 @@ void MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metada
         albumMap.insert(make_pair(strValue, metadata));
     }
 
-    return;
+    return E_OK;
 }
 
 int32_t MediaScannerDb::InsertAlbum(const Metadata &metadata)
@@ -420,7 +401,7 @@ int32_t MediaScannerDb::InsertAlbum(const Metadata &metadata)
     int32_t id = 0;
 
     string uri = InsertMetadata(metadata);
-    id = GetIdFromUri(uri);
+    id = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri));
 
     return id;
 }
@@ -430,7 +411,7 @@ int32_t MediaScannerDb::UpdateAlbum(const Metadata &metadata)
     int32_t id = 0;
 
     string uri = UpdateMetadata(metadata);
-    id = GetIdFromUri(uri);
+    id = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri));
 
     return id;
 }
@@ -461,52 +442,19 @@ void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)
 void MediaScannerDb::ExtractMetaFromColumn(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
                                            unique_ptr<Metadata> &metadata, const std::string &col)
 {
-    int32_t columnIndex(0);
-    resultSet->GetColumnIndex(col, columnIndex);
-
-    auto dataType = DataType::TYPE_NULL;
+    ResultSetDataType dataType = ResultSetDataType::TYPE_NULL;
     Metadata::MetadataFnPtr requestFunc = nullptr;
     auto itr = metadata->memberFuncMap_.find(col);
     if (itr != metadata->memberFuncMap_.end()) {
         dataType = itr->second.first;
         requestFunc = itr->second.second;
+    } else {
+        MEDIA_ERR_LOG("invalid column name %{private}s", col.c_str());
+        return;
     }
 
-    int32_t ret(0);
-    std::variant<int32_t, int64_t, double, std::string> data = 0;
-
-    switch (dataType) {
-        case DataType::TYPE_INT: {
-            int32_t intValue(0);
-            ret = resultSet->GetInt(columnIndex, intValue);
-            CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{public}d", columnIndex);
-            data = intValue;
-            break;
-        }
-        case DataType::TYPE_LONG: {
-            int64_t longValue(0);
-            ret = resultSet->GetLong(columnIndex, longValue);
-            CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain integer value for index %{public}d", columnIndex);
-            data = longValue;
-            break;
-        }
-        case DataType::TYPE_STRING: {
-            string strValue("");
-            ret = resultSet->GetString(columnIndex, strValue);
-            CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain string value for index %{public}d", columnIndex);
-            data = strValue;
-            break;
-        }
-        case DataType::TYPE_DOUBLE: {
-            double doubleVal(0);
-            ret = resultSet->GetDouble(columnIndex, doubleVal);
-            CHECK_AND_PRINT_LOG(ret == 0, "Failed to obtain double value for index %{public}d", columnIndex);
-            data = doubleVal;
-            break;
-        }
-        default:
-            break;
-    }
+    std::variant<int32_t, std::string, int64_t, double> data =
+        ResultSetUtils::GetValFromColumn<const shared_ptr<NativeRdb::AbsSharedResultSet>>(col, resultSet, dataType);
 
     // Use the function pointer from map and pass data to fn ptr
     if (requestFunc != nullptr) {
@@ -514,20 +462,21 @@ void MediaScannerDb::ExtractMetaFromColumn(const shared_ptr<NativeRdb::AbsShared
     }
 }
 
-unique_ptr<Metadata> MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+int32_t MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+    unique_ptr<Metadata> &ptr)
 {
-    unique_ptr<Metadata> metadata = make_unique<Metadata>();
-    CHECK_AND_RETURN_RET_LOG(metadata != nullptr, nullptr, "Metadata object creation failed");
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Result set for metadata is empty");
-
     std::vector<std::string> columnNames;
-
-    resultSet->GetAllColumnNames(columnNames);
-    for (const auto &col : columnNames) {
-        ExtractMetaFromColumn(resultSet, metadata, col);
+    int32_t err = resultSet->GetAllColumnNames(columnNames);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("failed to get all column names");
+        return E_RDB;
     }
 
-    return metadata;
+    for (const auto &col : columnNames) {
+        ExtractMetaFromColumn(resultSet, ptr, col);
+    }
+
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

@@ -26,7 +26,7 @@
 #include <thread>
 
 #include "gtest/gtest.h"
-#include "imedia_scanner_client.h"
+#include "imedia_scanner_callback.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,12 +39,12 @@ public:
     static void WaitForCallback();
 };
 
-class ApplicationCallback : public IMediaScannerAppCallback {
+class ApplicationCallback : public IMediaScannerCallback {
 public:
     explicit ApplicationCallback(const std::string &testCaseName);
     ~ApplicationCallback() = default;
 
-    void OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
+    int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
 
 private:
     std::string testCaseName_;
