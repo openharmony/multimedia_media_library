@@ -16,6 +16,8 @@
 #ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FILE_ASSET_NAPI_H_
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FILE_ASSET_NAPI_H_
 
+#include <mutex>
+
 #include "file_asset.h"
 #include "media_lib_service_const.h"
 #include "media_thumbnail_helper.h"
@@ -54,6 +56,7 @@ public:
     bool IsTrash() const;
     void SetTrash(bool isTrash);
     static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
+    static std::mutex sDataHelperMutex_;
     static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
         const std::shared_ptr<AbilityRuntime::Context> &context);
