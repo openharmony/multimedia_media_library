@@ -44,6 +44,7 @@ static const std::string MEDIA_FILEDESCRIPTOR = "fd";
 thread_local napi_ref FileAssetNapi::sConstructor_ = nullptr;
 thread_local FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> FileAssetNapi::sDataShareHelper_ = nullptr;
+std::mutex FileAssetNapi::sDataHelperMutex_;
 std::shared_ptr<MediaThumbnailHelper> FileAssetNapi::sThumbnailHelper_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
@@ -185,11 +186,6 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
                 obj->UpdateFileAssetInfo();
             }
 
-            if (obj->sDataShareHelper_ == nullptr) {
-                obj->sDataShareHelper_ = sDataShareHelper_;
-                CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sDataShareHelper_, result, "Helper creation failed");
-            }
-
             if (obj->sThumbnailHelper_ == nullptr) {
                 obj->sThumbnailHelper_ = std::make_shared<MediaThumbnailHelper>();
             }
@@ -218,12 +214,18 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
         (userFileMgrConstructor_) : (sConstructor_);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
-    napi_value result = nullptr;
-    sDataShareHelper_ = abilityHelper;
-    sFileAsset_ = &iAsset;
-    NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
-    sFileAsset_ = nullptr;
+    if (sDataShareHelper_ == nullptr) {
+        sDataHelperMutex_.lock();
+        sDataShareHelper_ = abilityHelper;
+        sDataHelperMutex_.unlock();
+    }
 
+    sFileAsset_ = &iAsset;
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
+
+    sFileAsset_ = nullptr;
     return result;
 }
 
