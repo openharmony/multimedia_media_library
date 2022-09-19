@@ -38,7 +38,7 @@ namespace OHOS {
 namespace Media {
 static const mode_t CHOWN_RWX_USR_GRP = 02770;
 static const mode_t CHOWN_RW_USR_GRP = 0660;
-static const size_t DISPLAYNAME_MAX = 128;
+static const size_t DISPLAYNAME_MAX = 255;
 const int32_t OPEN_FDS = 64;
 
 int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
@@ -277,6 +277,7 @@ bool MediaFileUtils::CheckDisplayName(const std::string &displayName)
 {
     size_t size = displayName.length();
     if (size == 0 || size > DISPLAYNAME_MAX) {
+        MEDIA_ERR_LOG("display name size err, size = %{public}d", size);
         return false;
     }
     std::regex express("[\\\\/:*?\"<>|{}\\[\\]]");
@@ -292,6 +293,7 @@ bool MediaFileUtils::CheckTitle(const std::string &title)
 {
     size_t size = title.length();
     if (size == 0 || size > DISPLAYNAME_MAX) {
+        MEDIA_ERR_LOG("title size err, size = %{public}d", size);
         return false;
     }
     std::regex express("[\\.\\\\/:*?\"<>|{}\\[\\]]");
