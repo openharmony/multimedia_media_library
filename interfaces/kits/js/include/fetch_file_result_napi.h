@@ -16,6 +16,8 @@
 #ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FETCH_FILE_RESULT_NAPI_H_
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FETCH_FILE_RESULT_NAPI_H_
 
+#include <mutex>
+
 #include "fetch_result.h"
 #include "album_asset.h"
 #include "file_asset_napi.h"
@@ -46,6 +48,7 @@ public:
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResult() const;
 
     static std::shared_ptr<DataShare::DataShareHelper> sMediaDataHelper;
+    static std::mutex sDataHelperMutex_;
 
 private:
     static void FetchFileResultNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
