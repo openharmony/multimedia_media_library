@@ -277,7 +277,7 @@ bool MediaFileUtils::CheckDisplayName(const std::string &displayName)
 {
     size_t size = displayName.length();
     if (size == 0 || size > DISPLAYNAME_MAX) {
-        MEDIA_ERR_LOG("display name size err, size = %{public}d", size);
+        MEDIA_ERR_LOG("display name size err, size = %{public}zu", size);
         return false;
     }
     std::regex express("[\\\\/:*?\"<>|{}\\[\\]]");
@@ -293,7 +293,7 @@ bool MediaFileUtils::CheckTitle(const std::string &title)
 {
     size_t size = title.length();
     if (size == 0 || size > DISPLAYNAME_MAX) {
-        MEDIA_ERR_LOG("title size err, size = %{public}d", size);
+        MEDIA_ERR_LOG("title size err, size = %{public}zu", size);
         return false;
     }
     std::regex express("[\\.\\\\/:*?\"<>|{}\\[\\]]");
