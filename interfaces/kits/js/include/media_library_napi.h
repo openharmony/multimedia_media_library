@@ -214,6 +214,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::string order;
     std::string uri;
     std::string networkId;
+    std::string extendArgs;
     std::unique_ptr<FetchResult> fetchFileResult;
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<SmartAlbumAsset> smartAlbumData;

@@ -42,6 +42,7 @@ namespace Media {
 thread_local unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 const int32_t NUM_2 = 2;
 const int32_t NUM_3 = 3;
+const string DATE_FUNCTION = "DATE(";
 
 static map<string, ListenerType> ListenerTypeMaps = {
     {"audioChange", AUDIO_LISTENER},
@@ -396,6 +397,19 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
         }
         present = false;
     }
+    napi_has_named_property(env, arg, "extendArgs", &present);
+    if (present) {
+        if ((napi_get_named_property(env, arg, "extendArgs", &property) != napi_ok) ||
+            (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
+            NAPI_ERR_LOG("Could not get the extendArgs string argument!");
+            err = true;
+            return;
+        } else {
+            asyncContext->extendArgs = buffer;
+            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
+        }
+        present = false;
+    }
 }
 
 static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibraryAsyncContext &context, bool &err)
@@ -614,6 +628,13 @@ static void GetFileAssetsExecute(napi_env env, void *data)
         return;
     }
     GetFileAssetUpdateSelections(context);
+    vector<string> columns{"*"};
+    if (context->extendArgs.find(DATE_FUNCTION) != string::npos) {
+        string group(" GROUP BY (");
+        group += context->extendArgs + " )";
+        context->selection += group;
+        columns.insert(columns.begin(), "count(*)");
+    }
 
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(context->selection);
@@ -627,7 +648,6 @@ static void GetFileAssetsExecute(napi_env env, void *data)
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
-    vector<string> columns;
     shared_ptr<DataShare::DataShareResultSet> resultSet = helper->Query(uri, predicates, columns);
     if (resultSet != nullptr) {
         // Create FetchResult object using the contents of resultSet
@@ -746,6 +766,8 @@ static string GetFileMediaTypeUri(MediaType mediaType, const string &networkId)
 
 static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetAlbumCoverUri");
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = ? ");

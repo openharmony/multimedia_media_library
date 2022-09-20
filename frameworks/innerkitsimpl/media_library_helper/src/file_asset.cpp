@@ -68,6 +68,16 @@ void FileAsset::SetId(int32_t id)
     id_ = id;
 }
 
+int32_t FileAsset::GetCount() const
+{
+    return count_;
+}
+
+void FileAsset::SetCount(int32_t count)
+{
+    count_ = count;
+}
+
 const string &FileAsset::GetUri() const
 {
     return uri_;

@@ -35,6 +35,9 @@ public:
     int32_t GetId() const;
     void SetId(int32_t id);
 
+    int32_t GetCount() const;
+    void SetCount(int32_t count);
+
     const std::string &GetUri() const;
     void SetUri(const std::string &uri);
 
@@ -165,6 +168,7 @@ private:
     std::string recyclePath_;
 
     ResultNapiType resultNapiType_;
+    int32_t count_;
 };
 } // namespace Media
 } // namespace OHOS
