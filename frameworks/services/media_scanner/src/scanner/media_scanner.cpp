@@ -339,10 +339,13 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_
     metadata.SetFileName(ScannerUtils::GetFileNameFromUri(albumPath));
     metadata.SetFileTitle(ScannerUtils::GetFileTitle(metadata.GetFileName()));
     metadata.SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_ALBUM));
-    metadata.SetParentId(parentId);
-    metadata.SetAlbumName(albumName);
     metadata.SetFileSize(statInfo.st_size);
     metadata.SetFileDateModified(statInfo.st_mtime);
+
+    string relativePath = ScannerUtils::GetParentPath(albumPath) + SLASH_CHAR;
+    metadata.SetRelativePath(relativePath.erase(0, ROOT_MEDIA_DIR.length()));
+    metadata.SetParentId(parentId);
+    metadata.SetAlbumName(albumName);
 
     if (update) {
         metadata.SetFileId(albumId);
