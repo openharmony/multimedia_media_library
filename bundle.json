@@ -40,7 +40,7 @@
           "ability_runtime",
           "ipc_js",
           "data_share",
-          "multimedia_image_standard",
+          "multimedia_image_framework",
           "samgr",
           "hiviewdfx_hilog_native",
           "user_file_service",
