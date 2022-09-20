@@ -198,7 +198,11 @@ void CreateRootDir()
 
 void MediaLibraryExtUnitTest::SetUpTestCase(void)
 {
+    const int DEFAULT_USER_SUID = 20000000;
+    const int ROOT_USER_SUID = 0;
+    setuid(DEFAULT_USER_SUID);
     g_mediaFileExtHelper = CreateFileExtHelper(g_uid);
+    setuid(ROOT_USER_SUID);
     g_mediaDataShareHelper = CreateDataShareHelper(g_uid);
     if (g_mediaFileExtHelper == nullptr) {
         MEDIA_DEBUG_LOG("medialibraryDataAbilityHelper fail");
