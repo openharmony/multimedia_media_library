@@ -16,6 +16,8 @@
 
 #include "media_file_utils.h"
 
+#include <cstring>
+#include <dirent.h>
 #include <fcntl.h>
 #include <fstream>
 #include <ftw.h>
@@ -40,13 +42,14 @@ static const mode_t CHOWN_RWX_USR_GRP = 02770;
 static const mode_t CHOWN_RW_USR_GRP = 0660;
 static const size_t DISPLAYNAME_MAX = 255;
 const int32_t OPEN_FDS = 64;
+constexpr size_t EMPTY_DIR_ENTRY_COUNT = 2;  // Empty dir has 2 entry: . and ..
 
 int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
 {
     CHECK_AND_RETURN_RET_LOG(fpath != nullptr, E_FAIL, "fpath == nullptr");
     int32_t errRet = remove(fpath);
     if (errRet) {
-        perror(fpath);
+        MEDIA_ERR_LOG("Failed to remove path: %{private}s, errno: %{public}d", fpath, errno);
     }
 
     return errRet;
@@ -97,6 +100,27 @@ bool MediaFileUtils::IsFileExists(const string &fileName)
     struct stat statInfo {};
 
     return ((stat(fileName.c_str(), &statInfo)) == SUCCESS);
+}
+
+bool MediaFileUtils::IsDirEmpty(const string &path)
+{
+    DIR *dir = opendir(path.c_str());
+    if (dir == nullptr) {
+        MEDIA_ERR_LOG("Failed to open dir:%{private}s, errno: %{public}d. Just return dir NOT empty.",
+            path.c_str(), errno);
+        return false;
+    }
+    struct dirent *ent = nullptr;
+    size_t entCount = 0;
+    while ((ent = readdir(dir)) != nullptr) {
+        if (++entCount > EMPTY_DIR_ENTRY_COUNT) {
+            break;
+        }
+    }
+    if (closedir(dir) < 0) {
+        MEDIA_ERR_LOG("Fail to closedir: %{private}s, errno: %{public}d.", path.c_str(), errno);
+    }
+    return (entCount > EMPTY_DIR_ENTRY_COUNT) ? false : true;
 }
 
 string MediaFileUtils::GetFilename(const string &filePath)
