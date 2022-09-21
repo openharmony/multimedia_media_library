@@ -680,7 +680,7 @@ static void GetFileAssetsNative(napi_env env, void *data)
     Uri uri(queryUri);
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
         context->objectInfo->GetMediaDataHelper()->Query(uri, predicates, columns);
-    context->fetchResult = std::make_unique<FetchResult>(move(resultSet));
+    context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->networkId_ = context->objectInfo->GetNetworkId();
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         context->fetchResult->resultNapiType_ = context->resultNapiType;
@@ -698,22 +698,25 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status, vo
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     if (context->fetchResult != nullptr) {
-        napi_value fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult),
-            context->objectInfo->sMediaDataHelper_);
         if (context->fetchResult->GetCount() < 0) {
             napi_get_undefined(env, &jsContext->data);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
                                                          "find no data by options");
-        } else if (fetchRes == nullptr) {
-            NAPI_ERR_LOG("Failed to get file asset napi object");
-            napi_get_undefined(env, &jsContext->data);
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
-                "Failed to create js object for FetchFileResult");
         } else {
-            jsContext->data = fetchRes;
-            napi_get_undefined(env, &jsContext->error);
-            jsContext->status = true;
+            napi_value fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchResult),
+                context->objectInfo->sMediaDataHelper_);
+            if (fetchRes == nullptr) {
+                NAPI_ERR_LOG("Failed to get file asset napi object");
+                napi_get_undefined(env, &jsContext->data);
+                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
+                    "Failed to create js object for FetchFileResult");
+            } else {
+                jsContext->data = fetchRes;
+                napi_get_undefined(env, &jsContext->error);
+                jsContext->status = true;
+            }
         }
+
     } else {
         NAPI_ERR_LOG("No fetch file result found!");
         napi_get_undefined(env, &jsContext->data);

@@ -87,7 +87,7 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    unique_ptr<FetchResult> GetFileAssets(const MediaFetchOptions &fetchOptions);
+    unique_ptr<FetchResult<FileAsset>> GetFileAssets(const MediaFetchOptions &fetchOptions);
 
     /**
      * @brief Get the list of albums based on certain conditions
@@ -193,7 +193,7 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    unique_ptr<FetchResult> GetAlbumFileAssets(const int32_t albumId, const MediaFetchOptions &fetchOptions);
+    unique_ptr<FetchResult<FileAsset>> GetAlbumFileAssets(const int32_t albumId, const MediaFetchOptions &fetchOptions);
     /**
      * @brief Obtain a mediaVolume object from MediaAssets can be obtained
      *

@@ -716,7 +716,7 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
         return nullptr;
     }
 
-    shared_ptr<FetchResult> fetchFileResult = make_shared<FetchResult>();
+    shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();
     if (fetchFileResult == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain fetch file result");
         return nullptr;
