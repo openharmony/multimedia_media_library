@@ -327,6 +327,7 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
         return E_HAS_DB_ERROR;
     }
 
+    int err = E_ERR;
     const int32_t MAX_DIR_DEPTH = 15;
     int depth = 0;
     while ((depth++ < MAX_DIR_DEPTH) && (dirId > 0)) {
@@ -352,19 +353,32 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
         }
         MEDIA_DEBUG_LOG("dirVal = %{private}s, parentIdVal = %{public}d", dirVal.c_str(), parentIdVal);
 
-        MediaLibraryCommand deleteDirCmd(OperationObject::FILESYSTEM_DIR, OperationType::DELETE);
-        int32_t errCode = DeleteInfoByIdInDb(deleteDirCmd, to_string(dirId));
-        if (errCode != E_SUCCESS) {
-            MEDIA_ERR_LOG("Delete dir info failed, errCode = %{public}d", errCode);
-            break;
+        // Do not delete user created dir
+        if (MediaFileUtils::IsFileExists(dirVal + "/" + ".nofile")) {
+            return E_SUCCESS;
         }
+        if (!MediaFileUtils::IsDirEmpty(dirVal)) {
+            return E_SUCCESS;
+        }
+
         if (!MediaFileUtils::DeleteDir(dirVal)) {
             MEDIA_ERR_LOG("Delete dir in filesystem failed, errno = %{public}d", errno);
+            err = E_HAS_FS_ERROR;
             break;
+        }
+        MediaLibraryCommand deleteDirCmd(OperationObject::FILESYSTEM_DIR, OperationType::DELETE);
+        int32_t deletedRows = DeleteInfoByIdInDb(deleteDirCmd, to_string(dirId));
+        if (deletedRows < 0) {
+            MEDIA_ERR_LOG("Delete dir info failed, err: %{public}d", deletedRows);
+            err = deletedRows;
+            break;
+        } else if (deletedRows == 0) {
+            MEDIA_ERR_LOG("Failed to delete dir in db!");
+            return E_HAS_DB_ERROR;
         }
         dirId = parentIdVal;
     }
-    return E_SUCCESS;
+    return err;
 }
 
 // Restriction: input param cmd MUST have file id in either uri or valuebucket
