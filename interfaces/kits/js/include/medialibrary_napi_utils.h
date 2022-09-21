@@ -184,6 +184,10 @@ const std::vector<std::string> directoryEnum {
     "DIR_CAMERA", "DIR_VIDEO", "DIR_IMAGE", "DIR_AUDIO", "DIR_DOCUMENTS", "DIR_DOWNLOAD"
 };
 
+const std::vector<std::string> virtualAlbumTypeEnum {
+    "TYPE_FAVORITE", "TYPE_TRASH"
+};
+
 const std::vector<std::string> directoryEnumValues {
     "Camera/",
     "Videos/",
