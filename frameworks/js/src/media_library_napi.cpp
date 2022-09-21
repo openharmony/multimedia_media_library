@@ -654,7 +654,7 @@ static void GetFileAssetsExecute(napi_env env, void *data)
     shared_ptr<DataShare::DataShareResultSet> resultSet = helper->Query(uri, predicates, columns);
     if (resultSet != nullptr) {
         // Create FetchResult object using the contents of resultSet
-        context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
+        context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
         context->fetchFileResult->networkId_ = context->networkId;
         if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
             context->fetchFileResult->resultNapiType_ = context->resultNapiType;
@@ -683,18 +683,20 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
     } else {
         // Create FetchResult object using the contents of resultSet
         if (context->fetchFileResult != nullptr) {
-            napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchFileResult),
-                context->objectInfo->sDataShareHelper_);
             if (context->fetchFileResult->GetCount() < 0) {
                 MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
                                                              "find no data by options");
-            } else if (fileResult == nullptr) {
-                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                    "Failed to create js object for Fetch File Result");
             } else {
-                jsContext->data = fileResult;
-                jsContext->status = true;
-                napi_get_undefined(env, &jsContext->error);
+                napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchFileResult),
+                    context->objectInfo->sDataShareHelper_);
+                if (fileResult == nullptr) {
+                    MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+                        "Failed to create js object for Fetch File Result");
+                } else {
+                    jsContext->data = fileResult;
+                    jsContext->status = true;
+                    napi_get_undefined(env, &jsContext->error);
+                }
             }
         } else {
             NAPI_ERR_LOG("No fetch file result found!");
@@ -707,7 +709,6 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
-
     delete context;
 }
 
@@ -785,7 +786,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     Uri uri(queryUri);
     shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
         uri, predicates, columns);
-    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     fetchFileResult->networkId_ = context->networkId;
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetAlbumCoverUr:FileAsset is nullptr");
@@ -955,7 +956,7 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     CHECK_NULL_PTR_RETURN_VOID(resultSet, "Failed to get file asset by id, query resultSet is nullptr");
 
     // Create FetchResult object using the contents of resultSet
-    context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     CHECK_NULL_PTR_RETURN_VOID(context->fetchFileResult, "Failed to get file asset by id, fetchFileResult is nullptr");
     context->fetchFileResult->networkId_ = networkId;
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
@@ -1985,7 +1986,7 @@ static void SetSmartAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<
 
     shared_ptr<DataShare::DataShareResultSet> resultSet =
        context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
-    unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+    unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetSmartAlbumCoverUri fileAsset is nullptr");
     string coverUri = fileAsset->GetUri();

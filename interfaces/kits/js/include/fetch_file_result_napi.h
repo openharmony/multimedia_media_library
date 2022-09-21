@@ -17,6 +17,7 @@
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_FETCH_FILE_RESULT_NAPI_H_
 
 #include "fetch_result.h"
+#include "album_asset.h"
 #include "file_asset_napi.h"
 #include "medialibrary_napi_utils.h"
 #include "napi/native_api.h"
@@ -33,13 +34,16 @@ public:
 
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value CreateFetchFileResult(napi_env env, FetchResult &fileResult,
+
+    template<class T>
+    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<T>> fileResult,
                                             std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
-    std::shared_ptr<FetchResult> GetFetchResultObject();
+
+    std::shared_ptr<FetchResult<FileAsset>> GetFetchResultObject();
 
     std::shared_ptr<DataShare::DataShareHelper> GetMediaDataHelper() const;
 
-    std::shared_ptr<FetchResult> GetFetchFileResult() const;
+    std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResult() const;
 
     static std::shared_ptr<DataShare::DataShareHelper> sMediaDataHelper;
 
@@ -57,11 +61,11 @@ private:
     static napi_value JSClose(napi_env env, napi_callback_info info);
 
     napi_env env_;
-    std::shared_ptr<FetchResult> fetchFileResult_;
+    std::shared_ptr<FetchResult<FileAsset>> fetchFileResult_;
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
-    static thread_local FetchResult *sFetchFileResult_;
+    static inline thread_local std::unique_ptr<FetchResult<FileAsset>> sFetchFileResult_ = nullptr;
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
 };
 
