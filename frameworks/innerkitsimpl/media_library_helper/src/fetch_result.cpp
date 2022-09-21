@@ -231,6 +231,19 @@ static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask
     }
 }
 
+int32_t FetchResult::GetFileCount(const shared_ptr<DataShare::DataShareResultSet> &resultSet)
+{
+    int32_t count = 1;
+    if (resultSet) {
+        string name;
+        resultSet->GetColumnName(0, name);
+        if (name.find("count(") != string::npos) {
+            resultSet->GetInt(0, count);
+        }
+    }
+    return count;
+}
+
 unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
     MediaLibraryTracer tracer;
@@ -239,6 +252,7 @@ unique_ptr<FileAsset> FetchResult::GetObject(shared_ptr<NativeRdb::AbsSharedResu
     unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
 
     fileAsset->SetId(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_ID, TYPE_INT32, resultSet)));
+    fileAsset->SetCount(GetFileCount(resultset_));
 
     fileAsset->SetMediaType(static_cast<Media::MediaType>(get<ARG_INT32>(
         GetRowValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, TYPE_INT32, resultSet))));

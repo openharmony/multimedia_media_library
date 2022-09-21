@@ -114,6 +114,7 @@ napi_value FileAssetNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_GETTER("albumId", JSGetAlbumId),
         DECLARE_NAPI_GETTER("albumUri", JSGetAlbumUri),
         DECLARE_NAPI_GETTER("albumName", JSGetAlbumName),
+        DECLARE_NAPI_GETTER("count", JSGetCount),
         DECLARE_NAPI_FUNCTION("isDirectory", JSIsDirectory),
         DECLARE_NAPI_FUNCTION("commitModify", JSCommitModify),
         DECLARE_NAPI_FUNCTION("open", JSOpen),
@@ -595,6 +596,28 @@ napi_value FileAssetNapi::JSGetAlbumName(napi_env env, napi_callback_info info)
     if (status == napi_ok && obj != nullptr) {
         albumName = obj->albumName_;
         napi_create_string_utf8(env, albumName.c_str(), NAPI_AUTO_LENGTH, &jsResult);
+    }
+
+    return jsResult;
+}
+
+napi_value FileAssetNapi::JSGetCount(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value jsResult = nullptr;
+    napi_value thisVar = nullptr;
+
+    napi_get_undefined(env, &jsResult);
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    if ((status != napi_ok) || (thisVar == nullptr)) {
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        return jsResult;
+    }
+
+    FileAssetNapi* obj = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if ((status == napi_ok) && (obj != nullptr)) {
+        napi_create_int32(env, obj->count_, &jsResult);
     }
 
     return jsResult;
@@ -2195,6 +2218,7 @@ void FileAssetNapi::UpdateFileAssetInfo()
     dateTaken_ = sFileAsset_->GetDateTaken();
     isFavorite_ = sFileAsset_->IsFavorite();
     isTrash_ = sFileAsset_->GetDateTrashed() != 0;
+    count_ = sFileAsset_->GetCount();
 }
 
 napi_value FileAssetNapi::UserFileMgrOpen(napi_env env, napi_callback_info info)
