@@ -159,6 +159,7 @@ private:
     static napi_value CreateMediaTypeEnum(napi_env env);
     static napi_value CreateFileKeyEnum(napi_env env);
     static napi_value CreateDirectoryTypeEnum(napi_env env);
+    static napi_value CreateVirtualAlbumTypeEnum(napi_env env);
     static napi_value CreatePrivateAlbumTypeEnum(napi_env env);
 
     static napi_value JSGetSmartAlbums(napi_env env, napi_callback_info info);
@@ -191,6 +192,7 @@ private:
     static thread_local napi_ref userFileMgrConstructor_;
     static thread_local napi_ref sMediaTypeEnumRef_;
     static thread_local napi_ref sDirectoryEnumRef_;
+    static thread_local napi_ref sVirtualAlbumTypeEnumRef_;
     static thread_local napi_ref sFileKeyEnumRef_;
     static thread_local napi_ref sPrivateAlbumEnumRef_;
 
