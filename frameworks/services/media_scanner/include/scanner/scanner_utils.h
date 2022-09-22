@@ -181,7 +181,6 @@ public:
     static std::string GetFileNameFromUri(const std::string &path);
     static std::string GetFileExtensionFromFileUri(const std::string &path);
     static std::string GetMimeTypeFromExtension(const std::string &extension);
-    static int32_t GetRealPath(std::string &path);
     static std::string GetParentPath(const std::string &path);
     static bool IsFileHidden(const std::string &path);
     static bool IsDirectory(const std::string &path);

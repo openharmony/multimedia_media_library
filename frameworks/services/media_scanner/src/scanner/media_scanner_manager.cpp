@@ -17,8 +17,11 @@
 
 #include "media_scanner_manager.h"
 
+#include "directory_ex.h"
+
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_data_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -29,13 +32,22 @@ std::shared_ptr<MediaScannerManager> MediaScannerManager::GetInstance()
 {
     if (instance_ == nullptr) {
         std::lock_guard<std::mutex> guard(instanceMutex_);
-        instance_ = std::shared_ptr<MediaScannerManager>(new MediaScannerManager());
+
+        if (instance_ != nullptr) {
+            return instance_;
+        }
+
+        instance_ = std::shared_ptr<MediaScannerManager>(new (std::nothrow) MediaScannerManager());
+        if (instance_ != nullptr) {
+            // keep a reference for data resources
+            MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(nullptr);
+        }
     }
 
     return instance_;
 }
 
-int32_t MediaScannerManager::ScanFile(std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
+int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
 {
     MEDIA_DEBUG_LOG("scan file %{private}s", path.c_str());
 
@@ -44,23 +56,24 @@ int32_t MediaScannerManager::ScanFile(std::string &path, const std::shared_ptr<I
         return E_INVALID_PATH;
     }
 
-    if (ScannerUtils::GetRealPath(path) != ERR_SUCCESS) {
-        MEDIA_ERR_LOG("invalid path %{private}s", path.c_str());
+    string realPath;
+    if (!PathToRealPath(path, realPath)) {
+        MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", path.c_str(), errno);
         return E_INVALID_PATH;
     }
 
-    if (ScannerUtils::IsDirectory(path)) {
-        MEDIA_ERR_LOG("path %{private}s is a dir", path.c_str());
+    if (ScannerUtils::IsDirectory(realPath)) {
+        MEDIA_ERR_LOG("path %{private}s is a dir", realPath.c_str());
         return E_INVALID_PATH;
     }
 
-    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(path, callback, false);
+    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(realPath, callback, false);
     executor_.Commit(move(scanner));
 
     return E_OK;
 }
 
-int32_t MediaScannerManager::ScanDir(std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
+int32_t MediaScannerManager::ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
 {
     MEDIA_DEBUG_LOG("scan dir %{private}s", path.c_str());
 
@@ -69,17 +82,18 @@ int32_t MediaScannerManager::ScanDir(std::string &path, const std::shared_ptr<IM
         return E_INVALID_PATH;
     }
 
-    if (ScannerUtils::GetRealPath(path) != ERR_SUCCESS) {
-        MEDIA_ERR_LOG("invalid path %{private}s", path.c_str());
+    string realPath;
+    if (!PathToRealPath(path, realPath)) {
+        MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", path.c_str(), errno);
         return E_INVALID_PATH;
     }
 
-    if (!ScannerUtils::IsDirectory(path)) {
-        MEDIA_ERR_LOG("path %{private}s isn't a dir", path.c_str());
+    if (!ScannerUtils::IsDirectory(realPath)) {
+        MEDIA_ERR_LOG("path %{private}s isn't a dir", realPath.c_str());
         return E_INVALID_PATH;
     }
 
-    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(path, callback, true);
+    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(realPath, callback, true);
     executor_.Commit(move(scanner));
 
     return E_OK;
