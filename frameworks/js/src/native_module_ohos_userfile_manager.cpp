@@ -25,6 +25,7 @@ static napi_value UserFileMgrExport(napi_env env, napi_value exports)
     FetchFileResultNapi::UserFileMgrInit(env, exports);
     FileAssetNapi::UserFileMgrInit(env, exports);
     AlbumNapi::UserFileMgrInit(env, exports);
+    SmartAlbumNapi::UserFileMgrInit(env, exports);
     return exports;
 }
 
