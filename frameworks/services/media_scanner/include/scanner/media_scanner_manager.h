@@ -29,8 +29,8 @@ public:
 
     virtual ~MediaScannerManager() = default;
 
-    int32_t ScanFile(std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
-    int32_t ScanDir(std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
+    int32_t ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
+    int32_t ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
 
 private:
     MediaScannerManager() = default;
