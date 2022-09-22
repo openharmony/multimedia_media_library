@@ -29,6 +29,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_subscriber.h"
+#include "media_scanner_manager.h"
 #include "media_log.h"
 #include "system_ability_definition.h"
 #include "permission_utils.h"
@@ -69,8 +70,16 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
     }
     MEDIA_INFO_LOG("%{public}s runtime language  %{public}d", __func__, runtime_.GetLanguage());
 
-    MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context);
-    MediaLibraryDataManager::GetInstance()->SetOwner(static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()));
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager != nullptr) {
+        dataManager->InitMediaLibraryMgr(context);
+        dataManager->SetOwner(static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()));
+    }
+
+    auto scannerManager = MediaScannerManager::GetInstance();
+    if (scannerManager != nullptr) {
+        scannerManager->ScanDir(ROOT_MEDIA_DIR, nullptr);
+    }
 }
 
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
