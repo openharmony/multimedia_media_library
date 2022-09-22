@@ -40,7 +40,7 @@ namespace OHOS {
 namespace Media {
 static const mode_t CHOWN_RWX_USR_GRP = 02770;
 static const mode_t CHOWN_RW_USR_GRP = 0660;
-static const size_t DISPLAYNAME_MAX = 128;
+static const size_t DISPLAYNAME_MAX = 255;
 const int32_t OPEN_FDS = 64;
 constexpr size_t EMPTY_DIR_ENTRY_COUNT = 2;  // Empty dir has 2 entry: . and ..
 

@@ -16,9 +16,12 @@
 
 #include "media_scanner.h"
 
+#include <cstdlib>
+
 #include "hitrace_meter.h"
 
 #include "media_log.h"
+#include "medialibrary_data_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -45,6 +48,10 @@ MediaScannerObj::~MediaScannerObj()
 MediaScannerObj *MediaScannerObj::GetMediaScannerInstance()
 {
     static MediaScannerObj scanner;
+
+    static std::once_flag onceFlag;
+    std::call_once(onceFlag, [&]() { MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(nullptr); });
+
     return &scanner;
 }
 
