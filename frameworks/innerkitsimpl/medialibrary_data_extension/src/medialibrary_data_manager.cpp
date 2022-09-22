@@ -108,17 +108,18 @@ __attribute__((constructor)) void RegisterDataShareCreator()
 void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
     std::lock_guard<std::mutex> lock(mgrMutex_);
+
     refCnt_++;
+    if (refCnt_.load() > 1) {
+        return;
+    }
+
     context_ = context;
     InitMediaLibraryRdbStore();
     InitDeviceData();
 
     MakeDirQuerySetMap(dirQuerySetMap_);
     InitialiseKvStore();
-
-    // scan the media dir
-    std::string srcPath = ROOT_MEDIA_DIR;
-    MediaScannerObj::GetMediaScannerInstance()->ScanDir(srcPath, nullptr);
 }
 
 void MediaLibraryDataManager::InitDeviceData()
