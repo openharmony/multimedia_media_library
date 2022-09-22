@@ -1432,6 +1432,7 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
     if (context->objectInfo->sDataShareHelper_ != nullptr &&
         context->objectInfo->sThumbnailHelper_ != nullptr) {
         std::string uri = context->objectInfo->GetFileUri();
+        MediaLibraryNapiUtils::UriRemoveAllFragment(uri);
         Size size = { .width = context->thumbWidth, .height = context->thumbHeight };
         context->pixelmap = QueryThumbnail(context->objectInfo->sDataShareHelper_,
             context->objectInfo->sThumbnailHelper_, uri, size, context->typeMask);
@@ -2347,7 +2348,7 @@ napi_value FileAssetNapi::UserFileMgrGetThumbnail(napi_env env, napi_callback_in
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
 
-    CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_TWO) ==
+    CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_TWO) ==
         napi_ok, result, "Failed to get object info");
     result = GetJSArgsForGetThumbnail(env, asyncContext->argc, asyncContext->argv, *asyncContext);
     ASSERT_NULLPTR_CHECK(env, result);

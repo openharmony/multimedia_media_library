@@ -192,5 +192,13 @@ void MediaLibraryNapiUtils::UriAddFragmentTypeMask(std::string &uri, const std::
         uri += "#" + URI_PARAM_KEY_TYPE + ":" + typeMask;
     }
 }
+
+void MediaLibraryNapiUtils::UriRemoveAllFragment(std::string &uri)
+{
+    size_t fragIndex = uri.find_first_of('#');
+    if (fragIndex != std::string::npos) {
+        uri = uri.substr(0, fragIndex);
+    }
+}
 } // namespace Media
 } // namespace OHOS
