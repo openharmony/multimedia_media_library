@@ -29,6 +29,7 @@ namespace Media {
 class MediaFileUtils {
 public:
     static bool IsFileExists(const std::string &fileName);
+    static bool IsDirEmpty(const std::string &path);
     static bool CreateFile(const std::string &fileName);
     static bool DeleteFile(const std::string &fileName);
     static bool DeleteDir(const std::string &dirName);
