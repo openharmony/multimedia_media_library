@@ -1,0 +1,278 @@
+/*
+ * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#define MLOG_TAG "Thumbnail"
+
+#include "ithumbnail_helper.h"
+
+#include "ability_manager_client.h"
+#include "hitrace_meter.h"
+#include "medialibrary_errno.h"
+#include "media_log.h"
+#include "thumbnail_const.h"
+#include "thumbnail_utils.h"
+
+using namespace std;
+using namespace OHOS::DistributedKv;
+using namespace OHOS::NativeRdb;
+
+namespace OHOS {
+namespace Media {
+shared_ptr<AbsSharedResultSet> IThumbnailHelper::QueryThumbnailInfo(ThumbRdbOpt &opts,
+    ThumbnailData &outData, int &err)
+{
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is not init");
+        return nullptr;
+    }
+    string filesTableName = MEDIALIBRARY_TABLE;
+    if (!opts.networkId.empty()) {
+        filesTableName = opts.store->ObtainDistributedTableName(opts.networkId, MEDIALIBRARY_TABLE);
+    }
+
+    MEDIA_DEBUG_LOG("Get filesTableName [ %{public}s ] id [ %{public}s ]", filesTableName.c_str(), opts.row.c_str());
+    opts.table = filesTableName;
+    shared_ptr<AbsSharedResultSet> rdbSet = ThumbnailUtils::QueryThumbnailInfo(opts, outData, err);
+    if (rdbSet == nullptr) {
+        MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
+        return nullptr;
+    }
+    return rdbSet;
+}
+
+void IThumbnailHelper::DeleteThumbnailKv(ThumbRdbOpt &opts)
+{
+    int err;
+    ThumbnailData thumbnailData;
+    shared_ptr<AbsSharedResultSet> rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
+    if (rdbSet == nullptr) {
+        MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
+        return;
+    }
+
+    if (!ThumbnailUtils::DeleteThumbnailData(opts, thumbnailData)) {
+        MEDIA_ERR_LOG("DeleteThumbnailData Faild");
+    }
+
+    if (!ThumbnailUtils::DeleteLcdData(opts, thumbnailData)) {
+        MEDIA_ERR_LOG("DeleteLcdData Faild");
+    }
+}
+
+void IThumbnailHelper::CreateLcd(AsyncTaskData* data)
+{
+    GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
+    DoCreateLcd(taskData->opts, taskData->thumbnailData, true);
+}
+
+void IThumbnailHelper::CreateThumbnail(AsyncTaskData* data)
+{
+    GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
+    DoCreateThumbnail(taskData->opts, taskData->thumbnailData, true);
+}
+
+void IThumbnailHelper::AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront)
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_DEBUG_LOG("IThumbnailHelper::AddAsyncTask asyncWorker is null");
+        return;
+    }
+    GenerateAsyncTaskData* taskData = new (std::nothrow)GenerateAsyncTaskData();
+    if (taskData == nullptr) {
+        MEDIA_DEBUG_LOG("IThumbnailHelper::GenerateAsyncTaskData taskData is null");
+        return;
+    }
+    taskData->opts = opts;
+    taskData->thumbnailData = data;
+
+    shared_ptr<MediaLibraryAsyncTask> generateAsyncTask = make_shared<MediaLibraryAsyncTask>(executor, taskData);
+    asyncWorker->AddTask(generateAsyncTask, isFront);
+}
+
+bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool force)
+{
+    if (ThumbnailUtils::IsImageExist(data.lcdKey, opts.networkId, opts.kvStore)) {
+        MEDIA_DEBUG_LOG("IThumbnailHelper::DoCreateLcd image has exist in kvStore");
+        return true;
+    }
+
+    if (!ThumbnailUtils::LoadSourceImage(data)) {
+        MEDIA_ERR_LOG("LoadSourceImage faild");
+        return false;
+    }
+
+    if (data.dateModified == 0) {
+        int err = 0;
+        ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
+    }
+
+    if (!ThumbnailUtils::GenLcdKey(data)) {
+        MEDIA_ERR_LOG("GenLcdKey faild");
+        return false;
+    }
+
+    if (!ThumbnailUtils::IsImageExist(data.lcdKey, opts.networkId, opts.kvStore)) {
+        if (!ThumbnailUtils::CreateLcdData(data, opts.size)) {
+            MEDIA_ERR_LOG("CreateLcdData faild");
+            return false;
+        }
+
+        if (ThumbnailUtils::SaveLcdData(data, opts.networkId, opts.kvStore) != Status::SUCCESS) {
+            MEDIA_ERR_LOG("SaveLcdData faild");
+            return false;
+        }
+    } else {
+        return true;
+    }
+
+    data.lcd.clear();
+    int err;
+    if ((data.dateModified == 0) || force) {
+        ThumbnailUtils::DeleteOriginImage(opts, data);
+    }
+    if (!ThumbnailUtils::UpdateThumbnailInfo(opts, data, err)) {
+        MEDIA_INFO_LOG("UpdateThumbnailInfo faild err : %{public}d", err);
+        return false;
+    }
+
+    return true;
+}
+
+bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool force)
+{
+    if (ThumbnailUtils::IsImageExist(data.thumbnailKey, opts.networkId, opts.kvStore)) {
+        MEDIA_INFO_LOG("IThumbnailHelper::DoCreateThumbnail image has exist in kvStore");
+        return true;
+    }
+
+    if (!ThumbnailUtils::LoadSourceImage(data)) {
+        MEDIA_ERR_LOG("LoadSourceImage faild");
+        return false;
+    }
+
+    if (data.dateModified == 0) {
+        int err = 0;
+        ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
+    }
+
+    if (!ThumbnailUtils::GenThumbnailKey(data)) {
+        MEDIA_ERR_LOG("GenThumbnailKey faild");
+        return false;
+    }
+
+    if (!ThumbnailUtils::IsImageExist(data.thumbnailKey, opts.networkId, opts.kvStore)) {
+        if (!ThumbnailUtils::CreateThumbnailData(data)) {
+            MEDIA_ERR_LOG("CreateThumbnailData faild");
+            return false;
+        }
+
+        if (ThumbnailUtils::SaveThumbnailData(data, opts.networkId, opts.kvStore) != Status::SUCCESS) {
+            MEDIA_ERR_LOG("SaveThumbnailData faild");
+            return false;
+        }
+    }
+    int err;
+    data.thumbnail.clear();
+    if ((data.dateModified == 0) || force) {
+        ThumbnailUtils::DeleteOriginImage(opts, data);
+    }
+    if (!ThumbnailUtils::UpdateThumbnailInfo(opts, data, err)) {
+        MEDIA_ERR_LOG("UpdateThumbnailInfo faild, %{public}d", err);
+        return false;
+    }
+
+    return true;
+}
+
+bool IThumbnailHelper::DoThumbnailSync(ThumbRdbOpt &opts, ThumbnailData &outData)
+{
+    ThumbnailConnection *conn = new (std::nothrow) ThumbnailConnection;
+    if (conn == nullptr) {
+        return false;
+    }
+    sptr<AAFwk::IAbilityConnection> callback(conn);
+    int ret = conn->GetRemoteDataShareHelper(opts, callback);
+    if (ret != E_OK) {
+        return false;
+    }
+
+    std::vector<std::string> devices = { opts.networkId };
+    opts.table = MEDIALIBRARY_TABLE;
+    if (ThumbnailUtils::SyncPullTable(opts, devices, true)) {
+        MEDIA_INFO_LOG("GetThumbnailPixelMap SyncPullTable FALSE");
+        return false;
+    }
+    shared_ptr<AbsSharedResultSet> resultSet = QueryThumbnailInfo(opts, outData, ret);
+    if ((resultSet == nullptr)) {
+        MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", ret);
+        return false;
+    }
+    return true;
+}
+
+void ThumbnailConnection::OnAbilityConnectDone(
+    const AppExecFwk::ElementName &element, const sptr<IRemoteObject> &remoteObject, int resultCode)
+{
+    if (remoteObject == nullptr) {
+        MEDIA_ERR_LOG("OnAbilityConnectDone failed, remote is nullptr");
+        return;
+    }
+    {
+        std::unique_lock<std::mutex> lock(status_.mtx_);
+        dataShareProxy_ = iface_cast<DataShare::DataShareProxy>(remoteObject);
+    }
+    status_.cond_.notify_all();
+}
+
+void ThumbnailConnection::OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int resultCode)
+{
+    MEDIA_DEBUG_LOG("called begin %{public}d", resultCode);
+    std::unique_lock<std::mutex> lock(status_.mtx_);
+    dataShareProxy_ = nullptr;
+}
+
+int32_t ThumbnailConnection::GetRemoteDataShareHelper(ThumbRdbOpt &opts, sptr<AAFwk::IAbilityConnection> &callback)
+{
+    if ((opts.context == nullptr)) {
+        MEDIA_ERR_LOG("context nullptr");
+        return E_ERR;
+    }
+
+    AAFwk::Want want;
+    want.SetElementName(BUNDLE_NAME, "DataShareExtAbility");
+    want.SetDeviceId(opts.networkId);
+    auto err = AAFwk::AbilityManagerClient::GetInstance()->ConnectAbility(want, callback, opts.context->GetToken());
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("ConnectAbility failed %{public}d", err);
+        return err;
+    }
+    std::unique_lock<std::mutex> lock(status_.mtx_);
+    if (status_.cond_.wait_for(lock, std::chrono::seconds(WAIT_FOR_SECOND),
+        [this] { return dataShareProxy_ != nullptr; })) {
+        MEDIA_DEBUG_LOG("All Wait connect success.");
+    } else {
+        MEDIA_ERR_LOG("All Wait connect timeout.");
+        return E_THUMBNAIL_CONNECT_TIMEOUT;
+    }
+
+    Uri distriuteGenUri(opts.uri + "/" + DISTRIBUTE_THU_OPRN_CREATE);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_URI, opts.uri);
+    auto ret = dataShareProxy_->Insert(distriuteGenUri, valuesBucket);
+    MEDIA_DEBUG_LOG("called end ret = %{public}d", ret);
+    return ret;
+}
+} // namespace Media
+} // namespace OHOS
