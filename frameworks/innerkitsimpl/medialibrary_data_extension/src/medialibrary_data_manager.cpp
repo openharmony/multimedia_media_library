@@ -120,7 +120,6 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
     InitDeviceData();
     MakeDirQuerySetMap(dirQuerySetMap_);
     InitialiseKvStore();
-    CreateRootDirectories(dirQuerySetMap_);
 }
 
 void MediaLibraryDataManager::InitDeviceData()
@@ -257,27 +256,6 @@ void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset>
         outDirQuerySetMap.insert(make_pair(dirVal, dirAsset));
     }
     MEDIA_DEBUG_LOG("MakeDirQuerySetMap OUT");
-}
-
-void MediaLibraryDataManager::CreateRootDirectories(unordered_map<string, DirAsset> &rootDirSetMap)
-{
-    for (const auto &rootDir : rootDirSetMap) {
-        if (rootDir.first.empty()) {
-            continue;
-        }
-        string displayName = rootDir.first;
-        displayName.pop_back();
-        string dirPath = ROOT_MEDIA_DIR + displayName;
-        if (MediaFileUtils::IsDirectory(dirPath)) {
-            continue;
-        }
-        Uri createAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
-        ValuesBucket valuesBucket;
-        valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, dirPath);
-        valuesBucket.PutString(MEDIA_DATA_DB_NAME, displayName);
-        MediaLibraryCommand cmd(createAlbumUri, valuesBucket);
-        MediaLibraryAlbumOperations::CreateAlbumOperation(cmd);
-    }
 }
 
 std::unordered_map<std::string, DirAsset> MediaLibraryDataManager::GetDirQuerySetMap() const
