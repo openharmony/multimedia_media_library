@@ -127,12 +127,13 @@ bool FetchResult::IsAtLastRow()
 variant<int32_t, int64_t, string> ReturnDefaultOnError(string errMsg, ResultSetDataType dataType)
 {
     MEDIA_ERR_LOG("%{public}s", errMsg.c_str());
-    if ((dataType) == TYPE_STRING)
+    if (dataType == TYPE_STRING) {
         return "";
-    else if (dataType == TYPE_INT64)
+    } else if (dataType == TYPE_INT64) {
         return 0LL;
-    else
+    } else {
         return 0;
+    }
 }
 
 variant<int32_t, int64_t, string> FetchResult::GetRowValFromColumn(string columnName, ResultSetDataType dataType,

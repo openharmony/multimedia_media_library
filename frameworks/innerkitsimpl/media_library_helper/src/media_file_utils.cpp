@@ -206,7 +206,7 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
     struct stat fst;
     bool errCode = false;
     if (filePath.size() >= PATH_MAX) {
-        MEDIA_ERR_LOG("File path too long %{public}d", (int)filePath.size());
+        MEDIA_ERR_LOG("File path too long %{public}d", static_cast<int>(filePath.size()));
         return errCode;
     }
     MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
