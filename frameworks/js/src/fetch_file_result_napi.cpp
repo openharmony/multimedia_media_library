@@ -26,6 +26,7 @@ namespace Media {
 thread_local napi_ref FetchFileResultNapi::sConstructor_ = nullptr;
 thread_local FetchResult *FetchFileResultNapi::sFetchFileResult_ = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> FetchFileResultNapi::sMediaDataHelper = nullptr;
+std::mutex FetchFileResultNapi::sDataHelperMutex_;
 
 FetchFileResultNapi::FetchFileResultNapi()
     : env_(nullptr), wrapper_(nullptr) {}
@@ -109,8 +110,10 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
                 obj->fetchFileResult_->isClosed_ = sFetchFileResult_->isClosed_;
                 obj->fetchFileResult_->count_ = sFetchFileResult_->count_;
                 obj->fetchFileResult_->networkId_ = sFetchFileResult_->networkId_;
+
+                sDataHelperMutex_.lock();
                 obj->abilityHelper_ = sMediaDataHelper;
-                fetchRes.release();
+                sDataHelperMutex_.unlock();
             } else {
                 NAPI_ERR_LOG("No native instance assigned yet");
                 FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
@@ -144,7 +147,9 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult 
 
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (status == napi_ok) {
+        sDataHelperMutex_.lock();
         sMediaDataHelper = abilityHelper;
+        sDataHelperMutex_.unlock();
         sFetchFileResult_ = &fileResult;
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         sFetchFileResult_ = nullptr;
@@ -157,7 +162,6 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, FetchResult 
 
     napi_get_undefined(env, &result);
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-
     return result;
 }
 
@@ -461,11 +465,11 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
     jsContext->status = false;
 
     if (!context->fileAssetArray.empty() && (napi_create_array(env, &jsFileArray) == napi_ok)) {
+        auto dataHelper = context->objectInfo->GetMediaDataHelper();
         size_t len = context->fileAssetArray.size();
         size_t i = 0;
         for (i = 0; i < len; i++) {
-            jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAssetArray[i]),
-                                                         context->objectInfo->GetMediaDataHelper());
+            jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAssetArray[i]), dataHelper);
             if (jsFileAsset == nullptr || napi_set_element(env, jsFileArray, i, jsFileAsset) != napi_ok) {
                 NAPI_ERR_LOG("Failed to get file asset napi object");
                 napi_get_undefined(env, &jsContext->data);
@@ -506,10 +510,11 @@ void GetAllObjectFromFetchResult(const FetchFileResultAsyncContext &asyncContext
     unique_ptr<FileAsset> fAsset = nullptr;
     FetchFileResultAsyncContext *context = const_cast<FetchFileResultAsyncContext *>(&asyncContext);
 
-    fAsset = context->objectInfo->GetFetchResultObject()->GetFirstObject();
+    auto fetchResult = context->objectInfo->GetFetchResultObject();
+    fAsset = fetchResult->GetFirstObject();
     while (fAsset != nullptr) {
         context->fileAssetArray.push_back(move(fAsset));
-        fAsset = context->objectInfo->GetFetchResultObject()->GetNextObject();
+        fAsset = fetchResult->GetNextObject();
     }
 }
 
