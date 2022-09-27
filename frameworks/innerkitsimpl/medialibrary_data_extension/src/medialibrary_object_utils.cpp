@@ -735,7 +735,7 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
         MEDIA_ERR_LOG("Failed to obtain fetch file result");
         return nullptr;
     }
-    fetchFileResult->networkId_ = networkId;
+    fetchFileResult->SetNetworkId(networkId);
     return fetchFileResult->GetObjectFromRdb(resultSet, 0);
 }
 

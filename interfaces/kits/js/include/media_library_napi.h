@@ -218,6 +218,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::string networkId;
     std::string extendArgs;
     std::unique_ptr<FetchResult<FileAsset>> fetchFileResult;
+    std::unique_ptr<FetchResult<AlbumAsset>> fetchAlbumResult;
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<SmartAlbumAsset> smartAlbumData;
     OHOS::DataShare::DataShareValuesBucket valuesBucket;

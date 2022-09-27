@@ -40,6 +40,7 @@ FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &res
     resultset_ = resultset;
     networkId_ = "";
     resultNapiType_ = ResultNapiType::TYPE_NAPI_MAX;
+    fetchResType_ = std::is_same<T, FileAsset>::value ? FetchResType::TYPE_FILE : FetchResType::TYPE_ALBUM;
 }
 
 template <class T>
@@ -83,6 +84,12 @@ void FetchResult<T>::SetInfo(unique_ptr<FetchResult<T>> &fetch)
     count_ = fetch->count_;
     networkId_ = fetch->networkId_;
     resultNapiType_ = fetch->resultNapiType_;
+}
+
+template <class T>
+void FetchResult<T>::SetNetworkId(const string &networkId)
+{
+    networkId_ = networkId;
 }
 
 template <class T>
@@ -345,17 +352,25 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Ab
 }
 
 template<class T>
+void FetchResult<T>::GetObjectFromAsset(FileAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+{
+    SetFileAsset(asset, resultSet);
+}
+
+template<class T>
+void FetchResult<T>::GetObjectFromAsset(AlbumAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+{
+    SetAlbumAsset(asset, resultSet);
+}
+
+template<class T>
 unique_ptr<T> FetchResult<T>::GetObject(shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
     MediaLibraryTracer tracer;
     tracer.Start("FetchResult::GetObject");
-    unique_ptr<T> fileAsset = make_unique<T>();
-    if (std::is_same<T, FileAsset>::value) {
-        SetFileAsset(reinterpret_cast<FileAsset *>(fileAsset.get()), resultSet);
-    } else {
-        MEDIA_ERR_LOG("GetObject failed");
-    }
-    return fileAsset;
+    unique_ptr<T> asset = make_unique<T>();
+    GetObjectFromAsset(asset.get(), resultSet);
+    return asset;
 }
 
 template <class T>
@@ -376,6 +391,27 @@ unique_ptr<T> FetchResult<T>::GetObjectFromRdb(shared_ptr<NativeRdb::AbsSharedRe
     return GetObject(resultSet);
 }
 
+template<class T>
+void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+{
+    // Get album id index and value
+    albumData->SetAlbumId(get<int32_t>(GetRowValFromColumn(MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32, resultSet)));
+
+    // Get album title index and value
+    albumData->SetAlbumName(get<string>(GetRowValFromColumn(MEDIA_DATA_DB_TITLE, TYPE_STRING, resultSet)));
+
+    // Get album asset count index and value
+    albumData->SetCount(get<int32_t>(GetRowValFromColumn(MEDIA_DATA_DB_COUNT, TYPE_INT32, resultSet)));
+    albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId_) + "/" +
+        to_string(albumData->GetAlbumId()));
+    // Get album relativePath index and value
+    albumData->SetAlbumRelativePath(get<string>(GetRowValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
+        TYPE_STRING, resultSet)));
+    albumData->SetAlbumDateModified(get<int64_t>(GetRowValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED,
+        TYPE_INT64, resultSet)));
+}
+
 template class FetchResult<FileAsset>;
+template class FetchResult<AlbumAsset>;
 }  // namespace Media
 }  // namespace OHOS

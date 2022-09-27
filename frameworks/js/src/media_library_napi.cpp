@@ -655,7 +655,7 @@ static void GetFileAssetsExecute(napi_env env, void *data)
     if (resultSet != nullptr) {
         // Create FetchResult object using the contents of resultSet
         context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
-        context->fetchFileResult->networkId_ = context->networkId;
+        context->fetchFileResult->SetNetworkId(context->networkId);
         if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
             context->fetchFileResult->resultNapiType_ = context->resultNapiType;
         }
@@ -663,6 +663,33 @@ static void GetFileAssetsExecute(napi_env env, void *data)
     } else {
         context->SaveError(resultSet);
         NAPI_ERR_LOG("Query for get fileAssets failed");
+    }
+}
+
+static void GetNapiFileResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    // Create FetchResult object using the contents of resultSet
+    if (context->fetchFileResult == nullptr) {
+        NAPI_ERR_LOG("No fetch file result found!");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to obtain Fetch File Result");
+        return;
+    }
+    if (context->fetchFileResult->GetCount() < 0) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
+                                                     "find no data by options");
+        return;
+    }
+    napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchFileResult),
+        context->objectInfo->sDataShareHelper_);
+    if (fileResult == nullptr) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to create js object for Fetch File Result");
+    } else {
+        jsContext->data = fileResult;
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
     }
 }
 
@@ -681,28 +708,7 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
     } else {
-        // Create FetchResult object using the contents of resultSet
-        if (context->fetchFileResult != nullptr) {
-            if (context->fetchFileResult->GetCount() < 0) {
-                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
-                                                             "find no data by options");
-            } else {
-                napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchFileResult),
-                    context->objectInfo->sDataShareHelper_);
-                if (fileResult == nullptr) {
-                    MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                        "Failed to create js object for Fetch File Result");
-                } else {
-                    jsContext->data = fileResult;
-                    jsContext->status = true;
-                    napi_get_undefined(env, &jsContext->error);
-                }
-            }
-        } else {
-            NAPI_ERR_LOG("No fetch file result found!");
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                "Failed to obtain Fetch File Result");
-        }
+        GetNapiFileResult(env, context, jsContext);
     }
 
     if (context->work != nullptr) {
@@ -787,7 +793,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
         uri, predicates, columns);
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
-    fetchFileResult->networkId_ = context->networkId;
+    fetchFileResult->SetNetworkId(context->networkId);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetAlbumCoverUr:FileAsset is nullptr");
     string coverUri = fileAsset->GetUri();
@@ -854,6 +860,12 @@ static void GetResultDataExecute(napi_env env, void *data)
         return;
     }
 
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        context->fetchAlbumResult = make_unique<FetchResult<AlbumAsset>>(move(resultSet));
+        context->fetchAlbumResult->SetNetworkId(context->networkId);
+        return;
+    }
+
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
         if (albumData != nullptr) {
@@ -864,6 +876,59 @@ static void GetResultDataExecute(napi_env env, void *data)
         } else {
             context->SaveError(E_NO_MEMORY);
         }
+    }
+}
+
+static void MediaLibAlbumsAsyncResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    if (context->albumNativeArray.empty()) {
+        napi_value albumNoArray = nullptr;
+        napi_create_array(env, &albumNoArray);
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->data = albumNoArray;
+    } else {
+        napi_value albumArray = nullptr;
+        napi_create_array_with_length(env, context->albumNativeArray.size(), &albumArray);
+        for (size_t i = 0; i < context->albumNativeArray.size(); i++) {
+            napi_value albumNapiObj = AlbumNapi::CreateAlbumNapi(env, *(context->albumNativeArray[i]),
+                context->objectInfo->sDataShareHelper_);
+            napi_set_element(env, albumArray, i, albumNapiObj);
+        }
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->data = albumArray;
+    }
+}
+
+static void UserFileMgrAlbumsAsyncResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    if (context->fetchAlbumResult->GetCount() < 0) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
+            "find no data by options");
+    } else {
+        napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchAlbumResult),
+            context->objectInfo->sDataShareHelper_);
+        if (fileResult == nullptr) {
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+                "Failed to create js object for Fetch File Result");
+        } else {
+            jsContext->data = fileResult;
+            jsContext->status = true;
+            napi_get_undefined(env, &jsContext->error);
+        }
+    }
+}
+
+static void AlbumsAsyncResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    if (context->resultNapiType == ResultNapiType::TYPE_MEDIALIBRARY) {
+        MediaLibAlbumsAsyncResult(env, context, jsContext);
+    } else {
+        UserFileMgrAlbumsAsyncResult(env, context, jsContext);
     }
 }
 
@@ -881,31 +946,13 @@ static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status, void *
         napi_get_undefined(env, &jsContext->data);
         context->HandleError(env, jsContext->error);
     } else {
-        if (context->albumNativeArray.empty()) {
-            napi_value albumNoArray = nullptr;
-            napi_create_array(env, &albumNoArray);
-            jsContext->status = true;
-            napi_get_undefined(env, &jsContext->error);
-            jsContext->data = albumNoArray;
-        } else {
-            napi_value albumArray = nullptr;
-            napi_create_array(env, &albumArray);
-            for (size_t i = 0; i < context->albumNativeArray.size(); i++) {
-                napi_value albumNapiObj = AlbumNapi::CreateAlbumNapi(env, *(context->albumNativeArray[i]),
-                    context->objectInfo->sDataShareHelper_);
-                napi_set_element(env, albumArray, i, albumNapiObj);
-            }
-            jsContext->status = true;
-            napi_get_undefined(env, &jsContext->error);
-            jsContext->data = albumArray;
-        }
+        AlbumsAsyncResult(env, context, jsContext);
     }
 
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
-
     delete context;
 }
 
@@ -958,7 +1005,7 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     // Create FetchResult object using the contents of resultSet
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     CHECK_NULL_PTR_RETURN_VOID(context->fetchFileResult, "Failed to get file asset by id, fetchFileResult is nullptr");
-    context->fetchFileResult->networkId_ = networkId;
+    context->fetchFileResult->SetNetworkId(networkId);
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         context->fetchFileResult->resultNapiType_ = context->resultNapiType;
     }

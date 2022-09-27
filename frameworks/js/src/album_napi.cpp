@@ -716,7 +716,6 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status, vo
                 jsContext->status = true;
             }
         }
-
     } else {
         NAPI_ERR_LOG("No fetch file result found!");
         napi_get_undefined(env, &jsContext->data);
