@@ -18,8 +18,8 @@
 
 #include <cstdlib>
 
+#include "extension_base.h"
 #include "hitrace_meter.h"
-
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 
@@ -50,7 +50,14 @@ MediaScannerObj *MediaScannerObj::GetMediaScannerInstance()
     static MediaScannerObj scanner;
 
     static std::once_flag onceFlag;
-    std::call_once(onceFlag, [&]() { MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(nullptr); });
+    std::call_once(onceFlag, [&]() {
+        auto context = AbilityRuntime::Context::GetApplicationContext();
+        if (context == nullptr) {
+            MEDIA_ERR_LOG("Failed to get context");
+            return;
+        }
+        MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context);
+    });
 
     return &scanner;
 }
