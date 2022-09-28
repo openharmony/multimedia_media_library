@@ -83,7 +83,7 @@ private:
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
     std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryThumbnailInfo(ThumbRdbOpt &opts,
         ThumbnailData &data, int &errorCode);
-    bool QueryThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailRdbData> &infos, int &errorCode);
+    bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailRdbData> &infos, int &errorCode);
     bool UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &errorCode);
 
     // Steps

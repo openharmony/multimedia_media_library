@@ -22,6 +22,8 @@
 #include "common_event_support.h"
 #include "want.h"
 
+#include "medialibrary_data_manager.h"
+#include "medialibrary_errno.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
 
@@ -41,7 +43,10 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
 
 MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
     : EventFwk::CommonEventSubscriber(subscriberInfo)
-{}
+{
+    isScreenOff_ = false;
+    isPowerConnected_ = false;
+}
 
 bool MedialibrarySubscriber::Subscribe(void)
 {
@@ -61,8 +66,49 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     std::string action = want.GetAction();
     MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
 
+    if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF) == 0) {
+        isScreenOff_ = true;
+        DoBackgroundOperation();
+    } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED) == 0) {
+        isPowerConnected_ = true;
+        DoBackgroundOperation();
+    } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON) == 0) {
+        isScreenOff_ = false;
+        StopBackgroundOperation();
+    } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED) == 0) {
+        isPowerConnected_ = false;
+        StopBackgroundOperation();
+    }
+
     std::string srcPath = "/storage/media/local/files";
     MediaScannerManager::GetInstance()->ScanDir(srcPath, nullptr);
+}
+
+void MedialibrarySubscriber::DoBackgroundOperation()
+{
+    if (isScreenOff_ && isPowerConnected_) {
+        std::shared_ptr<MediaLibraryDataManager> dataManager = MediaLibraryDataManager::GetInstance();
+        if (dataManager == nullptr) {
+            return;
+        }
+        auto result = dataManager->GenerateThumbnails();
+        if (result != E_OK) {
+            MEDIA_ERR_LOG("GenerateThumbnails faild");
+        }
+
+        result = dataManager->DoAging();
+        if (result != E_OK) {
+            MEDIA_ERR_LOG("DoAging faild");
+        }
+    } else {
+        MEDIA_DEBUG_LOG("DoBackgroundOperation success isScreenOff_ %{public}d, isPowerConnected_ %{public}d",
+            isScreenOff_, isPowerConnected_);
+    }
+}
+
+void MedialibrarySubscriber::StopBackgroundOperation()
+{
+    MediaLibraryDataManager::GetInstance()->InterruptBgworker();
 }
 }  // namespace Media
 }  // namespace OHOS

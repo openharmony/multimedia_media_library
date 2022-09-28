@@ -41,18 +41,22 @@ public:
     ~MediaLibraryDeviceOperations() = delete;
 
     static bool InsertDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                          const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
+        const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
     static bool UpdateDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                          const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
+        const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
     static bool DeleteDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &udid);
     static bool UpdateSyncStatus(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &udid,
-                          int32_t syncStatus);
+        int32_t syncStatus);
     static bool GetSyncStatusById(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &udid,
-                           int32_t &syncStatus);
+        int32_t &syncStatus);
     static bool QueryDeviceTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                          std::map<std::string, std::set<int>> &excludeMap);
-    static bool GetAllDeviceDatas(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                           vector<MediaLibraryDeviceInfo> &outDeviceList);
+        std::map<std::string, std::set<int>> &excludeMap);
+    static bool GetAllDeviceData(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        std::vector<MediaLibraryDeviceInfo> &outDeviceList);
+    static bool GetAgingDeviceData(const std::shared_ptr<RdbStore> &rdbStore,
+        std::vector<MediaLibraryDeviceInfo> &outDeviceList);
+    static bool GetAllDeviceUdid(const std::shared_ptr<RdbStore> &rdbStore,
+        std::vector<string> &deviceUdids);
 };
 } // namespace Media
 } // namespace OHOS

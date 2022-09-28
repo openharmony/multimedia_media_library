@@ -15,7 +15,7 @@ class ScannerMessaageClient {
     remoteCallback = null;
     context = null;
     options = null;
-    constructor(){
+    constructor() {
         this.context = globalThis.mainAbilityContext;
         this.options = {
             outObj: this,

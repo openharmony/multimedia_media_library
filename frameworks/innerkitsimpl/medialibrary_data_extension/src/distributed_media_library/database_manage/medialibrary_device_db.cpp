@@ -61,8 +61,7 @@ int32_t MediaLibraryDeviceDb::UpdateDeviceInfo(const ValuesBucket &values, const
         obj.GetString(udid);
     }
 
-    CHECK_AND_RETURN_RET_LOG(!udid.empty(), E_DEVICE_OPER_ERR, "Invalid dev id = %{private}s",
-        udid.c_str());
+    CHECK_AND_RETURN_RET_LOG(!udid.empty(), E_DEVICE_OPER_ERR, "Invalid dev id");
 
     int32_t updatedRows(0);
     vector<string> whereArgs = { udid };

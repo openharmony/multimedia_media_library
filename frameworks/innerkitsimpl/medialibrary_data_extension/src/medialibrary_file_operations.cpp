@@ -28,8 +28,6 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_db.h"
-#include "medialibrary_thumbnail.h"
-
 #include "medialibrary_unistore_manager.h"
 #include "native_album_asset.h"
 #include "rdb_utils.h"

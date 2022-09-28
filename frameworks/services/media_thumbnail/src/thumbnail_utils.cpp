@@ -251,7 +251,7 @@ std::string ThumbnailUtils::GetUdid()
     ret = deviceManager.GetUdidByNetworkId(BUNDLE_NAME, deviceInfo.networkId, innerUdid);
     if (ret != 0) {
         MEDIA_ERR_LOG("GetDeviceUdid error networkId = %{private}s, ret %{public}d",
-            deviceInfo.networkId.c_str(), ret);
+            deviceInfo.networkId, ret);
         return std::string();
     }
     return innerUdid;

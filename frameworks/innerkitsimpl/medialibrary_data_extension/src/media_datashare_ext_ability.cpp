@@ -270,7 +270,8 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
     string closeUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
     string insertUri = uri.ToString();
     bool isWrite = (insertUri == closeUri) ? false : true;
-    if (!CheckPermFromUri(insertUri, isWrite)) {
+    if ((insertUri.find(DISTRIBUTE_THU_OPRN_CREATE) == string::npos) &&
+        !CheckPermFromUri(insertUri, isWrite)) {
         return E_PERMISSION_DENIED;
     }
 

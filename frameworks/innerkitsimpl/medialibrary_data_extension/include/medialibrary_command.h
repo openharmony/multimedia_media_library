@@ -52,7 +52,11 @@ enum class OperationType : uint32_t {
     QUERY,
     ISDICTIONARY,
     GETCAPACITY,
-    SCAN
+    SCAN,
+    GENERATE,
+    AGING,
+    DISTRIBUTE_AGING,
+    DISTRIBUTE_CREATE,
 };
 
 class MediaLibraryCommand {

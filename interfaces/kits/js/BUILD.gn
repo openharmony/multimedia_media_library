@@ -77,6 +77,7 @@ config("napi_config") {
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension/include",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
     "//foundation/multimedia/media_library/frameworks/services/media_scanner/include/callback",
+    "//foundation/multimedia/media_library/frameworks/services/media_thumbnail/include",
     "//foundation/multimedia/media_library/frameworks/utils/include",
     "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
     "//foundation/multimedia/media_library/interfaces/kits/js/include",

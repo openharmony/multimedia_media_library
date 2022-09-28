@@ -1067,7 +1067,6 @@ static bool IsDirectory(const string &dirName)
 
 static bool CheckTypeOfType(const std::string &firstDirName, int32_t fileMediaType)
 {
-    NAPI_DEBUG_LOG("CheckTypeOfType IN");
     // "CDSA/"
     if (!strcmp(firstDirName.c_str(), directoryEnumValues[0].c_str())) {
         if (fileMediaType == MEDIA_TYPE_IMAGE || fileMediaType == MEDIA_TYPE_VIDEO) {
@@ -1099,7 +1098,6 @@ static bool CheckTypeOfType(const std::string &firstDirName, int32_t fileMediaTy
             return false;
         }
     }
-    NAPI_DEBUG_LOG("CheckTypeOfType END");
     return true;
 }
 static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
