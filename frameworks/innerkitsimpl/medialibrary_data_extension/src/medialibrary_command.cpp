@@ -67,7 +67,7 @@ MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, cons
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
-    const std::string &networkId)
+    const string &networkId)
 {
     SetOprnObject(oprnObject);
     SetOprnType(oprnType);
@@ -177,6 +177,11 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { MEDIA_SMARTALBUMOPRN, OperationObject::SMART_ALBUM },
         { MEDIA_SMARTALBUMMAPOPRN, OperationObject::SMART_ALBUM_MAP },
         { MEDIA_KVSTOREOPRN, OperationObject::KVSTORE },
+        { THU_OPRN_GENERATES, OperationObject::THUMBNAIL },
+        { THU_OPRN_AGING, OperationObject::THUMBNAIL },
+        { DISTRIBUTE_THU_OPRN_AGING, OperationObject::THUMBNAIL },
+        { DISTRIBUTE_THU_OPRN_CREATE, OperationObject::THUMBNAIL },
+
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
         { MEDIA_DATA_DB_THUMBNAIL, OperationObject::THUMBNAIL },
@@ -220,7 +225,11 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { MEDIA_FILEOPRN_ISDIRECTORY, OperationType::ISDICTIONARY },
         { MEDIA_FILEOPRN_GETALBUMCAPACITY, OperationType::QUERY },
         { MEDIA_QUERYOPRN_QUERYVOLUME, OperationType::QUERY },
-        { MEDIA_BOARDCASTOPRN, OperationType::SCAN }
+        { MEDIA_BOARDCASTOPRN, OperationType::SCAN },
+        { THU_OPRN_GENERATES, OperationType::GENERATE },
+        { THU_OPRN_AGING, OperationType::AGING },
+        { DISTRIBUTE_THU_OPRN_AGING, OperationType::DISTRIBUTE_AGING },
+        { DISTRIBUTE_THU_OPRN_CREATE, OperationType::DISTRIBUTE_CREATE }
     };
 
     if (oprnTypeMap.find(oprnName) != oprnTypeMap.end()) {

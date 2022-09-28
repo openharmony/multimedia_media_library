@@ -41,6 +41,7 @@
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_sync_table.h"
 #include "medialibrary_unistore_manager.h"
+#include "media_library_tracer.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "sa_mgr_client.h"
@@ -58,7 +59,7 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace {
 const OHOS::DistributedKv::AppId KVSTORE_APPID = {"com.ohos.medialibrary.medialibrarydata"};
-const OHOS::DistributedKv::StoreId KVSTORE_STOREID = {"ringtone"};
+const OHOS::DistributedKv::StoreId KVSTORE_STOREID = {"medialibrary_thumbnail"};
 };
 
 namespace OHOS {
@@ -120,6 +121,7 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
     InitDeviceData();
     MakeDirQuerySetMap(dirQuerySetMap_);
     InitialiseKvStore();
+    InitialiseThumbnailService();
 }
 
 void MediaLibraryDataManager::InitDeviceData()
@@ -154,7 +156,10 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     if (MediaLibraryDevice::GetInstance()) {
         MediaLibraryDevice::GetInstance()->Stop();
     };
-
+    if (thumbnailService_ != nullptr) {
+        thumbnailService_->ReleaseService();
+        thumbnailService_ = nullptr;
+    }
     MediaLibraryUnistoreManager::GetInstance().Stop();
     extension_ = nullptr;
 }
@@ -168,7 +173,6 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
     MediaLibraryUnistoreManager::GetInstance().Init(context_);
     rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
 
-    mediaThumbnail_ = std::make_shared<MediaLibraryThumbnail>();
     return E_SUCCESS;
 }
 
@@ -181,6 +185,7 @@ void MediaLibraryDataManager::InitialiseKvStore()
     Options options = {
         .createIfMissing = true,
         .encrypt = false,
+        .backup = false,
         .autoSync = false,
         .area = DistributedKv::Area::EL2,
         .kvStoreType = KvStoreType::SINGLE_VERSION,
@@ -318,11 +323,37 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
             result = kvStoreOprn.HandleKvStoreInsertOperations(operationType, value, kvStorePtr_);
             break;
         }
+        case OperationObject::THUMBNAIL: {
+            result = HandleThumbnailOperations(cmd);
+            break;
+        }
         default: {
             result = MediaLibraryObjectUtils::InsertInDb(cmd);
             MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
             break;
         }
+    }
+    return result;
+}
+
+int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &cmd)
+{
+    int32_t result = E_FAIL;
+    switch (cmd.GetOprnType()) {
+        case OperationType::GENERATE:
+            result = thumbnailService_->GenerateThumbnails();
+            break;
+        case OperationType::AGING:
+            result = thumbnailService_->LcdAging();
+            break;
+        case OperationType::DISTRIBUTE_AGING:
+            result = DistributeDeviceAging();
+            break;
+        case OperationType::DISTRIBUTE_CREATE:
+            result = CreateThumbnail(cmd.GetValueBucket());
+            break;
+        default:
+            MEDIA_ERR_LOG("bad operation type %{public}u", cmd.GetOprnType());
     }
     return result;
 }
@@ -423,88 +454,139 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
 }
 
-bool ParseThumbnailInfo(string &uriString, Size &size)
+void MediaLibraryDataManager::InterruptBgworker()
 {
-    string::size_type pos = uriString.find_last_of('?');
-    string queryKeys;
-    if (string::npos == pos) {
-        return false;
+    if (thumbnailService_ == nullptr) {
+        MEDIA_ERR_LOG("thumbnailService_ is null");
+        return;
     }
-    vector<string> keyWords = {
-        MEDIA_OPERN_KEYWORD,
-        MEDIA_DATA_DB_WIDTH,
-        MEDIA_DATA_DB_HEIGHT
-    };
-    queryKeys = uriString.substr(pos + 1);
-    uriString = uriString.substr(0, pos);
-    vector<string> vectorKeys;
-    MediaLibraryDataManagerUtils::SplitKeys(queryKeys, vectorKeys);
-    if (vectorKeys.size() != keyWords.size()) {
-        MEDIA_ERR_LOG("Parse error keys count %{private}d", (int)vectorKeys.size());
-        return false;
-    }
-    string action;
-    int width = 0;
-    int height = 0;
-    for (uint32_t i = 0; i < vectorKeys.size(); i++) {
-        string subKey, subVal;
-        MediaLibraryDataManagerUtils::SplitKeyValue(vectorKeys[i], subKey, subVal);
-        if (subKey.empty()) {
-            MEDIA_ERR_LOG("Parse key error [ %{private}s ]", vectorKeys[i].c_str());
-            return false;
-        }
-        if (subKey == MEDIA_OPERN_KEYWORD) {
-            action = subVal;
-        } else if (subKey == MEDIA_DATA_DB_WIDTH) {
-            if (MediaLibraryDataManagerUtils::IsNumber(subVal)) {
-                width = stoi(subVal);
-            }
-        } else if (subKey == MEDIA_DATA_DB_HEIGHT) {
-            if (MediaLibraryDataManagerUtils::IsNumber(subVal)) {
-                height = stoi(subVal);
-            }
-        }
-    }
-    MEDIA_INFO_LOG("ParseThumbnailInfo| action [%{private}s] width %{private}d height %{private}d",
-        action.c_str(), width, height);
-    if (action != MEDIA_DATA_DB_THUMBNAIL || width <= 0 || height <= 0) {
-        MEDIA_ERR_LOG("ParseThumbnailInfo | Error args");
-        return false;
-    }
-    size.width = width;
-    size.height = height;
-    return true;
+    thumbnailService_->InterruptBgworker();
 }
 
-shared_ptr<ResultSetBridge> GenThumbnail(shared_ptr<RdbStore> rdb,
-    shared_ptr<MediaLibraryThumbnail> thumbnail,
-    const string &uri, Size &size, string &networkId)
+int32_t MediaLibraryDataManager::GenerateThumbnails()
 {
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::GenThumbnail");
+    if (thumbnailService_ == nullptr) {
+        MEDIA_ERR_LOG("thumbnailService_ is null");
+        return E_FAIL;
+    }
+    return thumbnailService_->GenerateThumbnails();
+}
 
-    shared_ptr<ResultSetBridge> queryResultSet;
-    string filesTableName = MEDIALIBRARY_TABLE;
-
-    if (!networkId.empty()) {
-        StartTrace(HITRACE_TAG_FILEMANAGEMENT, "rdb->ObtainDistributedTableName");
-        filesTableName = rdb->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
-        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
+int32_t MediaLibraryDataManager::DoAging()
+{
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::DoAging IN");
+    if (thumbnailService_ == nullptr) {
+        MEDIA_ERR_LOG("thumbnailService_ is null");
+        return E_FAIL;
+    }
+    int32_t errorCode = thumbnailService_->LcdAging();
+    if (errorCode != 0) {
+        MEDIA_ERR_LOG("LcdAging exist error %{public}d", errorCode);
     }
 
-    string rowId = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
-    ThumbRdbOpt opts = {
-        .store = rdb,
-        .table = filesTableName,
-        .row = rowId,
-        .uri = uri
-    };
+    errorCode = DistributeDeviceAging();
+    if (errorCode != 0) {
+        MEDIA_ERR_LOG("DistributeDeviceAging exist error %{public}d", errorCode);
+    }
 
-    MEDIA_INFO_LOG("Get thumbnail [ %{private}s ], width %{private}d", opts.row.c_str(), size.width);
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "thumbnail->GetThumbnailKey");
-    queryResultSet = thumbnail->GetThumbnailKey(opts, size);
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
+    errorCode = LcdDistributeAging();
+    if (errorCode != 0) {
+        MEDIA_ERR_LOG("LcdDistributeAging exist error %{public}d", errorCode);
+    }
 
-    return queryResultSet;
+    return errorCode;
+}
+
+int32_t MediaLibraryDataManager::LcdDistributeAging()
+{
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::LcdDistributeAging IN");
+    auto deviceInstance = MediaLibraryDevice::GetInstance();
+    if ((thumbnailService_ == nullptr) || (deviceInstance == nullptr)) {
+        MEDIA_ERR_LOG("thumbnailService_ is null");
+        return E_FAIL;
+    }
+    int32_t result = E_SUCCESS;
+    vector<string> deviceUdids;
+    deviceInstance->QueryAllDeviceUdid(deviceUdids);
+    for (string &udid : deviceUdids) {
+        result = thumbnailService_->LcdDistributeAging(udid);
+        if (result != E_SUCCESS) {
+            MEDIA_ERR_LOG("LcdDistributeAging fail result is %{public}d", result);
+            break;
+        }
+    }
+    return result;
+}
+
+int32_t MediaLibraryDataManager::DistributeDeviceAging()
+{
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::DistributeDeviceAging IN");
+    auto deviceInstance = MediaLibraryDevice::GetInstance();
+    if ((thumbnailService_ == nullptr) || (deviceInstance == nullptr)) {
+        MEDIA_ERR_LOG("thumbnailService_ is null");
+        return E_FAIL;
+    }
+    int32_t result = E_FAIL;
+    vector<MediaLibraryDeviceInfo> deviceDataBaseList;
+    deviceInstance->QueryAgingDeviceInfos(deviceDataBaseList);
+    MEDIA_DEBUG_LOG("MediaLibraryDevice InitDeviceRdbStore deviceDataBaseList size =  %{public}d",
+        (int) deviceDataBaseList.size());
+    for (MediaLibraryDeviceInfo deviceInfo : deviceDataBaseList) {
+        result = thumbnailService_->ClearDistributeThumbnail(deviceInfo.deviceUdid);
+        if (result != E_SUCCESS) {
+            MEDIA_ERR_LOG("%{private}s ClearDistributeThumbnail fail result is %{public}d",
+                deviceInfo.deviceUdid.c_str(), result);
+            continue;
+        }
+    }
+    return result;
+}
+
+shared_ptr<ResultSetBridge> MediaLibraryDataManager::GenThumbnail(const string &uri)
+{
+    if (thumbnailService_ == nullptr) {
+        MEDIA_ERR_LOG("thumbnailService_ is null");
+        return nullptr;
+    }
+    return thumbnailService_->GetThumbnail(uri);
+}
+
+void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri)
+{
+    if (thumbnailService_ == nullptr) {
+        MEDIA_ERR_LOG("thumbnailService_ is null");
+        return;
+    }
+    if (!uri.empty()) {
+        int32_t err = thumbnailService_->CreateThumbnailAsync(uri);
+        if (err != E_SUCCESS) {
+            MEDIA_ERR_LOG("ThumbnailService CreateThumbnailAsync failed : %{public}d", err);
+        }
+    }
+}
+
+int32_t MediaLibraryDataManager::CreateThumbnail(const ValuesBucket &values)
+{
+    if (thumbnailService_ == nullptr) {
+        MEDIA_ERR_LOG("thumbnailService_ is null");
+        return E_ERR;
+    }
+    string actualUri;
+    ValueObject valueObject;
+
+    if (values.GetObject(MEDIA_DATA_DB_URI, valueObject)) {
+        valueObject.GetString(actualUri);
+    }
+
+    if (!actualUri.empty()) {
+        int32_t errorCode = thumbnailService_->CreateThumbnail(actualUri);
+        if (errorCode != E_OK) {
+            MEDIA_ERR_LOG("CreateThumbnail failed : %{public}d", errorCode);
+            return errorCode;
+        }
+    }
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager CreateThumbnail: OUT");
+    return E_OK;
 }
 
 void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationObject oprnObject)
@@ -532,10 +614,10 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::Query");
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "MediaLibraryDataManager::Query");
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryDataManager::Query");
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Rdb Store is not initialized");
-        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return nullptr;
     }
 
@@ -550,26 +632,23 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(predicates.GetOrder());
 
-    string uriString = uri.ToString();
     string networkId = cmd.GetOprnDevice();
     OperationObject oprnObject = cmd.GetOprnObject();
     NeedQuerySync(networkId, oprnObject);
 
     shared_ptr<ResultSetBridge> queryResultSet;
-    Size size;
-    bool thumbnailQuery = ParseThumbnailInfo(uriString, size);
-    MEDIA_DEBUG_LOG("uriString = %{public}s, thumbnailQuery %{private}d, Rdb Verison %{private}d",
-        uriString.c_str(), thumbnailQuery, MEDIA_RDB_VERSION);
-    if (thumbnailQuery) {
-        StartTrace(HITRACE_TAG_FILEMANAGEMENT, "GenThumbnail");
-        queryResultSet = GenThumbnail(rdbStore_, mediaThumbnail_, uriString, size, networkId);
-        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
+    if (cmd.GetOprnObject() == OperationObject::THUMBNAIL) {
+        string uriString = uri.ToString();
+        if (!ThumbnailService::ParseThumbnailInfo(uriString)) {
+            return nullptr;
+        }
+        tracer.Start("GenThumbnail");
+        queryResultSet = GenThumbnail(uriString);
+        tracer.Finish();
     } else {
         auto absResultSet = QueryRdb(uri, columns, predicates);
         queryResultSet = RdbUtils::ToResultSetBridge(absResultSet);
     }
-
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
     return queryResultSet;
 }
@@ -668,5 +747,25 @@ void MediaLibraryDataManager::NotifyChange(const Uri &uri)
         extension_->NotifyChange(uri);
     }
 }
+
+void MediaLibraryDataManager::InitialiseThumbnailService()
+{
+    if (thumbnailService_ != nullptr) {
+        return;
+    }
+    thumbnailService_ = ThumbnailService::GetInstance(rdbStore_, kvStorePtr_, context_);
+    if (thumbnailService_ == nullptr) {
+        MEDIA_INFO_LOG("MediaLibraryDataManager::InitialiseThumbnailService failed");
+    }
+}
+
+int32_t ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)
+{
+    auto instance = MediaLibraryDataManager::GetInstance();
+    if (instance != nullptr) {
+        instance->CreateThumbnailAsync(uri);
+    }
+    return E_OK;
+};
 }  // namespace Media
 }  // namespace OHOS

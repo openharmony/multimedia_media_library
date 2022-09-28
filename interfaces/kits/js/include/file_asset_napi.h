@@ -65,7 +65,6 @@ public:
     void SetTrash(bool isTrash);
     static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
     static std::mutex sDataHelperMutex_;
-    static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
         const std::shared_ptr<AbilityRuntime::Context> &context);
 

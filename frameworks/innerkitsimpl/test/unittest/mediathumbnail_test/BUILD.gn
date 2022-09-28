@@ -31,6 +31,7 @@ ohos_unittest("mediathumbnail_test") {
     "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
+    "${MEDIA_LIB_SERVICES_DIR}/interfaces/inner_api/media_library_helper/include",
   ]
 
   sources = [
@@ -40,6 +41,7 @@ ohos_unittest("mediathumbnail_test") {
 
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/media_library_helper:media_thumbnail_helper",
     "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
   ]
 

@@ -219,7 +219,6 @@ void ThumbnailService::StopAllWorker()
 
 int32_t ThumbnailService::GenerateThumbnails()
 {
-    MEDIA_DEBUG_LOG("ThumbnailService::GenerateThumbnails IN");
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .kvStore = kvStorePtr_,
@@ -240,7 +239,6 @@ int32_t ThumbnailService::GenerateThumbnails()
 
 int32_t ThumbnailService::LcdAging()
 {
-    MEDIA_DEBUG_LOG("ThumbnailService::LcdAging IN");
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .kvStore = kvStorePtr_,
@@ -256,7 +254,6 @@ int32_t ThumbnailService::LcdAging()
 
 int32_t ThumbnailService::LcdDistributeAging(const string &udid)
 {
-    MEDIA_DEBUG_LOG("ThumbnailService::LcdDistributeAging IN %{public}s", udid.c_str());
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .kvStore = kvStorePtr_,
@@ -272,7 +269,6 @@ int32_t ThumbnailService::LcdDistributeAging(const string &udid)
 
 int32_t ThumbnailService::ClearDistributeThumbnail(const string &udid)
 {
-    MEDIA_DEBUG_LOG("ThumbnailService::ClearDistributeThumbnail IN");
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .kvStore = kvStorePtr_,
