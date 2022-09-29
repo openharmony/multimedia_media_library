@@ -77,6 +77,11 @@ enum class DataType : int32_t {
     TYPE_BOOL
 };
 
+enum class FetchResType : int32_t {
+    TYPE_FILE = 1,
+    TYPE_ALBUM
+};
+
 const int32_t SUCCESS = 0;
 
 const int32_t DEFAULT_MEDIA_ID = 0;

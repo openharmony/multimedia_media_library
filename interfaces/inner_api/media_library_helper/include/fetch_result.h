@@ -55,6 +55,7 @@ public:
     bool IsClosed();
     bool IsAtLastRow();
     void SetInfo(unique_ptr<FetchResult<T>> &fetch);
+    void SetNetworkId(const string &networkId);
     std::unique_ptr<T> GetObjectAtPosition(int32_t index);
     std::unique_ptr<T> GetFirstObject();
     std::unique_ptr<T> GetObjectFromRdb(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, int idx);
@@ -68,6 +69,7 @@ public:
     std::string networkId_;
     ResultNapiType resultNapiType_;
     std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
+    FetchResType fetchResType_;
 
 private:
     std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
@@ -76,6 +78,8 @@ private:
     int32_t GetFileCount(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
     void SetFileAsset(FileAsset *fileAsset, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     void SetAlbumAsset(AlbumAsset* albumData, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    void GetObjectFromAsset(FileAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    void GetObjectFromAsset(AlbumAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
 };
 } // namespace Media
 } // namespace OHOS

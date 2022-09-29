@@ -320,7 +320,8 @@ int32_t MediaLibraryManager::DeleteAlbum(const int32_t albumId)
     return retVal;
 }
 
-unique_ptr<FetchResult<FileAsset>> MediaLibraryManager::GetAlbumFileAssets(const int32_t albumId, const MediaFetchOptions &option)
+unique_ptr<FetchResult<FileAsset>> MediaLibraryManager::GetAlbumFileAssets(const int32_t albumId,
+    const MediaFetchOptions &option)
 {
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = nullptr;
     DataSharePredicates predicates;

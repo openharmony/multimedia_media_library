@@ -37,16 +37,16 @@ public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
 
-    template<class T>
-    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<T>> fileResult,
+    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<FileAsset>> fileResult,
                                             std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
-
-    std::shared_ptr<FetchResult<FileAsset>> GetFetchResultObject();
-
+    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<AlbumAsset>> fileResult,
+                                            std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
+    std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResultObject();
+    std::shared_ptr<FetchResult<AlbumAsset>> GetFetchAlbumResultObject();
     std::shared_ptr<DataShare::DataShareHelper> GetMediaDataHelper() const;
 
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResult() const;
-
+    FetchResType GetFetchResType();
     static std::shared_ptr<DataShare::DataShareHelper> sMediaDataHelper;
     static std::mutex sDataHelperMutex_;
 
@@ -65,10 +65,13 @@ private:
 
     napi_env env_;
     std::shared_ptr<FetchResult<FileAsset>> fetchFileResult_;
-
+    std::shared_ptr<FetchResult<AlbumAsset>> fetchAlbumResult_;
+    FetchResType fetchResType_;
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
     static inline thread_local std::unique_ptr<FetchResult<FileAsset>> sFetchFileResult_ = nullptr;
+    static inline thread_local std::unique_ptr<FetchResult<AlbumAsset>> sFetchAlbumResult_ = nullptr;
+    static inline thread_local FetchResType sFetchResType_ = FetchResType::TYPE_FILE;
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
 };
 
@@ -81,7 +84,14 @@ public:
     bool status;
     int32_t position;
     std::unique_ptr<FileAsset> fileAsset;
+    std::unique_ptr<AlbumAsset> albumAsset;
     std::vector<std::unique_ptr<FileAsset>> fileAssetArray;
+    std::vector<std::unique_ptr<AlbumAsset>> fileAlbumArray;
+    void GetFirstAsset();
+    void GetObjectAtPosition();
+    void GetAllObjectFromFetchResult();
+    void GetLastObject();
+    void GetNextObject();
 };
 } // namespace Media
 } // namespace OHOS
