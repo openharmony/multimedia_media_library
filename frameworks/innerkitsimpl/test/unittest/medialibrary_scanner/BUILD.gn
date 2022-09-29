@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-ohos_executable("scanner_demo") {
+ohos_executable("scanner") {
   install_enable = true
   include_dirs = [
     "./include",
@@ -26,7 +26,7 @@ ohos_executable("scanner_demo") {
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
   ]
 
-  sources = [ "./src/medialibrary_scan_demo.cpp" ]
+  sources = [ "./src/medialibrary_scan.cpp" ]
 
   deps = [ "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension" ]
 
