@@ -589,9 +589,12 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
     };
 
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
-    cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
-    cmd.GetAbsRdbPredicates()->SetOrder(predicates.GetOrder());
+    // MEDIALIBRARY_TABLE just for RdbPredicates
+    NativeRdb::RdbPredicates rdbPredicate =  RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
+        MEDIALIBRARY_TABLE);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
 
     shared_ptr<AbsSharedResultSet> queryResultSet;
     OperationObject oprnObject = cmd.GetOprnObject();
