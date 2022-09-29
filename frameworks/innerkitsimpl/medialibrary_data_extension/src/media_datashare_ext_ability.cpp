@@ -244,7 +244,6 @@ static bool CheckPermFromUri(std::string &uri, bool isWrite)
         /* position of '#' should not be string::npos here */
         uri = uri.substr(0, uri.find('#'));
     }
-    
     return CheckPerms(shouldCheckType, isWrite, typeMask);
 }
 
