@@ -68,7 +68,7 @@
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
-            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_scanner_demo:scanner_demo"
+            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_scanner:scanner"
           ]
         },
         "inner_kits": [
