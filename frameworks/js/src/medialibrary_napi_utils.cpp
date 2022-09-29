@@ -16,8 +16,45 @@
 
 #include "medialibrary_napi_utils.h"
 
+#include "datashare_predicates_proxy.h"
+#include "media_library_napi.h"
+#include "medialibrary_data_manager_utils.h"
+using namespace std;
+using namespace OHOS::DataShare;
+
 namespace OHOS {
 namespace Media {
+void MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(const string &uri, string &networkId, string &fileId)
+{
+    networkId = "";
+    fileId = "-1";
+    if (uri.empty()) {
+        NAPI_ERR_LOG("input uri is empty");
+        return;
+    }
+    size_t pos = uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX);
+    if (pos == string::npos) {
+        NAPI_ERR_LOG("invalid input uri: %{private}s", uri.c_str());
+        return;
+    }
+    string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
+    if (tempUri.empty()) {
+        NAPI_ERR_LOG("invalid input uri: %{private}s", uri.c_str());
+        return;
+    }
+    pos = tempUri.find_first_of('/');
+    if (pos != 0 && pos != string::npos) {
+        networkId = tempUri.substr(0, pos);
+    }
+
+    pos = uri.rfind('/');
+    if (pos != std::string::npos) {
+        fileId = uri.substr(pos + 1);
+    } else {
+        NAPI_ERR_LOG("get file_id failed, uri: %{private}s", uri.c_str());
+    }
+}
+
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
     napi_value ctorObj;
@@ -200,5 +237,93 @@ void MediaLibraryNapiUtils::UriRemoveAllFragment(std::string &uri)
         uri = uri.substr(0, fragIndex);
     }
 }
+
+static bool GetFileAssetsPredicate(unique_ptr<MediaLibraryAsyncContext> &context,
+    shared_ptr<DataShareAbsPredicates> &predicate)
+{
+    constexpr int32_t FIELD_IDX = 0;
+    constexpr int32_t VALUE_IDX = 1;
+    list<OperationItem> operList;
+    for (auto item : predicate->GetOperationList()) {
+        // change uri ->file id
+        // get networkid
+        // replace networkid with file id
+        if (item.singleParams[FIELD_IDX].operator string() == MEDIA_DATA_DB_URI) {
+            if (item.operation != DataShare::EQUAL_TO) {
+                NAPI_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
+                return false;
+            }
+            string uri = item.singleParams[VALUE_IDX].operator string();
+            string fileId;
+            MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(uri, context->networkId, fileId);
+            item.singleParams[FIELD_IDX] = DataShare::DataSharePredicatesObject(MEDIA_DATA_DB_ID);
+            item.singleParams[VALUE_IDX] = DataShare::DataSharePredicatesObject(fileId);
+        }
+
+        if (item.singleParams[FIELD_IDX].operator string() == DEVICE_DB_NETWORK_ID) {
+            if (item.operation != DataShare::EQUAL_TO ||
+                item.singleParams[VALUE_IDX].GetType() != DataShare::DataSharePredicatesObjectType::TYPE_STRING) {
+                NAPI_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
+                return false;
+            }
+            context->networkId = item.singleParams[VALUE_IDX].operator string();
+            continue;
+        }
+        operList.push_back(item);
+    }
+    if (operList.size()) {
+        context->predicates = DataSharePredicates(operList);
+    }
+    return true;
+}
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::GetAssetFetchOption(napi_env env, napi_value arg, AsyncContext &context)
+{
+    // Parse the argument into fetchOption if any
+    CHECK_STATUS_RET(GetPredicate(env, arg, "predicates", context), "invalid predicate");
+    CHECK_STATUS_RET(GetArrayProperty(env, arg, "fetchColumn", context->fetchColumn),
+        "Failed to parse fetchColumn");
+    return napi_ok;
+}
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value arg, const std::string &propName,
+    AsyncContext &context)
+{
+    bool present = false;
+    napi_value property = nullptr;
+    CHECK_STATUS_RET(napi_has_named_property(env, arg, propName.c_str(), &present),
+        "Failed to check property name");
+    if (present) {
+        NAPI_ERR_LOG("GetPredicate. ");
+        CHECK_STATUS_RET(napi_get_named_property(env, arg, propName.c_str(), &property), "Failed to get property");
+        shared_ptr<DataShareAbsPredicates> predicate = DataSharePredicatesProxy::GetNativePredicates(env, property);
+        CHECK_COND_RET(GetFileAssetsPredicate(context, predicate) == TRUE, napi_invalid_arg, "invalid predicate");
+    }
+    return napi_ok;
+}
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback(napi_env env, napi_callback_info info,
+    AsyncContext &context)
+{
+    constexpr size_t MIN_ARGS = ARGS_ONE;
+    constexpr size_t MAX_ARGS = ARGS_TWO;
+    CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+        "Failed to get object info");
+    CHECK_STATUS_RET(GetAssetFetchOption(env, context->argv[ARGS_ZERO], context), "Failed to get fetch option");
+    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+    return napi_ok;
+}
+
+template napi_status MediaLibraryNapiUtils::GetAssetFetchOption<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
+    napi_value arg, unique_ptr<MediaLibraryAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
+    const napi_value arg, const std::string &propName, unique_ptr<MediaLibraryAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback<unique_ptr<MediaLibraryAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context);
 } // namespace Media
 } // namespace OHOS
