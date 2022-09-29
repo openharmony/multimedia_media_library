@@ -128,7 +128,7 @@ ohos_static_library("media_thumbnail_helper") {
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "kv_store:distributeddata_inner",
-    "multimedia_image_standard:image_native",
+    "multimedia_image_framework:image_native",
     "relational_store:native_appdatafwk",
     "relational_store:native_dataability",
     "relational_store:native_rdb",
