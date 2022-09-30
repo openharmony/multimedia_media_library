@@ -162,7 +162,6 @@ void MediaLibraryAsyncWorker::SleepBgWork()
 void MediaLibraryAsyncWorker::StartWorker()
 {
     isThreadExist_ = true;
-    MEDIA_DEBUG_LOG("StartWorker IN");
     while (!IsFgQueueEmpty() || !IsBgQueueEmpty() || WaitForTask()) {
         if (!IsFgQueueEmpty()) {
             shared_ptr<MediaLibraryAsyncTask> fgTask = GetFgTask();

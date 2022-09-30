@@ -15,6 +15,7 @@
 #define MLOG_TAG "Distributed"
 
 #include "medialibrary_device_operations.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
@@ -24,12 +25,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-static int64_t CurrentTimeMillis()
-{
-    auto now = std::chrono::system_clock::now();
-    auto millisecs = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
-    return static_cast<int64_t>(millisecs.count());
-}
+static const int64_t AGING_DEVICE_INTERVAL = 14 * 24 * 60 * 60LL;
 
 bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName)
@@ -40,9 +36,9 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
     }
     unique_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
-    AbsRdbPredicates mediaLibAbsPredDevice(DEVICE_TABLE);
-    mediaLibAbsPredDevice.EqualTo(DEVICE_DB_UDID, deviceInfo.deviceUdid);
-    queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
+    AbsRdbPredicates absPredDevice(DEVICE_TABLE);
+    absPredDevice.EqualTo(DEVICE_DB_UDID, deviceInfo.deviceUdid);
+    queryResultSet = rdbStore->Query(absPredDevice, columns);
 
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
@@ -58,7 +54,6 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
             return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == E_SUCCESS;
         } else {
             // 插入数据库
-            int64_t now = CurrentTimeMillis();
             ValuesBucket valuesBucket;
             valuesBucket.PutString(DEVICE_DB_UDID, deviceInfo.deviceUdid);
             valuesBucket.PutString(DEVICE_DB_NETWORK_ID, deviceInfo.networkId);
@@ -67,6 +62,7 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
             valuesBucket.PutString(DEVICE_DB_SELF_ID, deviceInfo.selfId);
             valuesBucket.PutInt(DEVICE_DB_TYPE, (int32_t) deviceInfo.deviceTypeId);
             valuesBucket.PutString(DEVICE_DB_PREPATH, std::string());
+            int64_t now = MediaFileUtils::UTCTimeSeconds();
             valuesBucket.PutLong(DEVICE_DB_DATE_ADDED, now);
             return MediaLibraryDeviceDb::InsertDeviceInfo(valuesBucket, rdbStore) >= 0;
         }
@@ -79,22 +75,37 @@ bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const std::shared_ptr<Native
 {
     unique_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
-    AbsRdbPredicates mediaLibAbsPredDevice(DEVICE_TABLE);
-    mediaLibAbsPredDevice.EqualTo(DEVICE_DB_UDID, deviceInfo.deviceUdid);
+    AbsRdbPredicates absPredDevice(DEVICE_TABLE);
+    absPredDevice.EqualTo(DEVICE_DB_UDID, deviceInfo.deviceUdid);
     MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo dev id = %{private}s",
         deviceInfo.deviceUdid.c_str());
-    queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
+    queryResultSet = rdbStore->Query(absPredDevice, columns);
 
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
     if (ret == NativeRdb::E_OK) {
         if (count > 0) {
-            int64_t now = CurrentTimeMillis();
             // 更新数据库
             ValuesBucket valuesBucket;
             valuesBucket.PutString(DEVICE_DB_UDID, deviceInfo.deviceUdid);
             valuesBucket.PutString(DEVICE_DB_NETWORK_ID, deviceInfo.networkId);
-            valuesBucket.PutLong(DEVICE_DB_DATE_MODIFIED, now);
+            int idx = -1;
+            ret = queryResultSet->GoToFirstRow();
+            if (ret != NativeRdb::E_OK) {
+                return false;
+            }
+
+            ret = queryResultSet->GetColumnIndex(DEVICE_DB_DATE_MODIFIED, idx);
+            if (ret != NativeRdb::E_OK) {
+                return false;
+            }
+
+            int64_t modifiedTime = 0;
+            queryResultSet->GetLong(idx, modifiedTime);
+            if (modifiedTime == 0) {
+                int64_t now = MediaFileUtils::UTCTimeSeconds();
+                valuesBucket.PutLong(DEVICE_DB_DATE_MODIFIED, now);
+            }
             return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == E_SUCCESS;
         }
     }
@@ -112,10 +123,10 @@ bool MediaLibraryDeviceOperations::UpdateSyncStatus(const std::shared_ptr<Native
 {
     unique_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
-    AbsRdbPredicates mediaLibAbsPredDevice(DEVICE_TABLE);
+    AbsRdbPredicates absPredDevice(DEVICE_TABLE);
 
-    mediaLibAbsPredDevice.EqualTo(DEVICE_DB_UDID, udid);
-    queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
+    absPredDevice.EqualTo(DEVICE_DB_UDID, udid);
+    queryResultSet = rdbStore->Query(absPredDevice, columns);
 
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
@@ -138,10 +149,10 @@ bool MediaLibraryDeviceOperations::GetSyncStatusById(const std::shared_ptr<Nativ
 {
     unique_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
-    AbsRdbPredicates mediaLibAbsPredDevice(DEVICE_TABLE);
+    AbsRdbPredicates absPredDevice(DEVICE_TABLE);
 
-    mediaLibAbsPredDevice.EqualTo(DEVICE_DB_UDID, udid);
-    queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
+    absPredDevice.EqualTo(DEVICE_DB_UDID, udid);
+    queryResultSet = rdbStore->Query(absPredDevice, columns);
     if (queryResultSet == nullptr) {
         return false;
     }
@@ -161,8 +172,8 @@ bool MediaLibraryDeviceOperations::QueryDeviceTable(const std::shared_ptr<Native
     const int SHORT_UDID_LEN = 8;
     unique_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
-    AbsRdbPredicates mediaLibAbsPredDevice(DEVICE_TABLE);
-    queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
+    AbsRdbPredicates absPredDevice(DEVICE_TABLE);
+    queryResultSet = rdbStore->Query(absPredDevice, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("MediaLibraryDeviceOperations::QueryDeviceTable fail");
         return false;
@@ -176,7 +187,7 @@ bool MediaLibraryDeviceOperations::QueryDeviceTable(const std::shared_ptr<Native
         if (selfId.length() > SHORT_UDID_LEN) {
             std::string shortUdid = selfId.substr(0, SHORT_UDID_LEN);
             std::string randNumber = selfId.substr(SHORT_UDID_LEN);
-            if (randNumber.length() > 0) {
+            if (!randNumber.empty()) {
                 auto &data = excludeMap[shortUdid];
                 data.insert(atoi(randNumber.c_str()));
             }
@@ -185,16 +196,16 @@ bool MediaLibraryDeviceOperations::QueryDeviceTable(const std::shared_ptr<Native
     return true;
 }
 
-bool MediaLibraryDeviceOperations::GetAllDeviceDatas(
+bool MediaLibraryDeviceOperations::GetAllDeviceData(
     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
     vector<MediaLibraryDeviceInfo> &outDeviceList)
 {
     shared_ptr<AbsSharedResultSet> queryResultSet;
     std::vector<std::string> columns;
-    AbsRdbPredicates mediaLibAbsPredDevice(DEVICE_TABLE);
-    queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
+    AbsRdbPredicates absPredDevice(DEVICE_TABLE);
+    queryResultSet = rdbStore->Query(absPredDevice, columns);
     if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryDeviceOperations::GetAllDeviceDatas fail");
+        MEDIA_ERR_LOG("MediaLibraryDeviceOperations::GetAllDeviceData fail");
         return false;
     }
 
@@ -202,9 +213,7 @@ bool MediaLibraryDeviceOperations::GetAllDeviceDatas(
         MediaLibraryDeviceInfo deviceInfo;
         deviceInfo.networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, queryResultSet,
             TYPE_STRING));
-        deviceInfo.deviceName = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NAME, queryResultSet,
-            TYPE_STRING));
-        deviceInfo.deviceTypeId =(DistributedHardware::DmDeviceType)(get<int32_t>(
+        deviceInfo.deviceTypeId = static_cast<DistributedHardware::DmDeviceType>(get<int32_t>(
             ResultSetUtils::GetValFromColumn(DEVICE_DB_TYPE, queryResultSet, TYPE_INT32)));
         deviceInfo.deviceUdid = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_UDID, queryResultSet,
             TYPE_STRING));
@@ -212,6 +221,68 @@ bool MediaLibraryDeviceOperations::GetAllDeviceDatas(
             TYPE_STRING));
         outDeviceList.push_back(deviceInfo);
     }
+    return true;
+}
+
+bool MediaLibraryDeviceOperations::GetAgingDeviceData(
+    const shared_ptr<RdbStore> &rdbStore, vector<MediaLibraryDeviceInfo> &outDeviceList)
+{
+    vector<string> columns;
+    int64_t agingTime = MediaFileUtils::UTCTimeSeconds() - AGING_DEVICE_INTERVAL;
+
+    MEDIA_INFO_LOG("GetAgingDeviceData less than %{public}lld", agingTime);
+    AbsRdbPredicates absPredevice(DEVICE_TABLE);
+    absPredevice.GreaterThan(DEVICE_DB_DATE_MODIFIED, to_string(0))->And()->
+        LessThan(DEVICE_DB_DATE_MODIFIED, to_string(agingTime));
+    shared_ptr<AbsSharedResultSet> queryResultSet = rdbStore->Query(absPredevice, columns);
+    if (queryResultSet == nullptr) {
+        MEDIA_ERR_LOG("GetAgingDeviceData fail");
+        return false;
+    }
+    auto ret = queryResultSet->GoToFirstRow();
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to fetch first record, ret = %{public}d", ret);
+        return false;
+    }
+
+    MediaLibraryDeviceInfo deviceInfo;
+    do {
+        deviceInfo.networkId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_NETWORK_ID, queryResultSet,
+            TYPE_STRING));
+        deviceInfo.deviceTypeId = (DistributedHardware::DmDeviceType)(get<int32_t>(ResultSetUtils::GetValFromColumn(
+            DEVICE_DB_TYPE, queryResultSet, TYPE_INT32)));
+        deviceInfo.deviceUdid = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_UDID, queryResultSet,
+            TYPE_STRING));
+        deviceInfo.selfId = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_SELF_ID, queryResultSet,
+            TYPE_STRING));
+        outDeviceList.push_back(deviceInfo);
+    } while (queryResultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    MEDIA_ERR_LOG("GetAgingDeviceData OUT, deviceSize = %{public}d", (int)outDeviceList.size());
+    return true;
+}
+
+bool MediaLibraryDeviceOperations::GetAllDeviceUdid(const shared_ptr<RdbStore> &rdbStore,
+    vector<string> &deviceUdids)
+{
+    vector<string> columns;
+    AbsRdbPredicates absPreDevice(DEVICE_TABLE);
+    shared_ptr<AbsSharedResultSet> queryResultSet = rdbStore->Query(absPreDevice, columns);
+    if (queryResultSet == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryDeviceOperations::GetAllDeviceUdid fail");
+        return false;
+    }
+    auto ret = queryResultSet->GoToFirstRow();
+    if (ret != NativeRdb::E_OK) {
+        return true;
+    }
+    do {
+        string udid = get<string>(ResultSetUtils::GetValFromColumn(DEVICE_DB_UDID, queryResultSet,
+            TYPE_STRING));
+        deviceUdids.push_back(udid);
+    } while (queryResultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    MEDIA_DEBUG_LOG("MediaLibraryDeviceOperations::GetAllDeviceUdid OUT");
     return true;
 }
 } // namespace Media

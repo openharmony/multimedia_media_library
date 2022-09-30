@@ -299,7 +299,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     }
 
     std::vector<OHOS::Media::MediaLibraryDeviceInfo> deviceDataBaseList;
-    MediaLibraryDeviceOperations::GetAllDeviceDatas(rdbStore, deviceDataBaseList);
+    MediaLibraryDeviceOperations::GetAllDeviceData(rdbStore, deviceDataBaseList);
     for (auto deviceInfo : deviceDataBaseList) {
         if (!IsHasDevice(deviceInfo.deviceUdid)) {
             MediaLibraryDeviceOperations::UpdateDeviceInfo(rdbStore_, deviceInfo, bundleName_);
@@ -426,6 +426,26 @@ void MediaLibraryDevice::UnRegisterFromDM()
         MEDIA_ERR_LOG("UnInitDeviceManager failed errCode %{public}d", errCode);
     }
     MEDIA_INFO_LOG("UnRegisterFromDM success");
+}
+
+void MediaLibraryDevice::GetDeviceInfoMap(unordered_map<string, MediaLibraryDeviceInfo> &outDeviceMap)
+{
+    outDeviceMap = deviceInfoMap_;
+}
+
+bool MediaLibraryDevice::QueryAgingDeviceInfos(vector<MediaLibraryDeviceInfo> &outDeviceInfos)
+{
+    return MediaLibraryDeviceOperations::GetAgingDeviceData(rdbStore_, outDeviceInfos);
+}
+
+bool MediaLibraryDevice::QueryAllDeviceUdid(vector<string> &deviceUdids)
+{
+    return MediaLibraryDeviceOperations::GetAllDeviceUdid(rdbStore_, deviceUdids);
+}
+
+bool MediaLibraryDevice::DeleteDeviceInfo(const string &udid)
+{
+    return MediaLibraryDeviceOperations::DeleteDeviceInfo(rdbStore_, udid);
 }
 } // namespace Media
 } // namespace OHOS
