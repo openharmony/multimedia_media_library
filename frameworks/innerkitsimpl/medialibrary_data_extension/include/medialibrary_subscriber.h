@@ -34,6 +34,11 @@ public:
 
 private:
     static const std::vector<std::string> events_;
+    bool isScreenOff_;
+    bool isPowerConnected_;
+
+    void DoBackgroundOperation();
+    void StopBackgroundOperation();
 };
 }  // namespace Media
 }  // namespace OHOS

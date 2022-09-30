@@ -15,6 +15,7 @@
 
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_DATA_ABILITY_CONST_H_
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_DATA_ABILITY_CONST_H_
+
 #include "medialibrary_type_const.h"
 namespace OHOS {
 namespace Media {
@@ -88,6 +89,7 @@ const std::string MEDIA_DATA_DB_THUMBNAIL = "thumbnail";
 const std::string MEDIA_DATA_DB_CONTENT_CREATE_TIME = "content_create_time";
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
+const std::string MEDIA_DATA_DB_TIME_VISIT = "time_visit";
 const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";
 const std::string MEDIA_DATA_DB_BUCKET_NAME = "bucket_display_name";
 const std::string MEDIA_DATA_DB_DURATION = "duration";
@@ -135,146 +137,158 @@ const std::string MEDIA_DATA_IMAGE_F_NUMBER = "FNumber";
 const std::string MEDIA_DATA_IMAGE_ISO_SPEED_RATINGS = "ISOSpeedRatings";
 const std::string MEDIA_DATA_IMAGE_SCENE_TYPE = "SceneType";
 
-const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " ("
-                                       + MEDIA_DATA_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                       + MEDIA_DATA_DB_FILE_PATH + " TEXT, "
-                                       + MEDIA_DATA_DB_SIZE + " BIGINT, "
-                                       + MEDIA_DATA_DB_PARENT_ID + " INT DEFAULT 0, "
-                                       + MEDIA_DATA_DB_DATE_ADDED + " BIGINT, "
-                                       + MEDIA_DATA_DB_DATE_MODIFIED + " BIGINT, "
-                                       + MEDIA_DATA_DB_MIME_TYPE + " TEXT, "
-                                       + MEDIA_DATA_DB_TITLE + " TEXT, "
-                                       + MEDIA_DATA_DB_DESCRIPTION + " TEXT, "
-                                       + MEDIA_DATA_DB_NAME + " TEXT, "
-                                       + MEDIA_DATA_DB_ORIENTATION + " INT DEFAULT 0, "
-                                       + MEDIA_DATA_DB_LATITUDE + " DOUBLE DEFAULT 0, "
-                                       + MEDIA_DATA_DB_LONGITUDE + " DOUBLE DEFAULT 0, "
-                                       + MEDIA_DATA_DB_DATE_TAKEN + " BIGINT DEFAULT 0, "
-                                       + MEDIA_DATA_DB_THUMBNAIL + " TEXT, "
-                                       + MEDIA_DATA_DB_LCD + " TEXT, "
-                                       + MEDIA_DATA_DB_BUCKET_ID + " INT DEFAULT 0, "
-                                       + MEDIA_DATA_DB_BUCKET_NAME + " TEXT, "
-                                       + MEDIA_DATA_DB_DURATION + " INT, "
-                                       + MEDIA_DATA_DB_ARTIST + " TEXT, "
-                                       + MEDIA_DATA_DB_AUDIO_ALBUM + " TEXT, "
-                                       + MEDIA_DATA_DB_MEDIA_TYPE + " INT, "
-                                       + MEDIA_DATA_DB_HEIGHT + " INT, "
-                                       + MEDIA_DATA_DB_WIDTH + " INT, "
-                                       + MEDIA_DATA_DB_IS_TRASH + " INT DEFAULT 0, "
-                                       + MEDIA_DATA_DB_RECYCLE_PATH + " TEXT, "
-                                       + MEDIA_DATA_DB_IS_FAV + " BOOL DEFAULT 0, "
-                                       + MEDIA_DATA_DB_OWNER_PACKAGE + " TEXT, "
-                                       + MEDIA_DATA_DB_IS_PENDING + " BOOL DEFAULT 0, "
-                                       + MEDIA_DATA_DB_TIME_PENDING + " BIGINT DEFAULT 0, "
-                                       + MEDIA_DATA_DB_DATE_TRASHED + " BIGINT DEFAULT 0, "
-                                       + MEDIA_DATA_DB_RELATIVE_PATH + " TEXT, "
-                                       + MEDIA_DATA_DB_VOLUME_NAME + " TEXT, "
-                                       + MEDIA_DATA_DB_SELF_ID + " TEXT DEFAULT '1', "
-                                       + MEDIA_DATA_DB_ALBUM_NAME + " TEXT, "
-                                       + MEDIA_DATA_DB_URI + " TEXT, "
-                                       + MEDIA_DATA_DB_ALBUM + " TEXT)";
+const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " (" +
+                                       MEDIA_DATA_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                       MEDIA_DATA_DB_FILE_PATH + " TEXT, " +
+                                       MEDIA_DATA_DB_SIZE + " BIGINT, " +
+                                       MEDIA_DATA_DB_PARENT_ID + " INT DEFAULT 0, " +
+                                       MEDIA_DATA_DB_DATE_ADDED + " BIGINT, " +
+                                       MEDIA_DATA_DB_DATE_MODIFIED + " BIGINT, " +
+                                       MEDIA_DATA_DB_MIME_TYPE + " TEXT, " +
+                                       MEDIA_DATA_DB_TITLE + " TEXT, " +
+                                       MEDIA_DATA_DB_DESCRIPTION + " TEXT, " +
+                                       MEDIA_DATA_DB_NAME + " TEXT, " +
+                                       MEDIA_DATA_DB_ORIENTATION + " INT DEFAULT 0, " +
+                                       MEDIA_DATA_DB_LATITUDE + " DOUBLE DEFAULT 0, " +
+                                       MEDIA_DATA_DB_LONGITUDE + " DOUBLE DEFAULT 0, " +
+                                       MEDIA_DATA_DB_DATE_TAKEN + " BIGINT DEFAULT 0, " +
+                                       MEDIA_DATA_DB_THUMBNAIL + " TEXT, " +
+                                       MEDIA_DATA_DB_LCD + " TEXT, " +
+                                       MEDIA_DATA_DB_TIME_VISIT + " BIGINT DEFAULT 0, " +
+                                       MEDIA_DATA_DB_BUCKET_ID + " INT DEFAULT 0, " +
+                                       MEDIA_DATA_DB_BUCKET_NAME + " TEXT, " +
+                                       MEDIA_DATA_DB_DURATION + " INT, " +
+                                       MEDIA_DATA_DB_ARTIST + " TEXT, " +
+                                       MEDIA_DATA_DB_AUDIO_ALBUM + " TEXT, " +
+                                       MEDIA_DATA_DB_MEDIA_TYPE + " INT, " +
+                                       MEDIA_DATA_DB_HEIGHT + " INT, " +
+                                       MEDIA_DATA_DB_WIDTH + " INT, " +
+                                       MEDIA_DATA_DB_IS_TRASH + " INT DEFAULT 0, " +
+                                       MEDIA_DATA_DB_RECYCLE_PATH + " TEXT, " +
+                                       MEDIA_DATA_DB_IS_FAV + " BOOL DEFAULT 0, " +
+                                       MEDIA_DATA_DB_OWNER_PACKAGE + " TEXT, " +
+                                       MEDIA_DATA_DB_IS_PENDING + " BOOL DEFAULT 0, " +
+                                       MEDIA_DATA_DB_TIME_PENDING + " BIGINT DEFAULT 0, " +
+                                       MEDIA_DATA_DB_DATE_TRASHED + " BIGINT DEFAULT 0, " +
+                                       MEDIA_DATA_DB_RELATIVE_PATH + " TEXT, " +
+                                       MEDIA_DATA_DB_VOLUME_NAME + " TEXT, " +
+                                       MEDIA_DATA_DB_SELF_ID + " TEXT DEFAULT '1', " +
+                                       MEDIA_DATA_DB_ALBUM_NAME + " TEXT, " +
+                                       MEDIA_DATA_DB_URI + " TEXT, " +
+                                       MEDIA_DATA_DB_ALBUM + " TEXT)";
 
-const std::string CREATE_IMAGE_VIEW = "CREATE VIEW Image AS SELECT "
-                                      + MEDIA_DATA_DB_ID + ", "
-                                      + MEDIA_DATA_DB_FILE_PATH + ", "
-                                      + MEDIA_DATA_DB_SIZE + ", "
-                                      + MEDIA_DATA_DB_NAME + ", "
-                                      + MEDIA_DATA_DB_TITLE + ", "
-                                      + MEDIA_DATA_DB_DESCRIPTION + ", "
-                                      + MEDIA_DATA_DB_DATE_ADDED + ", "
-                                      + MEDIA_DATA_DB_DATE_MODIFIED + ", "
-                                      + MEDIA_DATA_DB_DATE_TAKEN + ", "
-                                      + MEDIA_DATA_DB_MIME_TYPE + ", "
-                                      + MEDIA_DATA_DB_LATITUDE + ", "
-                                      + MEDIA_DATA_DB_LONGITUDE + ", "
-                                      + MEDIA_DATA_DB_ORIENTATION + ", "
-                                      + MEDIA_DATA_DB_WIDTH + ", "
-                                      + MEDIA_DATA_DB_HEIGHT + ", "
-                                      + MEDIA_DATA_DB_BUCKET_ID + ", "
-                                      + MEDIA_DATA_DB_BUCKET_NAME + ", "
-                                      + MEDIA_DATA_DB_THUMBNAIL + ", "
-                                      + MEDIA_DATA_DB_LCD + ", "
-                                      + MEDIA_DATA_DB_SELF_ID + " "
-                                      + "FROM Files WHERE "
-                                      + MEDIA_DATA_DB_MEDIA_TYPE + " = 3";
+const std::string CREATE_IMAGE_VIEW = "CREATE VIEW Image AS SELECT " +
+                                      MEDIA_DATA_DB_ID + ", " +
+                                      MEDIA_DATA_DB_FILE_PATH + ", " +
+                                      MEDIA_DATA_DB_SIZE + ", " +
+                                      MEDIA_DATA_DB_NAME + ", " +
+                                      MEDIA_DATA_DB_TITLE + ", " +
+                                      MEDIA_DATA_DB_DESCRIPTION + ", " +
+                                      MEDIA_DATA_DB_DATE_ADDED + ", " +
+                                      MEDIA_DATA_DB_DATE_MODIFIED + ", " +
+                                      MEDIA_DATA_DB_DATE_TAKEN + ", " +
+                                      MEDIA_DATA_DB_MIME_TYPE + ", " +
+                                      MEDIA_DATA_DB_LATITUDE + ", " +
+                                      MEDIA_DATA_DB_LONGITUDE + ", " +
+                                      MEDIA_DATA_DB_ORIENTATION + ", " +
+                                      MEDIA_DATA_DB_WIDTH + ", " +
+                                      MEDIA_DATA_DB_HEIGHT + ", " +
+                                      MEDIA_DATA_DB_BUCKET_ID + ", " +
+                                      MEDIA_DATA_DB_BUCKET_NAME + ", " +
+                                      MEDIA_DATA_DB_THUMBNAIL + ", " +
+                                      MEDIA_DATA_DB_LCD + ", " +
+                                      MEDIA_DATA_DB_SELF_ID + " " +
+                                      "FROM Files WHERE " +
+                                      MEDIA_DATA_DB_MEDIA_TYPE + " = 3";
 
-const std::string CREATE_VIDEO_VIEW = "CREATE VIEW Video AS SELECT "
-                                      + MEDIA_DATA_DB_ID + ", "
-                                      + MEDIA_DATA_DB_FILE_PATH + ", "
-                                      + MEDIA_DATA_DB_SIZE + ", "
-                                      + MEDIA_DATA_DB_NAME + ", "
-                                      + MEDIA_DATA_DB_TITLE + ", "
-                                      + MEDIA_DATA_DB_DESCRIPTION + ", "
-                                      + MEDIA_DATA_DB_DATE_ADDED + ", "
-                                      + MEDIA_DATA_DB_DATE_MODIFIED + ", "
-                                      + MEDIA_DATA_DB_MIME_TYPE + ", "
-                                      + MEDIA_DATA_DB_ORIENTATION + ", "
-                                      + MEDIA_DATA_DB_WIDTH + ", "
-                                      + MEDIA_DATA_DB_HEIGHT + ", "
-                                      + MEDIA_DATA_DB_DURATION + ", "
-                                      + MEDIA_DATA_DB_BUCKET_ID + ", "
-                                      + MEDIA_DATA_DB_BUCKET_NAME + ", "
-                                      + MEDIA_DATA_DB_THUMBNAIL + ", "
-                                      + MEDIA_DATA_DB_SELF_ID + " "
-                                      + "FROM Files WHERE "
-                                      + MEDIA_DATA_DB_MEDIA_TYPE + " = 4";
+const std::string CREATE_VIDEO_VIEW = "CREATE VIEW Video AS SELECT " +
+                                      MEDIA_DATA_DB_ID + ", " +
+                                      MEDIA_DATA_DB_FILE_PATH + ", " +
+                                      MEDIA_DATA_DB_SIZE + ", " +
+                                      MEDIA_DATA_DB_NAME + ", " +
+                                      MEDIA_DATA_DB_TITLE + ", " +
+                                      MEDIA_DATA_DB_DESCRIPTION + ", " +
+                                      MEDIA_DATA_DB_DATE_ADDED + ", " +
+                                      MEDIA_DATA_DB_DATE_MODIFIED + ", " +
+                                      MEDIA_DATA_DB_MIME_TYPE + ", " +
+                                      MEDIA_DATA_DB_ORIENTATION + ", " +
+                                      MEDIA_DATA_DB_WIDTH + ", " +
+                                      MEDIA_DATA_DB_HEIGHT + ", " +
+                                      MEDIA_DATA_DB_DURATION + ", " +
+                                      MEDIA_DATA_DB_BUCKET_ID + ", " +
+                                      MEDIA_DATA_DB_BUCKET_NAME + ", " +
+                                      MEDIA_DATA_DB_THUMBNAIL + ", " +
+                                      MEDIA_DATA_DB_SELF_ID + " " +
+                                      "FROM Files WHERE " +
+                                      MEDIA_DATA_DB_MEDIA_TYPE + " = 4";
 
-const std::string CREATE_AUDIO_VIEW = "CREATE VIEW Audio AS SELECT "
-                                      + MEDIA_DATA_DB_ID + ", "
-                                      + MEDIA_DATA_DB_FILE_PATH + ", "
-                                      + MEDIA_DATA_DB_SIZE + ", "
-                                      + MEDIA_DATA_DB_NAME + ", "
-                                      + MEDIA_DATA_DB_TITLE + ", "
-                                      + MEDIA_DATA_DB_DESCRIPTION + ", "
-                                      + MEDIA_DATA_DB_DATE_ADDED + ", "
-                                      + MEDIA_DATA_DB_DATE_MODIFIED + ", "
-                                      + MEDIA_DATA_DB_MIME_TYPE + ", "
-                                      + MEDIA_DATA_DB_ARTIST + ", "
-                                      + MEDIA_DATA_DB_DURATION + ", "
-                                      + MEDIA_DATA_DB_BUCKET_ID + ", "
-                                      + MEDIA_DATA_DB_BUCKET_NAME + ", "
-                                      + MEDIA_DATA_DB_THUMBNAIL + ", "
-                                      + MEDIA_DATA_DB_SELF_ID + " "
-                                      + "FROM Files WHERE "
-                                      + MEDIA_DATA_DB_MEDIA_TYPE + " = 5";
+const std::string CREATE_AUDIO_VIEW = "CREATE VIEW Audio AS SELECT " +
+                                      MEDIA_DATA_DB_ID + ", " +
+                                      MEDIA_DATA_DB_FILE_PATH + ", " +
+                                      MEDIA_DATA_DB_SIZE + ", " +
+                                      MEDIA_DATA_DB_NAME + ", " +
+                                      MEDIA_DATA_DB_TITLE + ", " +
+                                      MEDIA_DATA_DB_DESCRIPTION + ", " +
+                                      MEDIA_DATA_DB_DATE_ADDED + ", " +
+                                      MEDIA_DATA_DB_DATE_MODIFIED + ", " +
+                                      MEDIA_DATA_DB_MIME_TYPE + ", " +
+                                      MEDIA_DATA_DB_ARTIST + ", " +
+                                      MEDIA_DATA_DB_DURATION + ", " +
+                                      MEDIA_DATA_DB_BUCKET_ID + ", " +
+                                      MEDIA_DATA_DB_BUCKET_NAME + ", " +
+                                      MEDIA_DATA_DB_THUMBNAIL + ", " +
+                                      MEDIA_DATA_DB_SELF_ID + " " +
+                                      "FROM Files WHERE " +
+                                      MEDIA_DATA_DB_MEDIA_TYPE + " = 5";
 
+const std::string REMOTE_THUMBNAIL_TABLE = "RemoteThumbnailMap";
+const std::string REMOTE_THUMBNAIL_DB_ID = "id";
+const std::string REMOTE_THUMBNAIL_DB_FILE_ID = "file_id";
+const std::string REMOTE_THUMBNAIL_DB_UDID = "udid";
+const std::string CREATE_REMOTE_THUMBNAIL_TABLE = "CREATE TABLE IF NOT EXISTS " + REMOTE_THUMBNAIL_TABLE + " (" +
+                                            REMOTE_THUMBNAIL_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                            REMOTE_THUMBNAIL_DB_FILE_ID + " INT, " +
+                                            REMOTE_THUMBNAIL_DB_UDID + " TEXT, " +
+                                            MEDIA_DATA_DB_THUMBNAIL + " TEXT, " +
+                                            MEDIA_DATA_DB_LCD + " TEXT, " +
+                                            MEDIA_DATA_DB_TIME_VISIT + " BIGINT DEFAULT 0) ";
 const std::string FILE_TABLE = "file";
 const std::string ABLUM_TABLE = "album";
 const std::string ABLUM_VIEW_NAME = "Album";
-const std::string DISTRIBUTED_ABLUM_COLUMNS = "SELECT count( " + FILE_TABLE + "."
-                                               + MEDIA_DATA_DB_DATE_TRASHED + " = 0 OR NULL) AS "
-                                               + MEDIA_DATA_DB_COUNT + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_RELATIVE_PATH + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AS "
-                                               + MEDIA_DATA_DB_BUCKET_ID + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_FILE_PATH + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + " AS "
-                                               + MEDIA_DATA_DB_BUCKET_NAME + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_DESCRIPTION + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_ADDED + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_MODIFIED + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_THUMBNAIL + ", "
-                                               + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID + ", "
-                                               + ABLUM_TABLE + "." + MEDIA_DATA_DB_IS_TRASH;
-const std::string DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY = " WHERE "
-                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID + " = "
-                                                        + ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AND "
-                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + " <> "
-                                                        + std::to_string(MEDIA_TYPE_ALBUM) + " AND "
-                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + " <> "
-                                                        + std::to_string(MEDIA_TYPE_FILE)
-                                                        + " GROUP BY "
-                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID +", "
-                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_NAME + ", "
-                                                        + FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", "
-                                                        + ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
-const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME
-                                      + " AS " + DISTRIBUTED_ABLUM_COLUMNS
-                                      + " FROM Files " + FILE_TABLE + ", "
-                                      + " Files " + ABLUM_TABLE
-                                      + DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY;
+const std::string DISTRIBUTED_ABLUM_COLUMNS = "SELECT count( " + FILE_TABLE + "." +
+                                              MEDIA_DATA_DB_DATE_TRASHED + " = 0 OR NULL) AS " +
+                                              MEDIA_DATA_DB_COUNT + ", " +
+                                              ABLUM_TABLE + "." + MEDIA_DATA_DB_RELATIVE_PATH + ", " +
+                                              ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AS " +
+                                              MEDIA_DATA_DB_BUCKET_ID + ", " +
+                                              ABLUM_TABLE + "." + MEDIA_DATA_DB_FILE_PATH + ", " +
+                                              ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + " AS " +
+                                              MEDIA_DATA_DB_BUCKET_NAME + ", " +
+                                              ABLUM_TABLE + "." + MEDIA_DATA_DB_TITLE + ", " +
+                                              ABLUM_TABLE + "." + MEDIA_DATA_DB_DESCRIPTION + ", " +
+                                              ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_ADDED + ", " +
+                                              ABLUM_TABLE + "." + MEDIA_DATA_DB_DATE_MODIFIED + ", " +
+                                              ABLUM_TABLE + "." + MEDIA_DATA_DB_THUMBNAIL + ", " +
+                                              FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", " +
+                                              ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID + ", " +
+                                              ABLUM_TABLE + "." + MEDIA_DATA_DB_IS_TRASH;
+const std::string DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY = " WHERE " +
+                                                        FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID + " = " +
+                                                        ABLUM_TABLE + "." + MEDIA_DATA_DB_ID + " AND " +
+                                                        FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + " <> " +
+                                                        std::to_string(MEDIA_TYPE_ALBUM) + " AND " +
+                                                        FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + " <> " +
+                                                        std::to_string(MEDIA_TYPE_FILE) +
+                                                        " GROUP BY " +
+                                                        FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_ID +", " +
+                                                        FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_NAME + ", " +
+                                                        FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", " +
+                                                        ABLUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
+const std::string CREATE_ABLUM_VIEW = "CREATE VIEW " + ABLUM_VIEW_NAME +
+                                      " AS " + DISTRIBUTED_ABLUM_COLUMNS +
+                                      " FROM Files " + FILE_TABLE + ", " +
+                                      " Files " + ABLUM_TABLE +
+                                      DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY;
 const std::string SMARTALBUM_DB_ID = "album_id";
 const std::string SMARTALBUM_DB_ALBUM_TYPE = "album_type";
 const std::string SMARTALBUM_DB_NAME = "album_name";
@@ -285,51 +299,51 @@ const std::string SMARTALBUM_DB_LONGITUDE = "longitude";
 const std::string SMARTALBUM_DB_COVER_URI = "cover_uri";
 const std::string SMARTALBUM_DB_EXPIRED_TIME = "expired_id";
 const std::string SMARTALBUM_DB_SELF_ID = "self_id";
-const std::string CREATE_SMARTALBUM_TABLE = "CREATE TABLE IF NOT EXISTS " + SMARTALBUM_TABLE + " ("
-                                            + SMARTALBUM_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                            + SMARTALBUM_DB_NAME + " TEXT, "
-                                            + SMARTALBUM_DB_DESCRIPTION + " TEXT, "
-                                            + SMARTALBUM_DB_ALBUM_TYPE + " INT, "
-                                            + SMARTALBUM_DB_CAPACITY + " INT, "
-                                            + SMARTALBUM_DB_LATITUDE + " DOUBLE DEFAULT 0, "
-                                            + SMARTALBUM_DB_LONGITUDE + " DOUBLE DEFAULT 0, "
-                                            + SMARTALBUM_DB_COVER_URI + " TEXT, "
-                                            + SMARTALBUM_DB_EXPIRED_TIME + " INT DEFAULT 30, "
-                                            + SMARTALBUM_DB_SELF_ID + " TEXT) ";
+const std::string CREATE_SMARTALBUM_TABLE = "CREATE TABLE IF NOT EXISTS " + SMARTALBUM_TABLE + " (" +
+                                            SMARTALBUM_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                            SMARTALBUM_DB_NAME + " TEXT, " +
+                                            SMARTALBUM_DB_DESCRIPTION + " TEXT, " +
+                                            SMARTALBUM_DB_ALBUM_TYPE + " INT, " +
+                                            SMARTALBUM_DB_CAPACITY + " INT, " +
+                                            SMARTALBUM_DB_LATITUDE + " DOUBLE DEFAULT 0, " +
+                                            SMARTALBUM_DB_LONGITUDE + " DOUBLE DEFAULT 0, " +
+                                            SMARTALBUM_DB_COVER_URI + " TEXT, " +
+                                            SMARTALBUM_DB_EXPIRED_TIME + " INT DEFAULT 30, " +
+                                            SMARTALBUM_DB_SELF_ID + " TEXT) ";
 
 const std::string SMARTALBUMMAP_DB_ID = "map_id";
 const std::string SMARTALBUMMAP_DB_ALBUM_ID = "album_id";
 const std::string SMARTALBUMMAP_DB_CHILD_ALBUM_ID = "child_album_id";
 const std::string SMARTALBUMMAP_DB_CHILD_ASSET_ID = "child_asset_id";
 const std::string SMARTALBUMMAP_DB_SELF_ID = "self_id";
-const std::string CREATE_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXISTS " + SMARTALBUM_MAP_TABLE + " ("
-                                            + SMARTALBUMMAP_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                            + SMARTALBUMMAP_DB_ALBUM_ID + " INT, "
-                                            + SMARTALBUMMAP_DB_CHILD_ALBUM_ID + " INT, "
-                                            + SMARTALBUMMAP_DB_CHILD_ASSET_ID + " INT, "
-                                            + SMARTALBUMMAP_DB_SELF_ID + " TEXT) ";
+const std::string CREATE_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXISTS " + SMARTALBUM_MAP_TABLE + " (" +
+                                            SMARTALBUMMAP_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                            SMARTALBUMMAP_DB_ALBUM_ID + " INT, " +
+                                            SMARTALBUMMAP_DB_CHILD_ALBUM_ID + " INT, " +
+                                            SMARTALBUMMAP_DB_CHILD_ASSET_ID + " INT, " +
+                                            SMARTALBUMMAP_DB_SELF_ID + " TEXT) ";
 const std::string CATEGORY_SMARTALBUMMAP_DB_ID = "category_map_id";
 const std::string CATEGORY_SMARTALBUMMAP_DB_CATEGORY_ID = "category_id";
 const std::string CATEGORY_SMARTALBUMMAP_DB_CATEGORY_NAME = "category_name";
 const std::string CATEGORY_SMARTALBUMMAP_DB_ALBUM_ID = "album_id";
 const std::string CATEGORY_SMARTALBUMMAP_DB_SELF_ID = "self_id";
-const std::string CREATE_CATEGORY_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXISTS "
-                                            + CATEGORY_SMARTALBUM_MAP_TABLE + " ("
-                                            + CATEGORY_SMARTALBUMMAP_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                            + CATEGORY_SMARTALBUMMAP_DB_CATEGORY_ID + " INT, "
-                                            + CATEGORY_SMARTALBUMMAP_DB_CATEGORY_NAME + " TEXT, "
-                                            + CATEGORY_SMARTALBUMMAP_DB_ALBUM_ID + " INT, "
-                                            + SMARTALBUMMAP_DB_SELF_ID + " TEXT) ";
+const std::string CREATE_CATEGORY_SMARTALBUMMAP_TABLE = "CREATE TABLE IF NOT EXISTS " +
+                                            CATEGORY_SMARTALBUM_MAP_TABLE + " (" +
+                                            CATEGORY_SMARTALBUMMAP_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                            CATEGORY_SMARTALBUMMAP_DB_CATEGORY_ID + " INT, " +
+                                            CATEGORY_SMARTALBUMMAP_DB_CATEGORY_NAME + " TEXT, " +
+                                            CATEGORY_SMARTALBUMMAP_DB_ALBUM_ID + " INT, " +
+                                            SMARTALBUMMAP_DB_SELF_ID + " TEXT) ";
 const std::string CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE = "directory_type";
 const std::string CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE = "media_type";
 const std::string CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY = "directory";
 const std::string CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION = "extension";
-const std::string CREATE_MEDIATYPE_DIRECTORY_TABLE = "CREATE TABLE IF NOT EXISTS "
-                                            + MEDIATYPE_DIRECTORY_TABLE + " ("
-                                            + CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE + " INTEGER PRIMARY KEY, "
-                                            + CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE + " TEXT, "
-                                            + CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY + " TEXT, "
-                                            + CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION + " TEXT) ";
+const std::string CREATE_MEDIATYPE_DIRECTORY_TABLE = "CREATE TABLE IF NOT EXISTS " +
+                                            MEDIATYPE_DIRECTORY_TABLE + " (" +
+                                            CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE + " INTEGER PRIMARY KEY, " +
+                                            CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE + " TEXT, " +
+                                            CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY + " TEXT, " +
+                                            CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION + " TEXT) ";
 
 const std::string DEVICE_DB_ID = "id";
 const std::string DEVICE_DB_UDID = "device_udid";
@@ -342,64 +356,64 @@ const std::string DEVICE_DB_TYPE = "device_type";
 const std::string DEVICE_DB_PREPATH = "pre_path";
 const std::string DEVICE_DB_DATE_ADDED = "date_added";
 const std::string DEVICE_DB_DATE_MODIFIED = "date_modified";
-const std::string CREATE_DEVICE_TABLE = "CREATE TABLE IF NOT EXISTS " + DEVICE_TABLE + " ("
-                                            + DEVICE_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                            + DEVICE_DB_UDID + " TEXT, "
-                                            + DEVICE_DB_NETWORK_ID + " TEXT, "
-                                            + DEVICE_DB_NAME + " TEXT, "
-                                            + DEVICE_DB_IP + " TEXT DEFAULT '', "
-                                            + DEVICE_DB_SYNC_STATUS + " INT DEFAULT 0, "
-                                            + DEVICE_DB_SELF_ID + " TEXT, "
-                                            + DEVICE_DB_TYPE + " INT, "
-                                            + DEVICE_DB_PREPATH + " TEXT, "
-                                            + DEVICE_DB_DATE_ADDED + " BIGINT DEFAULT 0, "
-                                            + DEVICE_DB_DATE_MODIFIED + " BIGINT DEFAULT 0) ";
+const std::string CREATE_DEVICE_TABLE = "CREATE TABLE IF NOT EXISTS " + DEVICE_TABLE + " (" +
+                                            DEVICE_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                            DEVICE_DB_UDID + " TEXT, " +
+                                            DEVICE_DB_NETWORK_ID + " TEXT, " +
+                                            DEVICE_DB_NAME + " TEXT, " +
+                                            DEVICE_DB_IP + " TEXT DEFAULT '', " +
+                                            DEVICE_DB_SYNC_STATUS + " INT DEFAULT 0, " +
+                                            DEVICE_DB_SELF_ID + " TEXT, " +
+                                            DEVICE_DB_TYPE + " INT, " +
+                                            DEVICE_DB_PREPATH + " TEXT, " +
+                                            DEVICE_DB_DATE_ADDED + " BIGINT DEFAULT 0, " +
+                                            DEVICE_DB_DATE_MODIFIED + " BIGINT DEFAULT 0) ";
 const std::string SMARTALBUM_TABLE_NAME = "smartalbum";
 const std::string SMARTALBUMMAP_TABLE_NAME = "smartAlbumMap";
 const std::string CATEGORY_SMARTALBUMMAP_TABLE_NAME = "categorySmartAlbumMap";
 const std::string SMARTABLUMASSETS_VIEW_NAME = "SmartAlbumAssets";
 const std::string SMARTABLUMASSETS_ALBUMCAPACITY = "albumCapacity";
-const std::string CREATE_SMARTABLUMASSETS_VIEW = "CREATE VIEW " + SMARTABLUMASSETS_VIEW_NAME
-                        + " AS SELECT COUNT("
-                        + MEDIALIBRARY_TABLE + "."+ MEDIA_DATA_DB_DATE_TRASHED + " = 0 OR ("
-                        + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID + " = "
-                        + std::to_string(TRASH_ALBUM_ID_VALUES) + " AND "
-                        + MEDIALIBRARY_TABLE + "."+ MEDIA_DATA_DB_IS_TRASH + "<> 0)"
-                        + " OR NULL ) AS " + SMARTABLUMASSETS_ALBUMCAPACITY + ", "
-                        + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID + ", "
-                        + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_NAME + ", "
-                        + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_SELF_ID + ", "
-                        + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ALBUM_TYPE + ", "
-                        + SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_ID
-                        + " FROM " + SMARTALBUM_TABLE +" "+SMARTALBUM_TABLE_NAME
-                        + " LEFT JOIN " + SMARTALBUM_MAP_TABLE
-                        + " ON " + SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_ALBUM_ID + " = "
-                        + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID
-                        + " LEFT JOIN " + MEDIALIBRARY_TABLE
-                        + " ON " + SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_CHILD_ASSET_ID + " = "
-                        + MEDIALIBRARY_TABLE + "." + MEDIA_DATA_DB_ID
-                        + " GROUP BY IFNULL( " + SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_ALBUM_ID + ", "
-                        + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID + " ), "
-                        + SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_SELF_ID;
+const std::string CREATE_SMARTABLUMASSETS_VIEW = "CREATE VIEW " + SMARTABLUMASSETS_VIEW_NAME +
+                        " AS SELECT COUNT(" +
+                        MEDIALIBRARY_TABLE + "."+ MEDIA_DATA_DB_DATE_TRASHED + " = 0 OR (" +
+                        SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID + " = " +
+                        std::to_string(TRASH_ALBUM_ID_VALUES) + " AND " +
+                        MEDIALIBRARY_TABLE + "."+ MEDIA_DATA_DB_IS_TRASH + "<> 0)" +
+                        " OR NULL ) AS " + SMARTABLUMASSETS_ALBUMCAPACITY + ", " +
+                        SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID + ", " +
+                        SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_NAME + ", " +
+                        SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_SELF_ID + ", " +
+                        SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ALBUM_TYPE + ", " +
+                        SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_ID +
+                        " FROM " + SMARTALBUM_TABLE +" "+SMARTALBUM_TABLE_NAME +
+                        " LEFT JOIN " + SMARTALBUM_MAP_TABLE +
+                        " ON " + SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_ALBUM_ID + " = " +
+                        SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID +
+                        " LEFT JOIN " + MEDIALIBRARY_TABLE +
+                        " ON " + SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_CHILD_ASSET_ID + " = " +
+                        MEDIALIBRARY_TABLE + "." + MEDIA_DATA_DB_ID +
+                        " GROUP BY IFNULL( " + SMARTALBUM_MAP_TABLE + "." + SMARTALBUMMAP_DB_ALBUM_ID + ", " +
+                        SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID + " ), " +
+                        SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_SELF_ID;
 const std::string ASSETMAP_VIEW_NAME = "AssetMap";
-const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW " + ASSETMAP_VIEW_NAME
-                        + " AS SELECT * FROM "
-                        + MEDIALIBRARY_TABLE + " a " + ", "
-                        + SMARTALBUM_MAP_TABLE + " b "
-                        + " WHERE "
-                        + "a." + MEDIA_DATA_DB_ID + " = "
-                        + "b." + SMARTALBUMMAP_DB_CHILD_ASSET_ID;
+const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW " + ASSETMAP_VIEW_NAME +
+                        " AS SELECT * FROM " +
+                        MEDIALIBRARY_TABLE + " a " + ", " +
+                        SMARTALBUM_MAP_TABLE + " b " +
+                        " WHERE " +
+                        "a." + MEDIA_DATA_DB_ID + " = " +
+                        "b." + SMARTALBUMMAP_DB_CHILD_ASSET_ID;
 
-const std::string QUERY_MEDIA_VOLUME = "SELECT sum(" + MEDIA_DATA_DB_SIZE + ") AS "
-                        + MEDIA_DATA_DB_SIZE + ","
-                        + MEDIA_DATA_DB_MEDIA_TYPE + " FROM "
-                        + MEDIALIBRARY_TABLE + " WHERE "
-                        + MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_FILE) + " OR "
-                        + MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR "
-                        + MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " OR "
-                        + MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_AUDIO) + " AND "
-                        + MEDIA_DATA_DB_DATE_TRASHED + " = 0"
-                        + " GROUP BY " + MEDIA_DATA_DB_MEDIA_TYPE;
+const std::string QUERY_MEDIA_VOLUME = "SELECT sum(" + MEDIA_DATA_DB_SIZE + ") AS " +
+                        MEDIA_DATA_DB_SIZE + "," +
+                        MEDIA_DATA_DB_MEDIA_TYPE + " FROM " +
+                        MEDIALIBRARY_TABLE + " WHERE " +
+                        MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_FILE) + " OR " +
+                        MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " +
+                        MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " OR " +
+                        MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_AUDIO) + " AND " +
+                        MEDIA_DATA_DB_DATE_TRASHED + " = 0" +
+                        " GROUP BY " + MEDIA_DATA_DB_MEDIA_TYPE;
 
 // File operations constants
 const std::string MEDIA_OPERN_KEYWORD = "operation";
@@ -422,6 +436,12 @@ const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
 // BoardCast operation
 const std::string MEDIA_BOARDCASTOPRN = "boardcast";
 const std::string MEDIA_SCAN_OPERATION = "boardcast_scan";
+
+const std::string THU_OPRN_GENERATES = "thumbnail_generate_operation";
+const std::string THU_OPRN_AGING = "thumbnail_aging_operation";
+const std::string DISTRIBUTE_THU_OPRN_GENERATES = "thumbnail_distribute_generate_operation";
+const std::string DISTRIBUTE_THU_OPRN_AGING = "thumbnail_distribute_aging_operation";
+const std::string DISTRIBUTE_THU_OPRN_CREATE = "thumbnail_distribute_create_operation";
 
 // ringtone uris
 const std::string MEDIA_KVSTOREOPRN_SET_URI = "set_ringtone_uri";

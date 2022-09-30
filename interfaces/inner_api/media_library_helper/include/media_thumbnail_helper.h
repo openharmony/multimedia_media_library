@@ -18,32 +18,16 @@
 
 #include <securec.h>
 #include "pixel_map.h"
-#include "single_kvstore.h"
 
 #define EXPORT __attribute__ ((visibility ("default")))
 namespace OHOS {
 namespace Media {
-static const Size DEFAULT_THUMBNAIL_SIZE = {
-    .width = 256,
-    .height = 256
-};
-
 class MediaThumbnailHelper {
 public:
     MediaThumbnailHelper();
     ~MediaThumbnailHelper() = default;
-    std::unique_ptr<PixelMap> GetThumbnail(std::string key, Size &size, const std::string &uri = "");
-    bool isThumbnailFromLcd(Size &size);
-    std::string GetDeviceIdByUri(const std::string &uri);
-    // utils
-    bool ResizeImage(std::vector<uint8_t> &data, Size &size, std::unique_ptr<PixelMap> &pixelMap);
-protected:
-    std::shared_ptr<DistributedKv::SingleKvStore> singleKvStorePtr_ = nullptr;
-
-    // KV Store
-    bool GetImage(std::string &key, std::vector<uint8_t> &image);
-    bool IsImageExist(std::string &key);
-    DistributedKv::Status SyncKvstore(std::string key, const std::string &uri);
+    static bool IsThumbnailFromLcd(const Size &size);
+    static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
 };
 } // namespace Media
 } // namespace  OHOS

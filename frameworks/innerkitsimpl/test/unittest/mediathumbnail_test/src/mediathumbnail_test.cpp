@@ -172,7 +172,7 @@ HWTEST_F(MediaThumbnailTest, CreateImageThumbnailTest_001, TestSize.Level0)
     resultSet->GetBlob(PARAM1, image);
     resultSet->Close();
     unique_ptr<PixelMap> pixelMap;
-    g_thumbnailHelper->ResizeImage(image, size, pixelMap);
+    MediaThumbnailHelper::ResizeImage(image, size, pixelMap);
     EXPECT_NE(pixelMap, nullptr);
     if (pixelMap) {
         EXPECT_EQ(pixelMap->GetWidth(), size.width);
@@ -219,7 +219,7 @@ HWTEST_F(MediaThumbnailTest, CreateImageLcdTest_001, TestSize.Level0)
     resultSet->GetBlob(PARAM1, image);
     resultSet->Close();
     unique_ptr<PixelMap> pixelMap;
-    g_thumbnailHelper->ResizeImage(image, size2, pixelMap);
+    MediaThumbnailHelper::ResizeImage(image, size2, pixelMap);
     EXPECT_NE(pixelMap, nullptr);
     if (pixelMap) {
         EXPECT_EQ(pixelMap->GetWidth(), size2.width);
@@ -258,7 +258,7 @@ HWTEST_F(MediaThumbnailTest, CreateAudioThumbnailTest_001, TestSize.Level0)
     resultSet->GetBlob(PARAM1, image);
     resultSet->Close();
     unique_ptr<PixelMap> pixelMap;
-    g_thumbnailHelper->ResizeImage(image, size, pixelMap);
+    MediaThumbnailHelper::ResizeImage(image, size, pixelMap);
     EXPECT_NE(pixelMap, nullptr);
     if (pixelMap) {
         EXPECT_EQ(pixelMap->GetWidth(), size.width);
@@ -297,7 +297,7 @@ HWTEST_F(MediaThumbnailTest, CreateVideoThumbnailTest_001, TestSize.Level0)
     resultSet->GetBlob(PARAM1, image);
     resultSet->Close();
     unique_ptr<PixelMap> pixelMap;
-    g_thumbnailHelper->ResizeImage(image, size, pixelMap);
+    MediaThumbnailHelper::ResizeImage(image, size, pixelMap);
     EXPECT_NE(pixelMap, nullptr);
     if (pixelMap) {
         EXPECT_EQ(pixelMap->GetWidth(), size.width);

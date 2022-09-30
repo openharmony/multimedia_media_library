@@ -31,6 +31,7 @@
 #include "medialibrary_device_operations.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
+#include "single_kvstore.h"
 
 namespace OHOS {
 namespace Media {
@@ -55,7 +56,7 @@ public:
     void OnRemoteDied() override;
 
     void GetAllDeviceId(std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList);
-    bool InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    bool InitDeviceRdbStore(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void NotifyDeviceChange();
     void NotifyRemoteFileChange();
     bool UpdateDeviceSyncStatus(const std::string &networkId, int32_t syncStatus);
@@ -64,7 +65,10 @@ public:
     std::string GetUdidByNetworkId(std::string &networkId);
     void OnSyncCompleted(const std::string &devId, const DistributedKv::Status staus);
     void OnGetDevSecLevel(const std::string &udid, const int32_t level);
-private:
+    void GetDeviceInfoMap(std::unordered_map<std::string, OHOS::Media::MediaLibraryDeviceInfo> &outDeviceMap);
+    bool QueryAgingDeviceInfos(std::vector<MediaLibraryDeviceInfo> &outDeviceInfos);
+    bool QueryAllDeviceUdid(vector<string> &deviceUdids);
+    bool DeleteDeviceInfo(const std::string &udid);
     MediaLibraryDevice();
 
     void GetMediaLibraryDeviceInfo(const OHOS::DistributedHardware::DmDeviceInfo &dmInfo,

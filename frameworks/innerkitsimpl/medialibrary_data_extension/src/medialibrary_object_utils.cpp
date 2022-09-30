@@ -28,7 +28,6 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_thumbnail.h"
 #include "value_object.h"
 
 using namespace std;
@@ -600,14 +599,6 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
         UpdateDateModified(dirPath);
     }
 
-    MediaLibraryThumbnail thumbnail;
-    ThumbRdbOpt opt {
-        .store = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
-        .table = MEDIALIBRARY_TABLE,
-        .row = strFileId
-    };
-    string kvId;
-    thumbnail.CreateThumbnail(opt, kvId);
     ScanFile(srcPath);
     return E_SUCCESS;
 }
@@ -620,7 +611,7 @@ void MediaLibraryObjectUtils::ScanFile(string &path)
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
     }
-    int ret = MediaScannerManager::GetInstance()->ScanFile(path, nullptr);
+    int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }
