@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -59,6 +60,9 @@ public:
     bool DeleteAlbumAsset(const std::string &albumUri);
     bool ModifyAlbumAsset(const std::string &albumUri);
 
+    void SetResultNapiType(const ResultNapiType type);
+    ResultNapiType GetResultNapiType() const;
+
 private:
     int32_t albumId_;
     std::string albumName_;
@@ -71,6 +75,7 @@ private:
     string albumPath_;
     bool albumVirtual_;
     std::string typeMask_;
+    ResultNapiType resultNapiType_;
 };
 } // namespace Media
 } // namespace OHOS

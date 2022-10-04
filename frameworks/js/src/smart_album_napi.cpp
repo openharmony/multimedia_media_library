@@ -101,7 +101,7 @@ napi_value SmartAlbumNapi::UserFileMgrInit(napi_env env, napi_value exports)
         .ref = &userFileMgrConstructor_,
         .constructor = SmartAlbumNapiConstructor,
         .props = {
-            DECLARE_NAPI_FUNCTION("getFileAssets", UserFileMgrGetAssets),
+            DECLARE_NAPI_FUNCTION("getPhotoAssets", UserFileMgrGetAssets),
         }
     };
 
@@ -947,7 +947,11 @@ napi_value SmartAlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info
     napi_value ret = nullptr;
     unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = make_unique<SmartAlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsTypeFetchOptCallback(env, info, asyncContext) != napi_ok,
+
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_IMAGE);
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
+    MediaLibraryNapiUtils::GenTypeMaskFromArray(asyncContext->mediaTypes, asyncContext->typeMask);
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext) != napi_ok,
         "Failed to parse js args");
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
 

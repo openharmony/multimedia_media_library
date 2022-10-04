@@ -101,7 +101,7 @@ napi_value AlbumNapi::UserFileMgrInit(napi_env env, napi_value exports)
         .ref = &userFileMgrConstructor_,
         .constructor = AlbumNapiConstructor,
         .props = {
-            DECLARE_NAPI_FUNCTION("getFileAssets", UserFileMgrGetAssets),
+            DECLARE_NAPI_FUNCTION("getPhotoAssets", UserFileMgrGetAssets),
             DECLARE_NAPI_FUNCTION("commitModify", UserFileMgrCommitModify),
             DECLARE_NAPI_GETTER_SETTER("albumName", JSGetAlbumName, JSAlbumNameSetter),
             DECLARE_NAPI_GETTER("albumUri", JSGetAlbumUri),
@@ -167,7 +167,8 @@ napi_value AlbumNapi::CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
     napi_value constructor;
-    napi_ref constructorRef = (albumData.GetAlbumTypeMask().empty()) ? (sConstructor_) : (userFileMgrConstructor_);
+    napi_ref constructorRef = (albumData.GetResultNapiType() == ResultNapiType::TYPE_MEDIALIBRARY) ?
+        (sConstructor_) : (userFileMgrConstructor_);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
     napi_value result = nullptr;
@@ -862,7 +863,10 @@ napi_value AlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info info
     napi_value ret = nullptr;
     unique_ptr<AlbumNapiAsyncContext> asyncContext = make_unique<AlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsTypeFetchOptCallback(env, info, asyncContext) == napi_ok,
+
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_IMAGE);
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext) == napi_ok,
         "Failed to parse js args");
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
