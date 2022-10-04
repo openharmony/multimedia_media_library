@@ -28,6 +28,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_type_const.h"
+#include "datashare_predicates.h"
 
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \
     do {                                                                    \
@@ -339,6 +340,11 @@ public:
     static void GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask);
     static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask);
     static void UriRemoveAllFragment(std::string &uri);
+    template <class AsyncContext>
+    static napi_status GetPredicate(napi_env env, const napi_value arg,
+        const std::string &propName, AsyncContext &context);
+
+    static void GetNetworkIdAndFileIdFromUri(const std::string &uri, std::string &networkId, std::string &fileId);
 
     template <class AsyncContext>
     static napi_status AsyncContextSetObjectInfo(napi_env env, napi_callback_info info, AsyncContext &asyncContext,
@@ -377,6 +383,9 @@ public:
     }
 
     template <class AsyncContext>
+    static napi_status GetAssetFetchOption(napi_env env, napi_value arg, AsyncContext &context);
+
+    template <class AsyncContext>
     static napi_status GetParamCallback(napi_env env, AsyncContext &context)
     {
         /* Parse the last argument into callbackref if any */
@@ -388,6 +397,10 @@ public:
         }
         return napi_ok;
     }
+
+    template <class AsyncContext>
+    static napi_status ParseAssetFetchOptCallback(napi_env env, napi_callback_info info,
+        AsyncContext &context);
 
     template <class AsyncContext>
     static napi_status ParseArgsTypeFetchOptCallback(napi_env env, napi_callback_info info, AsyncContext &context)
