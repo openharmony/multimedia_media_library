@@ -31,6 +31,7 @@
 #include "values_bucket.h"
 #include "napi_remote_object.h"
 #include "datashare_helper.h"
+#include "datashare_predicates.h"
 
 namespace OHOS {
 namespace Media {
@@ -175,7 +176,8 @@ private:
     static napi_value UserFileMgrCreateAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetAlbums(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrGetFileAssets(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrGetPhotoAssets(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrGetAudioAssets(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetPrivateAlbum(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCreateFileKeyEnum(napi_env env);
     static napi_value CreateAudioKeyEnum(napi_env env);
@@ -238,6 +240,8 @@ struct MediaLibraryAsyncContext : public NapiError {
     ResultNapiType resultNapiType;
     std::string typeMask;
     std::vector<uint32_t> mediaTypes;
+    OHOS::DataShare::DataSharePredicates predicates;
+    std::vector<std::string> fetchColumn;
 };
 } // namespace Media
 } // namespace OHOS

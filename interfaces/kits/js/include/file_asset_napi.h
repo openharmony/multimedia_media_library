@@ -111,7 +111,6 @@ private:
     static napi_value JSIsTrash(napi_env env, napi_callback_info info);
     static napi_value JSGetCount(napi_env env, napi_callback_info info);
     void UpdateFileAssetInfo();
-
     static napi_value UserFileMgrOpen(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrClose(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
