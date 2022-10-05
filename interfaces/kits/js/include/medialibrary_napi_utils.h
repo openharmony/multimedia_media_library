@@ -341,8 +341,13 @@ public:
     static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask);
     static void UriRemoveAllFragment(std::string &uri);
     template <class AsyncContext>
-    static napi_status GetPredicate(napi_env env, const napi_value arg,
-        const std::string &propName, AsyncContext &context);
+    static napi_status GetPredicate(napi_env env, const napi_value arg, const std::string &propName,
+        AsyncContext &context);
+    template <class AsyncContext>
+    static napi_status ParseAlbumFetchOptCallback(napi_env env, napi_callback_info info, AsyncContext &context);
+    template <class AsyncContext>
+    static bool HandleSpecialPredicate(AsyncContext &context,
+        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate);
 
     static void GetNetworkIdAndFileIdFromUri(const std::string &uri, std::string &networkId, std::string &fileId);
 

@@ -19,6 +19,8 @@
 #include "datashare_predicates_proxy.h"
 #include "media_library_napi.h"
 #include "medialibrary_data_manager_utils.h"
+#include "smart_album_napi.h"
+
 using namespace std;
 using namespace OHOS::DataShare;
 
@@ -238,8 +240,8 @@ void MediaLibraryNapiUtils::UriRemoveAllFragment(std::string &uri)
     }
 }
 
-static bool GetFileAssetsPredicate(unique_ptr<MediaLibraryAsyncContext> &context,
-    shared_ptr<DataShareAbsPredicates> &predicate)
+template <class AsyncContext>
+bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context, shared_ptr<DataShareAbsPredicates> &predicate)
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
@@ -296,10 +298,9 @@ napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value a
     CHECK_STATUS_RET(napi_has_named_property(env, arg, propName.c_str(), &present),
         "Failed to check property name");
     if (present) {
-        NAPI_ERR_LOG("GetPredicate. ");
         CHECK_STATUS_RET(napi_get_named_property(env, arg, propName.c_str(), &property), "Failed to get property");
         shared_ptr<DataShareAbsPredicates> predicate = DataSharePredicatesProxy::GetNativePredicates(env, property);
-        CHECK_COND_RET(GetFileAssetsPredicate(context, predicate) == TRUE, napi_invalid_arg, "invalid predicate");
+        CHECK_COND_RET(HandleSpecialPredicate(context, predicate) == TRUE, napi_invalid_arg, "invalid predicate");
     }
     return napi_ok;
 }
@@ -312,10 +313,34 @@ napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback(napi_env env, napi
     constexpr size_t MAX_ARGS = ARGS_TWO;
     CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
         "Failed to get object info");
-    CHECK_STATUS_RET(GetAssetFetchOption(env, context->argv[ARGS_ZERO], context), "Failed to get fetch option");
+    CHECK_STATUS_RET(GetAssetFetchOption(env, context->argv[PARAM0], context), "Failed to get fetch option");
     CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
     return napi_ok;
 }
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::ParseAlbumFetchOptCallback(napi_env env, napi_callback_info info,
+    AsyncContext &context)
+{
+    constexpr size_t MIN_ARGS = ARGS_ONE;
+    constexpr size_t MAX_ARGS = ARGS_TWO;
+    CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+        "Failed to get object info");
+    // Parse the argument into fetchOption if any
+    CHECK_STATUS_RET(GetPredicate(env, context->argv[PARAM0], "predicates", context), "invalid predicate");
+    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+    return napi_ok;
+}
+
+
+template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
+    unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate);
+
+template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<AlbumNapiAsyncContext>>(
+    unique_ptr<AlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate);
+
+template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<SmartAlbumNapiAsyncContext>>(
+    unique_ptr<SmartAlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate);
 
 template napi_status MediaLibraryNapiUtils::GetAssetFetchOption<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     napi_value arg, unique_ptr<MediaLibraryAsyncContext> &context);
@@ -323,7 +348,22 @@ template napi_status MediaLibraryNapiUtils::GetAssetFetchOption<unique_ptr<Media
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     const napi_value arg, const std::string &propName, unique_ptr<MediaLibraryAsyncContext> &context);
 
+template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<AlbumNapiAsyncContext>>(napi_env env,
+    const napi_value arg, const std::string &propName, unique_ptr<AlbumNapiAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<SmartAlbumNapiAsyncContext>>(napi_env env,
+    const napi_value arg, const std::string &propName, unique_ptr<SmartAlbumNapiAsyncContext> &context);
+
 template napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback<unique_ptr<MediaLibraryAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback<unique_ptr<AlbumNapiAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<AlbumNapiAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback<unique_ptr<SmartAlbumNapiAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::ParseAlbumFetchOptCallback<unique_ptr<MediaLibraryAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context);
 } // namespace Media
 } // namespace OHOS

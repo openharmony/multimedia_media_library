@@ -139,7 +139,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getPublicDirectory", JSGetPublicDirectory),
             DECLARE_NAPI_FUNCTION("getPhotoAssets", UserFileMgrGetPhotoAssets),
             DECLARE_NAPI_FUNCTION("getAudioAssets", UserFileMgrGetAudioAssets),
-            DECLARE_NAPI_FUNCTION("getAlbums", UserFileMgrGetAlbums),
+            DECLARE_NAPI_FUNCTION("getPhotoAlbums", UserFileMgrGetAlbums),
             DECLARE_NAPI_FUNCTION("createAsset", UserFileMgrCreateAsset),
             DECLARE_NAPI_FUNCTION("deleteAsset", UserFileMgrDeleteAsset),
             DECLARE_NAPI_FUNCTION("on", JSOnCallback),
@@ -870,11 +870,11 @@ static void GetResultDataExecute(napi_env env, void *data)
         context->error = ERR_INVALID_OUTPUT;
         return;
     }
-    DataSharePredicates sharePredicates;
-    sharePredicates.SetWhereClause(context->selection);
-    sharePredicates.SetWhereArgs(context->selectionArgs);
+    UpdateMediaTypeSelections(context);
+    context->predicates.SetWhereClause(context->selection);
+    context->predicates.SetWhereArgs(context->selectionArgs);
     if (!context->order.empty()) {
-        sharePredicates.SetOrder(context->order);
+        context->predicates.SetOrder(context->order);
     }
 
     vector<string> columns;
@@ -886,7 +886,7 @@ static void GetResultDataExecute(napi_env env, void *data)
     }
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     Uri uri(queryUri);
-    shared_ptr<DataShareResultSet> resultSet = helper->Query(uri, sharePredicates, columns);
+    shared_ptr<DataShareResultSet> resultSet = helper->Query(uri, context->predicates, columns);
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr");
@@ -897,6 +897,7 @@ static void GetResultDataExecute(napi_env env, void *data)
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         context->fetchAlbumResult = make_unique<FetchResult<AlbumAsset>>(move(resultSet));
         context->fetchAlbumResult->SetNetworkId(context->networkId);
+        context->fetchAlbumResult->resultNapiType_ = context->resultNapiType;
         return;
     }
 
@@ -3244,7 +3245,11 @@ napi_value MediaLibraryNapi::UserFileMgrGetAlbums(napi_env env, napi_callback_in
     napi_value ret = nullptr;
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsTypeFetchOptCallback(env, info, asyncContext) == napi_ok,
+    // Parse the first argument into typeMask
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_IMAGE);
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
+    MediaLibraryNapiUtils::GenTypeMaskFromArray(asyncContext->mediaTypes, asyncContext->typeMask);
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseAlbumFetchOptCallback(env, info, asyncContext) == napi_ok,
         "Failed to parse js args");
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
 
