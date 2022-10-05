@@ -117,6 +117,8 @@ struct SmartAlbumNapiAsyncContext : public NapiError {
     ResultNapiType resultNapiType;
     std::vector<uint32_t> mediaTypes;
     std::string typeMask;
+    OHOS::DataShare::DataSharePredicates predicates;
+    std::vector<std::string> fetchColumn;
 };
 } // namespace Media
 } // namespace OHOS

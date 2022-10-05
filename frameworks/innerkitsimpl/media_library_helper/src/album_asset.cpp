@@ -36,6 +36,7 @@ AlbumAsset::AlbumAsset()
     albumPath_ = DEFAULT_ALBUM_PATH;
     albumVirtual_ = DEFAULT_ALBUM_VIRTUAL;
     typeMask_ = DEFAULT_TYPE_MASK;
+    resultNapiType_ = ResultNapiType::TYPE_MEDIALIBRARY;
 }
 
 AlbumAsset::~AlbumAsset() = default;
@@ -171,5 +172,17 @@ bool AlbumAsset::ModifyAlbumAsset(const string &albumUri)
 
     return errCode;
 }
+
+void AlbumAsset::SetResultNapiType(const ResultNapiType type)
+{
+    resultNapiType_ = type;
+}
+
+ResultNapiType AlbumAsset::GetResultNapiType() const
+{
+    return resultNapiType_;
+}
+
+
 }  // namespace Media
 }  // namespace OHOS

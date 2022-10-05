@@ -409,6 +409,8 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
         TYPE_STRING, resultSet)));
     albumData->SetAlbumDateModified(get<int64_t>(GetRowValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED,
         TYPE_INT64, resultSet)));
+
+    albumData->SetResultNapiType(resultNapiType_);
 }
 
 template class FetchResult<FileAsset>;
