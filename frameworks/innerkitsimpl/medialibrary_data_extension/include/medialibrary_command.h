@@ -80,7 +80,7 @@ public:
     OperationObject GetOprnObject() const;
     OperationType GetOprnType() const;
     const std::string &GetTableName();
-    const NativeRdb::ValuesBucket &GetValueBucket() const;
+    NativeRdb::ValuesBucket &GetValueBucket();
     NativeRdb::AbsRdbPredicates *GetAbsRdbPredicates();
     const std::string &GetOprnFileId();
     const std::string &GetOprnDevice();

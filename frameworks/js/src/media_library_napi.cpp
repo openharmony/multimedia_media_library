@@ -17,6 +17,7 @@
 #include "media_library_napi.h"
 
 #include <sys/sendfile.h>
+#include "media_asset.h"
 #include "media_file_utils.h"
 #include "hitrace_meter.h"
 #include "medialibrary_peer_info.h"
@@ -140,7 +141,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getPhotoAssets", UserFileMgrGetPhotoAssets),
             DECLARE_NAPI_FUNCTION("getAudioAssets", UserFileMgrGetAudioAssets),
             DECLARE_NAPI_FUNCTION("getPhotoAlbums", UserFileMgrGetAlbums),
-            DECLARE_NAPI_FUNCTION("createAsset", UserFileMgrCreateAsset),
+            DECLARE_NAPI_FUNCTION("createPhotoAsset", UserFileMgrCreateAsset),
             DECLARE_NAPI_FUNCTION("deleteAsset", UserFileMgrDeleteAsset),
             DECLARE_NAPI_FUNCTION("on", JSOnCallback),
             DECLARE_NAPI_FUNCTION("off", JSOffCallback),
@@ -1287,7 +1288,7 @@ static void JSCreateAssetExecute(napi_env env, void *data)
         context->error = ERR_DISPLAY_NAME_INVALID;
         return;
     }
-    if (!CheckRelativePathPrams(context)) {
+    if ((context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) && (!CheckRelativePathPrams(context))) {
         context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
         return;
     }
@@ -3162,28 +3163,32 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
 static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    constexpr size_t MIN_ARGS = ARGS_THREE;
-    constexpr size_t MAX_ARGS = ARGS_FOUR;
+    constexpr size_t MIN_ARGS = ARGS_ONE;
+    constexpr size_t MAX_ARGS = ARGS_THREE;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS) ==
         napi_ok, "Failed to get object info");
 
-    /* Parse the first argument into mediaType */
-    uint32_t mediaType = MEDIA_TYPE_ALL;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetUInt32(env, context->argv[ARGS_ZERO], mediaType) == napi_ok,
-        "Failed to get parameter");
-    /* Parse the second argument into displayName */
-    string displayName;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], displayName) == napi_ok,
-        "Failed to get displayName");
+    /* Set mediaTypes to get typeMask */
+    vector<uint32_t> mediaTypes;
+    mediaTypes.push_back(MEDIA_TYPE_IMAGE);
+    mediaTypes.push_back(MEDIA_TYPE_VIDEO);
+    MediaLibraryNapiUtils::GenTypeMaskFromArray(mediaTypes, context->typeMask);
 
-    /* Parse the third argument into relativePath */
-    string relativePath;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_TWO], relativePath) ==
-        napi_ok, "Failed to get relativePath");
+    /* Parse the first argument into displayName */
+    string displayName;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], displayName) ==
+        napi_ok, "Failed to get displayName");
+    MediaType mediaType = MediaAsset::GetMediaType(displayName);
+
+    /* Parse the second argument into albumUri if exists */
+    string albumUri;
+    if ((context->argc >= ARGS_TWO) &&
+        (MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], albumUri) == napi_ok)) {
+        context->valuesBucket.Put(MEDIA_DATA_DB_URI, albumUri);
+    }
 
     context->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
     context->valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
-    context->valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         vector<uint32_t> types = { mediaType };
         MediaLibraryNapiUtils::GenTypeMaskFromArray(types, context->typeMask);
