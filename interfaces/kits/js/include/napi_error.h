@@ -27,25 +27,11 @@ namespace Media {
 struct NapiError {
     int32_t error = 0;
     std::string apiName;
-    void SetApiName(const std::string &Name)
-    {
-        apiName = Name;
-    }
-    void SaveError(std::shared_ptr<DataShare::DataShareResultSet> resultSet)
-    {
-        error = MediaLibraryNapiUtils::TransErrorCode(apiName, resultSet);
-    }
-    void SaveError(int32_t ret)
-    {
-        if (ret < 0) {
-            error = MediaLibraryNapiUtils::TransErrorCode(apiName, ret);
-        }
-    }
-    void HandleError(napi_env env, napi_value &errorObj)
-    {
-        // deal with context->error
-        MediaLibraryNapiUtils::HandleError(env, error, errorObj, apiName);
-    }
+    void SetApiName(const std::string &Name);
+    void SaveError(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
+    void SaveError(int32_t ret);
+    void HandleError(napi_env env, napi_value &errorObj);
+    void ThrowError(napi_env env, int32_t err);
 };
 } // namespace Media
 } // namespace OHOS

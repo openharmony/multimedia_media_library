@@ -17,10 +17,17 @@
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_FILE_ASSET_H_
 
 #include <string>
+#include <variant>
+#include <unordered_map>
 #include "medialibrary_type_const.h"
 
 namespace OHOS {
 namespace Media {
+
+constexpr int MEMBER_TYPE_INT32 = 0;
+constexpr int MEMBER_TYPE_INT64 = 1;
+constexpr int MEMBER_TYPE_STRING = 2;
+
 /**
  * @brief Class for filling all file asset parameters
  *
@@ -126,49 +133,16 @@ public:
     int32_t OpenAsset(const std::string &filePath, const std::string &mode);
     int32_t CloseAsset(int32_t fd);
     bool IsFileExists(const std::string &filePath);
-
+    const std::string &GetStrMember(const std::string &name) const;
+    int32_t GetInt32Member(const std::string &name) const;
+    int64_t GetInt64Member(const std::string &name) const;
+    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> &GetMemberMap();
+    std::variant<int32_t, int64_t, std::string> &GetMemberValue(const std::string &name);
 private:
-    int32_t id_;
-    std::string uri_;
-    std::string path_;
-    std::string relativePath_;
-    std::string mimeType_;
-    MediaType mediaType_;
-    std::string displayName_;
-    int64_t size_;
-    int64_t dateAdded_;
-    int64_t dateModified_;
-
-    // audio
-    std::string title_;
-    std::string artist_;
-    std::string album_;
-
-    // image,video
-    int32_t width_;
-    int32_t height_;
-    int32_t duration_;
-    int32_t orientation_;
-
-    // album
-    int32_t albumId_;
-    std::string albumName_;
-    int32_t parent_;
     std::string albumUri_;
-    int64_t dateTaken_;
-
-    bool isPending_;
-    int64_t timePending_;
-
-    bool isFavorite_;
-    int64_t dateTrashed_;
-
-    std::string selfId_;
-    int32_t isTrash_;
-    std::string recyclePath_;
-
     ResultNapiType resultNapiType_;
     int32_t count_;
+    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> member_;
 };
 } // namespace Media
 } // namespace OHOS

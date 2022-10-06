@@ -150,6 +150,8 @@ napi_value FileAssetNapi::UserFileMgrInit(napi_env env, napi_value exports)
         .ref = &userFileMgrConstructor_,
         .constructor = FileAssetNapiConstructor,
         .props = {
+            DECLARE_NAPI_FUNCTION("get", UserFileMgrGet),
+            DECLARE_NAPI_FUNCTION("set", UserFileMgrSet),
             DECLARE_NAPI_FUNCTION("open", UserFileMgrOpen),
             DECLARE_NAPI_FUNCTION("close", UserFileMgrClose),
             DECLARE_NAPI_FUNCTION("commitModify", UserFileMgrCommitModify),
@@ -2222,6 +2224,107 @@ void FileAssetNapi::UpdateFileAssetInfo()
     isFavorite_ = sFileAsset_->IsFavorite();
     isTrash_ = sFileAsset_->GetDateTrashed() != 0;
     count_ = sFileAsset_->GetCount();
+    member_ = sFileAsset_->GetMemberMap();
+}
+
+napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrGet");
+
+    napi_value ret = nullptr;
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+
+    string inputKey;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, inputKey), asyncContext,
+        JS_ERR_PARAMETER_INVALID);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    napi_value jsResult = nullptr;
+    if ((status != napi_ok) || (thisVar == nullptr)) {
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        return jsResult;
+    }
+    FileAssetNapi *obj = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    napi_get_undefined(env, &jsResult);
+    if ((status != napi_ok) || (obj == nullptr)) {
+        NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
+        return jsResult;
+    }
+    if (obj->member_.count(inputKey) == 0) {
+        // no exist throw error
+        NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
+        return jsResult;
+    }
+    auto m = obj->member_.at(inputKey);
+    if (m.index() == MEMBER_TYPE_STRING) {
+        napi_create_string_utf8(env, get<string>(m).c_str(), NAPI_AUTO_LENGTH, &jsResult);
+    } else if (m.index() == MEMBER_TYPE_INT32) {
+        napi_create_int32(env, get<int32_t>(m), &jsResult);
+    } else if (m.index() == MEMBER_TYPE_INT64) {
+        napi_create_int64(env, get<int64_t>(m), &jsResult);
+    } else {
+        NAPI_THROW(env, asyncContext, JS_ERR_PARAMETER_INVALID);
+        return jsResult;
+    }
+    return jsResult;
+}
+
+bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value)
+{
+    if (inputKey == MEDIA_DATA_DB_NAME && member_.count(MEDIA_DATA_DB_NAME)) {
+        displayName_ = value;
+        member_[MEDIA_DATA_DB_NAME] = value;
+    } else if (inputKey == MEDIA_DATA_DB_RELATIVE_PATH && member_.count(MEDIA_DATA_DB_RELATIVE_PATH)) {
+        relativePath_ = value;
+        member_[MEDIA_DATA_DB_RELATIVE_PATH] = value;
+    } else if (inputKey == MEDIA_DATA_DB_TITLE && member_.count(MEDIA_DATA_DB_TITLE)) {
+        title_ = value;
+        member_[MEDIA_DATA_DB_TITLE] = value;
+    } else {
+        NAPI_ERR_LOG("invalid key %{public}s, no support key", inputKey.c_str());
+        return false;
+    }
+    return true;
+}
+
+napi_value FileAssetNapi::UserFileMgrSet(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrGet");
+
+    napi_value ret = nullptr;
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    string inputKey;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, inputKey), asyncContext,
+        JS_ERR_PARAMETER_INVALID);
+    string value;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[ARGS_ONE], value),
+        asyncContext, JS_ERR_PARAMETER_INVALID);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    napi_value jsResult = nullptr;
+    napi_get_undefined(env, &jsResult);
+    if ((status != napi_ok) || (thisVar == nullptr)) {
+        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
+        return jsResult;
+    }
+    FileAssetNapi *obj = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if (status != napi_ok || obj == nullptr) {
+        NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
+        return jsResult;
+    }
+    if (!obj->HandleParamSet(inputKey, value)) {
+        NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
+        return jsResult;
+    }
+    return jsResult;
 }
 
 napi_value FileAssetNapi::UserFileMgrOpen(napi_env env, napi_callback_info info)
