@@ -119,7 +119,7 @@ OperationType MediaLibraryCommand::GetOprnType() const
     return oprnType_;
 }
 
-const ValuesBucket &MediaLibraryCommand::GetValueBucket() const
+ValuesBucket &MediaLibraryCommand::GetValueBucket()
 {
     return insertValue_;
 }
