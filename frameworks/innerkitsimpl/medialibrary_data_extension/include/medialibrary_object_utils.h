@@ -54,6 +54,7 @@ public:
     static std::string GetRecyclePathByIdFromDb(const std::string &id);
     static int32_t GetParentIdByIdFromDb(const std::string &fileId);
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &uriStr);
+    static void GetDefaultRelativePath(const int32_t mediaType, string &relativePath);
 
     static int32_t InsertInDb(MediaLibraryCommand &cmd);
     static int32_t ModifyInfoByIdInDb(MediaLibraryCommand &cmd, const std::string &fileId = "");
