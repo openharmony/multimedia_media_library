@@ -228,7 +228,7 @@ void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset>
     int32_t dirTypeVal = -1;
     int32_t columnIndexDir, columnIndexMedia, columnIndexEx, columnIndexDirType;
     string dirVal, mediaVal, exVal;
-    vector<string> columns, selectionArgs;
+    vector<string> columns;
     shared_ptr<AbsSharedResultSet> queryResultSet;
     AbsRdbPredicates dirAbsPred(MEDIATYPE_DIRECTORY_TABLE);
     queryResultSet = rdbStore_->Query(dirAbsPred, columns);

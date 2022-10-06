@@ -28,6 +28,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
+#include "result_set_utils.h"
 #include "value_object.h"
 
 using namespace std;
@@ -139,6 +140,25 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     return (errCode == NativeRdb::E_OK) ? outRowId : errCode;
 }
 
+void GetRelativePathFromValues(ValuesBucket &values, string &relativePath, int32_t mediaType)
+{
+    ValueObject valueObject;
+    if (values.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
+        valueObject.GetString(relativePath);
+        return;
+    }
+    if (values.GetObject(MEDIA_DATA_DB_URI, valueObject)) {
+        string albumUri;
+        valueObject.GetString(albumUri);
+        auto albumAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(albumUri);
+        if (albumAsset != nullptr) {
+            relativePath = albumAsset->GetRelativePath() + albumAsset->GetDisplayName() + SLASH_CHAR;
+        }
+    } else {
+        MediaLibraryObjectUtils::GetDefaultRelativePath(mediaType, relativePath);
+    }
+}
+
 // create
 int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
 {
@@ -146,23 +166,25 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
     int32_t mediaType = static_cast<int32_t>(MEDIA_TYPE_FILE);
     FileAsset fileAsset;
     ValueObject valueObject;
-    const ValuesBucket values = cmd.GetValueBucket();
+    ValuesBucket values = cmd.GetValueBucket();
     if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
         valueObject.GetString(displayName);
         fileAsset.SetDisplayName(displayName);
-    }
-
-    if (values.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
-        valueObject.GetString(relativePath);
-        path = ROOT_MEDIA_DIR + relativePath + displayName;
-        fileAsset.SetRelativePath(relativePath);
-        fileAsset.SetPath(path);
     }
 
     if (values.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject)) {
         valueObject.GetInt(mediaType);
         fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
     }
+
+    GetRelativePathFromValues(values, relativePath, mediaType);
+    if (!relativePath.empty()) {
+        values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+        path = ROOT_MEDIA_DIR + relativePath + displayName;
+        fileAsset.SetRelativePath(relativePath);
+        fileAsset.SetPath(path);
+    }
+
     MediaLibraryDirOperations dirOprn;
     int32_t errCode = dirOprn.HandleDirOperations(MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION, values,
         MediaLibraryDataManager::GetInstance()->rdbStore_, MediaLibraryDataManager::GetInstance()->GetDirQuerySetMap());
@@ -728,6 +750,25 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
     }
     fetchFileResult->SetNetworkId(networkId);
     return fetchFileResult->GetObjectFromRdb(resultSet, 0);
+}
+
+void MediaLibraryObjectUtils::GetDefaultRelativePath(const int32_t mediaType, string &relativePath)
+{
+    MEDIA_DEBUG_LOG("enter");
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_DIR, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->EqualTo(CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE, to_string(mediaType));
+
+    shared_ptr<AbsSharedResultSet> resultSet = QueryWithCondition(cmd, {});
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain file asset from database");
+        return;
+    }
+
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        relativePath = get<string>(ResultSetUtils::GetValFromColumn(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY,
+            resultSet, TYPE_STRING));
+    }
 }
 
 int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, const string &dstPath,
