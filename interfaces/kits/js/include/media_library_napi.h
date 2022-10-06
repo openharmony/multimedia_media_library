@@ -174,7 +174,7 @@ private:
 
     static napi_value GetUserFileMgr(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCreateAsset(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrTrashAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetAlbums(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetPhotoAssets(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetAudioAssets(napi_env env, napi_callback_info info);
@@ -210,6 +210,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     napi_deferred deferred;
     napi_ref callbackRef;
     bool status;
+    bool isDelete;
     NapiAssetType assetType;
     AlbumType albumType;
     MediaLibraryNapi *objectInfo;
