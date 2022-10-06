@@ -348,7 +348,8 @@ public:
     template <class AsyncContext>
     static bool HandleSpecialPredicate(AsyncContext &context,
         std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate);
-
+    template <class AsyncContext>
+    static void UpdateMediaTypeSelections(AsyncContext *context);
     static void GetNetworkIdAndFileIdFromUri(const std::string &uri, std::string &networkId, std::string &fileId);
 
     template <class AsyncContext>
