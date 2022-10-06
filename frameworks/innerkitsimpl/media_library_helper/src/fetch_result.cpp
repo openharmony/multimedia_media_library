@@ -170,17 +170,11 @@ template <class T>
 variant<int32_t, int64_t, string> FetchResult<T>::GetRowValFromColumn(string columnName, ResultSetDataType dataType,
     shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
-    int index;
-    variant<int32_t, int64_t, string> cellValue;
-    int integerVal = 0;
-    string stringVal = "";
-    int64_t longVal = 0;
-    int status;
-
     if ((resultset_ == nullptr) && (resultSet == nullptr)) {
-        ReturnDefaultOnError("Resultset is null", dataType);
+        return ReturnDefaultOnError("Resultset is null", dataType);
     }
-
+    int index;
+    int status;
     if (resultSet) {
         status = resultSet->GetColumnIndex(columnName, index);
     } else {
@@ -189,7 +183,22 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetRowValFromColumn(string col
     if (status != NativeRdb::E_OK) {
         ReturnDefaultOnError("failed to obtain the index", dataType);
     }
+    return GetValByIndex(index, dataType, resultSet);
+}
 
+template <class T>
+variant<int32_t, int64_t, string> FetchResult<T>::GetValByIndex(int32_t index, ResultSetDataType dataType,
+    shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+{
+    if ((resultset_ == nullptr) && (resultSet == nullptr)) {
+        return ReturnDefaultOnError("Resultset is null", dataType);
+    }
+
+    variant<int32_t, int64_t, string> cellValue;
+    int integerVal = 0;
+    string stringVal = "";
+    int64_t longVal = 0;
+    int status;
     switch (dataType) {
         case TYPE_STRING:
             if (resultSet) {
@@ -280,74 +289,73 @@ int32_t FetchResult<T>::GetFileCount(const shared_ptr<DataShare::DataShareResult
 template<class T>
 void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
-    fileAsset->SetId(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_ID, TYPE_INT32, resultSet)));
-    fileAsset->SetCount(GetFileCount(resultset_));
+    static const unordered_map<string, ResultSetDataType> resultTypeMap = {
+        { MEDIA_DATA_DB_ID, TYPE_INT32 },
+        { MEDIA_DATA_DB_NAME, TYPE_STRING },
+        { MEDIA_DATA_DB_RELATIVE_PATH, TYPE_STRING },
+        { MEDIA_DATA_DB_MEDIA_TYPE, TYPE_INT32 },
+        { MEDIA_DATA_DB_PARENT_ID, TYPE_INT32 },
+        { MEDIA_DATA_DB_SIZE, TYPE_INT64 },
+        { MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64 },
+        { MEDIA_DATA_DB_DATE_MODIFIED, TYPE_INT64 },
+        { MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64 },
+        { MEDIA_DATA_DB_FILE_PATH, TYPE_STRING },
+        { MEDIA_DATA_DB_MIME_TYPE, TYPE_STRING },
+        { MEDIA_DATA_DB_TITLE, TYPE_STRING },
+        { MEDIA_DATA_DB_ARTIST, TYPE_STRING },
+        { MEDIA_DATA_DB_ALBUM, TYPE_STRING },
+        { MEDIA_DATA_DB_WIDTH, TYPE_INT32 },
+        { MEDIA_DATA_DB_HEIGHT, TYPE_INT32 },
+        { MEDIA_DATA_DB_DURATION, TYPE_INT32 },
+        { MEDIA_DATA_DB_ORIENTATION, TYPE_INT32 },
+        { MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32 },
+        { MEDIA_DATA_DB_BUCKET_NAME, TYPE_STRING },
+        { MEDIA_DATA_DB_TIME_PENDING, TYPE_INT64 },
+        { MEDIA_DATA_DB_IS_PENDING, TYPE_INT32 },
+        { MEDIA_DATA_DB_IS_FAV, TYPE_INT32 },
+        { MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64 },
+        { MEDIA_DATA_DB_SELF_ID, TYPE_STRING },
+        { MEDIA_DATA_DB_RECYCLE_PATH, TYPE_STRING },
+        { MEDIA_DATA_DB_IS_TRASH, TYPE_INT32 },
+    };
 
-    fileAsset->SetMediaType(static_cast<Media::MediaType>(get<ARG_INT32>(
-        GetRowValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, TYPE_INT32, resultSet))));
-
-    fileAsset->SetDisplayName(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_NAME, TYPE_STRING, resultSet)));
-
-    fileAsset->SetRelativePath(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
-        TYPE_STRING, resultSet)));
-
-    fileAsset->SetParent(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_PARENT_ID, TYPE_INT32, resultSet)));
-
-    fileAsset->SetSize(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_SIZE, TYPE_INT64, resultSet)));
-
-    fileAsset->SetDateAdded(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64, resultSet)));
-
-    fileAsset->SetDateModified(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED,
-        TYPE_INT64, resultSet)));
-
-    fileAsset->SetDateTaken(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64, resultSet)));
-
-    fileAsset->SetPath(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_FILE_PATH, TYPE_STRING, resultSet)));
-
-    fileAsset->SetMimeType(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_MIME_TYPE, TYPE_STRING, resultSet)));
-
-    fileAsset->SetTitle(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_TITLE, TYPE_STRING, resultSet)));
-
-    fileAsset->SetArtist(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_ARTIST, TYPE_STRING, resultSet)));
-
-    fileAsset->SetAlbum(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_ALBUM, TYPE_STRING, resultSet)));
-
-    fileAsset->SetWidth(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_WIDTH, TYPE_INT32, resultSet)));
-
-    fileAsset->SetHeight(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_HEIGHT, TYPE_INT32, resultSet)));
-
-    fileAsset->SetDuration(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_DURATION, TYPE_INT32, resultSet)));
-
-    fileAsset->SetOrientation(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_ORIENTATION, TYPE_INT32, resultSet)));
-
-    fileAsset->SetAlbumId(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32, resultSet)));
-
-    fileAsset->SetAlbumName(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_BUCKET_NAME, TYPE_STRING, resultSet)));
-
-    fileAsset->SetTimePending(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_TIME_PENDING, TYPE_INT64, resultSet)));
-
-    fileAsset->SetPending((get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_IS_PENDING, TYPE_INT32, resultSet)) != 0));
-
-    fileAsset->SetFavorite((get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_IS_FAV, TYPE_INT32, resultSet)) != 0));
-
-    fileAsset->SetDateTrashed(get<ARG_INT64>(GetRowValFromColumn(MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64, resultSet)));
-
-    fileAsset->SetSelfId(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_SELF_ID, TYPE_STRING, resultSet)));
-
-    fileAsset->SetRecyclePath(get<ARG_STRING>(GetRowValFromColumn(MEDIA_DATA_DB_RECYCLE_PATH, TYPE_STRING,
-        resultSet)));
-
-    fileAsset->SetIsTrash(get<ARG_INT32>(GetRowValFromColumn(MEDIA_DATA_DB_IS_TRASH, TYPE_INT32, resultSet)));
-
+    if ((resultset_ == nullptr) && (resultSet == nullptr)) {
+        MEDIA_ERR_LOG("SetFileAsset fail, result is nullptr");
+        return;
+    }
+    vector<string> columnNames;
+    if (resultSet != nullptr) {
+        resultSet->GetAllColumnNames(columnNames);
+    } else {
+        resultset_->GetAllColumnNames(columnNames);
+    }
+    int32_t index = -1;
+    for (const auto &name : columnNames) {
+        index++;
+        if (resultTypeMap.count(name) == 0) {
+            continue;
+        }
+        auto memberType = resultTypeMap.at(name);
+        auto &memberValue = fileAsset->GetMemberValue(name);
+        const auto &result = GetValByIndex(index, memberType, resultSet);
+        if (result.index() == ARG_INT32) {
+            memberValue = get<ARG_INT32>(result);
+        } else if (result.index() == ARG_INT64) {
+            memberValue = get<ARG_INT64>(result);
+        } else if (result.index() == ARG_STRING) {
+            memberValue = get<ARG_STRING>(result);
+        } else {
+            MEDIA_ERR_LOG("SetFileAsset args %{public}s fail, type:%{public}d", name.c_str(), result.index());
+        }
+    }
     fileAsset->SetResultNapiType(resultNapiType_);
-
+    fileAsset->SetCount(GetFileCount(resultset_));
     string typeMask;
     MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
     string uri = GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_) + "/" + to_string(fileAsset->GetId());
     if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
         UriAddFragmentTypeMask(uri, typeMask);
     }
-
     fileAsset->SetUri(uri);
 }
 

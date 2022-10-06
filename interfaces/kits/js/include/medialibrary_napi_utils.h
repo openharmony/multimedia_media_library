@@ -114,6 +114,20 @@
             return __ret;                                           \
         }                                                           \
     } while (0)
+
+#define CHECK_ARGS(env, cond, context, err)                         \
+    do {                                                            \
+        if ((cond) != napi_ok) {                                    \
+            NAPI_THROW(env, context, err);                          \
+            return nullptr;                                         \
+        }                                                           \
+    } while (0)
+
+#define NAPI_THROW(env, context, err)                               \
+    do {                                                            \
+        (context)->ThrowError(env, err);                            \
+    } while (0)
+
 namespace OHOS {
 namespace Media {
 /* Constants for array index */
@@ -148,6 +162,7 @@ const int32_t JS_ERR_NO_SUCH_FILE = 10;             // no such file
 const int32_t JS_ERR_FILE_EXIST = 11;               // file has exist
 const int32_t JS_ERR_WRONG_FILE_TYPE = 12;          // file type is not allow in the directory
 const int32_t JS_ERR_NO_MEMORY = 13;                // no memory left
+const int32_t JS_ERR_WRONG_FILE_KEY = 14;           // wrong member name
 
 const int32_t TRASH_SMART_ALBUM_ID = 1;
 const std::string TRASH_SMART_ALBUM_NAME = "TrashAlbum";
@@ -200,24 +215,25 @@ const std::vector<std::string> directoryEnumValues {
 
 // trans server errorCode to js Error code
 const std::unordered_map<int, int> trans2JsError = {
-    {E_PERMISSION_DENIED, JS_ERR_PERMISSION_DENIED},
-    {E_FAIL, JS_ERR_INNER_FAIL},
-    {E_NO_SUCH_FILE, JS_ERR_NO_SUCH_FILE},
-    {E_FILE_EXIST, JS_ERR_FILE_EXIST},
-    {E_NO_MEMORY, JS_ERR_NO_MEMORY},
-    {E_FILE_NAME_INVALID, JS_ERR_DISPLAYNAME_INVALID},
-    {E_CHECK_EXTENSION_FAIL, JS_ERR_WRONG_FILE_TYPE},
-    {E_FILE_OPER_FAIL, JS_ERR_INNER_FAIL},
+    { E_PERMISSION_DENIED,    JS_ERR_PERMISSION_DENIED },
+    { E_FAIL,                 JS_ERR_INNER_FAIL },
+    { E_NO_SUCH_FILE,         JS_ERR_NO_SUCH_FILE },
+    { E_FILE_EXIST,           JS_ERR_FILE_EXIST },
+    { E_NO_MEMORY,            JS_ERR_NO_MEMORY },
+    { E_FILE_NAME_INVALID,    JS_ERR_DISPLAYNAME_INVALID },
+    { E_CHECK_EXTENSION_FAIL, JS_ERR_WRONG_FILE_TYPE },
+    { E_FILE_OPER_FAIL,       JS_ERR_INNER_FAIL },
 };
 
 const std::unordered_map<int, std::string> jsErrMap = {
-    {JS_ERR_PERMISSION_DENIED, "without medialibrary permission"},
-    {JS_ERR_INNER_FAIL, "medialibrary inner fail"},
-    {JS_ERR_PARAMETER_INVALID, "invalid parameter"},
-    {JS_ERR_DISPLAYNAME_INVALID, "display name invalid"},
-    {JS_ERR_NO_SUCH_FILE, "no such file"},
-    {JS_ERR_FILE_EXIST, "file has existed"},
-    {JS_ERR_WRONG_FILE_TYPE, "file type is not allow in the directory"},
+    { JS_ERR_PERMISSION_DENIED,   "without medialibrary permission" },
+    { JS_ERR_INNER_FAIL,          "medialibrary inner fail" },
+    { JS_ERR_PARAMETER_INVALID,   "invalid parameter" },
+    { JS_ERR_DISPLAYNAME_INVALID, "display name invalid" },
+    { JS_ERR_NO_SUCH_FILE,        "no such file" },
+    { JS_ERR_FILE_EXIST,          "file has existed" },
+    { JS_ERR_WRONG_FILE_TYPE,     "file type is not allow in the directory" },
+    { JS_ERR_WRONG_FILE_KEY,      "member not exist" },
 };
 
 const std::vector<std::string> fileKeyEnumValues {
