@@ -591,27 +591,11 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     return result;
 }
 
-static void UpdateMediaTypeSelections(MediaLibraryAsyncContext *context)
-{
-    constexpr int FIRST_MEDIA_TYPE = 0;
-    constexpr int SECOND_MEDIA_TYPE = 1;
-    if ((context->mediaTypes.size() != ARGS_ONE) && (context->mediaTypes.size() != ARGS_TWO)) {
-        return;
-    }
-    DataShare::DataSharePredicates &predicates = context->predicates;
-    predicates.BeginWrap();
-    predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, (int)context->mediaTypes[FIRST_MEDIA_TYPE]);
-    if (context->mediaTypes.size() == ARGS_TWO) {
-        predicates.Or()->EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, (int)context->mediaTypes[SECOND_MEDIA_TYPE]);
-    }
-    predicates.EndWrap();
-}
-
 static void GetFileAssetUpdatePredicates(MediaLibraryAsyncContext *context)
 {
     context->predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_ALBUM);
     context->predicates.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, 0);
-    UpdateMediaTypeSelections(context);
+    MediaLibraryNapiUtils::UpdateMediaTypeSelections(context);
     if (!context->uri.empty()) {
         NAPI_ERR_LOG("context->uri is = %{public}s", context->uri.c_str());
         string fileId;
@@ -871,7 +855,7 @@ static void GetResultDataExecute(napi_env env, void *data)
         context->error = ERR_INVALID_OUTPUT;
         return;
     }
-    UpdateMediaTypeSelections(context);
+    MediaLibraryNapiUtils::UpdateMediaTypeSelections(context);
     context->predicates.SetWhereClause(context->selection);
     context->predicates.SetWhereArgs(context->selectionArgs);
     if (!context->order.empty()) {

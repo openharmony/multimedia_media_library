@@ -332,6 +332,22 @@ napi_status MediaLibraryNapiUtils::ParseAlbumFetchOptCallback(napi_env env, napi
     return napi_ok;
 }
 
+template <class AsyncContext>
+void MediaLibraryNapiUtils::UpdateMediaTypeSelections(AsyncContext *context)
+{
+    constexpr int FIRST_MEDIA_TYPE = 0;
+    constexpr int SECOND_MEDIA_TYPE = 1;
+    if ((context->mediaTypes.size() != ARGS_ONE) && (context->mediaTypes.size() != ARGS_TWO)) {
+        return;
+    }
+    DataShare::DataSharePredicates &predicates = context->predicates;
+    predicates.BeginWrap();
+    predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, (int)context->mediaTypes[FIRST_MEDIA_TYPE]);
+    if (context->mediaTypes.size() == ARGS_TWO) {
+        predicates.Or()->EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, (int)context->mediaTypes[SECOND_MEDIA_TYPE]);
+    }
+    predicates.EndWrap();
+}
 
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
     unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate);
@@ -365,5 +381,11 @@ template napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback<unique_pt
 
 template napi_status MediaLibraryNapiUtils::ParseAlbumFetchOptCallback<unique_ptr<MediaLibraryAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context);
+
+template void MediaLibraryNapiUtils::UpdateMediaTypeSelections<AlbumNapiAsyncContext>(
+    AlbumNapiAsyncContext *context);
+
+template void MediaLibraryNapiUtils::UpdateMediaTypeSelections<MediaLibraryAsyncContext>(
+    MediaLibraryAsyncContext *context);
 } // namespace Media
 } // namespace OHOS
