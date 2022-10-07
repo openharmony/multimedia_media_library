@@ -648,6 +648,29 @@ static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const n
     napi_get_boolean(env, true, &result);
     return result;
 }
+
+static void UpdateSelection(AlbumNapiAsyncContext *context)
+{
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        context->predicates.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, 0);
+        context->predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_ALBUM);
+        context->predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, context->objectInfo->GetAlbumId());
+        MediaLibraryNapiUtils::UpdateMediaTypeSelections(context);
+    } else {
+        string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
+        MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
+        context->selectionArgs.emplace_back("0");
+
+        string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
+        MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, prefix);
+        context->selectionArgs.emplace_back(to_string(MEDIA_TYPE_ALBUM));
+
+        string idPrefix = MEDIA_DATA_DB_BUCKET_ID + " = ? ";
+        MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, idPrefix);
+        context->selectionArgs.emplace_back(std::to_string(context->objectInfo->GetAlbumId()));
+    }
+}
+
 static void GetFileAssetsNative(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -655,32 +678,21 @@ static void GetFileAssetsNative(napi_env env, void *data)
 
     AlbumNapiAsyncContext *context = static_cast<AlbumNapiAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    DataShare::DataSharePredicates predicates;
 
-    string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
-    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
-    context->selectionArgs.emplace_back("0");
-
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
-    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, prefix);
-    context->selectionArgs.emplace_back(to_string(MEDIA_TYPE_ALBUM));
-
-    string idPrefix = MEDIA_DATA_DB_BUCKET_ID + " = ? ";
-    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, idPrefix);
-    context->selectionArgs.emplace_back(std::to_string(context->objectInfo->GetAlbumId()));
-
-    predicates.SetWhereClause(context->selection);
-    predicates.SetWhereArgs(context->selectionArgs);
-    predicates.SetOrder(context->order);
-    std::vector<std::string> columns;
-
+    UpdateSelection(context);
+    context->predicates.SetWhereClause(context->selection);
+    context->predicates.SetWhereArgs(context->selectionArgs);
+    context->predicates.SetOrder(context->order);
+    if (context->fetchColumn.size() == 0) {
+        context->fetchColumn.push_back("*");
+    }
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         context->objectInfo->GetNetworkId() + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
-        context->objectInfo->GetMediaDataHelper()->Query(uri, predicates, columns);
+        context->objectInfo->GetMediaDataHelper()->Query(uri, context->predicates, context->fetchColumn);
     context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->networkId_ = context->objectInfo->GetNetworkId();
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
