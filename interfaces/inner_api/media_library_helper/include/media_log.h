@@ -32,7 +32,7 @@
 
 #include "hilog/log.h"
 
-#include "media_library_tracer.h"
+#include "medialibrary_tracer.h"
 
 #define MEDIA_HILOG(op, fmt, args...) \
     do {                                  \

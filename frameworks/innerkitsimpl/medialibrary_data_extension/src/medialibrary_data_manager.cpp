@@ -41,7 +41,7 @@
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_sync_table.h"
 #include "medialibrary_unistore_manager.h"
-#include "media_library_tracer.h"
+#include "medialibrary_tracer.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "sa_mgr_client.h"
