@@ -131,11 +131,11 @@ void MediaLibraryDataManager::InitDeviceData()
         return;
     }
 
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "InitDeviceRdbStoreTrace", -1);
+    MediaLibraryTracer tracer;
+    tracer.Start("InitDeviceRdbStoreTrace");
     if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_)) {
         MEDIA_ERR_LOG("MediaLibraryDataManager InitDeviceData failed!");
     }
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 }
 
 void MediaLibraryDataManager::ClearMediaLibraryMgr()
@@ -603,9 +603,9 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationOb
     }
 
     if ((oprnObject != OperationObject::ASSETMAP) && (oprnObject != OperationObject::SMART_ABLUM_ASSETS)) {
-        StartTrace(HITRACE_TAG_FILEMANAGEMENT, "QuerySync");
+        MediaLibraryTracer tracer;
+        tracer.Start("QuerySync");
         auto ret = QuerySync(networkId, tableName);
-        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         MEDIA_INFO_LOG("MediaLibraryDataManager QuerySync result = %{private}d", ret);
     }
 }
@@ -656,7 +656,8 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
 shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
     const DataSharePredicates &predicates)
 {
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "MediaLibraryDataManager::QueryRdb");
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryDataManager::QueryRdb");
     static const map<OperationObject, string> queryConditionMap {
         { OperationObject::SMART_ALBUM, SMARTALBUM_DB_ID },
         { OperationObject::SMART_ALBUM_MAP, SMARTALBUMMAP_DB_ALBUM_ID },
@@ -683,11 +684,9 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
     } else if (oprnObject == OperationObject::FILESYSTEM_ALBUM || oprnObject == OperationObject::MEDIA_VOLUME) {
         queryResultSet = MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
     } else {
-        StartTrace(HITRACE_TAG_FILEMANAGEMENT, "QueryFile");
+        tracer.Start("QueryFile");
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
-        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     }
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     return queryResultSet;
 }
