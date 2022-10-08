@@ -544,6 +544,7 @@ static void GetPublicDirectoryCallbackComplete(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->data);
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -730,6 +731,7 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
         GetNapiFileResult(env, context, jsContext);
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -969,6 +971,7 @@ static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status, void *
         AlbumsAsyncResult(env, context, jsContext);
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -1079,6 +1082,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
         napi_get_undefined(env, &jsContext->data);
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -1381,6 +1385,7 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status, void
         napi_get_undefined(env, &jsContext->data);
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -1968,6 +1973,7 @@ static void JSReleaseCompleteCallback(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->data);
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
