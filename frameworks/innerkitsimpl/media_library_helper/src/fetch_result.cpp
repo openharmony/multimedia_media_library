@@ -345,7 +345,7 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Ab
         } else if (result.index() == ARG_STRING) {
             memberValue = get<ARG_STRING>(result);
         } else {
-            MEDIA_ERR_LOG("SetFileAsset args %{public}s fail, type:%{public}d", name.c_str(), result.index());
+            MEDIA_ERR_LOG("args %{public}s fail, type:%{public}d", name.c_str(), static_cast<int>(result.index()));
         }
     }
     fileAsset->SetResultNapiType(resultNapiType_);
