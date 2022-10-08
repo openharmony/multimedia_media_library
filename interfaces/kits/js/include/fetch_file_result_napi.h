@@ -67,6 +67,7 @@ private:
     std::shared_ptr<FetchResult<FileAsset>> fetchFileResult_;
     std::shared_ptr<FetchResult<AlbumAsset>> fetchAlbumResult_;
     FetchResType fetchResType_;
+    std::string typeMask_;
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
     static inline thread_local std::unique_ptr<FetchResult<FileAsset>> sFetchFileResult_ = nullptr;

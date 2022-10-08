@@ -84,6 +84,7 @@ void FetchResult<T>::SetInfo(unique_ptr<FetchResult<T>> &fetch)
     count_ = fetch->count_;
     networkId_ = fetch->networkId_;
     resultNapiType_ = fetch->resultNapiType_;
+    typeMask_ = fetch->typeMask_;
 }
 
 template <class T>
@@ -411,6 +412,7 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
         TYPE_INT64, resultSet)));
 
     albumData->SetResultNapiType(resultNapiType_);
+    albumData->SetAlbumTypeMask(typeMask_);
 }
 
 template class FetchResult<FileAsset>;

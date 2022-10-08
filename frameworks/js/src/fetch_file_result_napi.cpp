@@ -116,6 +116,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
     } else if ((sFetchAlbumResult_ != nullptr) && (sFetchResType_ == FetchResType::TYPE_ALBUM)) {
         obj->fetchAlbumResult_ = make_unique<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->resultset_));
         obj->fetchAlbumResult_->SetInfo(sFetchAlbumResult_);
+        obj->typeMask_ = obj->fetchAlbumResult_->typeMask_;
     } else {
         NAPI_ERR_LOG("No native instance assigned yet");
         return result;
