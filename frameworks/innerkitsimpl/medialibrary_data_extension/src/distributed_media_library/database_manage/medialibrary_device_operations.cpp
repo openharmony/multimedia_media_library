@@ -230,7 +230,7 @@ bool MediaLibraryDeviceOperations::GetAgingDeviceData(
     vector<string> columns;
     int64_t agingTime = MediaFileUtils::UTCTimeSeconds() - AGING_DEVICE_INTERVAL;
 
-    MEDIA_INFO_LOG("GetAgingDeviceData less than %{public}lld", agingTime);
+    MEDIA_INFO_LOG("GetAgingDeviceData less than %{public}" PRId64, agingTime);
     AbsRdbPredicates absPredevice(DEVICE_TABLE);
     absPredevice.GreaterThan(DEVICE_DB_DATE_MODIFIED, to_string(0))->And()->
         LessThan(DEVICE_DB_DATE_MODIFIED, to_string(agingTime));
@@ -258,7 +258,7 @@ bool MediaLibraryDeviceOperations::GetAgingDeviceData(
         outDeviceList.push_back(deviceInfo);
     } while (queryResultSet->GoToNextRow() == NativeRdb::E_OK);
 
-    MEDIA_ERR_LOG("GetAgingDeviceData OUT, deviceSize = %{public}d", (int)outDeviceList.size());
+    MEDIA_ERR_LOG("GetAgingDeviceData OUT, deviceSize = %{public}d", static_cast<int>(outDeviceList.size()));
     return true;
 }
 
