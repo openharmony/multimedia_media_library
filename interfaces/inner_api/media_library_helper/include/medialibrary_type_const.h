@@ -84,6 +84,10 @@ enum class FetchResType : int32_t {
 
 const int32_t SUCCESS = 0;
 
+constexpr int32_t DEFAULT_INT32 = 0;
+constexpr int64_t DEFAULT_INT64 = 0;
+const std::string DEFAULT_STR = "";
+const bool DEFAULT_BOOL = false;
 const int32_t DEFAULT_MEDIA_ID = 0;
 const int32_t DEFAULT_PARENT_ID = 0;
 const uint64_t DEFAULT_MEDIA_SIZE = 0;
