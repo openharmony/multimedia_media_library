@@ -240,9 +240,10 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFileOperation(
         devices.push_back(networkId);
         cmd.GetAbsRdbPredicates()->InDevices(devices);
     }
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "QueryFile RdbStore->Query");
+    MediaLibraryTracer tracer;
+    tracer.Start("QueryFile RdbStore->Query");
     queryResultSet = uniStore->Query(cmd, columns);
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
+    tracer.Finish();
     int32_t count = -1;
     queryResultSet->GetRowCount(count);
     MEDIA_INFO_LOG("QueryFile count is %{public}d", count);
