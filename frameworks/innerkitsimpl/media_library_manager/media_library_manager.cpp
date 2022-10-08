@@ -382,7 +382,8 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
             outMediaVolume.SetSize(mediatype, size);
         }
     }
-    MEDIA_INFO_LOG("Size:Files:%{public}lld Videos:%{public}lld Images:%{public}lld Audio:%{public}lld",
+    MEDIA_INFO_LOG("Size:Files:%{public}" PRId64" Videos:%{public}" PRId64" Images:%{public}" PRId64
+        " Audio:%{public}" PRId64,
         (long long)outMediaVolume.GetFilesSize(), (long long)outMediaVolume.GetVideosSize(),
         (long long)outMediaVolume.GetImagesSize(), (long long)outMediaVolume.GetAudiosSize());
     return E_SUCCESS;
