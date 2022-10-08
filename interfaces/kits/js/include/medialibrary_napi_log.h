@@ -32,7 +32,7 @@
 
 #include "hilog/log.h"
 
-#include "media_library_tracer.h"
+#include "medialibrary_tracer.h"
 
 #define __FILE_NAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 

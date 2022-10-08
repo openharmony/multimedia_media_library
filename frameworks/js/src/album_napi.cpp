@@ -736,6 +736,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status, vo
                                                      "Failed to obtain fetchFileResult from DB");
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -804,6 +805,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, voi
         context->HandleError(env, jsContext->error);
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);

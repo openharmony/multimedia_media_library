@@ -26,7 +26,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
-#include "media_library_tracer.h"
+#include "medialibrary_tracer.h"
 #include "rdb_errno.h"
 #include "string_ex.h"
 #include "thumbnail_const.h"
@@ -1052,6 +1052,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, voi
         context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -1162,6 +1163,7 @@ static void JSOpenCompleteCallback(napi_env env, napi_status status, void *data)
         napi_get_undefined(env, &jsContext->data);
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -1294,6 +1296,7 @@ static void JSCloseCompleteCallback(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->data);
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -1489,6 +1492,7 @@ static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->data);
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -1671,6 +1675,8 @@ static void JSFavoriteCallbackComplete(napi_env env, napi_status status, void *d
         context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
+
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -1723,6 +1729,7 @@ static void JSIsDirectoryCallbackComplete(napi_env env, napi_status status,
         napi_get_undefined(env, &jsContext->data);
     }
 
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -2034,6 +2041,8 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status, void *data
     } else {
         context->HandleError(env, jsContext->error);
     }
+
+    tracer.Finish();
     if (context->work != nullptr) {
         NAPI_ERR_LOG("JSTrashCallbackComplete context->work != nullptr");
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
@@ -2126,6 +2135,8 @@ static void JSIsTrashCallbackComplete(napi_env env, napi_status status,
             "Ability helper is null");
         napi_get_undefined(env, &jsContext->data);
     }
+
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
