@@ -67,7 +67,6 @@ public:
     static std::mutex sDataHelperMutex_;
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
         const std::shared_ptr<AbilityRuntime::Context> &context);
-
 private:
     static void FileAssetNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value FileAssetNapiConstructor(napi_env env, napi_callback_info info);
@@ -111,6 +110,8 @@ private:
     static napi_value JSIsTrash(napi_env env, napi_callback_info info);
     static napi_value JSGetCount(napi_env env, napi_callback_info info);
     void UpdateFileAssetInfo();
+    static napi_value UserFileMgrSet(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrGet(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrOpen(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrClose(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
@@ -118,7 +119,7 @@ private:
     static napi_value UserFileMgrTrash(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrIsDirectory(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetThumbnail(napi_env env, napi_callback_info info);
-
+    bool HandleParamSet(const std::string &inputKey, const std::string &value);
     int32_t fileId_;
     std::string fileUri_;
     MediaType mediaType_;
@@ -160,6 +161,7 @@ private:
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
     static thread_local FileAsset *sFileAsset_;
+    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> member_;
 };
 struct FileAssetAsyncContext : public NapiError {
     napi_async_work work;

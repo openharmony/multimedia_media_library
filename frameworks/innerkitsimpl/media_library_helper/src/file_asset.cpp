@@ -32,40 +32,18 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 FileAsset::FileAsset()
-    : id_(DEFAULT_MEDIA_ID),
-    uri_(DEFAULT_MEDIA_URI),
-    path_(DEFAULT_MEDIA_PATH),
-    relativePath_(DEFAULT_MEDIA_RELATIVE_PATH),
-    mimeType_(DEFAULT_MEDIA_MIMETYPE),
-    mediaType_(DEFAULT_MEDIA_TYPE),
-    displayName_(DEFAULT_MEDIA_NAME),
-    size_(DEFAULT_MEDIA_SIZE),
-    dateAdded_(DEFAULT_MEDIA_DATE_ADDED),
-    dateModified_(DEFAULT_MEDIA_DATE_MODIFIED),
-    title_(DEFAULT_MEDIA_TITLE),
-    artist_(DEFAULT_MEDIA_ARTIST),
-    album_(DEFAULT_MEDIA_ALBUM),
-    width_(DEFAULT_MEDIA_WIDTH),
-    height_(DEFAULT_MEDIA_HEIGHT),
-    duration_(DEFAULT_MEDIA_DURATION),
-    orientation_(DEFAULT_MEDIA_ORIENTATION),
-    albumId_(DEFAULT_ALBUM_ID),
-    albumName_(DEFAULT_ALBUM_NAME),
-    parent_(DEFAULT_MEDIA_PARENT),
-    albumUri_(DEFAULT_MEDIA_ALBUM_URI),
-    dateTaken_(DEFAULT_MEDIA_DATE_TAKEN),
-    isPending_(DEFAULT_MEDIA_IS_PENDING),
+    : albumUri_(DEFAULT_MEDIA_ALBUM_URI),
     resultNapiType_(ResultNapiType::TYPE_NAPI_MAX)
 {}
 
 int32_t FileAsset::GetId() const
 {
-    return id_;
+    return GetInt32Member(MEDIA_DATA_DB_ID);
 }
 
 void FileAsset::SetId(int32_t id)
 {
-    id_ = id;
+    member_[MEDIA_DATA_DB_ID] = id;
 }
 
 int32_t FileAsset::GetCount() const
@@ -80,192 +58,192 @@ void FileAsset::SetCount(int32_t count)
 
 const string &FileAsset::GetUri() const
 {
-    return uri_;
+    return GetStrMember(MEDIA_DATA_DB_URI);
 }
 
 void FileAsset::SetUri(const string &uri)
 {
-    uri_ = uri;
+    member_[MEDIA_DATA_DB_URI] = uri;
 }
 
 const string &FileAsset::GetPath() const
 {
-    return path_;
+    return GetStrMember(MEDIA_DATA_DB_FILE_PATH);
 }
 
 void FileAsset::SetPath(const string &path)
 {
-    path_ = path;
+    member_[MEDIA_DATA_DB_FILE_PATH] = path;
 }
 
 const string &FileAsset::GetRelativePath() const
 {
-    return relativePath_;
+    return GetStrMember(MEDIA_DATA_DB_RELATIVE_PATH);
 }
 
 void FileAsset::SetRelativePath(const std::string &relativePath)
 {
-    relativePath_ = relativePath;
+    member_[MEDIA_DATA_DB_RELATIVE_PATH] = relativePath;
 }
 
 const string &FileAsset::GetMimeType() const
 {
-    return mimeType_;
+    return GetStrMember(MEDIA_DATA_DB_MIME_TYPE);
 }
 
 void FileAsset::SetMimeType(const string &mimeType)
 {
-    mimeType_ = mimeType;
+    member_[MEDIA_DATA_DB_MIME_TYPE] = mimeType;
 }
 
 MediaType FileAsset::GetMediaType() const
 {
-    return mediaType_;
+    return static_cast<Media::MediaType>(GetInt32Member(MEDIA_DATA_DB_MEDIA_TYPE));
 }
 
 void FileAsset::SetMediaType(MediaType mediaType)
 {
-    mediaType_ = mediaType;
+    member_[MEDIA_DATA_DB_MEDIA_TYPE] = mediaType;
 }
 
 const string &FileAsset::GetDisplayName() const
 {
-    return displayName_;
+    return GetStrMember(MEDIA_DATA_DB_NAME);
 }
 
 void FileAsset::SetDisplayName(const string &displayName)
 {
-    displayName_ = displayName;
+    member_[MEDIA_DATA_DB_NAME] = displayName;
 }
 
 int64_t FileAsset::GetSize() const
 {
-    return size_;
+    return GetInt64Member(MEDIA_DATA_DB_SIZE);
 }
 
 void FileAsset::SetSize(int64_t size)
 {
-    size_ = size;
+    member_[MEDIA_DATA_DB_SIZE] = size;
 }
 
 int64_t FileAsset::GetDateAdded() const
 {
-    return dateAdded_;
+    return GetInt64Member(MEDIA_DATA_DB_DATE_ADDED);
 }
 
 void FileAsset::SetDateAdded(int64_t dateAdded)
 {
-    dateAdded_ = dateAdded;
+    member_[MEDIA_DATA_DB_DATE_ADDED] = dateAdded;
 }
 
 int64_t FileAsset::GetDateModified() const
 {
-    return dateModified_;
+    return GetInt64Member(MEDIA_DATA_DB_DATE_MODIFIED);
 }
 
 void FileAsset::SetDateModified(int64_t dateModified)
 {
-    dateModified_ = dateModified;
+    member_[MEDIA_DATA_DB_DATE_MODIFIED] = dateModified;
 }
 
 const string &FileAsset::GetTitle() const
 {
-    return title_;
+    return GetStrMember(MEDIA_DATA_DB_TITLE);
 }
 
 void FileAsset::SetTitle(const string &title)
 {
-    title_ = title;
+    member_[MEDIA_DATA_DB_TITLE] = title;
 }
 
 const string &FileAsset::GetArtist() const
 {
-    return artist_;
+    return GetStrMember(MEDIA_DATA_DB_ARTIST);
 }
 
 void FileAsset::SetArtist(const string &artist)
 {
-    artist_ = artist;
+    member_[MEDIA_DATA_DB_ARTIST] = artist;
 }
 
 const string &FileAsset::GetAlbum() const
 {
-    return album_;
+    return GetStrMember(MEDIA_DATA_DB_ALBUM);
 }
 
 void FileAsset::SetAlbum(const string &album)
 {
-    album_ = album;
+    member_[MEDIA_DATA_DB_ALBUM] = album;
 }
 
 int32_t FileAsset::GetWidth() const
 {
-    return width_;
+    return GetInt32Member(MEDIA_DATA_DB_WIDTH);
 }
 
 void FileAsset::SetWidth(int32_t width)
 {
-    width_ = width;
+    member_[MEDIA_DATA_DB_WIDTH] = width;
 }
 
 int32_t FileAsset::GetHeight() const
 {
-    return height_;
+    return GetInt32Member(MEDIA_DATA_DB_HEIGHT);
 }
 
 void FileAsset::SetHeight(int32_t height)
 {
-    height_ = height;
+    member_[MEDIA_DATA_DB_HEIGHT] = height;
 }
 
 int32_t FileAsset::GetDuration() const
 {
-    return duration_;
+    return GetInt32Member(MEDIA_DATA_DB_DURATION);
 }
 
 void FileAsset::SetDuration(int32_t duration)
 {
-    duration_ = duration;
+    member_[MEDIA_DATA_DB_DURATION] = duration;
 }
 
 int32_t FileAsset::GetOrientation() const
 {
-    return orientation_;
+    return GetInt32Member(MEDIA_DATA_DB_ORIENTATION);
 }
 
 void FileAsset::SetOrientation(int32_t orientation)
 {
-    orientation_ = orientation;
+    member_[MEDIA_DATA_DB_ORIENTATION] = orientation;
 }
 
 int32_t FileAsset::GetAlbumId() const
 {
-    return albumId_;
+    return GetInt32Member(MEDIA_DATA_DB_BUCKET_ID);
 }
 
 void FileAsset::SetAlbumId(int32_t albumId)
 {
-    albumId_ = albumId;
+    member_[MEDIA_DATA_DB_BUCKET_ID] = albumId;
 }
 
 const string &FileAsset::GetAlbumName() const
 {
-    return albumName_;
+    return GetStrMember(MEDIA_DATA_DB_BUCKET_NAME);
 }
 
 void FileAsset::SetAlbumName(const string &albumName)
 {
-    albumName_ = albumName;
+    member_[MEDIA_DATA_DB_BUCKET_NAME] = albumName;
 }
 
 int32_t FileAsset::GetParent() const
 {
-    return parent_;
+    return GetInt32Member(MEDIA_DATA_DB_PARENT_ID);
 }
 
 void FileAsset::SetParent(int32_t parent)
 {
-    parent_ = parent;
+    member_[MEDIA_DATA_DB_PARENT_ID] = parent;
 }
 
 const string &FileAsset::GetAlbumUri() const
@@ -280,82 +258,82 @@ void FileAsset::SetAlbumUri(const string &albumUri)
 
 int64_t FileAsset::GetDateTaken() const
 {
-    return dateTaken_;
+    return GetInt64Member(MEDIA_DATA_DB_DATE_TAKEN);
 }
 
 void FileAsset::SetDateTaken(int64_t dateTaken)
 {
-    dateTaken_ = dateTaken;
+    member_[MEDIA_DATA_DB_DATE_TAKEN] = dateTaken;
 }
 
 bool FileAsset::IsPending() const
 {
-    return isPending_;
+    return GetInt32Member(MEDIA_DATA_DB_IS_PENDING);
 }
 
 void FileAsset::SetPending(bool dateTaken)
 {
-    isPending_ = dateTaken;
+    member_[MEDIA_DATA_DB_IS_PENDING] = dateTaken;
 }
 
 int64_t FileAsset::GetTimePending() const
 {
-    return timePending_;
+    return GetInt64Member(MEDIA_DATA_DB_TIME_PENDING);
 }
 
 void FileAsset::SetTimePending(int64_t timePending)
 {
-    timePending_ = timePending;
+    member_[MEDIA_DATA_DB_TIME_PENDING] = timePending;
 }
 
 bool FileAsset::IsFavorite() const
 {
-    return isFavorite_;
+    return GetInt32Member(MEDIA_DATA_DB_IS_FAV);
 }
 
 void FileAsset::SetFavorite(bool isFavorite)
 {
-    isFavorite_ = isFavorite;
+    member_[MEDIA_DATA_DB_IS_FAV] = isFavorite;
 }
 
 int64_t FileAsset::GetDateTrashed() const
 {
-    return dateTrashed_;
+    return GetInt64Member(MEDIA_DATA_DB_DATE_TRASHED);
 }
 
 void FileAsset::SetDateTrashed(int64_t dateTrashed)
 {
-    dateTrashed_ = dateTrashed;
+    member_[MEDIA_DATA_DB_DATE_TRASHED] = dateTrashed;
 }
 
 const string &FileAsset::GetSelfId() const
 {
-    return selfId_;
+    return GetStrMember(MEDIA_DATA_DB_SELF_ID);
 }
 
 void FileAsset::SetSelfId(const string &selfId)
 {
-    selfId_ = selfId;
+    member_[MEDIA_DATA_DB_SELF_ID] = selfId;
 }
 
 int32_t FileAsset::GetIsTrash() const
 {
-    return isTrash_;
+    return GetInt32Member(MEDIA_DATA_DB_IS_TRASH);
 }
 
 void FileAsset::SetIsTrash(int32_t isTrash)
 {
-    isTrash_ = isTrash;
+    member_[MEDIA_DATA_DB_IS_TRASH] = isTrash;
 }
 
 const string &FileAsset::GetRecyclePath() const
 {
-    return recyclePath_;
+    return GetStrMember(MEDIA_DATA_DB_RECYCLE_PATH);
 }
 
 void FileAsset::SetRecyclePath(const string &recyclePath)
 {
-    recyclePath_ = recyclePath;
+    member_[MEDIA_DATA_DB_RECYCLE_PATH] = recyclePath;
 }
 
 ResultNapiType FileAsset::GetResultNapiType() const
@@ -388,7 +366,7 @@ int32_t FileAsset::CreateAsset(const string &filePath)
         string fileName = filePath.substr(slashIndex + 1);
         if (!fileName.empty() && fileName.at(0) != '.') {
             size_t dotIndex = filePath.rfind('.');
-            if (dotIndex == string::npos && mediaType_ != MEDIA_TYPE_FILE) {
+            if ((dotIndex == string::npos) && (GetMediaType() != MEDIA_TYPE_FILE)) {
                 return errCode;
             }
         }
@@ -485,6 +463,31 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
 int32_t FileAsset::CloseAsset(int32_t fd)
 {
     return close(fd);
+}
+
+std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> &FileAsset::GetMemberMap()
+{
+    return member_;
+}
+
+std::variant<int32_t, int64_t, std::string> &FileAsset::GetMemberValue(const std::string &name)
+{
+    return member_[name];
+}
+
+const string &FileAsset::GetStrMember(const std::string &name) const
+{
+    return (member_.count(name) > 0) ? get<string>(member_.at(name)) : DEFAULT_STR;
+}
+
+int32_t FileAsset::GetInt32Member(const std::string &name) const
+{
+    return (member_.count(name) > 0) ? get<int32_t>(member_.at(name)) : DEFAULT_INT32;
+}
+
+int64_t FileAsset::GetInt64Member(const std::string &name) const
+{
+    return (member_.count(name) > 0) ? get<int64_t>(member_.at(name)) : DEFAULT_INT64;
 }
 }  // namespace Media
 }  // namespace OHOS

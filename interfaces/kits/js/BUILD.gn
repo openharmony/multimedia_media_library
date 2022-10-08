@@ -110,6 +110,7 @@ ohos_shared_library("medialibrary") {
     "//foundation/multimedia/media_library/frameworks/js/src/media_library_napi.cpp",
     "//foundation/multimedia/media_library/frameworks/js/src/media_scanner_napi.cpp",
     "//foundation/multimedia/media_library/frameworks/js/src/medialibrary_napi_utils.cpp",
+    "//foundation/multimedia/media_library/frameworks/js/src/napi_error.cpp",
     "//foundation/multimedia/media_library/frameworks/js/src/native_module_ohos_medialibrary.cpp",
     "//foundation/multimedia/media_library/frameworks/js/src/smart_album_napi.cpp",
   ]

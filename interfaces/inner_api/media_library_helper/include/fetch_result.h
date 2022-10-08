@@ -75,6 +75,8 @@ private:
     std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     std::variant<int32_t, int64_t, std::string> GetRowValFromColumn(std::string columnName,
         ResultSetDataType dataType, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    std::variant<int32_t, int64_t, string> GetValByIndex(int32_t index, ResultSetDataType dataType,
+        std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     int32_t GetFileCount(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
     void SetFileAsset(FileAsset *fileAsset, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     void SetAlbumAsset(AlbumAsset* albumData, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
