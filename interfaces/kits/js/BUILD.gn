@@ -104,7 +104,6 @@ ohos_shared_library("medialibrary") {
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/src/media_thumbnail_helper.cpp",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_data_manager_utils.cpp",
     "//foundation/multimedia/media_library/frameworks/js/src/album_napi.cpp",
-    "//foundation/multimedia/media_library/frameworks/js/src/avmetadatahelper_napi.cpp",
     "//foundation/multimedia/media_library/frameworks/js/src/fetch_file_result_napi.cpp",
     "//foundation/multimedia/media_library/frameworks/js/src/file_asset_napi.cpp",
     "//foundation/multimedia/media_library/frameworks/js/src/media_library_napi.cpp",
