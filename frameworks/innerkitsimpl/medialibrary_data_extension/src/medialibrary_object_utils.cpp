@@ -754,14 +754,12 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
 
 void MediaLibraryObjectUtils::GetDefaultRelativePath(const int32_t mediaType, string &relativePath)
 {
-    MEDIA_DEBUG_LOG("enter");
-
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_DIR, OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE, to_string(mediaType));
 
     shared_ptr<AbsSharedResultSet> resultSet = QueryWithCondition(cmd, {});
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain file asset from database");
+        MEDIA_ERR_LOG("Failed to obtain file asset from database, mediaType: %{public}d", static_cast<int>(mediaType));
         return;
     }
 
