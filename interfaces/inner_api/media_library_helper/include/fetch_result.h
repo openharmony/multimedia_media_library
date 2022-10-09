@@ -70,6 +70,7 @@ public:
     ResultNapiType resultNapiType_;
     std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
     FetchResType fetchResType_;
+    std::string typeMask_;
 
 private:
     std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);

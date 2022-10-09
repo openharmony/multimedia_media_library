@@ -844,6 +844,29 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSe
         resultSet, TYPE_INT64)));
 }
 
+static void GetAlbumResult(MediaLibraryAsyncContext *context, shared_ptr<DataShareResultSet> resultSet)
+{
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        context->fetchAlbumResult = make_unique<FetchResult<AlbumAsset>>(move(resultSet));
+        context->fetchAlbumResult->SetNetworkId(context->networkId);
+        context->fetchAlbumResult->resultNapiType_ = context->resultNapiType;
+        context->fetchAlbumResult->typeMask_ = context->typeMask;
+        return;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
+        if (albumData != nullptr) {
+            SetAlbumData(albumData.get(), resultSet, context->networkId);
+            SetAlbumCoverUri(context, albumData);
+            albumData->SetAlbumTypeMask(context->typeMask);
+            context->albumNativeArray.push_back(move(albumData));
+        } else {
+            context->SaveError(E_NO_MEMORY);
+        }
+    }
+}
+
 static void GetResultDataExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -881,24 +904,7 @@ static void GetResultDataExecute(napi_env env, void *data)
         return;
     }
 
-    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
-        context->fetchAlbumResult = make_unique<FetchResult<AlbumAsset>>(move(resultSet));
-        context->fetchAlbumResult->SetNetworkId(context->networkId);
-        context->fetchAlbumResult->resultNapiType_ = context->resultNapiType;
-        return;
-    }
-
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
-        if (albumData != nullptr) {
-            SetAlbumData(albumData.get(), resultSet, context->networkId);
-            SetAlbumCoverUri(context, albumData);
-            albumData->SetAlbumTypeMask(context->typeMask);
-            context->albumNativeArray.push_back(move(albumData));
-        } else {
-            context->SaveError(E_NO_MEMORY);
-        }
-    }
+    GetAlbumResult(context, resultSet);
 }
 
 static void MediaLibAlbumsAsyncResult(napi_env env, MediaLibraryAsyncContext *context,
