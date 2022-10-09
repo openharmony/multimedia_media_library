@@ -142,7 +142,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getAudioAssets", UserFileMgrGetAudioAssets),
             DECLARE_NAPI_FUNCTION("getPhotoAlbums", UserFileMgrGetAlbums),
             DECLARE_NAPI_FUNCTION("createPhotoAsset", UserFileMgrCreateAsset),
-            DECLARE_NAPI_FUNCTION("deleteAsset", UserFileMgrDeleteAsset),
+            DECLARE_NAPI_FUNCTION("delete", UserFileMgrTrashAsset),
             DECLARE_NAPI_FUNCTION("on", JSOnCallback),
             DECLARE_NAPI_FUNCTION("off", JSOffCallback),
             DECLARE_NAPI_FUNCTION("getPrivateAlbum", UserFileMgrGetPrivateAlbum),
@@ -1389,6 +1389,82 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status, void
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
+    }
+
+    delete context;
+}
+
+static MediaType GetMediaTypeFromUri(const string &uri)
+{
+    if (uri.find(MEDIALIBRARY_IMAGE_URI) != string::npos) {
+        return MediaType::MEDIA_TYPE_IMAGE;
+    } else if (uri.find(MEDIALIBRARY_VIDEO_URI) != string::npos) {
+        return MediaType::MEDIA_TYPE_VIDEO;
+    } else if (uri.find(MEDIALIBRARY_AUDIO_URI) != string::npos) {
+        return MediaType::MEDIA_TYPE_AUDIO;
+    } else if (uri.find(MEDIALIBRARY_FILE_URI) != string::npos) {
+        return MediaType::MEDIA_TYPE_FILE;
+    }
+    return MediaType::MEDIA_TYPE_ALL;
+}
+
+static void JSTrashAssetExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSTrashAssetExecute");
+
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto dataShareHelper = context->objectInfo->sDataShareHelper_;
+    if (dataShareHelper == nullptr) {
+        context->error = JS_ERR_INNER_FAIL;
+        NAPI_ERR_LOG("sDataShareHelper_ is not exist");
+        return;
+    }
+
+    string uri = context->uri;
+    if (uri.empty()) {
+        context->error = ERR_INVALID_OUTPUT;
+        return;
+    }
+    MediaLibraryNapiUtils::UriRemoveAllFragment(uri);
+    string trashId = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
+
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, stoi(trashId));
+    string trashUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/";
+    trashUri += context->isDelete ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(trashUri, context->typeMask);
+    Uri trashAssetUri(trashUri);
+    int retVal = dataShareHelper->Insert(trashAssetUri, valuesBucket);
+    context->SaveError(retVal);
+}
+
+static void JSTrashAssetCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSTrashAssetCompleteCallback");
+
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    CHECK_NULL_PTR_RETURN_VOID(jsContext, "jsContext context is null");
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        Media::MediaType mediaType = GetMediaTypeFromUri(context->uri);
+        string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+        Uri modifyNotify(notifyUri);
+        context->objectInfo->sDataShareHelper_->NotifyChange(modifyNotify);
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+    if (context->work != nullptr) {
+        tracer.Finish();
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
     }
 
     delete context;
@@ -2873,20 +2949,6 @@ static int ConvertMediaType(const string &mimeType)
     return MediaType::MEDIA_TYPE_FILE;
 }
 
-static MediaType GetMediaTypeFromUri(const string &uri)
-{
-    if (uri.find(MEDIALIBRARY_IMAGE_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_IMAGE;
-    } else if (uri.find(MEDIALIBRARY_VIDEO_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_VIDEO;
-    } else if (uri.find(MEDIALIBRARY_AUDIO_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_AUDIO;
-    } else if (uri.find(MEDIALIBRARY_FILE_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_FILE;
-    }
-    return MediaType::MEDIA_TYPE_ALL;
-}
-
 static bool GetStoreMediaAssetProper(napi_env env, napi_value param, const string &proper, string &res)
 {
     napi_value value = MediaLibraryNapiUtils::GetPropertyValueByName(env, param, proper.c_str());
@@ -3191,6 +3253,30 @@ static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
     return result;
 }
 
+static napi_value ParseArgsTrashAsset(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_THREE;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+
+    /* Parse the first argument into uri */
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], context->uri) ==
+        napi_ok, "Failed to get uri");
+    /* Parse the second argument into isDelete */
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamBool(env, context->argv[ARGS_ONE], context->isDelete) == napi_ok,
+        "Failed to get isDelete");
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        MediaLibraryNapiUtils::GenTypeMaskFromArray({ GetMediaTypeFromUri(context->uri) }, context->typeMask);
+    }
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    return result;
+}
+
 void AddDefaultFetchColumn(unique_ptr<MediaLibraryAsyncContext> &asyncContext)
 {
     if (asyncContext->fetchColumn.size() == 0) {
@@ -3264,21 +3350,16 @@ napi_value MediaLibraryNapi::UserFileMgrCreateAsset(napi_env env, napi_callback_
         JSCreateAssetCompleteCallback);
 }
 
-napi_value MediaLibraryNapi::UserFileMgrDeleteAsset(napi_env env, napi_callback_info info)
+napi_value MediaLibraryNapi::UserFileMgrTrashAsset(napi_env env, napi_callback_info info)
 {
     napi_value ret = nullptr;
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-
-    string fileUri;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, fileUri) == napi_ok,
-        "Failed to parse js args");
-    asyncContext->valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    MediaLibraryNapiUtils::GenTypeMaskFromArray({ GetMediaTypeFromUri(fileUri) }, asyncContext->typeMask);
+    NAPI_ASSERT(env, ParseArgsTrashAsset(env, info, asyncContext), "Failed to parse js args");
 
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrDeleteAsset", JSDeleteAssetExecute,
-        JSDeleteAssetCompleteCallback);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrTrashAsset", JSTrashAssetExecute,
+        JSTrashAssetCompleteCallback);
 }
 
 napi_value MediaLibraryNapi::UserFileMgrGetPrivateAlbum(napi_env env, napi_callback_info info)
