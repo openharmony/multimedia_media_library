@@ -28,6 +28,37 @@ namespace {
 
 namespace OHOS {
 namespace Media {
+static const unordered_map<string, ResultSetDataType> RESULT_TYPE_MAP = {
+    { MEDIA_DATA_DB_ID, TYPE_INT32 },
+    { MEDIA_DATA_DB_NAME, TYPE_STRING },
+    { MEDIA_DATA_DB_RELATIVE_PATH, TYPE_STRING },
+    { MEDIA_DATA_DB_MEDIA_TYPE, TYPE_INT32 },
+    { MEDIA_DATA_DB_PARENT_ID, TYPE_INT32 },
+    { MEDIA_DATA_DB_SIZE, TYPE_INT64 },
+    { MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64 },
+    { MEDIA_DATA_DB_DATE_MODIFIED, TYPE_INT64 },
+    { MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64 },
+    { MEDIA_DATA_DB_FILE_PATH, TYPE_STRING },
+    { MEDIA_DATA_DB_MIME_TYPE, TYPE_STRING },
+    { MEDIA_DATA_DB_TITLE, TYPE_STRING },
+    { MEDIA_DATA_DB_ARTIST, TYPE_STRING },
+    { MEDIA_DATA_DB_ALBUM, TYPE_STRING },
+    { MEDIA_DATA_DB_WIDTH, TYPE_INT32 },
+    { MEDIA_DATA_DB_HEIGHT, TYPE_INT32 },
+    { MEDIA_DATA_DB_DURATION, TYPE_INT32 },
+    { MEDIA_DATA_DB_ORIENTATION, TYPE_INT32 },
+    { MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32 },
+    { MEDIA_DATA_DB_BUCKET_NAME, TYPE_STRING },
+    { MEDIA_DATA_DB_TIME_PENDING, TYPE_INT64 },
+    { MEDIA_DATA_DB_IS_PENDING, TYPE_INT32 },
+    { MEDIA_DATA_DB_IS_FAV, TYPE_INT32 },
+    { MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64 },
+    { MEDIA_DATA_DB_SELF_ID, TYPE_STRING },
+    { MEDIA_DATA_DB_RECYCLE_PATH, TYPE_STRING },
+    { MEDIA_DATA_DB_IS_TRASH, TYPE_INT32 },
+    { MEDIA_DATA_DB_AUDIO_ALBUM, TYPE_STRING },
+};
+
 template <class T>
 FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &resultset)
 {
@@ -290,36 +321,6 @@ int32_t FetchResult<T>::GetFileCount(const shared_ptr<DataShare::DataShareResult
 template<class T>
 void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
-    static const unordered_map<string, ResultSetDataType> resultTypeMap = {
-        { MEDIA_DATA_DB_ID, TYPE_INT32 },
-        { MEDIA_DATA_DB_NAME, TYPE_STRING },
-        { MEDIA_DATA_DB_RELATIVE_PATH, TYPE_STRING },
-        { MEDIA_DATA_DB_MEDIA_TYPE, TYPE_INT32 },
-        { MEDIA_DATA_DB_PARENT_ID, TYPE_INT32 },
-        { MEDIA_DATA_DB_SIZE, TYPE_INT64 },
-        { MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64 },
-        { MEDIA_DATA_DB_DATE_MODIFIED, TYPE_INT64 },
-        { MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64 },
-        { MEDIA_DATA_DB_FILE_PATH, TYPE_STRING },
-        { MEDIA_DATA_DB_MIME_TYPE, TYPE_STRING },
-        { MEDIA_DATA_DB_TITLE, TYPE_STRING },
-        { MEDIA_DATA_DB_ARTIST, TYPE_STRING },
-        { MEDIA_DATA_DB_ALBUM, TYPE_STRING },
-        { MEDIA_DATA_DB_WIDTH, TYPE_INT32 },
-        { MEDIA_DATA_DB_HEIGHT, TYPE_INT32 },
-        { MEDIA_DATA_DB_DURATION, TYPE_INT32 },
-        { MEDIA_DATA_DB_ORIENTATION, TYPE_INT32 },
-        { MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32 },
-        { MEDIA_DATA_DB_BUCKET_NAME, TYPE_STRING },
-        { MEDIA_DATA_DB_TIME_PENDING, TYPE_INT64 },
-        { MEDIA_DATA_DB_IS_PENDING, TYPE_INT32 },
-        { MEDIA_DATA_DB_IS_FAV, TYPE_INT32 },
-        { MEDIA_DATA_DB_DATE_TRASHED, TYPE_INT64 },
-        { MEDIA_DATA_DB_SELF_ID, TYPE_STRING },
-        { MEDIA_DATA_DB_RECYCLE_PATH, TYPE_STRING },
-        { MEDIA_DATA_DB_IS_TRASH, TYPE_INT32 },
-    };
-
     if ((resultset_ == nullptr) && (resultSet == nullptr)) {
         MEDIA_ERR_LOG("SetFileAsset fail, result is nullptr");
         return;
@@ -333,10 +334,10 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Ab
     int32_t index = -1;
     for (const auto &name : columnNames) {
         index++;
-        if (resultTypeMap.count(name) == 0) {
+        if (RESULT_TYPE_MAP.count(name) == 0) {
             continue;
         }
-        auto memberType = resultTypeMap.at(name);
+        auto memberType = RESULT_TYPE_MAP.at(name);
         auto &memberValue = fileAsset->GetMemberValue(name);
         const auto &result = GetValByIndex(index, memberType, resultSet);
         if (result.index() == ARG_INT32) {

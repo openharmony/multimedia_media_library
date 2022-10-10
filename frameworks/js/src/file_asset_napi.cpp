@@ -159,7 +159,7 @@ napi_value FileAssetNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("favorite", UserFileMgrFavorite),
             DECLARE_NAPI_FUNCTION("trash", UserFileMgrTrash),
             DECLARE_NAPI_GETTER("uri", JSGetFileUri),
-            DECLARE_NAPI_GETTER("mediaType", JSGetMediaType),
+            DECLARE_NAPI_GETTER("fileType", JSGetMediaType),
             DECLARE_NAPI_GETTER_SETTER("displayName", JSGetFileDisplayName, JSSetFileDisplayName),
             DECLARE_NAPI_FUNCTION("isFavorite", JSIsFavorite),
             DECLARE_NAPI_FUNCTION("isTrash", JSIsTrash),
