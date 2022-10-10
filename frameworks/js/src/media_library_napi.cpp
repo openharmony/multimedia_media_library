@@ -155,13 +155,12 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
 
     const std::vector<napi_property_descriptor> staticProps = {
         DECLARE_NAPI_STATIC_FUNCTION("getUserFileMgr", GetUserFileMgr),
-        DECLARE_NAPI_PROPERTY("MediaType", CreateMediaTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("FileType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("FileKey", UserFileMgrCreateFileKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AudioKey", CreateAudioKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("ImageVideoKey", CreateImageVideoKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumKey", CreateAlbumKeyEnum(env)),
-        DECLARE_NAPI_PROPERTY("DirectoryType", CreateDirectoryTypeEnum(env)),
-        DECLARE_NAPI_PROPERTY("VirtualAlbumType", CreateVirtualAlbumTypeEnum(env))
+        DECLARE_NAPI_PROPERTY("PrivateAlbumType", CreatePrivateAlbumTypeEnum(env))
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -1279,11 +1278,11 @@ static void JSCreateAssetExecute(napi_env env, void *data)
         return;
     }
     if (!CheckTitlePrams(context)) {
-        context->error = ERR_DISPLAY_NAME_INVALID;
+        context->error = JS_ERR_DISPLAYNAME_INVALID;
         return;
     }
     if ((context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) && (!CheckRelativePathPrams(context))) {
-        context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
+        context->error = JS_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
         return;
     }
     string uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
@@ -2868,7 +2867,7 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         NAPI_ERR_LOG("src path is not exist, %{public}d", errno);
         return;
     }
-    context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
+    context->error = JS_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
     int32_t srcFd = open(realPath.c_str(), O_RDWR);
     if (srcFd == -1) {
         NAPI_ERR_LOG("src path open fail, %{public}d", errno);
@@ -2999,7 +2998,7 @@ static napi_value GetStoreMediaAssetArgs(napi_env env, napi_value param,
     string fileName = MediaFileUtils::GetFilename(context->storeMediaSrc);
     if (fileName.empty() || (fileName.at(0) == '.')) {
         NAPI_ERR_LOG("src file name is not proper");
-        context->error = ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
+        context->error = JS_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
         return nullptr;
     };
     context->valuesBucket.Put(MEDIA_DATA_DB_NAME, fileName);
@@ -3303,8 +3302,8 @@ napi_value UserFileMgrGetFileAssets(napi_env env, napi_callback_info info, vecto
     asyncContext->mediaTypes = mediaTypes;
     MediaLibraryNapiUtils::GenTypeMaskFromArray(mediaTypes, asyncContext->typeMask);
 
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext) == napi_ok,
-        "Failed to parse js args");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext), asyncContext,
+        JS_ERR_PARAMETER_INVALID);
     AddDefaultFetchColumn(asyncContext);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
 
@@ -3336,8 +3335,8 @@ napi_value MediaLibraryNapi::UserFileMgrGetAlbums(napi_env env, napi_callback_in
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_IMAGE);
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
     MediaLibraryNapiUtils::GenTypeMaskFromArray(asyncContext->mediaTypes, asyncContext->typeMask);
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseAlbumFetchOptCallback(env, info, asyncContext) == napi_ok,
-        "Failed to parse js args");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAlbumFetchOptCallback(env, info, asyncContext), asyncContext,
+        JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAlbums", GetResultDataExecute,
@@ -3374,8 +3373,8 @@ napi_value MediaLibraryNapi::UserFileMgrGetPrivateAlbum(napi_env env, napi_callb
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
 
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext,
-        asyncContext->privateAlbumType) == napi_ok, "Failed to parse js args");
+    CHECK_ARGS(env,  MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext,
+        asyncContext->privateAlbumType), asyncContext, JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     // PrivateAlbum only support image and video so far
     MediaLibraryNapiUtils::GenTypeMaskFromArray({ MediaType::MEDIA_TYPE_IMAGE }, asyncContext->typeMask);
@@ -3387,6 +3386,11 @@ napi_value MediaLibraryNapi::UserFileMgrGetPrivateAlbum(napi_env env, napi_callb
 napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, mediaTypesEnum, sMediaTypeEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateMediaTypeUserFileEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, mediaTypesUserFileEnum, sMediaTypeEnumRef_);
 }
 
 napi_value MediaLibraryNapi::CreateDirectoryTypeEnum(napi_env env)
