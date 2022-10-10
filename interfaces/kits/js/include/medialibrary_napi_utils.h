@@ -128,6 +128,10 @@
         (context)->ThrowError(env, err);                            \
     } while (0)
 
+#define MODULE_OFFSET  100000
+#define MODULE_CODE(code) (((code) * MODULE_OFFSET))
+#define UFM_JS_ERR(moduleCode, errCode) ((MODULE_CODE(moduleCode))  + (errCode))
+
 namespace OHOS {
 namespace Media {
 /* Constants for array index */
@@ -148,21 +152,26 @@ constexpr uint32_t NAPI_INIT_REF_COUNT = 1;
 constexpr size_t NAPI_ARGC_MAX = 4;
 
 // Error codes
+constexpr int32_t FILEIO_MODULE_CODE = 139;
+constexpr int32_t UFM_MODULE_CODE = 140;
 const int32_t ERR_DEFAULT = 0;
 const int32_t ERR_MEM_ALLOCATION = 2;
 const int32_t ERR_INVALID_OUTPUT = 3;
 
-const int32_t JS_ERR_PERMISSION_DENIED = 4;
-const int32_t ERR_DISPLAY_NAME_INVALID = 5;
-const int32_t ERR_RELATIVE_PATH_NOT_EXIST_OR_INVALID = 6;
-const int32_t JS_ERR_INNER_FAIL = 7;                // ipc, rdb or file operation fail, etc
-const int32_t JS_ERR_PARAMETER_INVALID = 8;         // input parameter invalid
-const int32_t JS_ERR_DISPLAYNAME_INVALID = 9;       // input display invalid
-const int32_t JS_ERR_NO_SUCH_FILE = 10;             // no such file
-const int32_t JS_ERR_FILE_EXIST = 11;               // file has exist
-const int32_t JS_ERR_WRONG_FILE_TYPE = 12;          // file type is not allow in the directory
-const int32_t JS_ERR_NO_MEMORY = 13;                // no memory left
-const int32_t JS_ERR_WRONG_FILE_KEY = 14;           // wrong member name
+// file io common error code
+constexpr int32_t JS_ERR_NO_SUCH_FILE =      UFM_JS_ERR(FILEIO_MODULE_CODE, 2);         // no such file
+constexpr int32_t JS_ERR_PERMISSION_DENIED = UFM_JS_ERR(FILEIO_MODULE_CODE, 12);        // permission deny
+constexpr int32_t JS_ERR_FILE_EXIST =        UFM_JS_ERR(FILEIO_MODULE_CODE, 15);        // file has exist
+constexpr int32_t JS_ERR_PARAMETER_INVALID = UFM_JS_ERR(FILEIO_MODULE_CODE, 20);        // input parameter invalid
+
+// userfileMananger error code
+constexpr int32_t JS_ERR_DISPLAYNAME_INVALID            = UFM_JS_ERR(UFM_MODULE_CODE, 1);
+constexpr int32_t JS_RELATIVE_PATH_NOT_EXIST_OR_INVALID = UFM_JS_ERR(UFM_MODULE_CODE, 10);
+constexpr int32_t JS_ERR_INNER_FAIL                     = UFM_JS_ERR(UFM_MODULE_CODE, 11);
+// file type is not allow in the directory
+constexpr int32_t JS_ERR_WRONG_FILE_TYPE                = UFM_JS_ERR(UFM_MODULE_CODE, 12);
+constexpr int32_t JS_ERR_NO_MEMORY                      = UFM_JS_ERR(UFM_MODULE_CODE, 13);    // no memory left
+constexpr int32_t JS_ERR_WRONG_FILE_KEY                 = UFM_JS_ERR(UFM_MODULE_CODE, 14);    // wrong member name
 
 const int32_t TRASH_SMART_ALBUM_ID = 1;
 const std::string TRASH_SMART_ALBUM_NAME = "TrashAlbum";
@@ -188,6 +197,10 @@ const std::vector<std::string> privateAlbumTypeNameEnum {
 
 const std::vector<std::string> mediaTypesEnum {
     "FILE", "IMAGE", "VIDEO", "AUDIO", "MEDIA", "ALBUM_LIST", "ALBUM_LIST_INFO"
+};
+
+const std::vector<std::string> mediaTypesUserFileEnum {
+    "IMAGE", "VIDEO", "AUDIO"
 };
 
 const std::vector<std::string> fileKeyEnum {
@@ -291,33 +304,36 @@ const std::vector<std::pair<std::string, std::string>> USERFILEMGR_FILEKEY_ENUM_
 
 const std::vector<std::pair<std::string, std::string>> AUDIOKEY_ENUM_PROPERTIES = {
     std::make_pair("URI",                       MEDIA_DATA_DB_URI),
-    std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),
     std::make_pair("DISPLAY_NAME",              MEDIA_DATA_DB_NAME),
     std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
     std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED),
     std::make_pair("TITLE",                     MEDIA_DATA_DB_TITLE),
     std::make_pair("ARTIST",                    MEDIA_DATA_DB_ARTIST),
     std::make_pair("AUDIOALBUM",                MEDIA_DATA_DB_AUDIO_ALBUM),
-    std::make_pair("DURATION",                  MEDIA_DATA_DB_DURATION)
+    std::make_pair("DURATION",                  MEDIA_DATA_DB_DURATION),
+    std::make_pair("FAVORITE",                  MEDIA_DATA_DB_IS_FAV)
 };
 
 const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPERTIES = {
     std::make_pair("URI",                       MEDIA_DATA_DB_URI),
-    std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),
     std::make_pair("DISPLAY_NAME",              MEDIA_DATA_DB_NAME),
     std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
+    std::make_pair("FILE_TYPE",                 MEDIA_DATA_DB_MEDIA_TYPE),
     std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED),
     std::make_pair("TITLE",                     MEDIA_DATA_DB_TITLE),
     std::make_pair("DURATION",                  MEDIA_DATA_DB_DURATION),
     std::make_pair("WIDTH",                     MEDIA_DATA_DB_WIDTH),
     std::make_pair("HEIGHT",                    MEDIA_DATA_DB_HEIGHT),
-    std::make_pair("DATE_TAKEN",                MEDIA_DATA_DB_DATE_TAKEN)
+    std::make_pair("DATE_TAKEN",                MEDIA_DATA_DB_DATE_TAKEN),
+    std::make_pair("ORIENTATION",               MEDIA_DATA_DB_ORIENTATION),
+    std::make_pair("FAVORITE",                  MEDIA_DATA_DB_IS_FAV),
+    std::make_pair("MEDIA_TYPE",                MEDIA_DATA_DB_MEDIA_TYPE)
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
     std::make_pair("URI",                       MEDIA_DATA_DB_URI),
-    std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),
-    std::make_pair("DISPLAY_NAME",              MEDIA_DATA_DB_NAME),
+    std::make_pair("ALBUM_NAME",                MEDIA_DATA_DB_NAME),
+    std::make_pair("FILE_TYPE",                 MEDIA_DATA_DB_MEDIA_TYPE),
     std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
     std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED)
 };
@@ -358,12 +374,12 @@ public:
     static void UriRemoveAllFragment(std::string &uri);
     template <class AsyncContext>
     static napi_status GetPredicate(napi_env env, const napi_value arg, const std::string &propName,
-        AsyncContext &context);
+        AsyncContext &context, bool isAlbum);
     template <class AsyncContext>
     static napi_status ParseAlbumFetchOptCallback(napi_env env, napi_callback_info info, AsyncContext &context);
     template <class AsyncContext>
     static bool HandleSpecialPredicate(AsyncContext &context,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate);
+        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate, bool isAlbum);
     template <class AsyncContext>
     static void UpdateMediaTypeSelections(AsyncContext *context);
     static void GetNetworkIdAndFileIdFromUri(const std::string &uri, std::string &networkId, std::string &fileId);

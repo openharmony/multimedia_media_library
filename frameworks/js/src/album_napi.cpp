@@ -880,8 +880,8 @@ napi_value AlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info info
 
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_IMAGE);
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext) == napi_ok,
-        "Failed to parse js args");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext), asyncContext,
+        JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
 
@@ -898,8 +898,8 @@ napi_value AlbumNapi::UserFileMgrCommitModify(napi_env env, napi_callback_info i
     unique_ptr<AlbumNapiAsyncContext> asyncContext = make_unique<AlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
-        "Failed to parse js args");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext), asyncContext,
+        JS_ERR_PARAMETER_INVALID);
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrCommitModify", CommitModifyNative,
