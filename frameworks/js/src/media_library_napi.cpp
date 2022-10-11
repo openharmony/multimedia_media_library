@@ -306,12 +306,12 @@ static napi_status AddIntegerNamedProperty(napi_env env, napi_value object,
     return status;
 }
 
-static napi_value CreateNumberEnumProperty(napi_env env, vector<string> properties, napi_ref &ref)
+static napi_value CreateNumberEnumProperty(napi_env env, vector<string> properties, napi_ref &ref, int32_t offset = 0)
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
     for (size_t i = 0; i < properties.size(); i++) {
-        NAPI_CALL(env, AddIntegerNamedProperty(env, result, properties[i], i));
+        NAPI_CALL(env, AddIntegerNamedProperty(env, result, properties[i], i + offset));
     }
     NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &ref));
     return result;
@@ -3390,7 +3390,8 @@ napi_value MediaLibraryNapi::CreateMediaTypeEnum(napi_env env)
 
 napi_value MediaLibraryNapi::CreateMediaTypeUserFileEnum(napi_env env)
 {
-    return CreateNumberEnumProperty(env, mediaTypesUserFileEnum, sMediaTypeEnumRef_);
+    const int32_t startIdx = 1;
+    return CreateNumberEnumProperty(env, mediaTypesUserFileEnum, sMediaTypeEnumRef_, startIdx);
 }
 
 napi_value MediaLibraryNapi::CreateDirectoryTypeEnum(napi_env env)

@@ -332,7 +332,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
     std::make_pair("URI",                       MEDIA_DATA_DB_URI),
-    std::make_pair("ALBUM_NAME",                MEDIA_DATA_DB_NAME),
+    std::make_pair("ALBUM_NAME",                MEDIA_DATA_DB_BUCKET_NAME),
     std::make_pair("FILE_TYPE",                 MEDIA_DATA_DB_MEDIA_TYPE),
     std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
     std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED)
