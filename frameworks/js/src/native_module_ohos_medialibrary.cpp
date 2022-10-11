@@ -32,7 +32,6 @@ static napi_value Export(napi_env env, napi_value exports)
     SmartAlbumNapi::Init(env, exports);
     MediaLibraryNapi::Init(env, exports);
     MediaScannerNapi::Init(env, exports);
-    AVMetadataHelperNapi::Init(env, exports);
     return exports;
 }
 

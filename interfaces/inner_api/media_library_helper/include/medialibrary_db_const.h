@@ -421,7 +421,6 @@ const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_ALBUMOPRN = "album_operation";
 const std::string MEDIA_DIROPRN = "dir_operation";
 const std::string MEDIA_QUERYOPRN = "query_operation";
-const std::string MEDIA_KVSTOREOPRN = "kvstore_operation";
 const std::string MEDIA_SMARTALBUMOPRN = "albumsmart_operation";
 const std::string MEDIA_SMARTALBUMMAPOPRN = "smartalbummap_operation";
 const std::string MEDIA_FILEOPRN_CREATEASSET = "create_asset";
@@ -442,14 +441,6 @@ const std::string THU_OPRN_AGING = "thumbnail_aging_operation";
 const std::string DISTRIBUTE_THU_OPRN_GENERATES = "thumbnail_distribute_generate_operation";
 const std::string DISTRIBUTE_THU_OPRN_AGING = "thumbnail_distribute_aging_operation";
 const std::string DISTRIBUTE_THU_OPRN_CREATE = "thumbnail_distribute_create_operation";
-
-// ringtone uris
-const std::string MEDIA_KVSTOREOPRN_SET_URI = "set_ringtone_uri";
-const std::string MEDIA_KVSTOREOPRN_SET_NOTIFICATION_URI = "set_notification_uri";
-const std::string MEDIA_KVSTOREOPRN_SET_ALARM_URI = "set_alarm_uri";
-const std::string MEDIA_KVSTOREOPRN_GET_URI = "get_ringtone_uri";
-const std::string MEDIA_KVSTOREOPRN_GET_NOTIFICATION_URI = "get_notification_uri";
-const std::string MEDIA_KVSTOREOPRN_GET_ALARM_URI = "get_alarm_uri";
 
 const std::string MEDIA_ALBUMOPRN_CREATEALBUM = "create_album";
 const std::string MEDIA_ALBUMOPRN_MODIFYALBUM = "modify_album";
