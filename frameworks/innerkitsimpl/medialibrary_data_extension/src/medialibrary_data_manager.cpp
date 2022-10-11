@@ -106,6 +106,15 @@ __attribute__((constructor)) void RegisterDataShareCreator()
     DataShare::DataShareExtAbility::SetCreator(MediaDataShareCreator);
 }
 
+static void MakeRootDirs()
+{
+    for (auto &dir : PRESET_ROOT_DIRS) {
+        if (!MediaFileUtils::CreateDirectory(ROOT_MEDIA_DIR + dir + ".recycle")) {
+            MEDIA_ERR_LOG("Failed to preset root dir: %{public}s", dir.c_str());
+        }
+    }
+}
+
 void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
     std::lock_guard<std::mutex> lock(mgrMutex_);
@@ -120,6 +129,7 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
     InitMediaLibraryRdbStore();
     InitDeviceData();
     MakeDirQuerySetMap(dirQuerySetMap_);
+    MakeRootDirs();
     InitialiseKvStore();
     InitialiseThumbnailService();
 }
