@@ -1438,8 +1438,8 @@ static void JSTrashAssetExecute(napi_env env, void *data)
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, stoi(trashId));
-    string trashUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/";
-    trashUri += context->isDelete ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
+    string trashUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(trashUri, context->typeMask);
     Uri trashAssetUri(trashUri);
     int retVal = dataShareHelper->Insert(trashAssetUri, valuesBucket);
@@ -3258,30 +3258,6 @@ static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
     return result;
 }
 
-static napi_value ParseArgsTrashAsset(napi_env env, napi_callback_info info,
-    unique_ptr<MediaLibraryAsyncContext> &context)
-{
-    constexpr size_t minArgs = ARGS_TWO;
-    constexpr size_t maxArgs = ARGS_THREE;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
-        napi_ok, "Failed to get object info");
-
-    /* Parse the first argument into uri */
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], context->uri) ==
-        napi_ok, "Failed to get uri");
-    /* Parse the second argument into isDelete */
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamBool(env, context->argv[ARGS_ONE], context->isDelete) == napi_ok,
-        "Failed to get isDelete");
-    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
-        MediaLibraryNapiUtils::GenTypeMaskFromArray({ GetMediaTypeFromUri(context->uri) }, context->typeMask);
-    }
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
-
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
-    return result;
-}
-
 void AddDefaultFetchColumn(unique_ptr<MediaLibraryAsyncContext> &asyncContext)
 {
     if (asyncContext->fetchColumn.size() == 0) {
@@ -3361,7 +3337,8 @@ napi_value MediaLibraryNapi::UserFileMgrTrashAsset(napi_env env, napi_callback_i
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    NAPI_ASSERT(env, ParseArgsTrashAsset(env, info, asyncContext), "Failed to parse js args");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
+        asyncContext, JS_ERR_PARAMETER_INVALID);
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrTrashAsset", JSTrashAssetExecute,
         JSTrashAssetCompleteCallback);
