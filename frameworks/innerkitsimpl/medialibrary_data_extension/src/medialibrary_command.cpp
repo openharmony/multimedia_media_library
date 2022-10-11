@@ -176,7 +176,6 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { MEDIA_ALBUMOPRN, OperationObject::FILESYSTEM_ALBUM },
         { MEDIA_SMARTALBUMOPRN, OperationObject::SMART_ALBUM },
         { MEDIA_SMARTALBUMMAPOPRN, OperationObject::SMART_ALBUM_MAP },
-        { MEDIA_KVSTOREOPRN, OperationObject::KVSTORE },
         { THU_OPRN_GENERATES, OperationObject::THUMBNAIL },
         { THU_OPRN_AGING, OperationObject::THUMBNAIL },
         { DISTRIBUTE_THU_OPRN_AGING, OperationObject::THUMBNAIL },

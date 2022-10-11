@@ -35,7 +35,6 @@
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
-#include "medialibrary_kvstore_operations.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
@@ -210,15 +209,7 @@ void MediaLibraryDataManager::SetOwner(const std::shared_ptr<MediaDataShareExtAb
 
 std::string MediaLibraryDataManager::GetType(const Uri &uri)
 {
-    string getTypeUri = uri.ToString();
-    // If get uri contains media operation keyword, follow media operation procedure
-    if (getTypeUri.find(MEDIA_OPERN_KEYWORD) != string::npos) {
-        MediaLibraryKvStoreOperations kvStoreOprn;
-
-        if (getTypeUri.find(MEDIA_KVSTOREOPRN) != string::npos) {
-            return kvStoreOprn.HandleKvStoreGetOperations(getTypeUri, kvStorePtr_);
-        }
-    }
+    MEDIA_INFO_LOG("GetType uri: %{public}s", uri.ToString().c_str());
     return "";
 }
 
@@ -316,11 +307,6 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
             MediaLibrarySmartAlbumMapOperations smartalbumMapOprn;
             result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, rdbStore_, dirQuerySetMap_);
             MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-            break;
-        }
-        case OperationObject::KVSTORE: {
-            MediaLibraryKvStoreOperations kvStoreOprn;
-            result = kvStoreOprn.HandleKvStoreInsertOperations(operationType, value, kvStorePtr_);
             break;
         }
         case OperationObject::THUMBNAIL: {
