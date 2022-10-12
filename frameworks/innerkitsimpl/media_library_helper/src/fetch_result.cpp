@@ -238,9 +238,6 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetValByIndex(int32_t index, R
             } else {
                 status = resultset_->GetString(index, stringVal);
             }
-            if (status != NativeRdb::E_OK) {
-                MEDIA_ERR_LOG("resultSet GetString err %{public}d", status);
-            }
             cellValue = stringVal;
             break;
         case TYPE_INT32:
@@ -249,9 +246,6 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetValByIndex(int32_t index, R
             } else {
                 status = resultset_->GetInt(index, integerVal);
             }
-            if (status != NativeRdb::E_OK) {
-                MEDIA_ERR_LOG("resultSet GetInt err %{public}d", status);
-            }
             cellValue = integerVal;
             break;
         case TYPE_INT64:
@@ -259,9 +253,6 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetValByIndex(int32_t index, R
                 status = resultSet->GetLong(index, longVal);
             } else {
                 status = resultset_->GetLong(index, longVal);
-            }
-            if (status != NativeRdb::E_OK) {
-                MEDIA_ERR_LOG("resultSet GetInt64 err %{public}d", status);
             }
             cellValue = longVal;
             break;
