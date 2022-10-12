@@ -76,7 +76,8 @@
                 "header": {
                   "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
                   "header_files": [
-                    "media_library_manager.h"
+                    "media_library_manager.h",
+                    "medialibrary_db_const.h"
                   ]
                 },
                 "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library"
