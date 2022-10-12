@@ -16,6 +16,7 @@
 
 #include "metadata_extractor.h"
 
+#include <fcntl.h>
 #include "hitrace_meter.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
