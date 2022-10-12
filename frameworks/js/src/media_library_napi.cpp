@@ -16,6 +16,7 @@
 
 #include "media_library_napi.h"
 
+#include <fcntl.h>
 #include <sys/sendfile.h>
 #include "media_asset.h"
 #include "media_file_utils.h"
