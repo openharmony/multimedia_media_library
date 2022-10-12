@@ -15,12 +15,14 @@
 
 #include "uri_helper.h"
 
+#include <fcntl.h>
 #include <map>
 #include <sys/stat.h>
 #include <type_traits>
 #include <unistd.h>
 
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS {
 namespace Media {

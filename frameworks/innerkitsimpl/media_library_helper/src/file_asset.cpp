@@ -16,6 +16,7 @@
 
 #include "file_asset.h"
 
+#include <fcntl.h>
 #include <fstream>
 #include <unistd.h>
 

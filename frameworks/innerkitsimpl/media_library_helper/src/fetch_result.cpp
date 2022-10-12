@@ -192,7 +192,7 @@ variant<int32_t, int64_t, string> ReturnDefaultOnError(string errMsg, ResultSetD
     if (dataType == TYPE_STRING) {
         return "";
     } else if (dataType == TYPE_INT64) {
-        return 0LL;
+        return static_cast<int64_t>(0);
     } else {
         return 0;
     }

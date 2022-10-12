@@ -16,6 +16,7 @@
 
 #include "media_file_ext_ability.h"
 
+#include <fcntl.h>
 #include "extension_context.h"
 #include "file_access_ext_stub_impl.h"
 #include "js_runtime_utils.h"
