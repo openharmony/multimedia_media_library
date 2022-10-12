@@ -10,7 +10,8 @@
 
 
 ## 简介<a name="section1158716411637"></a>
-
+**图1** medialibrary组件架构图
+![](figures/medialibrary-architecture_zh.png "medialibrary-architecture_zh")
 **medialibrary\_standard** 仓库提供了一系列易用的接口用于获取媒体文件元数据信息。
 MediaLibrary接口暂不对外部应用开放, 仅内部使用。
 
@@ -115,8 +116,5 @@ MediaLibrary 给应用提供了操作相册的接口, 如创建、修改和删�
     bool errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     ```
 
-更多接口请参考 [**imedia_library_client.h**](https://gitee.com/openharmony/multimedia_medialibrary_standard/blob/master/interfaces/innerkits/native/include/imedia_library_client.h) 。
-
-
 ## 相关仓<a name="section1533973044317"></a>
-[multimedia/medialibrary_standard](https://gitee.com/openharmony/multimedia_medialibrary_standard)
+**[multimedia/medialibrary_standard](https://gitee.com/openharmony/multimedia_medialibrary_standard)**
