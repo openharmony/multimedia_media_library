@@ -11,6 +11,9 @@
 
 ## Introduction<a name="section1158716411637"></a>
 
+**Figure  1**  medialibrary architecture<a name="fig99659301300"></a>
+![](figures/medialibrary-architecture.png "medialibrary-architecture")
+
 The **medialibrary\_standard**  repository provides a set of easy-to-use APIs for getting media file metadata information. 
 MediaLibrary APIs can only be used internally, not exposed to public application currently.
 
@@ -114,8 +117,5 @@ File operations are supported via APIs like **CreateMediaAsset**, **ModifyMediaA
     bool errCode = mediaLibClientInstance->CopyMediaAsset(assetType, srcMediaAsset, dstMediaAsset);
     ```
 
-Please refer [**imedia_library_client.h**](https://gitee.com/openharmony/multimedia_medialibrary_standard/blob/master/interfaces/innerkits/native/include/imedia_library_client.h) for more APIs.
-
-
 ## Repositories Involved<a name="section1533973044317"></a>
-[multimedia/medialibrary_standard](https://gitee.com/openharmony/multimedia_medialibrary_standard)
+**[multimedia/medialibrary_standard](https://gitee.com/openharmony/multimedia_medialibrary_standard)**
