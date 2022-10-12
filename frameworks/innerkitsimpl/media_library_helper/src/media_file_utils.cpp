@@ -83,7 +83,7 @@ bool MediaFileUtils::CreateDirectory(const string &dirPath)
         if (!IsDirectory(subStr)) {
             string folderPath = subStr;
             mode_t mask = umask(0);
-            if ((mkdir(folderPath.c_str(), CHOWN_RWX_USR_GRP) == -1) && (errno != EEXIST)) {
+            if (mkdir(folderPath.c_str(), CHOWN_RWX_USR_GRP) == -1) {
                 MEDIA_ERR_LOG("Failed to create directory %{public}d", errno);
                 umask(mask);
                 return false;
