@@ -257,6 +257,7 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
                 return false;
             }
             string uri = item.singleParams[VALUE_IDX].operator string();
+	    UriRemoveAllFragment(uri);
             string fileId;
             MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(uri, context->networkId, fileId);
             item.singleParams[FIELD_IDX] = isAlbum ? DataShare::DataSharePredicatesObject(MEDIA_DATA_DB_BUCKET_ID) :
