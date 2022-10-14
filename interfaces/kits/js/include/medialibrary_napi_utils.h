@@ -443,9 +443,9 @@ public:
     template <class AsyncContext>
     static napi_status ParseArgsTypeFetchOptCallback(napi_env env, napi_callback_info info, AsyncContext &context)
     {
-        constexpr size_t MIN_ARGS = ARGS_TWO;
-        constexpr size_t MAX_ARGS = ARGS_THREE;
-        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+        constexpr size_t minArgs = ARGS_TWO;
+        constexpr size_t maxArgs = ARGS_THREE;
+        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
             "Failed to get object info");
         /* Parse the first argument into typeMask */
         CHECK_STATUS_RET(GetUInt32Array(env, context->argv[ARGS_ZERO], context->mediaTypes),
@@ -460,9 +460,9 @@ public:
     template <class AsyncContext>
     static napi_status ParseArgsBoolCallBack(napi_env env, napi_callback_info info, AsyncContext &context, bool &param)
     {
-        constexpr size_t MIN_ARGS = ARGS_ONE;
-        constexpr size_t MAX_ARGS = ARGS_TWO;
-        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+        constexpr size_t minArgs = ARGS_ONE;
+        constexpr size_t maxArgs = ARGS_TWO;
+        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
             "Failed to get object info");
 
         /* Parse the first argument into param */
@@ -475,9 +475,9 @@ public:
     static napi_status ParseArgsStringCallback(napi_env env, napi_callback_info info, AsyncContext &context,
         std::string &param)
     {
-        constexpr size_t MIN_ARGS = ARGS_ONE;
-        constexpr size_t MAX_ARGS = ARGS_TWO;
-        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+        constexpr size_t minArgs = ARGS_ONE;
+        constexpr size_t maxArgs = ARGS_TWO;
+        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
             "Failed to get object info");
 
         CHECK_STATUS_RET(GetParamStringPathMax(env, context->argv[ARGS_ZERO], param), "Failed to get string argument");
@@ -489,9 +489,9 @@ public:
     static napi_status ParseArgsNumberCallback(napi_env env, napi_callback_info info, AsyncContext &context,
         int32_t &value)
     {
-        constexpr size_t MIN_ARGS = ARGS_ONE;
-        constexpr size_t MAX_ARGS = ARGS_TWO;
-        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+        constexpr size_t minArgs = ARGS_ONE;
+        constexpr size_t maxArgs = ARGS_TWO;
+        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
             "Failed to get object info");
 
         CHECK_STATUS_RET(GetInt32(env, context->argv[ARGS_ZERO], value), "Failed to get number argument");
@@ -502,9 +502,9 @@ public:
     template <class AsyncContext>
     static napi_status ParseArgsOnlyCallBack(napi_env env, napi_callback_info info, AsyncContext &context)
     {
-        constexpr size_t MIN_ARGS = ARGS_ZERO;
-        constexpr size_t MAX_ARGS = ARGS_ONE;
-        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+        constexpr size_t minArgs = ARGS_ZERO;
+        constexpr size_t maxArgs = ARGS_ONE;
+        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
             "Failed to get object info");
 
         CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");

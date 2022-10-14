@@ -3221,9 +3221,9 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
 static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    constexpr size_t MIN_ARGS = ARGS_ONE;
-    constexpr size_t MAX_ARGS = ARGS_THREE;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS) ==
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_THREE;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
         napi_ok, "Failed to get object info");
 
     /* Set mediaTypes to get typeMask */
