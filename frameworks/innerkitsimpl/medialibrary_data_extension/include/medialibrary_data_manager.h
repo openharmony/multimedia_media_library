@@ -34,7 +34,7 @@
 #include "uri.h"
 #include "values_bucket.h"
 #include "thumbnail_service.h"
- 
+
 #define EXPORT __attribute__ ((visibility ("default")))
 
 namespace OHOS {

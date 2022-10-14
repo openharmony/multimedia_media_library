@@ -43,4 +43,11 @@
 #define COMMON_INFO_LOG(fmt, ...) COMMON_HILOG(OHOS::HiviewDFX::HiLog::Info, fmt, ##__VA_ARGS__)
 #define COMMON_FATAL_LOG(fmt, ...) COMMON_HILOG(OHOS::HiviewDFX::HiLog::Fatal, fmt, ##__VA_ARGS__)
 
+#define CHECK_AND_ERR_LOG(cond, fmt, ...) \
+    do { \
+        if (!(cond)) { \
+            COMMON_ERR_LOG(fmt, ##__VA_ARGS__); \
+        } \
+    } while (0)
+
 #endif // OHOS_MEDIALIBRARY_COMMON_LOG_H
