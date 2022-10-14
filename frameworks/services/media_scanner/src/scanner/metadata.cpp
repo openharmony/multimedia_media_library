@@ -61,7 +61,6 @@ void Metadata::Init()
     memberFuncMap_[MEDIA_DATA_DB_MIME_TYPE] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetFileMimeType);
     memberFuncMap_[MEDIA_DATA_DB_NAME] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetFileName);
     memberFuncMap_[MEDIA_DATA_DB_SIZE] = make_pair(ResultSetDataType::TYPE_INT64, &Metadata::SetFileSize);
-    memberFuncMap_[MEDIA_DATA_DB_DATE_MODIFIED] = make_pair(ResultSetDataType::TYPE_INT64, &Metadata::SetFileDateModified);
     memberFuncMap_[MEDIA_DATA_DB_DATE_ADDED] = make_pair(ResultSetDataType::TYPE_INT64, &Metadata::SetFileDateAdded);
     memberFuncMap_[MEDIA_DATA_DB_TITLE] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetFileTitle);
     memberFuncMap_[MEDIA_DATA_DB_ARTIST] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetFileArtist);
@@ -76,6 +75,8 @@ void Metadata::Init()
     memberFuncMap_[MEDIA_DATA_DB_PARENT_ID] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetParentId);
     memberFuncMap_[MEDIA_DATA_DB_RECYCLE_PATH] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetRecyclePath);
     memberFuncMap_[MEDIA_DATA_DB_DATE_TAKEN] = make_pair(ResultSetDataType::TYPE_INT64, &Metadata::SetDateTaken);
+    memberFuncMap_[MEDIA_DATA_DB_DATE_MODIFIED] = make_pair(ResultSetDataType::TYPE_INT64,
+        &Metadata::SetFileDateModified);
 }
 
 void Metadata::SetFileId(const VariantData &id)
