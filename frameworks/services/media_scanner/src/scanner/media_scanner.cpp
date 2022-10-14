@@ -94,7 +94,6 @@ int32_t MediaScannerObj::CommitTransaction()
     // will begin a transaction in later pr
     for (uint32_t i = 0; i < dataBuffer_.size(); i++) {
         data = move(dataBuffer_[i]);
-
         if (data->GetFileId() != FILE_ID_DEFAULT) {
             uri = mediaScannerDb_->UpdateMetadata(*data);
             scannedIds_.insert(data->GetFileId());
