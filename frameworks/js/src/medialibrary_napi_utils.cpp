@@ -313,9 +313,9 @@ template <class AsyncContext>
 napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback(napi_env env, napi_callback_info info,
     AsyncContext &context)
 {
-    constexpr size_t MIN_ARGS = ARGS_ONE;
-    constexpr size_t MAX_ARGS = ARGS_TWO;
-    CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         "Failed to get object info");
     CHECK_STATUS_RET(GetAssetFetchOption(env, context->argv[PARAM0], context), "Failed to get fetch option");
     CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
@@ -326,9 +326,9 @@ template <class AsyncContext>
 napi_status MediaLibraryNapiUtils::ParseAlbumFetchOptCallback(napi_env env, napi_callback_info info,
     AsyncContext &context)
 {
-    constexpr size_t MIN_ARGS = ARGS_ONE;
-    constexpr size_t MAX_ARGS = ARGS_TWO;
-    CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS),
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         "Failed to get object info");
     // Parse the argument into fetchOption if any
     CHECK_STATUS_RET(GetPredicate(env, context->argv[PARAM0], "predicates", context, true), "invalid predicate");
