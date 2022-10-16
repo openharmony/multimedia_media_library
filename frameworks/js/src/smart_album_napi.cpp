@@ -918,9 +918,9 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumFileAssets(napi_env env, napi_callback
 {
     napi_status status;
     napi_value result = nullptr;
-    constexpr int MAX_ARGS = 2;
-    size_t argc = MAX_ARGS;
-    napi_value argv[MAX_ARGS] = {0};
+    constexpr int maxArgs = 2;
+    size_t argc = maxArgs;
+    napi_value argv[maxArgs] = {0};
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
