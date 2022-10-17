@@ -91,7 +91,7 @@ ohos_shared_library("medialibrary_thumbnail") {
 
   sanitize = {
     cfi = true
-    debug = true
+    debug = false
   }
 
   part_name = "media_library"
