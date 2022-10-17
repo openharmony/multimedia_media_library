@@ -24,6 +24,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_db_const.h"
 #include "rdb_errno.h"
+#include "smart_album_asset.h"
 #include "userfile_manager_types.h"
 
 namespace OHOS {
@@ -81,8 +82,10 @@ private:
     int32_t GetFileCount(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
     void SetFileAsset(FileAsset *fileAsset, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     void SetAlbumAsset(AlbumAsset* albumData, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    void SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     void GetObjectFromAsset(FileAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     void GetObjectFromAsset(AlbumAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    void GetObjectFromAsset(SmartAlbumAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
 };
 } // namespace Media
 } // namespace OHOS
