@@ -46,13 +46,15 @@ class SmartAlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value CreateSmartAlbumNapi(napi_env env, SmartAlbumAsset &albumData,
+    static napi_value CreateSmartAlbumNapi(napi_env env, std::unique_ptr<SmartAlbumAsset> &albumData,
         std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
     int32_t GetSmartAlbumId() const;
     std::shared_ptr<DataShare::DataShareHelper> GetMediaDataHelper() const;
     std::string GetSmartAlbumName() const;
     int32_t GetAlbumPrivateType() const;
     void SetAlbumCapacity(int32_t albumCapacity);
+    std::string GetNetworkId() const;
+    std::string GetTypeMask() const;
     SmartAlbumNapi();
     ~SmartAlbumNapi();
 
@@ -71,6 +73,7 @@ private:
     static napi_value JSGetSmartAlbumCategoryId(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumCategoryName(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumCoverUri(napi_env env, napi_callback_info info);
+    static napi_value JSGetSmartAlbumDateModified(napi_env env, napi_callback_info info);
 
     static napi_value JSSmartAlbumNameSetter(napi_env env, napi_callback_info info);
     static napi_value JSCommitModify(napi_env env, napi_callback_info info);
@@ -85,8 +88,10 @@ private:
     int32_t albumPrivateType_;
     int32_t albumCapacity_;
     int32_t albumCategoryId_;
+    int64_t albumDateModified_;
     std::string albumCategoryName_;
     std::string albumCoverUri_;
+    std::string typeMask_;
 
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
     static thread_local SmartAlbumAsset *sAlbumData_;
