@@ -454,11 +454,6 @@ int32_t MediaLibServiceStub::ProcessMediaOperationRequests(uint32_t code,
                 errCode = FAIL;
             break;
         }
-        case MEDIA_DELETE_MEDIA_ASSET: {
-            if ((DeleteMediaOnRequest(data, reply) != true))
-                errCode = FAIL;
-            break;
-        }
         case MEDIA_MODIFY_MEDIA_ASSET: {
             if ((ModifyMediaOnRequest(data, reply) != true))
                 errCode = FAIL;
