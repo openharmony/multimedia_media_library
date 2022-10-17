@@ -142,7 +142,7 @@ ohos_shared_library("medialibrary") {
 
   sanitize = {
     cfi = true
-    debug = true
+    debug = false
   }
 
   relative_install_dir = "module/multimedia"
@@ -175,7 +175,7 @@ ohos_shared_library("userfilemanager") {
 
   sanitize = {
     cfi = true
-    debug = true
+    debug = false
   }
 
   relative_install_dir = "module/filemanagement"
