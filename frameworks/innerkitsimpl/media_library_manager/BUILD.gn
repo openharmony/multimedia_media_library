@@ -51,7 +51,7 @@ ohos_shared_library("media_library_manager") {
 
   sanitize = {
     cfi = true
-    debug = true
+    debug = false
   }
 
   part_name = "media_library"
