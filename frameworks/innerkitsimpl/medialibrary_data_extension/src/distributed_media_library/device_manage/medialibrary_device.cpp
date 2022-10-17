@@ -20,6 +20,7 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_sync_table.h"
+#include "medialibrary_tracer.h"
 
 namespace OHOS {
 namespace Media {

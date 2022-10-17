@@ -15,8 +15,8 @@
 #define MLOG_TAG "Distributed"
 
 #include "medialibrary_sync_table.h"
-#include "hitrace_meter.h"
 #include "media_log.h"
+#include "medialibrary_tracer.h"
 
 namespace OHOS {
 namespace Media {

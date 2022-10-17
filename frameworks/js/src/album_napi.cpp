@@ -16,6 +16,7 @@
 
 #include "album_napi.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_tracer.h"
 #include "media_file_utils.h"
 
 using OHOS::HiviewDFX::HiLog;
