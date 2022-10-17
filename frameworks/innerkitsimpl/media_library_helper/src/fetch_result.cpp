@@ -17,6 +17,7 @@
 #include "fetch_result.h"
 #include "album_asset.h"
 #include "media_log.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 

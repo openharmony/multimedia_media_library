@@ -19,6 +19,7 @@
 #include "album_napi.h"
 #include "hitrace_meter.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_tracer.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;

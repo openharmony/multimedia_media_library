@@ -27,6 +27,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "datashare_predicates.h"
 
