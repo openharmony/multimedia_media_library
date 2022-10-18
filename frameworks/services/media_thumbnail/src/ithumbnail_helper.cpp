@@ -103,11 +103,9 @@ void IThumbnailHelper::AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &o
 
 bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool force)
 {
-    if (ThumbnailUtils::IsImageExist(data.lcdKey, opts.networkId, opts.kvStore)) {
-        MEDIA_DEBUG_LOG("IThumbnailHelper::DoCreateLcd image has exist in kvStore");
-        return true;
+    if (!opts.networkId.empty()) {
+        return false;
     }
-
     if (!ThumbnailUtils::LoadSourceImage(data)) {
         MEDIA_ERR_LOG("LoadSourceImage faild");
         return false;
@@ -152,11 +150,9 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
 
 bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool force)
 {
-    if (ThumbnailUtils::IsImageExist(data.thumbnailKey, opts.networkId, opts.kvStore)) {
-        MEDIA_INFO_LOG("IThumbnailHelper::DoCreateThumbnail image has exist in kvStore");
-        return true;
+    if (!opts.networkId.empty()) {
+        return false;
     }
-
     if (!ThumbnailUtils::LoadSourceImage(data)) {
         MEDIA_ERR_LOG("LoadSourceImage faild");
         return false;
