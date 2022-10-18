@@ -1386,30 +1386,32 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
 static int GetImageFromResult(const shared_ptr<DataShare::DataShareResultSet> &resultSet, Size &size,
     unique_ptr<PixelMap> &outPixelMap)
 {
-    vector<uint8_t> image;
-    vector<uint8_t> key;
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaThumbnailHelper::GetKv");
     int ret = resultSet->GoToFirstRow();
     if (ret != DataShare::E_OK) {
         NAPI_ERR_LOG("GoToFirstRow error %{public}d", ret);
         return ret;
     }
 
+    vector<uint8_t> key;
     ret = resultSet->GetBlob(PARAM0, key);
     if (ret != DataShare::E_OK) {
         NAPI_ERR_LOG("GetBlob key error %{public}d", ret);
         return ret;
     }
+    vector<uint8_t> image;
     ret = resultSet->GetBlob(PARAM1, image);
-    resultSet->Close();
     if (ret != DataShare::E_OK) {
         NAPI_ERR_LOG("GetBlob image error %{public}d", ret);
         return ret;
     }
+    resultSet->Close();
+    tracer.Finish();
 
     NAPI_DEBUG_LOG("key %{public}s key len %{public}d len %{public}d", string(key.begin(),
         key.end()).c_str(), static_cast<int>(key.size()), static_cast<int>(image.size()));
 
-    MediaLibraryTracer tracer;
     tracer.Start("MediaThumbnailHelper::ResizeImage");
     if (!MediaThumbnailHelper::ResizeImage(image, size, outPixelMap)) {
         NAPI_ERR_LOG("ResizeImage error");
@@ -1437,6 +1439,12 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
     auto resultSet = helper->Query(queryUri, predicates, columns);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("Query thumbnail error");
+        return nullptr;
+    }
+    int rowCount = 0;
+    int err = resultSet->GetRowCount(rowCount);
+    if ((err != DataShare::E_OK) || (rowCount <= 0)) {
+        NAPI_ERR_LOG("GetRowCount err %{public}d", err);
         return nullptr;
     }
     tracer.Finish();
