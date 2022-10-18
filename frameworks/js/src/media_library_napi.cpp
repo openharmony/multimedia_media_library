@@ -3397,6 +3397,7 @@ napi_value MediaLibraryNapi::UserFileMgrTrashAsset(napi_env env, napi_callback_i
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
         asyncContext, JS_ERR_PARAMETER_INVALID);
+    MediaLibraryNapiUtils::GenTypeMaskFromArray({ GetMediaTypeFromUri(asyncContext->uri) }, asyncContext->typeMask);
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrTrashAsset", JSTrashAssetExecute,
         JSTrashAssetCompleteCallback);
