@@ -26,6 +26,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_tracer.h"
 #include "smart_album_napi.h"
 #include "directory_ex.h"
 #include "file_ex.h"
