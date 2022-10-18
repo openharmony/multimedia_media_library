@@ -57,7 +57,7 @@ shared_ptr<ThumbnailService> ThumbnailService::GetInstance(const shared_ptr<RdbS
     return thumbnailServiceInstance_;
 }
 
-static int32_t GetDafaultWindowSize(int32_t &size)
+static int32_t GetDefaultWindowSize(int32_t &size)
 {
     auto &displayMgr = OHOS::Rosen::DisplayManager::GetInstance();
     auto display = displayMgr.GetDefaultDisplay();
@@ -82,7 +82,7 @@ int32_t ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
     kvStorePtr_ = kvStore;
     context_ = context;
 
-    return GetDafaultWindowSize(windowSize_);
+    return GetDefaultWindowSize(windowSize_);
 }
 
 void ThumbnailService::ReleaseService()
