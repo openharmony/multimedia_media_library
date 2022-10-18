@@ -71,7 +71,13 @@ FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &res
     resultset_ = resultset;
     networkId_ = "";
     resultNapiType_ = ResultNapiType::TYPE_NAPI_MAX;
-    fetchResType_ = std::is_same<T, FileAsset>::value ? FetchResType::TYPE_FILE : FetchResType::TYPE_ALBUM;
+    if (std::is_same<T, FileAsset>::value) {
+        fetchResType_ = FetchResType::TYPE_FILE;
+    } else if (std::is_same<T, AlbumAsset>::value) {
+        fetchResType_ = FetchResType::TYPE_ALBUM;
+    } else if (std::is_same<T, SmartAlbumAsset>::value) {
+        fetchResType_ = FetchResType::TYPE_SMARTALBUM;
+    }
 }
 
 template <class T>
@@ -365,6 +371,12 @@ void FetchResult<T>::GetObjectFromAsset(AlbumAsset *asset, shared_ptr<NativeRdb:
 }
 
 template<class T>
+void FetchResult<T>::GetObjectFromAsset(SmartAlbumAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+{
+    SetSmartAlbumAsset(asset, resultSet);
+}
+
+template<class T>
 unique_ptr<T> FetchResult<T>::GetObject(shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
 {
     MediaLibraryTracer tracer;
@@ -415,7 +427,19 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
     albumData->SetAlbumTypeMask(typeMask_);
 }
 
+template<class T>
+void FetchResult<T>::SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData,
+    std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+{
+    smartAlbumData->SetAlbumId(get<int32_t>(GetRowValFromColumn(SMARTALBUM_DB_ID, TYPE_INT32, resultSet)));
+    smartAlbumData->SetAlbumName(get<string>(GetRowValFromColumn(SMARTALBUM_DB_NAME, TYPE_STRING, resultSet)));
+    smartAlbumData->SetAlbumCapacity(get<int32_t>(GetRowValFromColumn(SMARTALBUM_DB_CAPACITY, TYPE_INT32, resultSet)));
+    smartAlbumData->SetResultNapiType(resultNapiType_);
+    smartAlbumData->SetTypeMask(typeMask_);
+}
+
 template class FetchResult<FileAsset>;
 template class FetchResult<AlbumAsset>;
+template class FetchResult<SmartAlbumAsset>;
 }  // namespace Media
 }  // namespace OHOS

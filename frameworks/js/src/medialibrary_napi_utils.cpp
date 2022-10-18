@@ -386,6 +386,9 @@ template napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback<unique_pt
 template napi_status MediaLibraryNapiUtils::ParseAlbumFetchOptCallback<unique_ptr<MediaLibraryAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context);
 
+template void MediaLibraryNapiUtils::UpdateMediaTypeSelections<SmartAlbumNapiAsyncContext>(
+    SmartAlbumNapiAsyncContext *context);
+
 template void MediaLibraryNapiUtils::UpdateMediaTypeSelections<AlbumNapiAsyncContext>(
     AlbumNapiAsyncContext *context);
 

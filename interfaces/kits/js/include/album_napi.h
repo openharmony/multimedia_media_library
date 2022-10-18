@@ -47,7 +47,7 @@ class AlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
+    static napi_value CreateAlbumNapi(napi_env env, std::unique_ptr<AlbumAsset> &albumData,
         std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
     int32_t GetAlbumId() const;
     std::shared_ptr<DataShare::DataShareHelper> GetMediaDataHelper() const;

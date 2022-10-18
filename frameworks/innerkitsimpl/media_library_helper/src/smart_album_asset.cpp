@@ -30,6 +30,7 @@ SmartAlbumAsset::SmartAlbumAsset()
     albumPrivateType_ = DEFAULT_SMART_ALBUM_PRIVATE_TYPE;
     albumCapacity_ = DEFAULT_SMART_ALBUM_ALBUMCAPACITY;
     categoryId_ = DEFAULT_SMART_ALBUM_CATEGORYID;
+    albumDateModified_ = DEFAULT_SMART_ALBUM_DATE_MODIFIED;
     categoryName_ = DEFAULT_SMART_ALBUM_CATEGORYNAME;
     coverUri_ = DEFAULT_COVERURI;
 }
@@ -67,6 +68,11 @@ void SmartAlbumAsset::SetCategoryId(const int32_t categoryId)
     categoryId_ = categoryId;
 }
 
+void SmartAlbumAsset::SetAlbumDateModified(const int64_t albumDateModified)
+{
+    albumDateModified_ = albumDateModified;
+}
+
 void SmartAlbumAsset::SetCategoryName(const string categoryName)
 {
     categoryName_ = categoryName;
@@ -85,6 +91,11 @@ void SmartAlbumAsset::SetTypeMask(const string &typeMask)
 void SmartAlbumAsset::SetAlbumPrivateType(const PrivateAlbumType albumPrivateType)
 {
     albumPrivateType_ = albumPrivateType;
+}
+
+void SmartAlbumAsset::SetResultNapiType(const ResultNapiType type)
+{
+    resultNapiType_ = type;
 }
 
 int32_t SmartAlbumAsset::GetAlbumId() const
@@ -117,6 +128,11 @@ int32_t SmartAlbumAsset::GetCategoryId() const
     return categoryId_;
 }
 
+int64_t SmartAlbumAsset::GetAlbumDateModified() const
+{
+    return albumDateModified_;
+}
+
 string SmartAlbumAsset::GetCategoryName() const
 {
     return categoryName_;
@@ -135,6 +151,11 @@ string SmartAlbumAsset::GetTypeMask() const
 PrivateAlbumType SmartAlbumAsset::GetAlbumPrivateType() const
 {
     return albumPrivateType_;
+}
+
+ResultNapiType SmartAlbumAsset::GetResultNapiType() const
+{
+    return resultNapiType_;
 }
 }  // namespace Media
 }  // namespace OHOS

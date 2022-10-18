@@ -79,7 +79,8 @@ enum class DataType : int32_t {
 
 enum class FetchResType : int32_t {
     TYPE_FILE = 1,
-    TYPE_ALBUM
+    TYPE_ALBUM,
+    TYPE_SMARTALBUM
 };
 
 const int32_t SUCCESS = 0;
@@ -116,6 +117,7 @@ const std::string DEFAULT_SMART_ALBUM_TAG = "";
 const PrivateAlbumType DEFAULT_SMART_ALBUM_PRIVATE_TYPE = TYPE_SMART;
 const int32_t DEFAULT_SMART_ALBUM_ALBUMCAPACITY = 0;
 const int32_t DEFAULT_SMART_ALBUM_CATEGORYID = 0;
+const int64_t DEFAULT_SMART_ALBUM_DATE_MODIFIED = 0;
 const std::string DEFAULT_SMART_ALBUM_CATEGORYNAME = "";
 const int64_t DEFAULT_ALBUM_DATE_MODIFIED = 0;
 const int32_t DEFAULT_COUNT = 0;
