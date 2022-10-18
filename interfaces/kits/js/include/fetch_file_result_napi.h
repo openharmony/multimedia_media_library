@@ -41,8 +41,11 @@ public:
                                             std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
     static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<AlbumAsset>> fileResult,
                                             std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
+    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<SmartAlbumAsset>> fileResult,
+                                            std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResultObject();
     std::shared_ptr<FetchResult<AlbumAsset>> GetFetchAlbumResultObject();
+    std::shared_ptr<FetchResult<SmartAlbumAsset>> GetFetchSmartAlbumResultObject();
     std::shared_ptr<DataShare::DataShareHelper> GetMediaDataHelper() const;
 
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResult() const;
@@ -52,6 +55,7 @@ public:
 
 private:
     static void FetchFileResultNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
+    static void GetFetchResult(unique_ptr<FetchFileResultNapi> &obj);
     static napi_value FetchFileResultNapiConstructor(napi_env env, napi_callback_info info);
 
     static napi_value JSGetCount(napi_env env, napi_callback_info info);
@@ -66,12 +70,14 @@ private:
     napi_env env_;
     std::shared_ptr<FetchResult<FileAsset>> fetchFileResult_;
     std::shared_ptr<FetchResult<AlbumAsset>> fetchAlbumResult_;
+    std::shared_ptr<FetchResult<SmartAlbumAsset>> fetchSmartAlbumResult_;
     FetchResType fetchResType_;
     std::string typeMask_;
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
     static inline thread_local std::unique_ptr<FetchResult<FileAsset>> sFetchFileResult_ = nullptr;
     static inline thread_local std::unique_ptr<FetchResult<AlbumAsset>> sFetchAlbumResult_ = nullptr;
+    static inline thread_local std::unique_ptr<FetchResult<SmartAlbumAsset>> sFetchSmartAlbumResult_ = nullptr;
     static inline thread_local FetchResType sFetchResType_ = FetchResType::TYPE_FILE;
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
 };
@@ -86,8 +92,10 @@ public:
     int32_t position;
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<AlbumAsset> albumAsset;
+    std::unique_ptr<SmartAlbumAsset> smartAlbumAsset;
     std::vector<std::unique_ptr<FileAsset>> fileAssetArray;
     std::vector<std::unique_ptr<AlbumAsset>> fileAlbumArray;
+    std::vector<std::unique_ptr<SmartAlbumAsset>> fileSmartAlbumArray;
     void GetFirstAsset();
     void GetObjectAtPosition();
     void GetAllObjectFromFetchResult();

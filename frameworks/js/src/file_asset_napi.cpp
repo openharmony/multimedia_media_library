@@ -203,14 +203,18 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
     return result;
 }
 
-napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
+napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &iAsset,
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
     MediaLibraryTracer tracer;
     tracer.Start("CreateFileAsset");
 
+    if (iAsset == nullptr) {
+        return nullptr;
+    }
+
     napi_value constructor = nullptr;
-    napi_ref constructorRef = (iAsset.GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) ?
+    napi_ref constructorRef = (iAsset->GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) ?
         (userFileMgrConstructor_) : (sConstructor_);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
@@ -220,7 +224,7 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
         sDataHelperMutex_.unlock();
     }
 
-    sFileAsset_ = &iAsset;
+    sFileAsset_ = iAsset.get();
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
@@ -2291,13 +2295,13 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 
 bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value)
 {
-    if (inputKey == MEDIA_DATA_DB_NAME && member_.count(MEDIA_DATA_DB_NAME)) {
+    if ((inputKey == MEDIA_DATA_DB_NAME) && (member_.count(MEDIA_DATA_DB_NAME))) {
         displayName_ = value;
         member_[MEDIA_DATA_DB_NAME] = value;
-    } else if (inputKey == MEDIA_DATA_DB_RELATIVE_PATH && member_.count(MEDIA_DATA_DB_RELATIVE_PATH)) {
+    } else if ((inputKey == MEDIA_DATA_DB_RELATIVE_PATH) && (member_.count(MEDIA_DATA_DB_RELATIVE_PATH))) {
         relativePath_ = value;
         member_[MEDIA_DATA_DB_RELATIVE_PATH] = value;
-    } else if (inputKey == MEDIA_DATA_DB_TITLE && member_.count(MEDIA_DATA_DB_TITLE)) {
+    } else if ((inputKey == MEDIA_DATA_DB_TITLE) && (member_.count(MEDIA_DATA_DB_TITLE))) {
         title_ = value;
         member_[MEDIA_DATA_DB_TITLE] = value;
     } else {
