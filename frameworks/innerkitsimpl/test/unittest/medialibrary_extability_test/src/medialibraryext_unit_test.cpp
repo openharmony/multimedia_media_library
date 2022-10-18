@@ -54,7 +54,7 @@ namespace {
     const string g_invalidUri = "file/test";
     const string g_invalidFileName = "te/st.jpg";
     const string g_invalidDirName = "te/st";
-    const bool g_createAssetFailed = false;
+    const bool CREATE_ASSET_FAILED = false;
 } // namespace
 
 std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t systemAbilityId)
@@ -287,7 +287,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckSetUpEnv_test_001, TestSize.Leve
     // Pictures Album has been create in setup
     MEDIA_DEBUG_LOG("medialib_CheckSetUpEnv_test_001");
     if (g_pictures == nullptr) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
     }
     EXPECT_EQ(IsFileExists(g_pictures->GetPath()), true);
 }
@@ -307,7 +307,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_OpenFile_test_001, TestSize.Level0)
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("OpenFile_test_001.jpg", g_pictures, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri uri(fileAsset->GetUri());
@@ -379,7 +379,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateFile_test_001, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("CreateFile_test_001", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri parentUri(albumAsset->GetUri());
@@ -410,7 +410,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateFile_test_002, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("CreateFile_test_002", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri parentUri(albumAsset->GetUri());
@@ -484,12 +484,12 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateFile_test_005, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("CreateFile_test_005", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("CreateFile_test_005.jpg", albumAsset, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri parentUri(albumAsset->GetUri());
@@ -682,7 +682,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Mkdir_test_008, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("Mkdir_test_008", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri parentUri(g_pictures->GetUri());
@@ -710,12 +710,12 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Delete_test_001, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("Delete_test_001", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Delete_test_001.jpg", albumAsset, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(fileAsset->GetUri());
@@ -761,17 +761,17 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_001, TestSize.Level0)
     }
     unique_ptr<FileAsset> srcAlbumAsset = nullptr;
     if (!CreateAlbum("Move_test_001", g_pictures, srcAlbumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> destAlbumAsset = nullptr;
     if (!CreateAlbum("Move_test_001_dst", g_pictures, destAlbumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Move_test_001.jpg", srcAlbumAsset, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(fileAsset->GetUri());
@@ -807,17 +807,17 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_002, TestSize.Level0)
     }
     unique_ptr<FileAsset> srcAlbumAsset = nullptr;
     if (!CreateAlbum("Move_test_002", g_pictures, srcAlbumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Move_test_002.jpg", srcAlbumAsset, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> destAlbumAsset = nullptr;
     if (!CreateAlbum("Move_test_002_dest", g_pictures, destAlbumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(srcAlbumAsset->GetUri());
@@ -853,7 +853,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_003, TestSize.Level0)
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Move_test_003.jpg", g_pictures, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(fileAsset->GetUri());
@@ -881,7 +881,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_004, TestSize.Level0)
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Move_test_004.jpg", g_pictures, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(fileAsset->GetUri());
@@ -909,7 +909,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_005, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("Move_test_005_dest", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(g_commonPrefix + g_invalidUri);
@@ -937,7 +937,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_006, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("Move_test_006_dest", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(g_distributedPrefix + g_commonUri);
@@ -965,17 +965,17 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_007, TestSize.Level0)
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Move_test_007.jpg", g_pictures, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("Move_test_007_dest", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> tempFileAsset = nullptr;
     if (!CreateFile("Move_test_007.jpg", albumAsset, tempFileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(fileAsset->GetUri());
@@ -1008,7 +1008,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_008, TestSize.Level0)
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Move_test_008.jpg", g_pictures, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(fileAsset->GetUri());
@@ -1049,7 +1049,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_009, TestSize.Level0)
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Move_test_009.jpg", g_pictures, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(fileAsset->GetUri());
@@ -1082,12 +1082,12 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_010, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("Move_test_010", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Move_test_010.jpg", albumAsset, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(albumAsset->GetUri());
@@ -1128,17 +1128,17 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_011, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("Move_test_011", g_download, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> fileAsset1 = nullptr;
     if (!CreateFile("Move_test_011.jpg", albumAsset, fileAsset1)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> fileAsset2 = nullptr;
     if (!CreateFile("Move_test_011.txt", albumAsset, fileAsset2, MEDIA_TYPE_FILE)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(albumAsset->GetUri());
@@ -1166,7 +1166,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_001, TestSize.Level0)
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Rename_test_001.jpg", g_pictures, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(fileAsset->GetUri());
@@ -1201,12 +1201,12 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_002, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("Rename_test_002", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Rename_test_002.jpg", albumAsset, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(albumAsset->GetUri());
@@ -1287,7 +1287,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_005, TestSize.Level0)
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Rename_test_005.jpg", g_pictures, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(fileAsset->GetUri());
@@ -1315,12 +1315,12 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_006, TestSize.Level0)
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Rename_test_006.jpg", g_pictures, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> tempFileAsset = nullptr;
     if (!CreateFile("new_Rename_test_006.jpg", g_pictures, tempFileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(fileAsset->GetUri());
@@ -1348,7 +1348,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_007, TestSize.Level0)
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Rename_test_007.jpg", g_pictures, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     Uri sourceUri(fileAsset->GetUri());
@@ -1372,28 +1372,28 @@ void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
 bool InitListFileTest1(unique_ptr<FileAsset> &albumAsset)
 {
     if (!CreateAlbum("ListFile_test_001", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     unique_ptr<FileAsset> tempAsset = nullptr;
     if (!CreateAlbum("ListFile_test_001", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ListFile_test_001_1.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ListFile_test_001_2.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ListFile_test_001_3.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ListFile_test_001_1.mp4", g_videos, tempAsset, MEDIA_TYPE_VIDEO)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     return true;
@@ -1466,7 +1466,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_001, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!InitListFileTest1(albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     const int64_t offset = 0;
@@ -1490,40 +1490,40 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_001, TestSize.Level0)
 bool InitListFileTest2(unique_ptr<FileAsset> &albumAsset)
 {
     if (!CreateAlbum("ListFile_test_002", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     unique_ptr<FileAsset> tempAsset = nullptr;
     if (!CreateAlbum("ListFile_test_002", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateAlbum("ListFile_002", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ListFile_test_002.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ListFile_test_002_1.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ListFile_test_002.png", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ListFile_002.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ListFile_002_1.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ListFile_002.png", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     return true;
@@ -1616,7 +1616,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_002, TestSize.Level0)
 
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!InitListFileTest2(albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
 
@@ -1682,43 +1682,43 @@ bool InitScanFile(unique_ptr<FileAsset> &albumAsset)
     unique_ptr<FileAsset> tempAsset = nullptr;
     unique_ptr<FileAsset> albumAsset2 = nullptr;
     if (!CreateAlbum("ScanFile_test_001", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateAlbum("ScanFile_test_001", albumAsset, albumAsset2)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ScanFile_test_001_1.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ScanFile_test_001_2.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ScanFile_test_001_3.png", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ScanFile_test_001_4.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ScanFile_test_001_5.jpg", albumAsset, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ScanFile_test_001_6.jpg", albumAsset2, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ScanFile_test_001_7.png", albumAsset2, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     if (!CreateFile("ScanFile_test_001_8.jpg", albumAsset2, tempAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return false;
     }
     return true;
@@ -1740,7 +1740,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_001, TestSize.Level0)
 
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!InitScanFile(albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
 
@@ -1784,7 +1784,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_002, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!InitScanFile(albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     int64_t offset = 0;
@@ -1828,7 +1828,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_003, TestSize.Level0)
 
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!InitScanFile(albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
 
@@ -1873,12 +1873,12 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Access_test_001, TestSize.Level0)
     }
     unique_ptr<FileAsset> albumAsset = nullptr;
     if (!CreateAlbum("Access_test_001", g_pictures, albumAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     unique_ptr<FileAsset> fileAsset = nullptr;
     if (!CreateFile("Access_test_001.jpg", albumAsset, fileAsset)) {
-        EXPECT_EQ(g_createAssetFailed, true);
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
         return;
     }
     bool isExist = false;
