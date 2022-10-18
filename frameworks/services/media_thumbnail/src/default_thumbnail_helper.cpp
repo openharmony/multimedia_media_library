@@ -42,12 +42,10 @@ int32_t DefaultThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
         if (tmpData.thumbnailKey == thumbnailData.thumbnailKey) {
             MEDIA_DEBUG_LOG("CreateThumbnail key is same, no need generate");
             return E_OK;
-        } else if (!ThumbnailUtils::DeleteThumbnailData(opts, thumbnailData)) {
-            MEDIA_ERR_LOG("DeleteThumbnailData Faild");
         }
     }
     if (isSync) {
-        DoCreateThumbnail(opts, thumbnailData, false);
+        DoCreateThumbnail(opts, thumbnailData, true);
     } else {
         IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateThumbnail, opts, thumbnailData, true);
     }
@@ -79,7 +77,10 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts,
     }
 
     if (!ThumbnailUtils::IsImageExist(thumbnailData.thumbnailKey, opts.networkId, opts.kvStore)) {
-        MEDIA_ERR_LOG("image not exist in kvStore");
+        MEDIA_ERR_LOG("image not exist in kvStore, key [%{public}s]", thumbnailData.thumbnailKey.c_str());
+        if (!DoCreateThumbnail(opts, thumbnailData, true)) {
+            return E_ERR;
+        }
         return E_ERR;
     }
 

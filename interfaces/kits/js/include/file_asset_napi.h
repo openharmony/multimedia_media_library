@@ -43,7 +43,7 @@ public:
 
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value CreateFileAsset(napi_env env, FileAsset &iAsset,
+    static napi_value CreateFileAsset(napi_env env, std::unique_ptr<FileAsset> &iAsset,
                                       std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
     static napi_value UserFileMgrCreateAsset(napi_env env, FileAsset &iAsset,
         std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
