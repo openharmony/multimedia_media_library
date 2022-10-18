@@ -21,6 +21,7 @@
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 
 namespace OHOS {
 namespace Media {

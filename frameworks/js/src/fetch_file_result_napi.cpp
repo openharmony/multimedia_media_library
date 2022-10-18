@@ -19,6 +19,7 @@
 #include "album_napi.h"
 #include "hitrace_meter.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_tracer.h"
 #include "smart_album_napi.h"
 
 using OHOS::HiviewDFX::HiLog;
