@@ -163,16 +163,20 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
     return result;
 }
 
-napi_value AlbumNapi::CreateAlbumNapi(napi_env env, AlbumAsset &albumData,
+napi_value AlbumNapi::CreateAlbumNapi(napi_env env, unique_ptr<AlbumAsset> &albumData,
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
+    if (albumData == nullptr) {
+        return nullptr;
+    }
+
     napi_value constructor;
-    napi_ref constructorRef = (albumData.GetResultNapiType() == ResultNapiType::TYPE_MEDIALIBRARY) ?
+    napi_ref constructorRef = (albumData->GetResultNapiType() == ResultNapiType::TYPE_MEDIALIBRARY) ?
         (sConstructor_) : (userFileMgrConstructor_);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
     napi_value result = nullptr;
-    sAlbumData_ = &albumData;
+    sAlbumData_ = albumData.get();
     sMediaDataHelper_ = abilityHelper;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
     sAlbumData_ = nullptr;
