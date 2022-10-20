@@ -16,7 +16,7 @@
 #ifndef MEDIATHUMBNAIL_TEST_H
 #define MEDIATHUMBNAIL_TEST_H
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {

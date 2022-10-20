@@ -13,149 +13,50 @@
  * limitations under the License.
  */
 #include "get_self_permissions.h"
+
 #include <thread>
-#include "hilog/log.h"
 
-using OHOS::HiviewDFX::HiLog;
-using OHOS::HiviewDFX::HiLogLabel;
-
-using namespace testing::ext;
-using namespace OHOS::Security::AccessToken;
+#include "accesstoken_kit.h"
+#include "media_log.h"
+#include "nativetoken_kit.h"
+#include "token_setproc.h"
 
 namespace OHOS {
-namespace Security {
-namespace AccessToken {
-constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "GetSelfPermissions"};
-
-PermissionDef g_infoManagerTestPermDef1 = {
-    .permissionName = "ohos.permission.READ_MEDIA",
-    .bundleName = "ohos.acts.multimedia.mediaLibrary",
-    .grantMode = 1,
-    .availableLevel = APL_NORMAL,
-    .label = "label",
-    .labelId = 1,
-    .description = "READ_MEDIA",
-    .descriptionId = 1
-};
-
-PermissionDef g_infoManagerTestPermDef2 = {
-    .permissionName = "ohos.permission.WRITE_MEDIA",
-    .bundleName = "ohos.acts.multimedia.mediaLibrary",
-    .grantMode = 1,
-    .availableLevel = APL_NORMAL,
-    .label = "label",
-    .labelId = 1,
-    .description = "WRITE_MEDIA",
-    .descriptionId = 1
-};
-
-PermissionDef g_infoManagerTestPermDef3 = {
-    .permissionName = "ohos.permission.FILE_ACCESS_MANAGER",
-    .bundleName = "ohos.acts.multimedia.mediaLibrary",
-    .grantMode = 1,
-    .availableLevel = APL_NORMAL,
-    .label = "label",
-    .labelId = 1,
-    .description = "FILE_ACCESS_MANAGER",
-    .descriptionId = 1
-};
-
-PermissionStateFull g_infoManagerTestState1 = {
-    .permissionName = "ohos.permission.READ_MEDIA",
-    .isGeneral = true,
-    .resDeviceID = {"local"},
-    .grantStatus = {PermissionState::PERMISSION_GRANTED},
-    .grantFlags = {1}
-};
-
-PermissionStateFull g_infoManagerTestState2 = {
-    .permissionName = "ohos.permission.WRITE_MEDIA",
-    .isGeneral = true,
-    .resDeviceID = {"local"},
-    .grantStatus = {PermissionState::PERMISSION_GRANTED},
-    .grantFlags = {1}
-};
-
-PermissionStateFull g_infoManagerTestState3 = {
-    .permissionName = "ohos.permission.FILE_ACCESS_MANAGER",
-    .isGeneral = true,
-    .resDeviceID = {"local"},
-    .grantStatus = {PermissionState::PERMISSION_GRANTED},
-    .grantFlags = {1}
-};
-
-
-HapInfoParams g_infoManagerTestInfoParms = {
-    .userID = 1,
-    .bundleName = "accesstoken_test",
-    .instIndex = 0,
-    .appIDDesc = "testtesttesttest"
-};
-
-HapPolicyParams g_infoManagerTestPolicyPrams = {
-    .apl = APL_NORMAL,
-    .domain = "test.domain",
-    .permList = {g_infoManagerTestPermDef1, g_infoManagerTestPermDef2, g_infoManagerTestPermDef3},
-    .permStateList = {g_infoManagerTestState1, g_infoManagerTestState2, g_infoManagerTestState3}
-};
-
-void GetSelfPermissions::SetUpTestCase()
+namespace Media {
+void PermissionUtilsUnitTest::SetAccessTokenPermission(const std::string &processName,
+    const std::vector<std::string> &permission, uint64_t &tokenId)
 {
-    // make test case clean
-    AccessTokenID tokenID = AccessTokenKit::GetHapTokenID(g_infoManagerTestInfoParms.userID,
-                                                          g_infoManagerTestInfoParms.bundleName,
-                                                          g_infoManagerTestInfoParms.instIndex);
-    AccessTokenKit::DeleteToken(tokenID);
+    auto perms = std::make_unique<const char *[]>(permission.size());
+    for (int i = 0; i < permission.size(); i++) {
+        perms[i] = permission[i].c_str();
+    }
 
-    tokenID = AccessTokenKit::GetHapTokenID(TEST_USER_ID, TEST_BUNDLE_NAME, 0);
-    AccessTokenKit::DeleteToken(tokenID);
-}
-
-void GetSelfPermissions::TearDownTestCase()
-{
-}
-
-void GetSelfPermissions::SetUp()
-{
-    HapInfoParams info = {
-        .userID = TEST_USER_ID,
-        .bundleName = TEST_BUNDLE_NAME,
-        .instIndex = 0,
-        .appIDDesc = "appIDDesc",
+    NativeTokenInfoParams infoInstance = {
+        .dcapsNum = 0,
+        .permsNum = permission.size(),
+        .aclsNum = 0,
+        .dcaps = nullptr,
+        .perms = perms.get(),
+        .acls = nullptr,
+        .processName = processName.c_str(),
+        .aplStr = "system_basic",
     };
+    tokenId = GetAccessTokenId(&infoInstance);
+    if (tokenId == 0) {
+        MEDIA_ERR_LOG("Get Acess Token Id Failed");
+        return;
+    }
+    int ret = SetSelfTokenID(tokenId);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Set Acess Token Id Failed");
+        return;
+    }
+    ret = Security::AccessToken::AccessTokenKit::ReloadNativeTokenInfo();
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Reload Native Token Info Failed");
+        return;
+    }
+}
+} // namespace Media
+} // namespace OHOS
 
-    HapPolicyParams policy = {
-        .apl = APL_NORMAL,
-        .domain = "domain"
-    };
-
-    AccessTokenKit::AllocHapToken(info, policy);
-    AccessTokenID tokenID = AccessTokenKit::GetHapTokenID(g_infoManagerTestInfoParms.userID,
-                                                          g_infoManagerTestInfoParms.bundleName,
-                                                          g_infoManagerTestInfoParms.instIndex);
-    AccessTokenKit::DeleteToken(tokenID);
-    (void)remove("/data/token.json");
-
-    HiLog::Info(LABEL, "SetUp ok.");
-}
-
-void GetSelfPermissions::TearDown()
-{
-}
-
-/**
- * @tc.name: GetSelfPermissionsState001
- * @tc.desc: get permission list state
- * @tc.type: FUNC
- * @tc.require:AR000GK6T6
- */
-HWTEST_F(GetSelfPermissions, GetSelfPermissionsState001, TestSize.Level1)
-{
-    AccessTokenIDEx tokenIdEx = {0};
-    tokenIdEx = AccessTokenKit::AllocHapToken(g_infoManagerTestInfoParms, g_infoManagerTestPolicyPrams);
-    ASSERT_NE(0, tokenIdEx.tokenIdExStruct.tokenID);
-    ASSERT_EQ(0, SetSelfTokenID(tokenIdEx.tokenIdExStruct.tokenID));
-}
-}
-}
-}
