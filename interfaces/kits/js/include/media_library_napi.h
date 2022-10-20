@@ -16,6 +16,8 @@
 #ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_LIBRARY_NAPI_H_
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_LIBRARY_NAPI_H_
 
+#include <mutex>
+
 #include "abs_shared_result_set.h"
 #include "album_napi.h"
 #include "data_ability_helper.h"
@@ -129,9 +131,6 @@ public:
     MediaLibraryNapi();
     ~MediaLibraryNapi();
 
-    static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);
-    static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
-
     ResultNapiType resultNapiType_;
 
 private:
@@ -204,6 +203,8 @@ private:
     static thread_local napi_ref sAudioKeyEnumRef_;
     static thread_local napi_ref sImageVideoKeyEnumRef_;
     static thread_local napi_ref sAlbumKeyEnumRef_;
+
+    static std::mutex sUserFileClientMutex_;
 };
 
 const int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
