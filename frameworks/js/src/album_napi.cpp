@@ -18,6 +18,7 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
+#include "userfile_client.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -28,7 +29,6 @@ using namespace std;
 using namespace OHOS::DataShare;
 thread_local napi_ref AlbumNapi::sConstructor_ = nullptr;
 thread_local AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
-std::shared_ptr<DataShare::DataShareHelper> AlbumNapi::sMediaDataHelper_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
 thread_local napi_ref AlbumNapi::userFileMgrConstructor_ = nullptr;
@@ -145,7 +145,6 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
         std::unique_ptr<AlbumNapi> obj = std::make_unique<AlbumNapi>();
         if (obj != nullptr) {
             obj->env_ = env;
-            obj->abilityHelper_ = sMediaDataHelper_;
             if (sAlbumData_ != nullptr) {
                 obj->SetAlbumNapiProperties(*sAlbumData_);
             }
@@ -164,8 +163,7 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
     return result;
 }
 
-napi_value AlbumNapi::CreateAlbumNapi(napi_env env, unique_ptr<AlbumAsset> &albumData,
-    std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
+napi_value AlbumNapi::CreateAlbumNapi(napi_env env, unique_ptr<AlbumAsset> &albumData)
 {
     if (albumData == nullptr) {
         return nullptr;
@@ -178,15 +176,9 @@ napi_value AlbumNapi::CreateAlbumNapi(napi_env env, unique_ptr<AlbumAsset> &albu
 
     napi_value result = nullptr;
     sAlbumData_ = albumData.get();
-    sMediaDataHelper_ = abilityHelper;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
     sAlbumData_ = nullptr;
     return result;
-}
-
-std::shared_ptr<DataShare::DataShareHelper> AlbumNapi::GetMediaDataHelper() const
-{
-    return abilityHelper_;
 }
 
 std::string AlbumNapi::GetAlbumName() const
@@ -697,7 +689,7 @@ static void GetFileAssetsNative(napi_env env, void *data)
     NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
-        context->objectInfo->GetMediaDataHelper()->Query(uri, context->predicates, context->fetchColumn);
+        UserFileClient::Query(uri, context->predicates, context->fetchColumn);
     context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->networkId_ = context->objectInfo->GetNetworkId();
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
@@ -721,8 +713,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status, vo
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
                                                          "find no data by options");
         } else {
-            napi_value fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchResult),
-                context->objectInfo->sMediaDataHelper_);
+            napi_value fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchResult));
             if (fetchRes == nullptr) {
                 NAPI_ERR_LOG("Failed to get file asset napi object");
                 napi_get_undefined(env, &jsContext->data);
@@ -772,8 +763,7 @@ static void CommitModifyNative(napi_env env, void *data)
     string updateUri = MEDIALIBRARY_DATA_URI;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(updateUri, context->typeMask);
     Uri uri(updateUri);
-    auto helper = objectInfo->GetMediaDataHelper();
-    int changedRows = helper->Update(uri, predicates, valuesBucket);
+    int changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
     if (changedRows > 0) {
         DataSharePredicates filePredicates;
         DataShareValuesBucket fileValuesBucket;
@@ -784,12 +774,12 @@ static void CommitModifyNative(napi_env env, void *data)
         string fileUriStr = MEDIALIBRARY_DATA_URI;
         MediaLibraryNapiUtils::UriAddFragmentTypeMask(fileUriStr, context->typeMask);
         Uri fileUri(fileUriStr);
-        changedRows = helper->Update(fileUri, filePredicates, fileValuesBucket);
+        changedRows = UserFileClient::Update(fileUri, filePredicates, fileValuesBucket);
     }
     context->SaveError(changedRows);
     context->changedRows = changedRows;
 }
-
+ 
 static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
@@ -804,7 +794,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, voi
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
         auto contextUri = make_unique<Uri>(MEDIALIBRARY_ALBUM_URI);
-        context->objectInfo->GetMediaDataHelper()->NotifyChange(*contextUri);
+        UserFileClient::NotifyChange(*contextUri);
     } else {
         napi_get_undefined(env, &jsContext->data);
         context->HandleError(env, jsContext->error);
