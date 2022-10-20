@@ -16,6 +16,7 @@
 
 #include "accesstoken_kit.h"
 #include "datashare_helper.h"
+#include "get_self_permissions.h"
 #include "iservice_registry.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
@@ -27,91 +28,14 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::DataShare;
-using namespace OHOS::Security::AccessToken;
 
 namespace OHOS {
 namespace Media {
 namespace {
-static const int UID = 5003;
-static const std::string TEST_BUNDLE_NAME = "ohos";
-static const int TEST_USER_ID = 0;
-
-Security::AccessToken::PermissionDef g_infoManagerTestPermDef1 = {
-    .permissionName = "ohos.permission.READ_MEDIA",
-    .bundleName = "ohos.acts.multimedia.mediaLibrary",
-    .grantMode = 1,
-    .availableLevel = APL_NORMAL,
-    .label = "label",
-    .labelId = 1,
-    .description = "READ_MEDIA",
-    .descriptionId = 1
-};
-
-Security::AccessToken::PermissionDef g_infoManagerTestPermDef2 = {
-    .permissionName = "ohos.permission.WRITE_MEDIA",
-    .bundleName = "ohos.acts.multimedia.mediaLibrary",
-    .grantMode = 1,
-    .availableLevel = APL_NORMAL,
-    .label = "label",
-    .labelId = 1,
-    .description = "WRITE_MEDIA",
-    .descriptionId = 1
-};
-
-PermissionStateFull g_infoManagerTestState1 = {
-    .permissionName = "ohos.permission.READ_MEDIA",
-    .isGeneral = true,
-    .resDeviceID = {"local"},
-    .grantStatus = {PermissionState::PERMISSION_GRANTED},
-    .grantFlags = {1}
-};
-
-PermissionStateFull g_infoManagerTestState2 = {
-    .permissionName = "ohos.permission.WRITE_MEDIA",
-    .isGeneral = true,
-    .resDeviceID = {"local"},
-    .grantStatus = {PermissionState::PERMISSION_GRANTED},
-    .grantFlags = {1}
-};
-
-HapInfoParams g_infoManagerTestInfoParms = {
-    .userID = 1,
-    .bundleName = "accesstoken_test",
-    .instIndex = 0,
-    .appIDDesc = "testtesttesttest"
-};
-
-HapPolicyParams g_infoManagerTestPolicyPrams = {
-    .apl = APL_NORMAL,
-    .domain = "test.domain",
-    .permList = {g_infoManagerTestPermDef1, g_infoManagerTestPermDef2},
-    .permStateList = {g_infoManagerTestState1, g_infoManagerTestState2}
-};
-}
-}
-}
-
-static void SetUp()
-{
-    HapInfoParams info = {
-        .userID = TEST_USER_ID,
-        .bundleName = TEST_BUNDLE_NAME,
-        .instIndex = 0,
-        .appIDDesc = "appIDDesc",
-    };
-
-    HapPolicyParams policy = {
-        .apl = APL_NORMAL,
-        .domain = "domain"
-    };
-
-    AccessTokenKit::AllocHapToken(info, policy);
-    AccessTokenID tokenID = AccessTokenKit::GetHapTokenID(g_infoManagerTestInfoParms.userID,
-                                                          g_infoManagerTestInfoParms.bundleName,
-                                                          g_infoManagerTestInfoParms.instIndex);
-    AccessTokenKit::DeleteToken(tokenID);
-    (void)remove("/data/token.json");
-}
+constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
+} // namespace
+} // namespace Media
+} // namespace OHOS
 
 static std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t systemAbilityId)
 {
@@ -129,21 +53,6 @@ static std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t
     return DataShare::DataShareHelper::Creator(remoteObj, MEDIALIBRARY_DATA_URI);
 }
 
-static void SetPermission()
-{
-    SetUp();
-    AccessTokenID tokenID = AccessTokenKit::GetHapTokenID(g_infoManagerTestInfoParms.userID,
-                                                          g_infoManagerTestInfoParms.bundleName,
-                                                          g_infoManagerTestInfoParms.instIndex);
-    AccessTokenKit::DeleteToken(tokenID);
-
-    tokenID = AccessTokenKit::GetHapTokenID(TEST_USER_ID, TEST_BUNDLE_NAME, 0);
-    AccessTokenKit::DeleteToken(tokenID);
-    AccessTokenIDEx tokenIdEx = {0};
-    tokenIdEx = AccessTokenKit::AllocHapToken(g_infoManagerTestInfoParms, g_infoManagerTestPolicyPrams);
-    SetSelfTokenID(tokenIdEx.tokenIdExStruct.tokenID);
-}
-
 /*
  * Feature: MediaScanner
  * Function: Strat scanner
@@ -153,8 +62,19 @@ static void SetPermission()
  */
 int32_t main()
 {
-    SetPermission();
-    auto mediaDataShareHelper = CreateDataShareHelper(UID);
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_MEDIA");
+    perms.push_back("ohos.permission.WRITE_MEDIA");
+    perms.push_back("ohos.permission.FILE_ACCESS_MANAGER");
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryScan", perms, tokenId);
+    if (tokenId == 0) {
+        MEDIA_ERR_LOG("Set Access Token Permisson Failed.");
+        return 0;
+    }
+
+    auto mediaDataShareHelper = CreateDataShareHelper(STORAGE_MANAGER_MANAGER_ID);
     if (mediaDataShareHelper == nullptr) {
         MEDIA_ERR_LOG("mediaDataShareHelper fail");
         return 0;
