@@ -97,6 +97,8 @@ shared_ptr<AbsSharedResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     }
 
     string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    strQueryCondition += " GROUP BY " + MEDIA_DATA_DB_BUCKET_ID;
+    cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
     string networkId = cmd.GetOprnDevice();
     if (!networkId.empty()) {
         string tableName = cmd.GetTableName();
