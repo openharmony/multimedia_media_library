@@ -373,6 +373,8 @@ public:
     static void GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask);
     static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask);
     static void UriRemoveAllFragment(std::string &uri);
+    static std::string GetFileIdFromUri(const std::string &uri);
+    static MediaType GetMediaTypeFromUri(const std::string &uri);
     template <class AsyncContext>
     static napi_status GetPredicate(napi_env env, const napi_value arg, const std::string &propName,
         AsyncContext &context, bool isAlbum);
@@ -547,6 +549,7 @@ public:
             }
         }
     }
+
     static std::string GetMediaTypeUri(MediaType mediaType)
     {
         switch (mediaType) {
