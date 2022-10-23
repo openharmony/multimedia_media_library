@@ -41,8 +41,7 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
     MediaLibraryDeviceDb mediaLibraryDeviceDb;
     std::string strQueryCondition =
         DEVICE_DB_DEVICEID + "= '" + deviceInfo.deviceUdid + "'";
-    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::InsertDeviceInfo deviceId = %{public}s",
-        deviceInfo.deviceUdid.c_str());
+    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::InsertDeviceInfo deviceId");
     mediaLibAbsPredDevice.SetWhereClause(strQueryCondition);
     queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
 
@@ -87,8 +86,7 @@ bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const std::shared_ptr<Native
     MediaLibraryDeviceDb mediaLibraryDeviceDb;
     std::string strQueryCondition =
         DEVICE_DB_DEVICEID + " = '" + deviceInfo.deviceUdid + "'";
-    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo deviceId = %{public}s",
-        deviceInfo.deviceUdid.c_str());
+    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo deviceId");
     mediaLibAbsPredDevice.SetWhereClause(strQueryCondition);
     queryResultSet = rdbStore->Query(mediaLibAbsPredDevice, columns);
 
