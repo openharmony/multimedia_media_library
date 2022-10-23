@@ -64,7 +64,7 @@ void MediaLibraryDevice::GetAllDeviceId(
 void MediaLibraryDevice::OnDeviceOnline(
     const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo, const std::string &bundleName)
 {
-    MEDIA_INFO_LOG("OnDeviceOnline deviceId = %{public}s", deviceInfo.deviceId);
+    MEDIA_INFO_LOG("OnDeviceOnline deviceId");
 
     if (mediaLibraryDeviceHandler_ == nullptr) {
         MEDIA_ERR_LOG("OnDeviceOnline mediaLibraryDeviceHandler null");
@@ -96,7 +96,7 @@ void MediaLibraryDevice::OnDeviceOnline(
 void MediaLibraryDevice::OnDeviceOffline(
     const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo, const std::string &bundleName)
 {
-    MEDIA_INFO_LOG("OnDeviceOffline deviceId = %{public}s", deviceInfo.deviceId);
+    MEDIA_INFO_LOG("OnDeviceOffline deviceId");
 
     if (mediaLibraryDeviceHandler_ == nullptr) {
         MEDIA_ERR_LOG("OnDeviceOffline mediaLibraryDeviceHandler null");
@@ -107,7 +107,7 @@ void MediaLibraryDevice::OnDeviceOffline(
         std::string devId = deviceInfo.deviceId;
         auto info = deviceInfoMap_.find(devId);
         if (info == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("OnDeviceOffline can not find deviceId:%{public}s", devId.c_str());
+            MEDIA_ERR_LOG("OnDeviceOffline can not find deviceId");
             return;
         }
         if (mediaLibraryDeviceOperations_ != nullptr) {
@@ -125,12 +125,12 @@ void MediaLibraryDevice::OnDeviceOffline(
 
 void MediaLibraryDevice::OnDeviceChanged(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
-    MEDIA_INFO_LOG("MediaLibraryDevice OnDeviceChanged called deviceId = %{public}s", deviceInfo.deviceId);
+    MEDIA_INFO_LOG("MediaLibraryDevice OnDeviceChanged called deviceId");
 }
 
 void MediaLibraryDevice::OnDeviceReady(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo)
 {
-    MEDIA_INFO_LOG("MediaLibraryDevice OnDeviceReady called deviceId = %{public}s", deviceInfo.deviceId);
+    MEDIA_INFO_LOG("MediaLibraryDevice OnDeviceReady called deviceId");
 }
 
 void MediaLibraryDevice::ClearAllDevices()
@@ -215,7 +215,7 @@ bool MediaLibraryDevice::UpdateDevicieSyncStatus(
         lock_guard<mutex> autoLock(deviceLock_);
         auto info = deviceInfoMap_.find(deviceId);
         if (info == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("UpdateDevicieSyncStatus can not find deviceId:%{public}s", deviceId.c_str());
+            MEDIA_ERR_LOG("UpdateDevicieSyncStatus can not find deviceId");
             return false;
         }
         return mediaLibraryDeviceOperations_->UpdateSyncStatus(rdbStore_, info->second.deviceUdid, syncStatus,
@@ -231,7 +231,7 @@ bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &deviceId, int32
         lock_guard<mutex> autoLock(deviceLock_);
         auto info = deviceInfoMap_.find(deviceId);
         if (info == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("GetDevicieSyncStatus can not find deviceId:%{public}s", deviceId.c_str());
+            MEDIA_ERR_LOG("GetDevicieSyncStatus can not find deviceId");
             return false;
         }
         return mediaLibraryDeviceOperations_->GetSyncStatusById(rdbStore_, deviceId, syncStatus,
@@ -246,7 +246,7 @@ std::string MediaLibraryDevice::GetUdidByNetworkId(const std::string &deviceId, 
     std::string deviceUdid;
     auto ret = deviceManager.GetUdidByNetworkId(bundleName, deviceId, deviceUdid);
     if (ret != 0) {
-        MEDIA_INFO_LOG("GetDeviceUdid error deviceId = %{public}s", deviceId.c_str());
+        MEDIA_INFO_LOG("GetDeviceUdid error deviceId");
         return std::string();
     }
     return deviceUdid;
