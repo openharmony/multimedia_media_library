@@ -14,13 +14,21 @@
  */
 
 #include "media_space_statistics_test.h"
+
+#include "datashare_helper.h"
+#include "get_self_permissions.h"
 #include "hilog/log.h"
+#include "iservice_registry.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_errno.h"
+#include "media_library_manager.h"
 #include "media_log.h"
+#include "media_volume.h"
 #include "scanner_utils.h"
+#include "system_ability_definition.h"
 
 using namespace std;
 using namespace OHOS;
-using namespace OHOS::Media;
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::AppExecFwk;
@@ -39,7 +47,7 @@ std::unique_ptr<FileAsset> GetFile(int mediaTypeId);
 void ClearFile();
 void CreateDataHelper(int32_t systemAbilityId);
 
-int g_uid = 5003;
+constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 int g_albumMediaType = MEDIA_TYPE_ALBUM;
 const int COPY_TIME = 99;
 const int SCAN_WAIT_TIME = 10;
@@ -111,7 +119,7 @@ static const unsigned char FILE_CONTENT_MP4[] = {
 std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper()
 {
     if (sDataShareHelper_ == nullptr) {
-        CreateDataHelper(g_uid);
+        CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
     }
     if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("GetDataShareHelper ::sDataShareHelper_ is nullptr");
@@ -121,6 +129,15 @@ std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper()
 
 void MediaSpaceStatisticsTest::SetUpTestCase(void)
 {
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_MEDIA");
+    perms.push_back("ohos.permission.WRITE_MEDIA");
+    perms.push_back("ohos.permission.FILE_ACCESS_MANAGER");
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaSpaceStatisticsUnitTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: invoked");
     // // make sure board is empty
     ClearFile();
@@ -167,7 +184,7 @@ void MediaSpaceStatisticsTest::TearDownTestCase(void)
 }
 
 // SetUp:Execute before each test case
-void MediaSpaceStatisticsTest::SetUp() {}
+void MediaSpaceStatisticsTest::SetUp(void) {}
 
 void MediaSpaceStatisticsTest::TearDown(void) {}
 

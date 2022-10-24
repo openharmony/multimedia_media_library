@@ -80,6 +80,11 @@ ohos_shared_library("media_library") {
     "hiviewdfx_hilog_native:libhilog",
   ]
 
+  sanitize = {
+    cfi = true
+    debug = false
+  }
+
   part_name = "media_library"
   subsystem_name = "multimedia"
 }

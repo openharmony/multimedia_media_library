@@ -39,22 +39,26 @@ public:
     void SetAlbumUri(const string albumUri);
     void SetAlbumTag(const string albumTag);
     void SetAlbumCapacity(const int32_t albumCapacity);
+    void SetAlbumDateModified(const int64_t albumDateModified);
     void SetCategoryId(const int32_t categoryId);
     void SetCategoryName(const string categoryName);
     void SetCoverUri(const string coverUri);
     void SetTypeMask(const string &typeMask);
     void SetAlbumPrivateType(const PrivateAlbumType albumPrivateType);
+    void SetResultNapiType(const ResultNapiType type);
 
     int32_t GetAlbumId() const;
     string GetAlbumName() const;
     string GetAlbumUri() const;
     string GetAlbumTag() const;
     int32_t GetAlbumCapacity() const;
+    int64_t GetAlbumDateModified() const;
     int32_t GetCategoryId() const;
     string GetCategoryName() const;
     string GetCoverUri() const;
     string GetTypeMask() const;
     PrivateAlbumType GetAlbumPrivateType() const;
+    ResultNapiType GetResultNapiType() const;
 
 private:
     int32_t albumId_;
@@ -64,9 +68,11 @@ private:
     PrivateAlbumType albumPrivateType_;
     int32_t albumCapacity_;
     int32_t categoryId_;
+    int64_t albumDateModified_;
     string categoryName_;
     string coverUri_;
     string typeMask_;
+    ResultNapiType resultNapiType_;
 };
 } // namespace Media
 } // namespace OHOS

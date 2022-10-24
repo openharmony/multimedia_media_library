@@ -32,8 +32,6 @@
 
 #include "hilog/log.h"
 
-#include "medialibrary_tracer.h"
-
 #define MEDIA_HILOG(op, fmt, args...) \
     do {                                  \
         op(M_LOG_LABEL, M_MLOG_TAG ":{%{public}s:%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);  \

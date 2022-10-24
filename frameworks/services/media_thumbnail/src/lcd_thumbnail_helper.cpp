@@ -42,8 +42,6 @@ int32_t LcdThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
         if (tmpData.lcdKey == thumbnailData.lcdKey) {
             MEDIA_DEBUG_LOG("CreateLcd key is same, no need generate");
             return E_OK;
-        } else if (!ThumbnailUtils::DeleteLcdData(opts, thumbnailData)) {
-            MEDIA_ERR_LOG("DeleteLcdData Faild");
         }
     }
 
@@ -80,8 +78,10 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts,
     }
 
     if (!ThumbnailUtils::IsImageExist(thumbnailData.lcdKey, opts.networkId, opts.kvStore)) {
-        MEDIA_ERR_LOG("image not exist in kvStore");
-        return E_ERR;
+        MEDIA_ERR_LOG("image not exist in kvStore, key [%{public}s]", thumbnailData.lcdKey.c_str());
+        if (!DoCreateLcd(opts, thumbnailData, true)) {
+            return E_ERR;
+        }
     }
 
     if (!ThumbnailUtils::GetKvResultSet(opts.kvStore, thumbnailData.lcdKey, opts.networkId, outResultSet)) {

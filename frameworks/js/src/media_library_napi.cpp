@@ -26,6 +26,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_tracer.h"
 #include "smart_album_napi.h"
 #include "directory_ex.h"
 #include "file_ex.h"
@@ -920,7 +921,7 @@ static void MediaLibAlbumsAsyncResult(napi_env env, MediaLibraryAsyncContext *co
         napi_value albumArray = nullptr;
         napi_create_array_with_length(env, context->albumNativeArray.size(), &albumArray);
         for (size_t i = 0; i < context->albumNativeArray.size(); i++) {
-            napi_value albumNapiObj = AlbumNapi::CreateAlbumNapi(env, *(context->albumNativeArray[i]),
+            napi_value albumNapiObj = AlbumNapi::CreateAlbumNapi(env, context->albumNativeArray[i],
                 context->objectInfo->sDataShareHelper_);
             napi_set_element(env, albumArray, i, albumNapiObj);
         }
@@ -941,7 +942,7 @@ static void UserFileMgrAlbumsAsyncResult(napi_env env, MediaLibraryAsyncContext 
             context->objectInfo->sDataShareHelper_);
         if (fileResult == nullptr) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                "Failed to create js object for Fetch File Result");
+                "Failed to create js object for Fetch Album Result");
         } else {
             jsContext->data = fileResult;
             jsContext->status = true;
@@ -1069,7 +1070,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
                 "Obtain file asset failed");
             napi_get_undefined(env, &jsContext->data);
         } else {
-            jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
+            jsFileAsset = FileAssetNapi::CreateFileAsset(env, context->fileAsset,
                                                          context->objectInfo->sDataShareHelper_);
             if (jsFileAsset == nullptr) {
                 NAPI_ERR_LOG("Failed to get file asset napi object");
@@ -1400,20 +1401,6 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status, void
     delete context;
 }
 
-static MediaType GetMediaTypeFromUri(const string &uri)
-{
-    if (uri.find(MEDIALIBRARY_IMAGE_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_IMAGE;
-    } else if (uri.find(MEDIALIBRARY_VIDEO_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_VIDEO;
-    } else if (uri.find(MEDIALIBRARY_AUDIO_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_AUDIO;
-    } else if (uri.find(MEDIALIBRARY_FILE_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_FILE;
-    }
-    return MediaType::MEDIA_TYPE_ALL;
-}
-
 static void JSTrashAssetExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -1460,7 +1447,7 @@ static void JSTrashAssetCompleteCallback(napi_env env, napi_status status, void 
     napi_get_undefined(env, &jsContext->data);
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
-        Media::MediaType mediaType = GetMediaTypeFromUri(context->uri);
+        Media::MediaType mediaType = MediaLibraryNapiUtils::GetMediaTypeFromUri(context->uri);
         string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         context->objectInfo->sDataShareHelper_->NotifyChange(modifyNotify);
@@ -2154,7 +2141,7 @@ static void SetSmartAlbumData(SmartAlbumAsset* smartAlbumData, shared_ptr<DataSh
     smartAlbumData->SetAlbumId(get<int32_t>(ResultSetUtils::GetValFromColumn(SMARTALBUM_DB_ID, resultSet, TYPE_INT32)));
     smartAlbumData->SetAlbumName(get<string>(ResultSetUtils::GetValFromColumn(SMARTALBUM_DB_NAME, resultSet,
         TYPE_STRING)));
-    smartAlbumData->SetAlbumCapacity(get<int32_t>(ResultSetUtils::GetValFromColumn(SMARTABLUMASSETS_ALBUMCAPACITY,
+    smartAlbumData->SetAlbumCapacity(get<int32_t>(ResultSetUtils::GetValFromColumn(SMARTALBUM_DB_CAPACITY,
         resultSet, TYPE_INT32)));
     smartAlbumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_SMARTALBUM, context->networkId) +
         "/" + to_string(smartAlbumData->GetAlbumId()));
@@ -2163,29 +2150,44 @@ static void SetSmartAlbumData(SmartAlbumAsset* smartAlbumData, shared_ptr<DataSh
 
 static void GetAllSmartAlbumResultDataExecute(napi_env env, void *data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetResultDataExecute");
+
     auto context = static_cast<MediaLibraryAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NAPI_INFO_LOG("context->privateAlbumType = %{public}d", context->privateAlbumType);
-    DataShare::DataSharePredicates predicates;
+
     if (context->objectInfo->sDataShareHelper_ == nullptr) {
         context->error = ERR_INVALID_OUTPUT;
     }
     if (context->privateAlbumType == TYPE_TRASH) {
-        predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + to_string(TRASH_ALBUM_ID_VALUES));
+        context->predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + to_string(TRASH_ALBUM_ID_VALUES));
         NAPI_INFO_LOG("context->privateAlbumType == TYPE_TRASH");
     }
     if (context->privateAlbumType == TYPE_FAVORITE) {
-        predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + to_string(FAVOURITE_ALBUM_ID_VALUES));
+        context->predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + to_string(FAVOURITE_ALBUM_ID_VALUES));
         NAPI_INFO_LOG("context->privateAlbumType == TYPE_FAVORITE");
     }
 
     vector<string> columns;
-    string uriStr = MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTABLUMASSETS_VIEW_NAME;
+    string uriStr = MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTALBUM_TABLE;
+    if (!context->networkId.empty()) {
+        uriStr = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER +
+            "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTALBUM_TABLE;
+    }
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriStr, context->typeMask);
     Uri uri(uriStr);
-    auto resultSet =context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
+    auto resultSet =context->objectInfo->sDataShareHelper_->Query(uri, context->predicates, columns);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr");
+        return;
+    }
+
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        context->fetchSmartAlbumResult = make_unique<FetchResult<SmartAlbumAsset>>(move(resultSet));
+        context->fetchSmartAlbumResult->SetNetworkId(context->networkId);
+        context->fetchSmartAlbumResult->resultNapiType_ = context->resultNapiType;
+        context->fetchSmartAlbumResult->typeMask_ = context->typeMask;
         return;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -2197,8 +2199,72 @@ static void GetAllSmartAlbumResultDataExecute(napi_env env, void *data)
     }
 }
 
+static void MediaLibSmartAlbumsAsyncResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    if (context->smartAlbumData != nullptr) {
+        NAPI_ERR_LOG("context->smartAlbumData != nullptr");
+        jsContext->status = true;
+        napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, context->smartAlbumData,
+            context->objectInfo->sDataShareHelper_);
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->data = albumNapiObj;
+    } else if (!context->privateSmartAlbumNativeArray.empty()) {
+        NAPI_ERR_LOG("context->privateSmartAlbumNativeArray.empty()");
+        jsContext->status = true;
+        napi_value albumArray = nullptr;
+        napi_create_array(env, &albumArray);
+        for (size_t i = 0; i < context->privateSmartAlbumNativeArray.size(); i++) {
+            napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env,
+                context->privateSmartAlbumNativeArray[i],
+                context->objectInfo->sDataShareHelper_);
+            napi_set_element(env, albumArray, i, albumNapiObj);
+        }
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->data = albumArray;
+    } else {
+        NAPI_ERR_LOG("No fetch file result found!");
+        napi_get_undefined(env, &jsContext->data);
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to obtain Fetch File Result");
+    }
+}
+
+static void UserFileMgrSmartAlbumsAsyncResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    if (context->fetchSmartAlbumResult->GetCount() < 0) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
+            "find no data by options");
+    } else {
+        napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchSmartAlbumResult),
+            context->objectInfo->sDataShareHelper_);
+        if (fileResult == nullptr) {
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+                "Failed to create js object for Fetch SmartAlbum Result");
+        } else {
+            jsContext->data = fileResult;
+            jsContext->status = true;
+            napi_get_undefined(env, &jsContext->error);
+        }
+    }
+}
+
+static void SmartAlbumsAsyncResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    if (context->resultNapiType == ResultNapiType::TYPE_MEDIALIBRARY) {
+        MediaLibSmartAlbumsAsyncResult(env, context, jsContext);
+    } else {
+        UserFileMgrSmartAlbumsAsyncResult(env, context, jsContext);
+    }
+}
+
 static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status, void *data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetPrivateAlbumCallbackComplete");
+
     auto context = static_cast<MediaLibraryAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
@@ -2209,33 +2275,10 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status, vo
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
             "Query for get fileAssets failed");
     } else {
-        if (context->smartAlbumData != nullptr) {
-            NAPI_ERR_LOG("context->smartAlbumData != nullptr");
-            jsContext->status = true;
-            napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumData),
-                context->objectInfo->sDataShareHelper_);
-            napi_get_undefined(env, &jsContext->error);
-            jsContext->data = albumNapiObj;
-        } else if (!context->privateSmartAlbumNativeArray.empty()) {
-            NAPI_ERR_LOG("context->privateSmartAlbumNativeArray.empty()");
-            jsContext->status = true;
-            napi_value albumArray = nullptr;
-            napi_create_array(env, &albumArray);
-            for (size_t i = 0; i < context->privateSmartAlbumNativeArray.size(); i++) {
-                napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env,
-                    *(context->privateSmartAlbumNativeArray[i]),
-                    context->objectInfo->sDataShareHelper_);
-                napi_set_element(env, albumArray, i, albumNapiObj);
-            }
-            napi_get_undefined(env, &jsContext->error);
-            jsContext->data = albumArray;
-        } else {
-            NAPI_ERR_LOG("No fetch file result found!");
-            napi_get_undefined(env, &jsContext->data);
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                "Failed to obtain Fetch File Result");
-        }
+        SmartAlbumsAsyncResult(env, context, jsContext);
     }
+
+    tracer.Finish();
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
@@ -2261,7 +2304,7 @@ static void SmartAlbumsAsyncCallbackComplete(napi_env env, napi_status status, v
             napi_create_array(env, &albumArray);
             for (size_t i = 0; i < context->smartAlbumNativeArray.size(); i++) {
                 napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env,
-                    *(context->smartAlbumNativeArray[i]),
+                    context->smartAlbumNativeArray[i],
                     context->objectInfo->sDataShareHelper_);
                 napi_set_element(env, albumArray, i, albumNapiObj);
             }
@@ -2380,7 +2423,7 @@ static void JSCreateSmartAlbumCompleteCallback(napi_env env, napi_status status,
                 "No albums found");
         } else {
             jsContext->status = true;
-            napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumNativeArray[0]),
+            napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, context->smartAlbumNativeArray[0],
                                                                            context->objectInfo->sDataShareHelper_);
             jsContext->data = albumNapiObj;
             napi_get_undefined(env, &jsContext->error);
@@ -3221,9 +3264,9 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
 static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    constexpr size_t MIN_ARGS = ARGS_ONE;
-    constexpr size_t MAX_ARGS = ARGS_THREE;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, MIN_ARGS, MAX_ARGS) ==
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_THREE;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
         napi_ok, "Failed to get object info");
 
     /* Set mediaTypes to get typeMask */
@@ -3340,6 +3383,8 @@ napi_value MediaLibraryNapi::UserFileMgrTrashAsset(napi_env env, napi_callback_i
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
         asyncContext, JS_ERR_PARAMETER_INVALID);
+    MediaLibraryNapiUtils::GenTypeMaskFromArray({ MediaLibraryNapiUtils::GetMediaTypeFromUri(asyncContext->uri) },
+        asyncContext->typeMask);
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrTrashAsset", JSTrashAssetExecute,
         JSTrashAssetCompleteCallback);
@@ -3355,7 +3400,9 @@ napi_value MediaLibraryNapi::UserFileMgrGetPrivateAlbum(napi_env env, napi_callb
         asyncContext->privateAlbumType), asyncContext, JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     // PrivateAlbum only support image and video so far
-    MediaLibraryNapiUtils::GenTypeMaskFromArray({ MediaType::MEDIA_TYPE_IMAGE }, asyncContext->typeMask);
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_IMAGE);
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
+    MediaLibraryNapiUtils::GenTypeMaskFromArray(asyncContext->mediaTypes, asyncContext->typeMask);
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetPrivateAlbum",
         GetAllSmartAlbumResultDataExecute, GetPrivateAlbumCallbackComplete);
