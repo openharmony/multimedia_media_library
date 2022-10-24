@@ -20,10 +20,11 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_object_utils.h"
+#include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_type_const.h"
-#include "medialibrary_smartalbum_map_db.h"
+#include "result_set_utils.h"
 #include "scanner_utils.h"
 #include "uri_helper.h"
 
@@ -101,7 +102,7 @@ shared_ptr<AbsSharedResultSet> MediaFileExtentionUtils::GetResultSetFromDb(strin
     Uri queryUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER);
     vector<string> columns;
     DataSharePredicates predicates;
-    predicates.EqualTo(field, input)->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, NOT_ISTRASH);
+    predicates.EqualTo(field, input)->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, NOT_TRASHED);
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr,
         "Failed to obtain value from database, field: %{public}s, value: %{public}s", field.c_str(), input.c_str());
@@ -252,7 +253,7 @@ int32_t GetListFilePredicates(const FileInfo &parentInfo, const DistributedFS::F
         return E_URI_IS_NOT_ALBUM;
     }
     selection = MEDIA_DATA_DB_RELATIVE_PATH + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? ";
-    selectionArgs = { relativePath, to_string(NOT_ISTRASH) };
+    selectionArgs = { relativePath, to_string(NOT_TRASHED) };
     if (!filter.GetHasFilter()) {
         return E_SUCCESS;
     }
@@ -334,7 +335,7 @@ shared_ptr<AbsSharedResultSet> GetMediaRootResult(const FileInfo &parentInfo, Me
     Uri uri(GetQueryUri(parentInfo, uriType));
     DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, MimeType2MediaType(parentInfo.mimeType));
-    predicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_ISTRASH));
+    predicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
     predicates.Limit(maxCount, offset);
     vector<string> columns = { MEDIA_DATA_DB_BUCKET_ID, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_DATE_MODIFIED };
     return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
@@ -345,7 +346,8 @@ shared_ptr<AbsSharedResultSet> GetListRootResult(const FileInfo &parentInfo, Med
 {
     string selection = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? AND " +
         MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT ?, ?";
-    vector<string> selectionArgs = { to_string(ROOT_PARENT_ID), to_string(MEDIA_TYPE_NOFILE), to_string(NOT_ISTRASH),
+    vector<string> selectionArgs = { to_string(ROOT_PARENT_ID),
+        to_string(MEDIA_TYPE_NOFILE), to_string(NOT_TRASHED),
         to_string(offset), to_string(maxCount) };
     Uri uri(GetQueryUri(parentInfo, uriType));
     return GetResult(uri, uriType, selection, selectionArgs);
@@ -534,7 +536,7 @@ shared_ptr<AbsSharedResultSet> SetScanFileSelection(const FileInfo &parentInfo, 
     selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_NOFILE);
     selection += " AND " + MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT ?, ?";
-    selectionArgs.push_back(to_string(NOT_ISTRASH));
+    selectionArgs.push_back(to_string(NOT_TRASHED));
     selectionArgs.push_back(to_string(offset));
     selectionArgs.push_back(to_string(maxCount));
     Uri uri(GetQueryUri(parentInfo, uriType));
@@ -614,7 +616,7 @@ int MediaFileExtentionUtils::Access(const Uri &uri, bool &isExist)
     CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckUriValid(sourceUri), E_URI_INVALID,
         "Access::invalid uri: %{public}s", sourceUri.c_str());
     shared_ptr<AbsSharedResultSet> result = GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri);
-    if ((result == nullptr) || (GetInt32Val(MEDIA_DATA_DB_IS_TRASH, result) != NOT_ISTRASH)) {
+    if ((result == nullptr) || (GetInt32Val(MEDIA_DATA_DB_IS_TRASH, result) != NOT_TRASHED)) {
         MEDIA_ERR_LOG("Access::uri is not correct: %{public}s", sourceUri.c_str());
         return E_INVALID_URI;
     }
@@ -628,7 +630,7 @@ int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &file
     CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckUriValid(uri), E_URI_INVALID,
         "UriToFileInfo::invalid uri: %{public}s", uri.c_str());
     shared_ptr<AbsSharedResultSet> result = GetResultSetFromDb(MEDIA_DATA_DB_URI, uri);
-    if ((result == nullptr) || (GetInt32Val(MEDIA_DATA_DB_IS_TRASH, result) != NOT_ISTRASH)) {
+    if ((result == nullptr) || (GetInt32Val(MEDIA_DATA_DB_IS_TRASH, result) != NOT_TRASHED)) {
         MEDIA_ERR_LOG("UriToFileInfo::uri is not correct: %{public}s", uri.c_str());
         return E_INVALID_URI;
     }
@@ -840,13 +842,13 @@ int32_t CheckFileExtension(const string &relativePath, const string &name, int32
 {
     unordered_map<string, DirAsset> dirQuerySetMap;
     MediaLibraryDataManager::GetInstance()->MakeDirQuerySetMap(dirQuerySetMap);
-    MediaLibraryDirOperations dirOprn;
     ValuesBucket values;
     values.PutString(MEDIA_DATA_DB_NAME, name);
     values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    return dirOprn.HandleDirOperations(MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION,
-        values, MediaLibraryDataManager::GetInstance()->rdbStore_, dirQuerySetMap);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE, values);
+    cmd.SetDirQuerySetMap(dirQuerySetMap);
+    return MediaLibraryObjectUtils::CheckDirExtension(cmd);
 }
 
 void GetMoveSubFile(const string &srcPath, shared_ptr<AbsSharedResultSet> &result)

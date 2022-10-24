@@ -346,6 +346,16 @@ void FileAsset::SetRecyclePath(const string &recyclePath)
     member_[MEDIA_DATA_DB_RECYCLE_PATH] = recyclePath;
 }
 
+const string FileAsset::GetBundleName() const
+{
+    return GetStrMember(MEDIA_DATA_BUNDLENAME);
+}
+
+void FileAsset::SetBundleName(const string &bundleName)
+{
+    member_[MEDIA_DATA_BUNDLENAME] = bundleName;
+}
+
 ResultNapiType FileAsset::GetResultNapiType() const
 {
     return resultNapiType_;

@@ -122,6 +122,8 @@ public:
     void SetSelfId(const std::string &selfId);
     int32_t GetIsTrash() const;
     void SetIsTrash(int32_t isTrash);
+    const std::string GetBundleName() const;
+    void SetBundleName(const std::string &bundleName);
 
     const std::string &GetRecyclePath() const;
     void SetRecyclePath(const std::string &recyclePath);

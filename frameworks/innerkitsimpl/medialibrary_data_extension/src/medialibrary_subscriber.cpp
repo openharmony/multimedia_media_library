@@ -98,6 +98,10 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 
         std::string srcPath = "/storage/media/local/files";
         MediaScannerManager::GetInstance()->ScanDir(srcPath, nullptr);
+        result = dataManager->DoTrashAging();
+        if (result != E_OK) {
+            MEDIA_ERR_LOG("DoTrashAging faild");
+        }
     } else {
         MEDIA_DEBUG_LOG("DoBackgroundOperation success isScreenOff_ %{public}d, isPowerConnected_ %{public}d",
             isScreenOff_, isPowerConnected_);

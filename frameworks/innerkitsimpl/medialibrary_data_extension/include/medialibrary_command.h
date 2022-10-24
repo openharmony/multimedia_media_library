@@ -18,8 +18,10 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "abs_rdb_predicates.h"
+#include "dir_asset.h"
 #include "medialibrary_db_const.h"
 #include "uri.h"
 #include "values_bucket.h"
@@ -52,6 +54,7 @@ enum class OperationType : uint32_t {
     ISDICTIONARY,
     GETCAPACITY,
     SCAN,
+    TRASH,
     GENERATE,
     AGING,
     DISTRIBUTE_AGING,
@@ -69,7 +72,6 @@ public:
         const NativeRdb::ValuesBucket &value);
     MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
         const std::string &networkId);
-
     MediaLibraryCommand() = delete;
     ~MediaLibraryCommand();
     MediaLibraryCommand(const MediaLibraryCommand &) = delete;
@@ -85,10 +87,16 @@ public:
     const std::string &GetOprnFileId();
     const std::string &GetOprnDevice();
     const Uri &GetUri() const;
+    const std::string &GetBundleName();
+    const std::string &GetDeviceName();
+    const std::unordered_map<std::string, DirAsset> &GetDirQuerySetMap();
 
     void SetOprnAssetId(const std::string &oprnId);
     void SetValueBucket(const NativeRdb::ValuesBucket &value);
     void SetTableName(const std::string &tableName);
+    void SetBundleName(const std::string &bundleName);
+    void SetDeviceName(const std::string &deviceName);
+    void SetDirQuerySetMap(const std::unordered_map<std::string, DirAsset> &dirQuerySetMap);
 
 private:
     void SetOprnObject(const OperationObject &oprnObject);
@@ -108,6 +116,9 @@ private:
     std::string oprnFileId_;
     std::string oprnDevice_;
     std::string tableName_;
+    std::string bundleName_;
+    std::string deviceName_;
+    std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
 };
 } // namespace Media
 } // namespace OHOS

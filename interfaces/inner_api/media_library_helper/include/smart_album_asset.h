@@ -22,7 +22,6 @@
 #include "medialibrary_type_const.h"
 namespace OHOS {
 namespace Media {
-using namespace std;
 /**
  * @brief Data class for album details
  *
@@ -35,44 +34,50 @@ public:
     virtual ~SmartAlbumAsset();
 
     void SetAlbumId(const int32_t albumId);
-    void SetAlbumName(const string albumName);
-    void SetAlbumUri(const string albumUri);
-    void SetAlbumTag(const string albumTag);
+    void SetAlbumName(const std::string &albumName);
+    void SetAlbumUri(const std::string &albumUri);
+    void SetAlbumTag(const std::string &albumTag);
     void SetAlbumCapacity(const int32_t albumCapacity);
     void SetAlbumDateModified(const int64_t albumDateModified);
     void SetCategoryId(const int32_t categoryId);
-    void SetCategoryName(const string categoryName);
-    void SetCoverUri(const string coverUri);
-    void SetTypeMask(const string &typeMask);
+    void SetCategoryName(const std::string &categoryName);
+    void SetCoverUri(const std::string &coverUri);
     void SetAlbumPrivateType(const PrivateAlbumType albumPrivateType);
     void SetResultNapiType(const ResultNapiType type);
+    void SetDescription(const std::string &description);
+    void SetExpiredTime(const int32_t expiredTime);
+    void SetTypeMask(const std::string &typeMask);
 
     int32_t GetAlbumId() const;
-    string GetAlbumName() const;
-    string GetAlbumUri() const;
-    string GetAlbumTag() const;
+    std::string GetAlbumName() const;
+    std::string GetAlbumUri() const;
+    std::string GetAlbumTag() const;
     int32_t GetAlbumCapacity() const;
     int64_t GetAlbumDateModified() const;
     int32_t GetCategoryId() const;
-    string GetCategoryName() const;
-    string GetCoverUri() const;
-    string GetTypeMask() const;
+    std::string GetCategoryName() const;
+    std::string GetCoverUri() const;
+    std::string GetTypeMask() const;
     PrivateAlbumType GetAlbumPrivateType() const;
     ResultNapiType GetResultNapiType() const;
+    std::string GetDescription() const;
+    int32_t GetExpiredTime() const;
 
 private:
     int32_t albumId_;
     std::string albumName_;
-    string albumUri_;
-    string albumTag_;
+    std::string albumUri_;
+    std::string albumTag_;
     PrivateAlbumType albumPrivateType_;
     int32_t albumCapacity_;
     int32_t categoryId_;
     int64_t albumDateModified_;
-    string categoryName_;
-    string coverUri_;
-    string typeMask_;
     ResultNapiType resultNapiType_;
+    std::string typeMask_;
+    std::string categoryName_;
+    std::string coverUri_;
+    std::string description_;
+    int32_t expiredTime_;
 };
 } // namespace Media
 } // namespace OHOS
