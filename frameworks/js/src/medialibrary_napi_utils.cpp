@@ -240,6 +240,34 @@ void MediaLibraryNapiUtils::UriRemoveAllFragment(std::string &uri)
     }
 }
 
+std::string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
+{
+    string id = "-1";
+
+    string temp = uri;
+    UriRemoveAllFragment(temp);
+    size_t pos = temp.rfind('/');
+    if (pos != std::string::npos) {
+        id = temp.substr(pos + 1);
+    }
+
+    return id;
+}
+
+MediaType MediaLibraryNapiUtils::GetMediaTypeFromUri(const string &uri)
+{
+    if (uri.find(MEDIALIBRARY_IMAGE_URI) != string::npos) {
+        return MediaType::MEDIA_TYPE_IMAGE;
+    } else if (uri.find(MEDIALIBRARY_VIDEO_URI) != string::npos) {
+        return MediaType::MEDIA_TYPE_VIDEO;
+    } else if (uri.find(MEDIALIBRARY_AUDIO_URI) != string::npos) {
+        return MediaType::MEDIA_TYPE_AUDIO;
+    } else if (uri.find(MEDIALIBRARY_FILE_URI) != string::npos) {
+        return MediaType::MEDIA_TYPE_FILE;
+    }
+    return MediaType::MEDIA_TYPE_ALL;
+}
+
 template <class AsyncContext>
 bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
     shared_ptr<DataShareAbsPredicates> &predicate, bool isAlbum)
@@ -257,7 +285,7 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
                 return false;
             }
             string uri = item.singleParams[VALUE_IDX].operator string();
-	    UriRemoveAllFragment(uri);
+            UriRemoveAllFragment(uri);
             string fileId;
             MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(uri, context->networkId, fileId);
             item.singleParams[FIELD_IDX] = isAlbum ? DataShare::DataSharePredicatesObject(MEDIA_DATA_DB_BUCKET_ID) :

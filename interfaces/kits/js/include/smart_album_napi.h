@@ -81,6 +81,8 @@ private:
     static napi_value JSRemoveAsset(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumFileAssets(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetAssets(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrRecoverAsset(napi_env env, napi_callback_info info);
     int32_t albumId_;
     std::string albumName_;
     std::string albumUri_;
