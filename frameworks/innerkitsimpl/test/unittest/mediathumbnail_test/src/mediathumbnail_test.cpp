@@ -18,6 +18,7 @@
 #include <unistd.h>
 
 #include "datashare_helper.h"
+#include "get_self_permissions.h"
 #include "iservice_registry.h"
 #include "medialibrary_db_const.h"
 #include "media_log.h"
@@ -31,7 +32,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-int g_uid = 5003;
+constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 const int32_t PARAM1 = 1;
 std::shared_ptr<MediaThumbnailHelper> g_thumbnailHelper = nullptr;
 std::shared_ptr<DataShare::DataShareHelper> g_mediaDataShareHelper = nullptr;
@@ -55,8 +56,17 @@ std::shared_ptr<DataShare::DataShareHelper> CreateDataHelper(int32_t systemAbili
 void MediaThumbnailTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("SetUpTestCase invoked");
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_MEDIA");
+    perms.push_back("ohos.permission.WRITE_MEDIA");
+    perms.push_back("ohos.permission.FILE_ACCESS_MANAGER");
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaThumbnailUnitTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
     g_thumbnailHelper = std::make_shared<MediaThumbnailHelper>();
-    g_mediaDataShareHelper = CreateDataHelper(g_uid);
+    g_mediaDataShareHelper = CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
     if (g_mediaDataShareHelper == nullptr) {
         MEDIA_ERR_LOG("SetUpTestCase::DataShareHelper == nullptr");
         return;
