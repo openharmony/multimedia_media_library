@@ -108,6 +108,8 @@ napi_value SmartAlbumNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("count", JSGetSmartAlbumCapacity),
             DECLARE_NAPI_GETTER("coverUri", JSGetSmartAlbumCoverUri),
             DECLARE_NAPI_FUNCTION("getPhotoAssets", UserFileMgrGetAssets),
+            DECLARE_NAPI_FUNCTION("delete", UserFileMgrDeleteAsset),
+            DECLARE_NAPI_FUNCTION("recover", UserFileMgrRecoverAsset),
         }
     };
 
@@ -1033,6 +1035,141 @@ napi_value SmartAlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAssets", GetFileAssetsNative,
         JSGetFileAssetsCompleteCallback);
+}
+
+static void JSRecoverAssetExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSRecoverAssetExecute");
+
+    auto context = static_cast<SmartAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto dataShareHelper = context->objectInfo->sMediaDataHelper;
+    if (dataShareHelper == nullptr) {
+        context->error = JS_ERR_INNER_FAIL;
+        NAPI_ERR_LOG("sMediaDataHelper is not exist");
+        return;
+    }
+
+    string recoverUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(recoverUri, context->typeMask);
+    Uri recoverAssetUri(recoverUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
+    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, stoi(MediaLibraryNapiUtils::GetFileIdFromUri(context->uri)));
+    int retVal = dataShareHelper->Insert(recoverAssetUri, valuesBucket);
+    context->SaveError(retVal);
+}
+
+static void JSRecoverAssetCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSRecoverAssetCompleteCallback");
+
+    SmartAlbumNapiAsyncContext *context = static_cast<SmartAlbumNapiAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    CHECK_NULL_PTR_RETURN_VOID(jsContext, "jsContext context is null");
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        Media::MediaType mediaType = MediaLibraryNapiUtils::GetMediaTypeFromUri(context->uri);
+        string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+        Uri modifyNotify(notifyUri);
+        context->objectInfo->sMediaDataHelper->NotifyChange(modifyNotify);
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+    if (context->work != nullptr) {
+        tracer.Finish();
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+
+    delete context;
+}
+
+napi_value SmartAlbumNapi::UserFileMgrRecoverAsset(napi_env env, napi_callback_info info)
+{
+    napi_value ret = nullptr;
+    unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = make_unique<SmartAlbumNapiAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
+        asyncContext, JS_ERR_PARAMETER_INVALID);
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAssets", JSRecoverAssetExecute,
+        JSRecoverAssetCompleteCallback);
+}
+
+static void JSDeleteAssetExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDeleteAssetExecute");
+
+    auto context = static_cast<SmartAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto dataShareHelper = context->objectInfo->sMediaDataHelper;
+    if (dataShareHelper == nullptr) {
+        context->error = JS_ERR_INNER_FAIL;
+        NAPI_ERR_LOG("sMediaDataHelper is not exist");
+        return;
+    }
+
+    string deleteId = MediaLibraryNapiUtils::GetFileIdFromUri(context->uri);
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + "/" + deleteId;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, context->typeMask);
+    Uri deleteAssetUri(deleteUri);
+    int retVal = dataShareHelper->Delete(deleteAssetUri, {});
+    context->SaveError(retVal);
+}
+
+static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDeleteAssetCompleteCallback");
+
+    SmartAlbumNapiAsyncContext *context = static_cast<SmartAlbumNapiAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    CHECK_NULL_PTR_RETURN_VOID(jsContext, "jsContext context is null");
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        Media::MediaType mediaType = MediaLibraryNapiUtils::GetMediaTypeFromUri(context->uri);
+        string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+        Uri modifyNotify(notifyUri);
+        context->objectInfo->sMediaDataHelper->NotifyChange(modifyNotify);
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+    if (context->work != nullptr) {
+        tracer.Finish();
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+
+    delete context;
+}
+
+napi_value SmartAlbumNapi::UserFileMgrDeleteAsset(napi_env env, napi_callback_info info)
+{
+    napi_value ret = nullptr;
+    unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = make_unique<SmartAlbumNapiAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
+        asyncContext, JS_ERR_PARAMETER_INVALID);
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAssets", JSDeleteAssetExecute,
+        JSDeleteAssetCompleteCallback);
 }
 } // namespace Media
 } // namespace OHOS
