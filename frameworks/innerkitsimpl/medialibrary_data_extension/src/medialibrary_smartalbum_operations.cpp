@@ -12,12 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define MLOG_TAG "SmartAlbum"
 
 #include "medialibrary_smartalbum_operations.h"
-#include "media_log.h"
+#include "medialibrary_object_utils.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_smartalbum_map_db.h"
+#include "media_file_utils.h"
+#include "media_log.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -25,57 +25,73 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
-int32_t InsertAlbumInfoUtil(const ValuesBucket &valuesBucket,
-                            shared_ptr<RdbStore> rdbStore,
-                            const MediaLibrarySmartAlbumDb &smartAlbumDbOprn)
+constexpr int32_t DEFAULT_SMARTID = -1;
+int32_t MediaLibrarySmartAlbumOperations::CreateSmartAlbumOperation(MediaLibraryCommand &cmd)
 {
     ValueObject valueObject;
-    int32_t id = 0;
-    int32_t insertId = const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn).
-        InsertSmartAlbumInfo(valuesBucket, rdbStore);
-    if (insertId > 0) {
-        ValuesBucket values;
-        values.PutInt(CATEGORY_SMARTALBUMMAP_DB_CATEGORY_ID, id);
-        values.PutInt(CATEGORY_SMARTALBUMMAP_DB_ALBUM_ID, insertId);
-        const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn).InsertCategorySmartAlbumInfo(values, rdbStore);
+    if (!cmd.GetValueBucket().GetObject(SMARTALBUMMAP_DB_ALBUM_ID, valueObject)) {
+        MEDIA_ERR_LOG("Failed to get parentAlbumId");
+        return E_HAS_DB_ERROR;
     }
-    return insertId;
-}
-int32_t DeleteAlbumInfoUtil(const ValuesBucket &valuesBucket,
-                            shared_ptr<RdbStore> rdbStore,
-                            const MediaLibrarySmartAlbumDb &smartAlbumDbOprn)
-{
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
-    ValueObject valueObject;
-    int32_t albumId = 0;
-    MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
-    if (values.GetObject(SMARTALBUM_DB_ID, valueObject)) {
-        valueObject.GetInt(albumId);
+    int32_t parentAlbumId = DEFAULT_SMARTID;
+    valueObject.GetInt(parentAlbumId);
+    if (parentAlbumId > 0 && !MediaLibraryObjectUtils::IsSmartAlbumExistInDb(parentAlbumId)) {
+        MEDIA_ERR_LOG("Failed to get parent smart album, parentAlbumId = %{public}d", parentAlbumId);
+        return E_PARENT_SMARTALBUM_IS_NOT_EXISTED;
     }
-    MEDIA_ERR_LOG("mediasmart albumId = %{private}d", albumId);
-
-    int32_t deleteErrorCode = const_cast<MediaLibrarySmartAlbumDb &>(smartAlbumDbOprn)
-    .DeleteSmartAlbumInfo(albumId, rdbStore);
-    if (deleteErrorCode != -1) {
-        smartAlbumMapDbOprn.DeleteAllSmartAlbumMapInfo(albumId, rdbStore);
+    if (!cmd.GetValueBucket().GetObject(SMARTALBUM_DB_NAME, valueObject)) {
+        MEDIA_ERR_LOG("Failed to get albumName");
+        return E_HAS_DB_ERROR;
     }
-    return deleteErrorCode;
+    string albumName;
+    valueObject.GetString(albumName);
+    if (!MediaFileUtils::CheckTitle(albumName)) {
+        MEDIA_ERR_LOG("Smart album invalid, albumName = %{public}s", albumName.c_str());
+        return E_INVALID_VALUES;
+    }
+    ValuesBucket valuebucket;
+    valuebucket.PutString(SMARTALBUM_DB_NAME, albumName);
+    cmd.SetValueBucket(valuebucket);
+    return MediaLibraryObjectUtils::InsertInDb(cmd);
 }
 
-int32_t MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperations(const string &oprn,
-                                                                     const ValuesBucket &valuesBucket,
-                                                                     const shared_ptr<RdbStore> &rdbStore)
+int32_t MediaLibrarySmartAlbumOperations::DeleteSmartAlbumOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_ERR_LOG("HandleSmartAlbumOperations");
-    ValuesBucket values = const_cast<ValuesBucket &>(valuesBucket);
-    MediaLibrarySmartAlbumDb smartAlbumDbOprn;
-    int32_t errCode = E_FAIL;
     ValueObject valueObject;
-    if (oprn == MEDIA_SMARTALBUMOPRN_CREATEALBUM) {
-        errCode = InsertAlbumInfoUtil(values, rdbStore, smartAlbumDbOprn);
-    } else if (oprn == MEDIA_SMARTALBUMOPRN_DELETEALBUM) {
-        errCode = DeleteAlbumInfoUtil(values, rdbStore, smartAlbumDbOprn);
+    if (!cmd.GetValueBucket().GetObject(SMARTALBUM_DB_ID, valueObject)) {
+        MEDIA_ERR_LOG("Failed to get albumId");
+        return E_HAS_DB_ERROR;
     }
+    int32_t albumId = DEFAULT_SMARTID;
+    valueObject.GetInt(albumId);
+    CHECK_AND_RETURN_RET_LOG(albumId > 0, E_GET_VALUEBUCKET_FAIL, "Failed to get smartAlbumId");
+    if (MediaLibraryObjectUtils::IsParentSmartAlbum(albumId)) {
+        return E_PARENT_SMARTALBUM_CAN_NOT_DELETE;
+    }
+    MediaLibraryCommand smartAlbumMapCmd(OperationObject::SMART_ALBUM_MAP, OperationType::DELETE);
+    smartAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(SMARTALBUMMAP_DB_ALBUM_ID, to_string(albumId))->Or()->
+        EqualTo(SMARTALBUMMAP_DB_CHILD_ALBUM_ID, to_string(albumId));
+    int32_t errCode = MediaLibraryObjectUtils::DeleteInfoByIdInDb(smartAlbumMapCmd);
+    CHECK_AND_RETURN_RET_LOG(errCode > 0, E_DELETE_SMARTALBUM_MAP_FAIL, "Failed to delete smartAlbumMap");
+    MediaLibraryCommand smartAlbumCmd(OperationObject::SMART_ALBUM, OperationType::DELETE);
+    smartAlbumCmd.GetAbsRdbPredicates()->EqualTo(SMARTALBUM_DB_ID, to_string(albumId));
+    return MediaLibraryObjectUtils::DeleteInfoByIdInDb(smartAlbumCmd);
+}
+
+int32_t MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperation(MediaLibraryCommand &cmd)
+{
+    int32_t errCode = E_ERR;
+    switch (cmd.GetOprnType()) {
+        case OperationType::CREATE:
+            errCode = CreateSmartAlbumOperation(cmd);
+            break;
+        case OperationType::DELETE:
+            errCode = DeleteSmartAlbumOperation(cmd);
+            break;
+        default:
+            MEDIA_WARN_LOG("Unknown operation type %{private}d", cmd.GetOprnType());
+            break;
+        }
     return errCode;
 }
 } // namespace Media

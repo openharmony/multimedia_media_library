@@ -36,6 +36,7 @@ public:
     static std::shared_ptr<DataShare::DataShareResultSet> Query(Uri &uri,
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns);
     static int Insert(Uri &uri, const DataShare::DataShareValuesBucket &value);
+    static int BatchInsert(Uri &uri, const std::vector<DataShare::DataShareValuesBucket> &values);
     static int Delete(Uri &uri, const DataShare::DataSharePredicates &predicates);
     static void NotifyChange(const Uri &uri);
     static void RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);

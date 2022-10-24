@@ -44,9 +44,11 @@
 #include "medialibrary_tracer.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
+#include "result_set_utils.h"
 #include "system_ability_definition.h"
 #include "timer.h"
 #include "permission_utils.h"
+#include "trash_async_worker.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -65,6 +67,7 @@ namespace OHOS {
 namespace Media {
 
 std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
+std::unordered_map<std::string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 std::mutex MediaLibraryDataManager::mutex_;
 
 MediaLibraryDataManager::MediaLibraryDataManager(void)
@@ -145,8 +148,8 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS:
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init KvStore");
 
     ret = InitialiseThumbnailService(extensionContext);
+    DoTrashAging();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init ThumbnailService");
-
     refCnt_++;
     return E_OK;
 }
@@ -257,9 +260,6 @@ std::string MediaLibraryDataManager::GetType(const Uri &uri)
 int32_t MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset> &outDirQuerySetMap)
 {
     int32_t count = -1;
-    int32_t dirTypeVal = -1;
-    int32_t columnIndexDir, columnIndexMedia, columnIndexEx, columnIndexDirType;
-    string dirVal, mediaVal, exVal;
     vector<string> columns;
     shared_ptr<AbsSharedResultSet> queryResultSet;
     AbsRdbPredicates dirAbsPred(MEDIATYPE_DIRECTORY_TABLE);
@@ -274,31 +274,56 @@ int32_t MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAss
         MEDIA_ERR_LOG("can not find any dirAsset");
         return E_ERR;
     }
+    DirAsset dirAsset;
+    string dirVal;
+    dirQuerySetMap_.clear();
     while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
-        DirAsset dirAsset;
-        queryResultSet->GetColumnIndex(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE, columnIndexDirType);
-        queryResultSet->GetInt(columnIndexDirType, dirTypeVal);
-        queryResultSet->GetColumnIndex(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, columnIndexDir);
-        queryResultSet->GetString(columnIndexDir, dirVal);
-        queryResultSet->GetColumnIndex(CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE, columnIndexMedia);
-        queryResultSet->GetString(columnIndexMedia, mediaVal);
-        queryResultSet->GetColumnIndex(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, columnIndexEx);
-        queryResultSet->GetString(columnIndexEx, exVal);
-        dirAsset.SetDirType(dirTypeVal);
+        dirVal = get<string>(
+            ResultSetUtils::GetValFromColumn(DIRECTORY_DB_DIRECTORY, queryResultSet, TYPE_STRING));
         dirAsset.SetDirectory(dirVal);
-        dirAsset.SetMediaTypes(mediaVal);
-        dirAsset.SetExtensions(exVal);
-        MEDIA_INFO_LOG("dirTypeVal: %{public}d dirVal: %{private}s mediaVal: %{public}s exVal: %{public}s",
-            dirTypeVal, dirVal.c_str(), mediaVal.c_str(), exVal.c_str());
+        dirAsset.SetDirType(get<int32_t>(
+            ResultSetUtils::GetValFromColumn(DIRECTORY_DB_DIRECTORY_TYPE, queryResultSet, TYPE_INT32)));
+        dirAsset.SetMediaTypes(get<string>(
+            ResultSetUtils::GetValFromColumn(DIRECTORY_DB_MEDIA_TYPE, queryResultSet, TYPE_STRING)));
+        dirAsset.SetExtensions(get<string>(
+            ResultSetUtils::GetValFromColumn(DIRECTORY_DB_EXTENSION, queryResultSet, TYPE_STRING)));
         outDirQuerySetMap.insert(make_pair(dirVal, dirAsset));
     }
     MEDIA_DEBUG_LOG("MakeDirQuerySetMap OUT");
     return E_OK;
 }
 
-std::unordered_map<std::string, DirAsset> MediaLibraryDataManager::GetDirQuerySetMap() const
+std::unordered_map<std::string, DirAsset> MediaLibraryDataManager::GetDirQuerySetMap()
 {
     return dirQuerySetMap_;
+}
+
+int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
+{
+    vector<string> devices;
+    switch (cmd.GetOprnObject()) {
+        case OperationObject::FILESYSTEM_ASSET: {
+            return MediaLibraryFileOperations::HandleFileOperation(cmd);
+        }
+        case OperationObject::FILESYSTEM_ALBUM: {
+            return MediaLibraryAlbumOperations::CreateAlbumOperation(cmd);
+        }
+        case OperationObject::FILESYSTEM_DIR: {
+            return MediaLibraryDirOperations::HandleDirOperation(cmd);
+        }
+        case OperationObject::SMART_ALBUM: {
+            return MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperation(cmd);
+        }
+        case OperationObject::SMART_ALBUM_MAP: {
+            return MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
+        }
+        case OperationObject::THUMBNAIL: {
+            return HandleThumbnailOperations(cmd);
+        }
+        default: {
+            return MediaLibraryObjectUtils::InsertInDb(cmd);
+        }
+    }
 }
 
 int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBucket &dataShareValue)
@@ -317,56 +342,23 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
     }
 
     MediaLibraryCommand cmd(uri, value);
+    OperationType oprnType = cmd.GetOprnType();
+    if (oprnType == OperationType::CREATE) {
+        if (SetCmdBundleAndDevice(cmd) != ERR_OK) {
+            MEDIA_ERR_LOG("MediaLibraryDataManager SetCmdBundleAndDevice failed.");
+        }
+    }
+    cmd.SetDirQuerySetMap(GetDirQuerySetMap());
     // boardcast operation
-    if (cmd.GetOprnType() == OperationType::SCAN) {
-        string scanPath = ROOT_MEDIA_DIR;
-        return MediaScannerManager::GetInstance()->ScanDir(scanPath, nullptr);
-    } else if ((cmd.GetOprnType() == OperationType::CREATE) && !CheckFileNameValid(dataShareValue)) {
-        return E_FILE_NAME_INVALID;
+    if (oprnType == OperationType::SCAN) {
+        return MediaScannerManager::GetInstance()->ScanDir(ROOT_MEDIA_DIR, nullptr);
     }
-
-    int32_t result = E_FAIL;
-    vector<string> devices;
-    // after replace all xxxOperations following, remove "operationType"
-    string operationType = MediaLibraryDataManagerUtils::GetOperationType(uri.ToString());
-    switch (cmd.GetOprnObject()) {
-        case OperationObject::FILESYSTEM_ASSET: {
-            result = MediaLibraryFileOperations::HandleFileOperation(cmd);
-            break;
-        }
-        case OperationObject::FILESYSTEM_ALBUM: {
-            result = MediaLibraryAlbumOperations::CreateAlbumOperation(cmd);
-            break;
-        }
-        case OperationObject::FILESYSTEM_DIR: {
-            MediaLibraryDirOperations dirOprn;
-            result = dirOprn.HandleDirOperations(operationType, value, rdbStore_, dirQuerySetMap_);
-            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-            break;
-        }
-        case OperationObject::SMART_ALBUM: {
-            MediaLibrarySmartAlbumOperations smartalbumOprn;
-            result = smartalbumOprn.HandleSmartAlbumOperations(operationType, value, rdbStore_);
-            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-            break;
-        }
-        case OperationObject::SMART_ALBUM_MAP: {
-            MediaLibrarySmartAlbumMapOperations smartalbumMapOprn;
-            result = smartalbumMapOprn.HandleSmartAlbumMapOperations(operationType, value, rdbStore_, dirQuerySetMap_);
-            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-            break;
-        }
-        case OperationObject::THUMBNAIL: {
-            result = HandleThumbnailOperations(cmd);
-            break;
-        }
-        default: {
-            result = MediaLibraryObjectUtils::InsertInDb(cmd);
-            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-            break;
+    if (ShouldCheckFileName(cmd.GetOprnObject())) {
+        if (oprnType == OperationType::CREATE && !CheckFileNameValid(dataShareValue)) {
+            return E_FILE_NAME_INVALID;
         }
     }
-    return result;
+    return SolveInsertCmd(cmd);
 }
 
 int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &cmd)
@@ -401,7 +393,7 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
     }
 
     string uriString = uri.ToString();
-    if (uriString != MEDIALIBRARY_DATA_URI) {
+    if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
         return E_INVALID_URI;
     }
@@ -441,9 +433,7 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
             return ret;
         }
         case OperationObject::FILESYSTEM_DIR:
-            // supply a DeleteDirOperation here to replace
-            // delete in the HandleDirOperations in Insert function, if need
-            break;
+            return MediaLibraryDirOperations::DeleteDirOperation(cmd);
         case OperationObject::FILESYSTEM_ALBUM: {
             auto ret = MediaLibraryAlbumOperations::DeleteAlbumOperation(cmd);
             MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
@@ -475,6 +465,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     }
 
     MediaLibraryCommand cmd(uri, value);
+    cmd.SetDirQuerySetMap(GetDirQuerySetMap());
     cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
 
@@ -516,6 +507,12 @@ void MediaLibraryDataManager::InterruptBgworker()
         return;
     }
     thumbnailService_->InterruptBgworker();
+    shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("asyncWorker null");
+        return;
+    }
+    asyncWorker->Interrupt();
 }
 
 int32_t MediaLibraryDataManager::GenerateThumbnails()
@@ -560,7 +557,12 @@ int32_t MediaLibraryDataManager::DoAging()
     if (errorCode != 0) {
         MEDIA_ERR_LOG("LcdDistributeAging exist error %{public}d", errorCode);
     }
-
+    shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("asyncWorker null");
+        return E_FAIL;
+    }
+    asyncWorker->Init();
     return errorCode;
 }
 
@@ -868,6 +870,44 @@ int32_t ScanFileCallback::OnScanFinished(const int32_t status, const std::string
         instance->CreateThumbnailAsync(uri);
     }
     return E_OK;
-};
+}
+
+int32_t MediaLibraryDataManager::SetCmdBundleAndDevice(MediaLibraryCommand &outCmd)
+{
+    int uid = IPCSkeleton::GetCallingUid();
+    string clientBundle;
+    bool isSystemApp = false;
+    PermissionUtils::GetClientBundle(uid, clientBundle, isSystemApp);
+    if (clientBundle.empty()) {
+        MEDIA_ERR_LOG("MediaLibraryDataManager::GetClientBundle failed");
+        return E_GET_CLIENTBUNDLE_FAIL;
+    }
+    outCmd.SetBundleName(clientBundle);
+    OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
+    auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
+    int32_t ret = deviceManager.GetLocalDeviceInfo(bundleName_, deviceInfo);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("GetLocalDeviceInfo ret = %{public}d", ret);
+    } else {
+        outCmd.SetDeviceName(deviceInfo.deviceName);
+    }
+    return ret;
+}
+
+bool MediaLibraryDataManager::ShouldCheckFileName(const OperationObject &oprnObject)
+{
+    if ((oprnObject == OperationObject::SMART_ALBUM_MAP) ||
+        (oprnObject == OperationObject::SMART_ALBUM) ||
+        (oprnObject == OperationObject::FILESYSTEM_DIR)) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+int32_t MediaLibraryDataManager::DoTrashAging()
+{
+    return MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
+}
 }  // namespace Media
 }  // namespace OHOS
