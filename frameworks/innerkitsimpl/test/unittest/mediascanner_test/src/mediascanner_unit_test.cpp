@@ -25,7 +25,6 @@ using OHOS::HiviewDFX::HiLogLabel;
 
 using namespace std;
 using namespace OHOS;
-using namespace OHOS::Media;
 using namespace testing::ext;
 
 namespace OHOS {

@@ -17,14 +17,6 @@
 #define MEDIA_SPACE_STATISTICS_TEST_H
 
 #include "gtest/gtest.h"
-#include "iservice_registry.h"
-#include "media_log.h"
-#include "media_volume.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
-#include "media_library_manager.h"
-#include "system_ability_definition.h"
-#include "datashare_helper.h"
 
 namespace OHOS {
 namespace Media {
