@@ -19,6 +19,7 @@
 #include "accesstoken_kit.h"
 #include "ipc_skeleton.h"
 #include "media_log.h"
+#include "medialibrary_tracer.h"
 #include "privacy_kit.h"
 #include "sa_mgr_client.h"
 #include "system_ability_definition.h"

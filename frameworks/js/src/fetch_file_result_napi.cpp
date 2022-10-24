@@ -19,6 +19,8 @@
 #include "album_napi.h"
 #include "hitrace_meter.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_tracer.h"
+#include "smart_album_napi.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -84,6 +86,31 @@ napi_value FetchFileResultNapi::Init(napi_env env, napi_value exports)
     return nullptr;
 }
 
+void FetchFileResultNapi::GetFetchResult(unique_ptr<FetchFileResultNapi> &obj)
+{
+    switch (sFetchResType_) {
+        case FetchResType::TYPE_FILE:
+            obj->fetchFileResult_ = make_unique<FetchResult<FileAsset>>(move(sFetchFileResult_->resultset_));
+            obj->fetchFileResult_->SetInfo(sFetchFileResult_);
+            obj->typeMask_ = obj->fetchFileResult_->typeMask_;
+            break;
+        case FetchResType::TYPE_ALBUM:
+            obj->fetchAlbumResult_ = make_unique<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->resultset_));
+            obj->fetchAlbumResult_->SetInfo(sFetchAlbumResult_);
+            obj->typeMask_ = obj->fetchAlbumResult_->typeMask_;
+            break;
+        case FetchResType::TYPE_SMARTALBUM:
+            obj->fetchSmartAlbumResult_ =
+                make_unique<FetchResult<SmartAlbumAsset>>(move(sFetchSmartAlbumResult_->resultset_));
+            obj->fetchSmartAlbumResult_->SetInfo(sFetchSmartAlbumResult_);
+            obj->typeMask_ = obj->fetchSmartAlbumResult_->typeMask_;
+            break;
+        default:
+            NAPI_ERR_LOG("unsupported FetchResType");
+            break;
+    }
+}
+
 // Constructor callback
 napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, napi_callback_info info)
 {
@@ -108,19 +135,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
         return result;
     }
     obj->env_ = env;
-    if ((sFetchFileResult_ != nullptr) && (sFetchResType_ == FetchResType::TYPE_FILE)) {
-        unique_ptr<FetchResult<FileAsset>> fetchRes = make_unique<FetchResult<FileAsset>>(
-            move(sFetchFileResult_->resultset_));
-        obj->fetchFileResult_ = std::move(fetchRes);
-        obj->fetchFileResult_->SetInfo(sFetchFileResult_);
-    } else if ((sFetchAlbumResult_ != nullptr) && (sFetchResType_ == FetchResType::TYPE_ALBUM)) {
-        obj->fetchAlbumResult_ = make_unique<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->resultset_));
-        obj->fetchAlbumResult_->SetInfo(sFetchAlbumResult_);
-        obj->typeMask_ = obj->fetchAlbumResult_->typeMask_;
-    } else {
-        NAPI_ERR_LOG("No native instance assigned yet");
-        return result;
-    }
+    GetFetchResult(obj);
     sDataHelperMutex_.lock();
     obj->abilityHelper_ = sMediaDataHelper;
     sDataHelperMutex_.unlock();
@@ -185,6 +200,28 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<F
     return result;
 }
 
+napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<FetchResult<SmartAlbumAsset>> fileResult,
+    std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateFetchFileResult");
+    napi_value constructor;
+    napi_ref constructorRef = (fileResult->resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) ?
+        (userFileMgrConstructor_) : (sConstructor_);
+    NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
+    if (sMediaDataHelper == nullptr) {
+        sDataHelperMutex_.lock();
+        sMediaDataHelper = abilityHelper;
+        sDataHelperMutex_.unlock();
+    }
+    sFetchResType_ = fileResult->fetchResType_;
+    sFetchSmartAlbumResult_ = move(fileResult);
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
+    sFetchSmartAlbumResult_ = nullptr;
+    return result;
+}
+
 std::shared_ptr<DataShare::DataShareHelper> FetchFileResultNapi::GetMediaDataHelper() const
 {
     return abilityHelper_;
@@ -234,11 +271,20 @@ napi_value FetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    if (status == napi_ok && obj != nullptr) {
-        if (obj->GetFetchResType() == FetchResType::TYPE_FILE) {
-            count = obj->GetFetchFileResultObject()->GetCount();
-        } else {
-            count = obj->GetFetchAlbumResultObject()->GetCount();
+    if ((status == napi_ok) && (obj != nullptr)) {
+        switch (obj->GetFetchResType()) {
+            case FetchResType::TYPE_FILE:
+                count = obj->GetFetchFileResultObject()->GetCount();
+                break;
+            case FetchResType::TYPE_ALBUM:
+                count = obj->GetFetchAlbumResultObject()->GetCount();
+                break;
+            case FetchResType::TYPE_SMARTALBUM:
+                count = obj->GetFetchSmartAlbumResultObject()->GetCount();
+                break;
+            default:
+                NAPI_ERR_LOG("unsupported FetchResType");
+                break;
         }
         napi_create_int32(env, count, &jsResult);
     } else {
@@ -268,11 +314,20 @@ napi_value FetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info i
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    if (status == napi_ok && obj != nullptr) {
-        if (obj->GetFetchResType() == FetchResType::TYPE_FILE) {
-            isAfterLast = obj->GetFetchFileResultObject()->IsAtLastRow();
-        } else {
-            isAfterLast = obj->GetFetchAlbumResultObject()->IsAtLastRow();
+    if ((status == napi_ok) && (obj != nullptr)) {
+        switch (obj->GetFetchResType()) {
+            case FetchResType::TYPE_FILE:
+                isAfterLast = obj->GetFetchFileResultObject()->IsAtLastRow();
+                break;
+            case FetchResType::TYPE_ALBUM:
+                isAfterLast = obj->GetFetchAlbumResultObject()->IsAtLastRow();
+                break;
+            case FetchResType::TYPE_SMARTALBUM:
+                isAfterLast = obj->GetFetchSmartAlbumResultObject()->IsAtLastRow();
+                break;
+            default:
+                NAPI_ERR_LOG("unsupported FetchResType");
+                break;
         }
         napi_get_boolean(env, isAfterLast, &jsResult);
     } else {
@@ -288,10 +343,19 @@ static void GetNapiResFromAsset(napi_env env, FetchFileResultAsyncContext *conte
 {
     napi_value jsAsset;
     auto helper = context->objectInfo->GetMediaDataHelper();
-    if (context->fileAsset != nullptr) {
-        jsAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset), helper);
-    } else {
-        jsAsset = AlbumNapi::CreateAlbumNapi(env, *(context->albumAsset), helper);
+    switch (context->objectInfo->GetFetchResType()) {
+        case FetchResType::TYPE_FILE:
+            jsAsset = FileAssetNapi::CreateFileAsset(env, context->fileAsset, helper);
+            break;
+        case FetchResType::TYPE_ALBUM:
+            jsAsset = AlbumNapi::CreateAlbumNapi(env, context->albumAsset, helper);
+            break;
+        case FetchResType::TYPE_SMARTALBUM:
+            jsAsset = SmartAlbumNapi::CreateSmartAlbumNapi(env, context->smartAlbumAsset, helper);
+            break;
+        default:
+            NAPI_ERR_LOG("unsupported FetchResType");
+            break;
     }
 
     if (jsAsset == nullptr) {
@@ -316,14 +380,7 @@ static void GetPositionObjectCompleteCallback(napi_env env, napi_status status, 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if ((context->fileAsset == nullptr) && (context->albumAsset == nullptr)) {
-        NAPI_ERR_LOG("No file asset found!");
-        napi_get_undefined(env, &jsContext->data);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Failed to obtain fileAsset from DB");
-    } else {
-        GetNapiResFromAsset(env, context, jsContext);
-    }
+    GetNapiResFromAsset(env, context, jsContext);
 
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
@@ -534,13 +591,19 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
 static napi_value GetAsset(napi_env env, shared_ptr<DataShare::DataShareHelper> &helper,
     vector<std::unique_ptr<FileAsset>> &array, int index)
 {
-    return FileAssetNapi::CreateFileAsset(env, *(array[index]), helper);
+    return FileAssetNapi::CreateFileAsset(env, array[index], helper);
 }
 
 static napi_value GetAsset(napi_env env, shared_ptr<DataShare::DataShareHelper> &helper,
     vector<std::unique_ptr<AlbumAsset>> &array, int index)
 {
-    return AlbumNapi::CreateAlbumNapi(env, *(array[index]), helper);
+    return AlbumNapi::CreateAlbumNapi(env, array[index], helper);
+}
+
+static napi_value GetAsset(napi_env env, shared_ptr<DataShare::DataShareHelper> &helper,
+    vector<std::unique_ptr<SmartAlbumAsset>> &array, int index)
+{
+    return SmartAlbumNapi::CreateSmartAlbumNapi(env, array[index], helper);
 }
 
 template<class T>
@@ -577,15 +640,21 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->fileAssetArray.empty() && context->fileAlbumArray.empty()) {
-        NAPI_ERR_LOG("No file asset found!");
-        napi_get_undefined(env, &jsContext->data);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Failed to obtain fileAsset array from DB");
-    } else if (!context->fileAssetArray.empty()) {
-        GetAssetFromArray(env, context, context->fileAssetArray, jsContext);
-    } else if (!context->fileAlbumArray.empty()) {
-        GetAssetFromArray(env, context, context->fileAlbumArray, jsContext);
+    switch (context->objectInfo->GetFetchResType()) {
+        case FetchResType::TYPE_FILE:
+            GetAssetFromArray(env, context, context->fileAssetArray, jsContext);
+            break;
+        case FetchResType::TYPE_ALBUM:
+            GetAssetFromArray(env, context, context->fileAlbumArray, jsContext);
+            break;
+        case FetchResType::TYPE_SMARTALBUM:
+            GetAssetFromArray(env, context, context->fileSmartAlbumArray, jsContext);
+            break;
+        default:
+            NAPI_ERR_LOG("unsupported FetchResType");
+            napi_get_undefined(env, &jsContext->data);
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+                "Failed to obtain fileAsset array from DB");
     }
 
     if (context->work != nullptr) {
@@ -604,6 +673,11 @@ std::shared_ptr<FetchResult<FileAsset>> FetchFileResultNapi::GetFetchFileResultO
 std::shared_ptr<FetchResult<AlbumAsset>> FetchFileResultNapi::GetFetchAlbumResultObject()
 {
     return fetchAlbumResult_;
+}
+
+std::shared_ptr<FetchResult<SmartAlbumAsset>> FetchFileResultNapi::GetFetchSmartAlbumResultObject()
+{
+    return fetchSmartAlbumResult_;
 }
 
 void GetAllObjectFromFetchResult(const FetchFileResultAsyncContext &asyncContext)
@@ -692,58 +766,109 @@ napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
 
 void FetchFileResultAsyncContext::GetFirstAsset()
 {
-    if (objectInfo->GetFetchResType() == FetchResType::TYPE_FILE) {
-        fileAsset = objectInfo->GetFetchFileResultObject()->GetFirstObject();
-    } else {
-        albumAsset = objectInfo->GetFetchAlbumResultObject()->GetFirstObject();
+    switch (objectInfo->GetFetchResType()) {
+        case FetchResType::TYPE_FILE:
+            fileAsset = objectInfo->GetFetchFileResultObject()->GetFirstObject();
+            break;
+        case FetchResType::TYPE_ALBUM:
+            albumAsset = objectInfo->GetFetchAlbumResultObject()->GetFirstObject();
+            break;
+        case FetchResType::TYPE_SMARTALBUM:
+            smartAlbumAsset = objectInfo->GetFetchSmartAlbumResultObject()->GetFirstObject();
+            break;
+        default:
+            NAPI_ERR_LOG("unsupported FetchResType");
+            break;
     }
 }
 
 void FetchFileResultAsyncContext::GetObjectAtPosition()
 {
-    if (objectInfo->GetFetchResType() == FetchResType::TYPE_FILE) {
-        fileAsset = objectInfo->GetFetchFileResultObject()->GetObjectAtPosition(position);
-    } else {
-        albumAsset = objectInfo->GetFetchAlbumResultObject()->GetObjectAtPosition(position);
+    switch (objectInfo->GetFetchResType()) {
+        case FetchResType::TYPE_FILE:
+            fileAsset = objectInfo->GetFetchFileResultObject()->GetObjectAtPosition(position);
+            break;
+        case FetchResType::TYPE_ALBUM:
+            albumAsset = objectInfo->GetFetchAlbumResultObject()->GetObjectAtPosition(position);
+            break;
+        case FetchResType::TYPE_SMARTALBUM:
+            smartAlbumAsset = objectInfo->GetFetchSmartAlbumResultObject()->GetObjectAtPosition(position);
+            break;
+        default:
+            NAPI_ERR_LOG("unsupported FetchResType");
+            break;
     }
 }
 
 void FetchFileResultAsyncContext::GetLastObject()
 {
-    if (objectInfo->GetFetchResType() == FetchResType::TYPE_FILE) {
-        fileAsset = objectInfo->GetFetchFileResultObject()->GetLastObject();
-    } else {
-        albumAsset = objectInfo->GetFetchAlbumResultObject()->GetLastObject();
+    switch (objectInfo->GetFetchResType()) {
+        case FetchResType::TYPE_FILE:
+            fileAsset = objectInfo->GetFetchFileResultObject()->GetLastObject();
+            break;
+        case FetchResType::TYPE_ALBUM:
+            albumAsset = objectInfo->GetFetchAlbumResultObject()->GetLastObject();
+            break;
+        case FetchResType::TYPE_SMARTALBUM:
+            smartAlbumAsset = objectInfo->GetFetchSmartAlbumResultObject()->GetLastObject();
+            break;
+        default:
+            NAPI_ERR_LOG("unsupported FetchResType");
+            break;
     }
 }
 
 void FetchFileResultAsyncContext::GetNextObject()
 {
-    if (objectInfo->GetFetchResType() == FetchResType::TYPE_FILE) {
-        fileAsset =
-            objectInfo->GetFetchFileResultObject()->GetNextObject();
-    } else {
-        albumAsset =
-            objectInfo->GetFetchAlbumResultObject()->GetNextObject();
+    switch (objectInfo->GetFetchResType()) {
+        case FetchResType::TYPE_FILE:
+            fileAsset = objectInfo->GetFetchFileResultObject()->GetNextObject();
+            break;
+        case FetchResType::TYPE_ALBUM:
+            albumAsset = objectInfo->GetFetchAlbumResultObject()->GetNextObject();
+            break;
+        case FetchResType::TYPE_SMARTALBUM:
+            smartAlbumAsset = objectInfo->GetFetchSmartAlbumResultObject()->GetNextObject();
+            break;
+        default:
+            NAPI_ERR_LOG("unsupported FetchResType");
+            break;
     }
 }
 
 void FetchFileResultAsyncContext::GetAllObjectFromFetchResult()
 {
-    if (objectInfo->GetFetchResType() == FetchResType::TYPE_FILE) {
-        unique_ptr<FileAsset> fAsset = nullptr;
-        fAsset = objectInfo->GetFetchFileResultObject()->GetFirstObject();
-        while (fAsset != nullptr) {
-            fileAssetArray.push_back(move(fAsset));
-                fAsset = objectInfo->GetFetchFileResultObject()->GetNextObject();
+    switch (objectInfo->GetFetchResType()) {
+        case FetchResType::TYPE_FILE: {
+            unique_ptr<FileAsset> file = nullptr;
+            file = objectInfo->GetFetchFileResultObject()->GetFirstObject();
+            while (file != nullptr) {
+                fileAssetArray.push_back(move(file));
+                    file = objectInfo->GetFetchFileResultObject()->GetNextObject();
+            }
+            break;
         }
-    } else {
-        unique_ptr<AlbumAsset> fAsset = nullptr;
-        fAsset = objectInfo->GetFetchAlbumResultObject()->GetFirstObject();
-        while (fAsset != nullptr) {
-            fileAlbumArray.push_back(move(fAsset));
-            fAsset = objectInfo->GetFetchAlbumResultObject()->GetNextObject();
+        case FetchResType::TYPE_ALBUM: {
+            unique_ptr<AlbumAsset> album = nullptr;
+            album = objectInfo->GetFetchAlbumResultObject()->GetFirstObject();
+            while (album != nullptr) {
+                fileAlbumArray.push_back(move(album));
+                album = objectInfo->GetFetchAlbumResultObject()->GetNextObject();
+            }
+            break;
         }
+        case FetchResType::TYPE_SMARTALBUM: {
+            unique_ptr<SmartAlbumAsset> smartAlbum = nullptr;
+            smartAlbum = objectInfo->GetFetchSmartAlbumResultObject()->GetFirstObject();
+            while (smartAlbum != nullptr) {
+                fileSmartAlbumArray.push_back(move(smartAlbum));
+                smartAlbum = objectInfo->GetFetchSmartAlbumResultObject()->GetNextObject();
+            }
+            break;
+        }
+        default:
+            NAPI_ERR_LOG("unsupported FetchResType");
+            break;
     }
 }
 } // namespace Media

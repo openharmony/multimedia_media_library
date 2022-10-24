@@ -203,14 +203,18 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
     return result;
 }
 
-napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
+napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &iAsset,
     std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
 {
     MediaLibraryTracer tracer;
     tracer.Start("CreateFileAsset");
 
+    if (iAsset == nullptr) {
+        return nullptr;
+    }
+
     napi_value constructor = nullptr;
-    napi_ref constructorRef = (iAsset.GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) ?
+    napi_ref constructorRef = (iAsset->GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) ?
         (userFileMgrConstructor_) : (sConstructor_);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
@@ -220,7 +224,7 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, FileAsset &iAsset,
         sDataHelperMutex_.unlock();
     }
 
-    sFileAsset_ = &iAsset;
+    sFileAsset_ = iAsset.get();
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
@@ -1382,30 +1386,32 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
 static int GetImageFromResult(const shared_ptr<DataShare::DataShareResultSet> &resultSet, Size &size,
     unique_ptr<PixelMap> &outPixelMap)
 {
-    vector<uint8_t> image;
-    vector<uint8_t> key;
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaThumbnailHelper::GetKv");
     int ret = resultSet->GoToFirstRow();
     if (ret != DataShare::E_OK) {
         NAPI_ERR_LOG("GoToFirstRow error %{public}d", ret);
         return ret;
     }
 
+    vector<uint8_t> key;
     ret = resultSet->GetBlob(PARAM0, key);
     if (ret != DataShare::E_OK) {
         NAPI_ERR_LOG("GetBlob key error %{public}d", ret);
         return ret;
     }
+    vector<uint8_t> image;
     ret = resultSet->GetBlob(PARAM1, image);
-    resultSet->Close();
     if (ret != DataShare::E_OK) {
         NAPI_ERR_LOG("GetBlob image error %{public}d", ret);
         return ret;
     }
+    resultSet->Close();
+    tracer.Finish();
 
     NAPI_DEBUG_LOG("key %{public}s key len %{public}d len %{public}d", string(key.begin(),
         key.end()).c_str(), static_cast<int>(key.size()), static_cast<int>(image.size()));
 
-    MediaLibraryTracer tracer;
     tracer.Start("MediaThumbnailHelper::ResizeImage");
     if (!MediaThumbnailHelper::ResizeImage(image, size, outPixelMap)) {
         NAPI_ERR_LOG("ResizeImage error");
@@ -1433,6 +1439,12 @@ static unique_ptr<PixelMap> QueryThumbnail(shared_ptr<DataShare::DataShareHelper
     auto resultSet = helper->Query(queryUri, predicates, columns);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("Query thumbnail error");
+        return nullptr;
+    }
+    int rowCount = 0;
+    int err = resultSet->GetRowCount(rowCount);
+    if ((err != DataShare::E_OK) || (rowCount <= 0)) {
+        NAPI_ERR_LOG("GetRowCount err %{public}d", err);
         return nullptr;
     }
     tracer.Finish();
@@ -2291,13 +2303,13 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 
 bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value)
 {
-    if (inputKey == MEDIA_DATA_DB_NAME && member_.count(MEDIA_DATA_DB_NAME)) {
+    if ((inputKey == MEDIA_DATA_DB_NAME) && (member_.count(MEDIA_DATA_DB_NAME))) {
         displayName_ = value;
         member_[MEDIA_DATA_DB_NAME] = value;
-    } else if (inputKey == MEDIA_DATA_DB_RELATIVE_PATH && member_.count(MEDIA_DATA_DB_RELATIVE_PATH)) {
+    } else if ((inputKey == MEDIA_DATA_DB_RELATIVE_PATH) && (member_.count(MEDIA_DATA_DB_RELATIVE_PATH))) {
         relativePath_ = value;
         member_[MEDIA_DATA_DB_RELATIVE_PATH] = value;
-    } else if (inputKey == MEDIA_DATA_DB_TITLE && member_.count(MEDIA_DATA_DB_TITLE)) {
+    } else if ((inputKey == MEDIA_DATA_DB_TITLE) && (member_.count(MEDIA_DATA_DB_TITLE))) {
         title_ = value;
         member_[MEDIA_DATA_DB_TITLE] = value;
     } else {

@@ -20,7 +20,6 @@
 #include "media_log.h"
 
 using namespace std;
-using namespace OHOS::Media;
 
 namespace MediaLibTest {
     const int32_t SECOND_ARG_IDX = 2;

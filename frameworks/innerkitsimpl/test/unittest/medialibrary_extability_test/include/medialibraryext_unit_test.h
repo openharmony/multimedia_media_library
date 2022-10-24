@@ -16,7 +16,7 @@
 #ifndef MEDIALIBRARY_EXT_UNIT_TEST_H
 #define MEDIALIBRARY_EXT_UNIT_TEST_H
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {

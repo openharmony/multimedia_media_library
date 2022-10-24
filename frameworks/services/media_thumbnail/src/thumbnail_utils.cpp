@@ -1372,14 +1372,14 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbna
     }
 
     if (IsKeyNotSame(tmpData.thumbnailKey, thumbnailData.thumbnailKey)) {
-        if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, thumbnailData.thumbnailKey)) {
+        if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, tmpData.thumbnailKey)) {
             MEDIA_ERR_LOG("DeleteThumbnailData Faild");
             return false;
         }
     }
     if (IsKeyNotSame(tmpData.lcdKey, thumbnailData.lcdKey)) {
-        if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, thumbnailData.lcdKey)) {
-            MEDIA_ERR_LOG("DeleteThumbnailData Faild");
+        if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, tmpData.lcdKey)) {
+            MEDIA_ERR_LOG("DeleteLCDlData Faild");
             return false;
         }
     }
@@ -1408,7 +1408,7 @@ bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, co
     }
 
     if (!ret) {
-        MEDIA_DEBUG_LOG("IsImageExist failed!");
+        MEDIA_DEBUG_LOG("IsImageExist failed!, key [%{public}s]", key.c_str());
         if (!networkId.empty()) {
             MediaLibraryTracer tracer;
             tracer.Start("SyncPullKvstore");
