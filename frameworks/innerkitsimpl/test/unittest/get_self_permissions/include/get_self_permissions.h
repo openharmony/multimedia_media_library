@@ -16,28 +16,16 @@
 #ifndef GET_SELF_PERMISSIONS_H
 #define GET_SELF_PERMISSIONS_H
 
-#include <gtest/gtest.h>
-#include "accesstoken_kit.h"
-#include "nativetoken_kit.h"
-#include "token_setproc.h"
+#include <string>
+#include <vector>
 
 namespace OHOS {
-namespace Security {
-namespace AccessToken {
-static const std::string TEST_BUNDLE_NAME = "ohos";
-static const int TEST_USER_ID = 0;
-static const int INVALID_DLP_TYPE = 4;
-class GetSelfPermissions : public testing::Test {
+namespace Media {
+class PermissionUtilsUnitTest {
 public:
-    static void SetUpTestCase();
-
-    static void TearDownTestCase();
-
-    void SetUp();
-
-    void TearDown();
+    static void SetAccessTokenPermission(const std::string &processName,
+        const std::vector<std::string> &permission, uint64_t &tokenId);
 };
-} // namespace AccessToken
-} // namespace Security
+} // namespace Media
 } // namespace OHOS
 #endif // GET_SELF_PERMISSIONS_H

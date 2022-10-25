@@ -12,63 +12,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "mediascanner_unit_test.h"
-#include "media_log.h"
-#include "scanner_utils.h"
-#include "media_scanner_manager.h"
-#include "imedia_scanner_callback.h"
+#include "datashare_helper.h"
+#include "fetch_result.h"
+#include "get_self_permissions.h"
+#include "iservice_registry.h"
 #include "medialibrary_errno.h"
-
-using OHOS::HiviewDFX::HiLog;
-using OHOS::HiviewDFX::HiLogLabel;
+#include "mediascanner_unit_test.h"
+#include "media_file_utils.h"
+#include "media_library_manager.h"
+#include "media_log.h"
+#include "media_scanner_manager.h"
+#include "system_ability_definition.h"
 
 using namespace std;
-using namespace OHOS;
-using namespace OHOS::Media;
 using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
 namespace {
-    constexpr HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "ApplicationMediaScannerGtest"};
-
-    int32_t g_callbackStatus(0);
-    int32_t g_filescanstatus(0);
-    bool g_isCallbackReceived(false);
-
-    std::string g_callbackName("");
-    std::mutex g_mutex;
-    std::condition_variable g_condVar;
     string g_prefixPath = "/storage/media/local/files";
     const mode_t CHOWN_RW_UG = 0660;
-} // namespace
-
-ApplicationCallback::ApplicationCallback(const std::string &testCaseName) : testCaseName_(testCaseName) {}
-
-int32_t ApplicationCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)
-{
-    HiLog::Info(LABEL, "OnScanFinished invoked");
-
-    g_callbackStatus = status;
-    g_callbackName = testCaseName_;
-    g_isCallbackReceived = true;
-    g_condVar.notify_all();
-
-    return 0;
 }
+constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
+std::shared_ptr<DataShare::DataShareHelper> g_mediaDataShareHelper;
 
-void MediaScannerUnitTest::WaitForCallback()
+std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t systemAbilityId)
 {
-    HiLog::Info(LABEL, "WaitForCallback invoked");
-    std::unique_lock<std::mutex> lock(g_mutex);
-    g_condVar.wait_until(lock, std::chrono::system_clock::now() + std::chrono::minutes(1),
-        []() { return g_isCallbackReceived == true; });
+    MEDIA_INFO_LOG("CreateDataShareHelper::CreateFileExtHelper ");
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saManager == nullptr) {
+        MEDIA_INFO_LOG("CreateDataShareHelper::CreateFileExtHelper Get system ability mgr failed.");
+        return nullptr;
+    }
+    auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
+    while (remoteObj == nullptr) {
+        MEDIA_INFO_LOG("CreateDataShareHelper::CreateFileExtHelper GetSystemAbility Service Failed.");
+        return nullptr;
+    }
+    return DataShare::DataShareHelper::Creator(remoteObj, MEDIALIBRARY_DATA_URI);
 }
-
 bool CreateFile(const string &filePath)
 {
-    HiLog::Info(LABEL, "Creating new file: %{public}s", filePath.c_str());
     bool errCode = false;
 
     if (filePath.empty()) {
@@ -92,53 +76,35 @@ bool CreateFile(const string &filePath)
 
 void MediaScannerUnitTest::SetUpTestCase(void)
 {
-    HiLog::Info(LABEL, "SetUpTestCase invoked");
-    if (MediaScannerManager::GetInstance() == nullptr) {
-        HiLog::Error(LABEL, "Scanner instance not available");
-    }
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_MEDIA");
+    perms.push_back("ohos.permission.WRITE_MEDIA");
+    perms.push_back("ohos.permission.FILE_ACCESS_MANAGER");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaDataShareUnitTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
 
-    int createRes = mkdir("/storage/media/100/local/files/Pictures", S_IRWXU | S_IRWXG | S_IRWXO);
-    if (createRes != 0) {
-        HiLog::Error(LABEL, "mkdir err %{public}d", errno);
-    }
-    EXPECT_EQ(createRes, E_SUCCESS);
+    MEDIA_INFO_LOG("SetUpTestCase invoked");
+    g_mediaDataShareHelper = CreateDataShareHelper(STORAGE_MANAGER_MANAGER_ID);
+    ASSERT_TRUE(g_mediaDataShareHelper != nullptr);
 
-    createRes = mkdir("/storage/media/100/local/files/Documents", S_IRWXU | S_IRWXG | S_IRWXO);
-    if (createRes != 0) {
-        HiLog::Error(LABEL, "mkdir err %{public}d", errno);
-    }
-    EXPECT_EQ(createRes, E_SUCCESS);
-
-    createRes = mkdir("/storage/media/100/local/files/Download", S_IRWXU | S_IRWXG | S_IRWXO);
-    if (createRes != 0) {
-        HiLog::Error(LABEL, "mkdir err %{public}d", errno);
-    }
-    EXPECT_EQ(createRes, E_SUCCESS);
+    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
+    DataShare::DataSharePredicates predicates;
+    string selections = MEDIA_DATA_DB_ID + " <> 0 ";
+    predicates.SetWhereClause(selections);
+    int retVal = g_mediaDataShareHelper->Delete(deleteAssetUri, predicates);
+    MEDIA_INFO_LOG("SetUpTestCase Delete retVal: %{public}d", retVal);
+    EXPECT_EQ((retVal >= 0), true);
 }
 
-void MediaScannerUnitTest::TearDownTestCase(void)
-{
-    HiLog::Info(LABEL, "TearDownTestCase invoked");
-
-    if (remove("/storage/media/100/local/files/Pictures/gtest_Image1.jpg") != 0
-        || remove("/storage/media/100/local/files/Pictures/gtest_Image2.png") != 0
-        || remove("/storage/media/100/local/files/Pictures/gtest_Image3.jpeg") != 0
-        || remove("/storage/media/100/local/files/Documents/gtest_Text1.txt") != 0
-        || remove("/storage/media/100/local/files/Download/.HiddenFile") != 0) {
-        HiLog::Error(LABEL, "Test files deletion failed");
-    }
-}
-
+void MediaScannerUnitTest::TearDownTestCase(void) {}
 string ConvertPath(string path)
 {
     string tmp = "/storage/media/100/";
     path = tmp + path.substr(strlen("/storage/media/"));
     return path;
 }
-
-// SetUp:Execute before each test case
-void MediaScannerUnitTest::SetUp() {}
-
+void MediaScannerUnitTest::SetUp(void) {}
 void MediaScannerUnitTest::TearDown(void) {}
 
 /*
@@ -151,31 +117,11 @@ void MediaScannerUnitTest::TearDown(void) {}
  */
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
 {
-    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
-    if (MediaScannerManager::GetInstance() == nullptr) {
-        HiLog::Error(LABEL, "scanner manager get nullptr instance");
-        return;
-    }
-
-    string path = g_prefixPath;
-    HiLog::Info(LABEL, "ScanDir test case for: %{public}s", path.c_str());
-
-    int result;
-    std::string testcaseName("mediascanner_ScanDir_test_001");
-    g_isCallbackReceived = false;
-    g_callbackStatus = -1;
-    g_callbackName = "";
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-    path = ConvertPath(path);
-    result = MediaScannerManager::GetInstance()->ScanDir(path, appCallback);
-    EXPECT_EQ(result, g_filescanstatus);
-
-    if (result == 0) {
-        // Wait here for callback. If not callback for 2 mintues, will skip this step
-        WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, g_filescanstatus);
-        EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
-    }
+    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
+    EXPECT_EQ(ret, E_SUCCESS);
 }
 
 /*
@@ -188,35 +134,14 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
  */
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
 {
-    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
-    if (MediaScannerManager::GetInstance() == nullptr) {
-        HiLog::Error(LABEL, "scanner manager get nullptr instance");
-        return;
-    }
-
-    string path = g_prefixPath + "/Pictures/gtest_Image1.jpg";
-    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
-
     bool createRes = CreateFile("/storage/media/100/local/files/Pictures/gtest_Image1.jpg");
     EXPECT_EQ(createRes, true);
 
-    // scan the file
-    int result;
-    std::string testcaseName("mediascanner_ScanImage_Test_001");
-    g_isCallbackReceived = false;
-    g_callbackStatus = -1;
-    g_callbackName = "";
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-
-    path = ConvertPath(path);
-    result = MediaScannerManager::GetInstance()->ScanFile(path, appCallback);
-    EXPECT_EQ(result, g_filescanstatus);
-    if (result == 0) {
-        // Wait here for callback. If not callback for 2 mintues, will skip this step
-        WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, g_filescanstatus);
-        EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
-    }
+    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
+    EXPECT_EQ(ret, E_SUCCESS);
 }
 
 /*
@@ -229,34 +154,14 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
  */
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_002, TestSize.Level0)
 {
-    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
-    if (MediaScannerManager::GetInstance() == nullptr) {
-        HiLog::Error(LABEL, "scanner manager get nullptr instance");
-        return;
-    }
-
-    string path = g_prefixPath + "/Pictures/gtest_Image2.png";
-    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
-
     bool createRes = CreateFile("/storage/media/100/local/files/Pictures/gtest_Image2.png");
     EXPECT_EQ(createRes, true);
 
-    int result;
-    std::string testcaseName("mediascanner_ScanImage_Test_002");
-    g_isCallbackReceived = false;
-    g_callbackStatus = -1;
-    g_callbackName = "";
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-
-    path = ConvertPath(path);
-    result = MediaScannerManager::GetInstance()->ScanFile(path, appCallback);
-    EXPECT_EQ(result, g_filescanstatus);
-    if (result == 0) {
-        // Wait here for callback. If not callback for 2 mintues, will skip this step
-        WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, g_filescanstatus);
-        EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
-    }
+    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
+    EXPECT_EQ(ret, E_SUCCESS);
 }
 
 /*
@@ -269,34 +174,14 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_002, TestSize.Level0)
  */
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_003, TestSize.Level0)
 {
-    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
-    if (MediaScannerManager::GetInstance() == nullptr) {
-        HiLog::Error(LABEL, "scanner manager get nullptr instance");
-        return;
-    }
-
-    string path = g_prefixPath + "/Pictures/gtest_Image3.jpeg";
-    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
-
     bool createRes = CreateFile("/storage/media/100/local/files/Pictures/gtest_Image3.jpeg");
     EXPECT_EQ(createRes, true);
 
-    int result;
-    std::string testcaseName("mediascanner_ScanImage_Test_003");
-    g_isCallbackReceived = false;
-    g_callbackStatus = -1;
-    g_callbackName = "";
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-
-    path = ConvertPath(path);
-    result = MediaScannerManager::GetInstance()->ScanFile(path, appCallback);
-    EXPECT_EQ(result, g_filescanstatus);
-    if (result == 0) {
-        // Wait here for callback. If not callback for 2 mintues, will skip this step
-        WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, g_filescanstatus);
-        EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
-    }
+    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
+    EXPECT_EQ(ret, E_SUCCESS);
 }
 
 /*
@@ -309,36 +194,14 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_003, TestSize.Level0)
  */
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanTextFile_Test_001, TestSize.Level0)
 {
-    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
-    if (MediaScannerManager::GetInstance() == nullptr) {
-        HiLog::Error(LABEL, "scanner manager get nullptr instance");
-        return;
-    }
-
-    MEDIA_DEBUG_LOG("mediascanner_ScanTextFile_Test_001 start");
-    string path = g_prefixPath + "/Documents/gtest_Text1.txt";
-    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
-
     bool createRes = CreateFile("/storage/media/100/local/files/Documents/gtest_Text1.txt");
     EXPECT_EQ(createRes, true);
 
-    int result;
-    std::string testcaseName("mediascanner_ScanTextFile_Test_001");
-    g_isCallbackReceived = false;
-    g_callbackStatus = -1;
-    g_callbackName = "";
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-
-    path = ConvertPath(path);
-    result = MediaScannerManager::GetInstance()->ScanFile(path, appCallback);
-    EXPECT_EQ(result, g_filescanstatus);
-    if (result == 0) {
-        // Wait here for callback. If not callback for 2 mintues, will skip this step
-        WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, g_filescanstatus);
-        EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
-    }
-    MEDIA_DEBUG_LOG("mediascanner_ScanTextFile_Test_001 end");
+    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
+    EXPECT_EQ(ret, E_SUCCESS);
 }
 
 /*
@@ -351,34 +214,14 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanTextFile_Test_001, TestSize.Leve
  */
 HWTEST_F(MediaScannerUnitTest, mediascanner_ScanHiddenFile_Test_001, TestSize.Level0)
 {
-    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
-    if (MediaScannerManager::GetInstance() == nullptr) {
-        HiLog::Error(LABEL, "scanner manager get nullptr instance");
-        return;
-    }
-
-    string path = g_prefixPath + "/Download/.HiddenFile";
-    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
-
     bool createRes = CreateFile("/storage/media/100/local/files/Download/.HiddenFile");
     EXPECT_EQ(createRes, true);
 
-    int result;
-    std::string testcaseName("mediascanner_ScanHiddenFile_Test_001");
-    g_isCallbackReceived = false;
-    g_callbackStatus = -1;
-    g_callbackName = "";
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-
-    path = ConvertPath(path);
-    result = MediaScannerManager::GetInstance()->ScanFile(path, appCallback);
-    EXPECT_EQ(result, g_filescanstatus);
-    if (result == 0) {
-        // Wait here for callback. If not callback for 2 mintues, will skip this step
-        WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, ERR_NOT_ACCESSIBLE);
-        EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
-    }
+    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
+    EXPECT_EQ(ret, E_SUCCESS);
 }
 
 /*
@@ -391,32 +234,11 @@ HWTEST_F(MediaScannerUnitTest, mediascanner_ScanHiddenFile_Test_001, TestSize.Le
  */
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_002, TestSize.Level0)
 {
-    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
-    if (MediaScannerManager::GetInstance() == nullptr) {
-        HiLog::Error(LABEL, "scanner manager get nullptr instance");
-        return;
-    }
-
-    string path = g_prefixPath;
-    HiLog::Info(LABEL, "ScanDir test case for: %{public}s", path.c_str());
-
-    int result;
-    std::string testcaseName("mediascanner_ScanDir_test_002");
-    g_isCallbackReceived = false;
-    g_callbackStatus = -1;
-    g_callbackName = "";
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-
-    path = ConvertPath(path);
-    result = MediaScannerManager::GetInstance()->ScanDir(path, appCallback);
-    EXPECT_EQ(result, g_filescanstatus);
-
-    if (result == 0) {
-        // Wait here for callback. If not callback for 2 mintues, will skip this step
-        WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, g_filescanstatus);
-        EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
-    }
+    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
+    EXPECT_EQ(ret, E_SUCCESS);
 }
 
 /*
@@ -429,32 +251,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_002, TestSize.Level0)
  */
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_CononicalPathtest_001, TestSize.Level0)
 {
-    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
-    if (MediaScannerManager::GetInstance() == nullptr) {
-        HiLog::Error(LABEL, "scanner manager get nullptr instance");
-        return;
-    }
-
-    string path = g_prefixPath + "/../files";
-    HiLog::Info(LABEL, "ScanDir test case for: %{public}s", path.c_str());
-
-    int result;
-    std::string testcaseName("mediascanner_ScanDir_CononicalPathtest_001");
-    g_isCallbackReceived = false;
-    g_callbackStatus = -1;
-    g_callbackName = "";
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-
-    path = ConvertPath(path);
-    result = MediaScannerManager::GetInstance()->ScanDir(path, appCallback);
-    EXPECT_EQ(result, g_filescanstatus);
-
-    if (result == 0) {
-        // Wait here for callback. If not callback for 2 mintues, will skip this step
-        WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, g_filescanstatus);
-        EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
-    }
+    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
+    EXPECT_EQ(ret, E_SUCCESS);
 }
 
 /*
@@ -467,32 +268,11 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_CononicalPathtest_001, Test
  */
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_001, TestSize.Level0)
 {
-    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
-    if (MediaScannerManager::GetInstance() == nullptr) {
-        HiLog::Error(LABEL, "scanner manager get nullptr instance");
-        return;
-    }
-
-    string path = g_prefixPath + "/../files/Pictures/gtest_Image1.jpg";
-    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
-
-    int result;
-    std::string testcaseName("mediascanner_ScanFile_CononicalPathtest_001");
-    g_isCallbackReceived = false;
-    g_callbackStatus = -1;
-    g_callbackName = "";
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-
-    path = ConvertPath(path);
-    result = MediaScannerManager::GetInstance()->ScanFile(path, appCallback);
-    EXPECT_EQ(result, g_filescanstatus);
-
-    if (result == 0) {
-        // Wait here for callback. If not callback for 2 mintues, will skip this step
-        WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, g_filescanstatus);
-        EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
-    }
+    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
+    EXPECT_EQ(ret, E_SUCCESS);
 }
 
 /*
@@ -505,33 +285,12 @@ HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_001, Tes
  */
 HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_002, TestSize.Level0)
 {
-    EXPECT_EQ((MediaScannerManager::GetInstance() != nullptr), true);
-    if (MediaScannerManager::GetInstance() == nullptr) {
-        HiLog::Error(LABEL, "scanner manager get nullptr instance");
-        return;
-    }
-
     MEDIA_DEBUG_LOG("mediascanner_ScanFile_CononicalPathtest_002 start");
-    string path = g_prefixPath + "/../files/Documents/gtest_Text1.txt";
-    HiLog::Info(LABEL, "ScanFile test case for: %{public}s", path.c_str());
-
-    int result;
-    std::string testcaseName("mediascanner_ScanFile_CononicalPathtest_002");
-    g_isCallbackReceived = false;
-    g_callbackStatus = -1;
-    g_callbackName = "";
-    auto appCallback = make_shared<ApplicationCallback>(testcaseName);
-
-    path = ConvertPath(path);
-    result = MediaScannerManager::GetInstance()->ScanFile(path, appCallback);
-    EXPECT_EQ(result, g_filescanstatus);
-
-    if (result == 0) {
-        // Wait here for callback. If not callback for 2 mintues, will skip this step
-        WaitForCallback();
-        EXPECT_EQ(g_callbackStatus, g_filescanstatus);
-        EXPECT_STREQ(g_callbackName.c_str(), testcaseName.c_str());
-    }
+    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
+    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
+    EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_DEBUG_LOG("mediascanner_ScanFile_CononicalPathtest_002 end");
 }
 } // namespace Media

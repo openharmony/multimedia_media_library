@@ -23,6 +23,7 @@
 #include "file_access_framework_errno.h"
 #include "file_access_helper.h"
 #include "file_filter.h"
+#include "get_self_permissions.h"
 #include "iservice_registry.h"
 #include "medialibrary_errno.h"
 #include "media_library_manager.h"
@@ -32,9 +33,8 @@
 
 using namespace std;
 using namespace OHOS;
-using namespace OHOS::Media;
 using namespace testing::ext;
-int g_uid = 5003;
+constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 
 namespace OHOS {
 namespace Media {
@@ -200,12 +200,21 @@ void CreateRootDir()
 
 void MediaLibraryExtUnitTest::SetUpTestCase(void)
 {
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_MEDIA");
+    perms.push_back("ohos.permission.WRITE_MEDIA");
+    perms.push_back("ohos.permission.FILE_ACCESS_MANAGER");
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryExtUnitTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
     const int DEFAULT_USER_SUID = 20000000;
     const int ROOT_USER_SUID = 0;
     setuid(DEFAULT_USER_SUID);
-    g_mediaFileExtHelper = CreateFileExtHelper(g_uid);
+    g_mediaFileExtHelper = CreateFileExtHelper(STORAGE_MANAGER_MANAGER_ID);
     setuid(ROOT_USER_SUID);
-    g_mediaDataShareHelper = CreateDataShareHelper(g_uid);
+    g_mediaDataShareHelper = CreateDataShareHelper(STORAGE_MANAGER_MANAGER_ID);
     if (g_mediaFileExtHelper == nullptr) {
         MEDIA_DEBUG_LOG("medialibraryDataAbilityHelper fail");
         return;
