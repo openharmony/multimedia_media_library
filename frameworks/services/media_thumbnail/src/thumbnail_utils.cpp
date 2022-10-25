@@ -71,8 +71,7 @@ bool ThumbnailUtils::DeleteLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailDa
         }
     }
 
-    int err;
-    if (!CleanLcdInfo(opts, thumbnailData, err)) {
+    if (!CleanThumbnailInfo(opts, false, true)) {
         return false;
     }
     return true;
@@ -92,8 +91,7 @@ bool ThumbnailUtils::DeleteThumbnailData(ThumbRdbOpt &opts, ThumbnailData &thumb
         }
     }
 
-    int err;
-    if (!CleanThumbnailInfo(opts, thumbnailData, err)) {
+    if (!CleanThumbnailInfo(opts, true, false)) {
         return false;
     }
     return true;
@@ -113,9 +111,7 @@ bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &t
         }
     }
 
-    int err;
-    if (!CleanDistributeLcdInfo(opts, thumbnailData, err)) {
-        MEDIA_ERR_LOG("CleanDistributeLcdInfo faild err : %{public}d", err);
+    if (!CleanDistributeLcdInfo(opts)) {
         return false;
     }
     return true;
@@ -137,9 +133,7 @@ bool ThumbnailUtils::ClearThumbnailAllRecord(ThumbRdbOpt &opts, ThumbnailData &t
         }
     }
 
-    int err;
-    if (!DeleteDistributeThumbnailInfo(opts, thumbnailData, err)) {
-        MEDIA_ERR_LOG("DeleteDistributeThumbnailInfo faild err : %{public}d", err);
+    if (!DeleteDistributeThumbnailInfo(opts)) {
         return false;
     }
     return true;
@@ -625,7 +619,7 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
     rdbPredicates.IsNull(MEDIA_DATA_DB_LCD);
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
-    rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, 0);
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
 
     rdbPredicates.Limit(LcdLimit);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
@@ -666,7 +660,7 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailRd
     rdbPredicates.IsNull(MEDIA_DATA_DB_THUMBNAIL);
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
-    rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, 0);
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
 
     rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
@@ -957,44 +951,30 @@ bool ThumbnailUtils::InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData 
     return true;
 }
 
-bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
+bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd)
 {
     ValuesBucket values;
-    values.PutNull(MEDIA_DATA_DB_THUMBNAIL);
+    if (withThumb) {
+        values.PutNull(MEDIA_DATA_DB_THUMBNAIL);
+    }
+    if (withLcd) {
+        values.PutNull(MEDIA_DATA_DB_LCD);
+        values.PutLong(MEDIA_DATA_DB_TIME_VISIT, 0);
+    }
     int changedRows;
-    err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+    auto err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
         return false;
     }
-    std::vector<std::string> devices = std::vector<std::string>();
-    opts.table = MEDIALIBRARY_TABLE;
-    SyncPushTable(opts, devices);
     return true;
 }
 
-bool ThumbnailUtils::CleanLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
-{
-    ValuesBucket values;
-    values.PutNull(MEDIA_DATA_DB_LCD);
-    values.PutLong(MEDIA_DATA_DB_TIME_VISIT, 0);
-    int changedRows;
-    err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-        vector<string> { opts.row });
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-        return false;
-    }
-    std::vector<std::string> devices = std::vector<std::string>();
-    opts.table = MEDIALIBRARY_TABLE;
-    SyncPushTable(opts, devices);
-    return true;
-}
-
-bool ThumbnailUtils::CleanDistributeLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
+bool ThumbnailUtils::CleanDistributeLcdInfo(ThumbRdbOpt &opts)
 {
     string udid;
+    int err;
     if (!GetUdidByNetworkId(opts, opts.networkId, udid, err)) {
         MEDIA_ERR_LOG("GetUdidByNetworkId failed! %{public}d", err);
         return false;
@@ -1004,24 +984,24 @@ bool ThumbnailUtils::CleanDistributeLcdInfo(ThumbRdbOpt &opts, ThumbnailData &da
     values.PutNull(MEDIA_DATA_DB_LCD);
     values.PutLong(MEDIA_DATA_DB_TIME_VISIT, 0);
     int changedRows;
-    vector<string> whereArgs = { udid, data.id };
+    vector<string> whereArgs = { udid, opts.row };
     string deleteCondition = REMOTE_THUMBNAIL_DB_UDID + " = ? AND " +
         REMOTE_THUMBNAIL_DB_FILE_ID + " = ?";
-    err = opts.store->Update(changedRows, REMOTE_THUMBNAIL_TABLE, values, deleteCondition, whereArgs);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Delete failed! %{public}d", err);
+    auto ret = opts.store->Update(changedRows, REMOTE_THUMBNAIL_TABLE, values, deleteCondition, whereArgs);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("RdbStore Delete failed! %{public}d", ret);
         return false;
     }
     return true;
 }
 
-bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
+bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
 {
     int changedRows;
-    vector<string> whereArgs = { opts.udid, data.id };
+    vector<string> whereArgs = { opts.udid, opts.row };
     string deleteCondition = REMOTE_THUMBNAIL_DB_UDID + " = ? AND " +
         REMOTE_THUMBNAIL_DB_FILE_ID + " = ?";
-    err = opts.store->Delete(changedRows, REMOTE_THUMBNAIL_TABLE, deleteCondition, whereArgs);
+    auto err = opts.store->Delete(changedRows, REMOTE_THUMBNAIL_TABLE, deleteCondition, whereArgs);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Delete failed! %{public}d", err);
         return false;
