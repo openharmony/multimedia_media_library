@@ -37,11 +37,11 @@ ohos_unittest("mediathumbnail_test") {
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
     "./src/mediathumbnail_test.cpp",
+    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/src/media_thumbnail_helper.cpp",
   ]
 
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/media_library_helper:media_thumbnail_helper",
     "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
   ]
 

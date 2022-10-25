@@ -89,7 +89,7 @@ void IThumbnailHelper::AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &o
         MEDIA_DEBUG_LOG("IThumbnailHelper::AddAsyncTask asyncWorker is null");
         return;
     }
-    GenerateAsyncTaskData* taskData = new (std::nothrow)GenerateAsyncTaskData();
+    GenerateAsyncTaskData* taskData = new (nothrow)GenerateAsyncTaskData();
     if (taskData == nullptr) {
         MEDIA_DEBUG_LOG("IThumbnailHelper::GenerateAsyncTaskData taskData is null");
         return;
@@ -101,13 +101,97 @@ void IThumbnailHelper::AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &o
     asyncWorker->AddTask(generateAsyncTask, isFront);
 }
 
+ThumbnailWait::ThumbnailWait(bool release) : needRelease_(release)
+{}
+
+ThumbnailWait::~ThumbnailWait()
+{
+    if (needRelease_) {
+        Notify();
+    }
+}
+
+ThumbnailMap ThumbnailWait::thumbnailMap_;
+std::shared_mutex ThumbnailWait::mutex_;
+
+static bool WaitFor(const shared_ptr<SyncStatus>& thumbnailWait, int waitMs, unique_lock<mutex> &lck)
+{
+    bool ret = thumbnailWait->cond_.wait_for(lck, chrono::milliseconds(waitMs),
+        [thumbnailWait]() { return thumbnailWait->isSyncComplete_; });
+    if (!ret) {
+        MEDIA_INFO_LOG("IThumbnailHelper::Wait wait for lock timeout");
+    }
+    return ret;
+}
+
+WaitStatus ThumbnailWait::InsertAndWait(const string &id, bool isLcd)
+{
+    id_ = id;
+
+    if (isLcd) {
+        id_ += THUMBNAIL_LCD_END_SUFFIX;
+    }
+    unique_lock<shared_mutex> writeLck(mutex_);
+    auto iter = thumbnailMap_.find(id_);
+    if (iter != thumbnailMap_.end()) {
+        auto thumbnailWait = iter->second;
+        unique_lock<mutex> lck(thumbnailWait->mtx_);
+        writeLck.unlock();
+        bool ret = WaitFor(thumbnailWait, WAIT_FOR_MS, lck);
+        if (ret) {
+            return WaitStatus::WAIT_SUCCESS;
+        } else {
+            return WaitStatus::TIMEOUT;
+        }
+    } else {
+        shared_ptr<SyncStatus> thumbnailWait = make_shared<SyncStatus>();
+        thumbnailMap_.insert(ThumbnailMap::value_type(id_, thumbnailWait));
+        return WaitStatus::INSERT;
+    }
+}
+
+void ThumbnailWait::CheckAndWait(const string &id, bool isLcd)
+{
+    id_ = id;
+
+    if (isLcd) {
+        id_ += THUMBNAIL_LCD_END_SUFFIX;
+    }
+    shared_lock<shared_mutex> readLck(mutex_);
+    auto iter = thumbnailMap_.find(id_);
+    if (iter != thumbnailMap_.end()) {
+        auto thumbnailWait = iter->second;
+        unique_lock<mutex> lck(thumbnailWait->mtx_);
+        readLck.unlock();
+        WaitFor(thumbnailWait, WAIT_FOR_MS, lck);
+    }
+}
+
+void ThumbnailWait::Notify()
+{
+    unique_lock<shared_mutex> writeLck(mutex_);
+    auto iter = thumbnailMap_.find(id_);
+    if (iter != thumbnailMap_.end()) {
+        auto thumbnailWait = iter->second;
+        thumbnailMap_.erase(iter);
+        {
+            unique_lock<mutex> lck(thumbnailWait->mtx_);
+            writeLck.unlock();
+            thumbnailWait->isSyncComplete_ = true;
+        }
+        thumbnailWait->cond_.notify_all();
+    }
+}
+
 bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool force)
 {
-    if (!opts.networkId.empty()) {
-        return false;
+    ThumbnailWait thumbnailWait(true);
+    auto ret = thumbnailWait.InsertAndWait(data.id, true);
+    if (ret == WaitStatus::WAIT_SUCCESS) {
+        return true;
     }
-    if (!ThumbnailUtils::LoadSourceImage(data)) {
-        MEDIA_ERR_LOG("LoadSourceImage faild");
+
+    if (!opts.networkId.empty()) {
         return false;
     }
 
@@ -122,6 +206,10 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
     }
 
     if (!ThumbnailUtils::IsImageExist(data.lcdKey, opts.networkId, opts.kvStore)) {
+        if (!ThumbnailUtils::LoadSourceImage(data)) {
+            MEDIA_ERR_LOG("LoadSourceImage faild");
+            return false;
+        }
         if (!ThumbnailUtils::CreateLcdData(data, opts.size)) {
             MEDIA_ERR_LOG("CreateLcdData faild");
             return false;
@@ -150,11 +238,12 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
 
 bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool force)
 {
-    if (!opts.networkId.empty()) {
-        return false;
+    ThumbnailWait thumbnailWait(true);
+    auto ret = thumbnailWait.InsertAndWait(data.id, true);
+    if (ret == WaitStatus::WAIT_SUCCESS) {
+        return true;
     }
-    if (!ThumbnailUtils::LoadSourceImage(data)) {
-        MEDIA_ERR_LOG("LoadSourceImage faild");
+    if (!opts.networkId.empty()) {
         return false;
     }
 
@@ -169,6 +258,10 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
     }
 
     if (!ThumbnailUtils::IsImageExist(data.thumbnailKey, opts.networkId, opts.kvStore)) {
+        if (!ThumbnailUtils::LoadSourceImage(data)) {
+            MEDIA_ERR_LOG("LoadSourceImage faild");
+            return false;
+        }
         if (!ThumbnailUtils::CreateThumbnailData(data)) {
             MEDIA_ERR_LOG("CreateThumbnailData faild");
             return false;
@@ -194,7 +287,7 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
 
 bool IThumbnailHelper::DoThumbnailSync(ThumbRdbOpt &opts, ThumbnailData &outData)
 {
-    ThumbnailConnection *conn = new (std::nothrow) ThumbnailConnection;
+    ThumbnailConnection *conn = new (nothrow) ThumbnailConnection;
     if (conn == nullptr) {
         return false;
     }
@@ -204,7 +297,7 @@ bool IThumbnailHelper::DoThumbnailSync(ThumbRdbOpt &opts, ThumbnailData &outData
         return false;
     }
 
-    std::vector<std::string> devices = { opts.networkId };
+    vector<string> devices = { opts.networkId };
     opts.table = MEDIALIBRARY_TABLE;
     if (ThumbnailUtils::SyncPullTable(opts, devices, true)) {
         MEDIA_INFO_LOG("GetThumbnailPixelMap SyncPullTable FALSE");
@@ -226,7 +319,7 @@ void ThumbnailConnection::OnAbilityConnectDone(
         return;
     }
     {
-        std::unique_lock<std::mutex> lock(status_.mtx_);
+        unique_lock<mutex> lock(status_.mtx_);
         dataShareProxy_ = iface_cast<DataShare::DataShareProxy>(remoteObject);
     }
     status_.cond_.notify_all();
@@ -235,7 +328,7 @@ void ThumbnailConnection::OnAbilityConnectDone(
 void ThumbnailConnection::OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int resultCode)
 {
     MEDIA_DEBUG_LOG("called begin %{public}d", resultCode);
-    std::unique_lock<std::mutex> lock(status_.mtx_);
+    unique_lock<mutex> lock(status_.mtx_);
     dataShareProxy_ = nullptr;
 }
 
@@ -254,8 +347,8 @@ int32_t ThumbnailConnection::GetRemoteDataShareHelper(ThumbRdbOpt &opts, sptr<AA
         MEDIA_ERR_LOG("ConnectAbility failed %{public}d", err);
         return err;
     }
-    std::unique_lock<std::mutex> lock(status_.mtx_);
-    if (status_.cond_.wait_for(lock, std::chrono::seconds(WAIT_FOR_SECOND),
+    unique_lock<mutex> lock(status_.mtx_);
+    if (status_.cond_.wait_for(lock, chrono::seconds(WAIT_FOR_SECOND),
         [this] { return dataShareProxy_ != nullptr; })) {
         MEDIA_DEBUG_LOG("All Wait connect success.");
     } else {
