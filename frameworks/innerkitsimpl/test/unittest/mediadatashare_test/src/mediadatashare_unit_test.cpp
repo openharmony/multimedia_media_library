@@ -18,6 +18,7 @@
 
 #include "datashare_helper.h"
 #include "fetch_result.h"
+#include "get_self_permissions.h"
 #include "iservice_registry.h"
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
@@ -30,7 +31,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-int g_uid = 5003;
+constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 std::shared_ptr<DataShare::DataShareHelper> g_mediaDataShareHelper;
 
 std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t systemAbilityId)
@@ -51,8 +52,17 @@ std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t system
 
 void MediaDataShareUnitTest::SetUpTestCase(void)
 {
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_MEDIA");
+    perms.push_back("ohos.permission.WRITE_MEDIA");
+    perms.push_back("ohos.permission.FILE_ACCESS_MANAGER");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaDataShareUnitTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
     MEDIA_INFO_LOG("SetUpTestCase invoked");
-    g_mediaDataShareHelper = CreateDataShareHelper(g_uid);
+    g_mediaDataShareHelper = CreateDataShareHelper(STORAGE_MANAGER_MANAGER_ID);
+    ASSERT_TRUE(g_mediaDataShareHelper != nullptr);
 
     Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
     DataShare::DataSharePredicates predicates;
