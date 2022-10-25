@@ -32,11 +32,7 @@ namespace Media {
 class ThumbnailService {
 public:
     virtual ~ThumbnailService() = default;
-    THUMBNAIL_API_EXPORT static std::shared_ptr<ThumbnailService> GetInstance(
-        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
-        const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
-
+    THUMBNAIL_API_EXPORT static std::shared_ptr<ThumbnailService> GetInstance();
     THUMBNAIL_API_EXPORT void ReleaseService();
 
     THUMBNAIL_API_EXPORT std::shared_ptr<DataShare::ResultSetBridge> GetThumbnail(const std::string &uri);
@@ -51,11 +47,12 @@ public:
     THUMBNAIL_API_EXPORT int32_t CreateThumbnailAsync(const std::string &uri);
     THUMBNAIL_API_EXPORT int32_t CreateThumbnail(const std::string &uri);
     THUMBNAIL_API_EXPORT static bool ParseThumbnailInfo(const std::string &uriString);
-private:
-    ThumbnailService();
-    int32_t Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    THUMBNAIL_API_EXPORT void InvalidateThumbnail(const std::string &id);
+    THUMBNAIL_API_EXPORT int32_t Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
+private:
+    ThumbnailService();
 
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
     static std::mutex instanceLock_;

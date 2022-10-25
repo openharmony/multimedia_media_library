@@ -56,6 +56,8 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts,
     shared_ptr<DataShare::ResultSetBridge> &outResultSet)
 {
     int err = E_ERR;
+    ThumbnailWait thumbnailWait(false);
+    thumbnailWait.CheckAndWait(opts.row, false);
     ThumbnailData thumbnailData;
     shared_ptr<AbsSharedResultSet> rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
     if (rdbSet == nullptr) {
@@ -81,7 +83,6 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts,
         if (!DoCreateThumbnail(opts, thumbnailData, true)) {
             return E_ERR;
         }
-        return E_ERR;
     }
 
     if (!ThumbnailUtils::GetKvResultSet(opts.kvStore, thumbnailData.thumbnailKey, opts.networkId, outResultSet)) {

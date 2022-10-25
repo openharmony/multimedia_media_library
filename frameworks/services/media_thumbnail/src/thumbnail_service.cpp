@@ -40,8 +40,7 @@ ThumbnailService::ThumbnailService(void)
     kvStorePtr_ = nullptr;
 }
 
-shared_ptr<ThumbnailService> ThumbnailService::GetInstance(const shared_ptr<RdbStore> &rdbStore,
-    const shared_ptr<SingleKvStore> &kvStore, const shared_ptr<Context> &context)
+shared_ptr<ThumbnailService> ThumbnailService::GetInstance()
 {
     if (thumbnailServiceInstance_ == nullptr) {
         std::lock_guard<std::mutex> lockGuard(instanceLock_);
@@ -49,9 +48,6 @@ shared_ptr<ThumbnailService> ThumbnailService::GetInstance(const shared_ptr<RdbS
             return thumbnailServiceInstance_;
         }
         thumbnailServiceInstance_ = shared_ptr<ThumbnailService>(new (std::nothrow)ThumbnailService());
-        if (thumbnailServiceInstance_ != nullptr) {
-            thumbnailServiceInstance_->Init(rdbStore, kvStore, context);
-        }
     }
 
     return thumbnailServiceInstance_;
@@ -284,6 +280,21 @@ int32_t ThumbnailService::ClearDistributeThumbnail(const string &udid)
 bool ThumbnailService::ParseThumbnailInfo(const string &uriString)
 {
     return ThumbnailUriUtils::ParseThumbnailInfo(uriString);
+}
+
+void ThumbnailService::InvalidateThumbnail(const std::string &id)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .kvStore = kvStorePtr_,
+        .table = MEDIALIBRARY_TABLE,
+        .row = id,
+    };
+    ThumbnailData thumbnailData;
+    thumbnailData.thumbnailKey = "invalid";
+    thumbnailData.lcdKey = "invalid";
+    ThumbnailUtils::DeleteOriginImage(opts, thumbnailData);
+    ThumbnailUtils::CleanThumbnailInfo(opts, true, true);
 }
 } // namespace Media
 } // namespace OHOS
