@@ -293,12 +293,13 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
                 NAPI_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
                 return false;
             }
-            string fileId;
             string uri = static_cast<std::string>(item.GetSingle(VALUE_IDX));
             UriRemoveAllFragment(uri);
+            string fileId;
             MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(uri, context->networkId, fileId);
             string field = isAlbum ? MEDIA_DATA_DB_BUCKET_ID : MEDIA_DATA_DB_ID;
             operations.push_back({item.operation, {field, fileId}});
+            continue;
         }
         operations.push_back(item);
     }
