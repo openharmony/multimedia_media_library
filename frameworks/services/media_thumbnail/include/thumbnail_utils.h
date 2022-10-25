@@ -78,6 +78,7 @@ public:
     static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
     static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, const Size &size, std::vector<uint8_t> &data);
     static void ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData);
+    static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
     // URI utils
     std::string GetDeviceIdByUri(const std::string &uri);
@@ -162,10 +163,8 @@ private:
         std::string &outUdid, int &err);
     static bool UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-    static bool CleanLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-    static bool CleanThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-    static bool CleanDistributeLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-    static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    static bool CleanDistributeLcdInfo(ThumbRdbOpt &opts);
+    static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
 };
 
 class SyncStatus {

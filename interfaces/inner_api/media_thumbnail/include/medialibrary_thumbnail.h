@@ -17,7 +17,6 @@
 #define FRAMEWORKS_INNERKITSIMPL_MEDIALIBRARY_DATA_ABILITY_INCLUDE_MEDIALIBRARY_THUMBNAIL_H_
 
 #include "avmetadatahelper.h"
-#include "media_thumbnail_helper.h"
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 
