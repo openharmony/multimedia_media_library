@@ -49,7 +49,7 @@ void CreateDataHelper(int32_t systemAbilityId);
 
 constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 int g_albumMediaType = MEDIA_TYPE_ALBUM;
-const int COPY_TIME = 99;
+const int COPY_TIME = 9;
 const int SCAN_WAIT_TIME = 10;
 int64_t g_oneImageSize = 0;
 int64_t g_oneVideoSize = 0;
@@ -157,7 +157,7 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
     auto ret = helper->Insert(scanUri, valuesBucket);
-    EXPECT_EQ(ret, ERR_MEM_ALLOC_FAIL);
+    EXPECT_EQ(ret, 0);
     sleep(SCAN_WAIT_TIME);
 
     // get base size
@@ -320,13 +320,6 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
 
     mediaLibraryManager->CloseAsset(srcUri, srcFd);
     mediaLibraryManager->CloseAsset(destUri, destFd);
-    if (sleepSecond) {
-        Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
-        DataShareValuesBucket valuesBucket1;
-        valuesBucket1.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
-        auto ret = helper->Insert(scanUri, valuesBucket1);
-        EXPECT_EQ(ret, ERR_MEM_ALLOC_FAIL);
-    }
     sleep(sleepSecond);
     MEDIA_INFO_LOG("CopyFile:: end Copy file: %s", newName.c_str());
 }
@@ -422,10 +415,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_004, TestSize.Level
     for (int i = 0; i < COPY_TIME; i++)
     {
         string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".jpg";
-        int sleepSecond = 0;
-        if (i + 1 == COPY_TIME) {
-            sleepSecond = 10;
-        }
+        int sleepSecond = 3;
+
         CopyFile(fileAsset->GetUri(), MEDIALIBRARY_IMAGE_URI, "Pictures/", newName, MEDIA_TYPE_IMAGE, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004:: Copy finish!!!");
@@ -500,10 +491,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_008, TestSize.Level
     for (int i = 0; i < COPY_TIME; i++)
     {
         string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".mp4";
-        int sleepSecond = 0;
-        if (i + 1 == COPY_TIME) {
-            sleepSecond = 10;
-        }
+        int sleepSecond = 3;
         CopyFile(fileAsset->GetUri(), MEDIALIBRARY_VIDEO_URI, "Videos/", newName, MEDIA_TYPE_VIDEO, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_008:: Copy finish!!!");
@@ -575,10 +563,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_012, TestSize.Level
     for (int i = 0; i < COPY_TIME; i++)
     {
         string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".mp3";
-        int sleepSecond = 0;
-        if (i + 1 == COPY_TIME) {
-            sleepSecond = 10;
-        }
+        int sleepSecond = 3;
         CopyFile(fileAsset->GetUri(), MEDIALIBRARY_AUDIO_URI, "Audios/", newName, MEDIA_TYPE_AUDIO, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012:: Copy finish!!!");
@@ -651,10 +636,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_016, TestSize.Level
     for (int i = 0; i < COPY_TIME; i++)
     {
         string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".txt";
-        int sleepSecond = 0;
-        if (i + 1 == COPY_TIME) {
-            sleepSecond = 10;
-        }
+        int sleepSecond = 3;
         CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/", newName, MEDIA_TYPE_FILE, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012:: Copy finish!!!");
