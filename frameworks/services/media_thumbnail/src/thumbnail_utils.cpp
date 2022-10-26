@@ -625,7 +625,7 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
     rdbPredicates.IsNull(MEDIA_DATA_DB_LCD);
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
-    rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, 0);
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
 
     rdbPredicates.Limit(LcdLimit);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
@@ -666,7 +666,7 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailRd
     rdbPredicates.IsNull(MEDIA_DATA_DB_THUMBNAIL);
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
-    rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, 0);
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
 
     rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);

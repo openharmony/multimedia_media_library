@@ -640,7 +640,6 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         }
         tracer.Start("GenThumbnail");
         queryResultSet = GenThumbnail(uriString);
-        tracer.Finish();
     } else {
         auto absResultSet = QueryRdb(uri, columns, predicates);
         queryResultSet = RdbUtils::ToResultSetBridge(absResultSet);
