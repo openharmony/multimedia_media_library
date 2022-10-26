@@ -597,7 +597,7 @@ bool MediaLibrarySmartAlbumMapOperations::IsAlbumExistInDb(const std::string &pa
     MEDIA_DEBUG_LOG("isAlbumExistInDb path = %{private}s", realPath.c_str());
     AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
     absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, realPath);
-    absPredicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, 0);
+    absPredicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
     vector<string> columns;
     unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     if (queryResultSet == nullptr || queryResultSet->GoToNextRow() != NativeRdb::E_OK) {

@@ -274,39 +274,36 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
-    list<OperationItem> operList;
-    for (auto item : predicate->GetOperationList()) {
+    std::vector<OperationItem> operations;
+    auto &items = predicate->GetOperationList();
+    for (auto &item : items) {
+        if (DEVICE_DB_NETWORK_ID == static_cast<std::string>(item.GetSingle(FIELD_IDX))) {
+            if (item.operation != DataShare::EQUAL_TO || static_cast<std::string>(item.GetSingle(VALUE_IDX)).empty()) {
+                NAPI_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
+                return false;
+            }
+            context->networkId = static_cast<std::string>(item.GetSingle(VALUE_IDX));
+            continue;
+        }
         // change uri ->file id
         // get networkid
         // replace networkid with file id
-        if (item.singleParams[FIELD_IDX].operator string() == MEDIA_DATA_DB_URI) {
+        if (MEDIA_DATA_DB_URI == static_cast<std::string>(item.GetSingle(FIELD_IDX))) {
             if (item.operation != DataShare::EQUAL_TO) {
                 NAPI_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
                 return false;
             }
-            string uri = item.singleParams[VALUE_IDX].operator string();
+            string uri = static_cast<std::string>(item.GetSingle(VALUE_IDX));
             UriRemoveAllFragment(uri);
             string fileId;
             MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(uri, context->networkId, fileId);
-            item.singleParams[FIELD_IDX] = isAlbum ? DataShare::DataSharePredicatesObject(MEDIA_DATA_DB_BUCKET_ID) :
-                DataShare::DataSharePredicatesObject(MEDIA_DATA_DB_ID);
-            item.singleParams[VALUE_IDX] = DataShare::DataSharePredicatesObject(fileId);
-        }
-
-        if (item.singleParams[FIELD_IDX].operator string() == DEVICE_DB_NETWORK_ID) {
-            if (item.operation != DataShare::EQUAL_TO ||
-                item.singleParams[VALUE_IDX].GetType() != DataShare::DataSharePredicatesObjectType::TYPE_STRING) {
-                NAPI_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
-                return false;
-            }
-            context->networkId = item.singleParams[VALUE_IDX].operator string();
+            string field = isAlbum ? MEDIA_DATA_DB_BUCKET_ID : MEDIA_DATA_DB_ID;
+            operations.push_back({item.operation, {field, fileId}});
             continue;
         }
-        operList.push_back(item);
+        operations.push_back(item);
     }
-    if (operList.size()) {
-        context->predicates = DataSharePredicates(operList);
-    }
+    context->predicates = DataSharePredicates(std::move(operations));
     return true;
 }
 
