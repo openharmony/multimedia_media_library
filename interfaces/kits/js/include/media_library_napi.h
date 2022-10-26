@@ -147,9 +147,6 @@ private:
     static napi_value JSCreateAsset(napi_env env, napi_callback_info info);
     static napi_value JSDeleteAsset(napi_env env, napi_callback_info info);
 
-    static napi_value JSCreateAlbum(napi_env env, napi_callback_info info);
-    static napi_value JSDeleteAlbum(napi_env env, napi_callback_info info);
-
     static napi_value JSOnCallback(napi_env env, napi_callback_info info);
     static napi_value JSOffCallback(napi_env env, napi_callback_info info);
 
