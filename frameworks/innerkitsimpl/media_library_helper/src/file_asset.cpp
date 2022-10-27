@@ -438,7 +438,17 @@ bool FileAsset::IsFileExists(const string &filePath)
 
 int32_t FileAsset::DeleteAsset(const string &filePath)
 {
-    return remove(filePath.c_str());
+    int32_t errCode = E_ERR;
+    if (!MediaFileUtils::IsDirectory(filePath)) {
+        errCode = remove(filePath.c_str());
+    } else {
+        errCode = MediaFileUtils::RemoveDirectory(filePath);
+    }
+    if (errCode != E_SUCCESS) {
+        MEDIA_ERR_LOG("DeleteAsset failed, filePath: %{private}s, errno: %{public}d, errmsg: %{public}s",
+            filePath.c_str(), errno, strerror(errno));
+    }
+    return errCode;
 }
 
 int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)

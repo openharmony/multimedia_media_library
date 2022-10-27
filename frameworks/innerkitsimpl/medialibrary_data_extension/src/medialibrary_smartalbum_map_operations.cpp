@@ -224,7 +224,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleFile(const shared_ptr<FileAs
     string assetPath = fileAsset->GetRecyclePath();
     if (!MediaLibraryObjectUtils::IsAssetExistInDb(fileAsset->GetParent())) {
         MEDIA_INFO_LOG("RecycleFile GetRelativePath() = %{private}s", fileAsset->GetRelativePath().c_str());
-        int32_t albumId = MediaLibraryObjectUtils::CreateDirWithPath(fileAsset->GetRelativePath());
+        int32_t albumId = MediaLibraryObjectUtils::CreateDirWithPath(ROOT_MEDIA_DIR + fileAsset->GetRelativePath());
         nativeAlbumAsset.SetAlbumId(albumId);
         errorCode = fileAsset->ModifyAsset(recyclePath, assetPath);
         CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode,
@@ -301,7 +301,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleDir(const shared_ptr<FileAss
     MEDIA_INFO_LOG("RecycleDir assetPath = %{private}s", assetPath.c_str());
     if (!MediaLibraryObjectUtils::IsAssetExistInDb(fileAsset->GetParent())) {
         MEDIA_INFO_LOG("RecycleDir GetRelativePath() = %{private}s", fileAsset->GetRelativePath().c_str());
-        int32_t albumId = MediaLibraryObjectUtils::CreateDirWithPath(fileAsset->GetRelativePath());
+        int32_t albumId = MediaLibraryObjectUtils::CreateDirWithPath(ROOT_MEDIA_DIR + fileAsset->GetRelativePath());
         nativeAlbumAsset.SetAlbumId(albumId);
 
         if (MediaFileUtils::RenameDir(recyclePath, assetPath)) {
@@ -597,7 +597,7 @@ bool MediaLibrarySmartAlbumMapOperations::IsAlbumExistInDb(const std::string &pa
     MEDIA_DEBUG_LOG("isAlbumExistInDb path = %{private}s", realPath.c_str());
     AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
     absPredicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, realPath);
-    absPredicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, 0);
+    absPredicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
     vector<string> columns;
     unique_ptr<NativeRdb::ResultSet> queryResultSet = rdbStore->Query(absPredicates, columns);
     if (queryResultSet == nullptr || queryResultSet->GoToNextRow() != NativeRdb::E_OK) {

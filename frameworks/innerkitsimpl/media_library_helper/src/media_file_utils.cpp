@@ -55,7 +55,7 @@ int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, str
     return errRet;
 }
 
-int32_t RemoveDirectory(const string &path)
+int32_t MediaFileUtils::RemoveDirectory(const string &path)
 {
     int32_t errCode;
     char *dirPath = const_cast<char*>(path.c_str());
