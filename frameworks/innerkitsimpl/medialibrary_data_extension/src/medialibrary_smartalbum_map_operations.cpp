@@ -224,7 +224,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleFile(const shared_ptr<FileAs
     string assetPath = fileAsset->GetRecyclePath();
     if (!MediaLibraryObjectUtils::IsAssetExistInDb(fileAsset->GetParent())) {
         MEDIA_INFO_LOG("RecycleFile GetRelativePath() = %{private}s", fileAsset->GetRelativePath().c_str());
-        int32_t albumId = MediaLibraryObjectUtils::CreateDirWithPath(fileAsset->GetRelativePath());
+        int32_t albumId = MediaLibraryObjectUtils::CreateDirWithPath(ROOT_MEDIA_DIR + fileAsset->GetRelativePath());
         nativeAlbumAsset.SetAlbumId(albumId);
         errorCode = fileAsset->ModifyAsset(recyclePath, assetPath);
         CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode,
@@ -301,7 +301,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleDir(const shared_ptr<FileAss
     MEDIA_INFO_LOG("RecycleDir assetPath = %{private}s", assetPath.c_str());
     if (!MediaLibraryObjectUtils::IsAssetExistInDb(fileAsset->GetParent())) {
         MEDIA_INFO_LOG("RecycleDir GetRelativePath() = %{private}s", fileAsset->GetRelativePath().c_str());
-        int32_t albumId = MediaLibraryObjectUtils::CreateDirWithPath(fileAsset->GetRelativePath());
+        int32_t albumId = MediaLibraryObjectUtils::CreateDirWithPath(ROOT_MEDIA_DIR + fileAsset->GetRelativePath());
         nativeAlbumAsset.SetAlbumId(albumId);
 
         if (MediaFileUtils::RenameDir(recyclePath, assetPath)) {
