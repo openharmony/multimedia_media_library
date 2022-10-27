@@ -37,21 +37,15 @@ public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
 
-    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<FileAsset>> fileResult,
-                                            std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
-    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<AlbumAsset>> fileResult,
-                                            std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
-    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<SmartAlbumAsset>> fileResult,
-                                            std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
+    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<FileAsset>> fileResult);
+    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<AlbumAsset>> fileResult);
+    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<SmartAlbumAsset>> fileResult);
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResultObject();
     std::shared_ptr<FetchResult<AlbumAsset>> GetFetchAlbumResultObject();
     std::shared_ptr<FetchResult<SmartAlbumAsset>> GetFetchSmartAlbumResultObject();
-    std::shared_ptr<DataShare::DataShareHelper> GetMediaDataHelper() const;
 
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResult() const;
     FetchResType GetFetchResType();
-    static std::shared_ptr<DataShare::DataShareHelper> sMediaDataHelper;
-    static std::mutex sDataHelperMutex_;
 
 private:
     static void FetchFileResultNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -79,7 +73,6 @@ private:
     static inline thread_local std::unique_ptr<FetchResult<AlbumAsset>> sFetchAlbumResult_ = nullptr;
     static inline thread_local std::unique_ptr<FetchResult<SmartAlbumAsset>> sFetchSmartAlbumResult_ = nullptr;
     static inline thread_local FetchResType sFetchResType_ = FetchResType::TYPE_FILE;
-    std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
 };
 
 class FetchFileResultAsyncContext : public NapiError {

@@ -61,7 +61,6 @@ private:
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
-    static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
 };
 } // namespace Media
 } // namespace OHOS
