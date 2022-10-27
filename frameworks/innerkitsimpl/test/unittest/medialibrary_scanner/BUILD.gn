@@ -18,6 +18,7 @@ ohos_executable("scanner") {
   install_enable = true
   include_dirs = [
     "./include",
+    "../get_self_permissions/include",
     "$MEDIA_LIB_BASE_DIR/interfaces/innerkits/native/include",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
     "//commonlibrary/c_utils/base/include",
@@ -26,7 +27,10 @@ ohos_executable("scanner") {
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
   ]
 
-  sources = [ "./src/medialibrary_scan.cpp" ]
+  sources = [
+    "../get_self_permissions/src/get_self_permissions.cpp",
+    "./src/medialibrary_scan.cpp",
+  ]
 
   deps = [ "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension" ]
 
