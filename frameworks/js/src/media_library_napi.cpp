@@ -31,6 +31,7 @@
 #include "result_set_utils.h"
 #include "string_ex.h"
 #include "string_wrapper.h"
+#include "userfile_client.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -44,6 +45,8 @@ const int32_t NUM_2 = 2;
 const int32_t NUM_3 = 3;
 const string DATE_FUNCTION = "DATE(";
 
+std::mutex MediaLibraryNapi::sUserFileClientMutex_;
+
 static map<string, ListenerType> ListenerTypeMaps = {
     {"audioChange", AUDIO_LISTENER},
     {"videoChange", VIDEO_LISTENER},
@@ -55,7 +58,6 @@ static map<string, ListenerType> ListenerTypeMaps = {
 };
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
-std::shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::sDataShareHelper_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDirectoryEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sVirtualAlbumTypeEnumRef_ = nullptr;
@@ -165,39 +167,6 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
     return exports;
 }
 
-shared_ptr<DataShare::DataShareHelper> MediaLibraryNapi::GetDataShareHelper(napi_env env, napi_callback_info info)
-{
-    size_t argc = ARGS_ONE;
-    napi_value argv[ARGS_ONE] = {0};
-    napi_value thisVar = nullptr;
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-
-    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = nullptr;
-    bool isStageMode = false;
-    napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode);
-    if (status != napi_ok || !isStageMode) {
-        auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
-        if (ability == nullptr) {
-            NAPI_ERR_LOG("Failed to get native ability instance");
-            return nullptr;
-        }
-        auto context = ability->GetContext();
-        if (context == nullptr) {
-            NAPI_ERR_LOG("Failed to get native context instance");
-            return nullptr;
-        }
-        dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
-    } else {
-        auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
-        if (context == nullptr) {
-            NAPI_ERR_LOG("Failed to get native stage context instance");
-            return nullptr;
-        }
-        dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
-    }
-    return dataShareHelper;
-}
-
 // Constructor callback
 napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_callback_info info)
 {
@@ -225,10 +194,16 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
         g_listObj = make_unique<ChangeListenerNapi>(env);
     }
 
-    if (obj->sDataShareHelper_ == nullptr) {
-        obj->sDataShareHelper_ = GetDataShareHelper(env, info);
-        CHECK_NULL_PTR_RETURN_UNDEFINED(env, obj->sDataShareHelper_, result, "Helper creation failed");
+    std::unique_lock<std::mutex> helperLock(sUserFileClientMutex_);
+    if (!UserFileClient::IsValid()) {
+        UserFileClient::Init(env, info);
+        if (!UserFileClient::IsValid()) {
+            NAPI_ERR_LOG("UserFileClient creation failed");
+            napi_get_undefined(env, &(result));
+            return result;
+        }
     }
+    helperLock.unlock();
 
     status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
                        MediaLibraryNapi::MediaLibraryNapiDestructor, nullptr, nullptr);
@@ -482,12 +457,6 @@ static void GetPublicDirectoryExecute(napi_env env, void *data)
 
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    shared_ptr<DataShareHelper> helper = context->objectInfo->sDataShareHelper_;
-    if (helper == nullptr) {
-        context->error = ERR_INVALID_OUTPUT;
-        NAPI_ERR_LOG("sDataShareHelper is null");
-        return;
-    }
 
     vector<string> selectionArgs, columns;
     DataSharePredicates predicates;
@@ -498,7 +467,7 @@ static void GetPublicDirectoryExecute(napi_env env, void *data)
     string queryUri = MEDIALIBRARY_DIRECTORY_URI;
     Uri uri(queryUri);
 
-    shared_ptr<DataShareResultSet> resultSet = helper->Query(uri, predicates, columns);
+    shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns);
     if (resultSet != nullptr) {
         auto count = 0;
         auto ret = resultSet->GetRowCount(count);
@@ -624,12 +593,7 @@ static void GetFileAssetsExecute(napi_env env, void *data)
 
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    shared_ptr<DataShareHelper> helper = context->objectInfo->sDataShareHelper_;
-    if (helper == nullptr) {
-        context->error = ERR_INVALID_OUTPUT;
-        NAPI_ERR_LOG("sDataShareHelper is null");
-        return;
-    }
+    
     GetFileAssetUpdateSelections(context);
     vector<string> columns{"*"};
     if (context->extendArgs.find(DATE_FUNCTION) != string::npos) {
@@ -651,7 +615,8 @@ static void GetFileAssetsExecute(napi_env env, void *data)
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = helper->Query(uri, predicates, columns);
+
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns);
     if (resultSet != nullptr) {
         // Create FetchResult object using the contents of resultSet
         context->fetchFileResult = make_unique<FetchResult>(move(resultSet));
@@ -665,6 +630,7 @@ static void GetFileAssetsExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Query for get fileAssets failed");
     }
 }
+
 
 static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status, void *data)
 {
@@ -683,8 +649,7 @@ static void GetFileAssetsAsyncCallbackComplete(napi_env env, napi_status status,
     } else {
         // Create FetchResult object using the contents of resultSet
         if (context->fetchFileResult != nullptr) {
-            napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchFileResult),
-                context->objectInfo->sDataShareHelper_);
+            napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchFileResult));
             if (context->fetchFileResult->GetCount() < 0) {
                 MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
                                                              "find no data by options");
@@ -783,7 +748,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
         NAPI_DEBUG_LOG("querycoverUri is = %{public}s", queryUri.c_str());
     }
     Uri uri(queryUri);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(
         uri, predicates, columns);
     unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     fetchFileResult->networkId_ = context->networkId;
@@ -823,12 +788,7 @@ static void GetResultDataExecute(napi_env env, void *data)
 
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    shared_ptr<DataShareHelper> helper = context->objectInfo->sDataShareHelper_;
-    if (helper == nullptr) {
-        NAPI_ERR_LOG("sDataShareHelper is null");
-        context->error = ERR_INVALID_OUTPUT;
-        return;
-    }
+
     DataSharePredicates sharePredicates;
     sharePredicates.SetWhereClause(context->selection);
     sharePredicates.SetWhereArgs(context->selectionArgs);
@@ -845,7 +805,8 @@ static void GetResultDataExecute(napi_env env, void *data)
     }
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     Uri uri(queryUri);
-    shared_ptr<DataShareResultSet> resultSet = helper->Query(uri, sharePredicates, columns);
+
+    shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, sharePredicates, columns);
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr");
@@ -860,6 +821,7 @@ static void GetResultDataExecute(napi_env env, void *data)
             SetAlbumCoverUri(context, albumData);
             albumData->SetAlbumTypeMask(context->typeMask);
             context->albumNativeArray.push_back(move(albumData));
+
         } else {
             context->SaveError(E_NO_MEMORY);
         }
@@ -890,8 +852,7 @@ static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status, void *
             napi_value albumArray = nullptr;
             napi_create_array(env, &albumArray);
             for (size_t i = 0; i < context->albumNativeArray.size(); i++) {
-                napi_value albumNapiObj = AlbumNapi::CreateAlbumNapi(env, *(context->albumNativeArray[i]),
-                    context->objectInfo->sDataShareHelper_);
+                napi_value albumNapiObj = AlbumNapi::CreateAlbumNapi(env, *(context->albumNativeArray[i]));
                 napi_set_element(env, albumArray, i, albumNapiObj);
             }
             jsContext->status = true;
@@ -948,10 +909,8 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     string queryUri = MEDIALIBRARY_DATA_URI;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     Uri uri(queryUri);
-    auto helper = context->objectInfo->sDataShareHelper_;
-    CHECK_NULL_PTR_RETURN_VOID(helper, "Failed to get file asset by id, helper is nullptr");
 
-    auto resultSet = helper->Query(uri, predicates, columns);
+    auto resultSet = UserFileClient::Query(uri, predicates, columns);
     CHECK_NULL_PTR_RETURN_VOID(resultSet, "Failed to get file asset by id, query resultSet is nullptr");
 
     // Create FetchResult object using the contents of resultSet
@@ -971,7 +930,7 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     Media::MediaType mediaType = context->fileAsset->GetMediaType();
     string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
     Uri modifyNotify(notifyUri);
-    context->objectInfo->sDataShareHelper_->NotifyChange(modifyNotify);
+    UserFileClient::NotifyChange(modifyNotify);
 }
 
 static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void *data)
@@ -992,8 +951,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
                 "Obtain file asset failed");
             napi_get_undefined(env, &jsContext->data);
         } else {
-            jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset),
-                                                         context->objectInfo->sDataShareHelper_);
+            jsFileAsset = FileAssetNapi::CreateFileAsset(env, *(context->fileAsset));
             if (jsFileAsset == nullptr) {
                 NAPI_ERR_LOG("Failed to get file asset napi object");
                 napi_get_undefined(env, &jsContext->data);
@@ -1197,11 +1155,7 @@ static void JSCreateAssetExecute(napi_env env, void *data)
 
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    if (context->objectInfo->sDataShareHelper_ == nullptr) {
-        NAPI_ERR_LOG("sDataShareHelper_ is not exist");
-        context->error = JS_ERR_INNER_FAIL;
-        return;
-    }
+
     if (!CheckTitlePrams(context)) {
         context->error = ERR_DISPLAY_NAME_INVALID;
         return;
@@ -1213,7 +1167,7 @@ static void JSCreateAssetExecute(napi_env env, void *data)
     string uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->typeMask);
     Uri createFileUri(uri);
-    int index = context->objectInfo->sDataShareHelper_->Insert(createFileUri, context->valuesBucket);
+    int index = UserFileClient::Insert(createFileUri, context->valuesBucket);
     if (index < 0) {
         context->SaveError(index);
     } else {
@@ -1257,11 +1211,6 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
 
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    if (context->objectInfo->sDataShareHelper_ == nullptr) {
-        context->error = JS_ERR_INNER_FAIL;
-        NAPI_ERR_LOG("sDataShareHelper_ is not exist");
-        return;
-    }
 
     string mediaType;
     string deleteId;
@@ -1285,13 +1234,13 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
     string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + "/" + deleteId;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, context->typeMask);
     Uri deleteAssetUri(deleteUri);
-    int retVal = context->objectInfo->sDataShareHelper_->Delete(deleteAssetUri, {});
+    int retVal = UserFileClient::Delete(deleteAssetUri, {});
     if (retVal < 0) {
         context->SaveError(retVal);
     } else {
         context->retVal = retVal;
         Uri deleteNotify(notifyUri);
-        context->objectInfo->sDataShareHelper_->NotifyChange(deleteNotify);
+        UserFileClient::NotifyChange(deleteNotify);
     }
 }
 
@@ -1391,25 +1340,18 @@ static void JSCreateAlbumCompleteCallback(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri createAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
-
-        int albumId = context->objectInfo->sDataShareHelper_->Insert(createAlbumUri,
-            context->valuesBucket);
-        if (albumId < 0) {
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, albumId,
-                "Create Album failed");
-            napi_get_undefined(env, &jsContext->data);
-        } else {
-            napi_create_int32(env, albumId, &jsContext->data);
-            napi_get_undefined(env, &jsContext->error);
-            jsContext->status = true;
-        }
-    } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Ability helper is null");
+    string abilityUri = MEDIALIBRARY_DATA_URI;
+    Uri createAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
+    int albumId = UserFileClient::Insert(createAlbumUri,
+        context->valuesBucket);
+    if (albumId < 0) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, albumId,
+            "Create Album failed");
         napi_get_undefined(env, &jsContext->data);
+    } else {
+        napi_create_int32(env, albumId, &jsContext->data);
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->status = true;
     }
 
     if (context->work != nullptr) {
@@ -1499,24 +1441,18 @@ static void JSDeleteAlbumCompleteCallback(napi_env env, napi_status status,
     bool isValid = false;
     int32_t albumId = context->valuesBucket.Get(MEDIA_DATA_DB_ID, isValid);
 
-    if (context->objectInfo->sDataShareHelper_ != nullptr && isValid) {
-        string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM + "/" +
-            to_string(albumId));
-        int retVal = context->objectInfo->sDataShareHelper_->Delete(deleteAlbumUri, {});
-        if (retVal < 0) {
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
-                "Delete Album failed");
-            napi_get_undefined(env, &jsContext->data);
-        } else {
-            napi_create_int32(env, retVal, &jsContext->data);
-            napi_get_undefined(env, &jsContext->error);
-            jsContext->status = true;
-        }
-    } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Ability helper is null");
+    string abilityUri = MEDIALIBRARY_DATA_URI;
+    Uri deleteAlbumUri(abilityUri + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_DELETEALBUM + "/" +
+        to_string(albumId));
+    int retVal = UserFileClient::Delete(deleteAlbumUri, {});
+    if (retVal < 0) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, retVal,
+            "Delete Album failed");
         napi_get_undefined(env, &jsContext->data);
+    } else {
+        napi_create_int32(env, retVal, &jsContext->data);
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->status = true;
     }
 
     if (context->work != nullptr) {
@@ -1673,36 +1609,36 @@ void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, Cha
     switch (typeEnum) {
         case AUDIO_LISTENER:
             listObj.audioDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_AUDIO);
-            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_AUDIO_URI), listObj.audioDataObserver_);
+            UserFileClient::RegisterObserver(Uri(MEDIALIBRARY_AUDIO_URI), listObj.audioDataObserver_);
             break;
         case VIDEO_LISTENER:
             listObj.videoDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_VIDEO);
-            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_VIDEO_URI), listObj.videoDataObserver_);
+            UserFileClient::RegisterObserver(Uri(MEDIALIBRARY_VIDEO_URI), listObj.videoDataObserver_);
             break;
         case IMAGE_LISTENER:
             listObj.imageDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_IMAGE);
-            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_IMAGE_URI), listObj.imageDataObserver_);
+            UserFileClient::RegisterObserver(Uri(MEDIALIBRARY_IMAGE_URI), listObj.imageDataObserver_);
             break;
         case FILE_LISTENER:
             listObj.fileDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_FILE);
-            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_FILE_URI), listObj.fileDataObserver_);
+            UserFileClient::RegisterObserver(Uri(MEDIALIBRARY_FILE_URI), listObj.fileDataObserver_);
             break;
         case SMARTALBUM_LISTENER:
             listObj.smartAlbumDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_SMARTALBUM);
-            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
+            UserFileClient::RegisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
                 listObj.smartAlbumDataObserver_);
             break;
         case DEVICE_LISTENER:
             listObj.deviceDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_DEVICE);
-            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
+            UserFileClient::RegisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
             break;
         case REMOTEFILE_LISTENER:
             listObj.remoteFileDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_REMOTEFILE);
-            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
+            UserFileClient::RegisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
             break;
         case ALBUM_LISTENER:
             listObj.albumDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_ALBUM);
-            sDataShareHelper_->RegisterObserver(Uri(MEDIALIBRARY_ALBUM_URI), listObj.albumDataObserver_);
+            UserFileClient::RegisterObserver(Uri(MEDIALIBRARY_ALBUM_URI), listObj.albumDataObserver_);
             break;
         default:
             NAPI_ERR_LOG("Invalid Media Type!");
@@ -1768,50 +1704,50 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
         case AUDIO_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.audioDataObserver_, "Failed to obtain audio data observer");
             mediaType = MEDIA_TYPE_AUDIO;
-            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_AUDIO_URI), listObj.audioDataObserver_);
+            UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_AUDIO_URI), listObj.audioDataObserver_);
             listObj.audioDataObserver_ = nullptr;
             break;
         case VIDEO_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.videoDataObserver_, "Failed to obtain video data observer");
             mediaType = MEDIA_TYPE_VIDEO;
-            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_VIDEO_URI), listObj.videoDataObserver_);
+            UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_VIDEO_URI), listObj.videoDataObserver_);
             listObj.videoDataObserver_ = nullptr;
             break;
         case IMAGE_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.imageDataObserver_, "Failed to obtain image data observer");
             mediaType = MEDIA_TYPE_IMAGE;
-            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_IMAGE_URI), listObj.imageDataObserver_);
+            UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_IMAGE_URI), listObj.imageDataObserver_);
             listObj.imageDataObserver_ = nullptr;
             break;
         case FILE_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.fileDataObserver_, "Failed to obtain file data observer");
             mediaType = MEDIA_TYPE_FILE;
-            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_FILE_URI), listObj.fileDataObserver_);
+            UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_FILE_URI), listObj.fileDataObserver_);
             listObj.fileDataObserver_ = nullptr;
             break;
         case SMARTALBUM_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.smartAlbumDataObserver_, "Failed to obtain smart album data observer");
             mediaType = MEDIA_TYPE_SMARTALBUM;
-            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
+            UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_SMARTALBUM_CHANGE_URI),
                 listObj.smartAlbumDataObserver_);
             listObj.smartAlbumDataObserver_ = nullptr;
             break;
         case DEVICE_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.deviceDataObserver_, "Failed to obtain device data observer");
             mediaType = MEDIA_TYPE_DEVICE;
-            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
+            UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_DEVICE_URI), listObj.deviceDataObserver_);
             listObj.deviceDataObserver_ = nullptr;
             break;
         case REMOTEFILE_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.remoteFileDataObserver_, "Failed to obtain remote file data observer");
             mediaType = MEDIA_TYPE_REMOTEFILE;
-            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
+            UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_REMOTEFILE_URI), listObj.remoteFileDataObserver_);
             listObj.remoteFileDataObserver_ = nullptr;
             break;
         case ALBUM_LISTENER:
             CHECK_NULL_PTR_RETURN_VOID(listObj.albumDataObserver_, "Failed to obtain album data observer");
             mediaType = MEDIA_TYPE_ALBUM;
-            sDataShareHelper_->UnregisterObserver(Uri(MEDIALIBRARY_ALBUM_URI), listObj.albumDataObserver_);
+            UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_ALBUM_URI), listObj.albumDataObserver_);
             listObj.albumDataObserver_ = nullptr;
             break;
         default:
@@ -1898,7 +1834,7 @@ static void JSReleaseCompleteCallback(napi_env env, napi_status status,
     } else {
         NAPI_ERR_LOG("JSReleaseCompleteCallback context->objectInfo == nullptr");
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Ability helper is null");
+            "UserFileClient is invalid");
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -1983,9 +1919,10 @@ static void SetSmartAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<
                + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
                + ASSETMAP_VIEW_NAME);
 
-    shared_ptr<DataShare::DataShareResultSet> resultSet =
-       context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
+
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns);
     unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
+
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetSmartAlbumCoverUri fileAsset is nullptr");
     string coverUri = fileAsset->GetUri();
@@ -2013,9 +1950,7 @@ static void GetAllSmartAlbumResultDataExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NAPI_INFO_LOG("context->privateAlbumType = %{public}d", context->privateAlbumType);
     DataShare::DataSharePredicates predicates;
-    if (context->objectInfo->sDataShareHelper_ == nullptr) {
-        context->error = ERR_INVALID_OUTPUT;
-    }
+
     if (context->privateAlbumType == TYPE_TRASH) {
         predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + to_string(TRASH_ALBUM_ID_VALUES));
         NAPI_INFO_LOG("context->privateAlbumType == TYPE_TRASH");
@@ -2029,7 +1964,7 @@ static void GetAllSmartAlbumResultDataExecute(napi_env env, void *data)
     string uriStr = MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTABLUMASSETS_VIEW_NAME;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriStr, context->typeMask);
     Uri uri(uriStr);
-    auto resultSet =context->objectInfo->sDataShareHelper_->Query(uri, predicates, columns);
+    auto resultSet = UserFileClient::Query(uri, predicates, columns);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr");
         return;
@@ -2058,8 +1993,7 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status, vo
         if (context->smartAlbumData != nullptr) {
             NAPI_ERR_LOG("context->smartAlbumData != nullptr");
             jsContext->status = true;
-            napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumData),
-                context->objectInfo->sDataShareHelper_);
+            napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumData));
             napi_get_undefined(env, &jsContext->error);
             jsContext->data = albumNapiObj;
         } else if (!context->privateSmartAlbumNativeArray.empty()) {
@@ -2069,8 +2003,7 @@ static void GetPrivateAlbumCallbackComplete(napi_env env, napi_status status, vo
             napi_create_array(env, &albumArray);
             for (size_t i = 0; i < context->privateSmartAlbumNativeArray.size(); i++) {
                 napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env,
-                    *(context->privateSmartAlbumNativeArray[i]),
-                    context->objectInfo->sDataShareHelper_);
+                    *(context->privateSmartAlbumNativeArray[i]));
                 napi_set_element(env, albumArray, i, albumNapiObj);
             }
             napi_get_undefined(env, &jsContext->error);
@@ -2107,8 +2040,7 @@ static void SmartAlbumsAsyncCallbackComplete(napi_env env, napi_status status, v
             napi_create_array(env, &albumArray);
             for (size_t i = 0; i < context->smartAlbumNativeArray.size(); i++) {
                 napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env,
-                    *(context->smartAlbumNativeArray[i]),
-                    context->objectInfo->sDataShareHelper_);
+                    *(context->smartAlbumNativeArray[i]));
                 napi_set_element(env, albumArray, i, albumNapiObj);
             }
             napi_get_undefined(env, &jsContext->error);
@@ -2226,8 +2158,9 @@ static void JSCreateSmartAlbumCompleteCallback(napi_env env, napi_status status,
                 "No albums found");
         } else {
             jsContext->status = true;
-            napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumNativeArray[0]),
-                                                                           context->objectInfo->sDataShareHelper_);
+
+            napi_value albumNapiObj = SmartAlbumNapi::CreateSmartAlbumNapi(env, *(context->smartAlbumNativeArray[0]));
+
             jsContext->data = albumNapiObj;
             napi_get_undefined(env, &jsContext->error);
         }
@@ -2263,21 +2196,16 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
-                if (context->objectInfo->sDataShareHelper_ != nullptr) {
-                    string abilityUri = MEDIALIBRARY_DATA_URI;
-                    Uri CreateSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" +
-                        MEDIA_SMARTALBUMOPRN_CREATEALBUM);
-                    int retVal = context->objectInfo->sDataShareHelper_->Insert(CreateSmartAlbumUri,
-                        context->valuesBucket);
-                    if (retVal > 0) {
-                        context->selection = SMARTALBUM_DB_ID + " = ?";
-                        context->selectionArgs = {std::to_string(retVal)};
-                        context->retVal = retVal;
-                    } else {
-                        context->error = retVal;
-                    }
+                string abilityUri = MEDIALIBRARY_DATA_URI;
+                Uri CreateSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" +
+                    MEDIA_SMARTALBUMOPRN_CREATEALBUM);
+                int retVal = UserFileClient::Insert(CreateSmartAlbumUri, context->valuesBucket);
+                if (retVal > 0) {
+                    context->selection = SMARTALBUM_DB_ID + " = ?";
+                    context->selectionArgs = {std::to_string(retVal)};
+                    context->retVal = retVal;
                 } else {
-                    context->error = ERR_INVALID_OUTPUT;
+                    context->error = retVal;
                 }
             },
             reinterpret_cast<CompleteCallback>(JSCreateSmartAlbumCompleteCallback),
@@ -2335,7 +2263,7 @@ static void JSDeleteSmartAlbumCompleteCallback(napi_env env, napi_status status,
         jsContext->status = true;
     } else {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
-            "Ability helper is null");
+            "UserFileClient is invalid");
         napi_get_undefined(env, &jsContext->data);
     }
     if (context->work != nullptr) {
@@ -2348,26 +2276,22 @@ static void JSDeleteSmartAlbumCompleteCallback(napi_env env, napi_status status,
 static void JSDeleteSmartAlbumExecute(MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    if (context->objectInfo->sDataShareHelper_ != nullptr) {
-        bool isValid = false;
-        int32_t smartAlbumId = context->valuesBucket.Get(SMARTALBUM_DB_ID, isValid);
-        if (!isValid) {
-            context->error = ERR_INVALID_OUTPUT;
-            return;
-        }
-        string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri DeleteSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" +
-            MEDIA_SMARTALBUMOPRN_DELETEALBUM + '/' + to_string(smartAlbumId));
-        DataSharePredicates predicates;
-        int retVal = context->objectInfo->sDataShareHelper_->Delete(DeleteSmartAlbumUri, predicates);
-        NAPI_DEBUG_LOG("JSDeleteSmartAlbumCompleteCallback retVal = %{public}d", retVal);
-        if (retVal < 0) {
-            context->error = retVal;
-        } else {
-            context->retVal = retVal;
-        }
-    } else {
+    bool isValid = false;
+    int32_t smartAlbumId = context->valuesBucket.Get(SMARTALBUM_DB_ID, isValid);
+    if (!isValid) {
         context->error = ERR_INVALID_OUTPUT;
+        return;
+    }
+    string abilityUri = MEDIALIBRARY_DATA_URI;
+    Uri DeleteSmartAlbumUri(abilityUri + "/" + MEDIA_SMARTALBUMOPRN + "/" +
+        MEDIA_SMARTALBUMOPRN_DELETEALBUM + '/' + to_string(smartAlbumId));
+    DataSharePredicates predicates;
+    int retVal = UserFileClient::Delete(DeleteSmartAlbumUri, predicates);
+    NAPI_DEBUG_LOG("JSDeleteSmartAlbumCompleteCallback retVal = %{public}d", retVal);
+    if (retVal < 0) {
+        context->error = retVal;
+    } else {
+        context->retVal = retVal;
     }
 }
 
@@ -2493,7 +2417,7 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
     predicates.SetWhereArgs(context->selectionArgs);
 
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(
         uri, predicates, columns);
 
     if (resultSet == nullptr) {
@@ -2557,7 +2481,7 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
     predicates.SetWhereArgs(context->selectionArgs);
 
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = context->objectInfo->sDataShareHelper_->Query(
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(
         uri, predicates, columns);
 
     if (resultSet == nullptr) {
@@ -2692,7 +2616,7 @@ static int32_t CloseAsset(MediaLibraryAsyncContext *context, string uri)
     Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
     context->valuesBucket.Clear();
     context->valuesBucket.Put(MEDIA_DATA_DB_URI, uri);
-    int32_t ret = context->objectInfo->sDataShareHelper_->Insert(closeAssetUri, context->valuesBucket);
+    int32_t ret = UserFileClient::Insert(closeAssetUri, context->valuesBucket);
     NAPI_DEBUG_LOG("File close asset %{public}d", ret);
     if (ret != E_SUCCESS) {
         context->error = ret;
@@ -2703,12 +2627,6 @@ static int32_t CloseAsset(MediaLibraryAsyncContext *context, string uri)
 
 static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
 {
-    auto helper = context->objectInfo->sDataShareHelper_;
-    if (helper == nullptr) {
-        NAPI_ERR_LOG("sDataShareHelper_ is not exist");
-        context->error = ERR_INVALID_OUTPUT;
-        return;
-    }
     string realPath;
     if (!PathToRealPath(context->storeMediaSrc, realPath)) {
         NAPI_ERR_LOG("src path is not exist, %{public}d", errno);
@@ -2727,7 +2645,7 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         return;
     }
     Uri createFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
-    int index = helper->Insert(createFileUri, context->valuesBucket);
+    int index = UserFileClient::Insert(createFileUri, context->valuesBucket);
     if (index < 0) {
         close(srcFd);
         NAPI_ERR_LOG("storeMedia fail, file already exist %{public}d", index);
@@ -2735,7 +2653,7 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
     }
     getFileAssetById(index, "", context);
     Uri openFileUri(context->fileAsset->GetUri());
-    int32_t destFd = helper->OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE);
+    int32_t destFd = UserFileClient::OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE);
     if (destFd < 0) {
         context->error = destFd;
         NAPI_DEBUG_LOG("File open asset failed");
