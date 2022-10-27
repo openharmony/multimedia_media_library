@@ -46,10 +46,8 @@ class SmartAlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value CreateSmartAlbumNapi(napi_env env, std::unique_ptr<SmartAlbumAsset> &albumData,
-        std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
+    static napi_value CreateSmartAlbumNapi(napi_env env, std::unique_ptr<SmartAlbumAsset> &albumData);
     int32_t GetSmartAlbumId() const;
-    std::shared_ptr<DataShare::DataShareHelper> GetMediaDataHelper() const;
     std::string GetSmartAlbumName() const;
     int32_t GetAlbumPrivateType() const;
     void SetAlbumCapacity(int32_t albumCapacity);
@@ -57,8 +55,6 @@ public:
     std::string GetTypeMask() const;
     SmartAlbumNapi();
     ~SmartAlbumNapi();
-
-    static std::shared_ptr<DataShare::DataShareHelper> sMediaDataHelper;
 
 private:
     static void SmartAlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -92,8 +88,6 @@ private:
     std::string albumCategoryName_;
     std::string albumCoverUri_;
     std::string typeMask_;
-
-    std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
     static thread_local SmartAlbumAsset *sAlbumData_;
     napi_env env_;
 
