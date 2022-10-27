@@ -301,19 +301,8 @@ std::shared_ptr<AbsSharedResultSet> GetResult(const Uri &uri, MediaFileUriType u
     DataSharePredicates predicates;
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
-    vector<string> columns;
-    if (uriType == URI_MEDIA_ROOT) {
-        columns.push_back(MEDIA_DATA_DB_BUCKET_ID);
-        columns.push_back(MEDIA_DATA_DB_TITLE);
-        columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
-    } else {
-        columns.push_back(MEDIA_DATA_DB_ID);
-        columns.push_back(MEDIA_DATA_DB_SIZE);
-        columns.push_back(MEDIA_DATA_DB_DATE_MODIFIED);
-        columns.push_back(MEDIA_DATA_DB_MIME_TYPE);
-        columns.push_back(MEDIA_DATA_DB_NAME);
-        columns.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
-    }
+    vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE };
     return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
@@ -332,11 +321,13 @@ static string MimeType2MediaType(const string &mimeType)
 std::shared_ptr<AbsSharedResultSet> GetMediaRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
     const int64_t offset, const int64_t maxCount)
 {
-    string selection = MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT ?, ?";
-    vector<string> selectionArgs = { MimeType2MediaType(parentInfo.mimeType), to_string(NOT_ISTRASH), to_string(offset),
-        to_string(maxCount) };
     Uri uri(GetQueryUri(parentInfo, uriType));
-    return GetResult(uri, uriType, selection, selectionArgs);
+    DataSharePredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, MimeType2MediaType(parentInfo.mimeType));
+    predicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_ISTRASH));
+    predicates.Limit(maxCount, offset);
+    vector<string> columns = { MEDIA_DATA_DB_BUCKET_ID, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_DATE_MODIFIED };
+    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
 std::shared_ptr<AbsSharedResultSet> GetListRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
