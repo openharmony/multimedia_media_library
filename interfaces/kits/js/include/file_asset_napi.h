@@ -43,10 +43,9 @@ public:
 
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value CreateFileAsset(napi_env env, FileAsset &iAsset,
-                                      std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
-    static napi_value UserFileMgrCreateAsset(napi_env env, FileAsset &iAsset,
-        std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
+
+    static napi_value CreateFileAsset(napi_env env, FileAsset &iAsset);
+    static napi_value UserFileMgrCreateAsset(napi_env env, FileAsset &iAsset);
 
     std::string GetFileDisplayName() const;
     std::string GetRelativePath() const;
@@ -63,8 +62,7 @@ public:
     void SetFavorite(bool isFavorite);
     bool IsTrash() const;
     void SetTrash(bool isTrash);
-    static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
-    static std::mutex sDataHelperMutex_;
+    
     static std::shared_ptr<MediaThumbnailHelper> sThumbnailHelper_;
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
         const std::shared_ptr<AbilityRuntime::Context> &context);
