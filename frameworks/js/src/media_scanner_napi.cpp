@@ -19,6 +19,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
+#include "userfile_client.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -27,7 +28,6 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 thread_local napi_ref MediaScannerNapi::sConstructor_ = nullptr;
-std::shared_ptr<DataShare::DataShareHelper> MediaScannerNapi::sDataShareHelper_ = nullptr;
 
 MediaScannerNapi::MediaScannerNapi()
     : env_(nullptr) {}
@@ -78,11 +78,6 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
         unique_ptr<MediaScannerNapi> obj = make_unique<MediaScannerNapi>();
         if (obj != nullptr) {
             obj->env_ = env;
-            obj->sDataShareHelper_ = MediaLibraryNapi::GetDataShareHelper(env, info);
-            if (obj->sDataShareHelper_ == nullptr) {
-                NAPI_ERR_LOG("[MediaScannerNapiConstructor] GetDataShareHelper failed!");
-                return result;
-            }
 
             obj->mediaScannerNapiCallbackObj_ = std::make_shared<MediaScannerNapiCallback>(env);
             if (obj->mediaScannerNapiCallbackObj_ == nullptr) {
@@ -226,14 +221,10 @@ napi_value MediaScannerNapi::ScanDir(napi_env env, napi_callback_info info)
 void MediaScannerNapi::DataShareScanBoardcast(const std::string &event)
 {
     NAPI_INFO_LOG("MediaScannerNapi::DataShareScanBoardcast start, event: %{public}s", event.c_str());
-    if (sDataShareHelper_ == nullptr) {
-        NAPI_ERR_LOG("MediaScannerNapi::DataShareScanBoardcast datashare helper null");
-        return;
-    }
     Uri insertUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN + "/" + MEDIA_SCAN_OPERATION);
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, event);
-    int index = sDataShareHelper_->Insert(insertUri, valuesBucket);
+    int index = UserFileClient::Insert(insertUri, valuesBucket);
     if (index < 0) {
         NAPI_ERR_LOG("[MediaScannerNapi::DataShareScanBoardcast return status %{public}d", index);
     } else {
