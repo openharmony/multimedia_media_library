@@ -733,15 +733,21 @@ napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
 void FetchFileResultAsyncContext::GetFirstAsset()
 {
     switch (objectInfo->GetFetchResType()) {
-        case FetchResType::TYPE_FILE:
-            fileAsset = objectInfo->GetFetchFileResultObject()->GetFirstObject();
+        case FetchResType::TYPE_FILE: {
+            auto fetchResult = objectInfo->GetFetchFileResultObject();
+            fileAsset = fetchResult->GetFirstObject();
             break;
-        case FetchResType::TYPE_ALBUM:
-            albumAsset = objectInfo->GetFetchAlbumResultObject()->GetFirstObject();
+        }
+        case FetchResType::TYPE_ALBUM: {
+            auto fetchResult = objectInfo->GetFetchAlbumResultObject();
+            albumAsset = fetchResult->GetFirstObject();
             break;
-        case FetchResType::TYPE_SMARTALBUM:
-            smartAlbumAsset = objectInfo->GetFetchSmartAlbumResultObject()->GetFirstObject();
+        }
+        case FetchResType::TYPE_SMARTALBUM: {
+            auto fetchResult = objectInfo->GetFetchSmartAlbumResultObject();
+            smartAlbumAsset = fetchResult->GetFirstObject();
             break;
+        }
         default:
             NAPI_ERR_LOG("unsupported FetchResType");
             break;
@@ -751,15 +757,22 @@ void FetchFileResultAsyncContext::GetFirstAsset()
 void FetchFileResultAsyncContext::GetObjectAtPosition()
 {
     switch (objectInfo->GetFetchResType()) {
-        case FetchResType::TYPE_FILE:
-            fileAsset = objectInfo->GetFetchFileResultObject()->GetObjectAtPosition(position);
+        case FetchResType::TYPE_FILE: {
+            auto fetchResult = objectInfo->GetFetchFileResultObject();
+            fileAsset = fetchResult->GetObjectAtPosition(position);
             break;
-        case FetchResType::TYPE_ALBUM:
-            albumAsset = objectInfo->GetFetchAlbumResultObject()->GetObjectAtPosition(position);
+        }
+        case FetchResType::TYPE_ALBUM: {
+            auto fetchResult = objectInfo->GetFetchAlbumResultObject();
+            albumAsset = fetchResult->GetObjectAtPosition(position);
             break;
-        case FetchResType::TYPE_SMARTALBUM:
-            smartAlbumAsset = objectInfo->GetFetchSmartAlbumResultObject()->GetObjectAtPosition(position);
+        }
+
+        case FetchResType::TYPE_SMARTALBUM: {
+            auto fetchResult = objectInfo->GetFetchSmartAlbumResultObject();
+            smartAlbumAsset = fetchResult->GetObjectAtPosition(position);
             break;
+        }
         default:
             NAPI_ERR_LOG("unsupported FetchResType");
             break;
@@ -769,15 +782,21 @@ void FetchFileResultAsyncContext::GetObjectAtPosition()
 void FetchFileResultAsyncContext::GetLastObject()
 {
     switch (objectInfo->GetFetchResType()) {
-        case FetchResType::TYPE_FILE:
-            fileAsset = objectInfo->GetFetchFileResultObject()->GetLastObject();
+        case FetchResType::TYPE_FILE: {
+            auto fetchResult = objectInfo->GetFetchFileResultObject();
+            fileAsset = fetchResult->GetLastObject();
             break;
-        case FetchResType::TYPE_ALBUM:
-            albumAsset = objectInfo->GetFetchAlbumResultObject()->GetLastObject();
+        }
+        case FetchResType::TYPE_ALBUM: {
+            auto fetchResult = objectInfo->GetFetchAlbumResultObject();
+            albumAsset = fetchResult->GetLastObject();
             break;
-        case FetchResType::TYPE_SMARTALBUM:
-            smartAlbumAsset = objectInfo->GetFetchSmartAlbumResultObject()->GetLastObject();
+        }
+        case FetchResType::TYPE_SMARTALBUM: {
+            auto fetchResult = objectInfo->GetFetchSmartAlbumResultObject();
+            smartAlbumAsset = fetchResult->GetLastObject();
             break;
+        }
         default:
             NAPI_ERR_LOG("unsupported FetchResType");
             break;
@@ -787,15 +806,21 @@ void FetchFileResultAsyncContext::GetLastObject()
 void FetchFileResultAsyncContext::GetNextObject()
 {
     switch (objectInfo->GetFetchResType()) {
-        case FetchResType::TYPE_FILE:
-            fileAsset = objectInfo->GetFetchFileResultObject()->GetNextObject();
+        case FetchResType::TYPE_FILE: {
+            auto fetchResult = objectInfo->GetFetchFileResultObject();
+            fileAsset = fetchResult->GetNextObject();
             break;
-        case FetchResType::TYPE_ALBUM:
-            albumAsset = objectInfo->GetFetchAlbumResultObject()->GetNextObject();
+        }
+        case FetchResType::TYPE_ALBUM: {
+            auto fetchResult = objectInfo->GetFetchAlbumResultObject();
+            albumAsset = fetchResult->GetNextObject();
             break;
-        case FetchResType::TYPE_SMARTALBUM:
-            smartAlbumAsset = objectInfo->GetFetchSmartAlbumResultObject()->GetNextObject();
+        }
+        case FetchResType::TYPE_SMARTALBUM: {
+            auto fetchResult = objectInfo->GetFetchSmartAlbumResultObject();
+            smartAlbumAsset = fetchResult->GetNextObject();
             break;
+        }
         default:
             NAPI_ERR_LOG("unsupported FetchResType");
             break;
@@ -806,29 +831,29 @@ void FetchFileResultAsyncContext::GetAllObjectFromFetchResult()
 {
     switch (objectInfo->GetFetchResType()) {
         case FetchResType::TYPE_FILE: {
-            unique_ptr<FileAsset> file = nullptr;
-            file = objectInfo->GetFetchFileResultObject()->GetFirstObject();
+            auto fetchResult = objectInfo->GetFetchFileResultObject();
+            auto file = fetchResult->GetFirstObject();
             while (file != nullptr) {
                 fileAssetArray.push_back(move(file));
-                    file = objectInfo->GetFetchFileResultObject()->GetNextObject();
+                file = fetchResult->GetNextObject();
             }
             break;
         }
         case FetchResType::TYPE_ALBUM: {
-            unique_ptr<AlbumAsset> album = nullptr;
-            album = objectInfo->GetFetchAlbumResultObject()->GetFirstObject();
+            auto fetchResult = objectInfo->GetFetchAlbumResultObject();
+            auto album = fetchResult->GetFirstObject();
             while (album != nullptr) {
                 fileAlbumArray.push_back(move(album));
-                album = objectInfo->GetFetchAlbumResultObject()->GetNextObject();
+                album = fetchResult->GetNextObject();
             }
             break;
         }
         case FetchResType::TYPE_SMARTALBUM: {
-            unique_ptr<SmartAlbumAsset> smartAlbum = nullptr;
-            smartAlbum = objectInfo->GetFetchSmartAlbumResultObject()->GetFirstObject();
+            auto fetchResult = objectInfo->GetFetchSmartAlbumResultObject();
+            auto smartAlbum = fetchResult->GetFirstObject();
             while (smartAlbum != nullptr) {
                 fileSmartAlbumArray.push_back(move(smartAlbum));
-                smartAlbum = objectInfo->GetFetchSmartAlbumResultObject()->GetNextObject();
+                smartAlbum = fetchResult->GetNextObject();
             }
             break;
         }
