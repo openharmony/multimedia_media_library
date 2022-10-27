@@ -47,18 +47,14 @@ class AlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value CreateAlbumNapi(napi_env env, std::unique_ptr<AlbumAsset> &albumData,
-        std::shared_ptr<DataShare::DataShareHelper> abilityHelper);
+    static napi_value CreateAlbumNapi(napi_env env, std::unique_ptr<AlbumAsset> &albumData);
     int32_t GetAlbumId() const;
-    std::shared_ptr<DataShare::DataShareHelper> GetMediaDataHelper() const;
     std::string GetAlbumName() const;
     std::string GetAlbumPath() const;
     std::string GetNetworkId() const;
     std::string GetTypeMask() const;
     AlbumNapi();
     ~AlbumNapi();
-
-    static std::shared_ptr<DataShare::DataShareHelper> sMediaDataHelper_;
 
 private:
     static void AlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
@@ -93,8 +89,6 @@ private:
     bool albumVirtual_;
     std::string albumPath_;
     std::string typeMask_;
-
-    std::shared_ptr<DataShare::DataShareHelper> abilityHelper_;
 
     napi_env env_;
 
