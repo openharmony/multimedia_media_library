@@ -34,7 +34,6 @@ ohos_shared_library("media_library_manager") {
   deps = [
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}:permission_utils",
   ]
 
   external_deps = [
