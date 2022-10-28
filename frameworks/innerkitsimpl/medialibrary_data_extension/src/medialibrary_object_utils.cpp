@@ -28,6 +28,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_smartalbum_map_db.h"
 #include "medialibrary_thumbnail.h"
 #include "value_object.h"
 
@@ -1066,6 +1067,7 @@ bool MediaLibraryObjectUtils::IsAssetExistInDb(const int32_t id)
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(id));
+    cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_ISTRASH));
     vector<string> columns;
     auto queryResultSet = QueryWithCondition(cmd, columns);
     if (queryResultSet != nullptr && queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
