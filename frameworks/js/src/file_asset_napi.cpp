@@ -1933,6 +1933,9 @@ static napi_value GetJSArgsForIsFavorite(napi_env env, size_t argc, const napi_v
 
 napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSIsFavorite");
+    
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_ONE;
