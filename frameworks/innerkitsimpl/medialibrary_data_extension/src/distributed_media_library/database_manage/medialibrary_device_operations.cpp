@@ -77,8 +77,7 @@ bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const std::shared_ptr<Native
     std::vector<std::string> columns;
     AbsRdbPredicates absPredDevice(DEVICE_TABLE);
     absPredDevice.EqualTo(DEVICE_DB_UDID, deviceInfo.deviceUdid);
-    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo dev id = %{private}s",
-        deviceInfo.deviceUdid.c_str());
+    MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo dev");
     queryResultSet = rdbStore->Query(absPredDevice, columns);
 
     auto count = 0;

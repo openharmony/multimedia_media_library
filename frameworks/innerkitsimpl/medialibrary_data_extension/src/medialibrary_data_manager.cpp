@@ -530,8 +530,7 @@ int32_t MediaLibraryDataManager::DistributeDeviceAging()
     for (MediaLibraryDeviceInfo deviceInfo : deviceDataBaseList) {
         result = thumbnailService_->ClearDistributeThumbnail(deviceInfo.deviceUdid);
         if (result != E_SUCCESS) {
-            MEDIA_ERR_LOG("%{private}s ClearDistributeThumbnail fail result is %{public}d",
-                deviceInfo.deviceUdid.c_str(), result);
+            MEDIA_ERR_LOG("ClearDistributeThumbnail fail result is %{public}d", result);
             continue;
         }
     }

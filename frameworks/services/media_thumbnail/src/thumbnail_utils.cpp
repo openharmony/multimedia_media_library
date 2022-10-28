@@ -816,7 +816,7 @@ bool ThumbnailUtils::GetUdidByNetworkId(ThumbRdbOpt &opts, const std::string &ne
     if (err == NativeRdb::E_OK) {
         ParseStringResult(resultSet, index, outUdid, err);
     } else {
-        MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", DEVICE_DB_UDID.c_str(), err);
+        MEDIA_ERR_LOG("Get column index error %{public}d", err);
     }
     return true;
 }
