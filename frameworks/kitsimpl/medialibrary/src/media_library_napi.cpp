@@ -1544,6 +1544,10 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     unique_ptr<FetchResult> fetchFileResult = make_unique<FetchResult>(move(resultSet));
     fetchFileResult->networkId_ = context->networkId;
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
+    if (fileAsset == nullptr) {
+        HiLog::Error(LABEL, "SetAlbumCoverUri failed! File asset is nullptr");
+        return;
+    }
     string coverUri = fileAsset->GetUri();
     album->SetCoverUri(coverUri);
     HiLog::Debug(LABEL, "coverUri is = %{public}s", album->GetCoverUri().c_str());
@@ -1569,12 +1573,44 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<NativeRdb::AbsSharedResultSe
                                                                   resultSet, TYPE_INT64)));
 }
 
+static void FillAlbumArray(shared_ptr<NativeRdb::AbsSharedResultSet> resultSet, MediaLibraryAsyncContext *context)
+{
+    int32_t count = -1;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err < 0) {
+        HiLog::Error(LABEL, "GetResultData Failed to get row count, err: %{public}d", err);
+        return;
+    }
+    if (count < 0) {
+        HiLog::Error(LABEL, "GetResultData Got invalid count: %{public}d", count);
+        return;
+    }
+    for (int32_t i = 0; i < count; i++) {
+        err = resultSet->GoToNextRow();
+        if (err != NativeRdb::E_OK) {
+            HiLog::Error(LABEL, "GetResultData Failed to goto next row, err: %{public}d", err);
+            return;
+        }
+        unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
+        if (albumData == nullptr) {
+            HiLog::Error(LABEL, "GetResultData Failed to make album asset");
+            return;
+        }
+        SetAlbumData(albumData.get(), resultSet, context->networkId);
+        SetAlbumCoverUri(context, albumData);
+        context->albumNativeArray.push_back(move(albumData));
+    }
+    context->error = ERR_DEFAULT;
+}
+
 static void GetResultDataExecute(MediaLibraryAsyncContext *context)
 {
     HiLog::Error(LABEL, "GetResultDataExecute IN");
+    context->error = ERR_INVALID_OUTPUT;
     NativeRdb::DataAbilityPredicates predicates;
     if (context->objectInfo->sAbilityHelper_ == nullptr) {
-        context->error = ERR_INVALID_OUTPUT;
+        HiLog::Error(LABEL, "GetResultDataExecute helper is nullptr");
+        return;
     }
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
@@ -1592,19 +1628,11 @@ static void GetResultDataExecute(MediaLibraryAsyncContext *context)
     Uri uri(queryUri);
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = context->objectInfo->sAbilityHelper_->Query(
         uri, columns, predicates);
-
     if (resultSet == nullptr) {
         HiLog::Error(LABEL, "GetResultData resultSet is nullptr");
         return;
     }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
-        if (albumData != nullptr) {
-            SetAlbumData(albumData.get(), resultSet, context->networkId);
-            SetAlbumCoverUri(context, albumData);
-        }
-        context->albumNativeArray.push_back(move(albumData));
-    }
+    return FillAlbumArray(resultSet, context);
 }
 
 static void AlbumsAsyncCallbackComplete(napi_env env, napi_status status,
@@ -1707,6 +1735,10 @@ static void getFileAssetById(int32_t id, const string& networkId, MediaLibraryAs
         if (context->fetchFileResult != nullptr && context->fetchFileResult->GetCount() >= 1) {
             HiLog::Debug(LABEL, "getFileAssetById fetchFileResult->GetCount() >= 1");
             context->fileAsset = context->fetchFileResult->GetFirstObject();
+            if (context->fileAsset == nullptr) {
+                HiLog::Error(LABEL, "file asset is nullptr");
+                return;
+            }
 
             Media::MediaType mediaType = context->fileAsset->GetMediaType();
             string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
@@ -1962,6 +1994,10 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
                         context->error = index;
                     } else {
                         getFileAssetById(index, "", context);
+                        if (context->fileAsset == nullptr) {
+                            context->error = ERR_INVALID_OUTPUT;
+                            return;
+                        }
                     }
                 } else {
                     context->error = ERR_INVALID_OUTPUT;
@@ -3913,6 +3949,10 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         return;
     }
     getFileAssetById(index, "", context);
+    if (context->fileAsset == nullptr) {
+        context->error = ERR_INVALID_OUTPUT;
+        return;
+    }
     Uri openFileUri(context->fileAsset->GetUri());
     int32_t destFd = helper->OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE);
     if (destFd < 0) {
