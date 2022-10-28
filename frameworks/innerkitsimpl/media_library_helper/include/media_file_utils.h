@@ -33,6 +33,7 @@ public:
     static bool CreateFile(const std::string &fileName);
     static bool DeleteFile(const std::string &fileName);
     static bool DeleteDir(const std::string &dirName);
+    static int32_t RemoveDirectory(const std::string &path);
     static std::string GetFilename(const std::string &filePath);
     static std::string GetParentPath(const std::string &path);
     static bool IsDirectory(const std::string &dirName);
