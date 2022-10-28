@@ -33,6 +33,7 @@ ohos_unittest("medialibrary_extability_unittest") {
     "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager/include",
     "${ABILITY_RUNTIME_INNER_API_PATH}/app_manager/include/appmgr",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
+	"${ABILITY_RUNTIME_PATH}/interfaces/kits/native",
     "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
     "//commonlibrary/c_utils/base/include",
     "//utils/system/safwk/native/include",

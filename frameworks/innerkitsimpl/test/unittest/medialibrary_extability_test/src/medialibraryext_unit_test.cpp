@@ -30,6 +30,7 @@
 #include "media_log.h"
 #include "result_set_utils.h"
 #include "scanner_utils.h"
+#include "appkit/ability_runtime/context/context.h"
 
 using namespace std;
 using namespace OHOS;
