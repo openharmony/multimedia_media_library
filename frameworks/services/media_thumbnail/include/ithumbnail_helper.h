@@ -25,6 +25,8 @@
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_utils.h"
+#include <map>
+#include <shared_mutex>
 
 namespace OHOS {
 namespace Media {
@@ -35,6 +37,29 @@ public:
     ThumbRdbOpt opts;
     ThumbnailData thumbnailData;
     std::string thumbnailKey;
+};
+
+enum WaitStatus {
+    INSERT,
+    WAIT_SUCCESS,
+    TIMEOUT,
+};
+
+using ThumbnailMap = std::map<std::string, std::shared_ptr<SyncStatus>>;
+class ThumbnailWait {
+public:
+    ThumbnailWait(bool release);
+    ~ThumbnailWait();
+
+    WaitStatus InsertAndWait(const std::string &id, bool isLcd);
+    void CheckAndWait(const std::string &id, bool isLcd);
+
+private:
+    void Notify();
+    std::string id_;
+    bool needRelease_{false};
+    static ThumbnailMap thumbnailMap_;
+    static std::shared_mutex mutex_;
 };
 
 class IThumbnailHelper {

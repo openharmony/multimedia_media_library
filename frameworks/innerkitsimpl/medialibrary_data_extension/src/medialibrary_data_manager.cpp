@@ -750,10 +750,11 @@ void MediaLibraryDataManager::InitialiseThumbnailService()
     if (thumbnailService_ != nullptr) {
         return;
     }
-    thumbnailService_ = ThumbnailService::GetInstance(rdbStore_, kvStorePtr_, context_);
+    thumbnailService_ = ThumbnailService::GetInstance();
     if (thumbnailService_ == nullptr) {
         MEDIA_INFO_LOG("MediaLibraryDataManager::InitialiseThumbnailService failed");
     }
+    thumbnailService_->Init(rdbStore_, kvStorePtr_, context_);
 }
 
 int32_t ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)

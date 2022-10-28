@@ -30,6 +30,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_smartalbum_map_db.h"
 #include "result_set_utils.h"
+#include "thumbnail_service.h"
 #include "value_object.h"
 
 using namespace std;
@@ -403,6 +404,14 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
     return err;
 }
 
+static inline void InvalidateThumbnail(const string &id)
+{
+    auto thumbnailService = ThumbnailService::GetInstance();
+    if (thumbnailService != nullptr) {
+        thumbnailService->InvalidateThumbnail(id);
+    }
+}
+
 // Restriction: input param cmd MUST have file id in either uri or valuebucket
 int32_t MediaLibraryObjectUtils::DeleteFileObj(MediaLibraryCommand &cmd, const string &filePath)
 {
@@ -419,6 +428,7 @@ int32_t MediaLibraryObjectUtils::DeleteFileObj(MediaLibraryCommand &cmd, const s
         MEDIA_ERR_LOG("Get id from uri or valuebucket failed!");
         return E_INVALID_FILEID;
     }
+    InvalidateThumbnail(fileId);
     int32_t parentId = GetParentIdByIdFromDb(fileId);
     int32_t deleteRows = DeleteInfoByIdInDb(cmd);
     if (deleteRows <= 0) {
@@ -622,6 +632,7 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
         UpdateDateModified(dirPath);
     }
 
+    InvalidateThumbnail(strFileId);
     ScanFile(srcPath);
     return E_SUCCESS;
 }

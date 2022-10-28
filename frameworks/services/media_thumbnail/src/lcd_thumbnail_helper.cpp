@@ -57,6 +57,8 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts,
     shared_ptr<DataShare::ResultSetBridge> &outResultSet)
 {
     int err;
+    ThumbnailWait thumbnailWait(false);
+    thumbnailWait.CheckAndWait(opts.row, true);
     ThumbnailData thumbnailData;
     shared_ptr<AbsSharedResultSet> rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
     if (rdbSet == nullptr) {
