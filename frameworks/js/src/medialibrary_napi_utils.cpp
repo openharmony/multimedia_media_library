@@ -277,7 +277,10 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
     std::vector<OperationItem> operations;
     auto &items = predicate->GetOperationList();
     for (auto &item : items) {
-        if (DEVICE_DB_NETWORK_ID == static_cast<std::string>(item.GetSingle(FIELD_IDX))) {
+        // change uri ->file id
+        // get networkid
+        // replace networkid with file id
+        if (static_cast<std::string>(item.GetSingle(FIELD_IDX)) == DEVICE_DB_NETWORK_ID) {
             if (item.operation != DataShare::EQUAL_TO || static_cast<std::string>(item.GetSingle(VALUE_IDX)).empty()) {
                 NAPI_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
                 return false;
@@ -285,10 +288,7 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
             context->networkId = static_cast<std::string>(item.GetSingle(VALUE_IDX));
             continue;
         }
-        // change uri ->file id
-        // get networkid
-        // replace networkid with file id
-        if (MEDIA_DATA_DB_URI == static_cast<std::string>(item.GetSingle(FIELD_IDX))) {
+        if (static_cast<std::string>(item.GetSingle(FIELD_IDX)) == MEDIA_DATA_DB_URI) {
             if (item.operation != DataShare::EQUAL_TO) {
                 NAPI_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
                 return false;
