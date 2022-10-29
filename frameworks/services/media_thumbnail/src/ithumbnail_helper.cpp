@@ -51,25 +51,6 @@ shared_ptr<AbsSharedResultSet> IThumbnailHelper::QueryThumbnailInfo(ThumbRdbOpt 
     return rdbSet;
 }
 
-void IThumbnailHelper::DeleteThumbnailKv(ThumbRdbOpt &opts)
-{
-    int err;
-    ThumbnailData thumbnailData;
-    shared_ptr<AbsSharedResultSet> rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
-    if (rdbSet == nullptr) {
-        MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
-        return;
-    }
-
-    if (!ThumbnailUtils::DeleteThumbnailData(opts, thumbnailData)) {
-        MEDIA_ERR_LOG("DeleteThumbnailData Faild");
-    }
-
-    if (!ThumbnailUtils::DeleteLcdData(opts, thumbnailData)) {
-        MEDIA_ERR_LOG("DeleteLcdData Faild");
-    }
-}
-
 void IThumbnailHelper::CreateLcd(AsyncTaskData* data)
 {
     GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
