@@ -17,7 +17,7 @@
 #include <vector>
 #include <stdint.h>
 
-struct mtp_file_range {
+struct MtpFileRange {
     // file descriptor for file to transfer
     int fd;
     // offset in file for start of transfer
@@ -36,7 +36,7 @@ struct mtp_file_range {
     uint32_t transaction_id;
 };
 
-struct mtp_event {
+struct EventMtp {
     // size of the event
     size_t length;
     // event data to send
