@@ -214,7 +214,7 @@ int32_t ThumbnailAgingHelper::GetAgingDistributeLcdData(ThumbRdbOpt &opts,
     return E_OK;
 }
 
-int32_t ThumbnailAgingHelper::ClearDistributeBatch(ThumbRdbOpt &opts)
+int32_t ThumbnailAgingHelper::InvalidateDistributeBatch(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("opts.store is not init");

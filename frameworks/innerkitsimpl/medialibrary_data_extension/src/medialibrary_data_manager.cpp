@@ -535,10 +535,9 @@ int32_t MediaLibraryDataManager::DistributeDeviceAging()
     MEDIA_DEBUG_LOG("MediaLibraryDevice InitDeviceRdbStore deviceDataBaseList size =  %{public}d",
         (int) deviceDataBaseList.size());
     for (MediaLibraryDeviceInfo deviceInfo : deviceDataBaseList) {
-        result = thumbnailService_->ClearDistributeThumbnail(deviceInfo.deviceUdid);
+        result = thumbnailService_->InvalidateDistributeThumbnail(deviceInfo.deviceUdid);
         if (result != E_SUCCESS) {
-            MEDIA_ERR_LOG("%{private}s ClearDistributeThumbnail fail result is %{public}d",
-                deviceInfo.deviceUdid.c_str(), result);
+            MEDIA_ERR_LOG("invalidate fail %{public}d", result);
             continue;
         }
     }

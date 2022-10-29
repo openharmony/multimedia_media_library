@@ -39,7 +39,7 @@ public:
     static int32_t AgingLcdBatch(ThumbRdbOpt &opts);
 
     static int32_t AgingDistributeLcdBatch(ThumbRdbOpt &opts);
-    static int32_t ClearDistributeBatch(ThumbRdbOpt &opts);
+    static int32_t InvalidateDistributeBatch(ThumbRdbOpt &opts);
     static int32_t ClearKeyAndRecordFromMap(ThumbRdbOpt &opts);
     static int32_t ClearLcdFromFileTable(ThumbRdbOpt &opts);
     static int32_t ClearRemoteLcdFromFileTable(ThumbRdbOpt &opts);
