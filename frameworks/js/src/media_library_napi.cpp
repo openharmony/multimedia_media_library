@@ -1346,20 +1346,6 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status, void
     delete context;
 }
 
-static MediaType GetMediaTypeFromUri(const string &uri)
-{
-    if (uri.find(MEDIALIBRARY_IMAGE_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_IMAGE;
-    } else if (uri.find(MEDIALIBRARY_VIDEO_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_VIDEO;
-    } else if (uri.find(MEDIALIBRARY_AUDIO_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_AUDIO;
-    } else if (uri.find(MEDIALIBRARY_FILE_URI) != string::npos) {
-        return MediaType::MEDIA_TYPE_FILE;
-    }
-    return MediaType::MEDIA_TYPE_ALL;
-}
-
 static void JSTrashAssetExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -1400,7 +1386,7 @@ static void JSTrashAssetCompleteCallback(napi_env env, napi_status status, void 
     napi_get_undefined(env, &jsContext->data);
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
-        Media::MediaType mediaType = GetMediaTypeFromUri(context->uri);
+        Media::MediaType mediaType = MediaLibraryNapiUtils::GetMediaTypeFromUri(context->uri);
         string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         UserFileClient::NotifyChange(modifyNotify);
@@ -3299,7 +3285,8 @@ napi_value MediaLibraryNapi::UserFileMgrTrashAsset(napi_env env, napi_callback_i
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
         asyncContext, JS_ERR_PARAMETER_INVALID);
-    MediaLibraryNapiUtils::GenTypeMaskFromArray({ GetMediaTypeFromUri(asyncContext->uri) }, asyncContext->typeMask);
+    MediaLibraryNapiUtils::GenTypeMaskFromArray({ MediaLibraryNapiUtils::GetMediaTypeFromUri(asyncContext->uri) },
+        asyncContext->typeMask);
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrTrashAsset", JSTrashAssetExecute,
         JSTrashAssetCompleteCallback);

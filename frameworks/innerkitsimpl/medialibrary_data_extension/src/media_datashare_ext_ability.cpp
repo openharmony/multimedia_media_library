@@ -302,9 +302,14 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
+    const static set<string> noPermissionCheck = {
+        MEDIALIBRARY_DIRECTORY_URI,
+        MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE,
+        MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE
+    };
+
     string uriStr = uri.ToString();
-    string directoryQueryUri = MEDIALIBRARY_DIRECTORY_URI;
-    if ((uriStr != directoryQueryUri) && !CheckPermFromUri(uriStr, false)) {
+    if ((noPermissionCheck.find(uriStr) == noPermissionCheck.end()) && !CheckPermFromUri(uriStr, false)) {
         return nullptr;
     }
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(Uri(uriStr), columns, predicates);
