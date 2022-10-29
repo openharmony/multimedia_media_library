@@ -108,9 +108,15 @@ __attribute__((constructor)) void RegisterDataShareCreator()
 static void MakeRootDirs()
 {
     for (auto &dir : PRESET_ROOT_DIRS) {
-        if (!MediaFileUtils::CreateDirectory(ROOT_MEDIA_DIR + dir + ".recycle")) {
+        Uri createAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
+        ValuesBucket valuesBucket;
+        valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, dir);
+        MediaLibraryCommand cmd(createAlbumUri, valuesBucket);
+        auto ret = MediaLibraryAlbumOperations::CreateAlbumOperation(cmd);
+        if (ret <= 0) {
             MEDIA_ERR_LOG("Failed to preset root dir: %{public}s", dir.c_str());
         }
+        MediaFileUtils::CreateDirectory(ROOT_MEDIA_DIR + dir + ".recycle");
     }
 }
 
