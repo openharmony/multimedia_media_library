@@ -24,6 +24,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_helper_factory.h"
+#include "thumbnail_uri_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -263,16 +264,16 @@ int32_t ThumbnailService::LcdDistributeAging(const string &udid)
     return E_OK;
 }
 
-int32_t ThumbnailService::ClearDistributeThumbnail(const string &udid)
+int32_t ThumbnailService::InvalidateDistributeThumbnail(const string &udid)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .kvStore = kvStorePtr_,
         .udid = udid
     };
-    int32_t err = ThumbnailAgingHelper::ClearDistributeBatch(opts);
+    int32_t err = ThumbnailAgingHelper::InvalidateDistributeBatch(opts);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("ClearDistributeBatch failed : %{public}d", err);
+        MEDIA_ERR_LOG("InvalidateDistributeBatch failed : %{public}d", err);
     }
     return err;
 }

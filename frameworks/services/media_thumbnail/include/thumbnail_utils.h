@@ -94,7 +94,6 @@ public:
     static bool RemoveDataFromKv(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore, const std::string &key);
     static bool IsImageExist(const std::string &key, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
-    static bool DeleteThumbnailData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
     static bool DeleteLcdData(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
     static bool ClearThumbnailAllRecord(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
