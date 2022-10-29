@@ -36,10 +36,12 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     string name = MEDIA_DATA_ABILITY_DB_NAME;
     int32_t errCode = 0;
     std::string realPath = SqliteDatabaseUtils::GetDefaultDatabasePath(databaseDir, name, errCode);
-    config_.SetName(std::move(name));
-    config_.SetPath(std::move(realPath));
+    config_.SetName(name);
+    config_.SetPath(realPath);
     config_.SetBundleName(context->GetBundleName());
     config_.SetArea(context->GetArea());
+    MEDIA_INFO_LOG("rdb config: name: %{private}s realPath: %{private}s bundleName: %{private}s area: %{private}d",
+        name.c_str(), realPath.c_str(), context->GetBundleName().c_str(), context->GetArea());
     Init();
 }
 
