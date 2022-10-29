@@ -24,7 +24,6 @@
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
-#include "thumbnail_uri_utils.h"
 
 #define THUMBNAIL_API_EXPORT __attribute__ ((visibility ("default")))
 namespace OHOS {
@@ -36,14 +35,12 @@ public:
     THUMBNAIL_API_EXPORT void ReleaseService();
 
     THUMBNAIL_API_EXPORT std::shared_ptr<DataShare::ResultSetBridge> GetThumbnail(const std::string &uri);
-    THUMBNAIL_API_EXPORT std::shared_ptr<PixelMap> UnifiedGenerateThumbnail(const Size &size, const int fd);
-    THUMBNAIL_API_EXPORT std::shared_ptr<PixelMap> GetThumbnailData(const std::string &uri);
     THUMBNAIL_API_EXPORT int32_t LcdAging();
     THUMBNAIL_API_EXPORT int32_t LcdDistributeAging(const std::string &udid);
     THUMBNAIL_API_EXPORT int32_t GenerateThumbnails();
     THUMBNAIL_API_EXPORT void InterruptBgworker();
     THUMBNAIL_API_EXPORT void StopAllWorker();
-    THUMBNAIL_API_EXPORT int32_t ClearDistributeThumbnail(const std::string &udid);
+    THUMBNAIL_API_EXPORT int32_t InvalidateDistributeThumbnail(const std::string &udid);
     THUMBNAIL_API_EXPORT int32_t CreateThumbnailAsync(const std::string &uri);
     THUMBNAIL_API_EXPORT int32_t CreateThumbnail(const std::string &uri);
     THUMBNAIL_API_EXPORT static bool ParseThumbnailInfo(const std::string &uriString);

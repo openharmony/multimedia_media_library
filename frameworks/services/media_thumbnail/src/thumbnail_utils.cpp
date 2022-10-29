@@ -77,26 +77,6 @@ bool ThumbnailUtils::DeleteLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailDa
     return true;
 }
 
-bool ThumbnailUtils::DeleteThumbnailData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
-{
-    if (thumbnailData.thumbnailKey.empty()) {
-        MEDIA_ERR_LOG("thumbnailKey Key is empty");
-        return false;
-    }
-
-    if (IsImageExist(thumbnailData.thumbnailKey, opts.networkId, opts.kvStore)) {
-        if (!RemoveDataFromKv(opts.kvStore, thumbnailData.thumbnailKey)) {
-            MEDIA_ERR_LOG("ThumbnailUtils::RemoveDataFromKv faild");
-            return false;
-        }
-    }
-
-    if (!CleanThumbnailInfo(opts, true, false)) {
-        return false;
-    }
-    return true;
-}
-
 bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
 {
     if (thumbnailData.lcdKey.empty()) {
