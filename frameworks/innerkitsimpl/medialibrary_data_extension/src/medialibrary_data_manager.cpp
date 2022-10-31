@@ -110,7 +110,7 @@ static void MakeRootDirs()
     for (auto &dir : PRESET_ROOT_DIRS) {
         Uri createAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
         ValuesBucket valuesBucket;
-        valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, dir);
+        valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR + dir);
         MediaLibraryCommand cmd(createAlbumUri, valuesBucket);
         auto ret = MediaLibraryAlbumOperations::CreateAlbumOperation(cmd);
         if (ret <= 0) {
