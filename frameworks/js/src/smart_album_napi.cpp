@@ -17,6 +17,7 @@
 #include "smart_album_napi.h"
 #include "medialibrary_napi_log.h"
 #include "media_file_utils.h"
+#include "userfile_client.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -26,7 +27,6 @@ namespace Media {
 using namespace std;
 thread_local napi_ref SmartAlbumNapi::sConstructor_ = nullptr;
 thread_local SmartAlbumAsset *SmartAlbumNapi::sAlbumData_ = nullptr;
-std::shared_ptr<DataShare::DataShareHelper> SmartAlbumNapi::sMediaDataHelper = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
 thread_local napi_ref SmartAlbumNapi::userFileMgrConstructor_ = nullptr;
@@ -135,7 +135,6 @@ napi_value SmartAlbumNapi::SmartAlbumNapiConstructor(napi_env env, napi_callback
         std::unique_ptr<SmartAlbumNapi> obj = std::make_unique<SmartAlbumNapi>();
         if (obj != nullptr) {
             obj->env_ = env;
-            obj->abilityHelper_ = sMediaDataHelper;
             if (sAlbumData_ != nullptr) {
                 obj->SetSmartAlbumNapiProperties(*sAlbumData_);
             }
@@ -153,8 +152,7 @@ napi_value SmartAlbumNapi::SmartAlbumNapiConstructor(napi_env env, napi_callback
     return result;
 }
 
-napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, SmartAlbumAsset &albumData,
-    std::shared_ptr<DataShare::DataShareHelper> abilityHelper)
+napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, SmartAlbumAsset &albumData)
 {
     napi_value constructor;
     napi_ref constructorRef = (albumData.GetTypeMask().empty()) ? (sConstructor_) : (userFileMgrConstructor_);
@@ -162,15 +160,9 @@ napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, SmartAlbumAsset &a
 
     napi_value result = nullptr;
     sAlbumData_ = &albumData;
-    sMediaDataHelper = abilityHelper;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
     sAlbumData_ = nullptr;
     return result;
-}
-
-std::shared_ptr<DataShare::DataShareHelper> SmartAlbumNapi::GetMediaDataHelper() const
-{
-    return abilityHelper_;
 }
 
 std::string SmartAlbumNapi::GetSmartAlbumName() const
@@ -458,7 +450,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
         predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectInfo->GetSmartAlbumId()));
         Uri commitModifyUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMOPRN +
                             "/" + MEDIA_SMARTALBUMOPRN_MODIFYALBUM);
-        changedRows = context->objectInfo->GetMediaDataHelper()->Update(commitModifyUri, predicates, valuesBucket);
+        changedRows = UserFileClient::Update(commitModifyUri, predicates, valuesBucket);
     } else {
         changedRows = E_VIOLATION_PARAMETERS;
     }
@@ -473,7 +465,7 @@ static void JSAddAssetExecute(SmartAlbumNapiAsyncContext *context)
         DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
         valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
-        context->changedRows = context->objectInfo->GetMediaDataHelper()->Insert(addAssetUri, valuesBucket);
+        context->changedRows = UserFileClient::Insert(addAssetUri, valuesBucket);
     }
 }
 
@@ -486,7 +478,7 @@ static void JSRemoveAssetExecute(SmartAlbumNapiAsyncContext *context)
         DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
         valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
-        context->changedRows = context->objectInfo->GetMediaDataHelper()->Insert(removeAssetUri, context->valuesBucket);
+        context->changedRows = UserFileClient::Insert(removeAssetUri, context->valuesBucket);
     }
 }
 
@@ -872,7 +864,7 @@ static void GetFileAssetsNative(napi_env env, void *data)
                + ASSETMAP_VIEW_NAME);
 
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
-        context->objectInfo->GetMediaDataHelper()->Query(uri, predicates, columns);
+        UserFileClient::Query(uri, predicates, columns);
 
     context->fetchResult = std::make_unique<FetchResult>(move(resultSet));
     context->fetchResult->resultNapiType_ = context->resultNapiType;
@@ -888,8 +880,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status, vo
 
     napi_value fetchRes = nullptr;
     if (context->fetchResult != nullptr) {
-        fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult),
-                                                              context->objectInfo->sMediaDataHelper);
+        fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, *(context->fetchResult));
         if (fetchRes == nullptr) {
             NAPI_ERR_LOG("Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);
