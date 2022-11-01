@@ -53,7 +53,7 @@ shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(napi_e
             NAPI_ERR_LOG("Failed to get native stage context instance");
             return nullptr;
         }
-        dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
+        dataShareHelper = DataShare::DataShareHelper::Creator(context->GetToken(), MEDIALIBRARY_DATA_URI);
     }
     return dataShareHelper;
 }
