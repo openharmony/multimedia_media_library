@@ -179,7 +179,7 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data)
     }
 
     string filePath = data->GetFilePath();
-    if(filePath.empty()){
+    if (filePath.empty()) {
         MEDIA_ERR_LOG("AV metadata file path is empty");
         return E_AVMETADATA;
     }
