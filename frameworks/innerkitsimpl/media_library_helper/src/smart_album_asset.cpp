@@ -33,6 +33,7 @@ SmartAlbumAsset::SmartAlbumAsset()
     albumDateModified_ = DEFAULT_SMART_ALBUM_DATE_MODIFIED;
     categoryName_ = DEFAULT_SMART_ALBUM_CATEGORYNAME;
     coverUri_ = DEFAULT_COVERURI;
+    resultNapiType_ = ResultNapiType::TYPE_MEDIALIBRARY;
 }
 
 SmartAlbumAsset::~SmartAlbumAsset() = default;
