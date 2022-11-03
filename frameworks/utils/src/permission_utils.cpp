@@ -21,7 +21,7 @@
 #include "media_log.h"
 #include "medialibrary_tracer.h"
 #include "privacy_kit.h"
-#include "sa_mgr_client.h"
+#include "iservice_registry.h"
 #include "system_ability_definition.h"
 
 namespace OHOS {
@@ -51,16 +51,18 @@ sptr<AppExecFwk::IBundleMgr> PermissionUtils::GetSysBundleManager()
         return bundleMgr_;
     }
 
-    auto saMgr = OHOS::DelayedSingleton<AAFwk::SaMgrClient>::GetInstance();
-    if (saMgr == nullptr) {
-        MEDIA_ERR_LOG("Failed to get SaMgrClient::GetInstance");
+    auto systemAbilityMgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (systemAbilityMgr == nullptr) {
+        MEDIA_ERR_LOG("Failed to get SystemAbilityManager.");
         return nullptr;
     }
-    auto bundleObj = saMgr->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+
+    auto bundleObj = systemAbilityMgr->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
     if (bundleObj == nullptr) {
-        MEDIA_ERR_LOG("Failed to get GetSystemAbility");
+        MEDIA_ERR_LOG("Remote object is nullptr.");
         return nullptr;
     }
+
     auto bundleMgr = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
     if (bundleMgr == nullptr) {
         MEDIA_ERR_LOG("Failed to iface_cast");
