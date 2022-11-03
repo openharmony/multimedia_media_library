@@ -27,7 +27,7 @@ void PermissionUtilsUnitTest::SetAccessTokenPermission(const std::string &proces
     const std::vector<std::string> &permission, uint64_t &tokenId)
 {
     auto perms = std::make_unique<const char *[]>(permission.size());
-    for (int i = 0; i < permission.size(); i++) {
+    for (size_t i = 0; i < permission.size(); i++) {
         perms[i] = permission[i].c_str();
     }
 
