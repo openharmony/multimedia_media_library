@@ -21,7 +21,6 @@
 #include "media_datashare_stub_impl.h"
 #include "hilog_wrapper.h"
 #include "ipc_skeleton.h"
-#include "sa_mgr_client.h"
 #include "datashare_ext_ability_context.h"
 #include "runtime.h"
 #include "napi/native_api.h"
