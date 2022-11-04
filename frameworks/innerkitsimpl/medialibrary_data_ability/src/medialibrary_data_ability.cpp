@@ -15,6 +15,8 @@
 
 #include "medialibrary_data_ability.h"
 
+#include <algorithm>
+#include <regex>
 #include <unordered_set>
 
 #include "accesstoken_kit.h"
@@ -51,6 +53,51 @@ std::mutex bundleMgrMutex;
 const std::string MediaLibraryDataAbility::PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
 const std::string MediaLibraryDataAbility::PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 REGISTER_AA(MediaLibraryDataAbility);
+
+const std::vector<std::string> fileKeyWhiteListUSet = {
+    MEDIA_DATA_DB_ID,
+    MEDIA_DATA_DB_URI,
+    MEDIA_DATA_DB_FILE_PATH,
+    MEDIA_DATA_DB_SIZE,
+    MEDIA_DATA_DB_PARENT_ID,
+    MEDIA_DATA_DB_DATE_MODIFIED,
+    MEDIA_DATA_DB_DATE_ADDED,
+    MEDIA_DATA_DB_MIME_TYPE,
+    MEDIA_DATA_DB_TITLE,
+    MEDIA_DATA_DB_DESCRIPTION,
+    MEDIA_DATA_DB_NAME,
+    MEDIA_DATA_DB_ORIENTATION,
+    MEDIA_DATA_DB_LATITUDE,
+    MEDIA_DATA_DB_LONGITUDE,
+    MEDIA_DATA_DB_DATE_TAKEN,
+    MEDIA_DATA_DB_THUMBNAIL,
+    MEDIA_DATA_DB_LCD,
+    MEDIA_DATA_DB_BUCKET_ID,
+    MEDIA_DATA_DB_BUCKET_NAME,
+    MEDIA_DATA_DB_DURATION,
+    MEDIA_DATA_DB_ARTIST,
+    MEDIA_DATA_DB_AUDIO_ALBUM,
+    MEDIA_DATA_DB_MEDIA_TYPE,
+    MEDIA_DATA_DB_HEIGHT,
+    MEDIA_DATA_DB_WIDTH,
+    MEDIA_DATA_DB_OWNER_PACKAGE,
+    MEDIA_DATA_DB_IS_FAV,
+    MEDIA_DATA_DB_IS_TRASH,
+    MEDIA_DATA_DB_DATE_TRASHED,
+    MEDIA_DATA_DB_IS_PENDING,
+    MEDIA_DATA_DB_TIME_PENDING,
+    MEDIA_DATA_DB_RELATIVE_PATH,
+    MEDIA_DATA_DB_VOLUME_NAME,
+    MEDIA_DATA_DB_SELF_ID,
+    MEDIA_DATA_DB_ALBUM,
+    MEDIA_DATA_DB_ALBUM_ID,
+    MEDIA_DATA_DB_ALBUM_NAME,
+    MEDIA_DATA_DB_COUNT,
+    MEDIA_DATA_DB_RINGTONE_URI,
+    MEDIA_DATA_DB_ALARM_URI,
+    MEDIA_DATA_DB_NOTIFICATION_URI,
+    MEDIA_DATA_DB_RINGTONE_TYPE
+};
 
 void MediaLibraryDataAbility::OnStart(const AAFwk::Want &want)
 {
@@ -221,6 +268,146 @@ int32_t MediaLibraryDataAbility::InitMediaLibraryRdbStore()
     mediaThumbnail_ = std::make_shared<MediaLibraryThumbnail>();
     MEDIA_INFO_LOG("InitMediaLibraryRdbStore SUCCESS");
     return DATA_ABILITY_SUCCESS;
+}
+
+static void ExtractKeyWord(std::string &str)
+{
+    if (str.empty()) {
+        return;
+    }
+    // add seprate space symbol,like file_id=?
+    std::regex spacePattern("\\=|\\<>|\\>|\\>=|\\<|\\<=|\\!=",
+        std::regex_constants::ECMAScript | std::regex_constants::icase);
+    str = regex_replace(str, spacePattern, " ");
+    // remove front space of key word
+    auto pos = str.find_first_not_of(" ");
+    if (pos != std::string::npos) {
+        str.erase(0, pos);
+    }
+    // remove back space of key word
+    pos = str.find_first_of(" ");
+    if (pos != std::string::npos) {
+        str = str.substr(0, pos);
+    }
+}
+
+static bool CheckWhiteList(const std::string &express)
+{
+    auto it = std::find_if(fileKeyWhiteListUSet.begin(), fileKeyWhiteListUSet.end(), [express](const std::string &str) {
+        return express.find(str) != string::npos;
+    });
+    if (it != fileKeyWhiteListUSet.end()) {
+        return true;
+    }
+    MEDIA_ERR_LOG("Failed to check express: %{private}s", express.c_str());
+
+    return false;
+}
+
+static bool CheckExpressValidation(std::vector<std::string> &sepratedStr)
+{
+    for (auto &str : sepratedStr) {
+        ExtractKeyWord(str);
+        if (str.empty() || (str.size() == 1 && str == " ")) {
+            continue;
+        }
+        if (!CheckWhiteList(str)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static void removeSpecialCondition(std::string &hacker, const std::string &pattern)
+{
+    auto pos = hacker.find(pattern);
+    while (pos != std::string::npos) {
+        hacker.replace(pos, pos + pattern.size(), " ");
+        pos = hacker.find(pattern);
+    }
+}
+
+static void removeSpecialCondition(std::string &hacker)
+{
+    const std::string S1 = "not between ? and ?";
+    const std::string S2 = "between ? and ?";
+    removeSpecialCondition(hacker, S1);
+    removeSpecialCondition(hacker, S2);
+}
+
+static void SeprateSelection(std::string &strCondition, std::vector<std::string> &sepratedStr)
+{
+    // 0. transform to lower
+    std::transform(strCondition.begin(), strCondition.end(), strCondition.begin(), ::tolower);
+    // 1.remove brackets
+    std::regex bracketsPattern("\\(|\\)", std::regex_constants::ECMAScript | std::regex_constants::icase);
+    strCondition = regex_replace(strCondition, bracketsPattern, "");
+
+    // 2.remove redundant space
+    std::regex spacePattern("\\s+", std::regex_constants::ECMAScript | std::regex_constants::icase);
+    strCondition = regex_replace(strCondition, spacePattern, " ");
+
+    // 3. remove special condition
+    removeSpecialCondition(strCondition);
+
+    // 4. seprate core: according bound symbol,for example: and or ..
+    std::regex conditionPattern("\\s*and\\s+|\\s*or\\s+",
+        std::regex_constants::ECMAScript | std::regex_constants::icase);
+    std::sregex_token_iterator iter(strCondition.begin(), strCondition.end(), conditionPattern, -1);
+    decltype(iter) end;
+    while (iter != end) {
+        sepratedStr.push_back(iter->str());
+        ++iter;
+    }
+}
+
+static bool CheckKeyWord(const std::string &strCondition)
+{
+    std::regex pattern("\\s*exec\\s*|\\s*insert\\s*|\\s*delete\\s*|\\s*update\\s*|" \
+                            "\\s*join\\s*|\\s*union\\s*|\\s*master\\s*|\\s*truncate\\s*",
+                    std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+    if (regex_search(strCondition, pattern)) {
+        MEDIA_ERR_LOG("Faild to check key word");
+        return false;
+    }
+
+    return true;
+}
+
+static bool CheckIllegalCharacter(const std::string &strCondition)
+{
+    /* if strCondition contains ';', it will be sepreate to two clause */
+    if (strCondition.find(';') == std::string::npos) {
+        return true;
+    }
+    MEDIA_ERR_LOG("Faild to check illegal character");
+    /* other check to do */
+    return false;
+}
+
+static bool CheckWhereClause(const std::string &whereClause)
+{
+    if (whereClause.empty() || (whereClause.size() == 1 && whereClause == " ")) {
+        return true;
+    }
+
+    /* check whether query condition has illegal character */
+    if (!CheckIllegalCharacter(whereClause)) {
+        return false;
+    }
+
+    /* check whether query condition has key word */
+    if (!CheckKeyWord(whereClause)) {
+        return false;
+    }
+
+    std::vector<std::string> sepratedStr;
+    auto args = whereClause;
+    SeprateSelection(args, sepratedStr);
+    /* check every query condition */
+    return CheckExpressValidation(sepratedStr);
 }
 
 std::string MediaLibraryDataAbility::GetType(const Uri &uri)
@@ -690,6 +877,11 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataAbility::Query(const Uri &uri,
     shared_ptr<AbsSharedResultSet> queryResultSet;
     TableType tabletype = TYPE_DATA;
     string strRow, uriString = uri.ToString(), strQueryCondition = predicates.GetWhereClause();
+
+    if (!CheckWhereClause(strQueryCondition)) {
+        MEDIA_ERR_LOG("illegal query whereClause input %{public}s", strQueryCondition.c_str());
+        return nullptr;
+    }
 
     vector<int> space;
     bool thumbnailQuery = ParseThumbnailInfo(uriString, space);
