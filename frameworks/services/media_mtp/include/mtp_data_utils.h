@@ -122,8 +122,6 @@ public:
     static int32_t GetPropListBySet(const uint32_t property,
         const uint16_t format, const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         std::shared_ptr<std::vector<Property>> &outProps);
-    static std::variant<int32_t, int64_t, std::string> GetRowValFromColumn(const std::string &columnName,
-        MediaSetDataType &type, const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
     static int32_t GetPropValueBySet(const uint32_t property,
         const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         PropertyValue &outPropValue);
