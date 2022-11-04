@@ -45,6 +45,7 @@ private:
     void SendR2Idata(int &errorCode);
     void AddStorage(std::shared_ptr<Storage> &storage);
     void RemoveStorage(std::shared_ptr<Storage> &storage);
+    void DealRequest(uint16_t operationCode, int &errorCode);
     
 private:
     std::shared_ptr<MtpOperationContext> mtpContextPtr_;
@@ -55,8 +56,6 @@ private:
     std::shared_ptr<MtpDriver> mtpDriver_;
     std::shared_ptr<PayloadData> dataPayloadData_;
     uint16_t responseCode_;
-
-    void DealRequest(uint16_t operationCode, int &errorCode);
 };
 } // namespace Media
 } // namespace OHOS
