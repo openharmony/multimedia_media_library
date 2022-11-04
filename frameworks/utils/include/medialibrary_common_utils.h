@@ -23,8 +23,6 @@
 
 namespace OHOS {
 namespace Media {
-const static size_t HASH_INPUT_MAX_LENGTH = LONG_MAX;
-
 class MediaLibraryCommonUtils {
 public:
     static int32_t GenKeySHA256(const std::vector<uint8_t> &input, std::string &key);
@@ -45,7 +43,6 @@ private:
     static void ExtractKeyWord(std::string &str);
     static void removeSpecialCondition(std::string &hacker, const std::string &pattern);
     static void removeSpecialCondition(std::string &hacker);
-    static const std::string CHAR2HEX_TABLE[UCHAR_MAX + 1];
 };
 } // namespace Media
 } // namespace OHOS
