@@ -66,13 +66,13 @@ public:
     static std::string utf16ToUtf8(const std::u16string input_str);
     static bool GetString(const std::vector<uint8_t> &buffer, size_t &offset, std::string &str);
     static std::string FormatDateTime(time_t sec);
-    static const std::string& GetOperationName(uint16_t code);
-    static const std::string& GetEventName(uint16_t code);
-    static const std::string& GetFormatName(uint16_t code);
-    static const std::string& GetObjectPropName(uint16_t code);
-    static const std::string& GetDataTypeName(int type);
-    static const std::string& GetAssociationName(int type);
-    static const std::string& CodeToStrByMap(uint32_t code, const std::map<uint32_t, std::string> &theMap);
+    static const std::string &GetOperationName(uint16_t code);
+    static const std::string &GetEventName(uint16_t code);
+    static const std::string &GetFormatName(uint16_t code);
+    static const std::string &GetObjectPropName(uint16_t code);
+    static const std::string &GetDataTypeName(int type);
+    static const std::string &GetAssociationName(int type);
+    static const std::string &CodeToStrByMap(uint32_t code, const std::map<uint32_t, std::string> &theMap);
     static int GetObjectPropTypeByPropCode(uint16_t propCode);
 
     static bool Int8ToString(const int8_t &value, std::string &outstr);
