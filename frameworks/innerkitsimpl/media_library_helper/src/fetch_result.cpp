@@ -78,6 +78,9 @@ FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &res
         fetchResType_ = FetchResType::TYPE_ALBUM;
     } else if (std::is_same<T, SmartAlbumAsset>::value) {
         fetchResType_ = FetchResType::TYPE_SMARTALBUM;
+    } else {
+        MEDIA_ERR_LOG("unsupported FetchResType");
+        fetchResType_ = FetchResType::TYPE_FILE;
     }
 }
 

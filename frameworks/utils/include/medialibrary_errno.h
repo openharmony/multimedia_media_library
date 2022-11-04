@@ -26,6 +26,7 @@ namespace Media {
 // linux standard ERROR { 0, 200 }
 constexpr int32_t E_OK = 0;
 constexpr int32_t E_SUCCESS = 0;
+constexpr int32_t MTP_SUCCESS = 0;
 constexpr int32_t E_ERR = -1;
 constexpr int32_t E_PERMISSION_DENIED = -EACCES;
 constexpr int32_t E_NO_SUCH_FILE      = -ENOENT;

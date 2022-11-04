@@ -21,8 +21,6 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MTP_SUCCESS = 0;
-
 const uint16_t UNDEFINED_CONTAINER_TYPE = 0;
 const uint16_t COMMAND_CONTAINER_TYPE = 1;
 const uint16_t DATA_CONTAINER_TYPE = 2;
@@ -37,7 +35,7 @@ const std::string DEFAULT_PRODUCT_NAME = "OpenHarmony Device";
 const std::string DEFAULT_PRODUCT_MODEL = "ohos";
 const std::string DEFAULT_PRODUCT_MANUFACTURER = "default";
 const std::string DEFAULT_PRODUCT_HARDWARE_VERSION = "default";
-const std::string DEFAULT_PRODUCT_SOFTWARE_VERSION = "OpenHarmony 3.2.5.3";
+const std::string DEFAULT_PRODUCT_SOFTWARE_VERSION = "OpenHarmony 3.2";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MTP_SERVICE_INCLUDE_MEDIA_MTP_UTILS_H_

@@ -51,9 +51,6 @@ public:
     int32_t GetObjectPropValue(const std::shared_ptr<MtpOperationContext> &context,
         uint64_t &outIntVal, uint128_t &outLongVal, std::string &outStrVal);
 private:
-    static std::mutex mutex_;
-    static std::shared_ptr<MtpMedialibraryManager> instance_;
-    static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
     int32_t SetObjectInfo(const std::unique_ptr<FileAsset> &fileAsset, std::shared_ptr<ObjectInfo> &outObjectInfo);
     bool CompressImage(std::unique_ptr<PixelMap> &pixelMap, Size &size, std::vector<uint8_t> &data);
     int32_t GetAssetById(const int32_t id, std::shared_ptr<FileAsset> &outFileAsset);
@@ -65,6 +62,10 @@ private:
     std::shared_ptr<DataShare::DataShareResultSet> GetRootsDepthChildren(const uint16_t format);
     int32_t GetRootIdList(std::vector<std::string> &outRootIdList);
     std::shared_ptr<DataShare::DataShareResultSet> GetHandleDepthChildren(const uint16_t format, const uint32_t handle);
+private:
+    static std::mutex mutex_;
+    static std::shared_ptr<MtpMedialibraryManager> instance_;
+    static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
 };
 } // namespace Media
 } // namespace OHOS

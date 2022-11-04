@@ -30,6 +30,7 @@
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "datashare_helper.h"
+#include "appkit/ability_runtime/context/context.h"
 
 namespace OHOS {
 namespace Media {

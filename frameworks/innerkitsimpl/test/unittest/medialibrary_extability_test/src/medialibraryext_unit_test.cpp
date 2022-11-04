@@ -17,7 +17,7 @@
 #include "medialibraryext_unit_test.h"
 
 #include <fcntl.h>
-
+#include "appkit/ability_runtime/context/context.h"
 #include "datashare_helper.h"
 #include "file_access_extension_info.h"
 #include "file_access_framework_errno.h"
