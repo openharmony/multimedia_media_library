@@ -27,7 +27,7 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
-const std::string MediaLibraryCommonUtils::CHAR2HEX_TABLE[UCHAR_MAX + 1] = {
+const std::string CHAR2HEX_TABLE[UCHAR_MAX + 1] = {
     "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1A", "1B", "1C", "1D", "1E", "1F",
     "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "2A", "2B", "2C", "2D", "2E", "2F",
@@ -90,7 +90,7 @@ void MediaLibraryCommonUtils::Char2Hex(const unsigned char *data, const size_t l
 
 int32_t MediaLibraryCommonUtils::GenKey(const unsigned char *data, const size_t len, std::string &key)
 {
-    if (len == 0 || len > HASH_INPUT_MAX_LENGTH) {
+    if (len == 0 || len > LONG_MAX) {
         return -EINVAL;
     }
 
