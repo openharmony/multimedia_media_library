@@ -655,7 +655,6 @@ int32_t HandleFileRename(const shared_ptr<FileAsset> &srcAsset, const string &di
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, srcAsset->GetMediaType());
     valuesBucket.Put(MEDIA_DATA_DB_URI, srcAsset->GetUri());
     valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.Put(MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(displayName));
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
     predicates.SetWhereArgs({ MediaLibraryDataManagerUtils::GetIdFromUri(srcAsset->GetUri()) });
