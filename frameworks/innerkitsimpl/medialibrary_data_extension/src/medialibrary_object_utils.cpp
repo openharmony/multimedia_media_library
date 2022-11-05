@@ -123,6 +123,9 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     string displayName = fileAsset.GetDisplayName();
     ValuesBucket assetInfo;
     assetInfo.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset.GetMediaType());
+    assetInfo.PutString(MEDIA_DATA_DB_URI, MediaLibraryDataManagerUtils::GetMediaTypeUri(fileAsset.GetMediaType()));
+    string extension = ScannerUtils::GetFileExtensionFromFileUri(displayName);
+    assetInfo.PutString(MEDIA_DATA_DB_MIME_TYPE, ScannerUtils::GetMimeTypeFromExtension(extension));
     assetInfo.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset.GetRelativePath());
     assetInfo.PutString(MEDIA_DATA_DB_NAME, displayName);
     assetInfo.PutString(MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(displayName));
@@ -130,6 +133,7 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     if (stat(fileAsset.GetPath().c_str(), &statInfo) == 0) {
         assetInfo.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
         assetInfo.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
+        assetInfo.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
     }
     assetInfo.PutString(MEDIA_DATA_DB_FILE_PATH, fileAsset.GetPath());
     assetInfo.PutInt(MEDIA_DATA_DB_BUCKET_ID, dirAsset.GetAlbumId());
@@ -521,12 +525,13 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
         return E_FAIL;
     }
 
-    if (UpdateFileInfoInDb(cmd, dstFilePath, dirAsset.GetAlbumId(), dirAsset.GetAlbumName()) > 0) {
+    auto ret = UpdateFileInfoInDb(cmd, dstFilePath, dirAsset.GetAlbumId(), dirAsset.GetAlbumName());
+    if (ret > 0) {
         UpdateDateModified(dstAlbumPath);
         string srcAlbumPath = MediaLibraryDataManagerUtils::GetParentPath(srcFilePath);
         UpdateDateModified(srcAlbumPath);
     }
-    return errCode;
+    return ret;
 }
 
 // Restriction: input param cmd MUST have id in uri
@@ -770,6 +775,19 @@ void MediaLibraryObjectUtils::GetDefaultRelativePath(const int32_t mediaType, st
     }
 }
 
+string GetRelativePathFromFilePath(const string &path)
+{
+    string relativePath;
+    if (path.length() > ROOT_MEDIA_DIR.length()) {
+        relativePath = path.substr(ROOT_MEDIA_DIR.length());
+    }
+    size_t pos = relativePath.rfind('/');
+    if (pos != string::npos) {
+        relativePath = relativePath.substr(0, pos + 1);
+    }
+    return relativePath;
+}
+
 int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, const string &dstPath,
     const int32_t &bucketId, const string &bucketName)
 {
@@ -792,11 +810,21 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
         return E_HAS_FS_ERROR;
     }
     string fileId = cmd.GetOprnFileId();
+    string mimeType = ScannerUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtensionFromFileUri(dstPath));
+    MediaType mediaType = ScannerUtils::GetMediatypeFromMimetype(mimeType);
+    string displayName = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(dstPath);
     ValuesBucket values;
+    values.PutString(MEDIA_DATA_DB_NAME, displayName);
+    values.PutString(MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(displayName));
     values.PutString(MEDIA_DATA_DB_FILE_PATH, dstPath);
+    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, GetRelativePathFromFilePath(dstPath));
     values.PutString(MEDIA_DATA_DB_BUCKET_NAME, bucketName);
+    values.PutString(MEDIA_DATA_DB_MIME_TYPE, mimeType);
+    values.PutString(MEDIA_DATA_DB_URI, MediaLibraryDataManagerUtils::GetMediaTypeUri(mediaType));
+    values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     values.PutInt(MEDIA_DATA_DB_BUCKET_ID, bucketId);
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, bucketId);
+    values.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
     cmd.SetValueBucket(values);
 
