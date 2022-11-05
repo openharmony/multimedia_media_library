@@ -555,23 +555,17 @@ public:
         switch (mediaType) {
             case MEDIA_TYPE_AUDIO:
                 return MEDIALIBRARY_AUDIO_URI;
-                break;
             case MEDIA_TYPE_VIDEO:
                 return MEDIALIBRARY_VIDEO_URI;
-                break;
             case MEDIA_TYPE_IMAGE:
                 return MEDIALIBRARY_IMAGE_URI;
-                break;
             case MEDIA_TYPE_SMARTALBUM:
                 return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
-                break;
             case MEDIA_TYPE_DEVICE:
                 return MEDIALIBRARY_DEVICE_URI;
-                break;
             case MEDIA_TYPE_FILE:
             default:
                 return MEDIALIBRARY_FILE_URI;
-                break;
         }
     }
 
