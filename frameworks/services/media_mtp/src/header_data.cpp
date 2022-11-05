@@ -70,9 +70,9 @@ int HeaderData::Parser(vector<uint8_t> &buffer, uint32_t readSize)
     MEDIA_INFO_LOG("operationCode %{public}x, transactionID %{public}d, containerType %{public}d",
         context_->operationCode, context_->transactionID, containerType_);
     if (containerType_ == CONTAINER_TYPE_2) {
-        context_->indata = 1;
+        context_->indata = true;
     } else {
-        context_->indata = 0;
+        context_->indata = false;
     }
     return MTP_SUCCESS;
 }
