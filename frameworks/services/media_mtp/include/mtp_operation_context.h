@@ -43,7 +43,7 @@ struct MtpOperationContext {
     uint64_t offset {0};
     uint32_t length {0};
 
-    int indata {0};
+    bool indata {false};
     uint32_t storageInfoID {0};
 
     bool sessionOpen {false};
