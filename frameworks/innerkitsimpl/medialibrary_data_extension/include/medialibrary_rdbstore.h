@@ -29,7 +29,7 @@ public:
     explicit MediaLibraryRdbStore(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
     virtual ~MediaLibraryRdbStore();
 
-    virtual void Init() override;
+    virtual int32_t Init() override;
     virtual void Stop() override;
 
     virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) override;
