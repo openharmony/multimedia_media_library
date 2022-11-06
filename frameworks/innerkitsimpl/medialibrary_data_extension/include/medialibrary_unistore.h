@@ -32,7 +32,7 @@ public:
     MediaLibraryUnistore() = default;
     virtual ~MediaLibraryUnistore() = default;
 
-    virtual void Init() = 0;
+    virtual int32_t Init() = 0;
     virtual void Stop() = 0;
 
     virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) = 0;

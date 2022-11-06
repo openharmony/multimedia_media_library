@@ -62,6 +62,10 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
     const std::shared_ptr<OHOSApplication> &application, std::shared_ptr<AbilityHandler> &handler,
     const sptr<IRemoteObject> &token)
 {
+    if ((record == nullptr) || (application == nullptr) || (handler == nullptr) || (token == nullptr)) {
+        std::string errLog = "MediaDataShareExtAbility::init failed, some object is nullptr";
+        return;
+    }
     DataShareExtAbility::Init(record, application, handler, token);
     auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
@@ -71,10 +75,16 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
     MEDIA_INFO_LOG("%{public}s runtime language  %{public}d", __func__, runtime_.GetLanguage());
 
     auto dataManager = MediaLibraryDataManager::GetInstance();
-    if (dataManager != nullptr) {
-        dataManager->InitMediaLibraryMgr(context);
-        dataManager->SetOwner(static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()));
+    if (dataManager == nullptr) {
+        MEDIA_ERR_LOG("Failed to get dataManager");
+        return;
     }
+    int32_t ret = dataManager->InitMediaLibraryMgr(context);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to init MediaLibraryMgr");
+        return;
+    }
+    dataManager->SetOwner(static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()));
 
     auto scannerManager = MediaScannerManager::GetInstance();
     if (scannerManager != nullptr) {
