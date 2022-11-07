@@ -51,14 +51,15 @@ constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1
 
 // medialibary directory and file type control { 2000, 2099 }
 constexpr int32_t E_DIR_CTRL_OFFSET = 2000;
-constexpr int32_t E_CHECK_EXTENSION_FAIL = MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 0);
-constexpr int32_t E_DELETE_DIR_FAIL =      MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 1);
-constexpr int32_t E_CHECK_MEDIATYPE_FAIL = MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 2);
-constexpr int32_t E_CHECK_ROOT_DIR_FAIL =  MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 3);
-constexpr int32_t E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL = MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 4);
-constexpr int32_t E_FILE_NAME_INVALID =    MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 5);
-constexpr int32_t E_ALBUM_OPER_ERR =    MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 6);
-constexpr int32_t E_DIR_OPER_ERR =    MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 7);
+constexpr int32_t E_CHECK_EXTENSION_FAIL =                  MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 0);
+constexpr int32_t E_DELETE_DIR_FAIL =                       MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 1);
+constexpr int32_t E_CHECK_MEDIATYPE_FAIL =                  MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 2);
+constexpr int32_t E_CHECK_ROOT_DIR_FAIL =                   MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 3);
+constexpr int32_t E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL =  MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 4);
+constexpr int32_t E_FILE_NAME_INVALID =                     MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 5);
+constexpr int32_t E_ALBUM_OPER_ERR =                        MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 6);
+constexpr int32_t E_DIR_OPER_ERR =                          MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 7);
+constexpr int32_t E_SAME_PATH =                             MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 8);
 
 // medialibary recycle, trash { 2100, 2199 }
 constexpr int32_t E_TRASH_OFFSET = 2100;

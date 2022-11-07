@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 
+#include "userfile_manager_types.h"
+
 namespace OHOS {
 namespace Media {
 class MediaLibraryDataManagerUtils {
@@ -33,7 +35,8 @@ public:
     static std::string GetIdFromUri(const std::string &uri);
     static std::string GetFileTitle(const std::string &displayName);
     static std::string GetNetworkIdFromUri(const std::string &uri);
-    static std::string GetDisPlayNameFromPath(std::string &path);
+    static std::string GetDisPlayNameFromPath(const std::string &path);
+    static std::string GetMediaTypeUri(MediaType mediaType);
     static void SplitKeyValue(const std::string &keyValue, std::string &key, std::string &value);
     static void SplitKeys(const std::string &query, std::vector<std::string> &keys);
     static std::string ObtionCondition(std::string &strQueryCondition, const std::vector<std::string> &whereArgs);
