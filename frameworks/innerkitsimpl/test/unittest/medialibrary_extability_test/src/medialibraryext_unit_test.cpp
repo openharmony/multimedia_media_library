@@ -1056,7 +1056,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Move_test_009, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_009 sourceUri: %{public}s, targetUri: %{public}s",
         sourceUri.ToString().c_str(), targetUri.ToString().c_str());
     int32_t ret = g_mediaFileExtHelper->Move(sourceUri, targetUri, newUri);
-    EXPECT_EQ(ret, E_CHECK_MEDIATYPE_FAIL);
+    EXPECT_EQ(ret, E_CHECK_EXTENSION_FAIL);
     MEDIA_DEBUG_LOG("medialib_Move_test_009 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
@@ -1355,7 +1355,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_007, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_007 sourceUri: %{public}s, displayName: %{public}s",
         sourceUri.ToString().c_str(), displayName.c_str());
     int32_t ret = g_mediaFileExtHelper->Rename(sourceUri, displayName, newUri);
-    EXPECT_EQ(ret, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    EXPECT_EQ(ret, E_CHECK_MEDIATYPE_FAIL);
     MEDIA_DEBUG_LOG("medialib_Rename_test_007 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 

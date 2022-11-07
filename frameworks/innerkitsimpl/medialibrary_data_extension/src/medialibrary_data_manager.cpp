@@ -417,10 +417,11 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
             auto ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
-            if (ret != E_SUCCESS) {
+            if (ret == E_SAME_PATH) {
+                break;
+            } else {
                 return ret;
             }
-            break;
         }
         case OperationObject::FILESYSTEM_DIR:
             // supply a ModifyDirOperation here to replace
