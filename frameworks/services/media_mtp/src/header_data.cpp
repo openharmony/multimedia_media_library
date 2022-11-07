@@ -19,19 +19,6 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-// these numbers are defined by protocol, have no exact meaning
-const int OFFSET_1 = 1;
-const int OFFSET_2 = 2;
-const int OFFSET_3 = 3;
-const int OFFSET_4 = 4;
-const int OFFSET_5 = 5;
-const int OFFSET_6 = 6;
-const int OFFSET_7 = 7;
-const int OFFSET_8 = 8;
-const int OFFSET_9 = 9;
-const int OFFSET_10 = 10;
-const int OFFSET_11 = 11;
-const int CONTAINER_TYPE_2 = 2;
 HeaderData::HeaderData(std::shared_ptr<MtpOperationContext> &context)
 {
     context_ = context;
