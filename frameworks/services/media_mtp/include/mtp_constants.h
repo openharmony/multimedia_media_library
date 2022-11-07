@@ -514,17 +514,16 @@ constexpr uint32_t MTP_PERCEIVED_DEVICE_TYPE_VIDEO_PLAYER = 0x00000004;
 constexpr uint32_t MTP_PERCEIVED_DEVICE_TYPE_PERSONAL = 0x00000005;
 constexpr uint32_t MTP_PERCEIVED_DEVICE_TYPE_AUDIO_RECORDER = 0x00000005;
 
-typedef int32_t int128_t[4];
-typedef uint32_t uint128_t[4];
-
-typedef std::vector<uint8_t> UInt8List;
-typedef std::vector<uint16_t> UInt16List;
-typedef std::vector<uint32_t> UInt32List;
-typedef std::vector<uint64_t> UInt64List;
-typedef std::vector<int8_t> Int8List;
-typedef std::vector<int16_t> Int16List;
-typedef std::vector<int32_t> Int32List;
-typedef std::vector<int64_t> Int64List;
+using int128_t = int32_t[4];
+using uint128_t = uint32_t[4];
+using UInt8List = std::vector<uint8_t>;
+using UInt16List = std::vector<uint16_t>;
+using UInt32List = std::vector<uint32_t>;
+using UInt64List = std::vector<uint64_t>;
+using Int8List = std::vector<int8_t>;
+using Int16List = std::vector<int16_t>;
+using Int32List = std::vector<int32_t>;
+using Int64List = std::vector<int64_t>;
 
 // MTP Data Types
 constexpr uint16_t  MTP_DEVICE_PROP_DESC_TYPE_UNDEFINED = 0x0000;          // Undefined

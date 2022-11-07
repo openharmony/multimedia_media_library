@@ -20,6 +20,25 @@
 #include <vector>
 #include <time.h>
 #include "mtp_constants.h"
+
+// these numbers are defined by protocol, have no exact meaning
+constexpr int BIT_8 = 8;
+constexpr int BIT_16 = 16;
+constexpr int BIT_24 = 24;
+constexpr int BIT_32 = 32;
+constexpr int BIT_40 = 40;
+constexpr int BIT_48 = 48;
+constexpr int BIT_56 = 56;
+constexpr int OFFSET_0 = 0;
+constexpr int OFFSET_1 = 1;
+constexpr int OFFSET_2 = 2;
+constexpr int OFFSET_3 = 3;
+constexpr int OFFSET_4 = 4;
+constexpr int OFFSET_5 = 5;
+constexpr int OFFSET_6 = 6;
+constexpr int OFFSET_7 = 7;
+constexpr int CONTAINER_TYPE_2 = 2;
+
 namespace OHOS {
 namespace Media {
 class MtpPacketTool {
@@ -62,8 +81,8 @@ public:
     static bool GetInt64(const std::vector<uint8_t> &buffer, size_t &offset, int64_t &value);
     static bool GetInt128(const std::vector<uint8_t> &buffer, size_t &offset, int128_t &value);
     static std::string GetString(const std::vector<uint8_t> &buffer, size_t &offset);
-    static std::u16string utf8ToUtf16(const std::string input_str);
-    static std::string utf16ToUtf8(const std::u16string input_str);
+    static std::u16string utf8ToUtf16(const std::string &inputStr);
+    static std::string utf16ToUtf8(const std::u16string &inputStr);
     static bool GetString(const std::vector<uint8_t> &buffer, size_t &offset, std::string &str);
     static std::string FormatDateTime(time_t sec);
     static const std::string &GetOperationName(uint16_t code);
@@ -72,19 +91,20 @@ public:
     static const std::string &GetObjectPropName(uint16_t code);
     static const std::string &GetDataTypeName(int type);
     static const std::string &GetAssociationName(int type);
+    static const std::string &CodeToStrByMap(int type, const std::map<int, std::string> &theMap);
     static const std::string &CodeToStrByMap(uint32_t code, const std::map<uint32_t, std::string> &theMap);
     static int GetObjectPropTypeByPropCode(uint16_t propCode);
 
-    static bool Int8ToString(const int8_t &value, std::string &outstr);
-    static bool UInt8ToString(const uint8_t &value, std::string &outstr);
-    static bool Int16ToString(const int16_t &value, std::string &outstr);
-    static bool UInt16ToString(const uint16_t &value, std::string &outstr);
-    static bool Int32ToString(const int32_t &value, std::string &outstr);
-    static bool UInt32ToString(const uint32_t &value, std::string &outstr);
-    static bool Int64ToString(const int64_t &value, std::string &outstr);
-    static bool UInt64ToString(const uint64_t &value, std::string &outstr);
-    static bool Int128ToString(const int128_t &value, std::string &outstr);
-    static bool UInt128ToString(const uint128_t &value, std::string &outstr);
+    static bool Int8ToString(const int8_t &value, std::string &outStr);
+    static bool UInt8ToString(const uint8_t &value, std::string &outStr);
+    static bool Int16ToString(const int16_t &value, std::string &outStr);
+    static bool UInt16ToString(const uint16_t &value, std::string &outStr);
+    static bool Int32ToString(const int32_t &value, std::string &outStr);
+    static bool UInt32ToString(const uint32_t &value, std::string &outStr);
+    static bool Int64ToString(const int64_t &value, std::string &outStr);
+    static bool UInt64ToString(const uint64_t &value, std::string &outStr);
+    static bool Int128ToString(const int128_t &value, std::string &outStr);
+    static bool UInt128ToString(const uint128_t &value, std::string &outStr);
     static std::string StrToString(const std::string &value);
 
     static const std::string &GetIndentBlank();
@@ -92,12 +112,12 @@ public:
     static void Dump(const std::vector<uint8_t> &data, uint32_t offset = 0, uint32_t sum = UINT32_MAX);
 
 private:
-    static bool DumpClear(size_t loc, std::unique_ptr<char[]> &hexbuf, int hexBufSize,
-        std::unique_ptr<char[]> &txtbuf, int txtBufSize);
-    static bool DumpChar(uint8_t u8, std::unique_ptr<char[]> &hexbuf, int hexBufSize,
-        std::unique_ptr<char[]> &txtbuf, int txtBufSize);
-    static void DumpShow(const std::unique_ptr<char[]> &hexbuf, int hexBufSize,
-        const std::unique_ptr<char[]> &txtbuf, int txtBufSize);
+    static bool DumpClear(size_t loc, std::unique_ptr<char[]> &hexBuf, int hexBufSize,
+        std::unique_ptr<char[]> &txtBuf, int txtBufSize);
+    static bool DumpChar(uint8_t u8, std::unique_ptr<char[]> &hexBuf, int hexBufSize,
+        std::unique_ptr<char[]> &txtBuf, int txtBufSize);
+    static void DumpShow(const std::unique_ptr<char[]> &hexBuf, int hexBufSize,
+        const std::unique_ptr<char[]> &txtBuf, int txtBufSize);
 };
 } // namespace Media
 } // namespace OHOS
