@@ -34,7 +34,7 @@ enum MediaSetDataType {
 };
 struct PropertyValue {
     uint64_t outIntVal = 0;
-    uint128_t outLongVal = 0;
+    uint128_t outLongVal = {0};
     std::string outStrVal;
 };
 const std::string MTP_FORMAT_ALL = ".all"; // Undefined
