@@ -63,9 +63,9 @@ public:
     static bool SetPropertyInner(const std::string &property, const std::string &value);
 
 private:
-    static void WriteMock();
     uint16_t CheckErrorCode(int errorCode);
     void SendEventPacket(uint32_t objectHandle, uint16_t eventCode);
+    uint16_t HasStorage(int &errorCode);
 
     std::shared_ptr<MtpOperationContext> context_;
     std::shared_ptr<MtpMedialibraryManager> mtpMedialibraryManager_;
