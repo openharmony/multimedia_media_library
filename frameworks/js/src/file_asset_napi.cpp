@@ -995,7 +995,7 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     }
 
     string uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->typeMask);
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectInfo->GetTypeMask());
     Uri updateAssetUri(uri);
     MediaType mediaType = context->objectInfo->GetMediaType();
     string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
@@ -1114,8 +1114,6 @@ static void JSOpenExecute(napi_env env, void *data)
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    string fileUri = context->objectInfo->GetFileUri();
-
     bool isValid = false;
     string mode = context->valuesBucket.Get(MEDIA_FILEMODE, isValid);
     if (!isValid) {
@@ -1124,6 +1122,8 @@ static void JSOpenExecute(napi_env env, void *data)
         return;
     }
 
+    string fileUri = context->objectInfo->GetFileUri();
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(fileUri, context->objectInfo->GetTypeMask());
     Uri openFileUri(fileUri);
     int32_t retVal = UserFileClient::OpenFile(openFileUri, mode);
     if (retVal <= 0) {
@@ -1446,9 +1446,8 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     std::string uri = context->objectInfo->GetFileUri();
-    MediaLibraryNapiUtils::UriRemoveAllFragment(uri);
     Size size = { .width = context->thumbWidth, .height = context->thumbHeight };
-    context->pixelmap = QueryThumbnail(uri, size, context->typeMask);
+    context->pixelmap = QueryThumbnail(uri, size, context->objectInfo->GetTypeMask());
 }
 
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
@@ -1859,7 +1858,7 @@ static void JSFavouriteExecute(napi_env env, void *data)
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
     string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/";
     uriString += context->isFavorite ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->typeMask);
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectInfo->GetTypeMask());
     Uri uri(uriString);
     context->changedRows = UserFileClient::Insert(uri, valuesBucket);
     if (context->changedRows >= 0) {
@@ -1983,7 +1982,7 @@ static void JSTrashExecute(napi_env env, void *data)
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
     string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/";
     uriString += context->isTrash ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->typeMask);
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectInfo->GetTypeMask());
     Uri uri(uriString);
     context->changedRows = UserFileClient::Insert(uri, valuesBucket);
     if (context->changedRows >= 0) {
@@ -2211,6 +2210,7 @@ void FileAssetNapi::UpdateFileAssetInfo()
     dateTaken_ = sFileAsset_->GetDateTaken();
     isFavorite_ = sFileAsset_->IsFavorite();
     isTrash_ = sFileAsset_->GetDateTrashed() != 0;
+    typeMask_ = sFileAsset_->GetTypeMask();
     count_ = sFileAsset_->GetCount();
     member_ = sFileAsset_->GetMemberMap();
 }
@@ -2328,7 +2328,6 @@ napi_value FileAssetNapi::UserFileMgrOpen(napi_env env, napi_callback_info info)
     NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, mode) == napi_ok,
         "Failed to parse js args");
     asyncContext->valuesBucket.Put(MEDIA_FILEMODE, mode);
-    MediaLibraryNapiUtils::GenTypeMaskFromArray({ asyncContext->objectInfo->GetMediaType() }, asyncContext->typeMask);
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrOpen",
         JSOpenExecute, JSOpenCompleteCallback);
@@ -2367,7 +2366,6 @@ napi_value FileAssetNapi::UserFileMgrCommitModify(napi_env env, napi_callback_in
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
         "Failed to parse js args");
-    MediaLibraryNapiUtils::GenTypeMaskFromArray({ asyncContext->objectInfo->GetMediaType() }, asyncContext->typeMask);
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrCommitModify",
         JSCommitModifyExecute, JSCommitModifyCompleteCallback);
@@ -2384,7 +2382,6 @@ napi_value FileAssetNapi::UserFileMgrFavorite(napi_env env, napi_callback_info i
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     NAPI_ASSERT(env,  MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isFavorite) ==
         napi_ok, "Failed to parse js args");
-    MediaLibraryNapiUtils::GenTypeMaskFromArray({ asyncContext->objectInfo->GetMediaType() }, asyncContext->typeMask);
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrFavorite", JSFavouriteExecute,
         JSFavoriteCallbackComplete);
@@ -2401,7 +2398,6 @@ napi_value FileAssetNapi::UserFileMgrTrash(napi_env env, napi_callback_info info
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     NAPI_ASSERT(env,  MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isTrash) ==
         napi_ok, "Failed to parse js args");
-    MediaLibraryNapiUtils::GenTypeMaskFromArray({ asyncContext->objectInfo->GetMediaType() }, asyncContext->typeMask);
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrTrash", JSTrashExecute,
         JSTrashCallbackComplete);
@@ -2441,8 +2437,6 @@ napi_value FileAssetNapi::UserFileMgrGetThumbnail(napi_env env, napi_callback_in
         napi_ok, result, "Failed to get object info");
     result = GetJSArgsForGetThumbnail(env, asyncContext->argc, asyncContext->argv, *asyncContext);
     ASSERT_NULLPTR_CHECK(env, result);
-    const std::vector<uint32_t> types = { asyncContext->objectInfo->GetMediaType() };
-    MediaLibraryNapiUtils::GenTypeMaskFromArray(types, asyncContext->typeMask);
 
     result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetThumbnail",
         [](napi_env env, void* data) {
