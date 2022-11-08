@@ -433,6 +433,10 @@ int32_t MediaLibrarySmartAlbumMapOperations::RemoveTrashAssetsInfoUtil(const int
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(fileAssetId);
     shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(uri);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is nullptr");
+        return errorCode;
+    }
     if (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {
         errorCode = RecycleFileAssetsInfoUtil(fileAsset, smartAlbumMapQueryData);
     } else {
@@ -640,6 +644,10 @@ bool MediaLibrarySmartAlbumMapOperations::IsRecycleAssetExist(const int32_t &ass
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(assetId);
     shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(uri);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is nullptr");
+        return false;
+    }
     outRecyclePath = fileAsset->GetPath();
     MEDIA_DEBUG_LOG("assetRescyclePath = %{private}s", outRecyclePath.c_str());
     if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
