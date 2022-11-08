@@ -36,10 +36,6 @@ struct NormalProperty {
 static constexpr int32_t INTTYPE16 = 16;
 static constexpr int32_t INTTYPE128 = 128;
 static constexpr int32_t STRINGTYPE = -1;
-static constexpr int32_t OFFSET_0 = 0;
-static constexpr int32_t OFFSET_1 = 1;
-static constexpr int32_t OFFSET_2 = 2;
-static constexpr int32_t OFFSET_3 = 3;
 static const string MEDIA_DATA_DB_FORMAT = "format";
 
 static const map<uint16_t, string> FormatMap = {
