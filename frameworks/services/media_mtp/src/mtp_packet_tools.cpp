@@ -543,5 +543,514 @@ void MtpPacketTool::PutString(std::vector<uint8_t> &outBuffer, const std::string
     }
     PutUInt16(outBuffer, 0);
 }
+
+std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> gConvert(UTF16_CERROR, UTF8_CERROR);
+
+std::u16string MtpPacketTool::utf8ToUtf16(const std::string &inputStr)
+{
+    std::u16string conversion = gConvert.from_bytes(input_str);
+    if (conversion == UTF8_CERROR) {
+        return u"";
+    } else {
+        return conversion;
+    }
+}
+
+std::string MtpPacketTool::utf16ToUtf8(const std::u16string &inputStr)
+{
+    std::string conversion = gConvert.to_bytes(input_str);
+    if (conversion == UTF16_CERROR) {
+        return "";
+    } else {
+        return conversion;
+    }
+}
+
+uint8_t MtpPacketTool::GetUInt8(const std::vector<uint8_t> &buffer, size_t &offset)
+{
+    uint8_t value = (uint16_t)buffer[offset];
+    offset += sizeof(uint8_t);
+    return value;
+}
+
+uint16_t MtpPacketTool::GetUInt16(const std::vector<uint8_t> &buffer, size_t &offset)
+{
+    uint16_t value = (uint16_t)buffer[offset] | ((uint16_t)buffer[offset + OFFSET_1] << BIT_8);
+    offset += sizeof(uint16_t);
+    return value;
+}
+
+uint32_t MtpPacketTool::GetUInt32(const std::vector<uint8_t> &buffer, size_t &offset)
+{
+    uint32_t value = (uint32_t)buffer[offset] | ((uint32_t)buffer[offset + OFFSET_1] << BIT_8) |
+        ((uint32_t)buffer[offset + OFFSET_2] << BIT_16) | ((uint32_t)buffer[offset + OFFSET_3] << BIT_24);
+    offset += sizeof(uint32_t);
+    return value;
+}
+
+bool MtpPacketTool::GetUInt8(const std::vector<uint8_t> &buffer, size_t &offset, uint8_t &value)
+{
+    if ((buffer.size() - offset) < sizeof(uint8_t)) {
+        MEDIA_ERR_LOG("MtpPacketTool::GetUInt8, size incorrect");
+        return false;
+    }
+
+    value = buffer[offset];
+    offset += sizeof(uint8_t);
+    return true;
+}
+
+bool MtpPacketTool::GetUInt16(const std::vector<uint8_t> &buffer, size_t &offset, uint16_t &value)
+{
+    if ((buffer.size() - offset) < sizeof(uint16_t)) {
+        MEDIA_ERR_LOG("MtpPacketTool::GetUInt16, size incorrect");
+        return false;
+    }
+
+    value = (uint32_t)buffer[offset] | ((uint32_t)buffer[offset + OFFSET_1] << BIT_8);
+    offset += sizeof(uint16_t);
+    return true;
+}
+
+bool MtpPacketTool::GetUInt32(const std::vector<uint8_t> &buffer, size_t &offset, uint32_t &value)
+{
+    if ((buffer.size() - offset) < sizeof(uint32_t)) {
+        MEDIA_ERR_LOG("MtpPacketTool::GetUInt32, size incorrect");
+        return false;
+    }
+
+    value = (uint32_t)buffer[offset] | ((uint32_t)buffer[offset + OFFSET_1] << BIT_8) |
+        ((uint32_t)buffer[offset + OFFSET_2] << BIT_16) | ((uint32_t)buffer[offset + OFFSET_3] << BIT_24);
+    offset += sizeof(uint32_t);
+    return true;
+}
+
+bool MtpPacketTool::GetUInt64(const std::vector<uint8_t> &buffer, size_t &offset, uint64_t &value)
+{
+    if ((buffer.size() - offset) < sizeof(uint64_t)) {
+        MEDIA_ERR_LOG("MtpPacketTool::GetUInt64, size incorrect");
+        return false;
+    }
+
+    value = buffer[offset] | (buffer[offset + OFFSET_1] << BIT_8) | (buffer[offset + OFFSET_2] << BIT_16) |
+        (buffer[offset + OFFSET_3] << BIT_24) | (static_cast<uint64_t>(buffer[offset + OFFSET_4]) << BIT_32) |
+        (static_cast<uint64_t>(buffer[offset + OFFSET_5]) << BIT_40) |
+        (static_cast<uint64_t>(buffer[offset + OFFSET_6]) << BIT_48) |
+        (static_cast<uint64_t>(buffer[offset + OFFSET_7]) << BIT_56);
+    offset += sizeof(uint64_t);
+    return true;
+}
+
+bool MtpPacketTool::GetUInt128(const std::vector<uint8_t> &buffer, size_t &offset, uint128_t &value)
+{
+    if (!GetUInt32(buffer, offset, value[OFFSET_0]) || !GetUInt32(buffer, offset, value[OFFSET_1]) ||
+        !GetUInt32(buffer, offset, value[OFFSET_2]) || !GetUInt32(buffer, offset, value[OFFSET_3]) {
+        return false;
+    }
+    return true;
+}
+
+bool MtpPacketTool::GetInt8(const std::vector<uint8_t> &buffer, size_t &offset, int8_t &value)
+{
+    uint8_t uValue = 0;
+    if (!GetUInt8(buffer, offset, uValue)) {
+        return false;
+    }
+    value = static_cast<int8_t>(uValue);
+    return true;
+}
+
+bool MtpPacketTool::GetInt16(const std::vector<uint8_t> &buffer, size_t &offset, int16_t &value)
+{
+    uint16_t uValue = 0;
+    if (!GetUInt16(buffer, offset, uValue)) {
+        return false;
+    }
+    value = static_cast<int16_t>(uValue);
+    return true;
+}
+
+bool MtpPacketTool::GetInt32(const std::vector<uint8_t> &buffer, size_t &offset, int32_t &value)
+{
+    uint32_t uValue = 0;
+    if (!GetUInt32(buffer, offset, uValue)) {
+        return false;
+    }
+    value = static_cast<int32_t>(uValue);
+    return true;
+}
+bool MtpPacketTool::GetInt64(const std::vector<uint8_t> &buffer, size_t &offset, int64_t &value)
+{
+    uint64_t uValue = 0;
+    if (!GetUInt64(buffer, offset, uValue)) {
+        return false;
+    }
+    value = static_cast<int64_t>(uValue);
+    return true;
+}
+
+bool MtpPacketTool::GetInt128(const std::vector<uint8_t> &buffer, size_t &offset, int128_t &value)
+{
+    uint128_t uValue = {0};
+    if (!GetUInt32(buffer, offset, uValue[OFFSET_0]) || !GetUInt32(buffer, offset, uValue[OFFSET_1]) ||
+        !GetUInt32(buffer, offset, uValue[OFFSET_2]) || !GetUInt32(buffer, offset, uValue[OFFSET_3]) {
+        return false;
+    }
+    value[OFFSET_0] = static_cast<int32_t>(uValue[OFFSET_0]);
+    value[OFFSET_1] = static_cast<int32_t>(uValue[OFFSET_1]);
+    value[OFFSET_2] = static_cast<int32_t>(uValue[OFFSET_2]);
+    value[OFFSET_3] = static_cast<int32_t>(uValue[OFFSET_3]);
+    return true;
+}
+
+std::shared_ptr<UInt16List> MtpPacketTool::GetAUInt16(const std::vector<uint8_t> &buffer, size_t &offset)
+{
+    std::shared_ptr<UInt16List> result = std::make_shared<UInt16List>();
+
+    uint32_t count = GetUInt32(buffer, offset);
+    uint16_t value = 0;
+    for (uint32_t i = 0; i < count; i++) {
+        value = 0;
+        if (!GetUInt16(buffer, offset, value)) {
+            MEDIA_ERR_LOG("MtpPacketTool::GetAUInt16, count=%{public}d, i=%{public}d", count, i);
+            break;
+        }
+        result->push_back(value);
+    }
+
+    return result;
+}
+
+std::shared_ptr<UInt32List> MtpPacketTool::GetAUInt32(const std::vector<uint8_t> &buffer, size_t &offset)
+{
+    std::shared_ptr<UInt32List> result = std::make_shared<UInt32List>();
+
+    uint32_t count = GetUInt32(buffer, offset);
+    uint32_t value = 0;
+    for (uint32_t i = 0; i < count; i++) {
+        value = 0;
+        if (!GetUInt32(buffer, offset, value)) {
+            MEDIA_ERR_LOG("MtpPacketTool::GetAUInt32, count=%{public}d, i=%{public}d", count, i);
+            break;
+        }
+        result->push_back(value);
+    }
+
+    return result;
+}
+
+std::string MtpPacketTool::GetString(const std::vector<uint8_t> &buffer, size_t &offset)
+{
+    uint8_t count = GetUInt8(buffer, offset);
+    if (count < 1) {
+        return std::string();
+    }
+    std::vector<char16_t> tmpbuf(count);
+    uint16_t ch = 0;
+    for (int i = 0; i < count; i++) {
+        ch = GetUInt16(buffer, offset);
+        tmpbuf[i] = ch;
+    }
+    std::string String = utf16ToUtf8(std::u16string(tmpbuf.data()));
+    return String;
+}
+
+bool MtpPacketTool::GetString(const std::vector<uint8_t> &buffer, size_t &offset, std::string &str)
+{
+    uint8_t count = 0;
+    if (!GetUInt8(buffer, offset, count)) {
+        return false;
+    }
+
+    if (count < 1) {
+        str = std::string();
+        return true;
+    }
+
+    std::vector<char16_t> tmpbuf(count);
+    uint16_t ch = 0;
+    for (int i = 0; ((i < count) && ((offset + sizeof(uint16_t) - 1) < buffer.size())); i++) {
+        ch = 0;
+        if (!GetUInt16(buffer, offset, ch)) {
+            return false;
+        }
+        tmpbuf[i] = ch;
+    }
+
+    str = utf16ToUtf8(std::u16string(tmpbuf.data()));
+    return true;
+}
+
+std::string MtpPacketTool::FormatDateTime(time_t sec)
+{
+    struct tm tm;
+    char buffer[20] = {0};
+    localtime_r(&sec, &tm);
+    if (sprintf_s(buffer, sizeof(buffer), "%04d%02d%02dT%02d%02d%02d", tm.tm_year + BEGIN_YEAR, tm.tm_mon + 1,
+        tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec) == -1) {
+        return "";
+    }
+    return std::string(buffer);
+}
+
+const std::string &MtpPacketTool::GetOperationName(uint16_t code)
+{
+    return CodeToStrByMap(code, OperationMap);
+}
+
+const std::string &MtpPacketTool::GetFormatName(uint16_t code)
+{
+    return CodeToStrByMap(code, FormatMap);
+}
+
+const std::string &MtpPacketTool::GetObjectPropName(uint16_t code)
+{
+    return CodeToStrByMap(code, ObjectPropMap);
+}
+
+const std::string &MtpPacketTool::GetDataTypeName(int type)
+{
+    return CodeToStrByMap(type, DataTypeMap);
+}
+
+const std::string &MtpPacketTool::GetEventName(uint16_t code)
+{
+    return CodeToStrByMap(code, EventMap);
+}
+
+const std::string &MtpPacketTool::GetAssociationName(int type)
+{
+    return CodeToStrByMap(type, AssociationMap);
+}
+
+const std::string &MtpPacketTool::CodeToStrByMap(int type, const std::map<int, std::string> &theMap)
+{
+    auto codeSearch = theMap.find(type);
+    return (codeSearch != theMap.end()) ? codeSearch->second : UNKNOWN_STR;
+}
+
+const std::string &MtpPacketTool::CodeToStrByMap(uint32_t code, const std::map<uint32_t, std::string> &theMap)
+{
+    auto codeSearch = theMap.find(code);
+    return (codeSearch != theMap.end()) ? codeSearch->second : UNKNOWN_STR;
+}
+
+int MtpPacketTool::GetObjectPropTypeByPropCode(uint16_t propCode)
+{
+    auto propCodeSearch = ObjectPropTypeMap.find(propCode);
+    return (propCodeSearch != ObjectPropTypeMap.end()) ? propCodeSearch->second : MTP_TYPE_UNDEFINED_CODE;
+}
+
+bool MtpPacketTool::Int8ToString(const int8_t &value, std::string &outStr)
+{
+    char tmpbuf[32] = {0};
+    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%d", value, value) == -1) {
+        return false;
+    }
+    outStr.assign(tmpbuf);
+    return true;
+}
+
+bool MtpPacketTool::UInt8ToString(const uint8_t &value, std::string &outStr)
+{
+    char tmpbuf[32] = {0};
+    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%u", value, value) == -1) {
+        return false;
+    }
+    outStr.assign(tmpbuf);
+    return true;
+}
+
+bool MtpPacketTool::Int16ToString(const int16_t &value, std::string &outStr)
+{
+    char tmpbuf[32] = {0};
+    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%d", value, value) == -1) {
+        return false;
+    }
+    outStr.assign(tmpbuf);
+    return true;
+}
+
+bool MtpPacketTool::UInt16ToString(const uint16_t &value, std::string &outStr)
+{
+    char tmpbuf[32] = {0};
+    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%u", value, value) == -1) {
+        return false;
+    }
+    outStr.assign(tmpbuf);
+    return true;
+}
+
+bool MtpPacketTool::Int32ToString(const int32_t &value, std::string &outStr)
+{
+    char tmpbuf[64] = {0};
+    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%d", value, value) == -1) {
+        return false;
+    }
+    outStr.assign(tmpbuf);
+    return true;
+}
+
+bool MtpPacketTool::UInt32ToString(const uint32_t &value, std::string &outStr)
+{
+    char tmpbuf[64] = {0};
+    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%u", value, value) == -1) {
+        return false;
+    }
+    outStr.assign(tmpbuf);
+    return true;
+}
+
+bool MtpPacketTool::Int64ToString(const int64_t &value, std::string &outStr)
+{
+    char tmpbuf[64] = {0};
+    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIi64 "", value, value) == -1) {
+        return false;
+    }
+    outStr.assign(tmpbuf);
+    return true;
+}
+
+bool MtpPacketTool::UInt64ToString(const uint64_t &value, std::string &outStr)
+{
+    char tmpbuf[64] = {0};
+    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIu64 "", value, value) == -1) {
+        return false;
+    }
+    outStr.assign(tmpbuf);
+    return true;
+}
+
+bool MtpPacketTool::Int128ToString(const int128_t &value, std::string &outStr)
+{
+    char tmpbuf[128] = {0};
+    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=(%08x,%08x,%08x,%08x), dec=(%d,%d,%d,%d)", value[OFFSET_0],
+        value[OFFSET_1], value[OFFSET_2], value[OFFSET_3], value[OFFSET_0], value[OFFSET_1], value[OFFSET_2],
+        value[OFFSET_3]) == -1) {
+        return false;
+    }
+    outStr.assign(tmpbuf);
+    return true;
+}
+
+bool MtpPacketTool::UInt128ToString(const uint128_t &value, std::string &outStr)
+{
+    char tmpbuf[128] = {0};
+    if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=(%08x,%08x,%08x,%08x), dec=(%u,%u,%u,%u)", value[OFFSET_0],
+        value[OFFSET_1], value[OFFSET_2], value[OFFSET_3], value[OFFSET_0], value[OFFSET_1], value[OFFSET_2],
+        value[OFFSET_3]) == -1) {
+        return false;
+    }
+    outStr.assign(tmpbuf);
+    return true;
+}
+
+std::string MtpPacketTool::StrToString(const std::string &value)
+{
+    std::string str;
+    str.append("length:");
+    str.append(std::to_string(value.length()));
+    str.append(", content:[");
+    str.append(value);
+    str.append("]");
+    return str;
+}
+
+const std::string &MtpPacketTool::GetIndentBlank()
+{
+    return INDENT_BLANKSTR;
+}
+
+std::string MtpPacketTool::GetIndentBlank(size_t indent)
+{
+    size_t maxNum = BLANK_STR.length();
+    size_t num = indent * INDENT_SIZE;
+
+    std::string indentStr = BLANK_STR.substr(0, ((num > maxNum) ? maxNum : num));
+    return indentStr;
+}
+
+void MtpPacketTool::Dump(const std::vector<uint8_t> &data, uint32_t offset, uint32_t sum)
+{
+    std::unique_ptr<char[]> hexBuf = std::make_unique<char[]>(DUMP_HEXBUF_MAX);
+    std::unique_ptr<char[]> txtBuf = std::make_unique<char[]>(DUMP_TXTBUF_MAX);
+    if (!DumpClear(offset, hexBuf, DUMP_HEXBUF_MAX, txtBuf, DUMP_TXTBUF_MAX)) {
+        return;
+    }
+    const size_t datasize = data.size();
+    for (size_t loc = 0, cur = offset; ((loc < sum) && (cur < datasize)); loc++, cur++) {
+        if (!DumpChar(data[cur], hexBuf, DUMP_HEXBUF_MAX, txtBuf, DUMP_TXTBUF_MAX)) {
+            return;
+        }
+        size_t idx = (loc & BUF_0F);
+        if (strcat_s(hexBuf.get(), DUMP_HEXBUF_MAX, ((idx != BUF_07) ? " " : "-")) != EOK) {
+            return;
+        }
+        if (idx != BUF_0F) {
+            continue;
+        }
+        DumpShow(hexBuf, DUMP_HEXBUF_MAX, txtBuf, DUMP_TXTBUF_MAX);
+        if (!DumpClear(loc + 1, hexBuf, DUMP_HEXBUF_MAX, txtBuf, DUMP_TXTBUF_MAX)) {
+            return;
+        }
+    }
+    DumpShow(hexBuf, DUMP_HEXBUF_MAX, txtBuf, DUMP_TXTBUF_MAX);
+}
+
+bool MtpPacketTool::DumpClear(size_t loc, std::unique_ptr<char[]> &hexBuf, int hexBufSize,
+    std::unique_ptr<char[]> &txtBuf, int txtBufSize)
+{
+    if ((hexBuf == nullptr) || (txtBuf == nullptr)) {
+        return false;
+    }
+
+    if (sprintf_s(hexBuf.get(), hexBufSize, "%08X : ", static_cast<uint32_t>(loc)) == -1) {
+        return false;
+    }
+    if (sprintf_s(txtBuf.get(), txtBufSize, "%s", "") == -1) {
+        return false;
+    }
+    return true;
+}
+
+bool MtpPacketTool::DumpChar(uint8_t u8, std::unique_ptr<char[]> &hexBuf, int hexBufSize,
+    std::unique_ptr<char[]> &txtBuf, int txtBufSize)
+{
+    if ((hexBuf == nullptr) || (txtBuf == nullptr)) {
+        return false;
+    }
+
+    char hexTmp[4] = {0};
+    if (sprintf_s(hexTmp, sizeof(hexTmp), "%02X", u8) == -1) {
+        return false;
+    }
+
+    int intData = static_cast<int>(u8);
+    char txtTmp[4] = {0};
+    if (sprintf_s(txtTmp, sizeof(txtTmp), "%c", (isprint(intData)) ? intData : '.') == -1) {
+        return false;
+    }
+
+    if (strcat_s(hexBuf.get(), hexBufSize, hexTmp) != EOK) {
+        return false;
+    }
+    if (strcat_s(txtBuf.get(), txtBufSize, txtTmp) != EOK) {
+        return false;
+    }
+    return true;
+}
+
+void MtpPacketTool::DumpShow(const std::unique_ptr<char[]> &hexBuf, int hexBufSize,
+    const std::unique_ptr<char[]> &txtBuf, int txtBufSize)
+{
+    if ((hexBuf == nullptr) || (txtBuf == nullptr)) {
+        return;
+    }
+    if ((hexBuf[OFFSET_0] == '\0') || (txtBuf[OFFSET_0] == '\0')) {
+        return;
+    }
+
+    MEDIA_DEBUG_LOG("%-60s %s", hexBuf.get(), txtBuf.get());
+}
 } // namespace Media
 } // namespace OHOS
