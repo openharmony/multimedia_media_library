@@ -43,7 +43,6 @@
 #include "medialibrary_tracer.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
-#include "sa_mgr_client.h"
 #include "system_ability_definition.h"
 #include "timer.h"
 #include "permission_utils.h"
@@ -113,44 +112,60 @@ static void MakeRootDirs()
         valuesBucket.PutString(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR + dir);
         MediaLibraryCommand cmd(createAlbumUri, valuesBucket);
         auto ret = MediaLibraryAlbumOperations::CreateAlbumOperation(cmd);
-        if (ret <= 0) {
+        if (ret == E_FILE_EXIST) {
+            MEDIA_INFO_LOG("Root dir: %{public}s is exist", dir.c_str());
+        } else if (ret <= 0) {
             MEDIA_ERR_LOG("Failed to preset root dir: %{public}s", dir.c_str());
         }
         MediaFileUtils::CreateDirectory(ROOT_MEDIA_DIR + dir + ".recycle");
     }
 }
 
-void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
+int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
     std::lock_guard<std::mutex> lock(mgrMutex_);
 
-    refCnt_++;
-    if (refCnt_.load() > 1) {
+    if (refCnt_.load() > 0) {
         MEDIA_DEBUG_LOG("already initialized");
-        return;
+        refCnt_++;
+        return E_OK;
     }
 
     context_ = context;
-    InitMediaLibraryRdbStore();
-    InitDeviceData();
-    MakeDirQuerySetMap(dirQuerySetMap_);
+    int32_t ret = InitMediaLibraryRdbStore();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init MediaLibraryLibraryRdbStore");
+
+    ret = InitDeviceData();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init DeviceData");
+    
+    ret = MakeDirQuerySetMap(dirQuerySetMap_);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to MakeDirQuerySetMap");
+    
     MakeRootDirs();
-    InitialiseKvStore();
-    InitialiseThumbnailService();
+    ret = InitialiseKvStore();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init KvStore");
+
+    ret = InitialiseThumbnailService();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init ThumbnailService");
+
+    refCnt_++;
+    return E_OK;
 }
 
-void MediaLibraryDataManager::InitDeviceData()
+int32_t MediaLibraryDataManager::InitDeviceData()
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("MediaLibraryDataManager InitDeviceData rdbStore is null");
-        return;
+        return E_ERR;
     }
 
     MediaLibraryTracer tracer;
     tracer.Start("InitDeviceRdbStoreTrace");
     if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_)) {
         MEDIA_ERR_LOG("MediaLibraryDataManager InitDeviceData failed!");
+        return E_ERR;
     }
+    return E_OK;
 }
 
 void MediaLibraryDataManager::ClearMediaLibraryMgr()
@@ -182,19 +197,27 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
 int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
 {
     if (rdbStore_) {
-        return E_SUCCESS;
+        return E_OK;
     }
 
-    MediaLibraryUnistoreManager::GetInstance().Init(context_);
+    int32_t ret = MediaLibraryUnistoreManager::GetInstance().Init(context_);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("init MediaLibraryUnistoreManager failed");
+        return ret;
+    }
     rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return E_ERR;
+    }
 
-    return E_SUCCESS;
+    return E_OK;
 }
 
-void MediaLibraryDataManager::InitialiseKvStore()
+int32_t MediaLibraryDataManager::InitialiseKvStore()
 {
     if (kvStorePtr_ != nullptr) {
-        return;
+        return E_OK;
     }
 
     Options options = {
@@ -209,8 +232,10 @@ void MediaLibraryDataManager::InitialiseKvStore()
 
     Status status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_STOREID, kvStorePtr_);
     if (status != Status::SUCCESS || kvStorePtr_ == nullptr) {
-        MEDIA_INFO_LOG("MediaLibraryDataManager::InitialiseKvStore failed %{private}d", status);
+        MEDIA_ERR_LOG("MediaLibraryDataManager::InitialiseKvStore failed %{private}d", status);
+        return E_ERR;
     }
+    return E_OK;
 }
 
 std::shared_ptr<MediaDataShareExtAbility> MediaLibraryDataManager::GetOwner()
@@ -229,7 +254,7 @@ std::string MediaLibraryDataManager::GetType(const Uri &uri)
     return "";
 }
 
-void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset> &outDirQuerySetMap)
+int32_t MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset> &outDirQuerySetMap)
 {
     int32_t count = -1;
     int32_t dirTypeVal = -1;
@@ -242,12 +267,12 @@ void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset>
     auto ret = queryResultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdb failed");
-        return;
+        return E_ERR;
     }
     MEDIA_INFO_LOG("MakeDirQuerySetMap count = %{public}d", count);
     if (count == 0) {
         MEDIA_ERR_LOG("can not find any dirAsset");
-        return;
+        return E_ERR;
     }
     while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         DirAsset dirAsset;
@@ -268,6 +293,7 @@ void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset>
         outDirQuerySetMap.insert(make_pair(dirVal, dirAsset));
     }
     MEDIA_DEBUG_LOG("MakeDirQuerySetMap OUT");
+    return E_OK;
 }
 
 std::unordered_map<std::string, DirAsset> MediaLibraryDataManager::GetDirQuerySetMap() const
@@ -278,6 +304,10 @@ std::unordered_map<std::string, DirAsset> MediaLibraryDataManager::GetDirQuerySe
 int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBucket &dataShareValue)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::Insert");
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
 
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
     if (value.IsEmpty()) {
@@ -363,6 +393,10 @@ int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &
 int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::BatchInsert");
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
 
     string uriString = uri.ToString();
     if (uriString != MEDIALIBRARY_DATA_URI) {
@@ -382,6 +416,10 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
 int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::Delete");
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
 
     if (uri.ToString().find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("MediaLibraryDataManager Delete: Not Data ability Uri");
@@ -421,6 +459,10 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     const DataSharePredicates &predicates)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::Update");
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
 
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
     if (value.IsEmpty()) {
@@ -435,10 +477,11 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
             auto ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
-            if (ret != E_SUCCESS) {
+            if (ret == E_SAME_PATH) {
+                break;
+            } else {
                 return ret;
             }
-            break;
         }
         case OperationObject::FILESYSTEM_DIR:
             // supply a ModifyDirOperation here to replace
@@ -458,6 +501,11 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
 
 void MediaLibraryDataManager::InterruptBgworker()
 {
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return;
+    }
+
     if (thumbnailService_ == nullptr) {
         MEDIA_ERR_LOG("thumbnailService_ is null");
         return;
@@ -467,6 +515,11 @@ void MediaLibraryDataManager::InterruptBgworker()
 
 int32_t MediaLibraryDataManager::GenerateThumbnails()
 {
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+
     if (thumbnailService_ == nullptr) {
         MEDIA_ERR_LOG("thumbnailService_ is null");
         return E_FAIL;
@@ -477,6 +530,11 @@ int32_t MediaLibraryDataManager::GenerateThumbnails()
 int32_t MediaLibraryDataManager::DoAging()
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::DoAging IN");
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+
     if (thumbnailService_ == nullptr) {
         MEDIA_ERR_LOG("thumbnailService_ is null");
         return E_FAIL;
@@ -554,6 +612,11 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::GenThumbnail(const string &
 
 void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri)
 {
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return;
+    }
+
     if (thumbnailService_ == nullptr) {
         MEDIA_ERR_LOG("thumbnailService_ is null");
         return;
@@ -615,6 +678,11 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::Query");
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return nullptr;
+    }
+
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataManager::Query");
     if (rdbStore_ == nullptr) {
@@ -656,6 +724,11 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
 shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
     const DataSharePredicates &predicates)
 {
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return nullptr;
+    }
+
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataManager::QueryRdb");
     static const map<OperationObject, string> queryConditionMap {
@@ -745,21 +818,35 @@ bool MediaLibraryDataManager::CheckFileNameValid(const DataShareValuesBucket &va
 
 void MediaLibraryDataManager::NotifyChange(const Uri &uri)
 {
-    if (extension_ != nullptr) {
-        extension_->NotifyChange(uri);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return;
     }
+
+    if (extension_ == nullptr) {
+        MEDIA_ERR_LOG("MediaLibraryDataManager::NotifyChange failed");
+        return;
+    }
+
+    extension_->NotifyChange(uri);
 }
 
-void MediaLibraryDataManager::InitialiseThumbnailService()
+int32_t MediaLibraryDataManager::InitialiseThumbnailService()
 {
     if (thumbnailService_ != nullptr) {
-        return;
+        return E_OK;
     }
     thumbnailService_ = ThumbnailService::GetInstance();
     if (thumbnailService_ == nullptr) {
-        MEDIA_INFO_LOG("MediaLibraryDataManager::InitialiseThumbnailService failed");
+        MEDIA_ERR_LOG("MediaLibraryDataManager::InitialiseThumbnailService failed");
+        return E_ERR;
     }
-    thumbnailService_->Init(rdbStore_, kvStorePtr_, context_);
+    int ret = thumbnailService_->Init(rdbStore_, kvStorePtr_, context_);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to init ThumbnailService");
+        return E_ERR;
+    }
+    return E_OK;
 }
 
 int32_t ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)

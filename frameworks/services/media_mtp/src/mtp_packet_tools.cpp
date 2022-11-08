@@ -31,7 +31,8 @@ namespace {
     static const int BEGIN_YEAR = 1900;
     static const int DUMP_HEXBUF_MAX = 128;
     static const int DUMP_TXTBUF_MAX = 32;
-    static const int MAX_LENGHT = 255;
+    static const int MAX_LENGTH = 255;
+    static const int TIME_LENGTH = 20;
     static const std::string BLANK_STR = "                                                                ";
     static const std::string INDENT_BLANKSTR = "  ";
     static const int INDENT_SIZE = INDENT_BLANKSTR.length();
@@ -524,18 +525,18 @@ void MtpPacketTool::PutInt128(std::vector<uint8_t> &outBuffer, const int128_t va
 
 void MtpPacketTool::PutString(std::vector<uint8_t> &outBuffer, const std::string &string)
 {
-    std::u16string src16 = utf8ToUtf16(string);
+    std::u16string src16 = Utf8ToUtf16(string);
 
     int count = src16.length();
     if (count == 0) {
         PutUInt8(outBuffer, 0);
         return;
     }
-    PutUInt8(outBuffer, std::min(count + 1, MAX_LENGHT));
+    PutUInt8(outBuffer, std::min(count + 1, MAX_LENGTH));
 
     int i = 0;
     for (char16_t &c : src16) {
-        if (i == MAX_LENGHT - 1) {
+        if (i == MAX_LENGTH - 1) {
             break;
         }
         PutUInt16(outBuffer, c);
@@ -546,7 +547,7 @@ void MtpPacketTool::PutString(std::vector<uint8_t> &outBuffer, const std::string
 
 std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> gConvert(UTF16_CERROR, UTF8_CERROR);
 
-std::u16string MtpPacketTool::utf8ToUtf16(const std::string &inputStr)
+std::u16string MtpPacketTool::Utf8ToUtf16(const std::string &inputStr)
 {
     std::u16string conversion = gConvert.from_bytes(input_str);
     if (conversion == UTF8_CERROR) {
@@ -556,7 +557,7 @@ std::u16string MtpPacketTool::utf8ToUtf16(const std::string &inputStr)
     }
 }
 
-std::string MtpPacketTool::utf16ToUtf8(const std::u16string &inputStr)
+std::string MtpPacketTool::Utf16ToUtf8(const std::u16string &inputStr)
 {
     std::string conversion = gConvert.to_bytes(input_str);
     if (conversion == UTF16_CERROR) {
@@ -710,7 +711,6 @@ std::shared_ptr<UInt16List> MtpPacketTool::GetAUInt16(const std::vector<uint8_t>
     uint32_t count = GetUInt32(buffer, offset);
     uint16_t value = 0;
     for (uint32_t i = 0; i < count; i++) {
-        value = 0;
         if (!GetUInt16(buffer, offset, value)) {
             MEDIA_ERR_LOG("MtpPacketTool::GetAUInt16, count=%{public}d, i=%{public}d", count, i);
             break;
@@ -728,7 +728,6 @@ std::shared_ptr<UInt32List> MtpPacketTool::GetAUInt32(const std::vector<uint8_t>
     uint32_t count = GetUInt32(buffer, offset);
     uint32_t value = 0;
     for (uint32_t i = 0; i < count; i++) {
-        value = 0;
         if (!GetUInt32(buffer, offset, value)) {
             MEDIA_ERR_LOG("MtpPacketTool::GetAUInt32, count=%{public}d, i=%{public}d", count, i);
             break;
@@ -751,7 +750,7 @@ std::string MtpPacketTool::GetString(const std::vector<uint8_t> &buffer, size_t 
         ch = GetUInt16(buffer, offset);
         tmpbuf[i] = ch;
     }
-    std::string String = utf16ToUtf8(std::u16string(tmpbuf.data()));
+    std::string String = Utf16ToUtf8(std::u16string(tmpbuf.data()));
     return String;
 }
 
@@ -770,21 +769,20 @@ bool MtpPacketTool::GetString(const std::vector<uint8_t> &buffer, size_t &offset
     std::vector<char16_t> tmpbuf(count);
     uint16_t ch = 0;
     for (int i = 0; ((i < count) && ((offset + sizeof(uint16_t) - 1) < buffer.size())); i++) {
-        ch = 0;
         if (!GetUInt16(buffer, offset, ch)) {
             return false;
         }
         tmpbuf[i] = ch;
     }
 
-    str = utf16ToUtf8(std::u16string(tmpbuf.data()));
+    str = Utf16ToUtf8(std::u16string(tmpbuf.data()));
     return true;
 }
 
 std::string MtpPacketTool::FormatDateTime(time_t sec)
 {
     struct tm tm;
-    char buffer[20] = {0};
+    char buffer[TIME_LENGTH] = {0};
     localtime_r(&sec, &tm);
     if (sprintf_s(buffer, sizeof(buffer), "%04d%02d%02dT%02d%02d%02d", tm.tm_year + BEGIN_YEAR, tm.tm_mon + 1,
         tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec) == -1) {
@@ -843,7 +841,7 @@ int MtpPacketTool::GetObjectPropTypeByPropCode(uint16_t propCode)
 
 bool MtpPacketTool::Int8ToString(const int8_t &value, std::string &outStr)
 {
-    char tmpbuf[32] = {0};
+    char tmpbuf[BIT_32] = {0};
     if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%d", value, value) == -1) {
         return false;
     }
@@ -853,7 +851,7 @@ bool MtpPacketTool::Int8ToString(const int8_t &value, std::string &outStr)
 
 bool MtpPacketTool::UInt8ToString(const uint8_t &value, std::string &outStr)
 {
-    char tmpbuf[32] = {0};
+    char tmpbuf[BIT_32] = {0};
     if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%02x, dec=%u", value, value) == -1) {
         return false;
     }
@@ -863,7 +861,7 @@ bool MtpPacketTool::UInt8ToString(const uint8_t &value, std::string &outStr)
 
 bool MtpPacketTool::Int16ToString(const int16_t &value, std::string &outStr)
 {
-    char tmpbuf[32] = {0};
+    char tmpbuf[BIT_32] = {0};
     if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%d", value, value) == -1) {
         return false;
     }
@@ -873,7 +871,7 @@ bool MtpPacketTool::Int16ToString(const int16_t &value, std::string &outStr)
 
 bool MtpPacketTool::UInt16ToString(const uint16_t &value, std::string &outStr)
 {
-    char tmpbuf[32] = {0};
+    char tmpbuf[BIT_32] = {0};
     if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%04x, dec=%u", value, value) == -1) {
         return false;
     }
@@ -883,7 +881,7 @@ bool MtpPacketTool::UInt16ToString(const uint16_t &value, std::string &outStr)
 
 bool MtpPacketTool::Int32ToString(const int32_t &value, std::string &outStr)
 {
-    char tmpbuf[64] = {0};
+    char tmpbuf[BIT_64] = {0};
     if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%d", value, value) == -1) {
         return false;
     }
@@ -893,7 +891,7 @@ bool MtpPacketTool::Int32ToString(const int32_t &value, std::string &outStr)
 
 bool MtpPacketTool::UInt32ToString(const uint32_t &value, std::string &outStr)
 {
-    char tmpbuf[64] = {0};
+    char tmpbuf[BIT_64] = {0};
     if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%08x, dec=%u", value, value) == -1) {
         return false;
     }
@@ -903,7 +901,7 @@ bool MtpPacketTool::UInt32ToString(const uint32_t &value, std::string &outStr)
 
 bool MtpPacketTool::Int64ToString(const int64_t &value, std::string &outStr)
 {
-    char tmpbuf[64] = {0};
+    char tmpbuf[BIT_64] = {0};
     if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIi64 "", value, value) == -1) {
         return false;
     }
@@ -913,7 +911,7 @@ bool MtpPacketTool::Int64ToString(const int64_t &value, std::string &outStr)
 
 bool MtpPacketTool::UInt64ToString(const uint64_t &value, std::string &outStr)
 {
-    char tmpbuf[64] = {0};
+    char tmpbuf[BIT_64] = {0};
     if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=%016" PRIx64 ", dec=%" PRIu64 "", value, value) == -1) {
         return false;
     }
@@ -923,7 +921,7 @@ bool MtpPacketTool::UInt64ToString(const uint64_t &value, std::string &outStr)
 
 bool MtpPacketTool::Int128ToString(const int128_t &value, std::string &outStr)
 {
-    char tmpbuf[128] = {0};
+    char tmpbuf[BIT_128] = {0};
     if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=(%08x,%08x,%08x,%08x), dec=(%d,%d,%d,%d)", value[OFFSET_0],
         value[OFFSET_1], value[OFFSET_2], value[OFFSET_3], value[OFFSET_0], value[OFFSET_1], value[OFFSET_2],
         value[OFFSET_3]) == -1) {
@@ -935,7 +933,7 @@ bool MtpPacketTool::Int128ToString(const int128_t &value, std::string &outStr)
 
 bool MtpPacketTool::UInt128ToString(const uint128_t &value, std::string &outStr)
 {
-    char tmpbuf[128] = {0};
+    char tmpbuf[BIT_128] = {0};
     if (sprintf_s(tmpbuf, sizeof(tmpbuf), "hex=(%08x,%08x,%08x,%08x), dec=(%u,%u,%u,%u)", value[OFFSET_0],
         value[OFFSET_1], value[OFFSET_2], value[OFFSET_3], value[OFFSET_0], value[OFFSET_1], value[OFFSET_2],
         value[OFFSET_3]) == -1) {
@@ -1020,13 +1018,13 @@ bool MtpPacketTool::DumpChar(uint8_t u8, std::unique_ptr<char[]> &hexBuf, int he
         return false;
     }
 
-    char hexTmp[4] = {0};
+    char hexTmp[BIT_4] = {0};
     if (sprintf_s(hexTmp, sizeof(hexTmp), "%02X", u8) == -1) {
         return false;
     }
 
     int intData = static_cast<int>(u8);
-    char txtTmp[4] = {0};
+    char txtTmp[BIT_4] = {0};
     if (sprintf_s(txtTmp, sizeof(txtTmp), "%c", (isprint(intData)) ? intData : '.') == -1) {
         return false;
     }

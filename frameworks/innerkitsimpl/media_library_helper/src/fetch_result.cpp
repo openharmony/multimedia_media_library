@@ -298,13 +298,6 @@ static void MediaTypeToMask(MediaType mediaType, std::string &typeMask)
     }
 }
 
-static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask)
-{
-    if (!typeMask.empty()) {
-        uri += "#" + URI_PARAM_KEY_TYPE + ":" + typeMask;
-    }
-}
-
 template<class T>
 int32_t FetchResult<T>::GetFileCount(const shared_ptr<DataShare::DataShareResultSet> &resultSet)
 {
@@ -353,12 +346,12 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Ab
     }
     fileAsset->SetResultNapiType(resultNapiType_);
     fileAsset->SetCount(GetFileCount(resultset_));
-    string typeMask;
-    MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
-    string uri = GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_) + "/" + to_string(fileAsset->GetId());
     if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
-        UriAddFragmentTypeMask(uri, typeMask);
+        string typeMask;
+        MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
+        fileAsset->SetTypeMask(typeMask);
     }
+    string uri = GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_) + "/" + to_string(fileAsset->GetId());
     fileAsset->SetUri(uri);
 }
 

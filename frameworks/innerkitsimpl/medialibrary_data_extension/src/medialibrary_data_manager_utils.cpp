@@ -122,7 +122,7 @@ string MediaLibraryDataManagerUtils::GetNetworkIdFromUri(const string &uri)
     return networkId;
 }
 
-string MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(std::string &path)
+string MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(const std::string &path)
 {
     string displayName;
     size_t lastSlashPosition = path.rfind("/");
@@ -130,6 +130,25 @@ string MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(std::string &path)
         displayName = path.substr(lastSlashPosition + 1);
     }
     return displayName;
+}
+
+string MediaLibraryDataManagerUtils::GetMediaTypeUri(MediaType mediaType)
+{
+    switch (mediaType) {
+        case MEDIA_TYPE_AUDIO:
+            return MEDIALIBRARY_AUDIO_URI;
+        case MEDIA_TYPE_VIDEO:
+            return MEDIALIBRARY_VIDEO_URI;
+        case MEDIA_TYPE_IMAGE:
+            return MEDIALIBRARY_IMAGE_URI;
+        case MEDIA_TYPE_SMARTALBUM:
+            return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
+        case MEDIA_TYPE_DEVICE:
+            return MEDIALIBRARY_DEVICE_URI;
+        case MEDIA_TYPE_FILE:
+        default:
+            return MEDIALIBRARY_FILE_URI;
+    }
 }
 
 void MediaLibraryDataManagerUtils::SplitKeyValue(const string &keyValue, string &key, string &value)
