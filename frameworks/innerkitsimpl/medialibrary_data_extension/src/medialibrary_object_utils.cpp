@@ -747,7 +747,7 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
     string networkId = MediaFileUtils::GetNetworkIdFromUri(uriStr);
 
     if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) || (stoi(id) == -1)) {
-        MEDIA_ERR_LOG("Id for the path is incorrect");
+        MEDIA_ERR_LOG("Id for the path is incorrect: %{public}s", id.c_str());
         return nullptr;
     }
 
