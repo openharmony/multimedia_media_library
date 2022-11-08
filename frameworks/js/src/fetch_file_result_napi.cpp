@@ -87,18 +87,18 @@ void FetchFileResultNapi::GetFetchResult(unique_ptr<FetchFileResultNapi> &obj)
 {
     switch (sFetchResType_) {
         case FetchResType::TYPE_FILE:
-            obj->fetchFileResult_ = make_unique<FetchResult<FileAsset>>(move(sFetchFileResult_->resultset_));
+            obj->fetchFileResult_ = make_shared<FetchResult<FileAsset>>(move(sFetchFileResult_->resultset_));
             obj->fetchFileResult_->SetInfo(sFetchFileResult_);
             obj->typeMask_ = obj->fetchFileResult_->typeMask_;
             break;
         case FetchResType::TYPE_ALBUM:
-            obj->fetchAlbumResult_ = make_unique<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->resultset_));
+            obj->fetchAlbumResult_ = make_shared<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->resultset_));
             obj->fetchAlbumResult_->SetInfo(sFetchAlbumResult_);
             obj->typeMask_ = obj->fetchAlbumResult_->typeMask_;
             break;
         case FetchResType::TYPE_SMARTALBUM:
             obj->fetchSmartAlbumResult_ =
-                make_unique<FetchResult<SmartAlbumAsset>>(move(sFetchSmartAlbumResult_->resultset_));
+                make_shared<FetchResult<SmartAlbumAsset>>(move(sFetchSmartAlbumResult_->resultset_));
             obj->fetchSmartAlbumResult_->SetInfo(sFetchSmartAlbumResult_);
             obj->typeMask_ = obj->fetchSmartAlbumResult_->typeMask_;
             break;

@@ -82,14 +82,7 @@ private:
     int32_t GetRootDirAndExtension(std::string &displayName, std::string &relativePath,
                                    int mediaType, NativeRdb::ValuesBucket &outValues);
 
-    bool CheckMediaType(std::string mediaTypes, int mediaType);
-
-    bool CheckExtension(std::string extensions, std::string extension);
-
-    bool CheckFileExtension(const std::unordered_map
-                            <std::string, DirAsset> &dirQuerySetMap, std::string extension);
-
-    bool CheckMediaTypeMatchExtension(int mediaType, std::string extensions);
+    int32_t CheckFileExtension(const int mediaType, string extension, const string &dstMediaType);
 
     DirAsset GetDirQuerySet(const NativeRdb::ValuesBucket &values,
         const std::shared_ptr<RdbStore> &rdbStore,
