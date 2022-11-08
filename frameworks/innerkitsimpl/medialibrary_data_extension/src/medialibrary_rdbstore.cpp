@@ -43,11 +43,11 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     Init();
 }
 
-void MediaLibraryRdbStore::Init()
+int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store");
     if (rdbStore_ != nullptr) {
-        return;
+        return E_OK;
     }
 
     int32_t errCode = 0;
@@ -55,7 +55,7 @@ void MediaLibraryRdbStore::Init()
     rdbStore_ = RdbHelper::GetRdbStore(config_, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("GetRdbStore is failed ");
-        return;
+        return E_ERR;
     }
 
     if (rdbDataCallBack.HasDistributedTables()) {
@@ -66,10 +66,11 @@ void MediaLibraryRdbStore::Init()
 
     if (!SubscribeRdbStoreObserver()) {
         MEDIA_ERR_LOG("subscribe rdb observer err");
-        return;
+        return E_ERR;
     }
 
     MEDIA_INFO_LOG("SUCCESS");
+    return E_OK;
 }
 
 MediaLibraryRdbStore::~MediaLibraryRdbStore()
