@@ -50,7 +50,7 @@ public:
     static std::shared_ptr<MediaLibraryDataManager> GetInstance();
 
     EXPORT int32_t InitMediaLibraryRdbStore();
-    EXPORT void InitialiseKvStore();
+    EXPORT int32_t InitialiseKvStore();
 
     EXPORT int32_t Insert(const Uri &uri, const DataShare::DataShareValuesBucket &value);
     EXPORT int32_t Delete(const Uri &uri, const DataShare::DataSharePredicates &predicates);
@@ -70,9 +70,9 @@ public:
 
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 
-    void InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
+    int32_t InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
     void ClearMediaLibraryMgr();
-    void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
+    int32_t MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
     void CreateThumbnailAsync(const std::string &uri);
     std::unordered_map<std::string, DirAsset> GetDirQuerySetMap() const;
     std::shared_ptr<MediaDataShareExtAbility> GetOwner();
@@ -84,8 +84,8 @@ private:
     bool CheckFileNameValid(const DataShare::DataShareValuesBucket &value);
     void NeedQuerySync(const std::string &networkId, OperationObject oprnObject);
     void ScanFile(const NativeRdb::ValuesBucket &values, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore1);
-    void InitDeviceData();
-    void InitialiseThumbnailService();
+    int32_t InitDeviceData();
+    int32_t InitialiseThumbnailService();
     std::shared_ptr<DataShare::ResultSetBridge> GenThumbnail(const std::string &uri);
     int32_t CreateThumbnail(const NativeRdb::ValuesBucket &values);
     int32_t LcdDistributeAging();

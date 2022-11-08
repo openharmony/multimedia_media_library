@@ -18,6 +18,8 @@
 
 #include <memory>
 
+#include "media_log.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore.h"
 
@@ -31,16 +33,18 @@ public:
         return instance;
     }
 
-    void Init(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
+    int32_t Init(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
     {
         if (rdbStorePtr_) {
-            return;
+            return E_OK;
         }
 
         rdbStorePtr_ = std::make_shared<MediaLibraryRdbStore>(context);
-        if (rdbStorePtr_) {
-            rdbStorePtr_->Init();
+        if (!rdbStorePtr_) {
+            MEDIA_ERR_LOG("create rdbStore failed");
+            return E_ERR;
         }
+        return rdbStorePtr_->Init();
     }
 
     void Stop()
