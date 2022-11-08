@@ -34,11 +34,8 @@ namespace Media {
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED,
     EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED,
-    EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED,
-    EventFwk::CommonEventSupport::COMMON_EVENT_USER_STARTING,
     EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF,
-    EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON,
-    EventFwk::CommonEventSupport::COMMON_EVENT_BOOT_COMPLETED
+    EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON
 };
 
 MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)

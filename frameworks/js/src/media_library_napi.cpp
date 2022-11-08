@@ -3072,6 +3072,9 @@ napi_value MediaLibraryNapi::UserFileMgrCreateAsset(napi_env env, napi_callback_
     napi_value ret = nullptr;
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_IMAGE);
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
+    MediaLibraryNapiUtils::GenTypeMaskFromArray(asyncContext->mediaTypes, asyncContext->typeMask);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     NAPI_ASSERT(env, ParseArgsCreateAsset(env, info, asyncContext), "Failed to parse js args");
 
