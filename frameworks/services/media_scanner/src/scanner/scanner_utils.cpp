@@ -164,15 +164,8 @@ void ScannerUtils::GetRootMediaDir(string &dir)
 
 string ScannerUtils::GetFileTitle(const string &displayName)
 {
-    string title = "";
-    if (!displayName.empty()) {
-        string::size_type pos = displayName.find_first_of('.');
-        if (pos == displayName.length()) {
-            return displayName;
-        }
-        title = displayName.substr(0, pos);
-    }
-    return title;
+    string::size_type pos = displayName.find_last_of('.');
+    return (pos == string::npos) ? displayName : displayName.substr(0, pos);
 }
 
 bool ScannerUtils::IsDirHidden(const string &path)
