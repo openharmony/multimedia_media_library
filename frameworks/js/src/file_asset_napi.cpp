@@ -520,7 +520,7 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
             NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
             return undefinedResult;
         }
-        status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res);
+        status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
         if (status == napi_ok) {
             obj->title_ = string(buffer);
         }
