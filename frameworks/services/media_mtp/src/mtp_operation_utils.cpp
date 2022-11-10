@@ -671,7 +671,7 @@ uint16_t MtpOperationUtils::GetPropDesc(shared_ptr<PayloadData> &data, uint16_t 
             break;
         case MTP_DEVICE_PROPERTY_DEVICE_FRIENDLY_NAME_CODE:
             property = make_shared<Property>(context_->property, MTP_DEVICE_PROP_DESC_TYPE_STR, true);
-            property->currentValue->str = make_shared<string>(GetPropertyInner("persist.device.name",
+            property->currentValue->str_ = make_shared<string>(GetPropertyInner("persist.device.name",
                 DEFAULT_PRODUCT_NAME));
             break;
         case MTP_DEVICE_PROPERTY_SESSION_INITIATOR_VERSION_INFO_CODE:
@@ -682,7 +682,7 @@ uint16_t MtpOperationUtils::GetPropDesc(shared_ptr<PayloadData> &data, uint16_t 
             break;
         case MTP_DEVICE_PROPERTY_BATTERY_LEVEL_CODE:
             property = make_shared<Property>(context_->property, MTP_DEVICE_PROP_DESC_TYPE_UINT8);
-            property->currentValue->bin.ui8 = (uint8_t)MtpOperationUtils::GetBatteryLevel();
+            property->currentValue->bin_.ui8 = (uint8_t)MtpOperationUtils::GetBatteryLevel();
             property->SetFormRange(BATTERY_LEVEL_MIN, BATTERY_LEVEL_MAX, BATTERY_LEVEL_STEP);
             break;
         case MTP_DEVICE_PROPERTY_PERCEIVED_DEVICE_TYPE_CODE:
@@ -712,27 +712,27 @@ uint16_t MtpOperationUtils::GetPropValue(shared_ptr<PayloadData> &data, uint16_t
     switch (context_->property) {
         case MTP_DEVICE_PROPERTY_SYNCHRONIZATION_PARTNER_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_STR;
-            value->str = make_shared<string>("");
+            value->str_ = make_shared<string>("");
             break;
         case MTP_DEVICE_PROPERTY_DEVICE_FRIENDLY_NAME_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_STR;
-            value->str = make_shared<string>(GetPropertyInner("persist.device.name", DEFAULT_PRODUCT_NAME));
+            value->str_ = make_shared<string>(GetPropertyInner("persist.device.name", DEFAULT_PRODUCT_NAME));
             break;
         case MTP_DEVICE_PROPERTY_SESSION_INITIATOR_VERSION_INFO_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_STR;
-            value->str = make_shared<string>("");
+            value->str_ = make_shared<string>("");
             break;
         case MTP_DEVICE_PROPERTY_IMAGE_SIZE_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_STR;
-            value->str = make_shared<string>("");
+            value->str_ = make_shared<string>("");
             break;
         case MTP_DEVICE_PROPERTY_BATTERY_LEVEL_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_UINT8;
-            value->bin.ui8 = (uint8_t)MtpOperationUtils::GetBatteryLevel();
+            value->bin_.ui8 = (uint8_t)MtpOperationUtils::GetBatteryLevel();
             break;
         case MTP_DEVICE_PROPERTY_PERCEIVED_DEVICE_TYPE_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_UINT32;
-            value->bin.ui32 = MTP_PERCEIVED_DEVICE_TYPE_GENERIC;
+            value->bin_.ui32 = MTP_PERCEIVED_DEVICE_TYPE_GENERIC;
             break;
         default:
             MEDIA_INFO_LOG("property do not find");

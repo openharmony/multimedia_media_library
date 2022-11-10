@@ -416,16 +416,16 @@ void MtpDataUtils::SetProperty(const std::string &column, const shared_ptr<DataS
     variant<int32_t, int64_t, string> columnValue = ResultSetUtils::GetValFromColumn(column, resultSet, type);
     switch (type) {
         case MTP_TYPE_STRING:
-            prop.currentValue->str = make_shared<string>(get<string>(columnValue));
+            prop.currentValue->str_ = make_shared<string>(get<string>(columnValue));
             break;
         case MTP_TYPE_INT32:
-            prop.currentValue->bin.i32 = get<int32_t>(columnValue);
+            prop.currentValue->bin_.i32 = get<int32_t>(columnValue);
             break;
         case MTP_TYPE_INT64:
             if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
-                prop.currentValue->str = make_shared<string>(MtpPacketTool::FormatDateTime(get<int64_t>(columnValue)));
+                prop.currentValue->str_ = make_shared<string>(MtpPacketTool::FormatDateTime(get<int64_t>(columnValue)));
             } else {
-                prop.currentValue->bin.i64 = get<int64_t>(columnValue);
+                prop.currentValue->bin_.i64 = get<int64_t>(columnValue);
             }
             break;
         default:
@@ -442,14 +442,14 @@ void MtpDataUtils::GetOneRowPropList(uint32_t handle, const shared_ptr<DataShare
         if (PropColumnMap.find(property) != PropColumnMap.end()) {
             auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(property);
             Property prop(property, properType);
-            prop.handle = handle;
+            prop.handle_ = handle;
             PropColumnMap.at(property);
             type = ColumnTypeMap.at(column);
             if (column.compare(MEDIA_DATA_DB_FORMAT) == 0) {
                 uint16_t format = MTP_FORMAT_UNDEFINED_CODE;
                 GetFormat(resultSet, format);
-                prop.currentValue->bin.ui16 = format;
-                MEDIA_INFO_LOG("prop.currentValue->bin.ui16 %{public}u", format);
+                prop.currentValue->bin_.ui16 = format;
+                MEDIA_INFO_LOG("prop.currentValue->bin_.ui16 %{public}u", format);
             } else {
                 SetProperty(column, resultSet, type, prop);
             }
@@ -495,22 +495,22 @@ void MtpDataUtils::SetOneDefaultlPropList(uint32_t handle, uint16_t property, sh
     auto propType = PropDefaultMap.at(property);
     auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(property);
     Property prop(property, properType);
-    prop.handle = handle;
+    prop.handle_ = handle;
     switch (propType) {
         case INTTYPE16:
-            prop.currentValue->bin.i16 = 0;
+            prop.currentValue->bin_.i16 = 0;
             break;
         case INTTYPE128:
-            prop.currentValue->bin.i128[OFFSET_0] = handle;
-            prop.currentValue->bin.i128[OFFSET_1] = 0;
-            prop.currentValue->bin.i128[OFFSET_2] = 0;
-            prop.currentValue->bin.i128[OFFSET_3] = 0;
+            prop.currentValue->bin_.i128[OFFSET_0] = handle;
+            prop.currentValue->bin_.i128[OFFSET_1] = 0;
+            prop.currentValue->bin_.i128[OFFSET_2] = 0;
+            prop.currentValue->bin_.i128[OFFSET_3] = 0;
             break;
         case STRINGTYPE:
-            prop.currentValue->str = make_shared<string>("");
+            prop.currentValue->str_ = make_shared<string>("");
             break;
         default:
-            prop.currentValue->bin.i32 = DEFAULT_STORAGE_ID;
+            prop.currentValue->bin_.i32 = DEFAULT_STORAGE_ID;
             break;
     }
     outProps->push_back(prop);
