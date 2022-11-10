@@ -34,25 +34,26 @@ public:
     std::string GetStorageDescription();
     std::string GetVolumeIdentifier();
     
-    void SetStorageID(uint32_t storageID) { mStorageID = storageID; }
-    void SetStorageType(uint16_t storageType) { mStorageType = storageType; }
-    void SetFilesystemType(uint16_t fileSytemType) { mFileSystemType = fileSytemType; }
-    void SetAccessCapability(uint16_t accessCapability) { mAccessCapability = accessCapability; }
-    void SetMaxCapacity(uint64_t maxCapacity) { mMaxCapacity = maxCapacity; }
-    void SetFreeSpaceInBytes(uint32_t freeSpaceInBytes) { mFreeSpaceInBytes = freeSpaceInBytes; }
-    void SetFreeSpaceInObjects(uint32_t freeSpaceInObjects) { mFreeSpaceInObjects = freeSpaceInObjects; }
-    void SetStorageDescription(std::string storageDescription) { mStorageDescription = storageDescription; }
-    void SetVolumeIdentifier(std::string volumeIdentifier) { mVolumeIdentifier = volumeIdentifier; }
+    void SetStorageID(uint32_t storageID);
+    void SetStorageType(uint16_t storageType);
+    void SetFilesystemType(uint16_t fileSytemType);
+    void SetAccessCapability(uint16_t accessCapability);
+    void SetMaxCapacity(uint64_t maxCapacity);
+    void SetFreeSpaceInBytes(uint32_t freeSpaceInBytes);
+    void SetFreeSpaceInObjects(uint32_t freeSpaceInObjects);
+    void SetStorageDescription(std::string storageDescription);
+    void SetVolumeIdentifier(std::string volumeIdentifier);
+
 private:
-    uint32_t mStorageID {0};
-    uint16_t mStorageType {0};
-    uint16_t mFileSystemType {0};
-    uint16_t mAccessCapability {0};
-    uint64_t mMaxCapacity {0};
-    uint64_t mFreeSpaceInBytes {0};
-    uint32_t mFreeSpaceInObjects {0};
-    std::string mStorageDescription;
-    std::string mVolumeIdentifier;
+    uint32_t storageID_ {0};
+    uint16_t storageType_ {0};
+    uint16_t fileSytemType_ {0};
+    uint16_t accessCapability_ {0};
+    uint64_t maxCapacity_ {0};
+    uint64_t freeSpaceInBytes_ {0};
+    uint32_t freeSpaceInObjects_ {0};
+    std::string storageDescription_;
+    std::string volumeIdentifier_;
 };
 } // namespace Media
 } // namespace OHOS
