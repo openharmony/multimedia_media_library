@@ -22,6 +22,7 @@
 #include "mtp_constants.h"
 
 // these numbers are defined by protocol, have no exact meaning
+constexpr int BIT_4 = 4;
 constexpr int BIT_8 = 8;
 constexpr int BIT_16 = 16;
 constexpr int BIT_24 = 24;
@@ -29,6 +30,7 @@ constexpr int BIT_32 = 32;
 constexpr int BIT_40 = 40;
 constexpr int BIT_48 = 48;
 constexpr int BIT_56 = 56;
+constexpr int BIT_128 = 128;
 constexpr int OFFSET_0 = 0;
 constexpr int OFFSET_1 = 1;
 constexpr int OFFSET_2 = 2;
@@ -81,8 +83,8 @@ public:
     static bool GetInt64(const std::vector<uint8_t> &buffer, size_t &offset, int64_t &value);
     static bool GetInt128(const std::vector<uint8_t> &buffer, size_t &offset, int128_t &value);
     static std::string GetString(const std::vector<uint8_t> &buffer, size_t &offset);
-    static std::u16string utf8ToUtf16(const std::string &inputStr);
-    static std::string utf16ToUtf8(const std::u16string &inputStr);
+    static std::u16string Utf8ToUtf16(const std::string &inputStr);
+    static std::string Utf16ToUtf8(const std::u16string &inputStr);
     static bool GetString(const std::vector<uint8_t> &buffer, size_t &offset, std::string &str);
     static std::string FormatDateTime(time_t sec);
     static const std::string &GetOperationName(uint16_t code);
