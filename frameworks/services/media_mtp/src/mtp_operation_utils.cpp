@@ -286,10 +286,6 @@ uint16_t MtpOperationUtils::GetObjectPropList(shared_ptr<PayloadData> &data,
 
     shared_ptr<vector<Property>> props = make_shared<vector<Property>>();
     mtpMedialibraryManager_->GetObjectPropList(context_, props);
-    size_t count = (props == nullptr) ? 0 : props->size();
-    for (size_t i = 0; i < count; i++) {
-        props[i]->Dump();
-    }
 
     shared_ptr<GetObjectPropListData> getObjectPropList = make_shared<GetObjectPropListData>(context_);
     getObjectPropList->SetProps(props);
