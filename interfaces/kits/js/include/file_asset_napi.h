@@ -117,47 +117,12 @@ private:
     static napi_value UserFileMgrIsDirectory(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetThumbnail(napi_env env, napi_callback_info info);
     bool HandleParamSet(const std::string &inputKey, const std::string &value);
-    int32_t fileId_;
-    std::string fileUri_;
-    MediaType mediaType_;
-    std::string displayName_;
-    std::string relativePath_;
-    std::string filePath_;
-    int32_t parent_;
-
-    int64_t size_;
-    int64_t dateAdded_;
-    int64_t dateTrashed_;
-    int64_t dateModified_;
-    int64_t dateTaken_;
-    std::string mimeType_;
-    bool isFavorite_;
-    bool isTrash_;
-    std::string typeMask_;
-
-    // audio
-    std::string title_;
-    std::string artist_;
-    std::string album_;
-
-    // video, image
-    int32_t duration_;
-    int32_t orientation_;
-    int32_t width_;
-    int32_t height_;
-
-    // album
-    int32_t albumId_;
-    std::string albumUri_;
-    std::string albumName_;
-    // for group
-    int32_t count_;
-
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
     static thread_local FileAsset *sFileAsset_;
+    std::unique_ptr<FileAsset> fileAssetPtr = nullptr;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> member_;
 };
 struct FileAssetAsyncContext : public NapiError {
