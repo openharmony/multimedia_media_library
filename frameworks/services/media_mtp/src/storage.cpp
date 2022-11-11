@@ -27,47 +27,92 @@ Storage::~Storage()
 
 uint32_t Storage::GetStorageID()
 {
-    return mStorageID;
+    return storageID_;
 }
 
 uint16_t Storage::GetStorageType()
 {
-    return mStorageType;
+    return storageType_;
 }
 
 uint16_t Storage::GetFilesystemType()
 {
-    return mFileSystemType;
+    return fileSytemType_;
 }
 
 uint16_t Storage::GetAccessCapability()
 {
-    return mAccessCapability;
+    return accessCapability_;
 }
 
 uint64_t Storage::GetMaxCapacity()
 {
-    return mMaxCapacity;
+    return maxCapacity_;
 }
 
 uint64_t Storage::GetFreeSpaceInBytes()
 {
-    return mFreeSpaceInBytes;
+    return freeSpaceInBytes_;
 }
 
 uint32_t Storage::GetFreeSpaceInObjects()
 {
-    return mFreeSpaceInObjects;
+    return freeSpaceInObjects_;
 }
 
 std::string Storage::GetStorageDescription()
 {
-    return mStorageDescription;
+    return storageDescription_;
 }
 
 std::string Storage::GetVolumeIdentifier()
 {
-    return mVolumeIdentifier;
+    return volumeIdentifier_;
+}
+
+void Storage::SetStorageID(uint32_t storageID)
+{
+    storageID_ = storageID;
+}
+
+void Storage::SetStorageType(uint16_t storageType)
+{
+    storageType_ = storageType;
+}
+
+void Storage::SetFilesystemType(uint16_t fileSytemType)
+{
+    fileSytemType_ = fileSytemType;
+}
+
+void Storage::SetAccessCapability(uint16_t accessCapability)
+{
+    accessCapability_ = accessCapability;
+}
+
+void Storage::SetMaxCapacity(uint64_t maxCapacity)
+{
+    maxCapacity_ = maxCapacity;
+}
+
+void Storage::SetFreeSpaceInBytes(uint32_t freeSpaceInBytes)
+{
+    freeSpaceInBytes_ = freeSpaceInBytes;
+}
+
+void Storage::SetFreeSpaceInObjects(uint32_t freeSpaceInObjects)
+{
+    freeSpaceInObjects_ = freeSpaceInObjects;
+}
+
+void Storage::SetStorageDescription(std::string storageDescription)
+{
+    storageDescription_ = storageDescription;
+}
+
+void Storage::SetVolumeIdentifier(std::string volumeIdentifier)
+{
+    volumeIdentifier_ = volumeIdentifier;
 }
 } // namespace Media
 } // namespace OHOS
