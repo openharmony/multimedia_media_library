@@ -26,6 +26,11 @@ class Property {
 public:
     class Value{ 
     public:
+        Value();
+
+        void Dump(uint32_t valueType);
+        std::string ToString(uint32_t valueType);
+
         union {
             uint128_t ui128;
             int128_t i128;
@@ -37,15 +42,8 @@ public:
             int16_t i16;
             uint8_t ui8;
             int8_t i8;
-        } bin;
-        std::shared_ptr<std::string> str;
-
-        Value();
-        Value(const Value &value);
-        Value &operator = (const Value &value);
-
-        void Dump(uint32_t valueType);
-        std::string ToString(uint32_t valueType);
+        } bin_;
+        std::shared_ptr<std::string> str_;
 
     private:
         bool BinToString(uint32_t valueType, std::string &outStr);
@@ -72,10 +70,10 @@ public:
     bool IsArrayType() const;
     void Dump();
 
-    uint32_t handle {0}; // not a element for property
-    uint16_t code {0};
-    uint16_t type {MTP_TYPE_UNDEFINED_CODE};
-    bool writeable {false};
+    uint32_t handle_ {0}; // not a element for property
+    uint16_t code_ {0};
+    uint16_t type_ {MTP_TYPE_UNDEFINED_CODE};
+    bool writeable_ {false};
     std::shared_ptr<Value> defaultValue;
     std::shared_ptr<Value> currentValue;
     std::shared_ptr<std::vector<Value>> defaultValues; // for array types
@@ -88,8 +86,8 @@ public:
         DateTime = 3,
     };
 
-    uint32_t groupCode {0};
-    uint8_t formFlag {Form::None};
+    uint32_t groupCode_ {0};
+    uint8_t formFlag_ {Form::None};
     std::shared_ptr<Value> minValue; // for range form
     std::shared_ptr<Value> maxValue;
     std::shared_ptr<Value> stepSize;

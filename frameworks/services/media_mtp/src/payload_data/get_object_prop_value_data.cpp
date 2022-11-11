@@ -21,19 +21,15 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-namespace {
 static constexpr int PARSER_PARAM_SUM = 2;
-}
 
 GetObjectPropValueData::GetObjectPropValueData(std::shared_ptr<MtpOperationContext> &context)
     : PayloadData(context)
 {
-    MEDIA_DEBUG_LOG("GetObjectPropValueData create");
 }
 
 GetObjectPropValueData::~GetObjectPropValueData()
 {
-    MEDIA_DEBUG_LOG("GetObjectPropValueData release");
 }
 
 int GetObjectPropValueData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
@@ -51,14 +47,8 @@ int GetObjectPropValueData::Parser(const std::vector<uint8_t> &buffer, uint32_t 
     }
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    MtpPacketTool::Dump(buffer, offset);
-
     context_->handle = MtpPacketTool::GetUInt32(buffer, offset);
     context_->property = MtpPacketTool::GetUInt32(buffer, offset);
-    MEDIA_DEBUG_LOG("GetObjectPropValueData::parser handle=%{public}u,"
-        " property=%{public}s(%{public}x, %{public}u)",
-        context_->handle,
-        MtpPacketTool::GetObjectPropName(context_->property).c_str(), context_->property, context_->property);
     return MTP_SUCCESS;
 }
 
@@ -74,10 +64,6 @@ int GetObjectPropValueData::Maker(std::vector<uint8_t> &outBuffer)
         return MTP_INVALID_OBJECTHANDLE_CODE;
     }
 
-    MEDIA_DEBUG_LOG("GetObjectPropValueData::maker type=%{public}s(%{public}x, %{public}u), "
-        "int64Value=%{public}" PRIu64 ", strValue=[%{public}s]",
-        MtpPacketTool::GetDataTypeName(type_).c_str(), type_, type_, int64Value_, strValue_.c_str());
-
     if ((type_ == MTP_TYPE_INT8_CODE) || (type_ == MTP_TYPE_UINT8_CODE)) {
         MtpPacketTool::PutUInt8(outBuffer, int64Value_);
     } else if ((type_ == MTP_TYPE_INT16_CODE) || (type_ == MTP_TYPE_UINT16_CODE)) {
@@ -91,23 +77,21 @@ int GetObjectPropValueData::Maker(std::vector<uint8_t> &outBuffer)
     } else if (type_ == MTP_TYPE_STRING_CODE) {
         MtpPacketTool::PutString(outBuffer, strValue_);
     } else {
-        MEDIA_ERR_LOG("GetObjectPropValueData::maker unsupported type\n");
+        MEDIA_ERR_LOG("GetObjectPropValueData::maker unsupported type");
         return MTP_INVALID_OBJECTPROP_FORMAT_CODE;
     }
 
-    MtpPacketTool::Dump(outBuffer);
     return MTP_SUCCESS;
 }
 
 uint32_t GetObjectPropValueData::CalculateSize()
 {
-    std::vector<uint8_t> tmpuse;
-    int res = Maker(tmpuse);
+    std::vector<uint8_t> tmpUse;
+    int res = Maker(tmpUse);
     if (res != MTP_SUCCESS) {
         return res;
     }
-    uint32_t size = tmpuse.size();
-    return size;
+    return tmpUse.size();
 }
 
 bool GetObjectPropValueData::SetPropValue(int type, uint64_t int64Value, const uint128_t int128Value,

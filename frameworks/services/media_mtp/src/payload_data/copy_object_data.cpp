@@ -12,8 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "payload_data/get_partial_object_data.h"
-#include <cinttypes>
+#include "payload_data/copy_object_data.h"
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "mtp_packet_tools.h"
@@ -23,63 +22,73 @@ namespace OHOS {
 namespace Media {
 static constexpr int PARSER_PARAM_SUM = 3;
 
-GetPartialObjectData::GetPartialObjectData(std::shared_ptr<MtpOperationContext> &context)
+CopyObjectData::CopyObjectData(std::shared_ptr<MtpOperationContext> &context)
     : PayloadData(context)
 {
 }
 
-GetPartialObjectData::~GetPartialObjectData()
+CopyObjectData::CopyObjectData()
 {
 }
 
-int GetPartialObjectData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
+CopyObjectData::~CopyObjectData()
+{
+}
+
+int CopyObjectData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
 {
     if ((context_ == nullptr) || (!MtpStorageManager::GetInstance()->HasStorage())) {
-        MEDIA_ERR_LOG("GetPartialObjectData::parser null or storage");
-        return MTP_INVALID_OBJECTHANDLE_CODE;
+        MEDIA_ERR_LOG("CopyObjectData::parser null or storage");
+        return MTP_ERROR_CONTEXT_IS_NULL;
     }
 
     int parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
-        MEDIA_ERR_LOG("GetPartialObjectData::parser paramCount=%{public}u, needCount=%{public}d",
+        MEDIA_ERR_LOG("CopyObjectData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);
-        return MTP_INVALID_PARAMETER_CODE;
+        return MTP_ERROR_PACKET_INCORRECT;
     }
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
     context_->handle = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->offset = MtpPacketTool::GetUInt32(buffer, offset);
-    context_->length = MtpPacketTool::GetUInt32(buffer, offset);
+    context_->storageID = MtpPacketTool::GetUInt32(buffer, offset);
+    context_->parent = MtpPacketTool::GetUInt32(buffer, offset);
     return MTP_SUCCESS;
 }
 
-int GetPartialObjectData::Maker(std::vector<uint8_t> &outBuffer)
+int CopyObjectData::Maker(std::vector<uint8_t> &outBuffer)
 {
-    if (!hasSetLength_) {
-        MEDIA_ERR_LOG("GetPartialObjectData::maker set");
-        return MTP_INVALID_OBJECTHANDLE_CODE;
+    if (!hasSetObjectHandle_) {
+        MEDIA_ERR_LOG("CopyObjectData::maker error no objectHandle");
+        return MTP_ERROR_INVALID_OBJECTHANDLE;
     }
-    MtpPacketTool::PutUInt32(outBuffer, length_);
+
+    MtpPacketTool::PutUInt32(outBuffer, objectHandle_);
     return MTP_SUCCESS;
 }
 
-uint32_t GetPartialObjectData::CalculateSize()
+uint32_t CopyObjectData::CalculateSize()
 {
     std::vector<uint8_t> tmpUse;
+
     int res = Maker(tmpUse);
     if (res != MTP_SUCCESS) {
         return res;
     }
-    return tmpUse.size();
+
+    uint32_t size = tmpUse.size();
+    return size;
 }
 
-bool GetPartialObjectData::SetLength(uint32_t length)
+bool CopyObjectData::SetObjectHandle(uint32_t objectHandle)
 {
-    if (hasSetLength_) {
+    if (hasSetObjectHandle_) {
         return false;
     }
-    hasSetLength_ = true;
-    length_ = length;
+
+    hasSetObjectHandle_ = true;
+
+    objectHandle_ = objectHandle;
     return true;
 }
 } // namespace Media
