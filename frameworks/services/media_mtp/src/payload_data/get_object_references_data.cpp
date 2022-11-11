@@ -20,19 +20,15 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-namespace {
 static constexpr int PARSER_PARAM_SUM = 1;
-}
 
 GetObjectReferencesData::GetObjectReferencesData(std::shared_ptr<MtpOperationContext> &context)
     : PayloadData(context)
 {
-    MEDIA_DEBUG_LOG("GetObjectReferencesData create");
 }
 
 GetObjectReferencesData::~GetObjectReferencesData()
 {
-    MEDIA_DEBUG_LOG("GetObjectReferencesData release");
 }
 
 int GetObjectReferencesData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
@@ -77,13 +73,12 @@ int GetObjectReferencesData::Maker(std::vector<uint8_t> &outBuffer)
 
 uint32_t GetObjectReferencesData::CalculateSize()
 {
-    std::vector<uint8_t> tmpuse;
-    int res = Maker(tmpuse);
+    std::vector<uint8_t> tmpUse;
+    int res = Maker(tmpUse);
     if (res != MTP_SUCCESS) {
         return res;
     }
-    uint32_t size = tmpuse.size();
-    return size;
+    return tmpUse.size();
 }
 
 bool GetObjectReferencesData::SetObjectHandles(std::shared_ptr<UInt32List> &objectHandles)

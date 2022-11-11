@@ -19,7 +19,6 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-namespace {
 static constexpr int PARSER_PARAM_SUM = 1;
 static const std::vector<uint16_t> FILE_PROPERTIES = {
     MTP_PROPERTY_STORAGE_ID_CODE,
@@ -61,17 +60,14 @@ static const std::vector<uint16_t> VIDEO_PROPERTIES = {
 static const std::vector<uint16_t> IMAGE_PROPERTIES = {
     MTP_PROPERTY_DESCRIPTION_CODE,
 };
-}
 
 GetObjectPropsSupportedData::GetObjectPropsSupportedData(std::shared_ptr<MtpOperationContext> &context)
     : PayloadData(context)
 {
-    MEDIA_DEBUG_LOG("GetObjectPropsSupportedData create");
 }
 
 GetObjectPropsSupportedData::~GetObjectPropsSupportedData()
 {
-    MEDIA_DEBUG_LOG("GetObjectPropsSupportedData release");
 }
 
 int GetObjectPropsSupportedData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
@@ -89,11 +85,7 @@ int GetObjectPropsSupportedData::Parser(const std::vector<uint8_t> &buffer, uint
     }
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    MtpPacketTool::Dump(buffer, offset);
-
     context_->format = MtpPacketTool::GetUInt32(buffer, offset);
-    MEDIA_DEBUG_LOG("GetObjectPropsSupportedData::parser format=%{public}s(%{public}x, %{public}u)",
-        MtpPacketTool::GetFormatName(context_->format).c_str(), context_->format, context_->format);
     return MTP_SUCCESS;
 }
 
@@ -102,19 +94,17 @@ int GetObjectPropsSupportedData::Maker(std::vector<uint8_t> &outBuffer)
     UInt16List properties;
     GetObjectProps(properties);
     MtpPacketTool::PutAUInt16(outBuffer, properties.data(), properties.size());
-    MtpPacketTool::Dump(outBuffer);
     return MTP_SUCCESS;
 }
 
 uint32_t GetObjectPropsSupportedData::CalculateSize()
 {
-    std::vector<uint8_t> tmpuse;
-    int res = Maker(tmpuse);
+    std::vector<uint8_t> tmpUse;
+    int res = Maker(tmpUse);
     if (res != MTP_SUCCESS) {
         return res;
     }
-    uint32_t size = tmpuse.size();
-    return size;
+    return tmpUse.size();
 }
 
 void GetObjectPropsSupportedData::GetObjectProps(UInt16List &properties)
@@ -143,9 +133,8 @@ void GetObjectPropsSupportedData::GetObjectProps(UInt16List &properties)
             properties.insert(properties.end(), VIDEO_PROPERTIES.begin(), VIDEO_PROPERTIES.end());
             break;
         }
-        default: {
+        default:
             break;
-        }
     }
     return;
 }

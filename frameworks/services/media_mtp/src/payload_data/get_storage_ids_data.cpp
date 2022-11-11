@@ -20,7 +20,6 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-
 GetStorageIdsData::GetStorageIdsData(shared_ptr<MtpOperationContext> &context)
     :PayloadData(context)
 {
@@ -50,14 +49,13 @@ int GetStorageIdsData::Maker(vector<uint8_t> &outBuffer)
 
 uint32_t GetStorageIdsData::CalculateSize()
 {
-    std::vector<uint8_t> tmpuse;
-    int res = Maker(tmpuse);
+    std::vector<uint8_t> tmpUse;
+    int res = Maker(tmpUse);
     if (res != MTP_SUCCESS) {
         return res;
     }
 
-    uint32_t size = tmpuse.size();
-    return size;
+    return tmpUse.size();
 }
 
 void GetStorageIdsData::SetStorages(const std::vector<std::shared_ptr<Storage>> &storages)
