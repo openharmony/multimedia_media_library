@@ -507,7 +507,7 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
     FileAssetNapi* obj = nullptr;
     napi_valuetype valueType = napi_undefined;
     size_t res = 0;
-    char buffer[ARG_BUF_SIZE];
+    char buffer[FILENAME_MAX];
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
