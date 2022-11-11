@@ -47,35 +47,15 @@ static const std::string MEDIA_FILEDESCRIPTOR = "fd";
 thread_local napi_ref FileAssetNapi::sConstructor_ = nullptr;
 thread_local FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
 
+constexpr int64_t IS_TRASH = 1;
+constexpr int64_t NOT_TRASH = 0;
+
 using CompleteCallback = napi_async_complete_callback;
 
 thread_local napi_ref FileAssetNapi::userFileMgrConstructor_ = nullptr;
 
 FileAssetNapi::FileAssetNapi()
-    : env_(nullptr)
-{
-    fileId_ = DEFAULT_MEDIA_ID;
-    fileUri_ = DEFAULT_MEDIA_URI;
-    mimeType_ = DEFAULT_MEDIA_MIMETYPE;
-    mediaType_ = DEFAULT_MEDIA_TYPE;
-    title_ = DEFAULT_MEDIA_TITLE;
-    size_ = DEFAULT_MEDIA_SIZE;
-    albumId_ = DEFAULT_ALBUM_ID;
-    albumName_ = DEFAULT_ALBUM_NAME;
-    dateAdded_ = DEFAULT_MEDIA_DATE_ADDED;
-    dateModified_ = DEFAULT_MEDIA_DATE_MODIFIED;
-    orientation_ = DEFAULT_MEDIA_ORIENTATION;
-    width_ = DEFAULT_MEDIA_WIDTH;
-    height_ = DEFAULT_MEDIA_HEIGHT;
-    relativePath_ = DEFAULT_MEDIA_RELATIVE_PATH;
-    album_ = DEFAULT_MEDIA_ALBUM;
-    artist_ = DEFAULT_MEDIA_TITLE;
-    filePath_ = DEFAULT_MEDIA_PATH;
-    displayName_ = DEFAULT_MEDIA_NAME;
-    duration_ = DEFAULT_MEDIA_DURATION;
-    parent_ = DEFAULT_PARENT_ID;
-    dateTaken_ = DEFAULT_MEDIA_DATE_TAKEN;
-}
+    : env_(nullptr) {}
 
 FileAssetNapi::~FileAssetNapi() = default;
 
@@ -217,7 +197,7 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &i
         (userFileMgrConstructor_) : (sConstructor_);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
-    sFileAsset_ = iAsset.get();
+    sFileAsset_ = iAsset.release();
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
@@ -228,77 +208,78 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &i
 
 std::string FileAssetNapi::GetFileDisplayName() const
 {
-    return displayName_;
+    return fileAssetPtr->GetDisplayName();
 }
 
 std::string FileAssetNapi::GetRelativePath() const
 {
-    return relativePath_;
+    return fileAssetPtr->GetRelativePath();
 }
 
 std::string FileAssetNapi::GetFilePath() const
 {
-    return filePath_;
+    return fileAssetPtr->GetPath();
 }
 
 std::string FileAssetNapi::GetTitle() const
 {
-    return title_;
+    return fileAssetPtr->GetTitle();
 }
 
 std::string FileAssetNapi::GetFileUri() const
 {
-    return fileUri_;
+    return fileAssetPtr->GetUri();
 }
 
 int32_t FileAssetNapi::GetFileId() const
 {
-    return fileId_;
+    return fileAssetPtr->GetId();
 }
 
 Media::MediaType FileAssetNapi::GetMediaType() const
 {
-    return mediaType_;
+    return fileAssetPtr->GetMediaType();
 }
 
 int32_t FileAssetNapi::GetOrientation() const
 {
-    return orientation_;
+    return fileAssetPtr->GetOrientation();
 }
 
 std::string FileAssetNapi::GetNetworkId() const
 {
-    return MediaFileUtils::GetNetworkIdFromUri(fileUri_);
+    return MediaFileUtils::GetNetworkIdFromUri(GetFileUri());
 }
 
 std::string FileAssetNapi::GetTypeMask() const
 {
-    return typeMask_;
+    return fileAssetPtr->GetTypeMask();
 }
 
 void FileAssetNapi::SetTypeMask(const std::string &typeMask)
 {
-    typeMask_ = typeMask;
+    fileAssetPtr->SetTypeMask(typeMask);
 }
 
 bool FileAssetNapi::IsFavorite() const
 {
-    return isFavorite_;
+    return fileAssetPtr->IsFavorite();
 }
 
 void FileAssetNapi::SetFavorite(bool isFavorite)
 {
-    isFavorite_ = isFavorite;
+    fileAssetPtr->SetFavorite(isFavorite);
 }
 
 bool FileAssetNapi::IsTrash() const
 {
-    return isTrash_;
+    return (fileAssetPtr->GetIsTrash() != NOT_TRASH);
 }
 
 void FileAssetNapi::SetTrash(bool isTrash)
 {
-    isTrash_ = isTrash;
+    int32_t trashFlag = (isTrash ? IS_TRASH : NOT_TRASH);
+    fileAssetPtr->SetIsTrash(trashFlag);
 }
 
 napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
@@ -318,7 +299,7 @@ napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        id = obj->fileId_;
+        id = obj->GetFileId();
         napi_create_int32(env, id, &jsResult);
     }
 
@@ -342,7 +323,7 @@ napi_value FileAssetNapi::JSGetFileUri(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        uri = obj->fileUri_;
+        uri = obj->GetFileUri();
         napi_create_string_utf8(env, uri.c_str(), NAPI_AUTO_LENGTH, &jsResult);
     }
 
@@ -366,7 +347,7 @@ napi_value FileAssetNapi::JSGetFilePath(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        path = obj->filePath_;
+        path = obj->GetFilePath();
         napi_create_string_utf8(env, path.c_str(), NAPI_AUTO_LENGTH, &jsResult);
     }
 
@@ -390,7 +371,7 @@ napi_value FileAssetNapi::JSGetFileDisplayName(napi_env env, napi_callback_info 
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        displayName = obj->displayName_;
+        displayName = obj->GetFileDisplayName();
         napi_create_string_utf8(env, displayName.c_str(), NAPI_AUTO_LENGTH, &jsResult);
     }
 
@@ -422,7 +403,7 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
         if (status == napi_ok) {
-            obj->displayName_ = string(buffer);
+            obj->fileAssetPtr->SetDisplayName(string(buffer));
         }
     }
 
@@ -446,7 +427,7 @@ napi_value FileAssetNapi::JSGetMimeType(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        mimeType = obj->mimeType_;
+        mimeType = obj->fileAssetPtr->GetMimeType();
         napi_create_string_utf8(env, mimeType.c_str(), NAPI_AUTO_LENGTH, &jsResult);
     }
 
@@ -470,7 +451,7 @@ napi_value FileAssetNapi::JSGetMediaType(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        mediaType = static_cast<int32_t>(obj->mediaType_);
+        mediaType = static_cast<int32_t>(obj->GetMediaType());
         napi_create_int32(env, mediaType, &jsResult);
     }
 
@@ -494,7 +475,7 @@ napi_value FileAssetNapi::JSGetTitle(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        title = obj->title_;
+        title = obj->GetTitle();
         napi_create_string_utf8(env, title.c_str(), NAPI_AUTO_LENGTH, &jsResult);
     }
 
@@ -522,7 +503,7 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res);
         if (status == napi_ok) {
-            obj->title_ = string(buffer);
+            obj->fileAssetPtr->SetTitle(string(buffer));
         }
     }
     return undefinedResult;
@@ -545,7 +526,7 @@ napi_value FileAssetNapi::JSGetSize(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        size = obj->size_;
+        size = obj->fileAssetPtr->GetSize();
         napi_create_int64(env, size, &jsResult);
     }
 
@@ -569,7 +550,7 @@ napi_value FileAssetNapi::JSGetAlbumId(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        albumId = obj->albumId_;
+        albumId = obj->fileAssetPtr->GetAlbumId();
         napi_create_int32(env, albumId, &jsResult);
     }
 
@@ -593,7 +574,7 @@ napi_value FileAssetNapi::JSGetAlbumName(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        albumName = obj->albumName_;
+        albumName = obj->fileAssetPtr->GetAlbumName();
         napi_create_string_utf8(env, albumName.c_str(), NAPI_AUTO_LENGTH, &jsResult);
     }
 
@@ -616,7 +597,7 @@ napi_value FileAssetNapi::JSGetCount(napi_env env, napi_callback_info info)
     FileAssetNapi* obj = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if ((status == napi_ok) && (obj != nullptr)) {
-        napi_create_int32(env, obj->count_, &jsResult);
+        napi_create_int32(env, obj->fileAssetPtr->GetCount(), &jsResult);
     }
 
     return jsResult;
@@ -639,7 +620,7 @@ napi_value FileAssetNapi::JSGetDateAdded(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateAdded = obj->dateAdded_;
+        dateAdded = obj->fileAssetPtr->GetDateAdded();
         napi_create_int64(env, dateAdded, &jsResult);
     }
 
@@ -663,7 +644,7 @@ napi_value FileAssetNapi::JSGetDateTrashed(napi_env env, napi_callback_info info
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateTrashed = obj->dateTrashed_;
+        dateTrashed = obj->fileAssetPtr->GetDateTrashed();
         napi_create_int64(env, dateTrashed, &jsResult);
     }
 
@@ -687,7 +668,7 @@ napi_value FileAssetNapi::JSGetDateModified(napi_env env, napi_callback_info inf
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateModified = obj->dateModified_;
+        dateModified = obj->fileAssetPtr->GetDateModified();
         napi_create_int64(env, dateModified, &jsResult);
     }
 
@@ -711,7 +692,7 @@ napi_value FileAssetNapi::JSGetOrientation(napi_env env, napi_callback_info info
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        orientation = obj->orientation_;
+        orientation = obj->GetOrientation();
         napi_create_int32(env, orientation, &jsResult);
     }
 
@@ -741,7 +722,7 @@ napi_value FileAssetNapi::JSSetOrientation(napi_env env, napi_callback_info info
 
         status = napi_get_value_int32(env, argv[PARAM0], &orientation);
         if (status == napi_ok) {
-            obj->orientation_ = orientation;
+            obj->fileAssetPtr->SetOrientation(orientation);
         }
     }
 
@@ -765,7 +746,7 @@ napi_value FileAssetNapi::JSGetWidth(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        width = obj->width_;
+        width = obj->fileAssetPtr->GetWidth();
         napi_create_int32(env, width, &jsResult);
     }
 
@@ -789,7 +770,7 @@ napi_value FileAssetNapi::JSGetHeight(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        height = obj->height_;
+        height = obj->fileAssetPtr->GetHeight();
         napi_create_int32(env, height, &jsResult);
     }
 
@@ -813,7 +794,7 @@ napi_value FileAssetNapi::JSGetRelativePath(napi_env env, napi_callback_info inf
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        relativePath = obj->relativePath_;
+        relativePath = obj->GetRelativePath();
         napi_create_string_utf8(env, relativePath.c_str(), NAPI_AUTO_LENGTH, &jsResult);
     }
 
@@ -842,7 +823,7 @@ napi_value FileAssetNapi::JSSetRelativePath(napi_env env, napi_callback_info inf
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res);
         if (status == napi_ok) {
-            obj->relativePath_ = string(buffer);
+            obj->fileAssetPtr->SetRelativePath(string(buffer));
         }
     }
     return undefinedResult;
@@ -864,7 +845,7 @@ napi_value FileAssetNapi::JSGetAlbum(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        album = obj->album_;
+        album = obj->fileAssetPtr->GetAlbum();
         napi_create_string_utf8(env, album.c_str(), NAPI_AUTO_LENGTH, &jsResult);
     }
 
@@ -888,7 +869,7 @@ napi_value FileAssetNapi::JSGetArtist(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        artist = obj->artist_;
+        artist = obj->fileAssetPtr->GetArtist();
         napi_create_string_utf8(env, artist.c_str(), NAPI_AUTO_LENGTH, &jsResult);
     }
 
@@ -912,7 +893,7 @@ napi_value FileAssetNapi::JSGetDuration(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        duration = obj->duration_;
+        duration = obj->fileAssetPtr->GetDuration();
         napi_create_int32(env, duration, &jsResult);
     }
 
@@ -934,7 +915,7 @@ napi_value FileAssetNapi::JSParent(napi_env env, napi_callback_info info)
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        parent = obj->parent_;
+        parent = obj->fileAssetPtr->GetParent();
         napi_create_int32(env, parent, &jsResult);
     }
     return jsResult;
@@ -954,7 +935,7 @@ napi_value FileAssetNapi::JSGetAlbumUri(napi_env env, napi_callback_info info)
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        albumUri = obj->albumUri_;
+        albumUri = obj->fileAssetPtr->GetAlbumUri();
         napi_create_string_utf8(env, albumUri.c_str(), NAPI_AUTO_LENGTH, &jsResult);
     }
     return jsResult;
@@ -974,7 +955,7 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateTaken = obj->dateTaken_;
+        dateTaken = obj->fileAssetPtr->GetDateTaken();
         napi_create_int64(env, dateTaken, &jsResult);
     }
     return jsResult;
@@ -2184,35 +2165,7 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
 
 void FileAssetNapi::UpdateFileAssetInfo()
 {
-    fileId_ = sFileAsset_->GetId();
-    fileUri_ = sFileAsset_->GetUri();
-    filePath_ = sFileAsset_->GetPath();
-    displayName_ = sFileAsset_->GetDisplayName();
-    mimeType_ = sFileAsset_->GetMimeType();
-    mediaType_ = static_cast<MediaType>(sFileAsset_->GetMediaType());
-    title_ = sFileAsset_->GetTitle();
-    size_ = sFileAsset_->GetSize();
-    albumId_ = sFileAsset_->GetAlbumId();
-    albumName_ = sFileAsset_->GetAlbumName();
-    dateAdded_ = sFileAsset_->GetDateAdded();
-    dateModified_ = sFileAsset_->GetDateModified();
-    orientation_ = sFileAsset_->GetOrientation();
-    width_ = sFileAsset_->GetWidth();
-    height_ = sFileAsset_->GetHeight();
-    relativePath_ = sFileAsset_->GetRelativePath();
-    album_ = sFileAsset_->GetAlbum();
-    artist_ = sFileAsset_->GetArtist();
-    duration_ = sFileAsset_->GetDuration();
-
-    dateTrashed_ = sFileAsset_->GetDateTrashed();
-    parent_ = sFileAsset_->GetParent();
-    albumUri_ = sFileAsset_->GetAlbumUri();
-    dateTaken_ = sFileAsset_->GetDateTaken();
-    isFavorite_ = sFileAsset_->IsFavorite();
-    isTrash_ = sFileAsset_->GetDateTrashed() != 0;
-    typeMask_ = sFileAsset_->GetTypeMask();
-    count_ = sFileAsset_->GetCount();
-    member_ = sFileAsset_->GetMemberMap();
+    fileAssetPtr = std::unique_ptr<FileAsset>(sFileAsset_);
 }
 
 napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
@@ -2242,12 +2195,12 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
         NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
         return jsResult;
     }
-    if (obj->member_.count(inputKey) == 0) {
+    if (obj->fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
         // no exist throw error
         NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
         return jsResult;
     }
-    auto m = obj->member_.at(inputKey);
+    auto m = obj->fileAssetPtr->GetMemberMap().at(inputKey);
     if (m.index() == MEMBER_TYPE_STRING) {
         napi_create_string_utf8(env, get<string>(m).c_str(), NAPI_AUTO_LENGTH, &jsResult);
     } else if (m.index() == MEMBER_TYPE_INT32) {
@@ -2263,15 +2216,16 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 
 bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value)
 {
-    if ((inputKey == MEDIA_DATA_DB_NAME) && (member_.count(MEDIA_DATA_DB_NAME))) {
-        displayName_ = value;
-        member_[MEDIA_DATA_DB_NAME] = value;
-    } else if ((inputKey == MEDIA_DATA_DB_RELATIVE_PATH) && (member_.count(MEDIA_DATA_DB_RELATIVE_PATH))) {
-        relativePath_ = value;
-        member_[MEDIA_DATA_DB_RELATIVE_PATH] = value;
-    } else if ((inputKey == MEDIA_DATA_DB_TITLE) && (member_.count(MEDIA_DATA_DB_TITLE))) {
-        title_ = value;
-        member_[MEDIA_DATA_DB_TITLE] = value;
+    if ((inputKey == MEDIA_DATA_DB_NAME) && (fileAssetPtr->GetMemberMap().count(MEDIA_DATA_DB_NAME))) {
+        fileAssetPtr->SetDisplayName(value);
+        fileAssetPtr->GetMemberMap()[MEDIA_DATA_DB_NAME] = value;
+    } else if ((inputKey == MEDIA_DATA_DB_RELATIVE_PATH) &&
+        (fileAssetPtr->GetMemberMap().count(MEDIA_DATA_DB_RELATIVE_PATH))) {
+        fileAssetPtr->SetRelativePath(value);
+        fileAssetPtr->GetMemberMap()[MEDIA_DATA_DB_RELATIVE_PATH] = value;
+    } else if ((inputKey == MEDIA_DATA_DB_TITLE) && (fileAssetPtr->GetMemberMap().count(MEDIA_DATA_DB_TITLE))) {
+        fileAssetPtr->SetTitle(value);
+        fileAssetPtr->GetMemberMap()[MEDIA_DATA_DB_TITLE] = value;
     } else {
         NAPI_ERR_LOG("invalid key %{public}s, no support key", inputKey.c_str());
         return false;
