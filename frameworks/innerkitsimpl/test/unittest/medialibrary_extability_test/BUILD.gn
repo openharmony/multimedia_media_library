@@ -56,11 +56,9 @@ ohos_unittest("medialibrary_extability_unittest") {
 
   deps = [
     "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager:ability_manager",
+    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library_packages",
+    "${MEDIA_LIB_INNERKITS_DIR}/media_library_manager:media_library_manager",
     "//foundation/filemanagement/user_file_service/frameworks/innerkits/file_access:file_access_extension_ability_kit",
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
-    "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary",
-    "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_js",
   ]
 
   external_deps = [

@@ -34,13 +34,14 @@
 using namespace std;
 using namespace OHOS;
 using namespace testing::ext;
+using namespace OHOS::FileAccessFwk;
 constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 
 namespace OHOS {
 namespace Media {
 namespace {
     std::shared_ptr<DataShare::DataShareHelper> g_mediaDataShareHelper;
-    std::shared_ptr<FileAccessFwk::FileAccessHelper> g_mediaFileExtHelper;
+    std::shared_ptr<FileAccessHelper> g_mediaFileExtHelper;
     std::unique_ptr<FileAsset> g_pictures = nullptr;
     std::unique_ptr<FileAsset> g_camera = nullptr;
     std::unique_ptr<FileAsset> g_videos = nullptr;
@@ -73,7 +74,7 @@ std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t system
     return DataShare::DataShareHelper::Creator(remoteObj, MEDIALIBRARY_DATA_URI);
 }
 
-std::shared_ptr<FileAccessFwk::FileAccessHelper> CreateFileExtHelper(int32_t systemAbilityId)
+std::shared_ptr<FileAccessHelper> CreateFileExtHelper(int32_t systemAbilityId)
 {
     MEDIA_INFO_LOG("DataMedialibraryRdbHelper::CreateFileExtHelper ");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
@@ -87,15 +88,15 @@ std::shared_ptr<FileAccessFwk::FileAccessHelper> CreateFileExtHelper(int32_t sys
         return nullptr;
     }
     vector<AAFwk::Want> wantVec;
-    auto ret = FileAccessFwk::FileAccessHelper::GetRegisteredFileAccessExtAbilityInfo(wantVec);
-    if (ret == FileAccessFwk::ERR_QUERY_EXTENSIONINFOS_FAIL) {
+    auto ret = FileAccessHelper::GetRegisteredFileAccessExtAbilityInfo(wantVec);
+    if (ret == ERR_QUERY_EXTENSIONINFOS_FAIL) {
         MEDIA_ERR_LOG("CreateFileExtHelper::GetRegisteredFileAccessExtAbilityInfo failed");
         return nullptr;
     }
     AppExecFwk::Want want;
     want.SetElementName("com.ohos.medialibrary.medialibrarydata", "FileExtensionAbility");
     vector<AAFwk::Want> wants {want};
-    return FileAccessFwk::FileAccessHelper::Creator(remoteObj, wants);
+    return FileAccessHelper::Creator(remoteObj, wants);
 }
 
 bool GetFileAsset(const int index, unique_ptr<FileAsset> &fileAsset)
@@ -1370,7 +1371,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Rename_test_007, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_007 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
+void DisplayFileList(const vector<FileInfo> &fileList)
 {
     for (auto t : fileList) {
         MEDIA_DEBUG_LOG("medialib_ListFile_test_001 file.uri: %s, file.fileName: %s, file.mode: %d, file.mimeType: %s",
@@ -1408,7 +1409,7 @@ bool InitListFileTest1(unique_ptr<FileAsset> &albumAsset)
     return true;
 }
 
-void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int offset, int maxCount)
+void ListFileFromRootResult(vector<FileInfo> rootFileList, int offset, int maxCount)
 {
     const size_t URI_FILE_ROOT_FILE_SIZE = 5;
     const size_t URI_MEDIA_ROOT_IMAGE_SIZE = 1;
@@ -1417,7 +1418,7 @@ void ListFileFromRootResult(vector<FileAccessFwk::FileInfo> rootFileList, int of
     DistributedFS::FileFilter filter;
     // URI_FILE_ROOT & URI_MEDIA_ROOT
     for (auto mediaRootInfo : rootFileList) {
-        vector<FileAccessFwk::FileInfo> fileList;
+        vector<FileInfo> fileList;
         auto ret = g_mediaFileExtHelper->ListFile(mediaRootInfo, offset, maxCount, filter, fileList);
         EXPECT_EQ(ret, E_SUCCESS);
 
@@ -1483,10 +1484,10 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_001, TestSize.Level0)
     DistributedFS::FileFilter filter;
 
     // URI_ROOT
-    FileAccessFwk::FileInfo rootInfo;
+    FileInfo rootInfo;
     rootInfo.uri = g_commonPrefix + g_rootUri;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ROOT uri: %{public}s", rootInfo.uri.c_str());
-    vector<FileAccessFwk::FileInfo> rootFileList;
+    vector<FileInfo> rootFileList;
     auto ret = g_mediaFileExtHelper->ListFile(rootInfo, offset, maxCount, filter, rootFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ROOT fileList.size(): %{public}d", (int)rootFileList.size());
@@ -1538,7 +1539,7 @@ bool InitListFileTest2(unique_ptr<FileAsset> &albumAsset)
     return true;
 }
 
-void ListFileTestLimit(FileAccessFwk::FileInfo dirInfo)
+void ListFileTestLimit(FileInfo dirInfo)
 {
     const int64_t OFFSET_1 = 0;
     const int64_t OFFSET_2 = 5;
@@ -1553,20 +1554,20 @@ void ListFileTestLimit(FileAccessFwk::FileInfo dirInfo)
     for (auto limit : limits) {
         // URI_DIR
         dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
-        vector<FileAccessFwk::FileInfo> dirFileList;
+        vector<FileInfo> dirFileList;
         auto ret = g_mediaFileExtHelper->ListFile(dirInfo, limit.first, limit.second, filter, dirFileList);
         EXPECT_EQ(ret, E_SUCCESS);
         EXPECT_EQ(dirFileList.size(), min((DIR_RESULT - limit.first), limit.second));
         // URI_ALBUM
         dirInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE;
-        vector<FileAccessFwk::FileInfo> albumFileList;
+        vector<FileInfo> albumFileList;
         ret = g_mediaFileExtHelper->ListFile(dirInfo, limit.first, limit.second, filter, albumFileList);
         EXPECT_EQ(ret, E_SUCCESS);
         EXPECT_EQ(albumFileList.size(), min((ALBUM_RESULT - limit.first), limit.second));
     }
 }
 
-void ListFileTestFilter(FileAccessFwk::FileInfo dirInfo)
+void ListFileTestFilter(FileInfo dirInfo)
 {
     const int FILTER_COUNT = 3;
     const string SUFFIX_1 = ".jpg";
@@ -1592,7 +1593,7 @@ void ListFileTestFilter(FileAccessFwk::FileInfo dirInfo)
             (int)filters[i].GetHasFilter(), filters[i].GetSuffix()[0].c_str());
         // URI_DIR
         dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
-        vector<FileAccessFwk::FileInfo> dirFileList;
+        vector<FileInfo> dirFileList;
         auto ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, maxCount, filters[i], dirFileList);
         MEDIA_ERR_LOG("medialib_ListFile_test_002:: dirFileList.size(): %d", (int)dirFileList.size());
         DisplayFileList(dirFileList);
@@ -1600,7 +1601,7 @@ void ListFileTestFilter(FileAccessFwk::FileInfo dirInfo)
         EXPECT_EQ(dirFileList.size(), DIR_RESULT[i]);
         // URI_ALBUM
         dirInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE;
-        vector<FileAccessFwk::FileInfo> albumFileList;
+        vector<FileInfo> albumFileList;
         ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, maxCount, filters[i], albumFileList);
         MEDIA_ERR_LOG("medialib_ListFile_test_002:: albumFileList.size(): %d", (int)albumFileList.size());
         DisplayFileList(albumFileList);
@@ -1636,11 +1637,11 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_002, TestSize.Level0)
     DistributedFS::FileFilter filter;
 
     // URI_DIR
-    FileAccessFwk::FileInfo dirInfo;
+    FileInfo dirInfo;
     dirInfo.uri = albumAsset->GetUri();
     dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
-    vector<FileAccessFwk::FileInfo> dirFileList;
+    vector<FileInfo> dirFileList;
     auto ret = g_mediaFileExtHelper->ListFile(dirInfo, offset, maxCount, filter, dirFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_DIR fileList.size(): %{public}d", (int)dirFileList.size());
@@ -1648,11 +1649,11 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_002, TestSize.Level0)
     EXPECT_EQ(dirFileList.size(), DIR_RESULT);
 
     // URI_ALBUM
-    FileAccessFwk::FileInfo albumInfo;
+    FileInfo albumInfo;
     albumInfo.uri = albumAsset->GetUri();
     albumInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_ALBUM uri: %{public}s", albumInfo.uri.c_str());
-    vector<FileAccessFwk::FileInfo> albumFileList;
+    vector<FileInfo> albumFileList;
     ret = g_mediaFileExtHelper->ListFile(albumInfo, offset, maxCount, filter, albumFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_ALBUM fileList.size(): %{public}d", (int)albumFileList.size());
@@ -1660,7 +1661,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ListFile_test_002, TestSize.Level0)
     EXPECT_EQ(albumFileList.size(), ALBUM_RESULT);
 
     // test limit and filter
-    FileAccessFwk::FileInfo fileInfo;
+    FileInfo fileInfo;
     fileInfo.uri = albumAsset->GetUri();
     ListFileTestLimit(fileInfo);
     ListFileTestFilter(fileInfo);
@@ -1679,7 +1680,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetRoots_test_001, TestSize.Level0)
     if (!CheckEnvironment()) {
         return;
     }
-    vector<FileAccessFwk::RootInfo> rootList;
+    vector<RootInfo> rootList;
     auto ret = g_mediaFileExtHelper->GetRoots(rootList);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(rootList.size(), 1);
@@ -1758,21 +1759,21 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_001, TestSize.Level0)
     DistributedFS::FileFilter filter;
 
     // URI_DIR
-    FileAccessFwk::FileInfo dirInfo;
+    FileInfo dirInfo;
     dirInfo.uri = albumAsset->GetUri();
     dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
-    MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
-    vector<FileAccessFwk::FileInfo> dirFileList;
+    MEDIA_DEBUG_LOG("medialib_ScanFile_test_001 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
+    vector<FileInfo> dirFileList;
     auto ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, maxCount, filter, dirFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(dirFileList.size(), 8);
 
-    vector<FileAccessFwk::FileInfo> limitDirFileList1;
+    vector<FileInfo> limitDirFileList1;
     ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, 5, filter, limitDirFileList1);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(limitDirFileList1.size(), 5);
 
-    vector<FileAccessFwk::FileInfo> limitDirFileList2;
+    vector<FileInfo> limitDirFileList2;
     ret = g_mediaFileExtHelper->ScanFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(limitDirFileList2.size(), 3);
@@ -1801,21 +1802,21 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_002, TestSize.Level0)
     DistributedFS::FileFilter filter;
 
     // URI_DIR
-    FileAccessFwk::FileInfo dirInfo;
+    FileInfo dirInfo;
     dirInfo.uri = "datashare:///media/root";
     dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_002 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
-    vector<FileAccessFwk::FileInfo> dirFileList;
+    vector<FileInfo> dirFileList;
     auto ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, maxCount, filter, dirFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(dirFileList.size(), 8);
 
-    vector<FileAccessFwk::FileInfo> limitDirFileList1;
+    vector<FileInfo> limitDirFileList1;
     ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, 5, filter, limitDirFileList1);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(limitDirFileList1.size(), 5);
 
-    vector<FileAccessFwk::FileInfo> limitDirFileList2;
+    vector<FileInfo> limitDirFileList2;
     ret = g_mediaFileExtHelper->ScanFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(limitDirFileList2.size(), 3);
@@ -1847,21 +1848,21 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_003, TestSize.Level0)
     vector<string> suffix { ".jpg" };
     filter.SetSuffix(suffix);
     // URI_DIR
-    FileAccessFwk::FileInfo dirInfo;
+    FileInfo dirInfo;
     dirInfo.uri = albumAsset->GetUri();
     dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_003 URI_DIR uri: %{public}s", dirInfo.uri.c_str());
-    vector<FileAccessFwk::FileInfo> dirFileList;
+    vector<FileInfo> dirFileList;
     auto ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, maxCount, filter, dirFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(dirFileList.size(), 6);
 
-    vector<FileAccessFwk::FileInfo> limitDirFileList1;
+    vector<FileInfo> limitDirFileList1;
     ret = g_mediaFileExtHelper->ScanFile(dirInfo, offset, 5, filter, limitDirFileList1);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(limitDirFileList1.size(), 5);
 
-    vector<FileAccessFwk::FileInfo> limitDirFileList2;
+    vector<FileInfo> limitDirFileList2;
     ret = g_mediaFileExtHelper->ScanFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(limitDirFileList2.size(), 1);
@@ -1903,6 +1904,73 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Access_test_001, TestSize.Level0)
     ret = g_mediaFileExtHelper->Access(uri, isExist);
     EXPECT_EQ(ret, E_INVALID_URI);
     EXPECT_EQ(isExist, false);
+}
+
+/*
+ * Feature: MediaLibraryExtUnitTest
+ * Function: check uritofileinfo
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription:
+ */
+HWTEST_F(MediaLibraryExtUnitTest, medialib_UriToFileInfo_test_001, TestSize.Level0)
+{
+    if (!CheckEnvironment()) {
+        return;
+    }
+    unique_ptr<FileAsset> albumAsset = nullptr;
+    if (!CreateAlbum("UriToFileInfo_test_001", g_pictures, albumAsset)) {
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
+        return;
+    }
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!CreateFile("UriToFileInfo_test_001.jpg", albumAsset, fileAsset)) {
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
+        return;
+    }
+    Uri uri(fileAsset->GetUri());
+    FileInfo fileInfo;
+    auto ret = g_mediaFileExtHelper->UriToFileInfo(uri, fileInfo);
+    EXPECT_EQ(ret, E_SUCCESS);
+
+    int32_t fileMode = DOCUMENT_FLAG_REPRESENTS_FILE | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
+    EXPECT_EQ(fileInfo.fileName, "UriToFileInfo_test_001.jpg");
+    EXPECT_EQ(fileInfo.size, 0);
+    EXPECT_EQ(fileInfo.uri, fileAsset->GetUri());
+    EXPECT_EQ(fileInfo.mtime, fileAsset->GetDateModified());
+    EXPECT_EQ(fileInfo.mode, fileMode);
+}
+
+/*
+ * Feature: MediaLibraryExtUnitTest
+ * Function: check uritofileinfo
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription:
+ */
+HWTEST_F(MediaLibraryExtUnitTest, medialib_UriToFileInfo_test_002, TestSize.Level0)
+{
+    if (!CheckEnvironment()) {
+        return;
+    }
+    unique_ptr<FileAsset> albumAsset = nullptr;
+    if (!CreateAlbum("UriToFileInfo_test_002", g_pictures, albumAsset)) {
+        EXPECT_EQ(CREATE_ASSET_FAILED, true);
+        return;
+    }
+    Uri uri(albumAsset->GetUri());
+    FileInfo albumInfo;
+    auto ret = g_mediaFileExtHelper->UriToFileInfo(uri, albumInfo);
+    EXPECT_EQ(ret, E_SUCCESS);
+
+    int32_t albumMode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
+    EXPECT_EQ(albumInfo.fileName, "UriToFileInfo_test_002");
+    EXPECT_EQ(albumInfo.size, 0);
+    EXPECT_EQ(albumInfo.uri, albumAsset->GetUri());
+    EXPECT_EQ(albumInfo.mtime, albumAsset->GetDateModified());
+    EXPECT_EQ(albumInfo.mode, albumMode);
 }
 } // namespace Media
 } // namespace OHOS

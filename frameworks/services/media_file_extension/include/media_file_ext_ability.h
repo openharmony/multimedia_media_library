@@ -46,6 +46,7 @@ public:
     int Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri) override;
     int Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri) override;
     int Access(const Uri &uri, bool &isExist) override;
+    int UriToFileInfo(const Uri &selectFile, FileAccessFwk::FileInfo &fileInfo) override;
 private:
      AbilityRuntime::JsRuntime& jsRuntime_;
 };

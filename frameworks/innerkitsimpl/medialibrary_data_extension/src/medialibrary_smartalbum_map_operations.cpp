@@ -59,7 +59,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::InsertTrashAssetsInfoUtil(const int
         MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(fileAssetId);
     shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(uri);
     if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("fileAsset is nullptr");
+        MEDIA_ERR_LOG("fileAsset is nullptr, assetId: %{public}d", fileAssetId);
         return errorCode;
     }
     if (fileAsset->GetDateTrashed() == 0) {
@@ -434,7 +434,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::RemoveTrashAssetsInfoUtil(const int
         MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(fileAssetId);
     shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(uri);
     if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("fileAsset is nullptr");
+        MEDIA_ERR_LOG("fileAsset is nullptr, assetId: %{public}d", fileAssetId);
         return errorCode;
     }
     if (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {
@@ -645,7 +645,7 @@ bool MediaLibrarySmartAlbumMapOperations::IsRecycleAssetExist(const int32_t &ass
         MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(assetId);
     shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(uri);
     if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("fileAsset is nullptr");
+        MEDIA_ERR_LOG("fileAsset is nullptr, assetId: %{public}d", assetId);
         return false;
     }
     outRecyclePath = fileAsset->GetPath();
