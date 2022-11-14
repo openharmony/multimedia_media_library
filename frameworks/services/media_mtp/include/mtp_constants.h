@@ -550,9 +550,9 @@ constexpr uint16_t  MTP_DEVICE_PROP_DESC_TYPE_AUINT128 = 0x400A;          // Arr
 constexpr uint16_t  MTP_DEVICE_PROP_DESC_TYPE_STR = 0xFFFF;          // Variable-length Unicode string
 
 // Form_Flag
-constexpr uint8_t MTP_DEVICE_PROP_DESC_Form_Flag_None = 0x00;
-constexpr uint8_t MTP_DEVICE_PROP_DESC_Form_Flag_Range = 0x01;
-constexpr uint8_t MTP_DEVICE_PROP_DESC_Form_Flag_Enumeration = 0x02;
+constexpr uint8_t MTP_DEVICE_PROP_DESC_Form_FLAG_NONE = 0x00;
+constexpr uint8_t MTP_DEVICE_PROP_DESC_Form_FLAG_RANGE = 0x01;
+constexpr uint8_t MTP_DEVICE_PROP_DESC_Form_FLAG_ENUMERATION = 0x02;
 
 constexpr int BATTERY_LEVEL_MIN = 0;
 constexpr int BATTERY_LEVEL_MAX = 100;
