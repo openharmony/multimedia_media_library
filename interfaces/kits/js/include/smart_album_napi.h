@@ -49,6 +49,7 @@ public:
     static napi_value CreateSmartAlbumNapi(napi_env env, std::unique_ptr<SmartAlbumAsset> &albumData);
     int32_t GetSmartAlbumId() const;
     std::string GetSmartAlbumName() const;
+    std::string GetSmartAlbumUri() const;
     int32_t GetAlbumPrivateType() const;
     void SetAlbumCapacity(int32_t albumCapacity);
     std::string GetNetworkId() const;
@@ -59,7 +60,7 @@ public:
 private:
     static void SmartAlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value SmartAlbumNapiConstructor(napi_env env, napi_callback_info info);
-    void SetSmartAlbumNapiProperties(const SmartAlbumAsset &albumData);
+    void SetSmartAlbumNapiProperties();
 
     static napi_value JSGetSmartAlbumId(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumName(napi_env env, napi_callback_info info);
@@ -79,18 +80,9 @@ private:
     static napi_value UserFileMgrGetAssets(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrRecoverAsset(napi_env env, napi_callback_info info);
-    int32_t albumId_;
-    std::string albumName_;
-    std::string albumUri_;
-    std::string albumTag_;
-    int32_t albumPrivateType_;
-    int32_t albumCapacity_;
-    int32_t albumCategoryId_;
-    int64_t albumDateModified_;
-    std::string albumCategoryName_;
-    std::string albumCoverUri_;
-    std::string typeMask_;
+
     static thread_local SmartAlbumAsset *sAlbumData_;
+    std::unique_ptr<SmartAlbumAsset> smartAlbumAssetPtr = nullptr;
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;

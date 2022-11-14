@@ -32,19 +32,8 @@ using CompleteCallback = napi_async_complete_callback;
 thread_local napi_ref SmartAlbumNapi::userFileMgrConstructor_ = nullptr;
 
 SmartAlbumNapi::SmartAlbumNapi()
-    : env_(nullptr)
-{
-    albumId_ = DEFAULT_ALBUM_ID;
-    albumName_ = DEFAULT_ALBUM_NAME;
-    albumUri_ = DEFAULT_ALBUM_URI;
-    albumTag_ = DEFAULT_SMART_ALBUM_TAG;
-    albumPrivateType_ = DEFAULT_SMART_ALBUM_PRIVATE_TYPE;
-    albumCapacity_ = DEFAULT_SMART_ALBUM_ALBUMCAPACITY;
-    albumCategoryId_ = DEFAULT_SMART_ALBUM_CATEGORYID;
-    albumDateModified_ = DEFAULT_SMART_ALBUM_DATE_MODIFIED;
-    albumCategoryName_ = DEFAULT_SMART_ALBUM_CATEGORYNAME;
-    albumCoverUri_ = DEFAULT_COVERURI;
-}
+    : env_(nullptr) {}
+
 SmartAlbumNapi::~SmartAlbumNapi() = default;
 
 void SmartAlbumNapi::SmartAlbumNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
@@ -117,20 +106,11 @@ napi_value SmartAlbumNapi::UserFileMgrInit(napi_env env, napi_value exports)
     return exports;
 }
 
-void SmartAlbumNapi::SetSmartAlbumNapiProperties(const SmartAlbumAsset &albumData)
+void SmartAlbumNapi::SetSmartAlbumNapiProperties()
 {
-    NAPI_ERR_LOG("SetSmartAlbumNapiProperties name = %{public}s", albumData.GetAlbumName().c_str());
-    this->albumId_ = albumData.GetAlbumId();
-    this->albumName_ = albumData.GetAlbumName();
-    this->albumUri_ = albumData.GetAlbumUri();
-    this->albumTag_ = albumData.GetAlbumTag();
-    this->albumPrivateType_ = albumData.GetAlbumPrivateType();
-    this->albumCapacity_ = albumData.GetAlbumCapacity();
-    this->albumCategoryId_ = albumData.GetCategoryId();
-    this->albumDateModified_ = albumData.GetAlbumDateModified();
-    this->albumCategoryName_ = albumData.GetCategoryName();
-    this->albumCoverUri_ = albumData.GetCoverUri();
-    this->typeMask_ = albumData.GetTypeMask();
+    smartAlbumAssetPtr = std::unique_ptr<SmartAlbumAsset>(sAlbumData_);
+    NAPI_INFO_LOG("SetSmartAlbumNapiProperties name = %{public}s",
+        smartAlbumAssetPtr->GetAlbumName().c_str());
 }
 
 // Constructor callback
@@ -146,7 +126,7 @@ napi_value SmartAlbumNapi::SmartAlbumNapiConstructor(napi_env env, napi_callback
         if (obj != nullptr) {
             obj->env_ = env;
             if (sAlbumData_ != nullptr) {
-                obj->SetSmartAlbumNapiProperties(*sAlbumData_);
+                obj->SetSmartAlbumNapiProperties();
             }
             status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
                                SmartAlbumNapi::SmartAlbumNapiDestructor, nullptr, nullptr);
@@ -173,7 +153,7 @@ napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, unique_ptr<SmartAl
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
     napi_value result = nullptr;
-    sAlbumData_ = albumData.get();
+    sAlbumData_ = albumData.release();
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
     sAlbumData_ = nullptr;
     return result;
@@ -181,31 +161,36 @@ napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, unique_ptr<SmartAl
 
 std::string SmartAlbumNapi::GetSmartAlbumName() const
 {
-    return albumName_;
+    return smartAlbumAssetPtr->GetAlbumName();
 }
 
 int32_t SmartAlbumNapi::GetAlbumPrivateType() const
 {
-    return albumPrivateType_;
+    return smartAlbumAssetPtr->GetAlbumPrivateType();
+}
+
+std::string SmartAlbumNapi::GetSmartAlbumUri() const
+{
+    return smartAlbumAssetPtr->GetAlbumUri();
 }
 
 int32_t SmartAlbumNapi::GetSmartAlbumId() const
 {
-    return albumId_;
+    return smartAlbumAssetPtr->GetAlbumId();
 }
 void SmartAlbumNapi::SetAlbumCapacity(int32_t albumCapacity)
 {
-    albumCapacity_ = albumCapacity;
+    smartAlbumAssetPtr->SetAlbumCapacity(albumCapacity);
 }
 
 std::string SmartAlbumNapi::GetNetworkId() const
 {
-    return MediaFileUtils::GetNetworkIdFromUri(albumUri_);
+    return MediaFileUtils::GetNetworkIdFromUri(GetSmartAlbumUri());
 }
 
 std::string SmartAlbumNapi::GetTypeMask() const
 {
-    return typeMask_;
+    return smartAlbumAssetPtr->GetTypeMask();
 }
 
 napi_value SmartAlbumNapi::JSGetSmartAlbumId(napi_env env, napi_callback_info info)
@@ -226,7 +211,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumId(napi_env env, napi_callback_info in
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if ((status == napi_ok) && (obj != nullptr)) {
-        id = obj->albumId_;
+        id = obj->GetSmartAlbumId();
         status = napi_create_int32(env, id, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -252,7 +237,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumName(napi_env env, napi_callback_info 
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if ((status == napi_ok) && (obj != nullptr)) {
-        name = obj->albumName_;
+        name = obj->GetSmartAlbumName();
         NAPI_DEBUG_LOG("JSGetSmartAlbumName name = %{public}s", name.c_str());
         status = napi_create_string_utf8(env, name.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
@@ -289,7 +274,7 @@ napi_value SmartAlbumNapi::JSSmartAlbumNameSetter(napi_env env, napi_callback_in
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        obj->albumName_ = std::string(buffer);
+        obj->smartAlbumAssetPtr->SetAlbumName(std::string(buffer));
     }
 
     return jsResult;
@@ -313,7 +298,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumTag(napi_env env, napi_callback_info i
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        albumTag = obj->albumTag_;
+        albumTag = obj->smartAlbumAssetPtr->GetAlbumTag();
         status = napi_create_string_utf8(env, albumTag.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -341,7 +326,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCapacity(napi_env env, napi_callback_i
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        albumCapacity = obj->albumCapacity_;
+        albumCapacity = obj->smartAlbumAssetPtr->GetAlbumCapacity();
         status = napi_create_int32(env, albumCapacity, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -369,7 +354,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCategoryId(napi_env env, napi_callback
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        categoryId = obj->albumCategoryId_;
+        categoryId = obj->smartAlbumAssetPtr->GetCategoryId();
         status = napi_create_int32(env, categoryId, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -397,7 +382,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCategoryName(napi_env env, napi_callba
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        categoryName = obj->albumCategoryName_;
+        categoryName = obj->smartAlbumAssetPtr->GetCategoryName();
         status = napi_create_string_utf8(env, categoryName.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -425,7 +410,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCoverUri(napi_env env, napi_callback_i
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        coverUri = obj->albumCoverUri_;
+        coverUri = obj->smartAlbumAssetPtr->GetCoverUri();
         status = napi_create_string_utf8(env, coverUri.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -452,7 +437,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumUri(napi_env env, napi_callback_info i
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        albumUri = obj->albumUri_;
+        albumUri = obj->GetSmartAlbumUri();
         status = napi_create_string_utf8(env, albumUri.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -476,7 +461,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumDateModified(napi_env env, napi_callba
     SmartAlbumNapi* obj = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if ((status == napi_ok) && (obj != nullptr)) {
-        int64_t dateModified = obj->albumDateModified_;
+        int64_t dateModified = obj->smartAlbumAssetPtr->GetAlbumDateModified();
         napi_value jsResult = nullptr;
         status = napi_create_int64(env, dateModified, &jsResult);
         if (status == napi_ok) {
