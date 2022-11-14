@@ -34,18 +34,7 @@ using CompleteCallback = napi_async_complete_callback;
 thread_local napi_ref AlbumNapi::userFileMgrConstructor_ = nullptr;
 
 AlbumNapi::AlbumNapi()
-    : env_(nullptr)
-{
-    albumId_ = DEFAULT_ALBUM_ID;
-    albumName_ = DEFAULT_ALBUM_NAME;
-    albumUri_ = DEFAULT_ALBUM_URI;
-    albumDateModified_ = DEFAULT_ALBUM_DATE_MODIFIED;
-    count_ = DEFAULT_COUNT;
-    albumRelativePath_ = DEFAULT_ALBUM_RELATIVE_PATH;
-    coverUri_ = DEFAULT_COVERURI;
-    albumPath_ = DEFAULT_ALBUM_PATH;
-    albumVirtual_ = DEFAULT_ALBUM_VIRTUAL;
-}
+    : env_(nullptr) {}
 
 AlbumNapi::~AlbumNapi() = default;
 
@@ -117,19 +106,9 @@ napi_value AlbumNapi::UserFileMgrInit(napi_env env, napi_value exports)
     return exports;
 }
 
-void AlbumNapi::SetAlbumNapiProperties(const AlbumAsset &albumData)
+void AlbumNapi::SetAlbumNapiProperties()
 {
-    this->albumId_ = albumData.GetAlbumId();
-    this->albumName_ = albumData.GetAlbumName();
-    this->albumUri_ = albumData.GetAlbumUri();
-    this->albumDateModified_ = albumData.GetAlbumDateModified();
-    this->count_ = albumData.GetCount();
-    this->albumRelativePath_ = albumData.GetAlbumRelativePath();
-    this->coverUri_ = albumData.GetCoverUri();
-
-    this->albumPath_ = albumData.GetAlbumPath();
-    this->albumVirtual_ = albumData.GetAlbumVirtual();
-    this->typeMask_ = albumData.GetAlbumTypeMask();
+    albumAssetPtr = std::unique_ptr<AlbumAsset>(sAlbumData_);
 }
 
 // Constructor callback
@@ -146,7 +125,7 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
         if (obj != nullptr) {
             obj->env_ = env;
             if (sAlbumData_ != nullptr) {
-                obj->SetAlbumNapiProperties(*sAlbumData_);
+                obj->SetAlbumNapiProperties();
             }
 
             status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
@@ -175,7 +154,7 @@ napi_value AlbumNapi::CreateAlbumNapi(napi_env env, unique_ptr<AlbumAsset> &albu
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
     napi_value result = nullptr;
-    sAlbumData_ = albumData.get();
+    sAlbumData_ = albumData.release();
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
     sAlbumData_ = nullptr;
     return result;
@@ -183,27 +162,32 @@ napi_value AlbumNapi::CreateAlbumNapi(napi_env env, unique_ptr<AlbumAsset> &albu
 
 std::string AlbumNapi::GetAlbumName() const
 {
-    return albumName_;
+    return albumAssetPtr->GetAlbumName();
 }
 
 std::string AlbumNapi::GetAlbumPath() const
 {
-    return albumPath_;
+    return albumAssetPtr->GetAlbumPath();
 }
 
 int32_t AlbumNapi::GetAlbumId() const
 {
-    return albumId_;
+    return albumAssetPtr->GetAlbumId();
+}
+
+std::string AlbumNapi::GetAlbumUri() const
+{
+    return albumAssetPtr->GetAlbumUri();
 }
 
 std::string AlbumNapi::GetNetworkId() const
 {
-    return MediaFileUtils::GetNetworkIdFromUri(albumUri_);
+    return MediaFileUtils::GetNetworkIdFromUri(GetAlbumUri());
 }
 
 std::string AlbumNapi::GetTypeMask() const
 {
-    return typeMask_;
+    return albumAssetPtr->GetAlbumTypeMask();
 }
 
 napi_value AlbumNapi::JSGetAlbumId(napi_env env, napi_callback_info info)
@@ -224,7 +208,7 @@ napi_value AlbumNapi::JSGetAlbumId(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        id = obj->albumId_;
+        id = obj->GetAlbumId();
         status = napi_create_int32(env, id, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -251,7 +235,7 @@ napi_value AlbumNapi::JSGetAlbumName(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        name = obj->albumName_;
+        name = obj->GetAlbumName();
         status = napi_create_string_utf8(env, name.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -286,7 +270,7 @@ napi_value AlbumNapi::JSAlbumNameSetter(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        obj->albumName_ = std::string(buffer);
+        obj->albumAssetPtr->SetAlbumName(std::string(buffer));
     } else {
         NAPI_ERR_LOG("status = %{public}d", status);
     }
@@ -310,7 +294,7 @@ napi_value AlbumNapi::JSGetAlbumUri(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        uri = obj->albumUri_;
+        uri = obj->GetAlbumUri();
         status = napi_create_string_utf8(env, uri.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -337,7 +321,7 @@ napi_value AlbumNapi::JSGetAlbumDateModified(napi_env env, napi_callback_info in
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateModified = obj->albumDateModified_;
+        dateModified = obj->albumAssetPtr->GetAlbumDateModified();
         status = napi_create_int64(env, dateModified, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -363,7 +347,7 @@ napi_value AlbumNapi::JSGetCount(napi_env env, napi_callback_info info)
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        count = obj->count_;
+        count = obj->albumAssetPtr->GetCount();
         status = napi_create_int32(env, count, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -389,7 +373,7 @@ napi_value AlbumNapi::JSGetAlbumRelativePath(napi_env env, napi_callback_info in
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        relativePath = obj->albumRelativePath_;
+        relativePath = obj->albumAssetPtr->GetAlbumRelativePath();
         status = napi_create_string_utf8(env, relativePath.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -416,7 +400,7 @@ napi_value AlbumNapi::JSGetCoverUri(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        coverUri = obj->coverUri_;
+        coverUri = obj->albumAssetPtr->GetCoverUri();
         status = napi_create_string_utf8(env, coverUri.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -452,7 +436,7 @@ napi_value AlbumNapi::JSSetAlbumPath(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        obj->albumPath_ = std::string(buffer);
+        obj->albumAssetPtr->SetAlbumPath(std::string(buffer));
     }
 
     return jsResult;
@@ -476,7 +460,7 @@ napi_value AlbumNapi::JSGetAlbumPath(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        path = obj->albumPath_;
+        path = obj->GetAlbumPath();
         status = napi_create_string_utf8(env, path.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -504,7 +488,7 @@ napi_value AlbumNapi::JSGetAlbumVirtual(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        virtualAlbum = obj->albumVirtual_;
+        virtualAlbum = obj->albumAssetPtr->GetAlbumVirtual();
         status = napi_get_boolean(env, virtualAlbum, &jsResult);
         if (status == napi_ok) {
             return jsResult;

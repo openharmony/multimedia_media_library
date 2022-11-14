@@ -51,6 +51,7 @@ public:
     int32_t GetAlbumId() const;
     std::string GetAlbumName() const;
     std::string GetAlbumPath() const;
+    std::string GetAlbumUri() const;
     std::string GetNetworkId() const;
     std::string GetTypeMask() const;
     AlbumNapi();
@@ -59,7 +60,7 @@ public:
 private:
     static void AlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
     static napi_value AlbumNapiConstructor(napi_env env, napi_callback_info info);
-    void SetAlbumNapiProperties(const AlbumAsset &albumData);
+    void SetAlbumNapiProperties();
 
     static napi_value JSGetAlbumId(napi_env env, napi_callback_info info);
     static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
@@ -79,22 +80,12 @@ private:
     static napi_value UserFileMgrGetAssets(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
 
-    int32_t albumId_;
-    std::string albumName_;
-    std::string albumUri_;
-    int64_t albumDateModified_;
-    int32_t count_;
-    std::string albumRelativePath_;
-    std::string coverUri_;
-    bool albumVirtual_;
-    std::string albumPath_;
-    std::string typeMask_;
-
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
     static thread_local AlbumAsset *sAlbumData_;
+    std::unique_ptr<AlbumAsset> albumAssetPtr = nullptr;
 };
 
 struct AlbumNapiAsyncContext : public NapiError {
