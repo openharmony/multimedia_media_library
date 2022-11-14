@@ -168,6 +168,10 @@ int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd
     }
     string dstFilePath = ROOT_MEDIA_DIR + dstReFilePath + dstFileName;
 
+    if (srcPath.compare(dstFilePath) == 0) {
+        return E_SAME_PATH;
+    }
+
     return MediaLibraryObjectUtils::RenameFileObj(cmd, srcPath, dstFilePath);
 }
 
