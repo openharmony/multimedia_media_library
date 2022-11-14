@@ -80,69 +80,6 @@ public:
     void InitMediaLibraryManager(const sptr<IRemoteObject> &token);
 
     /**
-     * @brief Obtain a FetchResult object from which File Assets can be obtained
-     *
-     * @param fetchOptions Condition for obtaining the list of file assets
-     * @return a FetchResult object which has metadata for a list of files
-     * @since 1.0
-     * @version 1.0
-     */
-    unique_ptr<FetchResult<FileAsset>> GetFileAssets(const MediaFetchOptions &fetchOptions);
-
-    /**
-     * @brief Get the list of albums based on certain conditions
-     *
-     * @param fetchOptions Condition for obtaining the list of Albums
-     * @return a vector of albums along with their metadata
-     * @since 1.0
-     * @version 1.0
-     */
-    vector<unique_ptr<AlbumAsset>> GetAlbums(const MediaFetchOptions &fetchOptions);
-
-    /**
-     * @brief Create a new file
-     *
-     * @param fileAsset a FileAsset which has mediatype and filePath information
-     * @return uri for the created file
-     * @since 1.0
-     * @version 1.0
-     */
-    string CreateAsset(const FileAsset &fileAsset);
-
-    /**
-     * @brief Modify an existing file
-     *
-     * @param uri source uri of a file which is to be modified
-     * @param fileAsset a FileAsset which has modified filePath information
-     * @return modification status. <0> for success and <-1> for fail
-     * @since 1.0
-     * @version 1.0
-     */
-    int32_t ModifyAsset(const string &uri, const FileAsset &target);
-
-    /**
-     * @brief Delete an existing file
-     *
-     * @param uri source uri of a file which is to be deleted
-     * @return deletion status. <0> for success and <-1> for fail
-     * @since 1.0
-     * @version 1.0
-     */
-    int32_t DeleteAsset(const string &uri);
-
-    /**
-     * @brief Open an existing file
-     *
-     * @param uri source uri of a file which is to be opened
-     * @param mode Mode in which the file is to be opened. Refer medialibrary_db_const.h for
-     *             the list of supported file modes
-     * @return file descriptor for the opened file. Upon failure, return value will be <= 0
-     * @since 1.0
-     * @version 1.0
-     */
-    int32_t OpenAsset(const string &uri, string &mode);
-
-    /**
      * @brief Close an opened file
      *
      * @param uri source uri of a file which is to be closed
@@ -153,47 +90,6 @@ public:
      */
     int32_t CloseAsset(const string &uri, const int32_t fd);
 
-    /**
-     * @brief Create a new album
-     *
-     * @param album An AlbumAsset object which has the albumPath information
-     * @return An album id if success. Upon failure, returns value < 0
-     * @since 1.0
-     * @version 1.0
-     */
-    int32_t CreateAlbum(const AlbumAsset &album);
-
-    /**
-     * @brief Modify an existing album
-     *
-     * @param uri album id for the album which is to be modified
-     * @param target an AlbumAsset object which has the new album name information
-     * @return modification status. <0> for success and <-1> for fail
-     * @since 1.0
-     * @version 1.0
-     */
-    int32_t ModifyAlbum(const int32_t albumId, const AlbumAsset &target);
-
-    /**
-     * @brief Delete an existing album
-     *
-     * @param uri album id of the album which is to be deleted
-     * @return deletion status. <0> for success and <-1> for fail
-     * @since 1.0
-     * @version 1.0
-     */
-    int32_t DeleteAlbum(const int32_t albumId);
-
-    /**
-     * @brief Obtain a FetchResult object from which AlbumAsset File Assets can be obtained
-     *
-     * @param albumId album id for the album from where the file assets are to be fetched
-     * @param fetchOptions Condition for obtaining the list of album file assets
-     * @return a FetchResult object which has metadata for a list of files contained in the specified album
-     * @since 1.0
-     * @version 1.0
-     */
-    unique_ptr<FetchResult<FileAsset>> GetAlbumFileAssets(const int32_t albumId, const MediaFetchOptions &fetchOptions);
     /**
      * @brief Obtain a mediaVolume object from MediaAssets can be obtained
      *
