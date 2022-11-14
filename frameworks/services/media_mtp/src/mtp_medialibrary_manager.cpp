@@ -326,7 +326,7 @@ int32_t MtpMedialibraryManager::GetPathById(const int32_t id, string &outPath)
 {
     shared_ptr<FileAsset> fileAsset;
     int errCode = GetAssetById(id, fileAsset);
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR, "fileAsset is nullptr");
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR, "fileAsset is nullptr, assetId: %{public}d", id);
     outPath = fileAsset->GetPath();
     return errCode;
 }

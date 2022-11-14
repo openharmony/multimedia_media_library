@@ -17,6 +17,8 @@
 #include "media_file_ext_ability.h"
 
 #include <fcntl.h>
+
+#include "datashare_abs_result_set.h"
 #include "extension_context.h"
 #include "file_access_ext_stub_impl.h"
 #include "js_runtime_utils.h"
@@ -27,9 +29,7 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_object_utils.h"
 #include "medialibrary_type_const.h"
-#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -119,7 +119,7 @@ int MediaFileExtAbility::OpenFile(const Uri &uri, const int flags, int &fd)
     } else if (flags == O_RDWR) {
         mode = MEDIA_FILEMODE_READWRITE;
     } else {
-        MEDIA_ERR_LOG("invalid OpenFile flags %{private}d", flags);
+        MEDIA_ERR_LOG("invalid OpenFile flags %{public}d", flags);
         return E_OPENFILE_INVALID_FLAG;
     }
     auto ret = MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
@@ -134,15 +134,19 @@ int MediaFileExtAbility::OpenFile(const Uri &uri, const int flags, int &fd)
 int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayName,  Uri &newFileUri)
 {
     if (!MediaFileUtils::CheckDisplayName(displayName)) {
-        MEDIA_ERR_LOG("invalid file displayName %{private}s", displayName.c_str());
+        MEDIA_ERR_LOG("invalid file displayName %{public}s", displayName.c_str());
         return E_INVAVLID_DISPLAY_NAME;
     }
     string parentUriStr = parentUri.ToString();
     auto ret = MediaFileExtentionUtils::CheckUriSupport(parentUriStr);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
     Uri createFileUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_CREATEASSET);
-    string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(parentUriStr);
-    string albumPath = MediaLibraryObjectUtils::GetPathByIdFromDb(albumId);
+    auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, parentUriStr);
+    if (result == nullptr) {
+        MEDIA_ERR_LOG("CreateFile parent uri is not correct: %{public}s", parentUriStr.c_str());
+        return E_URI_INVALID;
+    }
+    string albumPath = GetStringVal(MEDIA_DATA_DB_FILE_PATH, result);
     string relativePath = albumPath.substr(ROOT_MEDIA_DIR.size()) + SLASH_CHAR;
     string destPath = albumPath + SLASH_CHAR + displayName;
     DataShareValuesBucket valuesBucket;
@@ -174,12 +178,12 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
     ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
     if (uriType != MediaFileUriType::URI_FILE_ROOT) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::GetAlbumRelativePathFromDB(parentUriStr, "", relativePath),
-            E_URI_IS_NOT_ALBUM, "selectUri is not valid album uri %{private}s", parentUriStr.c_str());
+        CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::GetAlbumRelativePathFromDB(parentUriStr, relativePath),
+            E_URI_IS_NOT_ALBUM, "selectUri is not valid album uri %{public}s", parentUriStr.c_str());
     }
     Uri mkdirUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR + MEDIA_DIROPRN_FMS_CREATEDIR);
     string dirPath = ROOT_MEDIA_DIR + relativePath + displayName;
-    if (MediaLibraryObjectUtils::IsFileExistInDb(dirPath)) {
+    if (MediaFileExtentionUtils::IsFileExistInDb(dirPath)) {
         MEDIA_ERR_LOG("Create dir is existed %{private}s", dirPath.c_str());
         return E_FILE_EXIST;
     }
@@ -188,7 +192,12 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
     if (ret > 0) {
-        int32_t dirId = MediaLibraryObjectUtils::GetParentIdByIdFromDb(to_string(ret));
+        auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_ID, to_string(ret));
+        if (result == nullptr) {
+            MEDIA_ERR_LOG("The ret value is invalid: %{public}d", ret);
+            return E_URI_INVALID;
+        }
+        int32_t dirId = GetInt32Val(MEDIA_DATA_DB_PARENT_ID, result);
         newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", dirId));
         return E_SUCCESS;
     } else {
@@ -202,7 +211,7 @@ int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
     string sourceUri = sourceFileUri.ToString();
     auto ret = MediaFileExtentionUtils::CheckUriSupport(sourceUri);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
-    auto result = MediaFileExtentionUtils::GetFileFromDB(sourceUri, "");
+    auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "GetFileFromDB result set is nullptr");
     int count = 0;
     result->GetRowCount(count);
@@ -259,6 +268,11 @@ int MediaFileExtAbility::Rename(const Uri &sourceFileUri, const string &displayN
 int MediaFileExtAbility::Access(const Uri &uri, bool &isExist)
 {
     return MediaFileExtentionUtils::Access(uri, isExist);
+}
+
+int MediaFileExtAbility::UriToFileInfo(const Uri &selectFile, FileInfo &fileInfo)
+{
+    return MediaFileExtentionUtils::UriToFileInfo(selectFile, fileInfo);
 }
 } // Media
 } // OHOS
