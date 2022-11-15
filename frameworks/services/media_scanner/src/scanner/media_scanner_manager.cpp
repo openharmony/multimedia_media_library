@@ -47,23 +47,37 @@ std::shared_ptr<MediaScannerManager> MediaScannerManager::GetInstance()
     return instance_;
 }
 
-int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
-{
-    MEDIA_DEBUG_LOG("scan file %{private}s", path.c_str());
-
+string MediaScannerManager::ScanCheck(const std::string &path, bool isDir) {
     if (path.empty()) {
         MEDIA_ERR_LOG("path is empty");
-        return E_INVALID_PATH;
+        return "";
     }
 
     string realPath;
     if (!PathToRealPath(path, realPath)) {
         MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", path.c_str(), errno);
-        return E_INVALID_PATH;
+        return "";
     }
 
-    if (ScannerUtils::IsDirectory(realPath)) {
+    if (isDir && !ScannerUtils::IsDirectory(realPath)) {
+        MEDIA_ERR_LOG("path %{private}s isn't a dir", realPath.c_str());
+        return "";
+    }
+
+    if (!isDir && ScannerUtils::IsDirectory(realPath)) {
         MEDIA_ERR_LOG("path %{private}s is a dir", realPath.c_str());
+        return "";
+    }
+
+    return realPath;
+}
+
+int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
+{
+    MEDIA_DEBUG_LOG("scan file %{private}s", path.c_str());
+
+    string realPath = ScanCheck(path, false);
+    if (realPath.empty()) {
         return E_INVALID_PATH;
     }
 
@@ -73,23 +87,27 @@ int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared
     return E_OK;
 }
 
+int32_t MediaScannerManager::ScanFileSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
+{
+    MEDIA_DEBUG_LOG("scan file %{private}s", path.c_str());
+
+    string realPath = ScanCheck(path, false);
+    if (realPath.empty()) {
+        return E_INVALID_PATH;
+    }
+
+    MediaScannerObj scanner = MediaScannerObj(realPath, callback, false);
+    scanner.Scan();
+
+    return E_OK;
+}
+
 int32_t MediaScannerManager::ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
 {
     MEDIA_DEBUG_LOG("scan dir %{private}s", path.c_str());
 
-    if (path.empty()) {
-        MEDIA_ERR_LOG("path is empty");
-        return E_INVALID_PATH;
-    }
-
-    string realPath;
-    if (!PathToRealPath(path, realPath)) {
-        MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", path.c_str(), errno);
-        return E_INVALID_PATH;
-    }
-
-    if (!ScannerUtils::IsDirectory(realPath)) {
-        MEDIA_ERR_LOG("path %{private}s isn't a dir", realPath.c_str());
+    string realPath = ScanCheck(path, true);
+    if (realPath.empty()) {
         return E_INVALID_PATH;
     }
 
