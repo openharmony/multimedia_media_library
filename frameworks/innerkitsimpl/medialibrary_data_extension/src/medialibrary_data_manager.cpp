@@ -535,10 +535,9 @@ int32_t MediaLibraryDataManager::DistributeDeviceAging()
     MEDIA_DEBUG_LOG("MediaLibraryDevice InitDeviceRdbStore deviceDataBaseList size =  %{public}d",
         (int) deviceDataBaseList.size());
     for (MediaLibraryDeviceInfo deviceInfo : deviceDataBaseList) {
-        result = thumbnailService_->ClearDistributeThumbnail(deviceInfo.deviceUdid);
+        result = thumbnailService_->InvalidateDistributeThumbnail(deviceInfo.deviceUdid);
         if (result != E_SUCCESS) {
-            MEDIA_ERR_LOG("%{private}s ClearDistributeThumbnail fail result is %{public}d",
-                deviceInfo.deviceUdid.c_str(), result);
+            MEDIA_ERR_LOG("invalidate fail %{public}d", result);
             continue;
         }
     }
@@ -647,7 +646,6 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         }
         tracer.Start("GenThumbnail");
         queryResultSet = GenThumbnail(uriString);
-        tracer.Finish();
     } else {
         auto absResultSet = QueryRdb(uri, columns, predicates);
         queryResultSet = RdbUtils::ToResultSetBridge(absResultSet);
@@ -758,10 +756,11 @@ void MediaLibraryDataManager::InitialiseThumbnailService()
     if (thumbnailService_ != nullptr) {
         return;
     }
-    thumbnailService_ = ThumbnailService::GetInstance(rdbStore_, kvStorePtr_, context_);
+    thumbnailService_ = ThumbnailService::GetInstance();
     if (thumbnailService_ == nullptr) {
         MEDIA_INFO_LOG("MediaLibraryDataManager::InitialiseThumbnailService failed");
     }
+    thumbnailService_->Init(rdbStore_, kvStorePtr_, context_);
 }
 
 int32_t ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)

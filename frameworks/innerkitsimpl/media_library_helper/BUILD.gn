@@ -112,32 +112,3 @@ ohos_executable("media_library_test") {
   part_name = "media_library"
   subsystem_name = "multimedia"
 }
-ohos_static_library("media_thumbnail_helper") {
-  sources = [ "src/media_thumbnail_helper.cpp" ]
-  include_dirs = [
-    "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
-    "//commonlibrary/c_utils/base/include",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
-  ]
-  deps = [
-    "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "//foundation/distributeddatamgr/kv_store/interfaces/innerkits/distributeddata:distributeddata_inner",
-  ]
-
-  # cflags = [ "-DOLD_KV_API" ]
-  external_deps = [
-    "c_utils:utils",
-    "data_share:datashare_common",
-    "data_share:datashare_consumer",
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
-    "kv_store:distributeddata_inner",
-    "multimedia_image_framework:image_native",
-    "relational_store:native_appdatafwk",
-    "relational_store:native_dataability",
-    "relational_store:native_rdb",
-  ]
-  subsystem_name = "multimedia"
-  part_name = "media_library"
-}
