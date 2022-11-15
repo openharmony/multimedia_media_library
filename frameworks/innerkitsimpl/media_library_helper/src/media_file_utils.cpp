@@ -304,7 +304,7 @@ bool MediaFileUtils::CheckDisplayName(const std::string &displayName)
         MEDIA_ERR_LOG("display name size err, size = %{public}zu", size);
         return false;
     }
-    std::regex express("[\\\\/:*?\"<>|{}\\[\\]]");
+    std::regex express("[\\\\/:*?\"\'`<>|{}\\[\\]]");
     bool bValid = std::regex_search(displayName, express);
     if ((displayName.at(0) == '.') || bValid) {
         MEDIA_ERR_LOG("CheckDisplayName fail %{private}s", displayName.c_str());
@@ -320,7 +320,7 @@ bool MediaFileUtils::CheckTitle(const std::string &title)
         MEDIA_ERR_LOG("title size err, size = %{public}zu", size);
         return false;
     }
-    std::regex express("[\\.\\\\/:*?\"<>|{}\\[\\]]");
+    std::regex express("[\\.\\\\/:*?\"\'`<>|{}\\[\\]]");
     bool bValid = std::regex_search(title, express);
     if (bValid) {
         MEDIA_ERR_LOG("CheckTitle title fail %{private}s", title.c_str());
