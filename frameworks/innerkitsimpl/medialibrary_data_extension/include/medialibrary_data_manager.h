@@ -18,6 +18,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <shared_mutex>
 
 #include "ability_context.h"
 #include "context/context.h"
@@ -92,7 +93,7 @@ private:
     int32_t DistributeDeviceAging();
     std::shared_ptr<ThumbnailService> thumbnailService_;
 
-    std::mutex mgrMutex_;
+    std::shared_mutex mgrSharedMutex_;
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
     DistributedKv::DistributedKvDataManager dataManager_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;

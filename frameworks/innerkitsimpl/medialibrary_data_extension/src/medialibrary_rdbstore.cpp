@@ -74,9 +74,7 @@ int32_t MediaLibraryRdbStore::Init()
 }
 
 MediaLibraryRdbStore::~MediaLibraryRdbStore()
-{
-    Stop();
-}
+{}
 
 void MediaLibraryRdbStore::Stop()
 {
