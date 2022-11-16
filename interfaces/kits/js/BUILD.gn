@@ -82,6 +82,7 @@ config("napi_config") {
     "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
     "//foundation/multimedia/media_library/interfaces/kits/js/include",
     "//foundation/multimedia/media_library/medialibrary_data_extension/include",
+    "//foundation/multimedia/media_library/frameworks/services/media_mtp/include",
     "//third_party/node/src",
     "//foundation/arkui/napi/interfaces/kits",
     "//foundation/multimedia/media_library/interfaces/innerkits/native/include",

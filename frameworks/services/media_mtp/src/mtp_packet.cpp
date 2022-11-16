@@ -27,7 +27,7 @@ MtpPacket::MtpPacket(std::shared_ptr<MtpOperationContext> &context)
 }
 
 MtpPacket::MtpPacket(std::shared_ptr<MtpOperationContext> &context, const shared_ptr<MtpDriver> &mtpDriver)
-    : context_(context), mtpDriver_(mtpDriver), readSize_(0), headerData_(nullptr), payloadData_(nullptr)
+    : context_(context), readSize_(0), headerData_(nullptr), payloadData_(nullptr), mtpDriver_(mtpDriver)
 {
 }
 
@@ -35,7 +35,7 @@ MtpPacket::~MtpPacket()
 {
 }
 
-void MtpPacket::Init(shared_ptr<HeaderData> &headerData)
+void MtpPacket::Init(std::shared_ptr<HeaderData> &headerData)
 {
     readSize_ = 0;
     headerData_ = headerData;
@@ -47,7 +47,7 @@ void MtpPacket::Init(shared_ptr<HeaderData> &headerData)
     }
 }
 
-void MtpPacket::Init(shared_ptr<HeaderData> &headerData, shared_ptr<PayloadData> &payloadData)
+void MtpPacket::Init(std::shared_ptr<HeaderData> &headerData, std::shared_ptr<PayloadData> &payloadData)
 {
     readSize_ = 0;
     headerData_ = headerData;

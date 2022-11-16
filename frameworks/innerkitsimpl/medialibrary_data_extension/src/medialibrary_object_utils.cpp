@@ -17,7 +17,7 @@
 #include "medialibrary_object_utils.h"
 
 #include <cerrno>
-
+#include <sys/sendfile.h>
 #include "album_asset.h"
 #include "datashare_predicates.h"
 #include "fetch_result.h"
@@ -38,6 +38,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+static const std::string ASSET_RECYCLE_SUFFIX = "-copy";
 static const string NO_MEDIA_TAG = ".nomedia";
 int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
 {
@@ -1165,5 +1166,141 @@ bool MediaLibraryObjectUtils::IsFileExistInDb(const string &path)
 
     return false;
 }
+
+int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileAsset,
+    const string &relativePath)
+{
+    if (srcFileAsset == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain path from Database");
+        return E_INVALID_URI;
+    }
+    string srcPath = MediaFileUtils::UpdatePath(srcFileAsset->GetPath(), srcFileAsset->GetUri());
+    int32_t srcFd = srcFileAsset->OpenAsset(srcPath, MEDIA_FILEMODE_READWRITE);
+    // dest asset
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
+    ValuesBucket values;
+    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    string displayName = srcFileAsset->GetDisplayName();
+    values.PutString(MEDIA_DATA_DB_NAME, displayName);
+    values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, srcFileAsset->GetMediaType());
+    cmd.SetValueBucket(values);
+    int32_t outRow = CreateFileObj(cmd);
+    while (outRow == E_FILE_EXIST) {
+        displayName = displayName + ASSET_RECYCLE_SUFFIX;
+        values.PutString(MEDIA_DATA_DB_NAME, displayName);
+        outRow = CreateFileObj(cmd);
+    }
+    if (outRow < 0) {
+        MEDIA_ERR_LOG("Failed to obtain CreateFileObj");
+        return outRow;
+    }
+    Uri destUri(MEDIALIBRARY_DATA_URI + "/" + to_string(outRow));
+    string destUriString = destUri.ToString();
+    shared_ptr<FileAsset> destFileAsset = GetFileAssetFromDb(destUriString);
+    if (destFileAsset == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain path from Database");
+        return E_INVALID_URI;
+    }
+    string destPath = MediaFileUtils::UpdatePath(destFileAsset->GetPath(), destFileAsset->GetUri());
+    int32_t destFd = destFileAsset->OpenAsset(destPath, MEDIA_FILEMODE_READWRITE);
+    return CopyAssetByFd(srcFd, srcFileAsset->GetId(), destFd, outRow);
+}
+
+int32_t MediaLibraryObjectUtils::CopyAssetByFd(int32_t srcFd, int32_t srcId, int32_t destFd, int32_t destId)
+{
+    struct stat statSrc;
+    if (fstat(srcFd, &statSrc) == -1) {
+        CloseFileById(srcId);
+        MEDIA_ERR_LOG("File get stat failed, %{public}d", errno);
+        return E_FILE_OPER_FAIL;
+    }
+
+    if (sendfile(destFd, srcFd, nullptr, statSrc.st_size) == -1) {
+        CloseFileById(srcId);
+        CloseFileById(destId);
+        MEDIA_ERR_LOG("copy file fail %{public}d ", errno);
+        return E_FILE_OPER_FAIL;
+    }
+    CloseFileById(srcId);
+    CloseFileById(destId);
+    return destId;
+}
+
+void MediaLibraryObjectUtils::CloseFileById(int32_t fileId)
+{
+    ValuesBucket values;
+    values.PutInt(MEDIA_DATA_DB_ID, fileId);
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_ASSET, OperationType::CLOSE, values);
+    CloseFile(closeCmd);
+}
+
+int32_t MediaLibraryObjectUtils::GetFileResult(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+    int count, const string &relativePath, const string &displayName)
+{
+    shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();
+    int errCode = E_SUCCESS;
+    for (int32_t row = 0; row < count; row++) {
+        unique_ptr<FileAsset> fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, row);
+        if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
+            errCode = CopyDir(move(fileAsset), relativePath + displayName + "/");
+            CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy dir");
+        } else {
+            errCode = CopyAsset(move(fileAsset), relativePath + displayName + "/");
+            CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy asset");
+        }
+    }
+    return errCode;
+}
+
+int32_t MediaLibraryObjectUtils::CopyDir(const shared_ptr<FileAsset> &srcDirAsset,
+    const string &relativePath)
+{
+    if (srcDirAsset == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain path from Database");
+        return E_INVALID_URI;
+    }
+    ValuesBucket values;
+    values.PutString(MEDIA_DATA_DB_NAME, ".nofile");
+    values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_NOFILE);
+    string displayName = srcDirAsset->GetDisplayName();
+    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath + displayName + "/");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
+    cmd.SetValueBucket(values);
+    int32_t outRow = CreateFileObj(cmd);
+    while (outRow == E_FILE_EXIST) {
+        displayName = displayName + ASSET_RECYCLE_SUFFIX;
+        values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath + displayName + "/");
+        outRow = CreateFileObj(cmd);
+    }
+    if (outRow < 0) {
+        MEDIA_ERR_LOG("Failed to obtain CreateFileObj");
+        return outRow;
+    }
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+    queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(srcDirAsset->GetId()))->And()->
+        EqualTo(MEDIA_DATA_DB_IS_TRASH, "0")->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_NOFILE));
+    shared_ptr<AbsSharedResultSet> resultSet = QueryWithCondition(queryCmd, {});
+    auto count = 0;
+    auto ret = resultSet->GetRowCount(count);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "get rdbstore failed");
+    if (count == 0) {
+        MEDIA_ERR_LOG("have no copy file");
+        return E_SUCCESS;
+    }
+
+    int err = GetFileResult(resultSet, count, relativePath, displayName);
+    if (err <= 0) {
+        return err;
+    }
+    Uri srcUri(MEDIALIBRARY_DATA_URI + "/" + to_string(outRow));
+    string srcUriString = srcUri.ToString();
+    shared_ptr<FileAsset> srcAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(srcUriString);
+    if (srcAsset == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain parentAsset from Database");
+        return E_INVALID_URI;
+    }
+    return srcAsset->GetParent();
+}
+
 } // namespace Media
 } // namespace OHOS

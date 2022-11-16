@@ -228,7 +228,8 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { THU_OPRN_GENERATES, OperationType::GENERATE },
         { THU_OPRN_AGING, OperationType::AGING },
         { DISTRIBUTE_THU_OPRN_AGING, OperationType::DISTRIBUTE_AGING },
-        { DISTRIBUTE_THU_OPRN_CREATE, OperationType::DISTRIBUTE_CREATE }
+        { DISTRIBUTE_THU_OPRN_CREATE, OperationType::DISTRIBUTE_CREATE },
+        { MEDIA_FILEOPRN_COPYASSET, OperationType::COPY }
     };
 
     if (oprnTypeMap.find(oprnName) != oprnTypeMap.end()) {

@@ -30,6 +30,7 @@ constexpr int BIT_32 = 32;
 constexpr int BIT_40 = 40;
 constexpr int BIT_48 = 48;
 constexpr int BIT_56 = 56;
+constexpr int BIT_64 = 64;
 constexpr int BIT_128 = 128;
 constexpr int OFFSET_0 = 0;
 constexpr int OFFSET_1 = 1;
@@ -39,6 +40,10 @@ constexpr int OFFSET_4 = 4;
 constexpr int OFFSET_5 = 5;
 constexpr int OFFSET_6 = 6;
 constexpr int OFFSET_7 = 7;
+constexpr int OFFSET_8 = 8;
+constexpr int OFFSET_9 = 9;
+constexpr int OFFSET_10 = 10;
+constexpr int OFFSET_11 = 11;
 constexpr int CONTAINER_TYPE_2 = 2;
 
 namespace OHOS {

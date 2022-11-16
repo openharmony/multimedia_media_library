@@ -427,6 +427,7 @@ const std::string MEDIA_FILEOPRN_CREATEASSET = "create_asset";
 const std::string MEDIA_FILEOPRN_MODIFYASSET = "modify_asset";
 const std::string MEDIA_FILEOPRN_DELETEASSET = "delete_asset";
 const std::string MEDIA_FILEOPRN_TRASHASSET = "trash_asset";
+const std::string MEDIA_FILEOPRN_COPYASSET = "copy_asset";
 const std::string MEDIA_FILEOPRN_GETALBUMCAPACITY = "get_album_capacity";
 const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
 const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";

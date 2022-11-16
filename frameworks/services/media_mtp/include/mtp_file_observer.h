@@ -32,10 +32,10 @@ public:
     bool StopFileInotify();
 
 private:
-    static bool AddInotifyEvents(const int &inotifyFd, ContextSptr &context);
+    static bool AddInotifyEvents(const int &inotifyFd, const ContextSptr &context);
     static bool WatchPathThread(const ContextSptr &context);
-    static void SendBattery(ContextSptr &context);
-    static void SendEvent(const inotify_event &event, const std::string &path, ContextSptr &context);
+    static void SendBattery(const ContextSptr &context);
+    static void SendEvent(const inotify_event &event, const std::string &path, const ContextSptr &context);
     static bool isRunning_;
     static std::map<int, std::string> watchMap_;
     static int inotifyFd_;

@@ -31,7 +31,7 @@
  */
 #define MTP_RECEIVE_FILE           _IOW('M', 1, struct MtpFileRange)
 /* Sends an event to the host via the interrupt endpoint */
-#define MTP_SEND_EVENT             _IOW('M', 3, struct mtp_event)
+#define MTP_SEND_EVENT             _IOW('M', 3, struct EventMtp)
 /*
  * Sends the specified file range to the host,
  * with a 12 byte MTP data packet header at the beginning.
@@ -104,8 +104,7 @@ int MtpDriver::SendObj(MtpFileRange &mfr)
 
 int MtpDriver::WriteEvent(EventMtp &em)
 {
-    auto ret = ioctl(usbDriver, MTP_SEND_EVENT, reinterpret_cast<unsigned long>(&em));
-    return ret;
+    return ioctl(usbDriver, MTP_SEND_EVENT, reinterpret_cast<unsigned long>(&em));
 }
 } // namespace Media
 } // namespace OHOS
