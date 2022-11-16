@@ -18,6 +18,7 @@ group("test") {
     "unittest/mediadatashare_test:unittest",
     "unittest/medialib_statistic_test:unittest",
     "unittest/medialibrary_extability_test:unittest",
+    "unittest/medialibrary_helper_test:unittest",
     "unittest/mediascanner_test:unittest",
     "unittest/mediathumbnail_test:unittest",
   ]
