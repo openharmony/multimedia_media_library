@@ -22,7 +22,7 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-MtpEvent::MtpEvent(std::shared_ptr<MtpOperationContext> &context)
+MtpEvent::MtpEvent(const std::shared_ptr<MtpOperationContext> &context)
 {
     if (context != nullptr) {
         mtpContextPtr_ = context;

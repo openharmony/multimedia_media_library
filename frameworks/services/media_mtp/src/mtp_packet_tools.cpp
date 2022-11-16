@@ -549,7 +549,7 @@ std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> gConvert(UTF16
 
 std::u16string MtpPacketTool::Utf8ToUtf16(const std::string &inputStr)
 {
-    std::u16string conversion = gConvert.from_bytes(input_str);
+    std::u16string conversion = gConvert.from_bytes(inputStr);
     if (conversion == UTF8_CERROR) {
         return u"";
     } else {
@@ -559,7 +559,7 @@ std::u16string MtpPacketTool::Utf8ToUtf16(const std::string &inputStr)
 
 std::string MtpPacketTool::Utf16ToUtf8(const std::u16string &inputStr)
 {
-    std::string conversion = gConvert.to_bytes(input_str);
+    std::string conversion = gConvert.to_bytes(inputStr);
     if (conversion == UTF16_CERROR) {
         return "";
     } else {
@@ -645,7 +645,7 @@ bool MtpPacketTool::GetUInt64(const std::vector<uint8_t> &buffer, size_t &offset
 bool MtpPacketTool::GetUInt128(const std::vector<uint8_t> &buffer, size_t &offset, uint128_t &value)
 {
     if (!GetUInt32(buffer, offset, value[OFFSET_0]) || !GetUInt32(buffer, offset, value[OFFSET_1]) ||
-        !GetUInt32(buffer, offset, value[OFFSET_2]) || !GetUInt32(buffer, offset, value[OFFSET_3]) {
+        !GetUInt32(buffer, offset, value[OFFSET_2]) || !GetUInt32(buffer, offset, value[OFFSET_3])) {
         return false;
     }
     return true;
@@ -694,7 +694,7 @@ bool MtpPacketTool::GetInt128(const std::vector<uint8_t> &buffer, size_t &offset
 {
     uint128_t uValue = {0};
     if (!GetUInt32(buffer, offset, uValue[OFFSET_0]) || !GetUInt32(buffer, offset, uValue[OFFSET_1]) ||
-        !GetUInt32(buffer, offset, uValue[OFFSET_2]) || !GetUInt32(buffer, offset, uValue[OFFSET_3]) {
+        !GetUInt32(buffer, offset, uValue[OFFSET_2]) || !GetUInt32(buffer, offset, uValue[OFFSET_3])) {
         return false;
     }
     value[OFFSET_0] = static_cast<int32_t>(uValue[OFFSET_0]);

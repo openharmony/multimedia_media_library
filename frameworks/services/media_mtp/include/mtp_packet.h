@@ -37,7 +37,7 @@ public:
     int Read();
     int Write();
     void Init(std::shared_ptr<HeaderData> &headerData);
-    void Init(std::shared_ptr<HeaderData> &headerData, std::shared_ptr<PayloadData> payloadData);
+    void Init(std::shared_ptr<HeaderData> &headerData, std::shared_ptr<PayloadData> &payloadData);
     void Reset();
 
     uint16_t GetOperationCode();

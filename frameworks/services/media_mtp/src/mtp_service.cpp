@@ -21,7 +21,7 @@ namespace Media {
 std::shared_ptr<MtpServcie> MtpServcie::mtpServcieInstance_{nullptr};
 std::mutex MtpServcie::instanceLock_;
 
-MtpServcie::MtpServcie(void) : monitorPtr_(nullptr), isMonitorRun_(isMonitorRun_)
+MtpServcie::MtpServcie(void) : monitorPtr_(nullptr), isMonitorRun_(false)
 {
 }
 

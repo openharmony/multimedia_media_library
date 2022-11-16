@@ -23,7 +23,7 @@ namespace Media {
 class MtpMedialibraryManager;
 class MtpOperationUtils {
 public:
-    explicit MtpOperationUtils(std::shared_ptr<MtpOperationContext> &context);
+    explicit MtpOperationUtils(const std::shared_ptr<MtpOperationContext> &context);
     ~MtpOperationUtils();
 
     uint16_t GetRespCommonData(std::shared_ptr<PayloadData> &data, int errorCode);

@@ -26,6 +26,8 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
+#include "application_context.h"
+#include "ability_manager_client.h"
 
 using namespace OHOS::AAFwk;
 
@@ -62,7 +64,6 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     const AAFwk::Want& want = eventData.GetWant();
     std::string action = want.GetAction();
     MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
-
     if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF) == 0) {
         isScreenOff_ = true;
         DoBackgroundOperation();
@@ -106,6 +107,16 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 void MedialibrarySubscriber::StopBackgroundOperation()
 {
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
+}
+
+void MedialibrarySubscriber::DoStartMtpService()
+{
+    AAFwk::Want want;
+    want.SetElementName("com.ohos.medialibrary.medialibrarydata", "MtpService");
+    auto abilityContext = AbilityRuntime::Context::GetApplicationContext();
+    ErrCode err = AAFwk::AbilityManagerClient::GetInstance()->StartAbility(want, abilityContext->GetToken(),
+        OHOS::AAFwk::DEFAULT_INVAL_VALUE);
+    MEDIA_INFO_LOG("MedialibrarySubscriber::DoStartMtpService. End calling StartAbility. ret=%{public}d", err);
 }
 }  // namespace Media
 }  // namespace OHOS
