@@ -650,7 +650,7 @@ void MediaLibraryObjectUtils::ScanFile(string &path)
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
     }
-    int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb);
+    int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanFileCb);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }
