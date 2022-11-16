@@ -96,13 +96,19 @@ void MedialibrarySubscriber::DoBackgroundOperation()
             MEDIA_ERR_LOG("DoAging faild");
         }
 
-        std::string srcPath = "/storage/media/local/files";
-        MediaScannerManager::GetInstance()->ScanDir(srcPath, nullptr);
         result = dataManager->DoTrashAging();
         if (result != E_OK) {
             MEDIA_ERR_LOG("DoTrashAging faild");
         }
-    } else {
+
+        auto scannerManager = MediaScannerManager::GetInstance();
+        if (scannerManager == nullptr) {
+            return;
+        }
+        result = scannerManager->ScanError();
+        if (result != E_OK) {
+            MEDIA_ERR_LOG("scan error faild");
+        }
         MEDIA_DEBUG_LOG("DoBackgroundOperation success isScreenOff_ %{public}d, isPowerConnected_ %{public}d",
             isScreenOff_, isPowerConnected_);
     }

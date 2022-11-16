@@ -427,8 +427,9 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
         return ERR_NOT_ACCESSIBLE;
     }
 
-    while ((ent = readdir(dirPath)) != nullptr && err != ERR_MEM_ALLOC_FAIL) {
+    while ((ent = readdir(dirPath)) != nullptr) {
         if (*stopFlag_) {
+            err = E_STOP;
             break;
         }
 
@@ -466,7 +467,7 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
     closedir(dirPath);
     FREE_MEMORY_AND_SET_NULL(fName);
 
-    return E_OK;
+    return err;
 }
 
 int32_t MediaScannerObj::ScanDirInternal()
@@ -486,6 +487,7 @@ int32_t MediaScannerObj::ScanDirInternal()
         return err;
     }
 
+    /* no further operation when stopped */
     err = WalkFileTree(dir_, NO_PARENT);
     if (err != E_OK) {
         MEDIA_ERR_LOG("walk file tree err %{public}d", err);

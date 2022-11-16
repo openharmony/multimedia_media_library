@@ -103,6 +103,7 @@ constexpr int32_t E_SCANNED = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 5);
 constexpr int32_t E_AVMETADATA = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 6);
 constexpr int32_t E_IMAGE = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 7);
 constexpr int32_t E_NO_RESULT = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 8);
+constexpr int32_t E_STOP = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 9);
 
 // media file extension module error code { 3000, 3099 }
 constexpr int32_t E_MEDIA_FILE_OFFSET = 3000;
