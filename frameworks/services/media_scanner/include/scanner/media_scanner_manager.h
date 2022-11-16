@@ -20,6 +20,7 @@
 
 #include "media_scanner.h"
 #include "media_scan_executor.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS {
 namespace Media {
@@ -29,13 +30,15 @@ public:
 
     virtual ~MediaScannerManager() = default;
 
+    int32_t Start();
+    int32_t Stop();
+
     std::string ScanCheck(const std::string &path, bool isDir);
     int32_t ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
     int32_t ScanFileSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
     int32_t ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
 
-    int32_t Start();
-    int32_t Stop();
+    int32_t ScanError(bool isBoot = false);
 
 private:
     MediaScannerManager() = default;
@@ -44,6 +47,22 @@ private:
     static std::mutex instanceMutex_;
 
     MediaScanExecutor executor_;
+};
+
+
+class ScanErrCallback : public IMediaScannerCallback {
+public:
+    ScanErrCallback() = default;
+    ~ScanErrCallback() = default;
+
+    int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override
+    {
+        if (status == E_OK) {
+            return MediaScannerDb::GetDatabaseInstance()->DeleteError(path);
+        }
+
+        return E_OK;
+    }
 };
 } // namespace Media
 } // namespace OHOS

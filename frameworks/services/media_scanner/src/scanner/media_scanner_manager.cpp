@@ -21,7 +21,7 @@
 
 #include "media_log.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_data_manager.h"
+#include "media_scanner_db.h"
 
 namespace OHOS {
 namespace Media {
@@ -116,12 +116,60 @@ int32_t MediaScannerManager::ScanDir(const std::string &path, const std::shared_
 int32_t MediaScannerManager::Start()
 {
     executor_.Start();
-    return ScanDir(ROOT_MEDIA_DIR, nullptr);
+
+    int32_t ret = ScanError(true);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("scann error fail %{public}d", ret);
+        return ret;
+    }
+
+    /*
+     * primary key wouldn't be duplicate
+     */
+    ret = MediaScannerDb::GetDatabaseInstance()->RecordError(ROOT_MEDIA_DIR);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("record err fail %{public}d", ret);
+        return ret;
+    }
+
+    return E_OK;
 }
 
 int32_t MediaScannerManager::Stop()
 {
+    /* stop all working threads */
     executor_.Stop();
+
+    return MediaScannerDb::GetDatabaseInstance()->DeleteError(ROOT_MEDIA_DIR);
+}
+
+int32_t MediaScannerManager::ScanError(bool isBoot)
+{
+    std::shared_ptr<ScanErrCallback> callback = make_shared<ScanErrCallback>();
+
+    auto errList = MediaScannerDb::GetDatabaseInstance()->ReadError();
+    for (auto &err : errList) {
+        /* 
+         * Scan full path only when boot; all other errors are processed in
+         * broadcast receving context.
+         */
+        if (err == ROOT_MEDIA_DIR) {
+            if (isBoot) {
+                (void)ScanDir(err, callback);
+                break;
+            } else {
+                continue;
+            }
+        }
+
+        /* assume err paths are correct */
+        if (ScannerUtils::IsDirectory(err)) {
+            (void)ScanDir(err, callback);
+        } else {
+            (void)ScanFile(err, callback);
+        }
+    }
+
     return E_OK;
 }
 } // namespace Media

@@ -480,5 +480,20 @@ int32_t MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::AbsSharedResult
 
     return E_OK;
 }
+
+int32_t MediaScannerDb::RecordError(const std::string &err)
+{
+    return MediaLibraryDataManager::GetInstance()->RecordError(err);
+}
+
+std::vector<std::string> MediaScannerDb::ReadError()
+{
+    return MediaLibraryDataManager::GetInstance()->ReadError();
+}
+
+int32_t MediaScannerDb::DeleteError(const std::string &err)
+{
+    return MediaLibraryDataManager::GetInstance()->DeleteError(err);
+}
 } // namespace Media
 } // namespace OHOS

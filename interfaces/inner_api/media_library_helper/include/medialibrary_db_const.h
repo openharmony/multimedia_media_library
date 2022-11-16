@@ -439,6 +439,14 @@ const std::string QUERY_MEDIA_VOLUME = "SELECT sum(" + MEDIA_DATA_DB_SIZE + ") A
                         MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_AUDIO) + " GROUP BY " +
                         MEDIA_DATA_DB_MEDIA_TYPE;
 
+/*
+ * Error Table
+ */
+const std::string MEDIALIBRARY_ERROR_TABLE = "Error";
+const std::string MEDIA_DATA_ERROR = "err";
+const std::string CREATE_MEDIALIBRARY_ERROR_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_ERROR_TABLE + " ("
+    + MEDIA_DATA_ERROR + " TEXT PRIMARY KEY)";
+
 // File operations constants
 const std::string MEDIA_OPERN_KEYWORD = "operation";
 const std::string MEDIA_FILEOPRN = "file_operation";
