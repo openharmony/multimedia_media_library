@@ -184,7 +184,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
         { MEDIA_DATA_DB_THUMBNAIL, OperationObject::THUMBNAIL },
-        { SMARTABLUMASSETS_VIEW_NAME, OperationObject::SMART_ABLUM_ASSETS },
+        { SMARTALBUMASSETS_VIEW_NAME, OperationObject::SMART_ALBUM_ASSETS },
         { ASSETMAP_VIEW_NAME, OperationObject::ASSETMAP },
         { MEDIA_DEVICE_QUERYALLDEVICE, OperationObject::ALL_DEVICE },
         { MEDIA_DEVICE_QUERYACTIVEDEVICE, OperationObject::ACTIVE_DEVICE },
@@ -242,10 +242,10 @@ void MediaLibraryCommand::ParseTableName()
     static const map<OperationObject, map<OperationType, string>> tableNameMap = {
         { OperationObject::SMART_ALBUM, { { OperationType::UNKNOWN_TYPE, SMARTALBUM_TABLE } } },
         { OperationObject::SMART_ALBUM_MAP, { { OperationType::UNKNOWN_TYPE, SMARTALBUM_MAP_TABLE } } },
-        { OperationObject::SMART_ABLUM_ASSETS, { { OperationType::UNKNOWN_TYPE, SMARTABLUMASSETS_VIEW_NAME } } },
+        { OperationObject::SMART_ALBUM_ASSETS, { { OperationType::UNKNOWN_TYPE, SMARTALBUMASSETS_VIEW_NAME } } },
         { OperationObject::ASSETMAP, { { OperationType::UNKNOWN_TYPE, ASSETMAP_VIEW_NAME } } },
         { OperationObject::FILESYSTEM_DIR, { { OperationType::QUERY, MEDIATYPE_DIRECTORY_TABLE } } },
-        { OperationObject::FILESYSTEM_ALBUM, { { OperationType::QUERY, ABLUM_VIEW_NAME } } },
+        { OperationObject::FILESYSTEM_ALBUM, { { OperationType::QUERY, ALBUM_VIEW_NAME } } },
         { OperationObject::ALL_DEVICE, { { OperationType::UNKNOWN_TYPE, DEVICE_TABLE } } },
         { OperationObject::ACTIVE_DEVICE, { { OperationType::UNKNOWN_TYPE, DEVICE_TABLE } } },
     };

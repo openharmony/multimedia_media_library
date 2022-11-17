@@ -468,7 +468,7 @@ int32_t MediaScannerObj::ScanDirInternal()
     }
 
     /*
-     * 1. may query ablums in batch for the big data case
+     * 1. may query albums in batch for the big data case
      * 2. postpone this operation might avoid some conflicts
      */
     int32_t err = mediaScannerDb_->ReadAlbums(dir_, albumMap_);
