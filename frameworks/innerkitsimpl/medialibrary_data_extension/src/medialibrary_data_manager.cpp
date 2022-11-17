@@ -672,7 +672,7 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationOb
         tableName = SMARTALBUM_MAP_TABLE;
     }
 
-    if ((oprnObject != OperationObject::ASSETMAP) && (oprnObject != OperationObject::SMART_ABLUM_ASSETS)) {
+    if ((oprnObject != OperationObject::ASSETMAP) && (oprnObject != OperationObject::SMART_ALBUM_ASSETS)) {
         MediaLibraryTracer tracer;
         tracer.Start("QuerySync");
         auto ret = QuerySync(networkId, tableName);
@@ -746,7 +746,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
         { OperationObject::ALL_DEVICE, "" },
         { OperationObject::ACTIVE_DEVICE, "" },
         { OperationObject::ASSETMAP, "" },
-        { OperationObject::SMART_ABLUM_ASSETS, "" },
+        { OperationObject::SMART_ALBUM_ASSETS, "" },
     };
 
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
