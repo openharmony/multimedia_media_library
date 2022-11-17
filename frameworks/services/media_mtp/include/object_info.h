@@ -50,4 +50,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif //FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_OBJECT_INFO_H_
+#endif // FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_OBJECT_INFO_H_

@@ -15,9 +15,7 @@
 
 #ifndef FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_STORAGE_H_
 #define FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_STORAGE_H_
-
 #include <string>
-
 namespace OHOS {
 namespace Media {
 class Storage {
@@ -57,5 +55,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-
-#endif //FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_STORAGE_H_
+#endif // FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_STORAGE_H_

@@ -398,7 +398,7 @@ int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedR
         fileInfo.mimeType = parentInfo.mimeType;
         fileInfo.uri =
             MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) + SLASH_CHAR + to_string(fileId);
-        fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);;
+        fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
         fileInfo.mode = ALBUM_MODE_RW;
         fileList.push_back(fileInfo);
     }
