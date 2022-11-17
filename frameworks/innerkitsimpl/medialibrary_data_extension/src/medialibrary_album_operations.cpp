@@ -72,9 +72,9 @@ int32_t MediaLibraryAlbumOperations::ModifyAlbumOperation(MediaLibraryCommand &c
 
 string MediaLibraryAlbumOperations::GetDistributedAlbumSql(const string &strQueryCondition, const string &tableName)
 {
-    string distributedAlbumSql = "SELECT * FROM ( " + DISTRIBUTED_ABLUM_COLUMNS + " FROM " + tableName + " " +
-        FILE_TABLE + ", " + tableName + " " + ABLUM_TABLE +
-        DISTRIBUTED_ABLUM_WHERE_AND_GROUPBY + " )";
+    string distributedAlbumSql = "SELECT * FROM ( " + DISTRIBUTED_ALBUM_COLUMNS + " FROM " + tableName + " " +
+        FILE_TABLE + ", " + tableName + " " + ALBUM_TABLE +
+        DISTRIBUTED_ALBUM_WHERE_AND_GROUPBY + " )";
     if (!strQueryCondition.empty()) {
         distributedAlbumSql += " WHERE " + strQueryCondition;
     }
