@@ -29,7 +29,7 @@ std::map<int, std::string> MtpFileObserver::watchMap_;
 std::mutex MtpFileObserver::eventLock_;
 const int BUF_SIZE = 1024;
 const int LOW_BATTERY = 50;
-void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &path, ContextSptr &context)
+void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &path, const ContextSptr &context)
 {
     string fileName;
     std::shared_ptr<MtpEvent> eventPtr = std::make_shared<OHOS::Media::MtpEvent>(context);
@@ -48,7 +48,7 @@ void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &p
     }
 }
 
-bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, ContextSptr &context)
+bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &context)
 {
     char eventBuf[BUF_SIZE] = {0};
 
@@ -76,7 +76,7 @@ bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, ContextSptr &contex
     return true;
 }
 
-void MtpFileObserver::SendBattery(ContextSptr &context)
+void MtpFileObserver::SendBattery(const ContextSptr &context)
 {
     std::shared_ptr<MtpEvent> eventPtr = std::make_shared<OHOS::Media::MtpEvent>(context);
     auto battery = make_shared<MtpOperationUtils>(context);

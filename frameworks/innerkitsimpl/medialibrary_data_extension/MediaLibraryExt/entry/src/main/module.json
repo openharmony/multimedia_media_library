@@ -36,6 +36,14 @@
         "visible": true
       },
       {
+        "srcEntrance": "./ets/MtpService/MtpService.ts",
+        "name": "MtpServiceExtension",
+        "icon": "$media:icon",
+        "description": "$string:description_serviceability",
+        "type": "service",
+        "visible": true
+      },
+      {
         "srcEntrance": "./ets/FileExtensionAbility/FileExtensionAbility.ts",
         "name": "FileExtensionAbility",
         "icon": "$media:icon",
@@ -55,6 +63,12 @@
       },
       {
         "name": "ohos.permission.PERMISSION_USED_STATS"
+      },
+      {
+        "name": "ohos.permission.READ_MEDIA"
+      },
+      {
+        "name": "ohos.permission.WRITE_MEDIA"
       }
     ]
   }

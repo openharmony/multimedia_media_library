@@ -56,6 +56,7 @@ enum class OperationType : uint32_t {
     AGING,
     DISTRIBUTE_AGING,
     DISTRIBUTE_CREATE,
+    COPY
 };
 
 class MediaLibraryCommand {

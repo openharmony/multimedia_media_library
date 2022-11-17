@@ -95,9 +95,8 @@ int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHan
         return MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
     }
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(resultSet);
-    unique_ptr<FileAsset> fileAsset;
     for (int32_t row = 0; row < count; row++) {
-        fileAsset.reset(fetchFileResult->GetObjectAtPosition(row));
+        unique_ptr<FileAsset> fileAsset = fetchFileResult->GetObjectAtPosition(row);
         outHandles.push_back(fileAsset->GetId());
     }
     return MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
@@ -630,9 +629,8 @@ int32_t MtpMedialibraryManager::GetRootIdList(std::vector<string> &outRootIdList
         return E_NO_SUCH_FILE;
     }
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(resultSet);
-    unique_ptr<FileAsset> fileAsset;
     for (int32_t row = 0; row < count; row++) {
-        fileAsset.reset(fetchFileResult->GetObjectAtPosition(row));
+        unique_ptr<FileAsset> fileAsset = fetchFileResult->GetObjectAtPosition(row);
         outRootIdList.push_back(to_string(fileAsset->GetId()));
     }
     return E_SUCCESS;
