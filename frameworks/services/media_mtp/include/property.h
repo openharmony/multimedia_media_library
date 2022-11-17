@@ -19,12 +19,14 @@
 #include <time.h>
 #include <string>
 #include <vector>
+
 #include "mtp_constants.h"
+
 namespace OHOS {
 namespace Media {
 class Property {
 public:
-    class Value{ 
+    class Value {
     public:
         Value();
 
@@ -114,4 +116,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif //FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_PROPERTY_H_
+#endif // FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_PROPERTY_H_
