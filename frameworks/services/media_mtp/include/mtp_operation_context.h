@@ -30,8 +30,8 @@ struct MtpOperationContext {
     uint32_t parent {0};
     uint32_t handle {0};
     uint32_t property {0};
-    int groupCode {0};
-    int depth {0};
+    uint32_t groupCode {0};
+    uint32_t depth {0};
     int properType = MTP_TYPE_UNDEFINED_CODE;
     std::string properStrValue;
     int64_t properIntValue {0};

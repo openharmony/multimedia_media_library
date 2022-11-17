@@ -25,13 +25,10 @@
 #include "mtp_operation_context.h"
 #include "property.h"
 #include "userfile_manager_types.h"
+#include "result_set_utils.h"
+
 namespace OHOS {
 namespace Media {
-enum MediaSetDataType {
-    MTP_TYPE_STRING,
-    MTP_TYPE_INT32,
-    MTP_TYPE_INT64
-};
 struct PropertyValue {
     uint64_t outIntVal = 0;
     uint128_t outLongVal = {0};
@@ -131,7 +128,7 @@ private:
         const std::shared_ptr<UInt16List> &properties, std::shared_ptr<std::vector<Property>> &outProps);
     static void GetFormatByPath(const std::string &path, uint16_t &outFormat);
     static std::variant<int32_t, int64_t, std::string> ReturnError(const std::string &errMsg,
-        const MediaSetDataType &type);
+        const ResultSetDataType &type);
     static int32_t GetFormat(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, uint16_t &outFormat);
     static void GetOneRowPropList(uint32_t handle, const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         const std::shared_ptr<UInt16List> &properties, std::shared_ptr<std::vector<Property>> &outProps);
@@ -140,7 +137,7 @@ private:
     static void SetOneDefaultlPropList(uint32_t handle,
         uint16_t property, std::shared_ptr<std::vector<Property>> &outProps);
     static void SetProperty(const std::string &column,
-        const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, MediaSetDataType &type, Property &prop);
+        const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, ResultSetDataType &type, Property &prop);
 };
 } // namespace Media
 } // namespace OHOS

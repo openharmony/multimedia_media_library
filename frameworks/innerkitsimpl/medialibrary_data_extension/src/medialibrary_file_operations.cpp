@@ -70,6 +70,9 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd
         case OperationType::GETCAPACITY:
             errCode = GetAlbumCapacityOperation(cmd);
             break;
+        case OperationType::COPY:
+            errCode = CopyFileOperation(cmd);
+            break;
         default:
             MEDIA_ERR_LOG("unknown operation type %{public}d", cmd.GetOprnType());
             break;
@@ -253,6 +256,25 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFileOperation(
     queryResultSet->GetRowCount(count);
     MEDIA_INFO_LOG("QueryFile count is %{public}d", count);
     return queryResultSet;
+}
+
+int32_t MediaLibraryFileOperations::CopyFileOperation(MediaLibraryCommand &cmd)
+{
+    auto values = cmd.GetValueBucket();
+    auto assetId = cmd.GetOprnFileId();
+    ValueObject valueObject;
+    string relativePath;
+    if (values.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
+        valueObject.GetString(relativePath);
+    }
+    Uri srcUri(MEDIALIBRARY_DATA_URI + "/" + assetId);
+    string srcUriString = srcUri.ToString();
+    shared_ptr<FileAsset> srcFileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(srcUriString);
+    if (srcFileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
+        return MediaLibraryObjectUtils::CopyDir(srcFileAsset, relativePath);
+    } else {
+        return MediaLibraryObjectUtils::CopyAsset(srcFileAsset, relativePath);
+    }
 }
 } // namespace Media
 } // namespace OHOS

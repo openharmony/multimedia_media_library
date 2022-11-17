@@ -39,6 +39,8 @@ private:
 
     void DoBackgroundOperation();
     void StopBackgroundOperation();
+
+    void DoStartMtpService();
 };
 }  // namespace Media
 }  // namespace OHOS

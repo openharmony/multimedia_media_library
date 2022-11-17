@@ -71,7 +71,7 @@ const int MAX_BATTERY = 100;
 const int EMPTY_BATTERY = 0;
 const int STORAGE_MANAGER_UID = 5003;
 const int ERROR_BATTERY = -1;
-MtpOperationUtils::MtpOperationUtils(shared_ptr<MtpOperationContext> &context) : context_(context)
+MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &context) : context_(context)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
@@ -785,8 +785,8 @@ int32_t MtpOperationUtils::GetHandleByPaths(string path, uint32_t &handle)
     if (path.empty()) {
         return MTP_UNDEFINED_CODE;
     }
-    if (path.back() == "/") {
-        path = path.pop();
+    if (path.back() == '/') {
+        path.pop_back();
     }
 
     int32_t result = mtpMedialibraryManager_->GetIdByPath(path, handle);

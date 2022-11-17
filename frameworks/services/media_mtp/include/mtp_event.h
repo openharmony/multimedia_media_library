@@ -24,7 +24,7 @@ namespace OHOS {
 namespace Media {
 class MtpEvent {
 public:
-    explicit MtpEvent(std::shared_ptr<MtpOperationContext> &context);
+    explicit MtpEvent(const std::shared_ptr<MtpOperationContext> &context);
     ~MtpEvent();
     void SendObjectAdded(const std::string &path);
     void SendObjectRemoved(const std::string &path);

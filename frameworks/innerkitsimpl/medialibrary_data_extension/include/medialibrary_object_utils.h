@@ -65,6 +65,8 @@ public:
     static bool IsColumnValueExist(const std::string &value, const std::string &column);
     static bool IsAssetExistInDb(const int32_t id);
     static bool IsFileExistInDb(const std::string &path);
+    static int32_t CopyAsset(const std::shared_ptr<FileAsset> &srcFileAsset, const std::string &relativePath);
+    static int32_t CopyDir(const std::shared_ptr<FileAsset> &srcDirAsset, const std::string &relativePath);
 
 private:
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);
@@ -85,6 +87,10 @@ private:
     static void UpdateDateModified(const std::string &dirPath);
     static void ScanFile(std::string &srcPath);
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
+    static int32_t CopyAssetByFd(int32_t srcFd, int32_t srcId, int32_t destFd, int32_t destId);
+    static void CloseFileById(int32_t fileId);
+    static int32_t GetFileResult(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+        int count, const string &relativePath, const string &displayName);
 };
 } // namespace Media
 } // namespace OHOS

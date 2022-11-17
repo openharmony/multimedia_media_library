@@ -41,6 +41,7 @@ enum MediaType {
     MEDIA_TYPE_REMOTEFILE,
     MEDIA_TYPE_NOFILE,
     MEDIA_TYPE_ALL,
+    MEDIA_TYPE_DEFAULT,
 };
 
 enum class MediaTypeMaskInteger: std::uint32_t {
