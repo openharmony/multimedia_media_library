@@ -102,7 +102,7 @@ shared_ptr<AbsSharedResultSet> MediaFileExtentionUtils::GetResultSetFromDb(strin
     Uri queryUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER);
     vector<string> columns;
     DataSharePredicates predicates;
-    predicates.EqualTo(field, input);
+    predicates.EqualTo(field, input)->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, NOT_ISTRASH);
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr,
         "Failed to obtain value from database, field: %{public}s, value: %{public}s", field.c_str(), input.c_str());
@@ -398,7 +398,7 @@ int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedR
         fileInfo.mimeType = parentInfo.mimeType;
         fileInfo.uri =
             MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) + SLASH_CHAR + to_string(fileId);
-        fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);;
+        fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
         fileInfo.mode = ALBUM_MODE_RW;
         fileList.push_back(fileInfo);
     }

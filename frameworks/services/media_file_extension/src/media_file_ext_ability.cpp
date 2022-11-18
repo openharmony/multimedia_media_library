@@ -212,13 +212,9 @@ int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
     auto ret = MediaFileExtentionUtils::CheckUriSupport(sourceUri);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
     auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri);
-    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "GetFileFromDB result set is nullptr");
-    int count = 0;
-    result->GetRowCount(count);
-    CHECK_AND_RETURN_RET_LOG(count > 0, E_FAIL, "AbsSharedResultSet empty");
-    ret = result->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(ret == 0, E_FAIL, "Failed to shift at first row");
-    int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_URI_INVALID,
+        "GetResultSetFromDb failed, uri: %{public}s", sourceUri.c_str());
+    int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
     string id = MediaLibraryDataManagerUtils::GetIdFromUri(sourceUri);
     int fileId = stoi(id);
     int errCode = 0;
