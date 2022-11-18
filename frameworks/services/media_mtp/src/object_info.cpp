@@ -36,12 +36,6 @@ void ObjectInfo::Dump()
     MEDIA_DEBUG_LOG("    association={type=%{public}s(%{public}x), desc=%{public}x}",
         MtpPacketTool::GetAssociationName(associationType).c_str(), associationType, associationDesc);
 
-    std::string dateCreatedStr = MtpPacketTool::FormatDateTime(dateCreated);
-    std::string dateModifiedStr = MtpPacketTool::FormatDateTime(dateModified);
-    MEDIA_DEBUG_LOG("    sequenceNumber=%{public}u,"
-        " date={create=%{public}s(%{public}lld), modify=%{public}s(%{public}lld)}",
-        sequenceNumber, dateCreatedStr.c_str(), dateCreated, dateModifiedStr.c_str(), dateModified);
-
     MEDIA_DEBUG_LOG("    protectionStatus=%{public}u, compressedSize=%{public}u, size=%{public}u",
         protectionStatus, compressedSize, size);
 

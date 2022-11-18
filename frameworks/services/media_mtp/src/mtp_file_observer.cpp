@@ -121,7 +121,6 @@ bool MtpFileObserver::WatchPathThread(const ContextSptr &context)
         SendBattery(context);
         if (watchMap_.size() > 0) {
             AddInotifyEvents(inotifyFd_, context);
-            MEDIA_DEBUG_LOG("MtpFileObserver WatchPathThread watchPairs.size:%{public}u", watchMap_.size());
         }
     }
     return true;
