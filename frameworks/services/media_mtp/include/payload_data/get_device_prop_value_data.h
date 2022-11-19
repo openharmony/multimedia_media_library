@@ -14,12 +14,11 @@
  */
 #ifndef FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_GET_DEVICE_PROP_VALUE_DATA_CODE_H_
 #define FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_GET_DEVICE_PROP_VALUE_DATA_CODE_H_
-
 #include "payload_data.h"
 #include "property.h"
 namespace OHOS {
 namespace Media {
-class GetDevicePropValueData : public PayloadData{
+class GetDevicePropValueData : public PayloadData {
 public:
     explicit GetDevicePropValueData(std::shared_ptr<MtpOperationContext> &context);
     explicit GetDevicePropValueData();
@@ -39,5 +38,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-
-#endif  //FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_GET_DEVICE_PROP_VALUE_DATA_CODE_H_
+#endif  // FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_GET_DEVICE_PROP_VALUE_DATA_CODE_H_

@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include <vector>
 #include "mtp_operation_context.h"
-
 namespace OHOS {
 namespace Media {
 class PayloadData {
