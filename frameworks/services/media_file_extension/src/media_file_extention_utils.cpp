@@ -102,7 +102,7 @@ shared_ptr<AbsSharedResultSet> MediaFileExtentionUtils::GetResultSetFromDb(strin
     Uri queryUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER);
     vector<string> columns;
     DataSharePredicates predicates;
-    predicates.EqualTo(field, input);
+    predicates.EqualTo(field, input)->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, NOT_ISTRASH);
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr,
         "Failed to obtain value from database, field: %{public}s, value: %{public}s", field.c_str(), input.c_str());
