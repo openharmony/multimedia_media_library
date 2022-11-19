@@ -78,7 +78,7 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
 
     auto scannerManager = MediaScannerManager::GetInstance();
     if (scannerManager != nullptr) {
-        scannerManager->ScanDir(ROOT_MEDIA_DIR, nullptr);
+        scannerManager->Start();
     }
 }
 
@@ -93,6 +93,10 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 void MediaDataShareExtAbility::OnStop()
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
+    auto scannerManager = MediaScannerManager::GetInstance();
+    if (scannerManager != nullptr) {
+        scannerManager->Stop();
+    }
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     MEDIA_INFO_LOG("%{public}s end.", __func__);
 }
