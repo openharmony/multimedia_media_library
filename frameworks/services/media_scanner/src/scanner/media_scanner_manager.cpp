@@ -38,10 +38,6 @@ std::shared_ptr<MediaScannerManager> MediaScannerManager::GetInstance()
         }
 
         instance_ = std::shared_ptr<MediaScannerManager>(new (std::nothrow) MediaScannerManager());
-        if (instance_ != nullptr) {
-            // keep a reference for data resources
-            MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(nullptr);
-        }
     }
 
     return instance_;
@@ -114,6 +110,18 @@ int32_t MediaScannerManager::ScanDir(const std::string &path, const std::shared_
     std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(realPath, callback, true);
     executor_.Commit(move(scanner));
 
+    return E_OK;
+}
+
+int32_t MediaScannerManager::Start()
+{
+    executor_.Start();
+    return ScanDir(ROOT_MEDIA_DIR, nullptr);
+}
+
+int32_t MediaScannerManager::Stop()
+{
+    executor_.Stop();
     return E_OK;
 }
 } // namespace Media

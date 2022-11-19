@@ -169,6 +169,7 @@ int32_t MediaLibraryDataManager::InitDeviceData()
 void MediaLibraryDataManager::ClearMediaLibraryMgr()
 {
     std::lock_guard<std::shared_mutex> lock(mgrSharedMutex_);
+
     refCnt_--;
     if (refCnt_.load() > 0) {
         MEDIA_DEBUG_LOG("still other extension exist");
