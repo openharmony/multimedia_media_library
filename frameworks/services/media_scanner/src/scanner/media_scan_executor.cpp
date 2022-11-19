@@ -49,8 +49,28 @@ void MediaScanExecutor::HandleScanExecution()
             queue_.pop();
         }
 
+        scanner->SetStopFlag(stopFlag_);
         (void)scanner->Scan();
     }
+}
+
+/* race condition is avoided by the ability life cycle */
+void MediaScanExecutor::Start()
+{
+    *stopFlag_ = false;
+}
+
+void MediaScanExecutor::Stop()
+{
+    *stopFlag_ = true;
+
+    /* wait for async scan theads to stop */
+    std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime_));
+
+    /* clear all tasks in the queue */
+    std::lock_guard<std::mutex> lock(queueMutex_);
+    std::queue<std::unique_ptr<MediaScannerObj>> emptyQueue;
+    queue_.swap(emptyQueue);
 }
 } // namespace Media
 } // namespace OHOS
