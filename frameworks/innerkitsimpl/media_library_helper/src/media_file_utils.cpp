@@ -28,7 +28,6 @@
 #include <unistd.h>
 
 #include "directory_ex.h"
-#include "media_asset.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -393,7 +392,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     }
 
     string endStr = path.substr(pos + MEDIA_DATA_DEVICE_PATH.length());
-    if (beginStr.empty()) {
+    if (endStr.empty()) {
         return retStr;
     }
 
@@ -420,8 +419,34 @@ string MediaFileUtils::GetFileMediaTypeUri(int32_t mediaType, const string &netw
 
 string MediaFileUtils::GetUriByNameAndId(const string &displayName, const string &networkId, int32_t id)
 {
-    MediaType mediaType = MediaAsset::GetMediaType(displayName);
+    MediaType mediaType = GetMediaType(displayName);
     return MediaFileUtils::GetFileMediaTypeUri(mediaType, networkId) + SLASH_CHAR + to_string(id);
+}
+
+MediaType MediaFileUtils::GetMediaType(const std::string &filePath)
+{
+    MediaType mediaType = MEDIA_TYPE_FILE;
+
+    if (filePath.size() == 0) {
+        return MEDIA_TYPE_ALL;
+    }
+
+    size_t dotIndex = filePath.rfind('.');
+    if (dotIndex != string::npos) {
+        string extension = filePath.substr(dotIndex + 1, filePath.length() - dotIndex);
+        transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+        if (SUPPORTED_AUDIO_FORMATS_SET.find(extension) != SUPPORTED_AUDIO_FORMATS_SET.end()) {
+            mediaType = MEDIA_TYPE_AUDIO;
+        } else if (SUPPORTED_VIDEO_FORMATS_SET.find(extension) != SUPPORTED_VIDEO_FORMATS_SET.end()) {
+            mediaType = MEDIA_TYPE_VIDEO;
+        } else if (SUPPORTED_IMAGE_FORMATS_SET.find(extension) != SUPPORTED_IMAGE_FORMATS_SET.end()) {
+            mediaType = MEDIA_TYPE_IMAGE;
+        } else {
+            mediaType = MEDIA_TYPE_FILE;
+        }
+    }
+
+    return mediaType;
 }
 } // namespace Media
 } // namespace OHOS

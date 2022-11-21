@@ -54,7 +54,6 @@ ohos_source_set("media_library_source") {
     "src/dir_asset.cpp",
     "src/fetch_result.cpp",
     "src/file_asset.cpp",
-    "src/media_asset.cpp",
     "src/media_file_utils.cpp",
     "src/media_volume.cpp",
     "src/native_album_asset.cpp",
@@ -84,30 +83,6 @@ ohos_shared_library("media_library") {
     cfi = true
     debug = false
   }
-
-  part_name = "media_library"
-  subsystem_name = "multimedia"
-}
-
-ohos_source_set("media_library_test_source") {
-  sources = [ "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/test/media_library_test.cpp" ]
-
-  configs = [ ":media_library_config" ]
-
-  part_name = "media_library"
-  subsystem_name = "multimedia"
-}
-
-ohos_executable("media_library_test") {
-  install_enable = true
-
-  deps = [
-    ":media_library",
-    ":media_library_test_source",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
-  ]
-
-  external_deps = [ "relational_store:native_rdb" ]
 
   part_name = "media_library"
   subsystem_name = "multimedia"

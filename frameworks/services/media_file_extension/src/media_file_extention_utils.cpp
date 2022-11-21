@@ -16,7 +16,6 @@
 
 #include "media_file_extention_utils.h"
 
-#include "media_asset.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
