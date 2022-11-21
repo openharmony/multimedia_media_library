@@ -18,7 +18,6 @@
 
 #include <fcntl.h>
 #include <sys/sendfile.h>
-#include "media_asset.h"
 #include "media_file_utils.h"
 #include "hitrace_meter.h"
 #include "medialibrary_peer_info.h"
@@ -2983,7 +2982,7 @@ static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
     string displayName;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], displayName) ==
         napi_ok, "Failed to get displayName");
-    MediaType mediaType = MediaAsset::GetMediaType(displayName);
+    MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
 
     /* Parse the second argument into albumUri if exists */
     string albumUri;
