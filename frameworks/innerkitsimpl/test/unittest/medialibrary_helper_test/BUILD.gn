@@ -34,6 +34,7 @@ ohos_unittest("media_library_helper_test") {
   sources = [
     "./src/album_asset_test.cpp",
     "./src/dir_asset_test.cpp",
+    "./src/fetch_result_test.cpp",
     "./src/file_asset_test.cpp",
     "./src/media_file_utils_test.cpp",
     "./src/native_album_asset_test.cpp",
@@ -48,8 +49,10 @@ ohos_unittest("media_library_helper_test") {
 
   external_deps = [
     "data_share:datashare_common",
+    "data_share:datashare_consumer",
     "multimedia_image_framework:image_native",
     "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
   ]
 
   resource_config_file =
