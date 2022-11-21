@@ -242,7 +242,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_006, TestSiz
     string path = "/storage/media/100/local";
     string tempNetworkId = "1d3cb099659d53b3ee15faaab3c00a8ff983382ebc8b01aabde039ed084e167b";
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + tempNetworkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-    EXPECT_EQ(MediaFileUtils::UpdatePath(path, uri), "/storage/media/100/" + tempNetworkId);
+    EXPECT_EQ(MediaFileUtils::UpdatePath(path, uri), path);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_001, TestSize.Level0)
@@ -273,6 +273,42 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_005
 {
     string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI;
     EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALL, ""), uri);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_001, TestSize.Level0)
+{
+    string displayName = "";
+    EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_ALL);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_002, TestSize.Level0)
+{
+    string displayName = "test";
+    EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_FILE);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_003, TestSize.Level0)
+{
+    string displayName = "test.mp3";
+    EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_AUDIO);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_004, TestSize.Level0)
+{
+    string displayName = "test.mp4";
+    EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_VIDEO);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_005, TestSize.Level0)
+{
+    string displayName = "test.jpg";
+    EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_IMAGE);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_006, TestSize.Level0)
+{
+    string displayName = "test.txt";
+    EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_FILE);
 }
 } // namespace Media
 } // namespace OHOS
