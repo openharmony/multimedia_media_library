@@ -15,7 +15,9 @@
 
 #include "medialibrary_helper_test.h"
 
+#include "album_asset.h"
 #include "file_asset.h"
+#include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "scanner_utils.h"
@@ -110,6 +112,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_002, TestSize.Level0)
     const string TEST_ALBUM_NAME = "Pictures";
     fileAsset.SetAlbumName(TEST_ALBUM_NAME);
     EXPECT_EQ(fileAsset.GetAlbumName(), TEST_ALBUM_NAME);
+
+    const string TEST_RECYCLE_PATH = "Pictures";
+    fileAsset.SetRecyclePath(TEST_RECYCLE_PATH);
+    EXPECT_EQ(fileAsset.GetRecyclePath(), TEST_RECYCLE_PATH);
+
+    const ResultNapiType TEST_RESULT_NAPI_TYPE = ResultNapiType::TYPE_USERFILE_MGR;
+    fileAsset.SetResultNapiType(TEST_RESULT_NAPI_TYPE);
+    EXPECT_EQ(fileAsset.GetResultNapiType(), TEST_RESULT_NAPI_TYPE);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_003, TestSize.Level0)
@@ -244,6 +254,16 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_DeleteAsset_Test_002, TestSize.Le
     FileAsset fileAsset;
     string filePath = "/data/test/DeleteAsset_002.jpg";
     EXPECT_EQ(fileAsset.DeleteAsset(filePath), E_ERR);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_DeleteAsset_Test_003, TestSize.Level0)
+{
+    AlbumAsset albumAsset;
+    const string albumPath = "/data/test/DeleteAsset_003";
+    albumAsset.SetAlbumPath(albumPath);
+    EXPECT_EQ(albumAsset.CreateAlbumAsset(), true);
+    FileAsset fileAsset;
+    EXPECT_EQ(fileAsset.DeleteAsset(albumPath), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_CloseAsset_Test_001, TestSize.Level0)
