@@ -19,7 +19,7 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-static constexpr int PARSER_PARAM_SUM = 1;
+static constexpr uint32_t PARSER_PARAM_SUM = 1;
 static const std::vector<uint16_t> FILE_PROPERTIES = {
     MTP_PROPERTY_STORAGE_ID_CODE,
     MTP_PROPERTY_OBJECT_FORMAT_CODE,
@@ -77,7 +77,7 @@ int GetObjectPropsSupportedData::Parser(const std::vector<uint8_t> &buffer, uint
         return MTP_SESSION_NOT_OPEN_CODE;
     }
 
-    int parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
+    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetObjectPropsSupportedData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);

@@ -20,7 +20,7 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-static constexpr int PARSER_PARAM_SUM = 3;
+static constexpr uint32_t PARSER_PARAM_SUM = 3;
 
 MoveObjectData::MoveObjectData(std::shared_ptr<MtpOperationContext> &context)
     : PayloadData(context)
@@ -38,9 +38,9 @@ int MoveObjectData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize
         return MTP_ERROR_CONTEXT_IS_NULL;
     }
 
-    int parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
+    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
-        MEDIA_ERR_LOG("MoveObjectData::parser paramCount=%{public}u, needCount=%{public}d",
+        MEDIA_ERR_LOG("MoveObjectData::parser paramCount=%{public}u, needCount=%{public}u",
             parameterCount, PARSER_PARAM_SUM);
         return MTP_ERROR_PACKET_INCORRECT;
     }

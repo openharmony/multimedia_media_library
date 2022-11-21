@@ -83,7 +83,7 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
     outBuffer.resize(outReadSize);
     auto len = read(usbDriver, outBuffer.data(), outReadSize);
     outBuffer.resize(len);
-    outReadSize = len;
+    outReadSize = static_cast<uint32_t>(len);
     return MTP_SUCCESS;
 }
 

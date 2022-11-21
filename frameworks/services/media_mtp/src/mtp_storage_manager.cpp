@@ -64,7 +64,7 @@ int64_t MtpStorageManager::GetTotalSize()
         return MTP_FAIL;
     }
     int64_t totalSize =
-        static_cast<unsigned long long>(diskInfo.f_bsize) * static_cast<unsigned long long>(diskInfo.f_blocks);
+        static_cast<long long>(diskInfo.f_bsize) * static_cast<long long>(diskInfo.f_blocks);
     return totalSize;
 }
 
@@ -77,7 +77,7 @@ int64_t MtpStorageManager::GetFreeSize()
         return MTP_FAIL;
     }
     int64_t freeSize =
-        static_cast<unsigned long long>(diskInfo.f_bsize) * static_cast<unsigned long long>(diskInfo.f_bfree);
+        static_cast<long long>(diskInfo.f_bsize) * static_cast<long long>(diskInfo.f_bfree);
     return freeSize;
 }
 
