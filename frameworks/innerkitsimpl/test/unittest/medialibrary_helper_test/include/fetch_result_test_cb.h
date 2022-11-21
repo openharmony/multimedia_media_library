@@ -13,20 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_SPACE_STATISTICS_TEST_H
-#define MEDIA_SPACE_STATISTICS_TEST_H
+#ifndef MEDIATHUMBNAIL_TEST_CB_H
+#define MEDIATHUMBNAIL_TEST_CB_H
 
-#include "gtest/gtest.h"
+#include "medialibrary_db_const.h"
+#include "rdb_open_callback.h"
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryHelperUnitTest : public testing::Test {
+class FetchResultTestCB : public NativeRdb::RdbOpenCallback {
 public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
+    int OnCreate(NativeRdb::RdbStore &rdbStore)
+    {
+        return rdbStore.ExecuteSql(CREATE_MEDIA_TABLE);
+    }
+
+    int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion)
+    {
+        return 0;
+    }
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_SPACE_STATISTICS_TEST_H
+#endif // MEDIATHUMBNAIL_TEST_CB_H
