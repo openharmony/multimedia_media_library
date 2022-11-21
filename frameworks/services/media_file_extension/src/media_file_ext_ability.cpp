@@ -21,7 +21,6 @@
 #include "file_access_ext_stub_impl.h"
 #include "js_runtime_utils.h"
 #include "js_runtime.h"
-#include "media_asset.h"
 #include "media_file_extention_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -148,7 +147,7 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayN
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, MediaAsset::GetMediaType(displayName));
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, MediaFileUtils::GetMediaType(displayName));
     ret = MediaLibraryDataManager::GetInstance()->Insert(createFileUri, valuesBucket);
     if (ret > 0) {
         newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", ret));
