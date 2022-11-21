@@ -75,9 +75,7 @@ void MediaLibraryRdbStore::Init()
 }
 
 MediaLibraryRdbStore::~MediaLibraryRdbStore()
-{
-    Stop();
-}
+{}
 
 void MediaLibraryRdbStore::Stop()
 {
