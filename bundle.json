@@ -86,7 +86,8 @@
             }
         ],
         "test": [
-          "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test:test"
+          "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test:test",
+          "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/fuzztest:media_library_fuzztest"
         ]
       }
     }
