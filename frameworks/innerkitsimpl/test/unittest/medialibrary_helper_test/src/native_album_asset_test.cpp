@@ -92,5 +92,12 @@ HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_ModifyAlbumAsset_Test_001,
     nativeAlbumAsset.SetAlbumName("native_deletealbumasset_001_modify");
     EXPECT_EQ(nativeAlbumAsset.ModifyAlbumAsset(albumPath), true);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_ModifyAlbumAsset_Test_002, TestSize.Level0)
+{
+    NativeAlbumAsset nativeAlbumAsset;
+    string albumPath = "native_deletealbumasset_002";
+    EXPECT_EQ(nativeAlbumAsset.ModifyAlbumAsset(albumPath), false);
+}
 } // namespace Media
 } // namespace OHOS
