@@ -19,7 +19,7 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-static constexpr int PARSER_PARAM_SUM = 2;
+static constexpr uint32_t PARSER_PARAM_SUM = 2;
 static const std::vector<int> CHANNEL_ENUM = { 1, 2, 3, 4, 5, 6, 7, 8, 9, };
 static const std::vector<int> BITRATE_ENUM = { 1, 2, };
 static constexpr int AUDIO_BITRATE_MIN = 1;
@@ -45,7 +45,7 @@ int GetObjectPropDescData::Parser(const std::vector<uint8_t> &buffer, uint32_t r
         return MTP_FAIL;
     }
 
-    int parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
+    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetObjectPropDescData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);

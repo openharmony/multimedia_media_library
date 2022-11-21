@@ -484,7 +484,7 @@ void MtpPacketTool::PutAUInt16(std::vector<uint8_t> &outBuffer, const uint16_t *
 void MtpPacketTool::PutAUInt32(std::vector<uint8_t> &outBuffer, const uint32_t *values, int count)
 {
     PutUInt32(outBuffer, count);
-    for (size_t i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++) {
         PutUInt32(outBuffer, *values++);
     }
 }
@@ -527,7 +527,7 @@ void MtpPacketTool::PutString(std::vector<uint8_t> &outBuffer, const std::string
 {
     std::u16string src16 = Utf8ToUtf16(string);
 
-    int count = src16.length();
+    uint16_t count = src16.length();
     if (count == 0) {
         PutUInt8(outBuffer, 0);
         return;

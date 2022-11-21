@@ -394,7 +394,7 @@ uint16_t MtpOperationUtils::DoRecevieSendObject()
     MtpFileRange object;
     object.fd = fd;
     object.offset = initialData;
-    object.length = context_->sendObjectFileSize - initialData;
+    object.length = static_cast<int>(context_->sendObjectFileSize) - initialData;
     int result = context_->mtpDriver->ReceiveObj(object);
     fsync(fd);
     struct stat sstat;
