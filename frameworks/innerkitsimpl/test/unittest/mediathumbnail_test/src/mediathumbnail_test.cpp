@@ -179,9 +179,10 @@ HWTEST_F(MediaThumbnailTest, CreateImageThumbnailTest_001, TestSize.Level0)
     }
     resultSet->GoToFirstRow();
     vector<uint8_t> image;
+    unique_ptr<PixelMap> pixelMap;
+    MediaThumbnailHelper::ResizeImage(image, size, pixelMap);
     resultSet->GetBlob(PARAM1, image);
     resultSet->Close();
-    unique_ptr<PixelMap> pixelMap;
     MediaThumbnailHelper::ResizeImage(image, size, pixelMap);
     EXPECT_NE(pixelMap, nullptr);
     if (pixelMap) {
