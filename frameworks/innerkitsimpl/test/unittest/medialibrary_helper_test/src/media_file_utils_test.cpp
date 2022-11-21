@@ -16,6 +16,7 @@
 #include "medialibrary_helper_test.h"
 
 #include "media_file_utils.h"
+#include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "userfile_manager_types.h"
 
@@ -104,6 +105,13 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_001, TestSize.
     string newPath = "/data/test/copyfile_001_copy";
     EXPECT_EQ(MediaFileUtils::CreateFile(oldPath), true);
     EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_002, TestSize.Level0)
+{
+    string oldPath = "";
+    string newPath = "";
+    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), false);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RenameDir_Test_001, TestSize.Level0)
@@ -273,6 +281,15 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_005
 {
     string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI;
     EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALL, ""), uri);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriByNameAndId_Test_001, TestSize.Level0)
+{
+    string displayName = "test.jpg";
+    string networkId = "";
+    int32_t fd = 1;
+    string targetUri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_IMAGE_URI + "/" + to_string(fd);
+    EXPECT_EQ(MediaFileUtils::GetUriByNameAndId(displayName, networkId, fd), targetUri);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_001, TestSize.Level0)
