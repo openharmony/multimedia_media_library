@@ -200,8 +200,8 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
         outObjectInfo->thumbCompressedSize = COMPRE_SIZE_LEVEL_1;
         outObjectInfo->format = MTP_FORMAT_EXIF_JPEG_CODE;
         outObjectInfo->storageID = DEFAULT_STORAGE_ID;
-        outObjectInfo->imagePixHeight = fileAsset->GetHeight();
-        outObjectInfo->imagePixWidth = fileAsset->GetWidth();
+        outObjectInfo->imagePixHeight = static_cast<uint32_t>(fileAsset->GetHeight());
+        outObjectInfo->imagePixWidth = static_cast<uint32_t>(fileAsset->GetWidth());
         outObjectInfo->thumbCompressedSize = COMPRE_SIZE_LEVEL_2;
         outObjectInfo->thumbFormat = MTP_FORMAT_EXIF_JPEG_CODE;
         outObjectInfo->thumbPixHeight = NORMAL_HEIGHT;
@@ -244,7 +244,7 @@ bool MtpMedialibraryManager::CompressImage(std::unique_ptr<PixelMap> &pixelMap,
     data.resize(compressImage->GetByteCount());
 
     ImagePacker imagePacker;
-    int errorCode = imagePacker.StartPacking(data.data(), data.size(), option);
+    uint32_t errorCode = imagePacker.StartPacking(data.data(), data.size(), option);
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to StartPacking %{private}d", errorCode);
         return false;
@@ -354,7 +354,7 @@ int32_t MtpMedialibraryManager::GetIdByPath(const std::string &path, uint32_t &o
         return E_NO_SUCH_FILE;
     }
     unique_ptr<FileAsset> fileUniAsset = fetchFileResult->GetFirstObject();
-    outId = fileUniAsset->GetId();
+    outId = static_cast<uint32_t>(fileUniAsset->GetId());
     return E_SUCCESS;
 }
 
@@ -391,7 +391,7 @@ int32_t MtpMedialibraryManager::SendObjectInfo(const std::shared_ptr<MtpOperatio
     }
     CHECK_AND_RETURN_RET_LOG(index > 0,
         MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR), "fail to create assset");
-    outHandle = index;
+    outHandle = static_cast<uint32_t>(index);
     outStorageID = DEFAULT_STORAGE_ID;
     outParent = context->parent;
     return MtpErrorUtils::SolveSendObjectInfoError(E_SUCCESS);
@@ -439,7 +439,7 @@ int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationCon
     Uri copyAssetUri(Media::MEDIALIBRARY_DATA_URI +
         "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_COPYASSET);
     int changedRows = dataShareHelper_->Insert(copyAssetUri, valuesBucket);
-    outObjectHandle = changedRows;
+    outObjectHandle = static_cast<uint32_t>(changedRows);
     return (changedRows > 0) ? MTP_SUCCESS : MtpErrorUtils::SolveCopyObjectError(changedRows);
 }
 

@@ -297,13 +297,13 @@ int32_t MtpDataUtils::GetPropList(const shared_ptr<DataShare::DataShareResultSet
         return MTP_INVALID_OBJECTPROPCODE_CODE;
     }
     ResultSetDataType idType = TYPE_INT32;
-    uint32_t handle = 0;
+    int32_t handle = 0;
     for (int32_t row = 0; row < count; row++) {
         resultSet->GoToRow(row);
         handle = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, resultSet, idType));
         MEDIA_INFO_LOG("GetPropList %{public}d",
             get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, resultSet, idType)));
-        GetOneRowPropList(handle, resultSet, properties, outProps);
+        GetOneRowPropList(static_cast<uint32_t>(handle), resultSet, properties, outProps);
     }
     return MTP_SUCCESS;
 }
@@ -484,7 +484,7 @@ int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
                     std::string timeFormat = "%Y-%m-%d %H:%M:%S";
                     outPropValue.outStrVal = Strftime(timeFormat, get<int64_t>(columnValue));
                 } else {
-                    outPropValue.outIntVal = get<int64_t>(columnValue);
+                    outPropValue.outIntVal = static_cast<uint64_t>(get<int64_t>(columnValue));
                 }
                 break;
             default:
@@ -505,7 +505,7 @@ void MtpDataUtils::SetOneDefaultlPropList(uint32_t handle, uint16_t property, sh
             prop.currentValue->bin_.i16 = 0;
             break;
         case INTTYPE128:
-            prop.currentValue->bin_.i128[OFFSET_0] = handle;
+            prop.currentValue->bin_.i128[OFFSET_0] = static_cast<int32_t>(handle);
             prop.currentValue->bin_.i128[OFFSET_1] = 0;
             prop.currentValue->bin_.i128[OFFSET_2] = 0;
             prop.currentValue->bin_.i128[OFFSET_3] = 0;
