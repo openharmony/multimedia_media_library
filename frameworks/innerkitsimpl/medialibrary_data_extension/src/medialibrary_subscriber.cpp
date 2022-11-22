@@ -76,9 +76,6 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         isPowerConnected_ = false;
         StopBackgroundOperation();
     }
-
-    std::string srcPath = "/storage/media/local/files";
-    MediaScannerManager::GetInstance()->ScanDir(srcPath, nullptr);
 }
 
 void MedialibrarySubscriber::DoBackgroundOperation()
@@ -97,6 +94,9 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         if (result != E_OK) {
             MEDIA_ERR_LOG("DoAging faild");
         }
+
+        std::string srcPath = "/storage/media/local/files";
+        MediaScannerManager::GetInstance()->ScanDir(srcPath, nullptr);
     } else {
         MEDIA_DEBUG_LOG("DoBackgroundOperation success isScreenOff_ %{public}d, isPowerConnected_ %{public}d",
             isScreenOff_, isPowerConnected_);
