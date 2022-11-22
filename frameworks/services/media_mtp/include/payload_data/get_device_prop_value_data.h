@@ -31,7 +31,7 @@ public:
     void SetValue(uint16_t type, std::shared_ptr<Property::Value> &value);
 
 private:
-    uint16_t type_;
+    uint16_t type_ {0};
     std::shared_ptr<Property::Value> value_;
 
     int WriteValue(std::vector<uint8_t> &buffer, uint16_t type, const Property::Value &value);
