@@ -28,7 +28,7 @@ public:
     void SetPayload(const int32_t &payload);
     uint32_t CalculateSize() override;
 private:
-    int32_t payload_;
+    int32_t payload_ {0};
 };
 } // namespace Media
 } // namespace OHOS

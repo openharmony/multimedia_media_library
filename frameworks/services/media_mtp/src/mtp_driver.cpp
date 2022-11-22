@@ -44,7 +44,6 @@ const int READ_SIZE = 10240;
 
 MtpDriver::MtpDriver()
 {
-    usbOpenFlag = false;
 }
 
 MtpDriver::~MtpDriver()
