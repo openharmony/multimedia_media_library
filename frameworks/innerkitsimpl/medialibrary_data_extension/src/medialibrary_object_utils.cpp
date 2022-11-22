@@ -836,8 +836,6 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
     values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     values.PutInt(MEDIA_DATA_DB_BUCKET_ID, bucketId);
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, bucketId);
-    values.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
-    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
     cmd.SetValueBucket(values);
 
     return ModifyInfoByIdInDb(cmd, fileId);
