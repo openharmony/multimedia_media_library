@@ -34,6 +34,9 @@ public:
     int32_t ScanFileSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
     int32_t ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
 
+    int32_t Start();
+    int32_t Stop();
+
 private:
     MediaScannerManager() = default;
 
