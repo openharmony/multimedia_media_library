@@ -59,7 +59,7 @@ uint32_t GetDevicePropValueData::CalculateSize()
 
     int res = Maker(tmpuse);
     if (res != MTP_SUCCESS) {
-        return res;
+        return static_cast<uint32_t>(res);
     }
 
     uint32_t size = tmpuse.size();
