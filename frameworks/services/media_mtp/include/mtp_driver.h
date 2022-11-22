@@ -34,8 +34,8 @@ public:
     int SendObj(MtpFileRange &mfr);
     int WriteEvent(EventMtp &em);
 private:
-    int usbDriver;
-    bool usbOpenFlag;
+    int usbDriver {0};
+    bool usbOpenFlag {false};
 };
 } // namespace Media
 } // namespace OHOS
