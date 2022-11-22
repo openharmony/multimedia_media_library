@@ -163,6 +163,11 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
         intTempMeta = stringToNum<int32_t>(strTemp);
     }
     data->SetOrientation(intTempMeta);
+
+    strTemp = resultMap.at(AV_KEY_TITLE);
+    if (!strTemp.empty()) {
+        data->SetFileTitle(strTemp);
+    }
 }
 
 int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data)

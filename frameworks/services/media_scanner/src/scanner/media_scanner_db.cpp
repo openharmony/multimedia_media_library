@@ -58,7 +58,7 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata)
     values.Put(MEDIA_DATA_DB_SIZE, metadata.GetFileSize());
     values.Put(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
     values.Put(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
-    values.Put(MEDIA_DATA_DB_TITLE, ScannerUtils::GetFileTitle(metadata.GetFileName()));
+    values.Put(MEDIA_DATA_DB_TITLE, metadata.GetFileTitle());
     values.Put(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
     values.Put(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
 
@@ -120,6 +120,7 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
     values.Put(MEDIA_DATA_DB_MIME_TYPE, metadata.GetFileMimeType());
     values.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     values.Put(MEDIA_DATA_DB_NAME, metadata.GetFileName());
+    values.Put(MEDIA_DATA_DB_TITLE, metadata.GetFileTitle());
 
     values.Put(MEDIA_DATA_DB_SIZE, metadata.GetFileSize());
     values.Put(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
