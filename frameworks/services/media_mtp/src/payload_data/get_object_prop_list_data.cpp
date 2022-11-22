@@ -20,7 +20,7 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-static constexpr int PARSER_PARAM_SUM = 5;
+static constexpr uint32_t PARSER_PARAM_SUM = 5;
 
 GetObjectPropListData::GetObjectPropListData(std::shared_ptr<MtpOperationContext> &context)
     : PayloadData(context)
@@ -38,7 +38,7 @@ int GetObjectPropListData::Parser(const std::vector<uint8_t> &buffer, uint32_t r
         return MTP_FAIL;
     }
 
-    int parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
+    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetObjectPropListData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);
