@@ -23,6 +23,14 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check set get function
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, SmartAlbumAsset_SetGet_Test_001, TestSize.Level0)
 {
     SmartAlbumAsset smartAlbumAsset;
