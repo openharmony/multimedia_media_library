@@ -39,6 +39,11 @@ MediaScannerObj::MediaScannerObj(const std::string &path, const std::shared_ptr<
     }
 }
 
+void MediaScannerObj::SetStopFlag(std::shared_ptr<bool> &flag)
+{
+    stopFlag_ = flag;
+}
+
 int32_t MediaScannerObj::ScanFile()
 {
     MEDIA_DEBUG_LOG("scan file %{private}s", path_.c_str());
@@ -423,6 +428,10 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
     }
 
     while ((ent = readdir(dirPath)) != nullptr && err != ERR_MEM_ALLOC_FAIL) {
+        if (*stopFlag_) {
+            break;
+        }
+
         if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
             continue;
         }

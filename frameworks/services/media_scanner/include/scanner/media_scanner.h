@@ -33,6 +33,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <memory>
 
 #include "medialibrary_type_const.h"
 #include "media_scanner_const.h"
@@ -65,15 +66,18 @@ public:
 
     void Scan();
 
+    /* stop */
+    void SetStopFlag(std::shared_ptr<bool> &stopFlag);
+
 private:
-    // file
+    /* file */
     int32_t ScanFile();
     int32_t ScanFileInternal();
     int32_t GetFileMetadata();
     int32_t GetParentDirInfo(const std::string &parent, int32_t parentId);
     int32_t GetMediaInfo();
 
-    // dir
+    /* dir */
     int32_t ScanDir();
     int32_t ScanDirInternal();
     int32_t ScanFileInTraversal(const std::string &path, const std::string &parent, int32_t parentId);
@@ -81,12 +85,12 @@ private:
     int32_t CleanupDirectory();
     int32_t InsertOrUpdateAlbumInfo(const std::string &albumPath, int32_t parentId, const std::string &albumName);
 
-    // database operation
+    /* db ops */
     int32_t Commit();
     int32_t AddToTransaction();
     int32_t CommitTransaction();
 
-    // callback
+    /* callback */
     int32_t InvokeCallback(int32_t code);
 
     std::string path_;
@@ -95,6 +99,7 @@ private:
     std::string uri_;
     std::unique_ptr<MediaScannerDb> mediaScannerDb_;
     const std::shared_ptr<IMediaScannerCallback> callback_;
+    std::shared_ptr<bool> stopFlag_;
 
     std::unique_ptr<Metadata> data_;
     std::unordered_map<std::string, Metadata> albumMap_;
