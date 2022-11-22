@@ -24,6 +24,15 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check set get function
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_SetGet_Test_001, TestSize.Level0)
 {
     AlbumAsset albumAsset;
@@ -74,6 +83,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_SetGet_Test_001, TestSize.Level0
     EXPECT_EQ(albumAsset.GetResultNapiType(), resultNapiType);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check createalbumasset
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_CreateAlbumAsset_Test_001, TestSize.Level0)
 {
     AlbumAsset albumAsset;
@@ -83,6 +100,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_CreateAlbumAsset_Test_001, TestS
     EXPECT_EQ(albumAsset.CreateAlbumAsset(), false);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check deletealbumasset
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_DeleteAlbumAsset_Test_001, TestSize.Level0)
 {
     AlbumAsset albumAsset;
@@ -92,6 +117,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_DeleteAlbumAsset_Test_001, TestS
     EXPECT_EQ(albumAsset.DeleteAlbumAsset(albumPath), true);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check modifyalbumasset
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_ModifyAlbumAsset_Test_001, TestSize.Level0)
 {
     AlbumAsset albumAsset;

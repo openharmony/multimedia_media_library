@@ -75,6 +75,14 @@ shared_ptr<DataShare::DataShareResultSet> GetFetchResult()
     return make_shared<DataShare::DataShareResultSet>(result);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check set get function
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_SetGet_Test_001, TestSize.Level0)
 {
     shared_ptr<FetchResult<FileAsset>> fetchResult = make_shared<FetchResult<FileAsset>>();
@@ -92,6 +100,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_SetGet_Test_001, TestSize.Level
     fetchResult->SetNetworkId(TEST_NETWORKID);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check getobjectatposition
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObjectAtPosition_Test_001, TestSize.Level0)
 {
     auto fetchResult = make_shared<FetchResult<FileAsset>>(GetFetchResult());
@@ -104,6 +120,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObjectAtPosition_Test_001, T
     EXPECT_EQ(fetchResult->GetObjectAtPosition(TEST_INDEX_LARGE_THAN_ROWS), nullptr);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check getfirstobject
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetFirstObject_Test_001, TestSize.Level0)
 {
     auto fileFetchResult = make_shared<FetchResult<FileAsset>>(GetFetchResult());
@@ -125,6 +149,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetFirstObject_Test_001, TestSi
     EXPECT_EQ(result->GetFirstObject(), nullptr);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check getnextobject
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetNextObject_Test_001, TestSize.Level0)
 {
     auto fetchResult = make_shared<FetchResult<FileAsset>>(GetFetchResult());
@@ -134,6 +166,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetNextObject_Test_001, TestSiz
     EXPECT_EQ(result->GetNextObject(), nullptr);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check getlastobject
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetLastObject_Test_001, TestSize.Level0)
 {
     auto fetchResult = make_shared<FetchResult<FileAsset>>(GetFetchResult());
@@ -143,6 +183,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetLastObject_Test_001, TestSiz
     EXPECT_EQ(result->GetLastObject(), nullptr);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check isatlastrow
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_IsAtLastRow_Test_001, TestSize.Level0)
 {
     auto fetchResult = make_shared<FetchResult<FileAsset>>(GetFetchResult());
@@ -152,6 +200,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_IsAtLastRow_Test_001, TestSize.
     EXPECT_EQ(result->IsAtLastRow(), false);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check getobjectfromrdb
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObjectFromRdb_Test_001, TestSize.Level0)
 {
     auto result = make_shared<FetchResult<FileAsset>>();
@@ -160,6 +216,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObjectFromRdb_Test_001, Test
     EXPECT_EQ(fileAsset, nullptr);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check getobjectfromrdb
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObjectFromRdb_Test_002, TestSize.Level0)
 {
     vector<string> columns;

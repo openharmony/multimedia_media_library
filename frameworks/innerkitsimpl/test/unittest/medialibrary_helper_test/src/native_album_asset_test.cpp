@@ -24,6 +24,15 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check set get function
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_SetGet_Test_001, TestSize.Level0)
 {
     NativeAlbumAsset nativeAlbumAsset;
@@ -65,6 +74,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_SetGet_Test_001, TestSize.
     EXPECT_EQ(nativeAlbumAsset.GetAlbumVirtual(), TEST_ALBUM_VIRTUAL);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check createalbumasset
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_CreateAlbumAsset_Test_001, TestSize.Level0)
 {
     NativeAlbumAsset nativeAlbumAsset;
@@ -74,6 +91,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_CreateAlbumAsset_Test_001,
     EXPECT_EQ(nativeAlbumAsset.CreateAlbumAsset(), false);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check deletealbumasset
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_DeleteAlbumAsset_Test_001, TestSize.Level0)
 {
     NativeAlbumAsset nativeAlbumAsset;
@@ -83,6 +108,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_DeleteAlbumAsset_Test_001,
     EXPECT_EQ(nativeAlbumAsset.DeleteAlbumAsset(albumPath), true);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check modifyalbumasset
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_ModifyAlbumAsset_Test_001, TestSize.Level0)
 {
     NativeAlbumAsset nativeAlbumAsset;
@@ -93,6 +126,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_ModifyAlbumAsset_Test_001,
     EXPECT_EQ(nativeAlbumAsset.ModifyAlbumAsset(albumPath), true);
 }
 
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check modifyalbumasset
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
 HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_ModifyAlbumAsset_Test_002, TestSize.Level0)
 {
     NativeAlbumAsset nativeAlbumAsset;
