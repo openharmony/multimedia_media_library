@@ -34,14 +34,14 @@ GetThumbData::~GetThumbData()
 {
 }
 
-int GetThumbData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
+int GetThumbData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
 {
     if (context_ == nullptr) {
         MEDIA_ERR_LOG("GetThumbData::parser null");
         return MTP_ERROR_CONTEXT_IS_NULL;
     }
 
-    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
+    int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetThumbData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);

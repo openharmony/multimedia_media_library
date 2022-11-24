@@ -41,10 +41,10 @@ bool MediaLibraryFuzzTest(const uint8_t *data, size_t size)
     }
 
     int32_t systemAbilityId = *(reinterpret_cast<const int32_t *>(data));
-    Uri queryFileUri(std::string((const char *)data, size));
-    std::string dataUri(std::string((const char *)data, size));
+    Uri queryFileUri(std::string(reinterpret_cast<const char*>(data), size));
+    std::string dataUri(std::string(reinterpret_cast<const char*>(data), size));
     DataShare::DataSharePredicates predicates;
-    std::string selections = std::string((const char *)data, size);
+    std::string selections = std::string(reinterpret_cast<const char*>(data), size);
     std::vector<string> columns;
     predicates.SetWhereClause(selections);
 

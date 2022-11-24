@@ -24,7 +24,7 @@ public:
     HeaderData(std::shared_ptr<MtpOperationContext> &context);
     HeaderData(uint16_t containerType, uint16_t code, uint32_t transactionID);
     ~HeaderData();
-    int Parser(std::vector<uint8_t> &buffer, uint32_t readSize);
+    int Parser(std::vector<uint8_t> &buffer, int32_t readSize);
     int Maker(std::vector<uint8_t> &outBuffer);
     uint16_t GetCode() const;
     void SetCode(uint16_t code);

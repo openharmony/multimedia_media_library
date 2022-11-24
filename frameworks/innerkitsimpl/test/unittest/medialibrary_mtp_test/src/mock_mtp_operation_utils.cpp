@@ -583,7 +583,7 @@ uint16_t MtpOperationUtils::GetPropValue(shared_ptr<PayloadData> &data, uint16_t
     }
 
     shared_ptr<GetDevicePropValueData> devicePropValueData = make_shared<GetDevicePropValueData>();
-    shared_ptr<Property::Value> value = nullptr;
+    shared_ptr<Property::Value> value = make_shared<Property::Value>();
     uint16_t valueType = MTP_DEVICE_PROP_DESC_TYPE_UNDEFINED;
     switch (context_->property) {
         case MTP_DEVICE_PROPERTY_SYNCHRONIZATION_PARTNER_CODE:

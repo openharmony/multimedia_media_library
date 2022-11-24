@@ -23,7 +23,7 @@ public:
     explicit GetPartialObjectData(std::shared_ptr<MtpOperationContext> &context);
     ~GetPartialObjectData() override;
 
-    int Parser(const std::vector<uint8_t> &buffer, uint32_t readSize) override;
+    int Parser(const std::vector<uint8_t> &buffer, int32_t readSize) override;
     int Maker(std::vector<uint8_t> &outBuffer) override;
     uint32_t CalculateSize() override;
 
