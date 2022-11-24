@@ -19,6 +19,8 @@
 #include <string>
 #include <iostream>
 #include <queue>
+#include <future>
+#include <memory>
 
 #include "media_scanner.h"
 
@@ -31,6 +33,9 @@ public:
 
     int32_t Commit(std::unique_ptr<MediaScannerObj> scanner);
 
+    void Start();
+    void Stop();
+
 private:
     void HandleScanExecution();
 
@@ -39,6 +44,9 @@ private:
 
     std::queue<std::unique_ptr<MediaScannerObj>> queue_;
     std::mutex queueMutex_;
+
+    std::shared_ptr<bool> stopFlag_ = make_shared<bool>(false);
+    int32_t sleepTime_ = 200;
 };
 } // namespace Media
 } // namespace OHOS
