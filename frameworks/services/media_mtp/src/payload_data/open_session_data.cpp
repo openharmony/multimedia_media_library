@@ -31,12 +31,12 @@ OpenSessionData::~OpenSessionData()
 {
 }
 
-int OpenSessionData::Parser(const vector<uint8_t> &buffer, uint32_t readSize)
+int OpenSessionData::Parser(const vector<uint8_t> &buffer, int32_t readSize)
 {
     if (context_ == nullptr) {
         return MTP_FAIL;
     }
-    if ((readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t) < 1) { // param num < 1
+    if ((readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t) < 1) { // param num < 1
         return MTP_FAIL;
     }
     size_t offset = MTP_CONTAINER_HEADER_SIZE;

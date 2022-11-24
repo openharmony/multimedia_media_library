@@ -31,7 +31,7 @@ CloseSessionData::~CloseSessionData()
 {
 }
 
-int CloseSessionData::Parser(const vector<uint8_t> &buffer, uint32_t readSize)
+int CloseSessionData::Parser(const vector<uint8_t> &buffer, int32_t readSize)
 {
     if (!context_->sessionOpen) {
         return MTP_SESSION_NOT_OPEN_CODE;

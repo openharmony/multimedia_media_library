@@ -33,7 +33,7 @@ GetStorageIdsData::~GetStorageIdsData()
 {
 }
 
-int GetStorageIdsData::Parser(const vector<uint8_t> &buffer, uint32_t readSize)
+int GetStorageIdsData::Parser(const vector<uint8_t> &buffer, int32_t readSize)
 {
     return MTP_SUCCESS;
 }
