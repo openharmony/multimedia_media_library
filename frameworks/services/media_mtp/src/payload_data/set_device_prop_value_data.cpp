@@ -35,13 +35,13 @@ SetDevicePropValueData::~SetDevicePropValueData()
 {
 }
 
-int SetDevicePropValueData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
+int SetDevicePropValueData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
 {
     if (context_ == nullptr) {
         MEDIA_ERR_LOG("SetDevicePropValueData::parser null");
         return MTP_ERROR_INVALID_OBJECTHANDLE;
     }
-    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
+    int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("SetDevicePropValueData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);

@@ -31,14 +31,14 @@ GetObjectPropListData::~GetObjectPropListData()
 {
 }
 
-int GetObjectPropListData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
+int GetObjectPropListData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
 {
     if ((context_ == nullptr) || (!MtpStorageManager::GetInstance()->HasStorage())) {
         MEDIA_ERR_LOG("GetObjectPropListData::parser null or storage");
         return MTP_FAIL;
     }
 
-    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
+    int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetObjectPropListData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);

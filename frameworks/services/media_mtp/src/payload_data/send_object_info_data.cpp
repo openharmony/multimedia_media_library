@@ -35,15 +35,15 @@ SendObjectInfoData::~SendObjectInfoData()
 {
 }
 
-int SendObjectInfoData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
+int SendObjectInfoData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
 {
-    if (!context_->indata) {
-        if (context_ == nullptr) {
-            MEDIA_ERR_LOG("SendObjectInfoData::parser null");
-            return MTP_ERROR_INVALID_OBJECTHANDLE;
-        }
+    if (context_ == nullptr) {
+        MEDIA_ERR_LOG("SendObjectInfoData::parser null");
+        return MTP_ERROR_INVALID_OBJECTHANDLE;
+    }
 
-        uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
+    if (!context_->indata) {
+        int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
         if (parameterCount < PARSER_PARAM_SUM) {
             MEDIA_ERR_LOG("SendObjectInfoData::parser paramCount=%{public}u, needCount=%{public}d",
                 parameterCount, PARSER_PARAM_SUM);

@@ -70,14 +70,14 @@ GetObjectPropsSupportedData::~GetObjectPropsSupportedData()
 {
 }
 
-int GetObjectPropsSupportedData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
+int GetObjectPropsSupportedData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
 {
     if ((context_ == nullptr) || (!context_->sessionOpen)) {
         MEDIA_ERR_LOG("GetObjectPropsSupportedData::parser null or session");
         return MTP_SESSION_NOT_OPEN_CODE;
     }
 
-    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
+    int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetObjectPropsSupportedData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);

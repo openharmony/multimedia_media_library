@@ -31,14 +31,14 @@ GetObjectReferencesData::~GetObjectReferencesData()
 {
 }
 
-int GetObjectReferencesData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
+int GetObjectReferencesData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
 {
     if (context_ == nullptr) {
         MEDIA_ERR_LOG("GetObjectReferencesData::parser context_ is null");
         return MTP_ERROR_SESSION_NOT_OPEN;
     }
 
-    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
+    int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetObjectReferencesData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);

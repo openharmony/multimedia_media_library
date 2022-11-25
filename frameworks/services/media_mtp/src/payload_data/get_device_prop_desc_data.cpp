@@ -33,7 +33,7 @@ GetDevicePropDescData::~GetDevicePropDescData()
 {
 }
 
-int GetDevicePropDescData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
+int GetDevicePropDescData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
 {
     if (context_ == nullptr) {
         return MTP_ERROR_CONTEXT_IS_NULL;

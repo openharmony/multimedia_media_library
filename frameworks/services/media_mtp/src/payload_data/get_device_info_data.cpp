@@ -136,7 +136,7 @@ GetDeviceInfoData::~GetDeviceInfoData()
 {
 }
 
-int GetDeviceInfoData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
+int GetDeviceInfoData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
 {
     return MTP_SUCCESS;
 }
