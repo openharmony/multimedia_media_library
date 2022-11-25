@@ -69,11 +69,11 @@ bool ThumbnailUtils::DeleteLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailDa
             MEDIA_ERR_LOG("ThumbnailUtils::RemoveDataFromKv faild");
             return false;
         }
+        if (!CleanThumbnailInfo(opts, false, true)) {
+            return false;
+        }
     }
 
-    if (!CleanThumbnailInfo(opts, false, true)) {
-        return false;
-    }
     return true;
 }
 
@@ -89,11 +89,11 @@ bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &t
             MEDIA_ERR_LOG("ThumbnailUtils::RemoveDataFromKv faild");
             return false;
         }
+        if (!CleanDistributeLcdInfo(opts)) {
+            return false;
+        }
     }
 
-    if (!CleanDistributeLcdInfo(opts)) {
-        return false;
-    }
     return true;
 }
 

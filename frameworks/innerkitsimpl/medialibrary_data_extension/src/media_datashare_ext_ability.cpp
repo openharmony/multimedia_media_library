@@ -78,7 +78,8 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
         MEDIA_ERR_LOG("Failed to get dataManager");
         return;
     }
-    int32_t ret = dataManager->InitMediaLibraryMgr(context);
+    auto extensionContext = GetContext();
+    int32_t ret = dataManager->InitMediaLibraryMgr(context, extensionContext);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to init MediaLibraryMgr");
         return;
