@@ -127,8 +127,15 @@ std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper()
     return sDataShareHelper_;
 }
 
+MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();
+
 void MediaSpaceStatisticsTest::SetUpTestCase(void)
 {
+    // test QueryTotalSize when sDataShareHelper_ is nullptr
+    MediaVolume mediaVolume;
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    mediaLibraryManager->CloseAsset("", 0);
+
     vector<string> perms;
     perms.push_back("ohos.permission.READ_MEDIA");
     perms.push_back("ohos.permission.WRITE_MEDIA");
@@ -188,26 +195,25 @@ void MediaSpaceStatisticsTest::SetUp(void) {}
 
 void MediaSpaceStatisticsTest::TearDown(void) {}
 
-MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();
-
 void CreateDataHelper(int32_t systemAbilityId)
 {
-    MEDIA_INFO_LOG("CreateDataHelper::CreateDataHelper");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
-        MEDIA_ERR_LOG("CreateDataHelper:: Get system ability mgr failed.");
+        MEDIA_ERR_LOG("Get system ability mgr failed.");
     }
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
     while (remoteObj == nullptr) {
-        MEDIA_ERR_LOG("CreateDataHelper:: GetSystemAbility Service Failed.");
+        MEDIA_ERR_LOG("GetSystemAbility Service Failed.");
     }
     mediaLibraryManager->InitMediaLibraryManager(remoteObj);
-    MEDIA_INFO_LOG("CreateDataHelper:: InitMediaLibraryManager success~!");
+    MEDIA_INFO_LOG("InitMediaLibraryManager success~!");
 
     if (sDataShareHelper_ == nullptr) {
         const sptr<IRemoteObject> &token = remoteObj;
         sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     }
+
+    mediaLibraryManager->InitMediaLibraryManager(remoteObj);
 }
 
 std::unique_ptr<FileAsset> GetFile(int mediaTypeId)
@@ -646,12 +652,26 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_016, TestSize.Level
 
 /**
  * @tc.number    : MediaSpaceStatistics_test_017
+ * @tc.name      : test CloseAsset
+ * @tc.desc      : pass invalid fd
+ */
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_017, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_018::Start");
+    const string TEST_URI = "";
+    const int32_t TEST_FD = 10000;
+    mediaLibraryManager->CloseAsset(TEST_URI, TEST_FD);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_018::End");
+}
+
+/**
+ * @tc.number    : MediaSpaceStatistics_test_018
  * @tc.name      : get Media(image,video,audio,file) size
  * @tc.desc      : 1.delete all media
  *                 2.query media size
  *                 3.make sure size is 0
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_017, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_018, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_017::Start");
     ClearFile();
