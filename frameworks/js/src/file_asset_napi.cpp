@@ -968,31 +968,31 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     MediaLibraryTracer tracer;
     tracer.Start("JSCommitModifyExecute");
 
-    if (!MediaFileUtils::CheckTitle(context->objectInfo->GetTitle()) ||
-        !MediaFileUtils::CheckDisplayName(context->objectInfo->GetFileDisplayName())) {
+    if (!MediaFileUtils::CheckTitle(context->objectPtr->GetTitle()) ||
+        !MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName())) {
         NAPI_ERR_LOG("JSCommitModify CheckDisplayName fail");
         context->error = JS_ERR_DISPLAYNAME_INVALID;
         return;
     }
 
     string uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectInfo->GetTypeMask());
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
     Uri updateAssetUri(uri);
-    MediaType mediaType = context->objectInfo->GetMediaType();
+    MediaType mediaType = context->objectPtr->GetMediaType();
     string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
     int32_t changedRows;
-    valuesBucket.Put(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
-    valuesBucket.Put(MEDIA_DATA_DB_TITLE, context->objectInfo->GetTitle());
-    valuesBucket.Put(MEDIA_DATA_DB_NAME, context->objectInfo->GetFileDisplayName());
-    if (context->objectInfo->GetOrientation() >= 0) {
-        valuesBucket.Put(MEDIA_DATA_DB_ORIENTATION, context->objectInfo->GetOrientation());
+    valuesBucket.Put(MEDIA_DATA_DB_URI, context->objectPtr->GetUri());
+    valuesBucket.Put(MEDIA_DATA_DB_TITLE, context->objectPtr->GetTitle());
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, context->objectPtr->GetDisplayName());
+    if (context->objectPtr->GetOrientation() >= 0) {
+        valuesBucket.Put(MEDIA_DATA_DB_ORIENTATION, context->objectPtr->GetOrientation());
     }
-    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, context->objectInfo->GetRelativePath());
-    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, context->objectInfo->GetMediaType());
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, context->objectPtr->GetRelativePath());
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, context->objectPtr->GetMediaType());
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
-    predicates.SetWhereArgs({std::to_string(context->objectInfo->GetFileId())});
+    predicates.SetWhereArgs({std::to_string(context->objectPtr->GetId())});
 
     changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
@@ -1079,6 +1079,8 @@ napi_value FileAssetNapi::JSCommitModify(napi_env env, napi_callback_info info)
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForCommitModify(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
+        asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
 
         result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSCommitModify", JSCommitModifyExecute,
             JSCommitModifyCompleteCallback);
@@ -1103,8 +1105,8 @@ static void JSOpenExecute(napi_env env, void *data)
         return;
     }
 
-    string fileUri = context->objectInfo->GetFileUri();
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(fileUri, context->objectInfo->GetTypeMask());
+    string fileUri = context->objectPtr->GetUri();
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(fileUri, context->objectPtr->GetTypeMask());
     Uri openFileUri(fileUri);
     int32_t retVal = UserFileClient::OpenFile(openFileUri, mode);
     if (retVal <= 0) {
@@ -1193,6 +1195,9 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
 
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
+
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForOpen(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
@@ -1426,9 +1431,9 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    std::string uri = context->objectInfo->GetFileUri();
+    std::string uri = context->objectPtr->GetUri();
     Size size = { .width = context->thumbWidth, .height = context->thumbHeight };
-    context->pixelmap = QueryThumbnail(uri, size, context->objectInfo->GetTypeMask());
+    context->pixelmap = QueryThumbnail(uri, size, context->objectPtr->GetTypeMask());
 }
 
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
@@ -1546,6 +1551,9 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetThumbnail", asyncContext);
+        asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
+
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -1630,7 +1638,7 @@ static void JSFavoriteCallbackComplete(napi_env env, napi_status status, void *d
     napi_get_undefined(env, &jsContext->data);
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
-        Media::MediaType mediaType = context->objectInfo->GetMediaType();
+        Media::MediaType mediaType = context->objectPtr->GetMediaType();
         string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         UserFileClient::NotifyChange(modifyNotify);
@@ -1662,7 +1670,7 @@ static bool GetIsDirectoryiteNative(napi_env env, const FileAssetAsyncContext &f
     bool IsDirectory = false;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri isDirectoryAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_ISDIRECTORY);
-    context->valuesBucket.Put(Media::MEDIA_DATA_DB_ID, context->objectInfo->GetFileId());
+    context->valuesBucket.Put(Media::MEDIA_DATA_DB_ID, context->objectPtr->GetId());
     int retVal = UserFileClient::Insert(isDirectoryAssetUri, context->valuesBucket);
     NAPI_DEBUG_LOG("GetIsDirectoryiteNative retVal = %{public}d", retVal);
     if (retVal == SUCCESS) {
@@ -1752,6 +1760,8 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsDirectory", asyncContext);
+        asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
         status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
                 FileAssetAsyncContext* context = static_cast<FileAssetAsyncContext*>(data);
                 context->isDirectory = GetIsDirectoryiteNative(env, *context);
@@ -1772,7 +1782,7 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
 static void JSIsFavoriteExecute(FileAssetAsyncContext* context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    context->isFavorite = context->objectInfo->IsFavorite();
+    context->isFavorite = context->objectPtr->IsFavorite();
     return;
 }
 
@@ -1836,14 +1846,14 @@ static void JSFavouriteExecute(napi_env env, void *data)
 
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
-    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
+    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectPtr->GetId());
     string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/";
     uriString += context->isFavorite ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectInfo->GetTypeMask());
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectPtr->GetTypeMask());
     Uri uri(uriString);
     context->changedRows = UserFileClient::Insert(uri, valuesBucket);
     if (context->changedRows >= 0) {
-        context->objectInfo->SetFavorite(context->isFavorite);
+        context->objectPtr->SetFavorite(context->isFavorite);
     }
     context->SaveError(context->changedRows);
 }
@@ -1877,6 +1887,8 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
         return result;
     }
     ASSERT_NULLPTR_CHECK(env, result);
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSFavorite", JSFavouriteExecute,
         JSFavoriteCallbackComplete);
@@ -1933,6 +1945,9 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsFavorite", asyncContext);
+        asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
+
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -1960,14 +1975,15 @@ static void JSTrashExecute(napi_env env, void *data)
 
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
-    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectInfo->GetFileId());
+    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectPtr->GetId());
     string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/";
     uriString += context->isTrash ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectInfo->GetTypeMask());
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectPtr->GetTypeMask());
     Uri uri(uriString);
     context->changedRows = UserFileClient::Insert(uri, valuesBucket);
     if (context->changedRows >= 0) {
-        context->objectInfo->SetTrash(context->isTrash);
+        int32_t trashFlag = (context->isTrash ? IS_TRASH : NOT_TRASH);
+        context->objectPtr->SetIsTrash(trashFlag);
     }
     context->SaveError(context->changedRows);
 }
@@ -1985,7 +2001,7 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status, void *data
     napi_get_undefined(env, &jsContext->data);
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
-        Media::MediaType mediaType = context->objectInfo->GetMediaType();
+        Media::MediaType mediaType = context->objectPtr->GetMediaType();
         string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         UserFileClient::NotifyChange(modifyNotify);
@@ -2052,6 +2068,8 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForTrash(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
+        asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
         result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSTrash", JSTrashExecute,
             JSTrashCallbackComplete);
     }
@@ -2064,7 +2082,7 @@ static void JSIsTrashExecute(FileAssetAsyncContext* context)
     tracer.Start("JSIsTrashExecute");
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    context->isTrash = context->objectInfo->IsTrash();
+    context->isTrash = (context->objectPtr->GetIsTrash() != NOT_TRASH);
     return;
 }
 
@@ -2145,6 +2163,9 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsTrash", asyncContext);
+        asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
+
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
@@ -2165,7 +2186,7 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
 
 void FileAssetNapi::UpdateFileAssetInfo()
 {
-    fileAssetPtr = std::unique_ptr<FileAsset>(sFileAsset_);
+    fileAssetPtr = std::shared_ptr<FileAsset>(sFileAsset_);
 }
 
 napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
@@ -2282,6 +2303,8 @@ napi_value FileAssetNapi::UserFileMgrOpen(napi_env env, napi_callback_info info)
     NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, mode) == napi_ok,
         "Failed to parse js args");
     asyncContext->valuesBucket.Put(MEDIA_FILEMODE, mode);
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrOpen",
         JSOpenExecute, JSOpenCompleteCallback);
@@ -2320,6 +2343,8 @@ napi_value FileAssetNapi::UserFileMgrCommitModify(napi_env env, napi_callback_in
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
         "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrCommitModify",
         JSCommitModifyExecute, JSCommitModifyCompleteCallback);
@@ -2336,6 +2361,8 @@ napi_value FileAssetNapi::UserFileMgrFavorite(napi_env env, napi_callback_info i
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     NAPI_ASSERT(env,  MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isFavorite) ==
         napi_ok, "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrFavorite", JSFavouriteExecute,
         JSFavoriteCallbackComplete);
@@ -2352,6 +2379,8 @@ napi_value FileAssetNapi::UserFileMgrTrash(napi_env env, napi_callback_info info
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     NAPI_ASSERT(env,  MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isTrash) ==
         napi_ok, "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrTrash", JSTrashExecute,
         JSTrashCallbackComplete);
@@ -2367,11 +2396,13 @@ napi_value FileAssetNapi::UserFileMgrIsDirectory(napi_env env, napi_callback_inf
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
     NAPI_ASSERT(env,  MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
         "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrIsDirectory",
         [](napi_env env, void* data) {
             FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
-            context->isDirectory = MediaFileUtils::IsDirectory(context->objectInfo->GetFilePath());
+            context->isDirectory = MediaFileUtils::IsDirectory(context->objectPtr->GetPath());
             context->status = true;
         },
         reinterpret_cast<CompleteCallback>(JSIsDirectoryCallbackComplete));
@@ -2391,6 +2422,8 @@ napi_value FileAssetNapi::UserFileMgrGetThumbnail(napi_env env, napi_callback_in
         napi_ok, result, "Failed to get object info");
     result = GetJSArgsForGetThumbnail(env, asyncContext->argc, asyncContext->argv, *asyncContext);
     ASSERT_NULLPTR_CHECK(env, result);
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
 
     result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetThumbnail",
         [](napi_env env, void* data) {
