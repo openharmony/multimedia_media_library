@@ -70,7 +70,7 @@ void MediaFileExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &record
         MEDIA_ERR_LOG("Failed to get context");
         return;
     }
-    MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context);
+    MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr);
 }
 
 void MediaFileExtAbility::OnStart(const AAFwk::Want &want)

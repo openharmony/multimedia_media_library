@@ -119,7 +119,8 @@ static void MakeRootDirs()
     }
 }
 
-int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
+int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
+    const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext)
 {
     std::lock_guard<std::shared_mutex> lock(mgrSharedMutex_);
 
@@ -143,7 +144,7 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS:
     ret = InitialiseKvStore();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init KvStore");
 
-    ret = InitialiseThumbnailService();
+    ret = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init ThumbnailService");
 
     refCnt_++;
@@ -841,7 +842,8 @@ void MediaLibraryDataManager::NotifyChange(const Uri &uri)
     extension_->NotifyChange(uri);
 }
 
-int32_t MediaLibraryDataManager::InitialiseThumbnailService()
+int32_t MediaLibraryDataManager::InitialiseThumbnailService(
+    const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext)
 {
     if (thumbnailService_ != nullptr) {
         return E_OK;
@@ -851,7 +853,7 @@ int32_t MediaLibraryDataManager::InitialiseThumbnailService()
         MEDIA_ERR_LOG("MediaLibraryDataManager::InitialiseThumbnailService failed");
         return E_ERR;
     }
-    int ret = thumbnailService_->Init(rdbStore_, kvStorePtr_, context_);
+    int ret = thumbnailService_->Init(rdbStore_, kvStorePtr_, extensionContext);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to init ThumbnailService");
         return E_ERR;
