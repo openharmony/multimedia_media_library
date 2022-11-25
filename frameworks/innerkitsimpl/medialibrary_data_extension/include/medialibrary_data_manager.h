@@ -71,7 +71,8 @@ public:
 
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 
-    void InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
+    void InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
+        const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
     void ClearMediaLibraryMgr();
     void MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
     void CreateThumbnailAsync(const std::string &uri);
@@ -86,7 +87,7 @@ private:
     void NeedQuerySync(const std::string &networkId, OperationObject oprnObject);
     void ScanFile(const NativeRdb::ValuesBucket &values, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore1);
     void InitDeviceData();
-    void InitialiseThumbnailService();
+    void InitialiseThumbnailService(const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
     std::shared_ptr<DataShare::ResultSetBridge> GenThumbnail(const std::string &uri);
     int32_t CreateThumbnail(const NativeRdb::ValuesBucket &values);
     int32_t LcdDistributeAging();

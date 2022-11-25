@@ -72,7 +72,8 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
 
     auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager != nullptr) {
-        dataManager->InitMediaLibraryMgr(context);
+        auto extensionContext = GetContext();
+        dataManager->InitMediaLibraryMgr(context, extensionContext);
         dataManager->SetOwner(static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()));
     }
 
