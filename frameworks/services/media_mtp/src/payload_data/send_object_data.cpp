@@ -29,7 +29,7 @@ SendObjectData::~SendObjectData()
 {
 }
 
-int SendObjectData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
+int SendObjectData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
 {
     if ((context_ == nullptr) || (!MtpStorageManager::GetInstance()->HasStorage())) {
         MEDIA_ERR_LOG("SendObjectData::parser null or storage");

@@ -32,14 +32,14 @@ GetPartialObjectData::~GetPartialObjectData()
 {
 }
 
-int GetPartialObjectData::Parser(const std::vector<uint8_t> &buffer, uint32_t readSize)
+int GetPartialObjectData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
 {
     if ((context_ == nullptr) || (!MtpStorageManager::GetInstance()->HasStorage())) {
         MEDIA_ERR_LOG("GetPartialObjectData::parser null or storage");
         return MTP_INVALID_OBJECTHANDLE_CODE;
     }
 
-    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(uint32_t);
+    int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetPartialObjectData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);

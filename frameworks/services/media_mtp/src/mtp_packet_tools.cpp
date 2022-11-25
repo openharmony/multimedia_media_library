@@ -1025,8 +1025,14 @@ bool MtpPacketTool::DumpChar(uint8_t u8, std::unique_ptr<char[]> &hexBuf, int he
 
     int intData = static_cast<int>(u8);
     char txtTmp[BIT_4] = {0};
-    if (sprintf_s(txtTmp, sizeof(txtTmp), "%c", (isprint(intData)) ? intData : '.') == -1) {
-        return false;
+    if (isprint(intData)) {
+        if (sprintf_s(txtTmp, sizeof(txtTmp), "%d", intData) == -1) {
+            return false;
+        }
+    } else {
+        if (sprintf_s(txtTmp, sizeof(txtTmp), "%c", '.') == -1) {
+            return false;
+        }
     }
 
     if (strcat_s(hexBuf.get(), hexBufSize, hexTmp) != EOK) {

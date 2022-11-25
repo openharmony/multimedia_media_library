@@ -26,7 +26,7 @@ public:
     explicit PayloadData();
     virtual ~PayloadData();
 
-    virtual int Parser(const std::vector<uint8_t> &buffer, uint32_t readSize) = 0;
+    virtual int Parser(const std::vector<uint8_t> &buffer, int32_t readSize) = 0;
     virtual int Maker(std::vector<uint8_t> &outBuffer) = 0;
 
     virtual uint32_t CalculateSize() = 0;
