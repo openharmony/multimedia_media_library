@@ -160,6 +160,41 @@ shared_ptr<DataShare::DataShareResultSet> QueryThumbnail(const string &uri, Size
     return g_mediaDataShareHelper->Query(queryUri, predicates, columns);
 }
 
+HWTEST_F(MediaThumbnailTest, ResizeImage_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreateImageThumbnailTest_001:: Start");
+    string displayName = "CreateImageThumbnailTest_001.jpg";
+    unique_ptr<FileAsset> fileAsset = nullptr;
+    if (!GetFileAsset(fileAsset, displayName)) {
+        return;
+    }
+
+    Size size = {
+        .width = 256, .height = 256
+    };
+    shared_ptr<DataShare::DataShareResultSet> resultSet = QueryThumbnail(fileAsset->GetUri(), size);
+    if (resultSet == nullptr) {
+        EXPECT_EQ(true, false);
+        return;
+    }
+    resultSet->GoToFirstRow();
+    vector<uint8_t> TEST_DATA;
+    unique_ptr<PixelMap> pixelMap;
+    MediaThumbnailHelper::ResizeImage(TEST_DATA, size, pixelMap);
+    TEST_DATA.push_back(1);
+    MediaThumbnailHelper::ResizeImage(TEST_DATA, size, pixelMap);
+    EXPECT_EQ(pixelMap, nullptr);
+
+    vector<uint8_t> image;
+    resultSet->GetBlob(PARAM1, image);
+    resultSet->Close();
+    Size TEST_SIZE = {
+        .width = PIXEL_MAP_MAX_RAM_SIZE, .height = PIXEL_MAP_MAX_RAM_SIZE
+    };
+    MediaThumbnailHelper::ResizeImage(image, TEST_SIZE, pixelMap);
+    EXPECT_EQ(pixelMap, nullptr);
+}
+
 HWTEST_F(MediaThumbnailTest, CreateImageThumbnailTest_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("CreateImageThumbnailTest_001:: Start");
