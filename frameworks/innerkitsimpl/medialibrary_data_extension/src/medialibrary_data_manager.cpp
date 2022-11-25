@@ -118,7 +118,8 @@ static void MakeRootDirs()
     }
 }
 
-void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
+void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
+    const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext)
 {
     std::lock_guard<std::shared_mutex> lock(mgrSharedMutex_);
 
@@ -134,7 +135,7 @@ void MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::Ab
     MakeDirQuerySetMap(dirQuerySetMap_);
     MakeRootDirs();
     InitialiseKvStore();
-    InitialiseThumbnailService();
+    InitialiseThumbnailService(extensionContext);
 }
 
 void MediaLibraryDataManager::InitDeviceData()
@@ -760,7 +761,8 @@ void MediaLibraryDataManager::NotifyChange(const Uri &uri)
     }
 }
 
-void MediaLibraryDataManager::InitialiseThumbnailService()
+void MediaLibraryDataManager::InitialiseThumbnailService(
+    const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext)
 {
     if (thumbnailService_ != nullptr) {
         return;
@@ -769,7 +771,7 @@ void MediaLibraryDataManager::InitialiseThumbnailService()
     if (thumbnailService_ == nullptr) {
         MEDIA_INFO_LOG("MediaLibraryDataManager::InitialiseThumbnailService failed");
     }
-    thumbnailService_->Init(rdbStore_, kvStorePtr_, context_);
+    thumbnailService_->Init(rdbStore_, kvStorePtr_, extensionContext);
 }
 
 int32_t ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)
