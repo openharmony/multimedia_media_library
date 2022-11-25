@@ -194,7 +194,8 @@ int32_t MediaLibraryFileOperations::DeleteFileOperation(MediaLibraryCommand &cmd
         return E_INVALID_FILEID;
     }
 
-    int32_t errCode = MediaLibraryObjectUtils::DeleteFileObj(cmd, srcPath);
+    int32_t errCode = MediaFileUtils::IsDirectory(srcPath) ? MediaLibraryObjectUtils::DeleteDirObj(cmd, srcPath) :
+        MediaLibraryObjectUtils::DeleteFileObj(cmd, srcPath);
     if (errCode > 0) {
         MediaLibraryDirOperations dirOprn;
         MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
