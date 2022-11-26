@@ -202,8 +202,9 @@ void CreateDataHelper(int32_t systemAbilityId)
         MEDIA_ERR_LOG("Get system ability mgr failed.");
     }
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
-    while (remoteObj == nullptr) {
+    if (remoteObj == nullptr) {
         MEDIA_ERR_LOG("GetSystemAbility Service Failed.");
+        return;
     }
     mediaLibraryManager->InitMediaLibraryManager(remoteObj);
     MEDIA_INFO_LOG("InitMediaLibraryManager success~!");
