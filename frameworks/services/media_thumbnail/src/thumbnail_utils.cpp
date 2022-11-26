@@ -119,7 +119,7 @@ bool ThumbnailUtils::ClearThumbnailAllRecord(ThumbRdbOpt &opts, ThumbnailData &t
     return true;
 }
 
-bool ThumbnailUtils::LoadAudioFile(const string &path, shared_ptr<PixelMap> &pixelMap)
+bool ThumbnailUtils::LoadAudioFile(const string &path, shared_ptr<PixelMap> &pixelMap, float &degrees)
 {
     std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     int32_t err = SetSource(avMetadataHelper, path);
@@ -154,10 +154,11 @@ bool ThumbnailUtils::LoadAudioFile(const string &path, shared_ptr<PixelMap> &pix
     if (pixelMap->GetAlphaType() == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
         pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     }
+    degrees = 0.0;
     return true;
 }
 
-bool ThumbnailUtils::LoadVideoFile(const string &path, shared_ptr<PixelMap> &pixelMap)
+bool ThumbnailUtils::LoadVideoFile(const string &path, shared_ptr<PixelMap> &pixelMap, float &degrees)
 {
     std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     int32_t err = SetSource(avMetadataHelper, path);
@@ -177,10 +178,17 @@ bool ThumbnailUtils::LoadVideoFile(const string &path, shared_ptr<PixelMap> &pix
     if (pixelMap->GetAlphaType() == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
         pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     }
+    std::string metaData = avMetadataHelper->ResolveMetadata(AV_KEY_VIDEO_ORIENTATION);
+    if (metaData == "") {
+        degrees = 0.0;
+    } else {
+        std::istringstream iss(metaData);
+        iss >> degrees;
+    }
     return true;
 }
 
-bool ThumbnailUtils::LoadImageFile(const string &path, shared_ptr<PixelMap> &pixelMap)
+bool ThumbnailUtils::LoadImageFile(const string &path, shared_ptr<PixelMap> &pixelMap, float &degrees)
 {
     uint32_t err = 0;
     SourceOptions opts;
@@ -202,6 +210,13 @@ bool ThumbnailUtils::LoadImageFile(const string &path, shared_ptr<PixelMap> &pix
         MEDIA_ERR_LOG("Failed to create pixelmap path %{private}s err %{public}d",
             path.c_str(), err);
         return false;
+    }
+    int intTempMeta;
+    err = imageSource->GetImagePropertyInt(0, MEDIA_DATA_IMAGE_ORIENTATION, intTempMeta);
+    if (err != SUCCESS) {
+        degrees = 0.0;
+    } else {
+        degrees = static_cast<float>(intTempMeta);
     }
     return true;
 }
@@ -264,7 +279,7 @@ bool ThumbnailUtils::GenLcdKey(ThumbnailData &data)
 
 
 bool ThumbnailUtils::CompressImage(std::shared_ptr<PixelMap> &pixelMap, const Size &size,
-    std::vector<uint8_t> &data)
+    std::vector<uint8_t> &data, float degrees)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PixelMap::Create");
@@ -287,6 +302,7 @@ bool ThumbnailUtils::CompressImage(std::shared_ptr<PixelMap> &pixelMap, const Si
         .quality = THUMBNAIL_QUALITY,
         .numberHint = NUMBER_HINT_1
     };
+    compressImage->rotate(degrees);
     data.resize(compressImage->GetByteCount());
     tracer.Start("imagePacker.StartPacking");
     ImagePacker imagePacker;
@@ -999,11 +1015,11 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
 
     bool ret = false;
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
-        ret = LoadVideoFile(data.path, data.source);
+        ret = LoadVideoFile(data.path, data.source, data.degrees);
     } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
-        ret = LoadAudioFile(data.path, data.source);
+        ret = LoadAudioFile(data.path, data.source, data.degrees);
     } else {
-        ret = LoadImageFile(data.path, data.source);
+        ret = LoadImageFile(data.path, data.source, data.degrees);
     }
 
     return ret;
@@ -1014,7 +1030,7 @@ bool ThumbnailUtils::CreateThumbnailData(ThumbnailData &data)
     Size size = { DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE };
     MediaLibraryTracer tracer;
     tracer.Start("CompressImage");
-    bool ret = CompressImage(data.source, size, data.thumbnail);
+    bool ret = CompressImage(data.source, size, data.thumbnail, data.degrees);
     return ret;
 }
 
@@ -1036,7 +1052,7 @@ bool ThumbnailUtils::CreateLcdData(ThumbnailData &data, int32_t lcdSize)
 
     MediaLibraryTracer tracer;
     tracer.Start("CompressImage");
-    bool ret = CompressImage(data.source, size, data.lcd);
+    bool ret = CompressImage(data.source, size, data.lcd, data.degrees);
     return ret;
 }
 
