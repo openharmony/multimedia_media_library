@@ -26,42 +26,18 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check isfileexists
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileExists_Test_001, TestSize.Level0)
 {
     string filePath = "/data/test/isfileexists_001";
     EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check isdirempty
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsDirEmpty_Test_001, TestSize.Level0)
 {
     string dirPath = "/data/test/isdirempty_001";
     EXPECT_EQ(MediaFileUtils::IsDirEmpty(dirPath), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check isdirempty
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsDirEmpty_Test_002, TestSize.Level0)
 {
     string dirPath = "/data/test/isdirempty_002";
@@ -70,42 +46,25 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsDirEmpty_Test_002, TestSiz
     EXPECT_EQ(MediaFileUtils::IsDirEmpty(dirPath), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check createfile
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsDirEmpty_Test_003, TestSize.Level0)
+{
+    string dirPath = "/data/test/isdirempty_003";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    EXPECT_EQ(MediaFileUtils::IsDirEmpty(dirPath), true);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateFile_Test_001, TestSize.Level0)
 {
     string filePath = "/data/test/createfile_001";
     EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check createfile
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateFile_Test_002, TestSize.Level0)
 {
     string filePath = "";
     EXPECT_EQ(MediaFileUtils::CreateFile(filePath), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check createfile
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateFile_Test_003, TestSize.Level0)
 {
     string filePath = "/data/test/createfile_003";
@@ -113,28 +72,18 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateFile_Test_003, TestSiz
     EXPECT_EQ(MediaFileUtils::CreateFile(filePath), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check deletefile
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateFile_Test_004, TestSize.Level0)
+{
+    string filePath = "/data/test/test/test/test/createfile_004";
+    EXPECT_EQ(MediaFileUtils::CreateFile(filePath), false);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DeleteFile_Test_001, TestSize.Level0)
 {
     string filePath = "/data/test/deletefile_001";
     EXPECT_EQ(MediaFileUtils::DeleteFile(filePath), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check deletedir
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DeleteDir_Test_001, TestSize.Level0)
 {
     string dirPath = "/data/test/deletedir_001";
@@ -142,14 +91,12 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DeleteDir_Test_001, TestSize
     EXPECT_EQ(MediaFileUtils::DeleteDir(dirPath), true);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check movefile
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DeleteDir_Test_002, TestSize.Level0)
+{
+    string dirPath = "/data/test/deletedir_002";
+    EXPECT_EQ(MediaFileUtils::DeleteDir(dirPath), false);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_MoveFile_Test_001, TestSize.Level0)
 {
     string oldPath = "/data/test/movefile_001";
@@ -158,28 +105,28 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_MoveFile_Test_001, TestSize.
     EXPECT_EQ(MediaFileUtils::MoveFile(oldPath, newPath), true);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check createdirectory
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_MoveFile_Test_002, TestSize.Level0)
+{
+    string oldPath = "/data/test/movefile_002";
+    string newPath = "/data/test/movefile_002_move";
+    EXPECT_EQ(MediaFileUtils::CreateFile(oldPath), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(newPath), true);
+    EXPECT_EQ(MediaFileUtils::MoveFile(oldPath, newPath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_MoveFile_Test_003, TestSize.Level0)
+{
+    string oldPath = "/data/test/movefile_003";
+    string newPath = "/data/test/movefile_003_move";
+    EXPECT_EQ(MediaFileUtils::MoveFile(oldPath, newPath), false);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateDirectory_Test_001, TestSize.Level0)
 {
     string dirPath = "/data/test/createdir_001";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check removedirectory
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RemoveDirectory_Test_001, TestSize.Level0)
 {
     string dirPath = "/data/test/removedir_001";
@@ -188,14 +135,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RemoveDirectory_Test_001, Te
     EXPECT_EQ(MediaFileUtils::RemoveDirectory(dirPath), 0);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check copyfile
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_001, TestSize.Level0)
 {
     string oldPath = "/data/test/copyfile_001";
@@ -204,14 +143,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_001, TestSize.
     EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), true);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check copyfile
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_002, TestSize.Level0)
 {
     string oldPath = "";
@@ -219,14 +150,49 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_002, TestSize.
     EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check renamedir
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_003, TestSize.Level0)
+{
+    string oldPath = "/data/test/copyfile_003";
+    string newPath = "";
+    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_004, TestSize.Level0)
+{
+    string oldPath = "/data/test/copyfile_004";
+    string newPath = "/data/test/copyfile_004_copy";
+    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_005, TestSize.Level0)
+{
+    string oldPath = "/data/test/copyfile_005";
+    string newPath = "/data/test/copyfile_005_copy";
+    string newPathCorrected = "/data/test/copyfile_005_copy/copyfile_005";
+    EXPECT_EQ(MediaFileUtils::CreateFile(oldPath), true);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(newPath), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(newPathCorrected), true);
+    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_006, TestSize.Level0)
+{
+    string oldPath = "/data/test/copyfile_006";
+    string newPath = "/data/test/copyfile_006_copy";
+    EXPECT_EQ(MediaFileUtils::CreateFile(oldPath), true);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(newPath), true);
+    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_008, TestSize.Level0)
+{
+    string oldPath = "/data/test/";
+    string newPath = "/data/test/copyfile_008_copy";
+    EXPECT_EQ(MediaFileUtils::CreateFile(oldPath), false);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(newPath), true);
+    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), false);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RenameDir_Test_001, TestSize.Level0)
 {
     string oldPath = "/data/test/renamedir_001";
@@ -235,140 +201,80 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RenameDir_Test_001, TestSize
     EXPECT_EQ(MediaFileUtils::RenameDir(oldPath, newPath), true);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check checkdisplayname
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RenameDir_Test_002, TestSize.Level0)
+{
+    string oldPath = "/data/test/renamedir_002";
+    string newPath = "";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(oldPath), true);
+    EXPECT_EQ(MediaFileUtils::RenameDir(oldPath, newPath), false);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_001, TestSize.Level0)
 {
     string displayName = "";
     EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check checkdisplayname
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_002, TestSize.Level0)
 {
     string displayName = ".nofile";
     EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check checkdisplayname
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_003, TestSize.Level0)
 {
     string displayName = "test";
     EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), true);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check checktitle
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_004, TestSize.Level0)
+{
+    string displayName = "test:*\'";
+    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), false);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckTitle_Test_001, TestSize.Level0)
 {
     string title = "test";
     EXPECT_EQ(MediaFileUtils::CheckTitle(title), true);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check checktitle
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckTitle_Test_002, TestSize.Level0)
 {
     string title = "";
     EXPECT_EQ(MediaFileUtils::CheckTitle(title), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check checktitle
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckTitle_Test_003, TestSize.Level0)
 {
     string title = "test\\.";
     EXPECT_EQ(MediaFileUtils::CheckTitle(title), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getalbumdatemodified
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAlbumDateModified_Test_001, TestSize.Level0)
 {
-    string dirPath = "/data/test/getalbumdatemodified_001_renamed";
+    string dirPath = "/data/test/getalbumdatemodified_001";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
     EXPECT_EQ(MediaFileUtils::GetAlbumDateModified(dirPath) > 0, true);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getalbumdatemodified
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAlbumDateModified_Test_002, TestSize.Level0)
 {
     string dirPath = "";
     EXPECT_EQ(MediaFileUtils::GetAlbumDateModified(dirPath), 0);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check utcTimeseconds
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAlbumDateModified_Test_003, TestSize.Level0)
+{
+    string dirPath = "/data/test/getalbumdatemodified_003";
+    EXPECT_EQ(MediaFileUtils::GetAlbumDateModified(dirPath), 0);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UTCTimeSeconds_Test_001, TestSize.Level0)
 {
     EXPECT_EQ(MediaFileUtils::UTCTimeSeconds() > 0, true);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getnetworkidfromuri
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetNetworkIdFromUri_Test_001, TestSize.Level0)
 {
     string tempNetworkId = "1d3cb099659d53b3ee15faaab3c00a8ff983382ebc8b01aabde039ed084e167b";
@@ -376,70 +282,30 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetNetworkIdFromUri_Test_001
     EXPECT_EQ(MediaFileUtils::GetNetworkIdFromUri(uri), tempNetworkId);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getnetworkidfromuri
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetNetworkIdFromUri_Test_002, TestSize.Level0)
 {
     string uri = "";
     EXPECT_EQ(MediaFileUtils::GetNetworkIdFromUri(uri), "");
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getnetworkidfromuri
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetNetworkIdFromUri_Test_003, TestSize.Level0)
 {
     string uri = MEDIALIBRARY_DATA_URI_IDENTIFIER;
     EXPECT_EQ(MediaFileUtils::GetNetworkIdFromUri(uri), "");
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getnetworkidfromuri
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetNetworkIdFromUri_Test_004, TestSize.Level0)
 {
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX;
     EXPECT_EQ(MediaFileUtils::GetNetworkIdFromUri(uri), "");
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getnetworkidfromuri
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetNetworkIdFromUri_Test_005, TestSize.Level0)
 {
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     EXPECT_EQ(MediaFileUtils::GetNetworkIdFromUri(uri), "");
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check updatepath
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_001, TestSize.Level0)
 {
     string path = "/storage/media/100/local/files";
@@ -448,14 +314,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_001, TestSiz
     EXPECT_EQ(MediaFileUtils::UpdatePath(path, uri), "/storage/media/100/" + tempNetworkId + "/files");
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check updatepath
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_002, TestSize.Level0)
 {
     string path = "";
@@ -463,14 +321,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_002, TestSiz
     EXPECT_EQ(MediaFileUtils::UpdatePath(path, uri), path);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check updatepath
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_003, TestSize.Level0)
 {
     string path = "/storage/media/100/local/files";
@@ -478,14 +328,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_003, TestSiz
     EXPECT_EQ(MediaFileUtils::UpdatePath(path, uri), path);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check updatepath
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_004, TestSize.Level0)
 {
     string path = "/storage/media/100/";
@@ -494,14 +336,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_004, TestSiz
     EXPECT_EQ(MediaFileUtils::UpdatePath(path, uri), path);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check updatepath
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_005, TestSize.Level0)
 {
     string path = "local/files";
@@ -510,14 +344,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_005, TestSiz
     EXPECT_EQ(MediaFileUtils::UpdatePath(path, uri), path);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check updatepath
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_006, TestSize.Level0)
 {
     string path = "/storage/media/100/local";
@@ -526,84 +352,43 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_006, TestSiz
     EXPECT_EQ(MediaFileUtils::UpdatePath(path, uri), path);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getfilemediatypeuri
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_007, TestSize.Level0)
+{
+    string path = "/storage/media/100/local";
+    string uri = "";
+    EXPECT_EQ(MediaFileUtils::UpdatePath(path, uri), path);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_001, TestSize.Level0)
 {
     string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_AUDIO_URI;
     EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_AUDIO, ""), uri);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getfilemediatypeuri
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_002, TestSize.Level0)
 {
     string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_VIDEO_URI;
     EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_VIDEO, ""), uri);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getfilemediatypeuri
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_003, TestSize.Level0)
 {
     string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_IMAGE_URI;
     EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_IMAGE, ""), uri);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getfilemediatypeuri
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_004, TestSize.Level0)
 {
     string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI;
     EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, ""), uri);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getfilemediatypeuri
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_005, TestSize.Level0)
 {
     string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI;
     EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALL, ""), uri);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check geturibynameandid
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriByNameAndId_Test_001, TestSize.Level0)
 {
     string displayName = "test.jpg";
@@ -613,88 +398,64 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriByNameAndId_Test_001, 
     EXPECT_EQ(MediaFileUtils::GetUriByNameAndId(displayName, networkId, fd), targetUri);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getmediatype
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_001, TestSize.Level0)
 {
     string displayName = "";
     EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_ALL);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getmediatype
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_002, TestSize.Level0)
 {
     string displayName = "test";
     EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_FILE);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getmediatype
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_003, TestSize.Level0)
 {
     string displayName = "test.mp3";
     EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_AUDIO);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getmediatype
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_004, TestSize.Level0)
 {
     string displayName = "test.mp4";
     EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_VIDEO);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getmediatype
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_005, TestSize.Level0)
 {
     string displayName = "test.jpg";
     EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_IMAGE);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getmediatype
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_006, TestSize.Level0)
 {
     string displayName = "test.txt";
     EXPECT_EQ(MediaFileUtils::GetMediaType(displayName), MEDIA_TYPE_FILE);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFilename_Test_001, TestSize.Level0)
+{
+    string filePath = "";
+    EXPECT_EQ(MediaFileUtils::GetFilename(filePath), "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFilename_Test_002, TestSize.Level0)
+{
+    string filePath = "test";
+    EXPECT_EQ(MediaFileUtils::GetFilename(filePath), "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFilename_Test_003, TestSize.Level0)
+{
+    string filePath = "test/";
+    EXPECT_EQ(MediaFileUtils::GetFilename(filePath), "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFilename_Test_004, TestSize.Level0)
+{
+    string filePath = "test/test";
+    EXPECT_EQ(MediaFileUtils::GetFilename(filePath), "test");
 }
 } // namespace Media
 } // namespace OHOS
