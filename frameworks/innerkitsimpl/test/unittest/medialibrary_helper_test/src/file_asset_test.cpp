@@ -28,15 +28,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check set get function
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_001, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -86,14 +77,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_001, TestSize.Level0)
     EXPECT_EQ(fileAsset.GetTitle(), TEST_TITLE);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check set get function
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_002, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -139,14 +122,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_002, TestSize.Level0)
     EXPECT_EQ(fileAsset.GetResultNapiType(), TEST_RESULT_NAPI_TYPE);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check set get function
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_003, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -192,14 +167,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_003, TestSize.Level0)
     EXPECT_EQ(memberMap.size() > 0, true);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check createasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_001, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -208,14 +175,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_001, TestSize.Le
     EXPECT_EQ(fileAsset.CreateAsset(filePath), E_SUCCESS);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check createasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_002, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -223,14 +182,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_002, TestSize.Le
     EXPECT_EQ(fileAsset.CreateAsset(filePath), E_VIOLATION_PARAMETERS);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check createasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_003, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -240,14 +191,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_003, TestSize.Le
     EXPECT_EQ(fileAsset.CreateAsset(filePath), E_FILE_EXIST);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check createasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_004, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -255,14 +198,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_004, TestSize.Le
     EXPECT_EQ(fileAsset.CreateAsset(filePath), E_SUCCESS);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check createasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_005, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -271,14 +206,20 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_005, TestSize.Le
     EXPECT_EQ(fileAsset.CreateAsset(filePath), E_ERR);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check modifyasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_006, TestSize.Level0)
+{
+    FileAsset fileAsset;
+    string filePath = "test";
+    EXPECT_EQ(fileAsset.CreateAsset(filePath), E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_CreateAsset_Test_007, TestSize.Level0)
+{
+    FileAsset fileAsset;
+    string filePath = "/data/test/test/test/test/test/nofile";
+    EXPECT_EQ(fileAsset.CreateAsset(filePath), E_ERR);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_ModifyAsset_Test_001, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -288,14 +229,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_ModifyAsset_Test_001, TestSize.Le
     EXPECT_EQ(fileAsset.ModifyAsset(oldPath, newPath), E_SUCCESS);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check modifyasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_ModifyAsset_Test_002, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -304,14 +237,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_ModifyAsset_Test_002, TestSize.Le
     EXPECT_EQ(fileAsset.ModifyAsset(oldPath, newPath), E_MODIFY_DATA_FAIL);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check modifyasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_ModifyAsset_Test_003, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -320,14 +245,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_ModifyAsset_Test_003, TestSize.Le
     EXPECT_EQ(fileAsset.ModifyAsset(oldPath, newPath), E_NO_SUCH_FILE);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check modifyasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_ModifyAsset_Test_004, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -338,14 +255,23 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_ModifyAsset_Test_004, TestSize.Le
     EXPECT_EQ(fileAsset.ModifyAsset(oldPath, newPath), E_FILE_EXIST);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check deleteasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_ModifyAsset_Test_005, TestSize.Level0)
+{
+    FileAsset fileAsset;
+    string oldPath = "/data/test/ModifyAsset_005.jpg";
+    string newPath = "/data/test/test/test/test/test/ModifyAsset_005.jpg";
+    EXPECT_EQ(fileAsset.CreateAsset(oldPath), E_SUCCESS);
+    EXPECT_EQ(fileAsset.ModifyAsset(oldPath, newPath), E_FILE_OPER_FAIL);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_ModifyAsset_Test_006, TestSize.Level0)
+{
+    FileAsset fileAsset;
+    string oldPath = "/data/test/ModifyAsset_006.jpg";
+    string newPath = "";
+    EXPECT_EQ(fileAsset.ModifyAsset(oldPath, newPath), E_MODIFY_DATA_FAIL);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_DeleteAsset_Test_001, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -354,14 +280,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_DeleteAsset_Test_001, TestSize.Le
     EXPECT_EQ(fileAsset.DeleteAsset(filePath), E_SUCCESS);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check deleteasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_DeleteAsset_Test_002, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -369,14 +287,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_DeleteAsset_Test_002, TestSize.Le
     EXPECT_EQ(fileAsset.DeleteAsset(filePath), E_ERR);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check deleteasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_DeleteAsset_Test_003, TestSize.Level0)
 {
     AlbumAsset albumAsset;
@@ -387,14 +297,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_DeleteAsset_Test_003, TestSize.Le
     EXPECT_EQ(fileAsset.DeleteAsset(albumPath), 0);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check openasset closeasset function
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_CloseAsset_Test_001, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -427,14 +329,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_CloseAsset_Test_001, Te
     EXPECT_EQ(fileAsset.CloseAsset(fd), 0);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check openasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_002, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -443,14 +337,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_002, TestSize.Leve
     EXPECT_EQ(fileAsset.OpenAsset(filePath, mode), E_ERR);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check openasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_003, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -462,14 +348,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_003, TestSize.Leve
     EXPECT_EQ(fileAsset.OpenAsset(filePath, mode), E_ERR);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check openasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_004, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -478,14 +356,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_004, TestSize.Leve
     EXPECT_EQ(fileAsset.OpenAsset(filePath, mode), E_ERR);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check openasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_005, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -494,14 +364,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_005, TestSize.Leve
     EXPECT_EQ(fileAsset.OpenAsset(filePath, mode), E_ERR);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check isfileexists
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_IsFileExists_Test_001, TestSize.Level0)
 {
     FileAsset fileAsset;
@@ -509,14 +371,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_IsFileExists_Test_001, TestSize.L
     EXPECT_EQ(fileAsset.IsFileExists(filePath), false);
 }
 
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check getmembervalue
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_GetMemberValue_Test_001, TestSize.Level0)
 {
     FileAsset fileAsset;
