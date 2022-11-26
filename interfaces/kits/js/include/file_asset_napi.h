@@ -122,7 +122,7 @@ private:
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
     static thread_local FileAsset *sFileAsset_;
-    std::unique_ptr<FileAsset> fileAssetPtr = nullptr;
+    std::shared_ptr<FileAsset> fileAssetPtr = nullptr;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> member_;
 };
 struct FileAssetAsyncContext : public NapiError {
@@ -131,6 +131,7 @@ struct FileAssetAsyncContext : public NapiError {
     napi_ref callbackRef;
     bool status;
     FileAssetNapi *objectInfo;
+    std::shared_ptr<FileAsset> objectPtr = nullptr;
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     int32_t thumbWidth;
     int32_t thumbHeight;

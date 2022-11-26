@@ -108,7 +108,7 @@ napi_value AlbumNapi::UserFileMgrInit(napi_env env, napi_value exports)
 
 void AlbumNapi::SetAlbumNapiProperties()
 {
-    albumAssetPtr = std::unique_ptr<AlbumAsset>(sAlbumData_);
+    albumAssetPtr = std::shared_ptr<AlbumAsset>(sAlbumData_);
 }
 
 // Constructor callback
@@ -668,14 +668,14 @@ static void GetFileAssetsNative(napi_env env, void *data)
         context->fetchColumn.push_back("*");
     }
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
-        context->objectInfo->GetNetworkId() + MEDIALIBRARY_DATA_URI_IDENTIFIER;
+        (MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri())) + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
         UserFileClient::Query(uri, context->predicates, context->fetchColumn);
     context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
-    context->fetchResult->networkId_ = context->objectInfo->GetNetworkId();
+    context->fetchResult->networkId_ = MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri());
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         context->fetchResult->resultNapiType_ = context->resultNapiType;
     }
@@ -731,18 +731,18 @@ static void CommitModifyNative(napi_env env, void *data)
 
     auto *context = static_cast<AlbumNapiAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    auto objectInfo = context->objectInfo;
-    if (!MediaFileUtils::CheckTitle(objectInfo->GetAlbumName())) {
+    auto objectPtr = context->objectPtr;
+    if (!MediaFileUtils::CheckTitle(objectPtr->GetAlbumName())) {
         context->error = JS_ERR_DISPLAYNAME_INVALID;
-        NAPI_ERR_LOG("album name invalid = %{public}s", objectInfo->GetAlbumName().c_str());
+        NAPI_ERR_LOG("album name invalid = %{public}s", objectPtr->GetAlbumName().c_str());
         return;
     }
 
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_TITLE, objectInfo->GetAlbumName());
+    valuesBucket.Put(MEDIA_DATA_DB_TITLE, objectPtr->GetAlbumName());
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
-    predicates.SetWhereArgs({ std::to_string(objectInfo->GetAlbumId()) });
+    predicates.SetWhereArgs({ std::to_string(objectPtr->GetAlbumId()) });
 
     string updateUri = MEDIALIBRARY_DATA_URI;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(updateUri, context->typeMask);
@@ -751,9 +751,9 @@ static void CommitModifyNative(napi_env env, void *data)
     if (changedRows > 0) {
         DataSharePredicates filePredicates;
         DataShareValuesBucket fileValuesBucket;
-        fileValuesBucket.Put(MEDIA_DATA_DB_BUCKET_NAME, objectInfo->GetAlbumName());
+        fileValuesBucket.Put(MEDIA_DATA_DB_BUCKET_NAME, objectPtr->GetAlbumName());
         filePredicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = ? ");
-        filePredicates.SetWhereArgs({ std::to_string(objectInfo->GetAlbumId()) });
+        filePredicates.SetWhereArgs({ std::to_string(objectPtr->GetAlbumId()) });
 
         string fileUriStr = MEDIALIBRARY_DATA_URI;
         MediaLibraryNapiUtils::UriAddFragmentTypeMask(fileUriStr, context->typeMask);
@@ -814,6 +814,8 @@ napi_value AlbumNapi::JSGetAlbumFileAssets(napi_env env, napi_callback_info info
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
+        asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "AlbumAsset is nullptr");
 
         result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetAlbumFileAssets",
             GetFileAssetsNative, JSGetFileAssetsCompleteCallback);
@@ -843,6 +845,8 @@ napi_value AlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = ConvertCommitJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSCommitModify fail ");
+        asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "AlbumAsset is nullptr");
 
         result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSCommitModify", CommitModifyNative,
             JSCommitModifyCompleteCallback);
@@ -863,6 +867,8 @@ napi_value AlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info info
         JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
+    asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "AlbumAsset is nullptr");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAssets", GetFileAssetsNative,
         JSGetFileAssetsCompleteCallback);
@@ -880,6 +886,8 @@ napi_value AlbumNapi::UserFileMgrCommitModify(napi_env env, napi_callback_info i
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext), asyncContext,
         JS_ERR_PARAMETER_INVALID);
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
+    asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "AlbumAsset is nullptr");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrCommitModify", CommitModifyNative,
         JSCommitModifyCompleteCallback);

@@ -82,7 +82,7 @@ private:
     static napi_value UserFileMgrRecoverAsset(napi_env env, napi_callback_info info);
 
     static thread_local SmartAlbumAsset *sAlbumData_;
-    std::unique_ptr<SmartAlbumAsset> smartAlbumAssetPtr = nullptr;
+    std::shared_ptr<SmartAlbumAsset> smartAlbumAssetPtr = nullptr;
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
@@ -94,6 +94,7 @@ struct SmartAlbumNapiAsyncContext : public NapiError {
     napi_deferred deferred;
     napi_ref callbackRef;
     SmartAlbumNapi *objectInfo;
+    std::shared_ptr<SmartAlbumAsset> objectPtr;
     bool status;
     int32_t changedRows;
     std::string selection;
