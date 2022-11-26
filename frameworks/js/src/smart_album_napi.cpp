@@ -108,7 +108,7 @@ napi_value SmartAlbumNapi::UserFileMgrInit(napi_env env, napi_value exports)
 
 void SmartAlbumNapi::SetSmartAlbumNapiProperties()
 {
-    smartAlbumAssetPtr = std::unique_ptr<SmartAlbumAsset>(sAlbumData_);
+    smartAlbumAssetPtr = std::shared_ptr<SmartAlbumAsset>(sAlbumData_);
     NAPI_INFO_LOG("SetSmartAlbumNapiProperties name = %{public}s",
         smartAlbumAssetPtr->GetAlbumName().c_str());
 }
@@ -478,10 +478,10 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     int32_t changedRows;
-    NAPI_DEBUG_LOG("CommitModifyNative = %{pubilc}s", context->objectInfo->GetSmartAlbumName().c_str());
-    if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName())) {
-        valuesBucket.Put(SMARTALBUM_DB_NAME, context->objectInfo->GetSmartAlbumName());
-        predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectInfo->GetSmartAlbumId()));
+    NAPI_DEBUG_LOG("CommitModifyNative = %{pubilc}s", context->objectPtr->GetAlbumName().c_str());
+    if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetAlbumName())) {
+        valuesBucket.Put(SMARTALBUM_DB_NAME, context->objectPtr->GetAlbumName());
+        predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectPtr->GetAlbumId()));
         Uri commitModifyUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMOPRN +
                             "/" + MEDIA_SMARTALBUMOPRN_MODIFYALBUM);
         changedRows = UserFileClient::Update(commitModifyUri, predicates, valuesBucket);
@@ -497,7 +497,7 @@ static void JSAddAssetExecute(SmartAlbumNapiAsyncContext *context)
         MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
     for (int32_t id : context->assetIds) {
         DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
+        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectPtr->GetAlbumId());
         valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
         context->changedRows = UserFileClient::Insert(addAssetUri, valuesBucket);
     }
@@ -510,7 +510,7 @@ static void JSRemoveAssetExecute(SmartAlbumNapiAsyncContext *context)
         MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
     for (int32_t id : context->assetIds) {
         DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
+        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectPtr->GetAlbumId());
         valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
         context->changedRows = UserFileClient::Insert(removeAssetUri, context->valuesBucket);
     }
@@ -684,6 +684,9 @@ napi_value SmartAlbumNapi::JSAddAsset(napi_env env, napi_callback_info info)
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSAddAsset", asyncContext);
 
+        asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "SmartAlbumAsset is nullptr");
+
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<SmartAlbumNapiAsyncContext*>(data);
@@ -723,6 +726,9 @@ napi_value SmartAlbumNapi::JSRemoveAsset(napi_env env, napi_callback_info info)
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRemoveAsset", asyncContext);
 
+        asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "SmartAlbumAsset is nullptr");
+
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
                 auto context = static_cast<SmartAlbumNapiAsyncContext*>(data);
@@ -761,6 +767,9 @@ napi_value SmartAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSCommitModify", asyncContext);
+
+        asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "SmartAlbumAsset is nullptr");
 
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {
@@ -912,13 +921,15 @@ static void GetFileAssetsNative(napi_env env, void *data)
     if (context->fetchColumn.empty()) {
         context->fetchColumn.push_back("*");
     }
-    string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->objectInfo->GetNetworkId() +
+    string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
+        (MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri())) +
         MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     Uri uri(queryUri);
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn);
     context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
-    context->fetchResult->SetNetworkId(context->objectInfo->GetNetworkId());
+    context->fetchResult->SetNetworkId(
+        MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri()));
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         context->fetchResult->resultNapiType_ = context->resultNapiType;
     }
@@ -989,6 +1000,9 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumFileAssets(napi_env env, napi_callback
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
+        asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "SmartAlbumAsset is nullptr");
+
         result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetSmartAlbumFileAssets",
             GetFileAssetsNative, JSGetFileAssetsCompleteCallback);
     }
@@ -1009,6 +1023,9 @@ napi_value SmartAlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
 
+    asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "SmartAlbumAsset is nullptr");
+
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAssets", GetFileAssetsNative,
         JSGetFileAssetsCompleteCallback);
 }
@@ -1026,7 +1043,7 @@ static void JSRecoverAssetExecute(napi_env env, void *data)
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(recoverUri, context->typeMask);
     Uri recoverAssetUri(recoverUri);
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectPtr->GetAlbumId());
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, stoi(MediaLibraryNapiUtils::GetFileIdFromUri(context->uri)));
     int retVal = UserFileClient::Insert(recoverAssetUri, valuesBucket);
     context->SaveError(retVal);
@@ -1071,6 +1088,8 @@ napi_value SmartAlbumNapi::UserFileMgrRecoverAsset(napi_env env, napi_callback_i
         asyncContext, JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
+    asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "SmartAlbumAsset is nullptr");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAssets", JSRecoverAssetExecute,
         JSRecoverAssetCompleteCallback);
