@@ -236,21 +236,5 @@ Uri MediaDataShareStubImpl::DenormalizeUri(const Uri &uri)
     MEDIA_INFO_LOG("end successfully.");
     return urivalue;
 }
-
-std::vector<std::shared_ptr<DataShareResult>> MediaDataShareStubImpl::ExecuteBatch(
-    const std::vector<std::shared_ptr<DataShareOperation>> &operations)
-{
-    MEDIA_INFO_LOG("begin.");
-    std::vector<std::shared_ptr<DataShareResult>> results;
-    auto client = sptr<MediaDataShareStubImpl>(this);
-    auto extension = client->GetOwner();
-    if (extension == nullptr) {
-        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
-        return results;
-    }
-    results = extension->ExecuteBatch(operations);
-    MEDIA_INFO_LOG("end successfully.");
-    return results;
-}
 } // namespace DataShare
 } // namespace OHOS
