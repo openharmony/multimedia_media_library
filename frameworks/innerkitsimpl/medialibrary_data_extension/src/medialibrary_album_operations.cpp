@@ -78,6 +78,7 @@ string MediaLibraryAlbumOperations::GetDistributedAlbumSql(const string &strQuer
     if (!strQueryCondition.empty()) {
         distributedAlbumSql += " WHERE " + strQueryCondition;
     }
+    distributedAlbumSql.append(GROUPBY_BUCKETID);
     MEDIA_DEBUG_LOG("GetDistributedAlbumSql distributedAlbumSql = %{private}s", distributedAlbumSql.c_str());
     return distributedAlbumSql;
 }
@@ -97,7 +98,6 @@ shared_ptr<AbsSharedResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     }
 
     string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
-    strQueryCondition += " GROUP BY " + MEDIA_DATA_DB_BUCKET_ID;
     cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
     string networkId = cmd.GetOprnDevice();
     if (!networkId.empty()) {
@@ -111,10 +111,11 @@ shared_ptr<AbsSharedResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
         return uniStore->QuerySql(distributedAlbumSql);
     }
 
+    cmd.GetAbsRdbPredicates()->GroupBy({ MEDIA_DATA_DB_BUCKET_ID });
     if (!strQueryCondition.empty()) {
         return uniStore->Query(cmd, columns);
     }
-    string querySql = "SELECT * FROM " + cmd.GetTableName();
+    string querySql = "SELECT * FROM " + cmd.GetTableName() + GROUPBY_BUCKETID;
     return uniStore->QuerySql(querySql);
 }
 } // namespace Media
