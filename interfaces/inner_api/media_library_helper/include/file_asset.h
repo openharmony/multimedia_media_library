@@ -102,6 +102,8 @@ public:
     int32_t GetParent() const;
     void SetParent(int32_t parent);
     const std::string &GetAlbumUri() const;
+    const std::string &GetTypeMask() const;
+    void SetTypeMask(const std::string &typeMask);
     void SetAlbumUri(const std::string &albumUri);
     int64_t GetDateTaken() const;
     void SetDateTaken(int64_t dataTaken);
@@ -140,6 +142,7 @@ public:
     std::variant<int32_t, int64_t, std::string> &GetMemberValue(const std::string &name);
 private:
     std::string albumUri_;
+    std::string typeMask_;
     ResultNapiType resultNapiType_;
     int32_t count_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> member_;
