@@ -415,14 +415,5 @@ Uri MediaDataShareExtAbility::DenormalizeUri(const Uri &uri)
     MEDIA_INFO_LOG("%{public}s end.", __func__);
     return ret;
 }
-
-std::vector<std::shared_ptr<DataShareResult>> MediaDataShareExtAbility::ExecuteBatch(
-    const std::vector<std::shared_ptr<DataShareOperation>> &operations)
-{
-    MEDIA_INFO_LOG("%{public}s begin.", __func__);
-    std::vector<std::shared_ptr<DataShareResult>> ret;
-    MEDIA_INFO_LOG("%{public}s end.", __func__);
-    return ret;
-}
 } // namespace AbilityRuntime
 } // namespace OHOS
