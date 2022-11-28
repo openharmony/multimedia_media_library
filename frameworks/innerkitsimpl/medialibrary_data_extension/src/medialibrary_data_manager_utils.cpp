@@ -65,7 +65,7 @@ std::string MediaLibraryDataManagerUtils::GetFileTitle(const std::string &displa
 {
     std::string title = "";
     if (!displayName.empty()) {
-        std::string::size_type pos = displayName.find_first_of('.');
+        std::string::size_type pos = displayName.find_last_of('.');
         if (pos == displayName.length()) {
             return displayName;
         }
