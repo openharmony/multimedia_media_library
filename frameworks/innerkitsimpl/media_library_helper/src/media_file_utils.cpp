@@ -129,7 +129,7 @@ string MediaFileUtils::GetFilename(const string &filePath)
     if (!(filePath.empty())) {
         size_t lastSlash = filePath.rfind("/");
         if (lastSlash != string::npos) {
-            if (filePath.size() > lastSlash) {
+            if (filePath.size() > (lastSlash + 1)) {
                 fileName = filePath.substr(lastSlash + 1, filePath.length() - lastSlash);
             }
         }
