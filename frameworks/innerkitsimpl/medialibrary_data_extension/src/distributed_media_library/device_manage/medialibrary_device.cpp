@@ -121,7 +121,7 @@ void MediaLibraryDevice::TryToGetTargetDevMLInfos(const std::string &udid, const
     }
     lock_guard<std::mutex> lock(devMtx_);
     deviceInfoMap_[networkId].versionId = version;
-    MEDIA_INFO_LOG("get dev %{public}s ml infos, version %{public}s",
+    MEDIA_INFO_LOG("get dev %{private}s ml infos, version %{private}s",
         networkId.substr(0, TRIM_LENGTH).c_str(), version.c_str());
 }
 
@@ -142,7 +142,7 @@ void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t
     }
 
     if (localDevLev_ < devLevel || devLevel <= 0) {
-        MEDIA_ERR_LOG("local dev's sec lev %{public}d is lower than dev %{public}s %{public}d, or level invalid!",
+        MEDIA_ERR_LOG("local dev's sec lev %{public}d is lower than dev %{private}s %{public}d, or level invalid!",
             localDevLev_, udid.substr(0, TRIM_LENGTH).c_str(), devLevel);
         return;
     }
@@ -160,7 +160,7 @@ void MediaLibraryDevice::OnGetDevSecLevel(const std::string &udid, const int32_t
         }
     }
     if (!findTargetDev) {
-        MEDIA_ERR_LOG("not find this dev %{public}s in device map table", udid.substr(0, TRIM_LENGTH).c_str());
+        MEDIA_ERR_LOG("not find this dev %{private}s in device map table", udid.substr(0, TRIM_LENGTH).c_str());
         return;
     }
 
