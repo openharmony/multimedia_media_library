@@ -66,7 +66,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPullTable tableName = %{public}s device = %{private}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPullTable tableName = %{public}s device = %{private}s syncResult = %{private}d",
                     tableName.c_str(), iter->first.c_str(), iter->second);
                 continue;
             }
@@ -110,7 +110,7 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPushTable tableName = %{public}s device = %{private}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPushTable tableName = %{public}s device = %{private}s syncResult = %{private}d",
                     tableName.c_str(), iter->first.c_str(), iter->second);
                 continue;
             }
