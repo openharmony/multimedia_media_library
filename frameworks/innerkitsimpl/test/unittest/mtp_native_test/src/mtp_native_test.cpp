@@ -40,8 +40,8 @@ void MtpNativeTest::TearDownTestCase() {}
 void MtpNativeTest::SetUp() {}
 void MtpNativeTest::TearDown(void) {}
 static constexpr int TEST_UID = 5003;
-static constexpr string TEST_NAME = "test.jpg"
-static constexpr string PROP_VALUE = "01.jpg"
+static const string TEST_NAME = "test.jpg";
+static const string PROP_VALUE = "01.jpg";
 
 /**
  * @tc.number    : mtp_native_test_001
@@ -52,7 +52,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_001, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -78,7 +78,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_002, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : all
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -104,7 +104,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_003, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     uint32_t handle = 1;
 
     // get handle
@@ -131,7 +131,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_004, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     uint32_t handle = 1;
 
     // get handle children and handle deep : 1
@@ -158,7 +158,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_005, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -184,7 +184,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_006, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : all
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -210,7 +210,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_007, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     uint32_t handle = 1;
 
     // get handle
@@ -237,7 +237,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_008, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -263,7 +263,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_009, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : all
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -289,7 +289,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_010, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     uint32_t handle = 1;
 
     // get handle
@@ -316,7 +316,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_011, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -342,7 +342,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_012, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : all
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -356,8 +356,8 @@ HWTEST_F(MtpNativeTest, mtp_native_test_012, TestSize.Level0)
     for (Property property : *outProps) {
         property.Dump();
     }
-}    MEDIA_INFO_LOG("mtp_native_test_012::End");
-
+    MEDIA_INFO_LOG("mtp_native_test_012::End");
+}
 
 /**
  * @tc.number    : mtp_native_test_013
@@ -368,7 +368,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_013, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     uint32_t handle = 1;
 
     // get handle
@@ -395,7 +395,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_014, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -421,7 +421,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_015, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : all
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -447,7 +447,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_016, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     uint32_t handle = 1;
 
     // get handle
@@ -474,7 +474,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_020, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -500,7 +500,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_021, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -526,7 +526,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_022, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -552,7 +552,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_023, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -578,7 +578,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_024, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -604,7 +604,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_025, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -630,7 +630,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_026, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -655,7 +655,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_027, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -681,7 +681,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_028, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -707,7 +707,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_029, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -733,7 +733,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_030, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -759,7 +759,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_031, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -785,7 +785,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_032, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -811,7 +811,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_033, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -838,7 +838,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_034, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -865,7 +865,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_035, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -892,7 +892,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_036, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -919,7 +919,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_037, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -946,7 +946,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_038, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -973,7 +973,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_039, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -1000,7 +1000,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_040, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -1027,7 +1027,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_041, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -1054,7 +1054,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_042, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -1081,7 +1081,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_043, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -1108,7 +1108,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_044, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -1135,7 +1135,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_045, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -1162,7 +1162,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_046, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -1189,7 +1189,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_047, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -1216,7 +1216,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_048, TestSize.Level0)
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
 
     // get root dirs children deep : 1:success
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -1242,7 +1242,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_049, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = 0;
     context->parent = 1;
@@ -1268,7 +1268,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_050, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = 0;
     context->parent = 0xFFFFFFFF;
@@ -1293,7 +1293,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_051, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = MTP_FORMAT_EXIF_JPEG_CODE;
     context->parent = 0;
@@ -1319,7 +1319,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_052, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = MTP_FORMAT_MP4_CONTAINER_CODE;
     context->parent = 0;
@@ -1345,7 +1345,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_053, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = MTP_FORMAT_MP3_CODE;
     context->parent = 0;
@@ -1371,7 +1371,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_054, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = MTP_FORMAT_TEXT_CODE;
     context->parent = 0;
@@ -1397,7 +1397,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_055, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = MTP_FORMAT_ASSOCIATION_CODE;
     context->parent = 0;
@@ -1423,7 +1423,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_058, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = 0;
     context->parent = 1;
@@ -1449,7 +1449,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_059, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = 0;
     context->parent = 1;
@@ -1475,7 +1475,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_060, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     uint32_t handle = 0;
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = handle;
@@ -1498,7 +1498,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_061, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     uint32_t handle = -1;
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = handle;
@@ -1521,7 +1521,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_064, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->name = TEST_NAME;
     context->parent = 1;
@@ -1542,7 +1542,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_065, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->name =-1;
     context->parent = 1;
@@ -1563,7 +1563,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_066, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->name = TEST_NAME;
     context->parent = -1;
@@ -1584,7 +1584,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_067, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->name = TEST_NAME;
     context->parent = 1;
@@ -1605,7 +1605,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_068, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->name = TEST_NAME;
     context->parent = 1;
@@ -1626,7 +1626,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_069, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->name = TEST_NAME;
     context->parent = 1;
@@ -1647,7 +1647,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_070, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
     context->parent = 1;
@@ -1666,7 +1666,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_071, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
     context->parent = -1;
@@ -1685,7 +1685,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_072, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
     context->parent = -1;
@@ -1704,7 +1704,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_073, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
     context->parent = 1;
@@ -1723,7 +1723,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_074, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
     context->parent = 1;
@@ -1743,7 +1743,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_075, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
     context->parent = -1;
@@ -1763,7 +1763,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_076, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
     context->parent = -1;
@@ -1783,7 +1783,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_077, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
     context->parent = 1;
@@ -1803,7 +1803,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_078, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 1;
     MtpMedialibraryManager::GetInstance()->DeleteObject(context);
@@ -1819,7 +1819,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_079, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = -1;
     MtpMedialibraryManager::GetInstance()->DeleteObject(context);
@@ -1835,7 +1835,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_080, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 0;
     context->property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
@@ -1855,7 +1855,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_081, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = -1;
     context->property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
@@ -1875,7 +1875,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_082, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 0;
     context->property = -1;
@@ -1895,7 +1895,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_083, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 0;
     context->property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
@@ -1915,7 +1915,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_084, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->handle = 0;
     context->property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
@@ -1935,7 +1935,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_085, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = 0;
     context->parent = 1;
@@ -1965,7 +1965,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_086, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->InitMtpMedialibraryManager(remoteObj);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = 0;
     context->parent = 1;
