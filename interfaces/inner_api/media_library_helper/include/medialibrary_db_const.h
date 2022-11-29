@@ -289,7 +289,6 @@ const std::string CREATE_ALBUM_VIEW = "CREATE VIEW " + ALBUM_VIEW_NAME +
                                       " FROM Files " + FILE_TABLE + ", " +
                                       " Files " + ALBUM_TABLE +
                                       DISTRIBUTED_ALBUM_WHERE_AND_GROUPBY;
-const std::string GROUPBY_BUCKETID = " GROUP BY " + MEDIA_DATA_DB_BUCKET_ID;
 const std::string SMARTALBUM_DB_ID = "album_id";
 const std::string SMARTALBUM_DB_ALBUM_TYPE = "album_type";
 const std::string SMARTALBUM_DB_NAME = "album_name";
