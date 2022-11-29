@@ -34,6 +34,7 @@ namespace OHOS {
 namespace Media {
 FileAsset::FileAsset()
     : albumUri_(DEFAULT_MEDIA_ALBUM_URI),
+    typeMask_(DEFAULT_TYPE_MASK),
     resultNapiType_(ResultNapiType::TYPE_NAPI_MAX)
 {}
 
@@ -255,6 +256,16 @@ const string &FileAsset::GetAlbumUri() const
 void FileAsset::SetAlbumUri(const string &albumUri)
 {
     albumUri_ = albumUri;
+}
+
+const string &FileAsset::GetTypeMask() const
+{
+    return typeMask_;
+}
+
+void FileAsset::SetTypeMask(const string &typeMask)
+{
+    typeMask_ = typeMask;
 }
 
 int64_t FileAsset::GetDateTaken() const
