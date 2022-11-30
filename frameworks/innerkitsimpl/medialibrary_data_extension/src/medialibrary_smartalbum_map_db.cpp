@@ -15,7 +15,9 @@
 #define MLOG_TAG "SmartAlbum"
 
 #include "medialibrary_smartalbum_map_db.h"
+#include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
 #include "rdb_utils.h"
 
@@ -111,6 +113,7 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateSameNameInfo(const int32_t &assetId,
         ValuesBucket values;
         values.PutString(MEDIA_DATA_DB_NAME, displayName);
         values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, path);
+        values.PutString(MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(displayName));
         int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);
         if ((result != NativeRdb::E_OK) || (changedRows <= 0)) {
             MEDIA_ERR_LOG("Update DB failed. Error is %{private}d. Updated count %{private}d", result, changedRows);
@@ -220,9 +223,7 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateFavoriteInfo(const int32_t &assetId,
 }
 
 int32_t MediaLibrarySmartAlbumMapDb::UpdateRecycleInfo(const int32_t &assetId,
-                                                       const int64_t &recycleDate,
                                                        const shared_ptr<RdbStore> &rdbStore,
-                                                       string &recyclePath,
                                                        const string &realPath)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ALBUM_OPER_ERR, "Invalid input");
@@ -231,8 +232,8 @@ int32_t MediaLibrarySmartAlbumMapDb::UpdateRecycleInfo(const int32_t &assetId,
     string strUpdateCondition = MEDIA_DATA_DB_ID + " = " + to_string(assetId);
     ValuesBucket values;
     values.PutString(MEDIA_DATA_DB_FILE_PATH, realPath);
-    values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, recyclePath);
-    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, recycleDate);
+    values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, "");
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
     values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, 0);
     values.PutInt(MEDIA_DATA_DB_IS_TRASH, 0);
     int32_t result = rdbStore->Update(changedRows, MEDIALIBRARY_TABLE, values, strUpdateCondition, whereArgs);

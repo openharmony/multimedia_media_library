@@ -416,6 +416,75 @@ static inline void InvalidateThumbnail(const string &id)
     }
 }
 
+bool GetFileInfoById(const string &fileId, int32_t &mediaType, int32_t &isTrash)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, fileId);
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr!");
+        return E_HAS_DB_ERROR;
+    }
+    auto result = uniStore->Query(cmd, {});
+    if (result->GoToFirstRow() != NativeRdb::E_OK) {
+        return false;
+    }
+    int32_t colIndex = 0;
+    CHECK_AND_RETURN_RET_LOG(result->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, colIndex) == NativeRdb::E_OK, false,
+        "failed to obtain the index");
+    CHECK_AND_RETURN_RET_LOG(result->GetInt(colIndex, mediaType) == NativeRdb::E_OK, false,
+        "get media_type failed");
+    CHECK_AND_RETURN_RET_LOG(result->GetColumnIndex(MEDIA_DATA_DB_IS_TRASH, colIndex) == NativeRdb::E_OK, false,
+        "failed to obtain the index");
+    CHECK_AND_RETURN_RET_LOG(result->GetInt(colIndex, isTrash) == NativeRdb::E_OK, false,
+        "get is_trash failed");
+    return true;
+}
+
+bool DeleteInfoRecursively(const string &fileId)
+{
+    int32_t mediaType = MEDIA_TYPE_ALL;
+    int32_t isTrash = -1;
+    if (!GetFileInfoById(fileId, mediaType, isTrash)) {
+        return false;
+    }
+    if (mediaType == MEDIA_TYPE_ALBUM) {
+        MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+        queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, fileId);
+        if (isTrash == NOT_ISTRASH) {
+            queryCmd.GetAbsRdbPredicates()->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_ISTRASH));
+        } else {
+            queryCmd.GetAbsRdbPredicates()->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(CHILD_ISTRASH));
+        }
+        auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        if (uniStore == nullptr) {
+            MEDIA_ERR_LOG("uniStore is nullptr!");
+            return E_HAS_DB_ERROR;
+        }
+        auto result = uniStore->Query(queryCmd, {});
+        while (result->GoToNextRow() == NativeRdb::E_OK) {
+            int32_t colIndex = 0;
+            int32_t childId = -1;
+            CHECK_AND_RETURN_RET_LOG(result->GetColumnIndex(MEDIA_DATA_DB_ID, colIndex) == NativeRdb::E_OK, false,
+                "failed to obtain the index");
+            CHECK_AND_RETURN_RET_LOG(result->GetInt(colIndex, childId) == NativeRdb::E_OK, false,
+                "get file_id failed");
+            if (!DeleteInfoRecursively(to_string(childId))) {
+                return false;
+            }
+        }
+    }
+
+    InvalidateThumbnail(fileId);
+    MediaLibraryCommand deleteCmd(Uri(MEDIALIBRARY_DATA_URI), OperationType::DELETE);
+    int32_t deleteRows = MediaLibraryObjectUtils::DeleteInfoByIdInDb(deleteCmd, fileId);
+    if (deleteRows <= 0) {
+        MEDIA_ERR_LOG("Delete file info in database failed, file_id: %{public}s", fileId.c_str());
+        return false;
+    }
+    return true;
+}
+
 // Restriction: input param cmd MUST have file id in either uri or valuebucket
 int32_t MediaLibraryObjectUtils::DeleteFileObj(MediaLibraryCommand &cmd, const string &filePath)
 {
@@ -432,13 +501,12 @@ int32_t MediaLibraryObjectUtils::DeleteFileObj(MediaLibraryCommand &cmd, const s
         MEDIA_ERR_LOG("Get id from uri or valuebucket failed!");
         return E_INVALID_FILEID;
     }
-    InvalidateThumbnail(fileId);
+
     int32_t parentId = GetParentIdByIdFromDb(fileId);
-    int32_t deleteRows = DeleteInfoByIdInDb(cmd);
-    if (deleteRows <= 0) {
-        MEDIA_ERR_LOG("Delete file info in database failed!");
-        return deleteRows;
+    if (!DeleteInfoRecursively(fileId)) {
+        MEDIA_ERR_LOG("Delete file info in database failed, file_id: %{public}s", fileId.c_str());
     }
+
     // if delete successfully, 1) update modify time
     string dirPath = MediaLibraryDataManagerUtils::GetParentPath(filePath);
     UpdateDateModified(dirPath);
@@ -449,8 +517,7 @@ int32_t MediaLibraryObjectUtils::DeleteFileObj(MediaLibraryCommand &cmd, const s
     // 3) delete relative records in smart album
     MediaLibraryCommand deleteSmartMapCmd(OperationObject::SMART_ALBUM_MAP, OperationType::DELETE);
     deleteSmartMapCmd.GetAbsRdbPredicates()->EqualTo(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileId);
-    deleteRows = DeleteInfoByIdInDb(deleteSmartMapCmd);
-    return deleteRows;
+    return DeleteInfoByIdInDb(deleteSmartMapCmd);
 }
 
 int32_t MediaLibraryObjectUtils::DeleteDirObj(MediaLibraryCommand &cmd, const string &dirPath)
@@ -913,6 +980,7 @@ int32_t MediaLibraryObjectUtils::GetIdByPathFromDb(const string &path)
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_FILE_PATH, newPath);
+    cmd.GetAbsRdbPredicates()->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_ISTRASH));
 
     auto queryResultSet = uniStore->Query(cmd, columns);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, fileId, "Failed to obtain path from database");
