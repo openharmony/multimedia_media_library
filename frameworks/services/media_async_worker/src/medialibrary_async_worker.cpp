@@ -24,8 +24,8 @@ static const int32_t SUCCESS = 0;
 static const int32_t WAIT_FOR_SECOND = 10;
 static const int32_t BG_SLEEP_COUNT = 500;
 static const int32_t FG_SLEEP_COUNT = 50;
-static const int32_t REST_FOR_SECOND = 1;
-static const int32_t REST_FOR_LONG_SECOND = 10;
+static const int32_t REST_FOR_MILLISECOND = 200;
+static const int32_t REST_FOR_LONG_SECOND = 2;
 shared_ptr<MediaLibraryAsyncWorker> MediaLibraryAsyncWorker::asyncWorkerInstance_{nullptr};
 mutex MediaLibraryAsyncWorker::instanceLock_;
 
@@ -147,13 +147,13 @@ bool MediaLibraryAsyncWorker::WaitForTask()
 void MediaLibraryAsyncWorker::SleepFgWork()
 {
     if ((doneTotal_.load() % FG_SLEEP_COUNT) == 0) {
-        this_thread::sleep_for(chrono::seconds(REST_FOR_SECOND));
+        this_thread::sleep_for(chrono::milliseconds(REST_FOR_MILLISECOND));
     }
 }
 
 void MediaLibraryAsyncWorker::SleepBgWork()
 {
-    this_thread::sleep_for(chrono::seconds(REST_FOR_SECOND));
+    this_thread::sleep_for(chrono::milliseconds(REST_FOR_MILLISECOND));
     if ((doneTotal_.load() % BG_SLEEP_COUNT) == 0) {
         this_thread::sleep_for(chrono::seconds(REST_FOR_LONG_SECOND));
     }
