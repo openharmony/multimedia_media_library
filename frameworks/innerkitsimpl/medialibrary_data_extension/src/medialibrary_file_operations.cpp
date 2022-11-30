@@ -24,11 +24,10 @@
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
-#include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_smartalbum_map_db.h"
 #include "medialibrary_tracer.h"
+#include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_unistore_manager.h"
 #include "native_album_asset.h"
 #include "rdb_utils.h"
@@ -96,7 +95,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFavFiles(MediaLi
 {
     MEDIA_DEBUG_LOG("enter");
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_IS_FAV, "1");
-    cmd.GetAbsRdbPredicates()->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, "8");
+    cmd.GetAbsRdbPredicates()->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(MEDIA_TYPE_ALBUM));
 
     return MediaLibraryObjectUtils::QueryWithCondition(cmd, {});
 }
@@ -105,9 +104,9 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryTrashFiles(Media
 {
     MEDIA_DEBUG_LOG("enter");
     cmd.GetAbsRdbPredicates()
-        ->GreaterThan(MEDIA_DATA_DB_DATE_TRASHED, "0")
+        ->GreaterThan(MEDIA_DATA_DB_DATE_TRASHED, std::to_string(NOT_TRASHED))
         ->And()
-        ->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, "8");
+        ->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(MEDIA_TYPE_ALBUM));
 
     return MediaLibraryObjectUtils::QueryWithCondition(cmd, {});
 }
@@ -187,22 +186,14 @@ int32_t MediaLibraryFileOperations::DeleteFileOperation(MediaLibraryCommand &cmd
         return E_INVALID_FILEID;
     }
 
-    string srcPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strFileId);
+    string srcPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strFileId, true);
     if (srcPath.empty()) {
         MEDIA_ERR_LOG("MediaLibraryFileOperations::DeleteFileOperation Get path of id %{private}s from database file!",
             strFileId.c_str());
         return E_INVALID_FILEID;
     }
 
-    int32_t errCode = MediaFileUtils::IsDirectory(srcPath) ? MediaLibraryObjectUtils::DeleteDirObj(cmd, srcPath) :
-        MediaLibraryObjectUtils::DeleteFileObj(cmd, srcPath);
-    if (errCode > 0) {
-        MediaLibraryDirOperations dirOprn;
-        MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
-        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-        dirOprn.HandleDirOperations(MEDIA_DIROPRN_DELETEDIR, cmd.GetValueBucket(), rdbStore, dirQuerySetMap);
-        smartAlbumMapDbOprn.DeleteAllAssetsMapInfo(std::stoi(strFileId), rdbStore);
-    }
+    int32_t errCode = MediaLibraryObjectUtils::DeleteFileObj(cmd, srcPath);
     return errCode;
 }
 

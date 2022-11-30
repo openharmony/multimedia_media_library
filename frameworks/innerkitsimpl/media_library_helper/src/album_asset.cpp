@@ -71,7 +71,7 @@ void AlbumAsset::SetAlbumRelativePath(const string albumRelativePath)
 {
     albumRelativePath_ = albumRelativePath;
 }
-void AlbumAsset::SetCoverUri(const string coverUri)
+void AlbumAsset::SetCoverUri(const string &coverUri)
 {
     coverUri_ = coverUri;
 }

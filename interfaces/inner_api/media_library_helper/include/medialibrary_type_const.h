@@ -124,6 +124,8 @@ const int32_t DEFAULT_COUNT = 0;
 const std::string DEFAULT_ALBUM_RELATIVE_PATH = "";
 const std::string DEFAULT_COVERURI = "";
 const int32_t DEFAULT_MEDIA_PARENT = 0;
+const std::string DEFAULT_DESCRIPTION;
+constexpr int32_t DEFAULT_EXPIREDTIME = 0;
 const bool DEFAULT_ALBUM_VIRTUAL = false;
 const uint64_t DEFAULT_MEDIA_DATE_TAKEN = 0;
 const std::string DEFAULT_MEDIA_ALBUM_URI = "";

@@ -28,9 +28,8 @@ using namespace std;
 thread_local napi_ref SmartAlbumNapi::sConstructor_ = nullptr;
 thread_local SmartAlbumAsset *SmartAlbumNapi::sAlbumData_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
-
 thread_local napi_ref SmartAlbumNapi::userFileMgrConstructor_ = nullptr;
-
+constexpr int32_t INVALID_EXPIREDTIME = -1;
 SmartAlbumNapi::SmartAlbumNapi()
     : env_(nullptr) {}
 
@@ -55,15 +54,18 @@ napi_value SmartAlbumNapi::Init(napi_env env, napi_value exports)
     napi_property_descriptor album_props[] = {
         DECLARE_NAPI_GETTER("albumId", JSGetSmartAlbumId),
         DECLARE_NAPI_GETTER("albumUri", JSGetSmartAlbumUri),
+        DECLARE_NAPI_GETTER("albumType", JSGetSmartAlbumType),
         DECLARE_NAPI_GETTER_SETTER("albumName", JSGetSmartAlbumName, JSSmartAlbumNameSetter),
+        DECLARE_NAPI_GETTER_SETTER("description", JSGetSmartAlbumDescription, JSSmartAlbumDescriptionSetter),
         DECLARE_NAPI_GETTER("albumTag", JSGetSmartAlbumTag),
         DECLARE_NAPI_GETTER("size", JSGetSmartAlbumCapacity),
         DECLARE_NAPI_GETTER("categoryId", JSGetSmartAlbumCategoryId),
         DECLARE_NAPI_GETTER("categoryName", JSGetSmartAlbumCategoryName),
-        DECLARE_NAPI_GETTER("coverUri", JSGetSmartAlbumCoverUri),
+        DECLARE_NAPI_GETTER_SETTER("coverURI", JSGetSmartAlbumCoverUri, JSSmartAlbumCoverUriSetter),
+        DECLARE_NAPI_GETTER_SETTER("expiredTime", JSGetSmartAlbumExpiredTime, JSSmartAlbumExpiredTimeSetter),
         DECLARE_NAPI_FUNCTION("commitModify", JSCommitModify),
-        DECLARE_NAPI_FUNCTION("addAsset", JSAddAsset),
-        DECLARE_NAPI_FUNCTION("removeAsset", JSRemoveAsset),
+        DECLARE_NAPI_FUNCTION("addFileAssets", JSAddFileAssets),
+        DECLARE_NAPI_FUNCTION("removeFileAssets", JSRemoveFileAssets),
         DECLARE_NAPI_FUNCTION("getFileAssets", JSGetSmartAlbumFileAssets)
     };
 
@@ -178,6 +180,21 @@ int32_t SmartAlbumNapi::GetSmartAlbumId() const
 {
     return smartAlbumAssetPtr->GetAlbumId();
 }
+std::string SmartAlbumNapi::GetDescription() const
+{
+    return smartAlbumAssetPtr->GetDescription();
+}
+
+std::string SmartAlbumNapi::GetCoverUri() const
+{
+    return smartAlbumAssetPtr->GetCoverUri();
+}
+
+int32_t SmartAlbumNapi::GetExpiredTime() const
+{
+    return smartAlbumAssetPtr->GetExpiredTime();
+}
+
 void SmartAlbumNapi::SetAlbumCapacity(int32_t albumCapacity)
 {
     smartAlbumAssetPtr->SetAlbumCapacity(albumCapacity);
@@ -191,6 +208,21 @@ std::string SmartAlbumNapi::GetNetworkId() const
 std::string SmartAlbumNapi::GetTypeMask() const
 {
     return smartAlbumAssetPtr->GetTypeMask();
+}
+
+void SmartAlbumNapi::SetCoverUri(string &coverUri)
+{
+    smartAlbumAssetPtr->SetCoverUri(coverUri);
+}
+
+void SmartAlbumNapi::SetDescription(string &description)
+{
+    smartAlbumAssetPtr->SetDescription(description);
+}
+
+void SmartAlbumNapi::SetExpiredTime(int32_t expiredTime)
+{
+    smartAlbumAssetPtr->SetExpiredTime(expiredTime);
 }
 
 napi_value SmartAlbumNapi::JSGetSmartAlbumId(napi_env env, napi_callback_info info)
@@ -264,8 +296,7 @@ napi_value SmartAlbumNapi::JSSmartAlbumNameSetter(napi_env env, napi_callback_in
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
 
-    if (thisVar == nullptr || napi_typeof(env, argv[PARAM0], &valueType) != napi_ok
-        || valueType != napi_string) {
+    if (thisVar == nullptr || napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
         NAPI_ERR_LOG("Invalid arguments type! valueType: %{public}d", valueType);
         return jsResult;
     }
@@ -291,7 +322,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumTag(napi_env env, napi_callback_info i
 
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
-    if (status != napi_ok || thisVar == nullptr) {
+    if ((status != napi_ok) || (thisVar == nullptr)) {
         NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
@@ -319,7 +350,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCapacity(napi_env env, napi_callback_i
 
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
-    if (status != napi_ok || thisVar == nullptr) {
+    if ((status != napi_ok) || (thisVar == nullptr)) {
         NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
@@ -347,7 +378,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCategoryId(napi_env env, napi_callback
 
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
-    if (status != napi_ok || thisVar == nullptr) {
+    if ((status != napi_ok) || (thisVar == nullptr)) {
         NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
@@ -375,7 +406,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCategoryName(napi_env env, napi_callba
 
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
-    if (status != napi_ok || thisVar == nullptr) {
+    if ((status != napi_ok) || (thisVar == nullptr)) {
         NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
@@ -403,7 +434,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCoverUri(napi_env env, napi_callback_i
 
     napi_get_undefined(env, &undefinedResult);
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
-    if (status != napi_ok || thisVar == nullptr) {
+    if ((status != napi_ok) || (thisVar == nullptr)) {
         NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
@@ -420,30 +451,61 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumCoverUri(napi_env env, napi_callback_i
     return undefinedResult;
 }
 
+napi_value SmartAlbumNapi::JSSmartAlbumCoverUriSetter(napi_env env, napi_callback_info info)
+{
+    napi_value jsResult = nullptr;
+    napi_get_undefined(env, &jsResult);
+    napi_value argv[ARGS_ONE] = {0};
+    size_t argc = ARGS_ONE;
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    napi_valuetype valueType = napi_undefined;
+    if (thisVar == nullptr || napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
+        NAPI_ERR_LOG("Invalid arguments type! valueType: %{private}d", valueType);
+        return jsResult;
+    }
+    SmartAlbumNapi* obj = nullptr;
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if ((status != napi_ok) || (obj == nullptr)) {
+        NAPI_ERR_LOG("Unwrap object failed");
+        return jsResult;
+    }
+    size_t res = 0;
+    char buffer[FILENAME_MAX];
+    status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Get coverUri value string failed");
+        return jsResult;
+    }
+    obj->smartAlbumAssetPtr->SetCoverUri(std::string(buffer));
+    return jsResult;
+}
+
 napi_value SmartAlbumNapi::JSGetSmartAlbumUri(napi_env env, napi_callback_info info)
 {
-    napi_status status;
-    napi_value jsResult = nullptr;
     napi_value undefinedResult = nullptr;
-    SmartAlbumNapi* obj = nullptr;
-    std::string albumUri = "";
-    napi_value thisVar = nullptr;
-
     napi_get_undefined(env, &undefinedResult);
+    napi_status status;
+    napi_value thisVar = nullptr;
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
-    if (status != napi_ok || thisVar == nullptr) {
+    if ((status != napi_ok) || (thisVar == nullptr)) {
         NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
         return undefinedResult;
     }
+    SmartAlbumNapi* obj = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    if (status == napi_ok && obj != nullptr) {
-        albumUri = obj->GetSmartAlbumUri();
-        status = napi_create_string_utf8(env, albumUri.c_str(), NAPI_AUTO_LENGTH, &jsResult);
-        if (status == napi_ok) {
-            return jsResult;
-        }
+    if ((status != napi_ok) || (obj == nullptr)) {
+        NAPI_ERR_LOG("Unwrap object failed");
+        return undefinedResult;
     }
-    return undefinedResult;
+    napi_value jsResult = nullptr;
+    status = napi_create_string_utf8(env, obj->smartAlbumAssetPtr->GetAlbumUri().c_str(), NAPI_AUTO_LENGTH, &jsResult);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create albumUri string failed");
+        return undefinedResult;
+    }
+    return jsResult;
 }
 
 napi_value SmartAlbumNapi::JSGetSmartAlbumDateModified(napi_env env, napi_callback_info info)
@@ -471,48 +533,224 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumDateModified(napi_env env, napi_callba
     return undefinedResult;
 }
 
+napi_value SmartAlbumNapi::JSGetSmartAlbumType(napi_env env, napi_callback_info info)
+{
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    if ((status != napi_ok) || (thisVar == nullptr)) {
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        return undefinedResult;
+    }
+    SmartAlbumNapi* obj = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if ((status != napi_ok) || (obj == nullptr)) {
+        NAPI_ERR_LOG("Unwrap object failed");
+        return undefinedResult;
+    }
+    napi_value jsResult = nullptr;
+    status = napi_create_int32(env, obj->smartAlbumAssetPtr->GetAlbumPrivateType(), &jsResult);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create albumPrivateType int32 failed");
+        return undefinedResult;
+    }
+    return jsResult;
+}
+
+napi_value SmartAlbumNapi::JSGetSmartAlbumDescription(napi_env env, napi_callback_info info)
+{
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    if ((status != napi_ok) || (thisVar == nullptr)) {
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        return undefinedResult;
+    }
+    SmartAlbumNapi* obj = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if ((status != napi_ok) || (obj == nullptr)) {
+        NAPI_ERR_LOG("Unwrap object failed");
+        return undefinedResult;
+    }
+    napi_value jsResult = nullptr;
+    status = napi_create_string_utf8(env, obj->smartAlbumAssetPtr->GetDescription().c_str(), NAPI_AUTO_LENGTH,
+        &jsResult);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create description string failed");
+        return undefinedResult;
+    }
+    return jsResult;
+}
+
+napi_value SmartAlbumNapi::JSSmartAlbumDescriptionSetter(napi_env env, napi_callback_info info)
+{
+    napi_value jsResult = nullptr;
+    napi_get_undefined(env, &jsResult);
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    napi_valuetype valueType = napi_undefined;
+    if (thisVar == nullptr || napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
+        NAPI_ERR_LOG("Invalid arguments type! valueType: %{private}d", valueType);
+        return jsResult;
+    }
+    SmartAlbumNapi* obj = nullptr;
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if ((status != napi_ok) || (obj == nullptr)) {
+        NAPI_ERR_LOG("Unwrap object failed");
+        return jsResult;
+    }
+    size_t res = 0;
+    char buffer[FILENAME_MAX];
+    status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Get description value string failed");
+        return jsResult;
+    }
+    obj->smartAlbumAssetPtr->SetDescription(std::string(buffer));
+    return jsResult;
+}
+
+napi_value SmartAlbumNapi::JSGetSmartAlbumExpiredTime(napi_env env, napi_callback_info info)
+{
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
+    if ((status != napi_ok) || (thisVar == nullptr)) {
+        NAPI_ERR_LOG("Invalid arguments! status: %{private}d", status);
+        return undefinedResult;
+    }
+    SmartAlbumNapi* obj = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if ((status != napi_ok) || (obj == nullptr)) {
+        NAPI_ERR_LOG("Unwrap object failed");
+        return undefinedResult;
+    }
+    napi_value jsResult = nullptr;
+    status = napi_create_int32(env, obj->smartAlbumAssetPtr->GetExpiredTime(), &jsResult);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create expiredTime int32 failed");
+        return undefinedResult;
+    }
+    return jsResult;
+}
+
+napi_value SmartAlbumNapi::JSSmartAlbumExpiredTimeSetter(napi_env env, napi_callback_info info)
+{
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    SmartAlbumNapi* obj = nullptr;
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if ((status != napi_ok) || (obj == nullptr)) {
+        NAPI_ERR_LOG("Failed to get expiredTime obj");
+        return undefinedResult;
+    }
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_number) {
+        NAPI_ERR_LOG("Invalid arguments type! valueType: %{private}d", valueType);
+        obj->smartAlbumAssetPtr->SetExpiredTime(INVALID_EXPIREDTIME);
+        return undefinedResult;
+    }
+    int32_t expiredTime;
+    status = napi_get_value_int32(env, argv[PARAM0], &expiredTime);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Failed to get expiredTime");
+        return undefinedResult;
+    }
+    obj->smartAlbumAssetPtr->SetExpiredTime(expiredTime);
+    return undefinedResult;
+}
+
 static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
 {
     SmartAlbumNapiAsyncContext *context = const_cast<SmartAlbumNapiAsyncContext *>(&albumContext);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    int32_t changedRows;
-    NAPI_DEBUG_LOG("CommitModifyNative = %{pubilc}s", context->objectPtr->GetAlbumName().c_str());
-    if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetAlbumName())) {
-        valuesBucket.Put(SMARTALBUM_DB_NAME, context->objectPtr->GetAlbumName());
-        predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectPtr->GetAlbumId()));
-        Uri commitModifyUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMOPRN +
-                            "/" + MEDIA_SMARTALBUMOPRN_MODIFYALBUM);
-        changedRows = UserFileClient::Update(commitModifyUri, predicates, valuesBucket);
-    } else {
-        changedRows = E_VIOLATION_PARAMETERS;
+    NAPI_DEBUG_LOG("CommitModifyNative = %{private}s", context->objectInfo->GetSmartAlbumName().c_str());
+    if (!MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName())) {
+        context->error = E_VIOLATION_PARAMETERS;
+        NAPI_ERR_LOG("Failed to checkDisplayName");
+        return;
     }
-    context->changedRows = changedRows;
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(SMARTALBUM_DB_DESCRIPTION, context->objectInfo->GetDescription());
+    string coverUri = context->objectInfo->GetCoverUri();
+    if (coverUri.empty() || (coverUri.find(MEDIALIBRARY_MEDIA_PREFIX) == string::npos)) {
+        context->error = E_VIOLATION_PARAMETERS;
+        NAPI_ERR_LOG("CoverUri is invalid");
+        return;
+    }
+    valuesBucket.Put(SMARTALBUM_DB_COVER_URI, coverUri);
+    if (context->objectInfo->GetExpiredTime() < 0) {
+        context->error = E_VIOLATION_PARAMETERS;
+        NAPI_ERR_LOG("ExpiredTime is invalid");
+        return;
+    }
+    valuesBucket.Put(SMARTALBUM_DB_EXPIRED_TIME, context->objectInfo->GetExpiredTime());
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(SMARTALBUM_DB_ID + " = " + std::to_string(context->objectInfo->GetSmartAlbumId()));
+    Uri commitModifyUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMOPRN + "/" + MEDIA_SMARTALBUMOPRN_MODIFYALBUM);
+    context->changedRows = UserFileClient::Update(commitModifyUri, predicates, valuesBucket);
+    context->SaveError(context->changedRows);
 }
+
 static void JSAddAssetExecute(SmartAlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    Uri addAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
-        MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
+    int32_t smartAlbumId = context->objectInfo->GetSmartAlbumId();
+    if ((smartAlbumId == TRASH_ALBUM_ID_VALUES) || (smartAlbumId == FAVOURITE_ALBUM_ID_VALUES)) {
+        context->error = E_INVALID_VALUES;
+        NAPI_ERR_LOG("SmartAlbumId is invalid, smartAlbumId = %{private}d", smartAlbumId);
+        return;
+    }
+    vector<DataShare::DataShareValuesBucket> values;
     for (int32_t id : context->assetIds) {
         DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectPtr->GetAlbumId());
+        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, smartAlbumId);
         valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
-        context->changedRows = UserFileClient::Insert(addAssetUri, valuesBucket);
+        values.push_back(valuesBucket);
+    }
+    Uri addAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
+    context->changedRows = UserFileClient::BatchInsert(addAssetUri, values);
+    if (context->changedRows != context->assetIds.size()) {
+        context->error = E_INVALID_VALUES;
     }
 }
 
 static void JSRemoveAssetExecute(SmartAlbumNapiAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    Uri removeAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
-        MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
+    int32_t smartAlbumId = context->objectInfo->GetSmartAlbumId();
+    if ((smartAlbumId == TRASH_ALBUM_ID_VALUES) || (smartAlbumId == FAVOURITE_ALBUM_ID_VALUES)) {
+        NAPI_ERR_LOG("SmartAlbumId is invalid, smartAlbumId = %{private}d", smartAlbumId);
+        context->error = E_INVALID_VALUES;
+        return;
+    }
+    vector<DataShare::DataShareValuesBucket> values;
     for (int32_t id : context->assetIds) {
         DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectPtr->GetAlbumId());
+        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, smartAlbumId);
         valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
-        context->changedRows = UserFileClient::Insert(removeAssetUri, context->valuesBucket);
+        values.push_back(valuesBucket);
+    }
+    Uri removeAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
+    context->changedRows = UserFileClient::BatchInsert(removeAssetUri, values);
+    if (context->changedRows != context->assetIds.size()) {
+        context->error = E_INVALID_VALUES;
     }
 }
 
@@ -521,14 +759,15 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, Sma
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    if (context->changedRows != -1) {
+    if (context->error == ERR_DEFAULT) {
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                                                     "Failed to obtain fetchFileResult from DB");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
+                                                     "Failed to commit smart album");
     }
 
     if (context->work != nullptr) {
@@ -543,14 +782,15 @@ static void JSAddAssetCompleteCallback(napi_env env, napi_status status, SmartAl
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    if (context->changedRows != -1 && context->changedRows != 0) {
+    if (context->error == ERR_DEFAULT) {
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                                                     "Failed to obtain fetchFileResult from DB");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error,  context->error,
+                                                     "Failed to add smartalbum asset");
     }
 
     if (context->work != nullptr) {
@@ -566,14 +806,15 @@ static void JSRemoveAssetCompleteCallback(napi_env env, napi_status status, Smar
     std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    if (context->changedRows != -1 && context->changedRows != 0) {
+    if (context->error == ERR_DEFAULT) {
         napi_create_int32(env, context->changedRows, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
     } else {
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                                                     "Failed to obtain fetchFileResult from DB");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error,  context->error,
+                                                     "Failed to remove smartalbum asset");
     }
 
     if (context->work != nullptr) {
@@ -623,10 +864,13 @@ static napi_value GetAssetIds(napi_env env, napi_value param, SmartAlbumNapiAsyn
             return nullptr;
         }
         if (napi_get_value_int32(env, jsValue, &result) != napi_ok) {
-            NAPI_ERR_LOG("get ids value fail");
+            NAPI_ERR_LOG("Get ids value fail");
             return nullptr;
         } else {
-            NAPI_ERR_LOG("GetAssetIds id = %{public}d", result);
+            if (result < 0) {
+                NAPI_ERR_LOG("GetAssetIds < 0 is invalid , id = %{public}d", result);
+                return nullptr;
+            }
             context.assetIds.push_back(result);
         }
     }
@@ -650,7 +894,10 @@ napi_value GetJSArgsForAsset(napi_env env, size_t argc,
         napi_typeof(env, argv[i], &valueType);
         if (i == PARAM0) {
             napi_value res = GetAssetIds(env, argv[PARAM0], asyncContext);
-            CHECK_NULL_PTR_RETURN_UNDEFINED(env, res, result, "Failed to obtain arguments ids");
+            if (res == nullptr) {
+                napi_throw_error(env, std::to_string(ERR_INVALID_OUTPUT).c_str(), "Failed to obtain arguments ids");
+                return nullptr;
+            }
         } else if (i == PARAM1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
@@ -663,7 +910,7 @@ napi_value GetJSArgsForAsset(napi_env env, size_t argc,
     return result;
 }
 
-napi_value SmartAlbumNapi::JSAddAsset(napi_env env, napi_callback_info info)
+napi_value SmartAlbumNapi::JSAddFileAssets(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -679,10 +926,9 @@ napi_value SmartAlbumNapi::JSAddAsset(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForAsset(env, argc, argv, *asyncContext);
-        CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSAddAsset fail ");
-
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSAddFileAssets fail");
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSAddAsset", asyncContext);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSAddFileAssets", asyncContext);
 
         asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "SmartAlbumAsset is nullptr");
@@ -705,7 +951,7 @@ napi_value SmartAlbumNapi::JSAddAsset(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value SmartAlbumNapi::JSRemoveAsset(napi_env env, napi_callback_info info)
+napi_value SmartAlbumNapi::JSRemoveFileAssets(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value result = nullptr;
@@ -721,10 +967,10 @@ napi_value SmartAlbumNapi::JSRemoveAsset(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForAsset(env, argc, argv, *asyncContext);
-        CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSRemoveAsset fail ");
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSRemoveFileAssets fail ");
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRemoveAsset", asyncContext);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRemoveFileAssets", asyncContext);
 
         asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "SmartAlbumAsset is nullptr");
@@ -950,7 +1196,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status, vo
         if (context->fetchResult->GetCount() < 0) {
             napi_get_undefined(env, &jsContext->data);
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
-                "find no data by options");
+                "Find no data by options");
         } else {
             napi_value fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchResult));
             if (fetchRes == nullptr) {
@@ -968,7 +1214,7 @@ static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status, vo
         NAPI_ERR_LOG("No fetch file result found!");
         napi_get_undefined(env, &jsContext->data);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                                                     "Failed to obtain fetchFileResult from DB");
+                                                     "Failed to get fetchFileResult from DB");
     }
 
     tracer.Finish();
@@ -1014,7 +1260,7 @@ napi_value SmartAlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info
 {
     napi_value ret = nullptr;
     unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = make_unique<SmartAlbumNapiAsyncContext>();
-    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "AsyncContext context is null");
 
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_IMAGE);
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
@@ -1082,7 +1328,7 @@ napi_value SmartAlbumNapi::UserFileMgrRecoverAsset(napi_env env, napi_callback_i
 {
     napi_value ret = nullptr;
     unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = make_unique<SmartAlbumNapiAsyncContext>();
-    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "AsyncContext context is null");
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
         asyncContext, JS_ERR_PARAMETER_INVALID);
@@ -1119,7 +1365,7 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status, void
     SmartAlbumNapiAsyncContext *context = static_cast<SmartAlbumNapiAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
-    CHECK_NULL_PTR_RETURN_VOID(jsContext, "jsContext context is null");
+    CHECK_NULL_PTR_RETURN_VOID(jsContext, "JsContext context is null");
     jsContext->status = false;
     napi_get_undefined(env, &jsContext->data);
     if (context->error == ERR_DEFAULT) {
@@ -1144,7 +1390,7 @@ napi_value SmartAlbumNapi::UserFileMgrDeleteAsset(napi_env env, napi_callback_in
 {
     napi_value ret = nullptr;
     unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = make_unique<SmartAlbumNapiAsyncContext>();
-    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "AsyncContext context is null");
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
         asyncContext, JS_ERR_PARAMETER_INVALID);

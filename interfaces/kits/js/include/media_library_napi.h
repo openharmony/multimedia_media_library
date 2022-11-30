@@ -236,7 +236,8 @@ struct MediaLibraryAsyncContext : public NapiError {
     Ability *ability_;
     std::string storeMediaSrc;
     int32_t imagePreviewIndex;
-
+    int32_t parentSmartAlbumId = 0;
+    int32_t smartAlbumId = -1;
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
     ResultNapiType resultNapiType;

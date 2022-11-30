@@ -68,6 +68,7 @@ public:
     EXPORT int32_t GenerateThumbnails();
     EXPORT void InterruptBgworker();
     EXPORT int32_t DoAging();
+    EXPORT int32_t DoTrashAging();
 
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 
@@ -76,7 +77,7 @@ public:
     void ClearMediaLibraryMgr();
     int32_t MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
     void CreateThumbnailAsync(const std::string &uri);
-    std::unordered_map<std::string, DirAsset> GetDirQuerySetMap() const;
+    static std::unordered_map<std::string, DirAsset> GetDirQuerySetMap();
     std::shared_ptr<MediaDataShareExtAbility> GetOwner();
     void SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExtension);
 
@@ -85,6 +86,8 @@ private:
     int32_t HandleThumbnailOperations(MediaLibraryCommand &cmd);
     bool CheckFileNameValid(const DataShare::DataShareValuesBucket &value);
     void NeedQuerySync(const std::string &networkId, OperationObject oprnObject);
+    int32_t SolveInsertCmd(MediaLibraryCommand &cmd);
+    int32_t SetCmdBundleAndDevice(MediaLibraryCommand &outCmd);
     void ScanFile(const NativeRdb::ValuesBucket &values, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore1);
     int32_t InitDeviceData();
     int32_t InitialiseThumbnailService(const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
@@ -92,6 +95,7 @@ private:
     int32_t CreateThumbnail(const NativeRdb::ValuesBucket &values);
     int32_t LcdDistributeAging();
     int32_t DistributeDeviceAging();
+    bool ShouldCheckFileName(const OperationObject &oprnObject);
     std::shared_ptr<ThumbnailService> thumbnailService_;
 
     std::shared_mutex mgrSharedMutex_;
@@ -102,7 +106,7 @@ private:
     OHOS::sptr<AppExecFwk::IBundleMgr> bundleMgr_;
     static std::mutex mutex_;
     static std::shared_ptr<MediaLibraryDataManager> instance_;
-    std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
+    static std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
     std::atomic<int> refCnt_{0};
     std::shared_ptr<MediaDataShareExtAbility> extension_;
 };
