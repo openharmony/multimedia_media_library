@@ -23,8 +23,8 @@
 #include <unistd.h>
 
 #include "medialibrary_db_const.h"
-#include "medialibrary_smartalbum_db.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_command.h"
 #include "rdb_store.h"
 #include "values_bucket.h"
 
@@ -32,9 +32,9 @@ namespace OHOS {
 namespace Media {
 class MediaLibrarySmartAlbumOperations {
 public:
-    int32_t HandleSmartAlbumOperations(const std::string &uri,
-                                       const NativeRdb::ValuesBucket &values,
-                                       const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static int32_t HandleSmartAlbumOperation(MediaLibraryCommand &cmd);
+    static int32_t CreateSmartAlbumOperation(MediaLibraryCommand &cmd);
+    static int32_t DeleteSmartAlbumOperation(MediaLibraryCommand &cmd);
 };
 } // namespace Media
 } // namespace OHOS

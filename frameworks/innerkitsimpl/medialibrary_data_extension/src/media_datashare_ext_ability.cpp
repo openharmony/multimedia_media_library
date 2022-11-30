@@ -350,9 +350,8 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<Data
         MEDIA_ERR_LOG("%{public}s Check calling permission failed.", __func__);
         return ret;
     }
-
     MEDIA_INFO_LOG("%{public}s end.", __func__);
-    return ret;
+    return MediaLibraryDataManager::GetInstance()->BatchInsert(uri, values);
 }
 
 bool MediaDataShareExtAbility::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
