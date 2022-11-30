@@ -886,8 +886,8 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
 static void UpdateSelection(SmartAlbumNapiAsyncContext *context)
 {
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
-        context->predicates.EqualTo(SMARTALBUMMAP_DB_ALBUM_ID, context->objectInfo->GetSmartAlbumId());
-        if (context->objectInfo->GetSmartAlbumId() == TRASH_ALBUM_ID_VALUES) {
+        context->predicates.EqualTo(SMARTALBUMMAP_DB_ALBUM_ID, context->objectPtr->GetAlbumId());
+        if (context->objectPtr->GetAlbumId() == TRASH_ALBUM_ID_VALUES) {
             context->predicates.NotEqualTo(MEDIA_DATA_DB_DATE_TRASHED, "0");
         } else {
             context->predicates.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, "0");
@@ -895,14 +895,14 @@ static void UpdateSelection(SmartAlbumNapiAsyncContext *context)
         MediaLibraryNapiUtils::UpdateMediaTypeSelections(context);
     } else {
         string trashPrefix;
-        if (context->objectInfo->GetSmartAlbumId() == TRASH_ALBUM_ID_VALUES) {
+        if (context->objectPtr->GetAlbumId() == TRASH_ALBUM_ID_VALUES) {
             trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " <> ? AND " + SMARTALBUMMAP_DB_ALBUM_ID + " = ? ";
         } else {
             trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? AND " + SMARTALBUMMAP_DB_ALBUM_ID + " = ? ";
         }
         MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
         context->selectionArgs.emplace_back("0");
-        context->selectionArgs.emplace_back(std::to_string(context->objectInfo->GetSmartAlbumId()));
+        context->selectionArgs.emplace_back(std::to_string(context->objectPtr->GetAlbumId()));
     }
 }
 
