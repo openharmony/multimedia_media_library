@@ -386,6 +386,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         CREATE_SMARTALBUMASSETS_VIEW,
         CREATE_ASSETMAP_VIEW,
         CREATE_MEDIATYPE_DIRECTORY_TABLE,
+        CREATE_BUNDLE_PREMISSION_TABLE,
     };
 
     for (string sqlStr : executeSqlStrs) {
