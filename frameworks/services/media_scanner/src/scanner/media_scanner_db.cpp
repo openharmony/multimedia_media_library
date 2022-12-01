@@ -287,6 +287,7 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
     resultSet->GetColumnIndex(MEDIA_DATA_DB_RECYCLE_PATH, recyclePathIndex);
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        recyclePath.clear();
         resultSet->GetString(recyclePathIndex, recyclePath);
         if (!recyclePath.empty()) {
             continue;
