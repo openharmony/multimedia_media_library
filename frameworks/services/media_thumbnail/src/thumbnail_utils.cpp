@@ -1137,11 +1137,11 @@ bool ThumbnailUtils::SyncPushTable(ThumbRdbOpt &opts, std::vector<std::string> &
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPushTable device = %{public}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPushTable device = %{private}s syncResult = %{private}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
-            MEDIA_ERR_LOG("SyncPushTable device = %{public}s success", iter->first.c_str());
+            MEDIA_ERR_LOG("SyncPushTable device = %{private}s success", iter->first.c_str());
         }
     };
 
@@ -1169,7 +1169,7 @@ bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, std::vector<std::string> &
     DistributedRdb::SyncCallback callback = [status](const DistributedRdb::SyncResult& syncResult) {
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPullTable device = %{public}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPullTable device = %{private}s syncResult = %{private}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
@@ -1201,7 +1201,7 @@ bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, std::vector<std::string> &
 Status ThumbnailUtils::SyncPullKvstore(const shared_ptr<SingleKvStore> &kvStore, const string key,
     const string &networkId)
 {
-    MEDIA_DEBUG_LOG("networkId is %{public}s key is %{public}s",
+    MEDIA_DEBUG_LOG("networkId is %{private}s key is %{private}s",
         networkId.c_str(), key.c_str());
     if (kvStore == nullptr) {
         MEDIA_ERR_LOG("kvStore is null");
