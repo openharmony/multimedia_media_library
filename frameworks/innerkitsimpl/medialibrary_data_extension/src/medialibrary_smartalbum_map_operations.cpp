@@ -128,6 +128,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleAgingOperation()
     shared_ptr<AbsSharedResultSet> resultSet = QueryAgeingTrashFiles();
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query ageing trash files");
+        return E_HAS_DB_ERROR;
     }
     int32_t count = 0;
     auto ret = resultSet->GetRowCount(count);
