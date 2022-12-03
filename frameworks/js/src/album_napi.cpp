@@ -635,7 +635,7 @@ static void UpdateSelection(AlbumNapiAsyncContext *context)
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         context->predicates.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, 0);
         context->predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_ALBUM);
-        context->predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, context->objectInfo->GetAlbumId());
+        context->predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, context->objectPtr->GetAlbumId());
         MediaLibraryNapiUtils::UpdateMediaTypeSelections(context);
     } else {
         string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
@@ -648,7 +648,7 @@ static void UpdateSelection(AlbumNapiAsyncContext *context)
 
         string idPrefix = MEDIA_DATA_DB_BUCKET_ID + " = ? ";
         MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, idPrefix);
-        context->selectionArgs.emplace_back(std::to_string(context->objectInfo->GetAlbumId()));
+        context->selectionArgs.emplace_back(std::to_string(context->objectPtr->GetAlbumId()));
     }
 }
 
