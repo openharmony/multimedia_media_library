@@ -47,6 +47,9 @@ constexpr int32_t E_INVALID_FILEID =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 8
 constexpr int32_t E_INVALID_PATH =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 9);
 constexpr int32_t E_VIOLATION_PARAMETERS =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 10);
 constexpr int32_t E_RDIR_FAIL =             MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 11);
+constexpr int32_t E_EXIST_IN_DB =           MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 16);
+constexpr int32_t E_INVALID_MODE =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 17);
+constexpr int32_t E_INVALID_BUNDLENAME =    MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 18);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }

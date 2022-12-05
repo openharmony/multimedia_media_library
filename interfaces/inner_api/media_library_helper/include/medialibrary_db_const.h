@@ -36,6 +36,7 @@ const std::string SMARTALBUM_MAP_TABLE = "SmartAlbumMap";
 const std::string CATEGORY_SMARTALBUM_MAP_TABLE = "CategorySmartAlbumMap";
 const std::string MEDIATYPE_DIRECTORY_TABLE = "MediaTypeDirectory";
 const std::string DEVICE_TABLE = "Device";
+const std::string BUNDLE_PERMISSION_TABLE = "BundlePermission";
 const std::string MEDIA_DATA_ABILITY_DB_NAME = "media_library.db";
 
 const std::string BUNDLE_NAME = "com.ohos.medialibrary.medialibrarydata";
@@ -59,6 +60,7 @@ const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/" 
 const std::string MEDIALIBRARY_CATEGORY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/"
                                                              + CATEGORY_SMARTALBUM_MAP_TABLE;
 const std::string MEDIALIBRARY_DIRECTORY_URI = MEDIALIBRARY_DATA_URI + "/" + MEDIATYPE_DIRECTORY_TABLE;
+const std::string MEDIALIBRARY_BUNDLEPERM_URI = MEDIALIBRARY_DATA_URI + "/" + BUNDLE_PERMISSION_TABLE;
 
 const std::string MEDIALIBRARY_AUDIO_URI = MEDIALIBRARY_DATA_URI + '/' + "audio";
 const std::string MEDIALIBRARY_VIDEO_URI = MEDIALIBRARY_DATA_URI + '/' + "video";
@@ -137,6 +139,11 @@ const std::string MEDIA_DATA_IMAGE_F_NUMBER = "FNumber";
 const std::string MEDIA_DATA_IMAGE_ISO_SPEED_RATINGS = "ISOSpeedRatings";
 const std::string MEDIA_DATA_IMAGE_SCENE_TYPE = "SceneType";
 
+const std::string PERMISSION_ID = "id";
+const std::string PERMISSION_BUNDLE_NAME = "bundle_name";
+const std::string PERMISSION_FILE_ID = "file_id";
+const std::string PERMISSION_MODE = "mode";
+
 const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " (" +
                                        MEDIA_DATA_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                                        MEDIA_DATA_DB_FILE_PATH + " TEXT, " +
@@ -176,6 +183,13 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        MEDIA_DATA_DB_ALBUM_NAME + " TEXT, " +
                                        MEDIA_DATA_DB_URI + " TEXT, " +
                                        MEDIA_DATA_DB_ALBUM + " TEXT)";
+
+const std::string CREATE_BUNDLE_PREMISSION_TABLE = "CREATE TABLE IF NOT EXISTS " +
+                                      BUNDLE_PERMISSION_TABLE + " (" +
+                                      PERMISSION_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                      PERMISSION_BUNDLE_NAME + " TEXT NOT NULL, " +
+                                      PERMISSION_FILE_ID + " INT NOT NULL, " +
+                                      PERMISSION_MODE + " TEXT NOT NULL)";
 
 const std::string CREATE_IMAGE_VIEW = "CREATE VIEW Image AS SELECT " +
                                       MEDIA_DATA_DB_ID + ", " +
@@ -441,6 +455,7 @@ const std::string THU_OPRN_AGING = "thumbnail_aging_operation";
 const std::string DISTRIBUTE_THU_OPRN_GENERATES = "thumbnail_distribute_generate_operation";
 const std::string DISTRIBUTE_THU_OPRN_AGING = "thumbnail_distribute_aging_operation";
 const std::string DISTRIBUTE_THU_OPRN_CREATE = "thumbnail_distribute_create_operation";
+const std::string BUNDLE_PERMISSION_INSERT = "bundle_permission_insert_operation";
 
 const std::string MEDIA_ALBUMOPRN_CREATEALBUM = "create_album";
 const std::string MEDIA_ALBUMOPRN_MODIFYALBUM = "modify_album";

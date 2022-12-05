@@ -169,7 +169,7 @@ bool PermissionUtils::CheckCallerPermission(const std::array<std::string, PERM_G
 
 bool PermissionUtils::CheckCallerSpecialFilePerm(const string &displayName)
 {
-    string bundleName = "";
+    string bundleName;
     bool isSystemApp = false;
     int uid = IPCSkeleton::GetCallingUid();
     GetClientBundle(uid, bundleName, isSystemApp);

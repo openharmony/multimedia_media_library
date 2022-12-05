@@ -60,11 +60,10 @@ public:
     static bool CheckCallerPermission(const std::string &permission);
     static bool CheckCallerPermission(const std::array<std::string, PERM_GRP_SIZE> &perms, const uint32_t permMask);
     static bool CheckCallerSpecialFilePerm(const std::string &displayName);
+    static void GetClientBundle(const int uid, std::string &bundleName, bool &isSystemApp);
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
-    static void GetClientBundle(const int uid, std::string &bundleName, bool &isSystemApp);
-
     static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
     static std::mutex bundleMgrMutex_;
 };
