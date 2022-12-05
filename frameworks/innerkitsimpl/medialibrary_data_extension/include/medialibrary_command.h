@@ -39,6 +39,7 @@ enum class OperationObject : uint32_t {
     ALL_DEVICE,
     ACTIVE_DEVICE,
     MEDIA_VOLUME,
+    BUNDLE_PERMISSION,
 };
 
 enum class OperationType : uint32_t {
@@ -56,6 +57,7 @@ enum class OperationType : uint32_t {
     AGING,
     DISTRIBUTE_AGING,
     DISTRIBUTE_CREATE,
+    INSERT_PERMISSION,
 };
 
 class MediaLibraryCommand {
