@@ -30,6 +30,7 @@
 #include "media_log.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_uripermission_operations.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_device.h"
 #include "medialibrary_device_info.h"
@@ -319,6 +320,9 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         }
         case OperationObject::THUMBNAIL: {
             return HandleThumbnailOperations(cmd);
+        }
+        case OperationObject::BUNDLE_PERMISSION: {
+            return UriPermissionOperations::HandleUriPermOperations(cmd);
         }
         default: {
             return MediaLibraryObjectUtils::InsertInDb(cmd);
@@ -751,6 +755,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri,
         { OperationObject::ACTIVE_DEVICE, "" },
         { OperationObject::ASSETMAP, "" },
         { OperationObject::SMART_ALBUM_ASSETS, "" },
+        { OperationObject::BUNDLE_PERMISSION, "" },
     };
 
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
