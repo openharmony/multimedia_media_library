@@ -38,7 +38,7 @@ public:
     virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) = 0;
     virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &rowId) = 0;
     virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &rowId) = 0;
-    virtual std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(MediaLibraryCommand &cmd,
+    virtual std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns)
     {
         return nullptr;
@@ -66,7 +66,7 @@ public:
         return NativeRdb::E_NOT_SUPPORT;
     }
 
-    virtual std::shared_ptr<NativeRdb::AbsSharedResultSet> QuerySql(const std::string &sql)
+    virtual std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql)
     {
         return nullptr;
     }

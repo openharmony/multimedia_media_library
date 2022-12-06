@@ -759,7 +759,7 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY, networkId);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, id);
 
-    shared_ptr<AbsSharedResultSet> resultSet = QueryWithCondition(cmd, {});
+    auto resultSet = QueryWithCondition(cmd, {});
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain file asset from database");
         return nullptr;
@@ -779,7 +779,7 @@ void MediaLibraryObjectUtils::GetDefaultRelativePath(const int32_t mediaType, st
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_DIR, OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(DIRECTORY_DB_MEDIA_TYPE, to_string(mediaType));
 
-    shared_ptr<AbsSharedResultSet> resultSet = QueryWithCondition(cmd, {});
+    auto resultSet = QueryWithCondition(cmd, {});
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain file asset from database, mediaType: %{public}d", static_cast<int>(mediaType));
         return;
@@ -1078,7 +1078,7 @@ int32_t MediaLibraryObjectUtils::ModifyInfoByIdInDb(MediaLibraryCommand &cmd, co
     return updatedRows;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryObjectUtils::QueryWithCondition(MediaLibraryCommand &cmd,
+shared_ptr<ResultSet> MediaLibraryObjectUtils::QueryWithCondition(MediaLibraryCommand &cmd,
     const vector<string> &columns, const string &conditionColumn)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -1240,7 +1240,7 @@ void MediaLibraryObjectUtils::CloseFileById(int32_t fileId)
     CloseFile(closeCmd);
 }
 
-int32_t MediaLibraryObjectUtils::GetFileResult(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+int32_t MediaLibraryObjectUtils::GetFileResult(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
     int count, const string &relativePath, const string &displayName)
 {
     shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();
@@ -1285,7 +1285,7 @@ int32_t MediaLibraryObjectUtils::CopyDir(const shared_ptr<FileAsset> &srcDirAsse
     MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(srcDirAsset->GetId()))->And()->
         EqualTo(MEDIA_DATA_DB_IS_TRASH, "0")->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_NOFILE));
-    shared_ptr<AbsSharedResultSet> resultSet = QueryWithCondition(queryCmd, {});
+    auto resultSet = QueryWithCondition(queryCmd, {});
     auto count = 0;
     auto ret = resultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "get rdbstore failed");
@@ -1533,7 +1533,7 @@ bool MediaLibraryObjectUtils::IsSmartAlbumExistInDb(const int32_t id)
 {
     MediaLibraryCommand querySmartAlbumCmd(OperationObject::SMART_ALBUM, OperationType::QUERY);
     querySmartAlbumCmd.GetAbsRdbPredicates()->EqualTo(SMARTALBUM_DB_ID, to_string(id));
-    shared_ptr<AbsSharedResultSet> queryResultSet = QuerySmartAlbum(querySmartAlbumCmd);
+    auto queryResultSet = QuerySmartAlbum(querySmartAlbumCmd);
     if (queryResultSet != nullptr) {
         if (queryResultSet->GoToFirstRow() == NativeRdb::E_OK) {
             return true;
@@ -1548,9 +1548,8 @@ bool MediaLibraryObjectUtils::IsParentSmartAlbum(const int32_t id, const bool is
 {
     MediaLibraryCommand querySmartAlbumCmd(OperationObject::SMART_ALBUM_MAP, OperationType::QUERY);
     querySmartAlbumCmd.GetAbsRdbPredicates()->EqualTo(SMARTALBUMMAP_DB_ALBUM_ID, to_string(id));
-    shared_ptr<AbsSharedResultSet> queryResultSet;
     if (isInclude) {
-        queryResultSet = QuerySmartAlbum(querySmartAlbumCmd);
+        auto queryResultSet = QuerySmartAlbum(querySmartAlbumCmd);
         if (queryResultSet != nullptr) {
             if (queryResultSet->GoToFirstRow() != NativeRdb::E_OK) {
                 return true;
@@ -1561,7 +1560,7 @@ bool MediaLibraryObjectUtils::IsParentSmartAlbum(const int32_t id, const bool is
         }
     }
     querySmartAlbumCmd.GetAbsRdbPredicates()->IsNotNull(SMARTALBUMMAP_DB_CHILD_ALBUM_ID);
-    queryResultSet = QuerySmartAlbum(querySmartAlbumCmd);
+    auto queryResultSet = QuerySmartAlbum(querySmartAlbumCmd);
     if (queryResultSet != nullptr) {
         if (queryResultSet->GoToFirstRow() == NativeRdb::E_OK) {
             return true;
@@ -1570,7 +1569,7 @@ bool MediaLibraryObjectUtils::IsParentSmartAlbum(const int32_t id, const bool is
     return false;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryObjectUtils::QuerySmartAlbum(MediaLibraryCommand &cmd)
+shared_ptr<ResultSet> MediaLibraryObjectUtils::QuerySmartAlbum(MediaLibraryCommand &cmd)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
