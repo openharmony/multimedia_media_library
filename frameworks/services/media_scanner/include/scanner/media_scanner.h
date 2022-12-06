@@ -36,6 +36,7 @@
 #include <memory>
 
 #include "medialibrary_type_const.h"
+#include "medialibrary_errno.h"
 #include "media_scanner_const.h"
 #include "media_scanner_db.h"
 #include "metadata.h"
@@ -61,7 +62,16 @@ namespace Media {
  */
 class MediaScannerObj {
 public:
-    MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback, bool isDir);
+    enum ScanType {
+        FILE,
+        DIRECTORY,
+        START,
+        ERROR
+    };
+
+    MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
+        MediaScannerObj::ScanType type);
+    MediaScannerObj(MediaScannerObj::ScanType type);
     virtual ~MediaScannerObj() = default;
 
     void Scan();
@@ -85,6 +95,10 @@ private:
     int32_t CleanupDirectory();
     int32_t InsertOrUpdateAlbumInfo(const std::string &albumPath, int32_t parentId, const std::string &albumName);
 
+    /* error */
+    int32_t Start();
+    int32_t ScanError(bool isBoot = false);
+
     /* db ops */
     int32_t Commit();
     int32_t AddToTransaction();
@@ -93,18 +107,33 @@ private:
     /* callback */
     int32_t InvokeCallback(int32_t code);
 
+    ScanType type_;
     std::string path_;
     std::string dir_;
-    bool isDir_;
     std::string uri_;
     std::unique_ptr<MediaScannerDb> mediaScannerDb_;
-    const std::shared_ptr<IMediaScannerCallback> callback_;
+    std::shared_ptr<IMediaScannerCallback> callback_;
     std::shared_ptr<bool> stopFlag_;
 
     std::unique_ptr<Metadata> data_;
     std::unordered_map<std::string, Metadata> albumMap_;
     std::unordered_set<int32_t> scannedIds_;
     std::vector<std::unique_ptr<Metadata>> dataBuffer_;
+};
+
+class ScanErrCallback : public IMediaScannerCallback {
+public:
+    ScanErrCallback() = default;
+    ~ScanErrCallback() = default;
+
+    int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override
+    {
+        if (status == E_OK) {
+            return MediaScannerDb::GetDatabaseInstance()->DeleteError(path);
+        }
+
+        return E_OK;
+    }
 };
 } // namespace Media
 } // namespace OHOS

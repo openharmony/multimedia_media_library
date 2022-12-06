@@ -30,13 +30,17 @@ using namespace OHOS::AppExecFwk;
 using namespace OHOS::DataShare;
 
 MediaScannerObj::MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
-    bool isDir) : isDir_(isDir), callback_(callback)
+    MediaScannerObj::ScanType type) : type_(type), callback_(callback)
 {
-    if (isDir) {
+    if (type_ == DIRECTORY) {
         dir_ = path;
-    } else {
+    } else if (type_ == FILE) {
         path_ = path;
     }
+}
+
+MediaScannerObj::MediaScannerObj(MediaScannerObj::ScanType type) : type_(type)
+{
 }
 
 void MediaScannerObj::SetStopFlag(std::shared_ptr<bool> &flag)
@@ -74,10 +78,21 @@ int32_t MediaScannerObj::ScanDir()
 
 void MediaScannerObj::Scan()
 {
-    if (isDir_) {
-        ScanDir();
-    } else {
-        ScanFile();
+    switch (type_) {
+        case FILE:
+            ScanFile();
+            break;
+        case DIRECTORY:
+            ScanDir();
+            break;
+        case START:
+            Start();
+            break;
+        case ERROR:
+            ScanError();
+            break;
+        default:
+            break;
     }
 }
 
@@ -504,6 +519,59 @@ int32_t MediaScannerObj::ScanDirInternal()
     if (err != E_OK) {
         MEDIA_ERR_LOG("clean up dir err %{public}d", err);
         return err;
+    }
+
+    return E_OK;
+}
+
+int32_t MediaScannerObj::Start()
+{
+    int32_t ret = ScanError(true);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("scann error fail %{public}d", ret);
+        return ret;
+    }
+
+    /*
+     * primary key wouldn't be duplicate
+     */
+    ret = mediaScannerDb_->RecordError(ROOT_MEDIA_DIR);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("record err fail %{public}d", ret);
+        return ret;
+    }
+
+    return E_OK;
+}
+
+int32_t MediaScannerObj::ScanError(bool isBoot)
+{
+    callback_ = make_shared<ScanErrCallback>();
+
+    auto errList = mediaScannerDb_->ReadError();
+    for (auto &err : errList) {
+        /*
+         * Scan full path only when boot; all other errors are processed in
+         * broadcast receving context.
+         */
+        if (err == ROOT_MEDIA_DIR) {
+            if (isBoot) {
+                dir_ = move(err);
+                (void)ScanDir();
+                break;
+            } else {
+                continue;
+            }
+        }
+
+        /* assume err paths are correct */
+        if (ScannerUtils::IsDirectory(err)) {
+            dir_ = move(err);
+            (void)ScanDir();
+        } else {
+            path_ = move(err);
+            (void)ScanFile();
+        }
     }
 
     return E_OK;

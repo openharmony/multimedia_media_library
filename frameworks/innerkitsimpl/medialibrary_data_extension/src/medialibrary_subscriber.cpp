@@ -105,10 +105,8 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         if (scannerManager == nullptr) {
             return;
         }
-        result = scannerManager->ScanError();
-        if (result != E_OK) {
-            MEDIA_ERR_LOG("scan error faild");
-        }
+        scannerManager->ScanError();
+
         MEDIA_DEBUG_LOG("DoBackgroundOperation success isScreenOff_ %{public}d, isPowerConnected_ %{public}d",
             isScreenOff_, isPowerConnected_);
     }
