@@ -74,6 +74,7 @@ public:
     static bool IsSmartAlbumExistInDb(const int32_t id);
     static bool IsParentSmartAlbum(const int32_t id, const bool includeEmptyAlbum = false);
     static int32_t CheckDirExtension(MediaLibraryCommand &cmd);
+    static void UpdateDateModified(const std::string &dirPath);
 
 private:
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);
@@ -91,7 +92,6 @@ private:
     static int32_t ProcessHiddenDir(const std::string &dstDirName, const std::string &srcDirPath);
     static int32_t UpdateFileInfoInDb(MediaLibraryCommand &cmd, const std::string &dstPath,
         const int &bucketId, const std::string &bucketName);
-    static void UpdateDateModified(const std::string &dirPath);
     static void ScanFile(std::string &srcPath);
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
     static int32_t CopyAssetByFd(int32_t srcFd, int32_t srcId, int32_t destFd, int32_t destId);
