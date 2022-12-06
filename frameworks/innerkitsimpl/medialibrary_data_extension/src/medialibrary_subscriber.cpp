@@ -76,9 +76,6 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         isPowerConnected_ = false;
         StopBackgroundOperation();
     }
-
-    std::string srcPath = "/storage/media/local/files";
-    MediaScannerManager::GetInstance()->ScanDir(srcPath, nullptr);
 }
 
 void MedialibrarySubscriber::DoBackgroundOperation()
