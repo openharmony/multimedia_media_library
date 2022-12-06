@@ -90,7 +90,7 @@ int32_t MediaFileExtentionUtils::CheckUriSupport(const string &uri)
     return E_SUCCESS;
 }
 
-shared_ptr<AbsSharedResultSet> MediaFileExtentionUtils::GetResultSetFromDb(string field, const string &value)
+shared_ptr<NativeRdb::ResultSet> MediaFileExtentionUtils::GetResultSetFromDb(string field, const string &value)
 {
     string networkId;
     string input = value;
@@ -306,7 +306,7 @@ static int32_t RootListFile(const FileInfo &parentInfo, vector<FileInfo> &fileLi
     return E_SUCCESS;
 }
 
-shared_ptr<AbsSharedResultSet> GetResult(const Uri &uri, MediaFileUriType uriType, const string &selection,
+shared_ptr<NativeRdb::ResultSet> GetResult(const Uri &uri, MediaFileUriType uriType, const string &selection,
     const vector<string> &selectionArgs)
 {
     DataSharePredicates predicates;
@@ -329,7 +329,7 @@ static string MimeType2MediaType(const string &mimeType)
     return to_string(res);
 }
 
-shared_ptr<AbsSharedResultSet> GetMediaRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
+shared_ptr<NativeRdb::ResultSet> GetMediaRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
     const int64_t offset, const int64_t maxCount)
 {
     Uri uri(GetQueryUri(parentInfo, uriType));
@@ -341,7 +341,7 @@ shared_ptr<AbsSharedResultSet> GetMediaRootResult(const FileInfo &parentInfo, Me
     return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
-shared_ptr<AbsSharedResultSet> GetListRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
+shared_ptr<NativeRdb::ResultSet> GetListRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
     const int64_t offset, const int64_t maxCount)
 {
     string selection = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? AND " +
@@ -353,7 +353,7 @@ shared_ptr<AbsSharedResultSet> GetListRootResult(const FileInfo &parentInfo, Med
     return GetResult(uri, uriType, selection, selectionArgs);
 }
 
-shared_ptr<AbsSharedResultSet> GetListDirResult(const FileInfo &parentInfo, MediaFileUriType uriType,
+shared_ptr<NativeRdb::ResultSet> GetListDirResult(const FileInfo &parentInfo, MediaFileUriType uriType,
     const int64_t offset, const int64_t maxCount, const DistributedFS::FileFilter &filter)
 {
     string selection;
@@ -370,7 +370,7 @@ shared_ptr<AbsSharedResultSet> GetListDirResult(const FileInfo &parentInfo, Medi
     return GetResult(uri, uriType, selection, selectionArgs);
 }
 
-shared_ptr<AbsSharedResultSet> GetListAlbumResult(const FileInfo &parentInfo, MediaFileUriType uriType,
+shared_ptr<NativeRdb::ResultSet> GetListAlbumResult(const FileInfo &parentInfo, MediaFileUriType uriType,
     const int64_t offset, const int64_t maxCount, const DistributedFS::FileFilter &filter)
 {
     string selection;
@@ -387,10 +387,10 @@ shared_ptr<AbsSharedResultSet> GetListAlbumResult(const FileInfo &parentInfo, Me
     return GetResult(uri, uriType, selection, selectionArgs);
 }
 
-int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedResultSet> &result,
+int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::ResultSet> &result,
     vector<FileInfo> &fileList)
 {
-    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "AbsSharedResultSet is nullptr");
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "ResultSet is nullptr");
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
     FileInfo fileInfo;
     while (result->GoToNextRow() == NativeRdb::E_OK) {
@@ -406,10 +406,10 @@ int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedR
     return E_SUCCESS;
 }
 
-int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedResultSet> &result,
+int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::ResultSet> &result,
     vector<FileInfo> &fileList)
 {
-    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "AbsSharedResultSet is nullptr");
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "ResultSet is nullptr");
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
     FileInfo fileInfo;
     while (result->GoToNextRow() == NativeRdb::E_OK) {
@@ -441,7 +441,7 @@ int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int6
         MEDIA_ERR_LOG("ResolveUri::invalid input fileInfo");
         return ret;
     }
-    shared_ptr<AbsSharedResultSet> result = nullptr;
+    shared_ptr<NativeRdb::ResultSet> result = nullptr;
     switch (uriType) {
         case URI_ROOT:
             return RootListFile(parentInfo, fileList);
@@ -462,7 +462,7 @@ int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int6
     }
 }
 
-int32_t GetScanFileFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedResultSet> &result,
+int32_t GetScanFileFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::ResultSet> &result,
     vector<FileInfo> &fileList)
 {
     if (result == nullptr) {
@@ -485,7 +485,7 @@ int32_t GetScanFileFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<Abs
     return E_SUCCESS;
 }
 
-shared_ptr<AbsSharedResultSet> GetScanFileResult(const Uri &uri, MediaFileUriType uriType, const string &selection,
+shared_ptr<NativeRdb::ResultSet> GetScanFileResult(const Uri &uri, MediaFileUriType uriType, const string &selection,
     const vector<string> &selectionArgs)
 {
     DataSharePredicates predicates;
@@ -504,7 +504,7 @@ shared_ptr<AbsSharedResultSet> GetScanFileResult(const Uri &uri, MediaFileUriTyp
     return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
-shared_ptr<AbsSharedResultSet> SetScanFileSelection(const FileInfo &parentInfo, MediaFileUriType uriType,
+shared_ptr<NativeRdb::ResultSet> SetScanFileSelection(const FileInfo &parentInfo, MediaFileUriType uriType,
     const int64_t offset, const int64_t maxCount, const DistributedFS::FileFilter &filter)
 {
     string filePath;
@@ -553,11 +553,11 @@ int32_t MediaFileExtentionUtils::ScanFile(const FileInfo &parentInfo, const int6
         MEDIA_ERR_LOG("ResolveUri::invalid input fileInfo");
         return ret;
     }
-    shared_ptr<AbsSharedResultSet> result = SetScanFileSelection(parentInfo, uriType, offset, maxCount, filter);
+    auto result = SetScanFileSelection(parentInfo, uriType, offset, maxCount, filter);
     return GetScanFileFileInfoFromResult(parentInfo, result, fileList);
 }
 
-bool GetRootInfo(shared_ptr<AbsSharedResultSet> &result, RootInfo &rootInfo)
+bool GetRootInfo(shared_ptr<NativeRdb::ResultSet> &result, RootInfo &rootInfo)
 {
     string networkId = GetStringVal(DEVICE_DB_NETWORK_ID, result);
     rootInfo.uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_ROOT;
@@ -567,11 +567,11 @@ bool GetRootInfo(shared_ptr<AbsSharedResultSet> &result, RootInfo &rootInfo)
     return true;
 }
 
-void GetRootInfoFromResult(shared_ptr<AbsSharedResultSet> &result, vector<RootInfo> &rootList)
+void GetRootInfoFromResult(shared_ptr<NativeRdb::ResultSet> &result, vector<RootInfo> &rootList)
 {
     int count = 0;
     result->GetRowCount(count);
-    CHECK_AND_RETURN_LOG(count > 0, "AbsSharedResultSet empty");
+    CHECK_AND_RETURN_LOG(count > 0, "ResultSet empty");
     auto ret = result->GoToFirstRow();
     CHECK_AND_RETURN_LOG(ret == 0, "Failed to shift at first row");
     rootList.reserve(count + 1);
@@ -584,7 +584,7 @@ void GetRootInfoFromResult(shared_ptr<AbsSharedResultSet> &result, vector<RootIn
     }
 }
 
-void GetActivePeer(shared_ptr<AbsSharedResultSet> &result)
+void GetActivePeer(shared_ptr<NativeRdb::ResultSet> &result)
 {
     string strQueryCondition = DEVICE_DB_DATE_MODIFIED + " = 0";
     DataShare::DataSharePredicates predicates;
@@ -603,7 +603,7 @@ int32_t MediaFileExtentionUtils::GetRoots(vector<RootInfo> &rootList)
     rootInfo.deviceFlags = DEVICE_FLAG_SUPPORTS_READ | DEVICE_FLAG_SUPPORTS_WRITE;
     rootInfo.deviceType = DEVICE_LOCAL_DISK;
     rootList.push_back(rootInfo);
-    shared_ptr<AbsSharedResultSet> result;
+    shared_ptr<NativeRdb::ResultSet> result;
     GetActivePeer(result);
     GetRootInfoFromResult(result, rootList);
     return E_SUCCESS;
@@ -615,7 +615,7 @@ int MediaFileExtentionUtils::Access(const Uri &uri, bool &isExist)
     string sourceUri = uri.ToString();
     CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckUriValid(sourceUri), E_URI_INVALID,
         "Access::invalid uri: %{public}s", sourceUri.c_str());
-    shared_ptr<AbsSharedResultSet> result = GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri);
+    auto result = GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri);
     if ((result == nullptr) || (GetInt32Val(MEDIA_DATA_DB_IS_TRASH, result) != NOT_TRASHED)) {
         MEDIA_ERR_LOG("Access::uri is not correct: %{public}s", sourceUri.c_str());
         return E_INVALID_URI;
@@ -629,7 +629,7 @@ int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &file
     string uri = selectFile.ToString();
     CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckUriValid(uri), E_URI_INVALID,
         "UriToFileInfo::invalid uri: %{public}s", uri.c_str());
-    shared_ptr<AbsSharedResultSet> result = GetResultSetFromDb(MEDIA_DATA_DB_URI, uri);
+    auto result = GetResultSetFromDb(MEDIA_DATA_DB_URI, uri);
     if ((result == nullptr) || (GetInt32Val(MEDIA_DATA_DB_IS_TRASH, result) != NOT_TRASHED)) {
         MEDIA_ERR_LOG("UriToFileInfo::uri is not correct: %{public}s", uri.c_str());
         return E_INVALID_URI;
@@ -648,7 +648,7 @@ int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &file
     return E_SUCCESS;
 }
 
-int32_t HandleFileRename(const shared_ptr<AbsSharedResultSet> &result, const string &displayName,
+int32_t HandleFileRename(const shared_ptr<NativeRdb::ResultSet> &result, const string &displayName,
     const string &destRelativePath)
 {
     string uri = MEDIALIBRARY_DATA_URI;
@@ -723,7 +723,7 @@ int32_t UpdateSubFilesBucketName(const string &srcId, const string &displayName)
     return MediaLibraryDataManager::GetInstance()->rdbStore_->ExecuteSql(modifySql);
 }
 
-int32_t HandleAlbumRename(const shared_ptr<AbsSharedResultSet> &result, const string &displayName)
+int32_t HandleAlbumRename(const shared_ptr<NativeRdb::ResultSet> &result, const string &displayName)
 {
     if (GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result).empty()) {
         MEDIA_ERR_LOG("Rename dir in root dir, denied");
@@ -761,7 +761,7 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const string &
         MEDIA_ERR_LOG("invalid displayName %{public}s", displayName.c_str());
         return E_INVAVLID_DISPLAY_NAME;
     }
-    shared_ptr<AbsSharedResultSet> result = GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri);
+    auto result = GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri);
     if (result == nullptr) {
         MEDIA_ERR_LOG("Rename source uri is not correct %{public}s", sourceUri.c_str());
         return E_MODIFY_DATA_FAIL;
@@ -778,7 +778,7 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const string &
     return ret;
 }
 
-int32_t HandleFileMove(const shared_ptr<AbsSharedResultSet> &result, const string &destRelativePath)
+int32_t HandleFileMove(const shared_ptr<NativeRdb::ResultSet> &result, const string &destRelativePath)
 {
     string uri = MEDIALIBRARY_DATA_URI;
     Uri updateAssetUri(uri + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_MODIFYASSET);
@@ -801,7 +801,7 @@ int32_t HandleFileMove(const shared_ptr<AbsSharedResultSet> &result, const strin
     }
 }
 
-int32_t UpdateMovedAlbumInfo(const shared_ptr<AbsSharedResultSet> &result, const string &bucketId,
+int32_t UpdateMovedAlbumInfo(const shared_ptr<NativeRdb::ResultSet> &result, const string &bucketId,
     const string &newAlbumPath, const string &destRelativePath)
 {
     int64_t date_modified = MediaFileUtils::GetAlbumDateModified(newAlbumPath);
@@ -817,7 +817,7 @@ int32_t UpdateMovedAlbumInfo(const shared_ptr<AbsSharedResultSet> &result, const
     return MediaLibraryDataManager::GetInstance()->rdbStore_->Update(count, valuesBucket, absPredicates);
 }
 
-int32_t HandleAlbumMove(const shared_ptr<AbsSharedResultSet> &result, const string &destRelativePath,
+int32_t HandleAlbumMove(const shared_ptr<NativeRdb::ResultSet> &result, const string &destRelativePath,
     const string &bucketId)
 {
     string destPath = ROOT_MEDIA_DIR + destRelativePath + GetStringVal(MEDIA_DATA_DB_NAME, result);
@@ -851,7 +851,7 @@ int32_t CheckFileExtension(const string &relativePath, const string &name, int32
     return MediaLibraryObjectUtils::CheckDirExtension(cmd);
 }
 
-void GetMoveSubFile(const string &srcPath, shared_ptr<AbsSharedResultSet> &result)
+void GetMoveSubFile(const string &srcPath, shared_ptr<NativeRdb::ResultSet> &result)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     string selection = MEDIA_DATA_DB_FILE_PATH + " LIKE ? ";
@@ -866,12 +866,12 @@ void GetMoveSubFile(const string &srcPath, shared_ptr<AbsSharedResultSet> &resul
 
 bool CheckSubFileExtension(const string &srcPath, const string &destRelPath)
 {
-    shared_ptr<AbsSharedResultSet> result;
+    shared_ptr<NativeRdb::ResultSet> result;
     GetMoveSubFile(srcPath, result);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, false, "GetSrcFileFromResult Get fail");
     int count = 0;
     result->GetRowCount(count);
-    CHECK_AND_RETURN_RET_LOG(count > 0, true, "AbsSharedResultSet empty");
+    CHECK_AND_RETURN_RET_LOG(count > 0, true, "ResultSet empty");
     while (result->GoToNextRow() == NativeRdb::E_OK) {
         int32_t mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
         string path = GetStringVal(MEDIA_DATA_DB_FILE_PATH, result);
@@ -886,7 +886,7 @@ bool CheckSubFileExtension(const string &srcPath, const string &destRelPath)
     return true;
 }
 
-bool CheckRootDir(const shared_ptr<AbsSharedResultSet> &result, const string &destRelPath)
+bool CheckRootDir(const shared_ptr<NativeRdb::ResultSet> &result, const string &destRelPath)
 {
     string srcRelPath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
     if (srcRelPath.empty()) {

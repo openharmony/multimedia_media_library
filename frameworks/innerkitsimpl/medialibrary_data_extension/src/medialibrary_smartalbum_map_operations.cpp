@@ -92,7 +92,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::DeleteDirAssetsInfoUtil(const uniqu
     return errorCode;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibrarySmartAlbumMapOperations::QueryAgeingTrashFiles()
+shared_ptr<NativeRdb::ResultSet> MediaLibrarySmartAlbumMapOperations::QueryAgeingTrashFiles()
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
@@ -125,7 +125,7 @@ shared_ptr<AbsSharedResultSet> MediaLibrarySmartAlbumMapOperations::QueryAgeingT
 
 int32_t MediaLibrarySmartAlbumMapOperations::HandleAgingOperation()
 {
-    shared_ptr<AbsSharedResultSet> resultSet = QueryAgeingTrashFiles();
+    auto resultSet = QueryAgeingTrashFiles();
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query ageing trash files");
     }
@@ -292,7 +292,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleChildAssetsInfoUtil(const in
     querySmartAlbumCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId))->And()->
         EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(TRASHED_DIR_CHILD));
     vector<string> columns;
-    shared_ptr<AbsSharedResultSet> queryResultSet = uniStore->Query(querySmartAlbumCmd, columns);
+    auto queryResultSet = uniStore->Query(querySmartAlbumCmd, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("QueryResultSet is nullptr");
         return E_HAS_DB_ERROR;
@@ -343,7 +343,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleChildSameNameInfoUtil(const 
     querySmartAlbumCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId));
     vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_NAME,
         MEDIA_DATA_DB_RELATIVE_PATH, MEDIA_DATA_DB_IS_TRASH };
-    shared_ptr<AbsSharedResultSet> queryResultSet = uniStore->Query(querySmartAlbumCmd, columns);
+    auto queryResultSet = uniStore->Query(querySmartAlbumCmd, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("QueryResultSet is nullptr");
         return E_HAS_DB_ERROR;
@@ -590,7 +590,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::TrashChildAssetsInfoUtil(const int3
         EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED))->And()->
         EqualTo(MEDIA_DATA_DB_ID, to_string(parentId));
     vector<string> columns = { MEDIA_DATA_DB_ID };
-    shared_ptr<AbsSharedResultSet> queryResultSet = uniStore->Query(querySmartAlbumCmd, columns);
+    auto queryResultSet = uniStore->Query(querySmartAlbumCmd, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("QueryResultSet is nullptr");
         return E_HAS_DB_ERROR;
