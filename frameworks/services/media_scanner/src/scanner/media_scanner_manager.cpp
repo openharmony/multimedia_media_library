@@ -77,7 +77,7 @@ int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared
         return E_INVALID_PATH;
     }
 
-    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(realPath, callback, false);
+    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(realPath, callback, MediaScannerObj::FILE);
     executor_.Commit(move(scanner));
 
     return E_OK;
@@ -92,7 +92,7 @@ int32_t MediaScannerManager::ScanFileSync(const std::string &path, const std::sh
         return E_INVALID_PATH;
     }
 
-    MediaScannerObj scanner = MediaScannerObj(realPath, callback, false);
+    MediaScannerObj scanner = MediaScannerObj(realPath, callback, MediaScannerObj::FILE);
     scanner.Scan();
 
     return E_OK;
@@ -107,7 +107,8 @@ int32_t MediaScannerManager::ScanDir(const std::string &path, const std::shared_
         return E_INVALID_PATH;
     }
 
-    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(realPath, callback, true);
+    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(realPath, callback,
+        MediaScannerObj::DIRECTORY);
     executor_.Commit(move(scanner));
 
     return E_OK;
@@ -115,63 +116,24 @@ int32_t MediaScannerManager::ScanDir(const std::string &path, const std::shared_
 
 void MediaScannerManager::Start()
 {
-    thread([this]() {
-        this->executor_.Start();
+    executor_.Start();
 
-        int32_t ret = this->ScanError(true);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("scann error fail %{public}d", ret);
-            return;
-        }
-
-        /*
-        * primary key wouldn't be duplicate
-        */
-        ret = MediaScannerDb::GetDatabaseInstance()->RecordError(ROOT_MEDIA_DIR);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("record err fail %{public}d", ret);
-            return;
-        }
-    }).detach();
+    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(MediaScannerObj::START);
+    executor_.Commit(move(scanner));
 }
 
 void MediaScannerManager::Stop()
 {
-    thread([this]() {
-        /* stop all working threads */
-        this->executor_.Stop();
-        MediaScannerDb::GetDatabaseInstance()->DeleteError(ROOT_MEDIA_DIR);
-    }).detach();
+    /* stop all working threads */
+    this->executor_.Stop();
+
+    MediaScannerDb::GetDatabaseInstance()->DeleteError(ROOT_MEDIA_DIR);
 }
 
-int32_t MediaScannerManager::ScanError(bool isBoot)
+void MediaScannerManager::ScanError()
 {
-    std::shared_ptr<ScanErrCallback> callback = make_shared<ScanErrCallback>();
-
-    auto errList = MediaScannerDb::GetDatabaseInstance()->ReadError();
-    for (auto &err : errList) {
-        /* 
-         * Scan full path only when boot; all other errors are processed in
-         * broadcast receving context.
-         */
-        if (err == ROOT_MEDIA_DIR) {
-            if (isBoot) {
-                (void)ScanDir(err, callback);
-                break;
-            } else {
-                continue;
-            }
-        }
-
-        /* assume err paths are correct */
-        if (ScannerUtils::IsDirectory(err)) {
-            (void)ScanDir(err, callback);
-        } else {
-            (void)ScanFile(err, callback);
-        }
-    }
-
-    return E_OK;
+    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(MediaScannerObj::ERROR);
+    executor_.Commit(move(scanner));
 }
 } // namespace Media
 } // namespace OHOS

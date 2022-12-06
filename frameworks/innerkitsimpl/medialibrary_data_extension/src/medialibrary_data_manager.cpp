@@ -913,6 +913,6 @@ bool MediaLibraryDataManager::ShouldCheckFileName(const OperationObject &oprnObj
 int32_t MediaLibraryDataManager::DoTrashAging()
 {
     return MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
-};
+}
 }  // namespace Media
 }  // namespace OHOS
