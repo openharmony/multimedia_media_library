@@ -1195,10 +1195,9 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
 
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
-    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
-
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+    if ((status == napi_ok) && (asyncContext->objectInfo != nullptr)) {
+        asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
         result = GetJSArgsForOpen(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
         result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSOpen", JSOpenExecute,
@@ -1876,7 +1875,7 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
     asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo == nullptr) {
+    if ((status != napi_ok) || (asyncContext->objectInfo == nullptr)) {
         NAPI_DEBUG_LOG("get this Var fail");
         return result;
     }

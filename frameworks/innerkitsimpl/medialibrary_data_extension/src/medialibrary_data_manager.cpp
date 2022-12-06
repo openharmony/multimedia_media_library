@@ -301,7 +301,6 @@ std::unordered_map<std::string, DirAsset> MediaLibraryDataManager::GetDirQuerySe
 
 int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 {
-    vector<string> devices;
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
             return MediaLibraryFileOperations::HandleFileOperation(cmd);
