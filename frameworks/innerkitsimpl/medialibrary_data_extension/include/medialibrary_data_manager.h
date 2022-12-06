@@ -81,10 +81,6 @@ public:
     std::shared_ptr<MediaDataShareExtAbility> GetOwner();
     void SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExtension);
 
-    std::vector<std::string> ReadError();
-    int32_t RecordError(const std::string &err);
-    int32_t DeleteError(const std::string &err);
-
 private:
     bool QuerySync(const std::string &networkId, const std::string &tableName);
     int32_t HandleThumbnailOperations(MediaLibraryCommand &cmd);

@@ -30,8 +30,8 @@ public:
 
     virtual ~MediaScannerManager() = default;
 
-    int32_t Start();
-    int32_t Stop();
+    void Start();
+    void Stop();
 
     std::string ScanCheck(const std::string &path, bool isDir);
     int32_t ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);

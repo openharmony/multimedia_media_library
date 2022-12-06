@@ -113,34 +113,35 @@ int32_t MediaScannerManager::ScanDir(const std::string &path, const std::shared_
     return E_OK;
 }
 
-int32_t MediaScannerManager::Start()
+void MediaScannerManager::Start()
 {
-    executor_.Start();
+    thread([this]() {
+        this->executor_.Start();
 
-    int32_t ret = ScanError(true);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("scann error fail %{public}d", ret);
-        return ret;
-    }
+        int32_t ret = this->ScanError(true);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("scann error fail %{public}d", ret);
+            return;
+        }
 
-    /*
-     * primary key wouldn't be duplicate
-     */
-    ret = MediaScannerDb::GetDatabaseInstance()->RecordError(ROOT_MEDIA_DIR);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("record err fail %{public}d", ret);
-        return ret;
-    }
-
-    return E_OK;
+        /*
+        * primary key wouldn't be duplicate
+        */
+        ret = MediaScannerDb::GetDatabaseInstance()->RecordError(ROOT_MEDIA_DIR);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("record err fail %{public}d", ret);
+            return;
+        }
+    }).detach();
 }
 
-int32_t MediaScannerManager::Stop()
+void MediaScannerManager::Stop()
 {
-    /* stop all working threads */
-    executor_.Stop();
-
-    return MediaScannerDb::GetDatabaseInstance()->DeleteError(ROOT_MEDIA_DIR);
+    thread([this]() {
+        /* stop all working threads */
+        this->executor_.Stop();
+        MediaScannerDb::GetDatabaseInstance()->DeleteError(ROOT_MEDIA_DIR);
+    }).detach();
 }
 
 int32_t MediaScannerManager::ScanError(bool isBoot)
