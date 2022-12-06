@@ -277,7 +277,7 @@ int32_t MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAss
     }
     DirAsset dirAsset;
     string dirVal;
-    dirQuerySetMap_.clear();
+    outDirQuerySetMap.clear();
     while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         dirVal = get<string>(
             ResultSetUtils::GetValFromColumn(DIRECTORY_DB_DIRECTORY, queryResultSet, TYPE_STRING));
