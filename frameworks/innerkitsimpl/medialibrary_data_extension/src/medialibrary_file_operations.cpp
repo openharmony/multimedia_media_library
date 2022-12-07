@@ -144,8 +144,6 @@ int32_t MediaLibraryFileOperations::GetAlbumCapacityOperation(MediaLibraryComman
 
 int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_DEBUG_LOG("enter");
-
     string strFileId = cmd.GetOprnFileId();
     if (strFileId.empty()) {
         MEDIA_ERR_LOG("MediaLibraryFileOperations::ModifyFileOperation Get id from uri or valuesBucket failed!");
@@ -241,12 +239,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFileOperation(
     }
     MediaLibraryTracer tracer;
     tracer.Start("QueryFile RdbStore->Query");
-    auto queryResultSet = uniStore->Query(cmd, columns);
-    tracer.Finish();
-    int32_t count = -1;
-    queryResultSet->GetRowCount(count);
-    MEDIA_INFO_LOG("QueryFile count is %{public}d", count);
-    return queryResultSet;
+    return uniStore->Query(cmd, columns);
 }
 
 int32_t MediaLibraryFileOperations::CopyFileOperation(MediaLibraryCommand &cmd)

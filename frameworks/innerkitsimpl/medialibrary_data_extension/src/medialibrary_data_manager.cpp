@@ -330,7 +330,6 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBucket &dataShareValue)
 {
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::Insert");
     std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
@@ -612,7 +611,7 @@ int32_t MediaLibraryDataManager::DistributeDeviceAging()
     return result;
 }
 
-shared_ptr<ResultSetBridge> MediaLibraryDataManager::GenThumbnail(const string &uri)
+shared_ptr<ResultSetBridge> MediaLibraryDataManager::GetThumbnail(const string &uri)
 {
     if (thumbnailService_ == nullptr) {
         MEDIA_ERR_LOG("thumbnailService_ is null");
@@ -689,7 +688,6 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationOb
 shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::Query");
     std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
@@ -703,29 +701,15 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         return nullptr;
     }
 
-    auto whereClause = predicates.GetWhereClause();
-    if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
-        MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
-        return nullptr;
-    }
-
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
-    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
-    cmd.GetAbsRdbPredicates()->SetOrder(predicates.GetOrder());
-
-    string networkId = cmd.GetOprnDevice();
-    OperationObject oprnObject = cmd.GetOprnObject();
-    NeedQuerySync(networkId, oprnObject);
-
     shared_ptr<ResultSetBridge> queryResultSet;
     if (cmd.GetOprnObject() == OperationObject::THUMBNAIL) {
         string uriString = uri.ToString();
         if (!ThumbnailService::ParseThumbnailInfo(uriString)) {
             return nullptr;
         }
-        tracer.Start("GenThumbnail");
-        queryResultSet = GenThumbnail(uriString);
+        tracer.Start("GetThumbnail");
+        queryResultSet = GetThumbnail(uriString);
     } else {
         auto absResultSet = QueryRdb(uri, columns, predicates);
         queryResultSet = RdbUtils::ToResultSetBridge(absResultSet);
@@ -758,11 +742,17 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
 
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
     // MEDIALIBRARY_TABLE just for RdbPredicates
-    NativeRdb::RdbPredicates rdbPredicate =  RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
+    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
         MEDIALIBRARY_TABLE);
-    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    auto whereClause = rdbPredicate.GetWhereClause();
+    if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
+        MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
+        return nullptr;
+    }
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+    NeedQuerySync(cmd.GetOprnDevice(), cmd.GetOprnObject());
 
     shared_ptr<NativeRdb::ResultSet> queryResultSet;
     OperationObject oprnObject = cmd.GetOprnObject();
@@ -775,7 +765,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
         tracer.Start("QueryFile");
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
     }
-    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr, "Query functionality failed");
     return queryResultSet;
 }
 

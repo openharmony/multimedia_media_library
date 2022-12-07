@@ -401,7 +401,6 @@ bool MediaDataShareExtAbility::UnregisterObserver(const Uri &uri, const sptr<AAF
 
 bool MediaDataShareExtAbility::NotifyChange(const Uri &uri)
 {
-    MEDIA_INFO_LOG("%{public}s begin.", __func__);
     auto obsMgrClient = DataObsMgrClient::GetInstance();
     if (obsMgrClient == nullptr) {
         MEDIA_ERR_LOG("%{public}s obsMgrClient is nullptr", __func__);
@@ -413,7 +412,6 @@ bool MediaDataShareExtAbility::NotifyChange(const Uri &uri)
         MEDIA_ERR_LOG("%{public}s obsMgrClient->NotifyChange error return %{public}d", __func__, ret);
         return false;
     }
-    MEDIA_INFO_LOG("%{public}s end.", __func__);
     return true;
 }
 

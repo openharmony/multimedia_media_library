@@ -91,7 +91,7 @@ private:
     void ScanFile(const NativeRdb::ValuesBucket &values, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore1);
     int32_t InitDeviceData();
     int32_t InitialiseThumbnailService(const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
-    std::shared_ptr<DataShare::ResultSetBridge> GenThumbnail(const std::string &uri);
+    std::shared_ptr<DataShare::ResultSetBridge> GetThumbnail(const std::string &uri);
     int32_t CreateThumbnail(const NativeRdb::ValuesBucket &values);
     int32_t LcdDistributeAging();
     int32_t DistributeDeviceAging();

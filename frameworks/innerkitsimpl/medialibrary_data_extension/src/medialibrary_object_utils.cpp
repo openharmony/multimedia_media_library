@@ -500,8 +500,6 @@ int32_t MediaLibraryObjectUtils::DeleteDirObj(MediaLibraryCommand &cmd, const st
 int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
     const string &srcFilePath, const string &dstFilePath)
 {
-    MEDIA_DEBUG_LOG("enter, srcFilePath = %{private}s, dstFilePath = %{private}s",
-        srcFilePath.c_str(), dstFilePath.c_str());
     if (srcFilePath.empty() || dstFilePath.empty()) {
         MEDIA_ERR_LOG("srcFilePath or dstFilePath is empty, rename failed!");
         return E_INVALID_PATH;
