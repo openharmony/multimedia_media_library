@@ -123,17 +123,20 @@ private:
 
 class ScanErrCallback : public IMediaScannerCallback {
 public:
-    ScanErrCallback() = default;
+    ScanErrCallback(std::string &err) : err_(err) {};
     ~ScanErrCallback() = default;
 
     int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override
     {
         if (status == E_OK) {
-            return MediaScannerDb::GetDatabaseInstance()->DeleteError(path);
+            return MediaScannerDb::GetDatabaseInstance()->DeleteError(err_);
         }
 
         return E_OK;
     }
+
+private:
+    std::string err_;
 };
 } // namespace Media
 } // namespace OHOS
