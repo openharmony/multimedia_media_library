@@ -36,12 +36,12 @@ public:
     static int32_t DeleteFileOperation(MediaLibraryCommand &cmd,
         const std::unordered_map<std::string, DirAsset> &dirQuerySetMap);
     static int32_t IsDirectoryOperation(MediaLibraryCommand &cmd);
-    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFileOperation(MediaLibraryCommand &cmd,
+    static std::shared_ptr<NativeRdb::ResultSet> QueryFileOperation(MediaLibraryCommand &cmd,
         std::vector<std::string> columns);
 
 private:
-    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryFavFiles(MediaLibraryCommand &cmd);
-    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryTrashFiles(MediaLibraryCommand &cmd);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryFavFiles(MediaLibraryCommand &cmd);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryTrashFiles(MediaLibraryCommand &cmd);
 };
 } // namespace Media
 } // namespace OHOS
