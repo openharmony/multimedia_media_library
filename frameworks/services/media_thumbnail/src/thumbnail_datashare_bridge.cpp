@@ -146,20 +146,20 @@ int ThumbnailDataShareBridge::Count(std::shared_ptr<KvStoreResultSet> &kvResultS
     return count;
 }
 
-bool ThumbnailDataShareBridge::OnGo(int32_t start, int32_t target, ResultSetBridge::Writer &writer)
+int ThumbnailDataShareBridge::OnGo(int32_t start, int32_t target, ResultSetBridge::Writer &writer)
 {
     if ((start < 0) || (target < 0) || (start > target)) {
         MEDIA_ERR_LOG("nowRowIndex out of line: %{pubilc}d", target);
-        return false;
+        return -1;
     }
     for (int pos = start; pos <= target; pos++) {
         bool ret = FillBlock(pos, writer);
         if (!ret) {
             MEDIA_ERR_LOG("nowRowIndex out of line: %{pubilc}d", target);
-            return ret;
+            return pos - 1;
         }
     }
-    return true;
+    return target;
 }
 
 ThumbnailDataShareBridge::ThumbnailDataShareBridge(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
