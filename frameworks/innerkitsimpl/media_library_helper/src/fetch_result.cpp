@@ -21,12 +21,6 @@
 
 using namespace std;
 
-namespace {
-    const int ARG_INT32 = 0;
-    const int ARG_INT64 = 1;
-    const int ARG_STRING = 2;
-}
-
 namespace OHOS {
 namespace Media {
 static const unordered_map<string, ResultSetDataType> RESULT_TYPE_MAP = {
@@ -211,7 +205,7 @@ variant<int32_t, int64_t, string> ReturnDefaultOnError(string errMsg, ResultSetD
 
 template <class T>
 variant<int32_t, int64_t, string> FetchResult<T>::GetRowValFromColumn(string columnName, ResultSetDataType dataType,
-    shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+    shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if ((resultset_ == nullptr) && (resultSet == nullptr)) {
         return ReturnDefaultOnError("Resultset is null", dataType);
@@ -231,7 +225,7 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetRowValFromColumn(string col
 
 template <class T>
 variant<int32_t, int64_t, string> FetchResult<T>::GetValByIndex(int32_t index, ResultSetDataType dataType,
-    shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+    shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if ((resultset_ == nullptr) && (resultSet == nullptr)) {
         return ReturnDefaultOnError("Resultset is null", dataType);
@@ -300,21 +294,7 @@ static void MediaTypeToMask(MediaType mediaType, std::string &typeMask)
 }
 
 template<class T>
-int32_t FetchResult<T>::GetFileCount(const shared_ptr<DataShare::DataShareResultSet> &resultSet)
-{
-    int32_t count = 1;
-    if (resultSet) {
-        string name;
-        resultSet->GetColumnName(0, name);
-        if (name.find("count(") != string::npos) {
-            resultSet->GetInt(0, count);
-        }
-    }
-    return count;
-}
-
-template<class T>
-void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if ((resultset_ == nullptr) && (resultSet == nullptr)) {
         MEDIA_ERR_LOG("SetFileAsset fail, result is nullptr");
@@ -334,48 +314,45 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Ab
         }
         auto memberType = RESULT_TYPE_MAP.at(name);
         auto &memberValue = fileAsset->GetMemberValue(name);
-        const auto &result = GetValByIndex(index, memberType, resultSet);
-        if (result.index() == ARG_INT32) {
-            memberValue = get<ARG_INT32>(result);
-        } else if (result.index() == ARG_INT64) {
-            memberValue = get<ARG_INT64>(result);
-        } else if (result.index() == ARG_STRING) {
-            memberValue = get<ARG_STRING>(result);
-        } else {
-            MEDIA_ERR_LOG("args %{public}s fail, type:%{public}d", name.c_str(), static_cast<int>(result.index()));
-        }
+        memberValue = move(GetValByIndex(index, memberType, resultSet));
     }
     fileAsset->SetResultNapiType(resultNapiType_);
-    fileAsset->SetCount(GetFileCount(resultset_));
+    if (!columnNames.empty() && columnNames[0].find("count(") != string::npos) {
+        int count = 1;
+        if (resultSet) {
+            resultSet->GetInt(0, count);
+        }
+        fileAsset->SetCount(count);
+    }
     if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
         string typeMask;
         MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
         fileAsset->SetTypeMask(typeMask);
     }
     string uri = GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_) + "/" + to_string(fileAsset->GetId());
-    fileAsset->SetUri(uri);
+    fileAsset->SetUri(move(uri));
 }
 
 template<class T>
-void FetchResult<T>::GetObjectFromAsset(FileAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+void FetchResult<T>::GetObjectFromAsset(FileAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     SetFileAsset(asset, resultSet);
 }
 
 template<class T>
-void FetchResult<T>::GetObjectFromAsset(AlbumAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+void FetchResult<T>::GetObjectFromAsset(AlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     SetAlbumAsset(asset, resultSet);
 }
 
 template<class T>
-void FetchResult<T>::GetObjectFromAsset(SmartAlbumAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+void FetchResult<T>::GetObjectFromAsset(SmartAlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     SetSmartAlbumAsset(asset, resultSet);
 }
 
 template<class T>
-unique_ptr<T> FetchResult<T>::GetObject(shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+unique_ptr<T> FetchResult<T>::GetObject(shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     MediaLibraryTracer tracer;
     tracer.Start("FetchResult::GetObject");
@@ -387,12 +364,12 @@ unique_ptr<T> FetchResult<T>::GetObject(shared_ptr<NativeRdb::AbsSharedResultSet
 template <class T>
 unique_ptr<T> FetchResult<T>::GetObject()
 {
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = nullptr;
+    shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
     return GetObject(resultSet);
 }
 
 template <class T>
-unique_ptr<T> FetchResult<T>::GetObjectFromRdb(shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, int idx)
+unique_ptr<T> FetchResult<T>::GetObjectFromRdb(shared_ptr<NativeRdb::ResultSet> &resultSet, int idx)
 {
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != 0) || (resultSet->GoTo(idx))) {
         MEDIA_ERR_LOG("resultset is null|first row failed");
@@ -403,7 +380,7 @@ unique_ptr<T> FetchResult<T>::GetObjectFromRdb(shared_ptr<NativeRdb::AbsSharedRe
 }
 
 template<class T>
-void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     // Get album id index and value
     albumData->SetAlbumId(get<int32_t>(GetRowValFromColumn(MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32, resultSet)));
@@ -427,7 +404,7 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
 
 template<class T>
 void FetchResult<T>::SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData,
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+    std::shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     smartAlbumData->SetAlbumId(get<int32_t>(GetRowValFromColumn(SMARTALBUM_DB_ID, TYPE_INT32, resultSet)));
     smartAlbumData->SetAlbumName(get<string>(GetRowValFromColumn(SMARTALBUM_DB_NAME, TYPE_STRING, resultSet)));

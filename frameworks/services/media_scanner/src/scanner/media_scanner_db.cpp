@@ -441,7 +441,7 @@ void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)
     MediaLibraryDataManager::GetInstance()->NotifyChange(uri);
 }
 
-void MediaScannerDb::ExtractMetaFromColumn(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+void MediaScannerDb::ExtractMetaFromColumn(const shared_ptr<NativeRdb::ResultSet> &resultSet,
                                            unique_ptr<Metadata> &metadata, const std::string &col)
 {
     ResultSetDataType dataType = ResultSetDataType::TYPE_NULL;
@@ -456,7 +456,7 @@ void MediaScannerDb::ExtractMetaFromColumn(const shared_ptr<NativeRdb::AbsShared
     }
 
     std::variant<int32_t, std::string, int64_t, double> data =
-        ResultSetUtils::GetValFromColumn<const shared_ptr<NativeRdb::AbsSharedResultSet>>(col, resultSet, dataType);
+        ResultSetUtils::GetValFromColumn<const shared_ptr<NativeRdb::ResultSet>>(col, resultSet, dataType);
 
     // Use the function pointer from map and pass data to fn ptr
     if (requestFunc != nullptr) {
@@ -464,7 +464,7 @@ void MediaScannerDb::ExtractMetaFromColumn(const shared_ptr<NativeRdb::AbsShared
     }
 }
 
-int32_t MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+int32_t MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::ResultSet> &resultSet,
     unique_ptr<Metadata> &ptr)
 {
     std::vector<std::string> columnNames;

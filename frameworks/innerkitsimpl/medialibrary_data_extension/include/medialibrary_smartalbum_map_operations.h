@@ -91,7 +91,7 @@ private:
     static bool GetRecyclePath(const int32_t assetId, std::string &outRecyclePath);
     static int32_t MakeRecycleDisplayName(const int32_t assetId,
         const std::string &trashDirPath, std::string &outDisplayName);
-    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryAgeingTrashFiles();
+    static std::shared_ptr<NativeRdb::ResultSet> QueryAgeingTrashFiles();
     static int32_t UpdateTrashInfoInDb(const int32_t assetId, const int64_t trashDate, std::string &recyclePath,
         const std::string &oldPath, const uint32_t trashType);
     static std::atomic<bool> isInterrupt_;

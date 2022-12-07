@@ -191,7 +191,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
     return ret;
 }
 
-std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
+std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
     MEDIA_DEBUG_LOG("Query");
@@ -212,7 +212,7 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(Media
     }
     MEDIA_DEBUG_LOG("limit = %d", predicates->GetLimit());
 
-    auto ret = rdbStore_->Query(*predicates, columns);
+    auto ret = rdbStore_->QueryByStep(*predicates, columns);
     if (ret != nullptr) {
         int count;
         ret->GetRowCount(count);
@@ -238,7 +238,7 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
     return ret;
 }
 
-std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql)
+std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql)
 {
     MEDIA_DEBUG_LOG("ExecuteSql");
 
