@@ -64,7 +64,7 @@ private:
     std::shared_ptr<MediaLibraryAsyncTask> GetBgTask();
     void ReleaseFgTask();
     void ReleaseBgTask();
-    bool WaitForTask();
+    void WaitForTask();
     bool IsFgQueueEmpty();
     bool IsBgQueueEmpty();
     void SleepFgWork();
@@ -72,8 +72,7 @@ private:
 
     static std::mutex instanceLock_;
     static std::shared_ptr<MediaLibraryAsyncWorker> asyncWorkerInstance_;
-    std::atomic<bool> isThreadExist_;
-    bool isContinue_;
+    std::atomic<bool> isThreadRunning_;
     std::mutex bgTaskLock_;
     std::queue<std::shared_ptr<MediaLibraryAsyncTask>> bgTaskQueue_;
 
@@ -83,6 +82,8 @@ private:
     std::mutex bgWorkLock_;
     std::condition_variable bgWorkCv_;
     std::atomic<uint32_t> doneTotal_;
+
+    std::thread thread_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -243,7 +243,7 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetValByIndex(int32_t index, R
             } else {
                 status = resultset_->GetString(index, stringVal);
             }
-            cellValue = stringVal;
+            cellValue = move(stringVal);
             break;
         case TYPE_INT32:
             if (resultSet) {
@@ -307,14 +307,14 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
         resultset_->GetAllColumnNames(columnNames);
     }
     int32_t index = -1;
+    auto &map = fileAsset->GetMemberMap();
     for (const auto &name : columnNames) {
         index++;
         if (RESULT_TYPE_MAP.count(name) == 0) {
             continue;
         }
         auto memberType = RESULT_TYPE_MAP.at(name);
-        auto &memberValue = fileAsset->GetMemberValue(name);
-        memberValue = move(GetValByIndex(index, memberType, resultSet));
+        map.emplace(move(name), move(GetValByIndex(index, memberType, resultSet)));
     }
     fileAsset->SetResultNapiType(resultNapiType_);
     if (!columnNames.empty() && columnNames[0].find("count(") != string::npos) {

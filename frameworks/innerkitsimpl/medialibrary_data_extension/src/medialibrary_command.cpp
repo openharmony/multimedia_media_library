@@ -168,7 +168,6 @@ const string &MediaLibraryCommand::GetOprnDevice()
 {
     if (oprnDevice_.empty()) {
         oprnDevice_ = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri_.ToString());
-        MEDIA_INFO_LOG("oprnDevice_: %{private}s", oprnDevice_.c_str());
     }
     return oprnDevice_;
 }

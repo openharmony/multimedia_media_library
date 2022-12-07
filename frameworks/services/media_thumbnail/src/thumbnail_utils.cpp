@@ -1311,29 +1311,33 @@ bool ThumbnailUtils::RemoveDataFromKv(const shared_ptr<SingleKvStore> &kvStore, 
     return true;
 }
 
+// notice: return value is whether thumb/lcd is deleted
 bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
 {
     ThumbnailData tmpData;
+    bool isDelete = false;
     int err = 0;
     auto rdbSet = QueryThumbnailInfo(opts, tmpData, err);
     if (rdbSet == nullptr) {
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
-        return false;
+        return isDelete;
     }
 
     if (IsKeyNotSame(tmpData.thumbnailKey, thumbnailData.thumbnailKey)) {
         if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, tmpData.thumbnailKey)) {
             MEDIA_ERR_LOG("DeleteThumbnailData Faild");
-            return false;
+            return isDelete;
         }
+        isDelete = true;
     }
     if (IsKeyNotSame(tmpData.lcdKey, thumbnailData.lcdKey)) {
         if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, tmpData.lcdKey)) {
             MEDIA_ERR_LOG("DeleteLCDlData Faild");
-            return false;
+            return isDelete;
         }
+        isDelete = true;
     }
-    return true;
+    return isDelete;
 }
 
 bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, const shared_ptr<SingleKvStore> &kvStore)
