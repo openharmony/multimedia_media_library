@@ -294,8 +294,9 @@ void ThumbnailService::InvalidateThumbnail(const std::string &id)
     ThumbnailData thumbnailData;
     thumbnailData.thumbnailKey = "invalid";
     thumbnailData.lcdKey = "invalid";
-    ThumbnailUtils::DeleteOriginImage(opts, thumbnailData);
-    ThumbnailUtils::CleanThumbnailInfo(opts, true, true);
+    if (ThumbnailUtils::DeleteOriginImage(opts, thumbnailData)) {
+        ThumbnailUtils::CleanThumbnailInfo(opts, true, true);
+    }
 }
 } // namespace Media
 } // namespace OHOS
