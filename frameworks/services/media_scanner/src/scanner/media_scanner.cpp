@@ -18,6 +18,7 @@
 #include "media_scanner.h"
 
 #include "hitrace_meter.h"
+#include "directory_ex.h"
 
 #include "media_log.h"
 #include "medialibrary_errno.h"
@@ -546,17 +547,24 @@ int32_t MediaScannerObj::Start()
 
 int32_t MediaScannerObj::ScanError(bool isBoot)
 {
-    callback_ = make_shared<ScanErrCallback>();
-
     auto errList = mediaScannerDb_->ReadError();
     for (auto &err : errList) {
+        string realPath;
+        if (!PathToRealPath(err, realPath)) {
+            MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", err.c_str(), errno);
+            (void)mediaScannerDb_->DeleteError(err);
+            continue;
+        }
+
+        callback_ = make_shared<ScanErrCallback>(err);
+
         /*
          * Scan full path only when boot; all other errors are processed in
          * broadcast receving context.
          */
         if (err == ROOT_MEDIA_DIR) {
             if (isBoot) {
-                dir_ = move(err);
+                dir_ = move(realPath);
                 (void)ScanDir();
                 break;
             } else {
@@ -565,11 +573,11 @@ int32_t MediaScannerObj::ScanError(bool isBoot)
         }
 
         /* assume err paths are correct */
-        if (ScannerUtils::IsDirectory(err)) {
-            dir_ = move(err);
+        if (ScannerUtils::IsDirectory(realPath)) {
+            dir_ = move(realPath);
             (void)ScanDir();
-        } else {
-            path_ = move(err);
+        } else if (ScannerUtils::IsRegularFile(realPath)) {
+            path_ = move(realPath);
             (void)ScanFile();
         }
     }
