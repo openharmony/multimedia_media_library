@@ -201,8 +201,8 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCo
     }
 
     auto predicates = cmd.GetAbsRdbPredicates();
+#ifdef ML_DEBUG
     MEDIA_DEBUG_LOG("tablename = %s", cmd.GetTableName().c_str());
-    MEDIA_DEBUG_LOG("ObtainTableName = %s", ObtainTableName(cmd).c_str());
     for (auto &col : columns) {
         MEDIA_DEBUG_LOG("col = %s", col.c_str());
     }
@@ -211,14 +211,9 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCo
         MEDIA_DEBUG_LOG("whereArgs = %s", arg.c_str());
     }
     MEDIA_DEBUG_LOG("limit = %d", predicates->GetLimit());
+#endif
 
-    auto ret = rdbStore_->QueryByStep(*predicates, columns);
-    if (ret != nullptr) {
-        int count;
-        ret->GetRowCount(count);
-        MEDIA_DEBUG_LOG("GetRowCount() = %{public}d", count);
-    }
-    return ret;
+    return rdbStore_->QueryByStep(*predicates, columns);
 }
 
 int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
@@ -247,13 +242,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const std::
         return nullptr;
     }
 
-    auto ret = rdbStore_->QuerySql(sql);
-    if (ret != nullptr) {
-        int count;
-        ret->GetRowCount(count);
-        MEDIA_DEBUG_LOG("GetRowCount() = %{public}d", count);
-    }
-    return ret;
+    return rdbStore_->QuerySql(sql);
 }
 
 std::shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
