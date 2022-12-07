@@ -180,6 +180,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { THU_OPRN_AGING, OperationObject::THUMBNAIL },
         { DISTRIBUTE_THU_OPRN_AGING, OperationObject::THUMBNAIL },
         { DISTRIBUTE_THU_OPRN_CREATE, OperationObject::THUMBNAIL },
+        { BUNDLE_PERMISSION_INSERT, OperationObject::BUNDLE_PERMISSION },
 
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -192,6 +193,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { SMARTALBUM_TABLE, OperationObject::SMART_ALBUM },
         { SMARTALBUM_MAP_TABLE, OperationObject::SMART_ALBUM_MAP },
         { MEDIA_QUERYOPRN_QUERYVOLUME, OperationObject::MEDIA_VOLUME },
+        { BUNDLE_PERMISSION_TABLE, OperationObject::BUNDLE_PERMISSION },
     };
 
     for (const auto &item : oprnMap) {
@@ -228,7 +230,8 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { THU_OPRN_GENERATES, OperationType::GENERATE },
         { THU_OPRN_AGING, OperationType::AGING },
         { DISTRIBUTE_THU_OPRN_AGING, OperationType::DISTRIBUTE_AGING },
-        { DISTRIBUTE_THU_OPRN_CREATE, OperationType::DISTRIBUTE_CREATE }
+        { DISTRIBUTE_THU_OPRN_CREATE, OperationType::DISTRIBUTE_CREATE },
+        { BUNDLE_PERMISSION_INSERT, OperationType::INSERT_PERMISSION }
     };
 
     if (oprnTypeMap.find(oprnName) != oprnTypeMap.end()) {
@@ -248,6 +251,7 @@ void MediaLibraryCommand::ParseTableName()
         { OperationObject::FILESYSTEM_ALBUM, { { OperationType::QUERY, ABLUM_VIEW_NAME } } },
         { OperationObject::ALL_DEVICE, { { OperationType::UNKNOWN_TYPE, DEVICE_TABLE } } },
         { OperationObject::ACTIVE_DEVICE, { { OperationType::UNKNOWN_TYPE, DEVICE_TABLE } } },
+        { OperationObject::BUNDLE_PERMISSION, { { OperationType::UNKNOWN_TYPE, BUNDLE_PERMISSION_TABLE } } },
     };
 
     if (tableNameMap.find(oprnObject_) != tableNameMap.end()) {

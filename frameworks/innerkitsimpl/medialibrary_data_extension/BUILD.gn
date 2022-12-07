@@ -39,6 +39,7 @@ config("media_data_extension_public_config") {
     "//base/security/device_auth/interfaces/innerkits",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/appmgr",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
+    "//foundation/bundlemanager/bundle_framework/interfaces/kits/js/common",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/distributeddatamgr/kv_store/interfaces/innerkits/distributeddata/include/",
     "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler/include",
@@ -133,6 +134,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_smartalbum_map_operations.cpp",
     "src/medialibrary_smartalbum_operations.cpp",
     "src/medialibrary_subscriber.cpp",
+    "src/medialibrary_uripermission_operations.cpp",
     "src/uri_helper.cpp",
   ]
   sources += media_fileext_source

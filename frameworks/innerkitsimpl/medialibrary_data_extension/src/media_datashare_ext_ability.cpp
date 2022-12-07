@@ -29,6 +29,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_subscriber.h"
+#include "medialibrary_uripermission_operations.h"
 #include "media_scanner_manager.h"
 #include "media_log.h"
 #include "system_ability_definition.h"
@@ -257,10 +258,18 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
     string uriStr = uri.ToString();
     string unifyMode = mode;
     transform(unifyMode.begin(), unifyMode.end(), unifyMode.begin(), ::tolower);
+
     int err = CheckOpenFilePermission(uriStr, unifyMode);
-    if (err < 0) {
+    if (err == E_PERMISSION_DENIED) {
+        err = UriPermissionOperations::CheckUriPermission(uriStr, unifyMode);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
+            return err;
+        }
+    } else if (err < 0) {
         return err;
     }
+    
     return MediaLibraryDataManager::GetInstance()->OpenFile(Uri(uriStr), unifyMode);
 }
 
