@@ -62,7 +62,7 @@ public:
     static int32_t InsertInDb(MediaLibraryCommand &cmd);
     static int32_t ModifyInfoByIdInDb(MediaLibraryCommand &cmd, const std::string &fileId = "");
     static int32_t DeleteInfoByIdInDb(MediaLibraryCommand &cmd, const std::string &fileId = "");
-    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryWithCondition(MediaLibraryCommand &cmd,
+    static std::shared_ptr<NativeRdb::ResultSet> QueryWithCondition(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns, const std::string &conditionColumn = "");
 
     static bool IsColumnValueExist(const std::string &value, const std::string &column);
@@ -96,7 +96,7 @@ private:
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
     static int32_t CopyAssetByFd(int32_t srcFd, int32_t srcId, int32_t destFd, int32_t destId);
     static void CloseFileById(int32_t fileId);
-    static int32_t GetFileResult(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+    static int32_t GetFileResult(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int count, const string &relativePath, const string &displayName);
     static int32_t GetRootDirAndExtension(const std::string &relativePath,
         const std::string &displayName, NativeRdb::ValuesBucket &outValues);
@@ -109,7 +109,7 @@ private:
     static DirAsset GetDirQuerySet(MediaLibraryCommand &cmd);
     static int32_t GetExtension(const std::string &displayName, std::string &outExtension);
     static int32_t GetRootDir(const std::string &relativePath, std::string &outRootDir);
-    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QuerySmartAlbum(MediaLibraryCommand &cmd);
+    static std::shared_ptr<NativeRdb::ResultSet> QuerySmartAlbum(MediaLibraryCommand &cmd);
     static int32_t CheckUpdateMediaType(const std::string &dstPath, MediaLibraryCommand &outCmd);
 };
 } // namespace Media
