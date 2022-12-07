@@ -588,8 +588,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::TrashChildAssetsInfoUtil(const int3
     MediaLibraryCommand querySmartAlbumCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     string parentPath = MediaLibraryObjectUtils::GetPathByIdFromDb(to_string(parentId));
     querySmartAlbumCmd.GetAbsRdbPredicates()->Like(MEDIA_DATA_DB_FILE_PATH, parentPath + "%")->And()->
-        EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED))->And()->
-        EqualTo(MEDIA_DATA_DB_ID, to_string(parentId));
+        EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
     vector<string> columns = { MEDIA_DATA_DB_ID };
     shared_ptr<AbsSharedResultSet> queryResultSet = uniStore->Query(querySmartAlbumCmd, columns);
     if (queryResultSet == nullptr) {
