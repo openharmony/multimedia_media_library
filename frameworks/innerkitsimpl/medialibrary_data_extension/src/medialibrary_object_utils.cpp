@@ -197,6 +197,7 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
     GetRelativePathFromValues(values, relativePath, mediaType);
     if (!relativePath.empty()) {
         values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+        cmd.SetValueBucket(values);
         path = ROOT_MEDIA_DIR + relativePath + displayName;
         fileAsset.SetRelativePath(relativePath);
         fileAsset.SetPath(path);
