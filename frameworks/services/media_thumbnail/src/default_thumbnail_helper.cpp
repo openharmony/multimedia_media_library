@@ -35,6 +35,7 @@ int32_t DefaultThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
         return err;
     }
+    rdbSet.reset();
 
     if (!thumbnailData.thumbnailKey.empty()) {
         ThumbnailData tmpData = thumbnailData;
@@ -64,6 +65,7 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts,
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
         return err;
     }
+    rdbSet.reset();
 
     if (thumbnailData.thumbnailKey.empty()) {
         if (!opts.networkId.empty()) {
