@@ -1322,6 +1322,7 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbna
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
         return isDelete;
     }
+    rdbSet.reset();
 
     if (IsKeyNotSame(tmpData.thumbnailKey, thumbnailData.thumbnailKey)) {
         if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, tmpData.thumbnailKey)) {
