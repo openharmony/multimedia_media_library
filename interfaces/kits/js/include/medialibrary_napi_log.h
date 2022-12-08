@@ -16,18 +16,18 @@
 #ifndef OHOS_MEDIALIBRARY_NAPI_LOG_H
 #define OHOS_MEDIALIBRARY_NAPI_LOG_H
 
-#undef N_LOG_DOMAIN
-#define N_LOG_DOMAIN 0xD002B71
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0xD002B71
 
-#ifndef N_MLOG_TAG
-#define N_MLOG_TAG "Common"
+#ifndef MLOG_TAG
+#define MLOG_TAG "Common"
 #endif
 
-#undef N_LOG_TAG
-#define N_LOG_TAG "MediaLibraryNapi"
+#undef LOG_TAG
+#define LOG_TAG "MediaLibraryNapi"
 
-#ifndef N_LOG_LABEL
-#define N_LOG_LABEL { LOG_CORE, N_LOG_DOMAIN, N_LOG_TAG }
+#ifndef LOG_LABEL
+#define LOG_LABEL { LOG_CORE, LOG_DOMAIN, LOG_TAG }
 #endif
 
 #include "hilog/log.h"
@@ -36,7 +36,7 @@
 
 #define NAPI_HILOG(op, fmt, args...) \
     do {                                  \
-        op(N_LOG_LABEL, N_MLOG_TAG ":{%{public}s:%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);  \
+        op(LOG_LABEL, MLOG_TAG ":{%{public}s:%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);  \
     } while (0)
 
 #define NAPI_DEBUG_LOG(fmt, ...) NAPI_HILOG(OHOS::HiviewDFX::HiLog::Debug, fmt, ##__VA_ARGS__)
