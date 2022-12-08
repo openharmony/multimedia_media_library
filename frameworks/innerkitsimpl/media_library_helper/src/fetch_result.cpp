@@ -319,8 +319,8 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
     fileAsset->SetResultNapiType(resultNapiType_);
     if (!columnNames.empty() && columnNames[0].find("count(") != string::npos) {
         int count = 1;
-        if (resultSet) {
-            resultSet->GetInt(0, count);
+        if (resultset_) {
+            resultset_->GetInt(0, count);
         }
         fileAsset->SetCount(count);
     }
