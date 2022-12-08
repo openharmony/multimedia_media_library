@@ -735,9 +735,17 @@ int32_t HandleAlbumRename(const shared_ptr<FileAsset> &srcAsset, const string &d
         MEDIA_ERR_LOG("Failed RenameDir errno %{public}d", errno);
         return E_MODIFY_DATA_FAIL;
     }
+    // update parent info
+    string parentPath = ROOT_MEDIA_DIR + srcAsset->GetRelativePath();
+    parentPath.pop_back();
+    MediaLibraryObjectUtils::UpdateDateModified(parentPath);
+
+    // update album info
     string srcId = to_string(srcAsset->GetId());
     int32_t updateResult = UpdateRenamedAlbumInfo(srcId, displayName, destPath);
     CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL, "UpdateRenamedAlbumInfo failed");
+
+    // update child info
     updateResult = UpdateSubFilesPath(srcPath, destPath);
     CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL, "UpdateSubFilesPath failed");
     updateResult = UpdateSubFilesBucketName(srcId, displayName);
@@ -825,8 +833,20 @@ int32_t HandleAlbumMove(const shared_ptr<FileAsset> &srcAsset, const string &des
         MEDIA_ERR_LOG("Failed RenameDir errno %{public}d", errno);
         return E_MODIFY_DATA_FAIL;
     }
+
+    // update parent info
+    string srcParentPath = ROOT_MEDIA_DIR + srcAsset->GetRelativePath();
+    srcParentPath.pop_back();
+    string tarParentPath = ROOT_MEDIA_DIR + destRelativePath;
+    tarParentPath.pop_back();
+    MediaLibraryObjectUtils::UpdateDateModified(srcParentPath);
+    MediaLibraryObjectUtils::UpdateDateModified(tarParentPath);
+
+    // update album info
     int32_t updateResult = UpdateMovedAlbumInfo(srcAsset, bucketId, destPath, destRelativePath);
     CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL, "UpdateMovedAlbumInfo failed");
+
+    // update child info
     updateResult = UpdateSubFilesPath(srcAsset->GetPath(), destPath);
     CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL, "UpdateSubFilesPath failed");
     return E_SUCCESS;
