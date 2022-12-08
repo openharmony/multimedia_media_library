@@ -263,7 +263,7 @@ int32_t MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAss
     int32_t count = -1;
     vector<string> columns;
     AbsRdbPredicates dirAbsPred(MEDIATYPE_DIRECTORY_TABLE);
-    auto queryResultSet = rdbStore_->QueryByStep(dirAbsPred, columns);
+    auto queryResultSet = rdbStore_->Query(dirAbsPred, columns);
     auto ret = queryResultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdb failed");
@@ -740,16 +740,17 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
         { OperationObject::BUNDLE_PERMISSION, "" },
     };
 
-    MediaLibraryCommand cmd(uri, OperationType::QUERY);
-    // MEDIALIBRARY_TABLE just for RdbPredicates
-    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
-        MEDIALIBRARY_TABLE);
-    auto whereClause = rdbPredicate.GetWhereClause();
+    auto whereClause = predicates.GetWhereClause();
     if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
         MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
         return nullptr;
     }
-    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+
+    MediaLibraryCommand cmd(uri, OperationType::QUERY);
+    // MEDIALIBRARY_TABLE just for RdbPredicates
+    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
+        MEDIALIBRARY_TABLE);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
     NeedQuerySync(cmd.GetOprnDevice(), cmd.GetOprnObject());
