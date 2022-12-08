@@ -65,6 +65,7 @@ public:
     static bool IsColumnValueExist(const std::string &value, const std::string &column);
     static bool IsAssetExistInDb(const int32_t id);
     static bool IsFileExistInDb(const std::string &path);
+    static void UpdateDateModified(const std::string &dirPath);
 
 private:
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);
@@ -82,7 +83,6 @@ private:
     static int32_t ProcessHiddenDir(const std::string &dstDirName, const std::string &srcDirPath);
     static int32_t UpdateFileInfoInDb(MediaLibraryCommand &cmd, const std::string &dstPath,
         const int &bucketId, const std::string &bucketName);
-    static void UpdateDateModified(const std::string &dirPath);
     static void ScanFile(std::string &srcPath);
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
 };
