@@ -213,7 +213,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCo
     MEDIA_DEBUG_LOG("limit = %d", predicates->GetLimit());
 #endif
 
-    return rdbStore_->QueryByStep(*predicates, columns);
+    return rdbStore_->Query(*predicates, columns);
 }
 
 int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
