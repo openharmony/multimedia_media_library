@@ -35,6 +35,7 @@ int32_t LcdThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
         return err;
     }
+    rdbSet.reset();
 
     if (!thumbnailData.lcdKey.empty()) {
         ThumbnailData tmpData = thumbnailData;
@@ -65,6 +66,7 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts,
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
         return E_ERR;
     }
+    rdbSet.reset();
 
     if (thumbnailData.lcdKey.empty()) {
         if (!opts.networkId.empty()) {
