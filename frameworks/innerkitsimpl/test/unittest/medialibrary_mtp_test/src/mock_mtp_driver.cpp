@@ -24,7 +24,7 @@ static std::vector<std::vector<uint8_t>> testDatas = {
     // MTP_OPERATION_OPEN_SESSION_CODE
     { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 },
 };
-
+constexpr int32_t MTP_SUCCESS = 0;
 MtpDriver::MtpDriver()
 {
 }
@@ -43,7 +43,7 @@ int MtpDriver::CloseDriver()
     return 0;
 }
 
-void MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
+int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
 {
     std::vector<uint8_t>().swap(outBuffer);
     outBuffer.insert(outBuffer.end(), MtpTest::GetInstance()->testData_.begin(),
@@ -51,9 +51,10 @@ void MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
     outReadSize = outBuffer.size();
     MEDIA_INFO_LOG("MtpDriver::Read");
     MtpPacketTool::Dump(outBuffer);
+    return MTP_SUCCESS;
 }
 
-void MtpDriver::Write(std::vector<uint8_t> buffer, uint32_t bufferSize)
+void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t bufferSize)
 {
     MEDIA_INFO_LOG("MtpDriver::Write");
     MtpTest::GetInstance()->setOutBuffer(buffer);
