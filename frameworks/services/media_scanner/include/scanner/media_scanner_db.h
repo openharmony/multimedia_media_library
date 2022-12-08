@@ -30,7 +30,6 @@
 #include "uri.h"
 #include "values_bucket.h"
 #include "want.h"
-#include "result_set_bridge.h"
 #include "datashare_result_set.h"
 
 namespace OHOS {
