@@ -29,6 +29,16 @@ namespace OHOS {
 namespace Media {
 static const std::string FETCH_FILE_RESULT_CLASS_NAME = "FetchFileResult";
 static const std::string UFM_FETCH_FILE_RESULT_CLASS_NAME = "UserFileMgrFetchFileResult";
+
+class FetchResultProperty {
+public:
+    std::shared_ptr<FetchResult<FileAsset>> fetchFileResult_ = nullptr;
+    std::shared_ptr<FetchResult<AlbumAsset>> fetchAlbumResult_ = nullptr;
+    std::shared_ptr<FetchResult<SmartAlbumAsset>> fetchSmartAlbumResult_ = nullptr;
+    FetchResType fetchResType_;
+    std::string typeMask_;
+};
+
 class FetchFileResultNapi {
 public:
     FetchFileResultNapi();
@@ -62,11 +72,7 @@ private:
     static napi_value JSClose(napi_env env, napi_callback_info info);
 
     napi_env env_;
-    std::shared_ptr<FetchResult<FileAsset>> fetchFileResult_;
-    std::shared_ptr<FetchResult<AlbumAsset>> fetchAlbumResult_;
-    std::shared_ptr<FetchResult<SmartAlbumAsset>> fetchSmartAlbumResult_;
-    FetchResType fetchResType_;
-    std::string typeMask_;
+    std::shared_ptr<FetchResultProperty> propertyPtr;
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
     static inline thread_local std::unique_ptr<FetchResult<FileAsset>> sFetchFileResult_ = nullptr;
@@ -81,6 +87,7 @@ public:
     napi_ref callbackRef;
     napi_deferred deferred;
     FetchFileResultNapi* objectInfo;
+    std::shared_ptr<FetchResultProperty> objectPtr;
     bool status;
     int32_t position;
     std::unique_ptr<FileAsset> fileAsset;
