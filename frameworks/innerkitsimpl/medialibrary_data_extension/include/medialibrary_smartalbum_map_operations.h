@@ -79,10 +79,6 @@ private:
                         std::string &outSameNamePath,
                         SmartAlbumMapQueryData &smartAlbumMapQueryData);
     std::string MakeSuffixPathName(std::string &assetPath);
-    int32_t RecycleDir(const std::shared_ptr<FileAsset> &fileAsset,
-                       const std::string &recyclePath,
-                       std::string &outSameNamePath,
-                       SmartAlbumMapQueryData &smartAlbumMapQueryData);
     int32_t RecycleChildAssetsInfoUtil(const int32_t &assetId,
                                        const int64_t &newPath,
                                        SmartAlbumMapQueryData &smartAlbumMapQueryData);
@@ -101,8 +97,6 @@ private:
                                          SmartAlbumMapQueryData &smartAlbumMapQueryData);
 
     NativeAlbumAsset GetAlbumAsset(const std::string &id, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    bool IsAlbumExistInDb(const std::string &path, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                          int32_t &outRow);
     int32_t GetAssetRecycle(const int32_t &assetId, std::string &outOldPath, std::string &outTrashDirPath,
                             const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
                             const std::unordered_map<std::string, DirAsset> &dirQuerySetMap);
