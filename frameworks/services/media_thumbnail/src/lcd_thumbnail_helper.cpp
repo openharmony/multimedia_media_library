@@ -30,11 +30,12 @@ int32_t LcdThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
 {
     int err = E_ERR;
     ThumbnailData thumbnailData;
-    shared_ptr<AbsSharedResultSet> rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
+    auto rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
     if (rdbSet == nullptr) {
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
         return err;
     }
+    rdbSet.reset();
 
     if (!thumbnailData.lcdKey.empty()) {
         ThumbnailData tmpData = thumbnailData;
@@ -60,11 +61,12 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts,
     ThumbnailWait thumbnailWait(false);
     thumbnailWait.CheckAndWait(opts.row, true);
     ThumbnailData thumbnailData;
-    shared_ptr<AbsSharedResultSet> rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
+    auto rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
     if (rdbSet == nullptr) {
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
         return E_ERR;
     }
+    rdbSet.reset();
 
     if (thumbnailData.lcdKey.empty()) {
         if (!opts.networkId.empty()) {

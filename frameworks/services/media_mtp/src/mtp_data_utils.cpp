@@ -444,7 +444,7 @@ void MtpDataUtils::GetOneRowPropList(uint32_t handle, const shared_ptr<DataShare
             auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(property);
             Property prop(property, properType);
             prop.handle_ = handle;
-            PropColumnMap.at(property);
+            column = PropColumnMap.at(property);
             type = ColumnTypeMap.at(column);
             if (column.compare(MEDIA_DATA_DB_FORMAT) == 0) {
                 uint16_t format = MTP_FORMAT_UNDEFINED_CODE;

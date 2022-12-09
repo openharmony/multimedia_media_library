@@ -15,6 +15,7 @@
 
 #include "smart_album_asset.h"
 
+#include "media_file_utils.h"
 #include "medialibrary_type_const.h"
 
 using namespace std;
@@ -34,6 +35,7 @@ SmartAlbumAsset::SmartAlbumAsset()
     categoryName_ = DEFAULT_SMART_ALBUM_CATEGORYNAME;
     coverUri_ = DEFAULT_COVERURI;
     resultNapiType_ = ResultNapiType::TYPE_MEDIALIBRARY;
+    expiredTime_ = DEFAULT_EXPIREDTIME;
 }
 
 SmartAlbumAsset::~SmartAlbumAsset() = default;
@@ -44,17 +46,17 @@ void SmartAlbumAsset::SetAlbumId(const int32_t albumId)
     albumId_ = albumId;
 }
 
-void SmartAlbumAsset::SetAlbumName(const string albumName)
+void SmartAlbumAsset::SetAlbumName(const string &albumName)
 {
     albumName_ = albumName;
 }
 
-void SmartAlbumAsset::SetAlbumUri(const string albumUri)
+void SmartAlbumAsset::SetAlbumUri(const string &albumUri)
 {
     albumUri_ = albumUri;
 }
 
-void SmartAlbumAsset::SetAlbumTag(const string albumTag)
+void SmartAlbumAsset::SetAlbumTag(const string &albumTag)
 {
     albumTag_ = albumTag;
 }
@@ -74,12 +76,12 @@ void SmartAlbumAsset::SetAlbumDateModified(const int64_t albumDateModified)
     albumDateModified_ = albumDateModified;
 }
 
-void SmartAlbumAsset::SetCategoryName(const string categoryName)
+void SmartAlbumAsset::SetCategoryName(const string &categoryName)
 {
     categoryName_ = categoryName;
 }
 
-void SmartAlbumAsset::SetCoverUri(const string coverUri)
+void SmartAlbumAsset::SetCoverUri(const string &coverUri)
 {
     coverUri_ = coverUri;
 }
@@ -97,6 +99,16 @@ void SmartAlbumAsset::SetAlbumPrivateType(const PrivateAlbumType albumPrivateTyp
 void SmartAlbumAsset::SetResultNapiType(const ResultNapiType type)
 {
     resultNapiType_ = type;
+}
+
+void SmartAlbumAsset::SetDescription(const string &description)
+{
+    description_ = description;
+}
+
+void SmartAlbumAsset::SetExpiredTime(const int32_t expiredTime)
+{
+    expiredTime_ = expiredTime;
 }
 
 int32_t SmartAlbumAsset::GetAlbumId() const
@@ -157,6 +169,16 @@ PrivateAlbumType SmartAlbumAsset::GetAlbumPrivateType() const
 ResultNapiType SmartAlbumAsset::GetResultNapiType() const
 {
     return resultNapiType_;
+}
+
+string SmartAlbumAsset::GetDescription() const
+{
+    return description_;
+}
+
+int32_t SmartAlbumAsset::GetExpiredTime() const
+{
+    return expiredTime_;
 }
 }  // namespace Media
 }  // namespace OHOS

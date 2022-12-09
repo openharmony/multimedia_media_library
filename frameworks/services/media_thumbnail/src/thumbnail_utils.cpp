@@ -111,17 +111,17 @@ bool ThumbnailUtils::ClearThumbnailAllRecord(ThumbRdbOpt &opts, ThumbnailData &t
             MEDIA_ERR_LOG("ThumbnailUtils::RemoveDataFromKv faild");
             return false;
         }
+        if (!DeleteDistributeThumbnailInfo(opts)) {
+            return false;
+        }
     }
 
-    if (!DeleteDistributeThumbnailInfo(opts)) {
-        return false;
-    }
     return true;
 }
 
 bool ThumbnailUtils::LoadAudioFile(const string &path, shared_ptr<PixelMap> &pixelMap, float &degrees)
 {
-    std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     int32_t err = SetSource(avMetadataHelper, path);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Av meta data helper set source failed %{public}d", err);
@@ -160,7 +160,7 @@ bool ThumbnailUtils::LoadAudioFile(const string &path, shared_ptr<PixelMap> &pix
 
 bool ThumbnailUtils::LoadVideoFile(const string &path, shared_ptr<PixelMap> &pixelMap, float &degrees)
 {
-    std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     int32_t err = SetSource(avMetadataHelper, path);
     if (err != 0) {
         MEDIA_ERR_LOG("Av meta data helper set source failed path %{private}s err %{public}d",
@@ -221,9 +221,9 @@ bool ThumbnailUtils::LoadImageFile(const string &path, shared_ptr<PixelMap> &pix
     return true;
 }
 
-std::string ThumbnailUtils::GetUdid()
+string ThumbnailUtils::GetUdid()
 {
-    static std::string innerUdid;
+    static string innerUdid;
 
     if (!innerUdid.empty()) {
         return innerUdid;
@@ -234,24 +234,24 @@ std::string ThumbnailUtils::GetUdid()
     auto ret = deviceManager.GetLocalDeviceInfo(BUNDLE_NAME, deviceInfo);
     if (ret != ERR_OK) {
         MEDIA_ERR_LOG("get local device info failed, ret %{public}d", ret);
-        return std::string();
+        return string();
     }
 
     ret = deviceManager.GetUdidByNetworkId(BUNDLE_NAME, deviceInfo.networkId, innerUdid);
     if (ret != 0) {
         MEDIA_ERR_LOG("GetDeviceUdid error networkId = %{private}s, ret %{public}d",
             deviceInfo.networkId, ret);
-        return std::string();
+        return string();
     }
     return innerUdid;
 }
 
-bool ThumbnailUtils::GenKey(ThumbnailData &data, std::string &key)
+bool ThumbnailUtils::GenKey(ThumbnailData &data, string &key)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GenerateKey");
     if (data.hashKey.empty()) {
-        std::string sourceKey = GetUdid() + data.path + to_string(data.dateModified);
+        string sourceKey = GetUdid() + data.path + to_string(data.dateModified);
         MEDIA_DEBUG_LOG("ThumbnailUtils::GenKey sourceKey %{private}s", sourceKey.c_str());
         int32_t ret = MediaLibraryCommonUtils::GenKeySHA256(sourceKey, data.hashKey);
         if (ret != E_OK) {
@@ -278,7 +278,7 @@ bool ThumbnailUtils::GenLcdKey(ThumbnailData &data)
 }
 
 
-bool ThumbnailUtils::CompressImage(std::shared_ptr<PixelMap> &pixelMap, const Size &size,
+bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, const Size &size,
     vector<uint8_t> &data, float degrees)
 {
     MediaLibraryTracer tracer;
@@ -350,7 +350,7 @@ Status ThumbnailUtils::SaveImage(const shared_ptr<SingleKvStore> &kvStore, const
     return status;
 }
 
-shared_ptr<AbsSharedResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
+shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
 {
     MEDIA_DEBUG_LOG("ThumbnailUtils::QueryThumbnailSet IN row [%{public}s]", opts.row.c_str());
     vector<string> column = {
@@ -368,16 +368,16 @@ shared_ptr<AbsSharedResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &op
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
-    shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
+    auto resultSet = opts.store->Query(rdbPredicates, column);
     return resultSet;
 }
 
-shared_ptr<AbsSharedResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
+shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
     ThumbnailData &data, int &err)
 {
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnailInfo");
-    shared_ptr<AbsSharedResultSet> resultSet = QueryThumbnailSet(opts);
+    auto resultSet = QueryThumbnailSet(opts);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return nullptr;
@@ -403,7 +403,7 @@ bool ThumbnailUtils::QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
-    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
+    auto resultSet = opts.store->Query(rdbPredicates, column);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("query failed");
         return false;
@@ -433,7 +433,7 @@ bool ThumbnailUtils::QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount
     RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
-    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
+    auto resultSet = opts.store->Query(rdbPredicates, column);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("query failed");
         return false;
@@ -713,7 +713,7 @@ bool ThumbnailUtils::UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data,
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
         return false;
     }
-    std::vector<std::string> devices;
+    vector<string> devices;
     opts.table = MEDIALIBRARY_TABLE;
     SyncPushTable(opts, devices);
     return true;
@@ -738,7 +738,7 @@ bool ThumbnailUtils::UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int
     return true;
 }
 
-bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailRdbData> &infos,
+bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, vector<ThumbnailRdbData> &infos,
     int &err)
 {
     vector<string> column = {
@@ -769,8 +769,8 @@ bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<
     return true;
 }
 
-bool ThumbnailUtils::GetRemoteThumbnailInfo(ThumbRdbOpt &opts, const std::string &id,
-    const std::string &udid, int &err)
+bool ThumbnailUtils::GetRemoteThumbnailInfo(ThumbRdbOpt &opts, const string &id,
+    const string &udid, int &err)
 {
     vector<string> column = {
         REMOTE_THUMBNAIL_DB_ID
@@ -787,8 +787,8 @@ bool ThumbnailUtils::GetRemoteThumbnailInfo(ThumbRdbOpt &opts, const std::string
     return true;
 }
 
-bool ThumbnailUtils::GetUdidByNetworkId(ThumbRdbOpt &opts, const std::string &networkId,
-    std::string &outUdid, int &err)
+bool ThumbnailUtils::GetUdidByNetworkId(ThumbRdbOpt &opts, const string &networkId,
+    string &outUdid, int &err)
 {
     vector<string> column = {
         DEVICE_DB_ID,
@@ -859,10 +859,7 @@ bool ThumbnailUtils::QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data
 
 static inline bool IsKeyNotSame(const string &newKey, const string &oldKey)
 {
-    if (!newKey.empty() && !oldKey.empty() && (newKey != oldKey)) {
-        return true;
-    }
-    return false;
+    return !newKey.empty() && !oldKey.empty() && (newKey != oldKey);
 }
 
 bool ThumbnailUtils::DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
@@ -926,7 +923,7 @@ bool ThumbnailUtils::UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData 
 bool ThumbnailUtils::InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
 {
     ValuesBucket values;
-    values.PutInt(REMOTE_THUMBNAIL_DB_FILE_ID, std::stoi(data.id));
+    values.PutInt(REMOTE_THUMBNAIL_DB_FILE_ID, stoi(data.id));
     values.PutString(REMOTE_THUMBNAIL_DB_UDID, data.udid);
     if (!data.thumbnailKey.empty()) {
         values.PutString(MEDIA_DATA_DB_THUMBNAIL, data.thumbnailKey);
@@ -1056,7 +1053,7 @@ bool ThumbnailUtils::CreateLcdData(ThumbnailData &data, int32_t lcdSize)
     return ret;
 }
 
-Status ThumbnailUtils::SaveThumbnailData(ThumbnailData &data, const std::string &networkId,
+Status ThumbnailUtils::SaveThumbnailData(ThumbnailData &data, const string &networkId,
     const shared_ptr<SingleKvStore> &kvStore)
 {
     Status status = SaveImage(kvStore, data.thumbnailKey, data.thumbnail);
@@ -1077,7 +1074,7 @@ Status ThumbnailUtils::SaveThumbnailData(ThumbnailData &data, const std::string 
     return status;
 }
 
-Status ThumbnailUtils::SaveLcdData(ThumbnailData &data, const std::string &networkId,
+Status ThumbnailUtils::SaveLcdData(ThumbnailData &data, const string &networkId,
     const shared_ptr<SingleKvStore> &kvStore)
 {
     Status status = SaveImage(kvStore, data.lcdKey, data.lcd);
@@ -1097,21 +1094,14 @@ Status ThumbnailUtils::SaveLcdData(ThumbnailData &data, const std::string &netwo
     return status;
 }
 
-int32_t ThumbnailUtils::SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path)
+int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper, const string &path)
 {
     if (avMetadataHelper == nullptr) {
         MEDIA_ERR_LOG("avMetadataHelper == nullptr");
         return E_ERR;
     }
     MEDIA_DEBUG_LOG("path = %{private}s", path.c_str());
-    UriHelper uriHelper(path);
-    if ((uriHelper.UriType() != UriHelper::URI_TYPE_FILE) && !uriHelper.AccessCheck(UriHelper::URI_READ)) {
-        MEDIA_ERR_LOG("Invalid file Path %{private}s", path.c_str());
-        return E_ERR;
-    }
-    std::string rawFile = uriHelper.FormattedUri();
-    rawFile = rawFile.substr(strlen("file://"));
-    int32_t fd = open(rawFile.c_str(), O_RDONLY);
+    int32_t fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d", errno);
         return E_ERR;
@@ -1134,7 +1124,7 @@ int32_t ThumbnailUtils::SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHe
     return SUCCESS;
 }
 
-bool ThumbnailUtils::SyncPushTable(ThumbRdbOpt &opts, std::vector<std::string> &devices, bool isBlock)
+bool ThumbnailUtils::SyncPushTable(ThumbRdbOpt &opts, vector<string> &devices, bool isBlock)
 {
     MEDIA_DEBUG_LOG("SyncPushTable table = %{public}s", opts.table.c_str());
     // start sync
@@ -1146,18 +1136,17 @@ bool ThumbnailUtils::SyncPushTable(ThumbRdbOpt &opts, std::vector<std::string> &
     (devices.size() > 0) ? predicate.InDevices(devices) : predicate.InAllDevices();
 
     DistributedRdb::SyncCallback callback = [](const DistributedRdb::SyncResult& syncResult) {
-        // update device db
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
             if (iter->first.empty()) {
                 MEDIA_ERR_LOG("SyncPushTable deviceId is empty");
                 continue;
             }
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPushTable device = %{public}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPushTable device = %{private}s syncResult = %{private}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
-            MEDIA_ERR_LOG("SyncPushTable device = %{public}s success", iter->first.c_str());
+            MEDIA_ERR_LOG("SyncPushTable device = %{private}s success", iter->first.c_str());
         }
     };
 
@@ -1168,7 +1157,7 @@ bool ThumbnailUtils::SyncPushTable(ThumbRdbOpt &opts, std::vector<std::string> &
     return ret;
 }
 
-bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, std::vector<std::string> &devices, bool isBlock)
+bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, vector<string> &devices, bool isBlock)
 {
     MEDIA_DEBUG_LOG("SyncPullTable table = %{public}s", opts.table.c_str());
     DistributedRdb::SyncOption option;
@@ -1185,12 +1174,13 @@ bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, std::vector<std::string> &
     DistributedRdb::SyncCallback callback = [status](const DistributedRdb::SyncResult& syncResult) {
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
             if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPullTable device = %{public}s syncResult = %{public}d",
+                MEDIA_ERR_LOG("SyncPullTable device = %{private}s syncResult = %{private}d",
                     iter->first.c_str(), iter->second);
                 continue;
             }
-            std::unique_lock<std::mutex> lock(status->mtx_);
+            unique_lock<mutex> lock(status->mtx_);
             status->isSyncComplete_ = true;
+            break;
         }
         status->cond_.notify_one();
     };
@@ -1202,8 +1192,8 @@ bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, std::vector<std::string> &
         return ret;
     }
 
-    std::unique_lock<std::mutex> lock(status->mtx_);
-    bool success = status->cond_.wait_for(lock, std::chrono::milliseconds(WAIT_FOR_MS),
+    unique_lock<mutex> lock(status->mtx_);
+    bool success = status->cond_.wait_for(lock, chrono::milliseconds(WAIT_FOR_MS),
         [status] { return status->isSyncComplete_; });
     if (success) {
         MEDIA_DEBUG_LOG("wait_for SyncCompleted");
@@ -1217,7 +1207,7 @@ bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, std::vector<std::string> &
 Status ThumbnailUtils::SyncPullKvstore(const shared_ptr<SingleKvStore> &kvStore, const string key,
     const string &networkId)
 {
-    MEDIA_DEBUG_LOG("networkId is %{public}s key is %{public}s",
+    MEDIA_DEBUG_LOG("networkId is %{private}s key is %{private}s",
         networkId.c_str(), key.c_str());
     if (kvStore == nullptr) {
         MEDIA_ERR_LOG("kvStore is null");
@@ -1231,10 +1221,10 @@ Status ThumbnailUtils::SyncPullKvstore(const shared_ptr<SingleKvStore> &kvStore,
     DataQuery dataQuery;
     dataQuery.KeyPrefix(key);
     dataQuery.Limit(1, 0); // for force to sync single key
-    std::vector<std::string> deviceIds = { networkId };
+    vector<string> deviceIds = { networkId };
     MediaLibraryTracer tracer;
     tracer.Start("SyncPullKvstore kvStore->SyncPull");
-    auto callback = std::make_shared<MediaLibrarySyncCallback>();
+    auto callback = make_shared<MediaLibrarySyncCallback>();
     Status status = kvStore->Sync(deviceIds, OHOS::DistributedKv::SyncMode::PULL, dataQuery, callback);
     if (!callback->WaitFor()) {
         MEDIA_DEBUG_LOG("wait_for timeout");
@@ -1296,7 +1286,7 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
 }
 
 bool ThumbnailUtils::GetKvResultSet(const shared_ptr<SingleKvStore> &kvStore, const string &key,
-    const std::string &networkId, shared_ptr<DataShare::ResultSetBridge> &outResultSet)
+    const string &networkId, shared_ptr<DataShare::ResultSetBridge> &outResultSet)
 {
     if (key.empty()) {
         MEDIA_ERR_LOG("key empty");
@@ -1337,29 +1327,34 @@ bool ThumbnailUtils::RemoveDataFromKv(const shared_ptr<SingleKvStore> &kvStore, 
     return true;
 }
 
+// notice: return value is whether thumb/lcd is deleted
 bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
 {
     ThumbnailData tmpData;
+    bool isDelete = false;
     int err = 0;
     auto rdbSet = QueryThumbnailInfo(opts, tmpData, err);
     if (rdbSet == nullptr) {
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
-        return false;
+        return isDelete;
     }
+    rdbSet.reset();
 
     if (IsKeyNotSame(tmpData.thumbnailKey, thumbnailData.thumbnailKey)) {
         if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, tmpData.thumbnailKey)) {
             MEDIA_ERR_LOG("DeleteThumbnailData Faild");
-            return false;
+            return isDelete;
         }
+        isDelete = true;
     }
     if (IsKeyNotSame(tmpData.lcdKey, thumbnailData.lcdKey)) {
         if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, tmpData.lcdKey)) {
             MEDIA_ERR_LOG("DeleteLCDlData Faild");
-            return false;
+            return isDelete;
         }
+        isDelete = true;
     }
-    return true;
+    return isDelete;
 }
 
 bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, const shared_ptr<SingleKvStore> &kvStore)
@@ -1414,8 +1409,6 @@ void ThumbnailUtils::ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rd
 int64_t ThumbnailUtils::UTCTimeSeconds()
 {
     struct timespec t;
-    t.tv_sec = 0;
-    t.tv_nsec = 0;
     clock_gettime(CLOCK_REALTIME, &t);
     return (int64_t)(t.tv_sec);
 }
@@ -1538,12 +1531,12 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
     }
 }
 
-void MediaLibrarySyncCallback::SyncCompleted(const map<std::string, DistributedKv::Status> &results)
+void MediaLibrarySyncCallback::SyncCompleted(const map<string, DistributedKv::Status> &results)
 {
     for (auto &item : results) {
         if (item.second == Status::SUCCESS) {
             MEDIA_DEBUG_LOG("ThumbnailUtils::SyncCompleted OK");
-            std::unique_lock<std::mutex> lock(status_.mtx_);
+            unique_lock<mutex> lock(status_.mtx_);
             status_.isSyncComplete_ = true;
             break;
         }
@@ -1553,8 +1546,8 @@ void MediaLibrarySyncCallback::SyncCompleted(const map<std::string, DistributedK
 
 bool MediaLibrarySyncCallback::WaitFor()
 {
-    std::unique_lock<std::mutex> lock(status_.mtx_);
-    bool ret = status_.cond_.wait_for(lock, std::chrono::milliseconds(WAIT_FOR_MS),
+    unique_lock<mutex> lock(status_.mtx_);
+    bool ret = status_.cond_.wait_for(lock, chrono::milliseconds(WAIT_FOR_MS),
         [this]() { return status_.isSyncComplete_; });
     if (!ret) {
         MEDIA_INFO_LOG("ThumbnailUtils::SyncPullKvstore wait_for timeout");

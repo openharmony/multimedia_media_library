@@ -191,7 +191,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
     return ret;
 }
 
-std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
+std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
     MEDIA_DEBUG_LOG("Query");
@@ -201,8 +201,8 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(Media
     }
 
     auto predicates = cmd.GetAbsRdbPredicates();
+#ifdef ML_DEBUG
     MEDIA_DEBUG_LOG("tablename = %s", cmd.GetTableName().c_str());
-    MEDIA_DEBUG_LOG("ObtainTableName = %s", ObtainTableName(cmd).c_str());
     for (auto &col : columns) {
         MEDIA_DEBUG_LOG("col = %s", col.c_str());
     }
@@ -211,14 +211,9 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(Media
         MEDIA_DEBUG_LOG("whereArgs = %s", arg.c_str());
     }
     MEDIA_DEBUG_LOG("limit = %d", predicates->GetLimit());
+#endif
 
-    auto ret = rdbStore_->Query(*predicates, columns);
-    if (ret != nullptr) {
-        int count;
-        ret->GetRowCount(count);
-        MEDIA_DEBUG_LOG("GetRowCount() = %{public}d", count);
-    }
-    return ret;
+    return rdbStore_->Query(*predicates, columns);
 }
 
 int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
@@ -238,7 +233,7 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
     return ret;
 }
 
-std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql)
+std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql)
 {
     MEDIA_DEBUG_LOG("ExecuteSql");
 
@@ -247,13 +242,7 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::QuerySql(co
         return nullptr;
     }
 
-    auto ret = rdbStore_->QuerySql(sql);
-    if (ret != nullptr) {
-        int count;
-        ret->GetRowCount(count);
-        MEDIA_DEBUG_LOG("GetRowCount() = %{public}d", count);
-    }
-    return ret;
+    return rdbStore_->QuerySql(sql);
 }
 
 std::shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
@@ -327,10 +316,10 @@ int32_t MediaLibraryDataCallBack::PrepareDir(RdbStore &store)
 int32_t MediaLibraryDataCallBack::InsertDirValues(const DirValuesBucket &dirValuesBucket, RdbStore &store)
 {
     ValuesBucket valuesBucket;
-    valuesBucket.PutInt(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE, dirValuesBucket.directoryType);
-    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY, dirValuesBucket.dirValues);
-    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE, dirValuesBucket.typeValues);
-    valuesBucket.PutString(CATEGORY_MEDIATYPE_DIRECTORY_DB_EXTENSION, dirValuesBucket.extensionValues);
+    valuesBucket.PutInt(DIRECTORY_DB_DIRECTORY_TYPE, dirValuesBucket.directoryType);
+    valuesBucket.PutString(DIRECTORY_DB_DIRECTORY, dirValuesBucket.dirValues);
+    valuesBucket.PutString(DIRECTORY_DB_MEDIA_TYPE, dirValuesBucket.typeValues);
+    valuesBucket.PutString(DIRECTORY_DB_EXTENSION, dirValuesBucket.extensionValues);
     int64_t outRowId = -1;
     int32_t insertResult = store.Insert(outRowId, MEDIATYPE_DIRECTORY_TABLE, valuesBucket);
     MEDIA_DEBUG_LOG("insert dir outRowId: %{public}ld insertResult: %{public}d", (long)outRowId, insertResult);
@@ -386,6 +375,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         CREATE_SMARTALBUMASSETS_VIEW,
         CREATE_ASSETMAP_VIEW,
         CREATE_MEDIATYPE_DIRECTORY_TABLE,
+        CREATE_BUNDLE_PREMISSION_TABLE,
     };
 
     for (string sqlStr : executeSqlStrs) {

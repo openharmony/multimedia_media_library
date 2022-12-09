@@ -30,11 +30,12 @@ int32_t DefaultThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
 {
     int err = E_ERR;
     ThumbnailData thumbnailData;
-    shared_ptr<AbsSharedResultSet> rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
+    auto rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
     if (rdbSet == nullptr) {
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
         return err;
     }
+    rdbSet.reset();
 
     if (!thumbnailData.thumbnailKey.empty()) {
         ThumbnailData tmpData = thumbnailData;
@@ -59,11 +60,12 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts,
     ThumbnailWait thumbnailWait(false);
     thumbnailWait.CheckAndWait(opts.row, false);
     ThumbnailData thumbnailData;
-    shared_ptr<AbsSharedResultSet> rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
+    auto rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
     if (rdbSet == nullptr) {
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
         return err;
     }
+    rdbSet.reset();
 
     if (thumbnailData.thumbnailKey.empty()) {
         if (!opts.networkId.empty()) {

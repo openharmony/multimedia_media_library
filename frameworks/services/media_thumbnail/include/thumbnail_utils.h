@@ -87,8 +87,8 @@ public:
     static bool UpdateRemotePath(std::string &path, const std::string &networkId);
 
     // RDB Store Query
-    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
-    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryThumbnailInfo(ThumbRdbOpt &opts,
+    static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailInfo(ThumbRdbOpt &opts,
         ThumbnailData &data, int &err);
     static bool QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
 
