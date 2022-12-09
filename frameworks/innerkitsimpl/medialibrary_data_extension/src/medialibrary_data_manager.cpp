@@ -740,12 +740,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
         { OperationObject::BUNDLE_PERMISSION, "" },
     };
 
-    auto whereClause = predicates.GetWhereClause();
-    if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
-        MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
-        return nullptr;
-    }
-
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
     // MEDIALIBRARY_TABLE just for RdbPredicates
     NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
