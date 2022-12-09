@@ -54,8 +54,7 @@ public:
     int32_t DeleteTrashInfo(const int32_t &assetId, const shared_ptr<RdbStore> &rdbStore);
     int32_t UpdateFavoriteInfo(const int32_t &assetId,
         const OHOS::NativeRdb::ValuesBucket &values, const shared_ptr<RdbStore> &rdbStore);
-    int32_t UpdateRecycleInfo(const int32_t &assetId,
-        const int64_t &recycleDate, const shared_ptr<RdbStore> &rdbStore, string &recyclePath, const string &realPath);
+    int32_t UpdateRecycleInfo(const int32_t &assetId, const shared_ptr<RdbStore> &rdbStore, const string &realPath);
     int32_t UpdateDirTrashInfo(const int32_t &assetId,
         const int64_t &trashDate, const shared_ptr<RdbStore> &rdbStore, string &recyclePath, const string &oldPath);
     int32_t UpdateChildTrashInfo(const int32_t &assetId,
