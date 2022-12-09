@@ -85,7 +85,7 @@ private:
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
     static thread_local AlbumAsset *sAlbumData_;
-    std::unique_ptr<AlbumAsset> albumAssetPtr = nullptr;
+    std::shared_ptr<AlbumAsset> albumAssetPtr = nullptr;
 };
 
 struct AlbumNapiAsyncContext : public NapiError {
@@ -93,6 +93,7 @@ struct AlbumNapiAsyncContext : public NapiError {
     napi_deferred deferred;
     napi_ref callbackRef;
     AlbumNapi *objectInfo;
+    std::shared_ptr<AlbumAsset> objectPtr;
     bool status;
     int32_t changedRows;
     std::string selection;

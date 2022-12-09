@@ -108,6 +108,20 @@ void MediaLibraryCommand::SetTableName(const std::string &tableName)
     tableName_ = tableName;
 }
 
+void MediaLibraryCommand::SetBundleName(const std::string &bundleName)
+{
+    bundleName_ = bundleName;
+}
+
+void MediaLibraryCommand::SetDeviceName(const std::string &deviceName)
+{
+    deviceName_ = deviceName;
+}
+
+void MediaLibraryCommand::SetDirQuerySetMap(const unordered_map<string, DirAsset> &dirQuerySetMap)
+{
+    dirQuerySetMap_ = dirQuerySetMap;
+}
 // get functions
 OperationObject MediaLibraryCommand::GetOprnObject() const
 {
@@ -154,7 +168,6 @@ const string &MediaLibraryCommand::GetOprnDevice()
 {
     if (oprnDevice_.empty()) {
         oprnDevice_ = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri_.ToString());
-        MEDIA_INFO_LOG("oprnDevice_: %{private}s", oprnDevice_.c_str());
     }
     return oprnDevice_;
 }
@@ -162,6 +175,21 @@ const string &MediaLibraryCommand::GetOprnDevice()
 const Uri &MediaLibraryCommand::GetUri() const
 {
     return uri_;
+}
+
+const string &MediaLibraryCommand::GetBundleName()
+{
+    return bundleName_;
+}
+
+const string &MediaLibraryCommand::GetDeviceName()
+{
+    return deviceName_;
+}
+
+const unordered_map<string, DirAsset> &MediaLibraryCommand::GetDirQuerySetMap()
+{
+    return dirQuerySetMap_;
 }
 
 void MediaLibraryCommand::ParseOprnObjectFromUri()
@@ -180,6 +208,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { THU_OPRN_AGING, OperationObject::THUMBNAIL },
         { DISTRIBUTE_THU_OPRN_AGING, OperationObject::THUMBNAIL },
         { DISTRIBUTE_THU_OPRN_CREATE, OperationObject::THUMBNAIL },
+        { BUNDLE_PERMISSION_INSERT, OperationObject::BUNDLE_PERMISSION },
 
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -192,6 +221,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { SMARTALBUM_TABLE, OperationObject::SMART_ALBUM },
         { SMARTALBUM_MAP_TABLE, OperationObject::SMART_ALBUM_MAP },
         { MEDIA_QUERYOPRN_QUERYVOLUME, OperationObject::MEDIA_VOLUME },
+        { BUNDLE_PERMISSION_TABLE, OperationObject::BUNDLE_PERMISSION },
     };
 
     for (const auto &item : oprnMap) {
@@ -229,7 +259,18 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { THU_OPRN_AGING, OperationType::AGING },
         { DISTRIBUTE_THU_OPRN_AGING, OperationType::DISTRIBUTE_AGING },
         { DISTRIBUTE_THU_OPRN_CREATE, OperationType::DISTRIBUTE_CREATE },
-        { MEDIA_FILEOPRN_COPYASSET, OperationType::COPY }
+        { MEDIA_FILEOPRN_COPYASSET, OperationType::COPY },
+        { MEDIA_DIROPRN_DELETEDIR, OperationType::DELETE },
+        { MEDIA_DIROPRN_FMS_CREATEDIR, OperationType::CREATE },
+        { MEDIA_DIROPRN_FMS_DELETEDIR, OperationType::DELETE },
+        { MEDIA_DIROPRN_FMS_TRASHDIR, OperationType::TRASH },
+        { MEDIA_SMARTALBUMOPRN_CREATEALBUM, OperationType::CREATE },
+        { MEDIA_SMARTALBUMOPRN_DELETEALBUM, OperationType::DELETE },
+        { MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM, OperationType::CREATE },
+        { MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM, OperationType::DELETE },
+        { MEDIA_SMARTALBUMMAPOPRN_AGEINGSMARTALBUM, OperationType::AGING },
+        { MEDIA_SMARTALBUMOPRN_MODIFYALBUM, OperationType::UPDATE },
+        { BUNDLE_PERMISSION_INSERT, OperationType::INSERT_PERMISSION }
     };
 
     if (oprnTypeMap.find(oprnName) != oprnTypeMap.end()) {
@@ -249,6 +290,7 @@ void MediaLibraryCommand::ParseTableName()
         { OperationObject::FILESYSTEM_ALBUM, { { OperationType::QUERY, ALBUM_VIEW_NAME } } },
         { OperationObject::ALL_DEVICE, { { OperationType::UNKNOWN_TYPE, DEVICE_TABLE } } },
         { OperationObject::ACTIVE_DEVICE, { { OperationType::UNKNOWN_TYPE, DEVICE_TABLE } } },
+        { OperationObject::BUNDLE_PERMISSION, { { OperationType::UNKNOWN_TYPE, BUNDLE_PERMISSION_TABLE } } },
     };
 
     if (tableNameMap.find(oprnObject_) != tableNameMap.end()) {
@@ -263,7 +305,11 @@ void MediaLibraryCommand::ParseTableName()
     } else {
         tableName_ = MEDIALIBRARY_TABLE;
     }
-
+    // distributed tablename, smartalbum and smartalbumMap can not distributed
+    if ((oprnObject_ == OperationObject::SMART_ALBUM) || (oprnObject_ == OperationObject::SMART_ALBUM_MAP)) {
+        MEDIA_DEBUG_LOG("smart table name is %{public}s", tableName_.c_str());
+        return;
+    }
     // distributed tablename
     auto networkId = GetOprnDevice();
     if (networkId.empty()) {

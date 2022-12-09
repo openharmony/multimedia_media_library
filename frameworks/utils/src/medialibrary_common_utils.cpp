@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "medialibrary_common_utils.h"
 
 #include <algorithm>
@@ -69,11 +68,14 @@ const std::unordered_set<std::string> fileKeyWhiteListUSet {
     MEDIA_DATA_DB_ORIENTATION,
     MEDIA_DATA_DB_BUCKET_ID,
     MEDIA_DATA_DB_BUCKET_NAME,
-    CATEGORY_MEDIATYPE_DIRECTORY_DB_DIRECTORY_TYPE,
+    DIRECTORY_DB_DIRECTORY_TYPE,
     MEDIA_DATA_DB_DATE_TRASHED,
     MEDIA_DATA_DB_BUCKET_ID,
     MEDIA_DATA_DB_ALBUM_ID,
-    DEVICE_DB_NETWORK_ID
+    DEVICE_DB_NETWORK_ID,
+    SMARTABLUMASSETS_PARENTID,
+    SMARTALBUM_DB_ID,
+    MEDIA_DATA_DB_FILE_PATH
 };
 
 void MediaLibraryCommonUtils::Char2Hex(const unsigned char *data, const size_t len, std::string &hexStr)
@@ -138,11 +140,7 @@ void MediaLibraryCommonUtils::ExtractKeyWord(std::string &str)
 
 bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)
 {
-    if (fileKeyWhiteListUSet.find(express) != fileKeyWhiteListUSet.end()) {
-        return true;
-    }
-
-    return false;
+    return fileKeyWhiteListUSet.find(express) != fileKeyWhiteListUSet.end();
 }
 
 bool MediaLibraryCommonUtils::CheckExpressValidation(std::vector<std::string> &sepratedStr)
@@ -235,11 +233,13 @@ bool MediaLibraryCommonUtils::CheckWhereClause(const std::string &whereClause)
     }
     /* check whether query condition has illegal character */
     if (!CheckIllegalCharacter(whereClause)) {
+        MEDIA_ERR_LOG("CheckIllegalCharacter is failed!");
         return false;
     }
 
     /* check whether query condition has key word */
     if (!CheckKeyWord(whereClause)) {
+        MEDIA_ERR_LOG("CheckKeyWord is failed!");
         return false;
     }
 

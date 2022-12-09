@@ -14,6 +14,8 @@
  */
 
 #include "medialibrary_async_worker.h"
+
+#include <pthread.h>
 #include "media_log.h"
 
 using namespace std;
@@ -21,11 +23,10 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 static const int32_t SUCCESS = 0;
-static const int32_t WAIT_FOR_SECOND = 10;
 static const int32_t BG_SLEEP_COUNT = 500;
 static const int32_t FG_SLEEP_COUNT = 50;
-static const int32_t REST_FOR_SECOND = 1;
-static const int32_t REST_FOR_LONG_SECOND = 10;
+static const int32_t REST_FOR_MILLISECOND = 200;
+static const int32_t REST_FOR_LONG_SECOND = 2;
 shared_ptr<MediaLibraryAsyncWorker> MediaLibraryAsyncWorker::asyncWorkerInstance_{nullptr};
 mutex MediaLibraryAsyncWorker::instanceLock_;
 
@@ -34,24 +35,31 @@ shared_ptr<MediaLibraryAsyncWorker> MediaLibraryAsyncWorker::GetInstance()
     if (asyncWorkerInstance_ == nullptr) {
         lock_guard<mutex> lockGuard(instanceLock_);
         asyncWorkerInstance_ = shared_ptr<MediaLibraryAsyncWorker>(new MediaLibraryAsyncWorker());
+        if (asyncWorkerInstance_ != nullptr) {
+            asyncWorkerInstance_->Init();
+        }
     }
     return asyncWorkerInstance_;
 }
 
-MediaLibraryAsyncWorker::MediaLibraryAsyncWorker() : isThreadExist_(false), isContinue_(false), doneTotal_(0)
+MediaLibraryAsyncWorker::MediaLibraryAsyncWorker() : isThreadRunning_(false), doneTotal_(0)
 {}
 
 MediaLibraryAsyncWorker::~MediaLibraryAsyncWorker()
 {
-    isThreadExist_ = false;
+    isThreadRunning_ = false;
+    bgWorkCv_.notify_all();
+    if (thread_.joinable()) {
+        thread_.join();
+    }
 }
 
 void MediaLibraryAsyncWorker::Init()
 {
-    isThreadExist_ = true;
-    isContinue_ = false;
+    isThreadRunning_ = true;
     doneTotal_ = 0;
-    thread(&MediaLibraryAsyncWorker::StartWorker, this).detach();
+    thread_ = thread(&MediaLibraryAsyncWorker::StartWorker, this);
+    pthread_setname_np(thread_.native_handle(), "MediaLibraryAsyncWorker");
 }
 
 void MediaLibraryAsyncWorker::Interrupt()
@@ -77,12 +85,6 @@ int32_t MediaLibraryAsyncWorker::AddTask(const shared_ptr<MediaLibraryAsyncTask>
         bgTaskQueue_.push(task);
     }
 
-    if (!isThreadExist_.load() && (asyncWorkerInstance_ != nullptr)) {
-        asyncWorkerInstance_->Init();
-    }
-    std::unique_lock<std::mutex> lock(bgWorkLock_);
-    isContinue_ = true;
-    lock.unlock();
     bgWorkCv_.notify_one();
     return SUCCESS;
 }
@@ -135,25 +137,23 @@ bool MediaLibraryAsyncWorker::IsBgQueueEmpty()
     return bgTaskQueue_.empty();
 }
 
-bool MediaLibraryAsyncWorker::WaitForTask()
+void MediaLibraryAsyncWorker::WaitForTask()
 {
     std::unique_lock<std::mutex> lock(bgWorkLock_);
-    isContinue_ = false;
-    bool ret = bgWorkCv_.wait_for(lock, std::chrono::seconds(WAIT_FOR_SECOND),
-        [this]() { return isContinue_; });
-    return ret;
+    bgWorkCv_.wait(lock,
+        [this]() { return !isThreadRunning_ || !IsFgQueueEmpty() || !IsBgQueueEmpty(); });
 }
 
 void MediaLibraryAsyncWorker::SleepFgWork()
 {
     if ((doneTotal_.load() % FG_SLEEP_COUNT) == 0) {
-        this_thread::sleep_for(chrono::seconds(REST_FOR_SECOND));
+        this_thread::sleep_for(chrono::milliseconds(REST_FOR_MILLISECOND));
     }
 }
 
 void MediaLibraryAsyncWorker::SleepBgWork()
 {
-    this_thread::sleep_for(chrono::seconds(REST_FOR_SECOND));
+    this_thread::sleep_for(chrono::milliseconds(REST_FOR_MILLISECOND));
     if ((doneTotal_.load() % BG_SLEEP_COUNT) == 0) {
         this_thread::sleep_for(chrono::seconds(REST_FOR_LONG_SECOND));
     }
@@ -161,8 +161,11 @@ void MediaLibraryAsyncWorker::SleepBgWork()
 
 void MediaLibraryAsyncWorker::StartWorker()
 {
-    isThreadExist_ = true;
-    while (!IsFgQueueEmpty() || !IsBgQueueEmpty() || WaitForTask()) {
+    while (true) {
+        WaitForTask();
+        if (!isThreadRunning_) {
+            return;
+        }
         if (!IsFgQueueEmpty()) {
             shared_ptr<MediaLibraryAsyncTask> fgTask = GetFgTask();
             if (fgTask != nullptr) {
@@ -181,8 +184,7 @@ void MediaLibraryAsyncWorker::StartWorker()
             }
         }
     }
-    doneTotal_ = 0;
-    isThreadExist_ = false;
+
 }
 } // namespace Media
 } // namespace OHOS

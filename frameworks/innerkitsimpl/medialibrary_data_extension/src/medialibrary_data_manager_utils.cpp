@@ -63,9 +63,9 @@ bool MediaLibraryDataManagerUtils::IsNumber(const string &str)
 
 std::string MediaLibraryDataManagerUtils::GetFileTitle(const std::string &displayName)
 {
-    std::string title = "";
+    std::string title;
     if (!displayName.empty()) {
-        std::string::size_type pos = displayName.find_first_of('.');
+        std::string::size_type pos = displayName.find_last_of('.');
         if (pos == displayName.length()) {
             return displayName;
         }

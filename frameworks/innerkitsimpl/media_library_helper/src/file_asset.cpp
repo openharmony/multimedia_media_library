@@ -32,9 +32,12 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
+static constexpr int MAP_INT_MAX = 50;
 FileAsset::FileAsset()
     : albumUri_(DEFAULT_MEDIA_ALBUM_URI), typeMask_(DEFAULT_TYPE_MASK), resultNapiType_(ResultNapiType::TYPE_NAPI_MAX)
-{}
+{
+    member_.reserve(MAP_INT_MAX);
+}
 
 int32_t FileAsset::GetId() const
 {
@@ -344,6 +347,16 @@ const string &FileAsset::GetRecyclePath() const
 void FileAsset::SetRecyclePath(const string &recyclePath)
 {
     member_[MEDIA_DATA_DB_RECYCLE_PATH] = recyclePath;
+}
+
+const string FileAsset::GetBundleName() const
+{
+    return GetStrMember(MEDIA_DATA_BUNDLENAME);
+}
+
+void FileAsset::SetBundleName(const string &bundleName)
+{
+    member_[MEDIA_DATA_BUNDLENAME] = bundleName;
 }
 
 ResultNapiType FileAsset::GetResultNapiType() const

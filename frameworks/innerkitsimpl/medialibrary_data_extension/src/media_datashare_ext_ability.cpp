@@ -28,6 +28,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_subscriber.h"
+#include "medialibrary_uripermission_operations.h"
 #include "media_scanner_manager.h"
 #include "media_log.h"
 #include "system_ability_definition.h"
@@ -266,10 +267,18 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
     string uriStr = uri.ToString();
     string unifyMode = mode;
     transform(unifyMode.begin(), unifyMode.end(), unifyMode.begin(), ::tolower);
+
     int err = CheckOpenFilePermission(uriStr, unifyMode);
-    if (err < 0) {
+    if (err == E_PERMISSION_DENIED) {
+        err = UriPermissionOperations::CheckUriPermission(uriStr, unifyMode);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
+            return err;
+        }
+    } else if (err < 0) {
         return err;
     }
+    
     return MediaLibraryDataManager::GetInstance()->OpenFile(Uri(uriStr), unifyMode);
 }
 
@@ -350,9 +359,8 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<Data
         MEDIA_ERR_LOG("%{public}s Check calling permission failed.", __func__);
         return ret;
     }
-
     MEDIA_INFO_LOG("%{public}s end.", __func__);
-    return ret;
+    return MediaLibraryDataManager::GetInstance()->BatchInsert(uri, values);
 }
 
 bool MediaDataShareExtAbility::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
@@ -393,7 +401,6 @@ bool MediaDataShareExtAbility::UnregisterObserver(const Uri &uri, const sptr<AAF
 
 bool MediaDataShareExtAbility::NotifyChange(const Uri &uri)
 {
-    MEDIA_INFO_LOG("%{public}s begin.", __func__);
     auto obsMgrClient = DataObsMgrClient::GetInstance();
     if (obsMgrClient == nullptr) {
         MEDIA_ERR_LOG("%{public}s obsMgrClient is nullptr", __func__);
@@ -405,7 +412,6 @@ bool MediaDataShareExtAbility::NotifyChange(const Uri &uri)
         MEDIA_ERR_LOG("%{public}s obsMgrClient->NotifyChange error return %{public}d", __func__, ret);
         return false;
     }
-    MEDIA_INFO_LOG("%{public}s end.", __func__);
     return true;
 }
 

@@ -65,7 +65,7 @@ namespace OHOS {
 namespace Media {
 static constexpr int32_t BATTERY_FULL = 100;
 
-MtpOperationUtils::MtpOperationUtils(std::shared_ptr<MtpOperationContext> &context) : context_(context) {}
+MtpOperationUtils::MtpOperationUtils(const std::shared_ptr<MtpOperationContext> &context) : context_(context) {}
 MtpOperationUtils::~MtpOperationUtils() {}
 
 uint16_t MtpOperationUtils::GetDeviceInfo(std::shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode)
@@ -547,7 +547,7 @@ uint16_t MtpOperationUtils::GetPropDesc(shared_ptr<PayloadData> &data, uint16_t 
             break;
         case MTP_DEVICE_PROPERTY_DEVICE_FRIENDLY_NAME_CODE:
             property = make_shared<Property>(context_->property, MTP_DEVICE_PROP_DESC_TYPE_STR, true);
-            property->currentValue->str = make_shared<string>(GetPropertyInner("persist.device.name",
+            property->currentValue->str_ = make_shared<string>(GetPropertyInner("persist.device.name",
                 DEFAULT_PRODUCT_NAME));
             break;
         case MTP_DEVICE_PROPERTY_SESSION_INITIATOR_VERSION_INFO_CODE:
@@ -558,7 +558,7 @@ uint16_t MtpOperationUtils::GetPropDesc(shared_ptr<PayloadData> &data, uint16_t 
             break;
         case MTP_DEVICE_PROPERTY_BATTERY_LEVEL_CODE:
             property = make_shared<Property>(context_->property, MTP_DEVICE_PROP_DESC_TYPE_UINT8);
-            property->currentValue->bin.ui8 = (uint8_t)MtpOperationUtils::GetBatteryLevel();
+            property->currentValue->bin_.ui8 = (uint8_t)MtpOperationUtils::GetBatteryLevel();
             property->SetFormRange(BATTERY_LEVEL_MIN, BATTERY_LEVEL_MAX, BATTERY_LEVEL_STEP);
             break;
         case MTP_DEVICE_PROPERTY_PERCEIVED_DEVICE_TYPE_CODE:
@@ -588,27 +588,27 @@ uint16_t MtpOperationUtils::GetPropValue(shared_ptr<PayloadData> &data, uint16_t
     switch (context_->property) {
         case MTP_DEVICE_PROPERTY_SYNCHRONIZATION_PARTNER_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_STR;
-            value->str = make_shared<string>("");
+            value->str_ = make_shared<string>("");
             break;
         case MTP_DEVICE_PROPERTY_DEVICE_FRIENDLY_NAME_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_STR;
-            value->str = make_shared<string>(GetPropertyInner("persist.device.name", DEFAULT_PRODUCT_NAME));
+            value->str_ = make_shared<string>(GetPropertyInner("persist.device.name", DEFAULT_PRODUCT_NAME));
             break;
         case MTP_DEVICE_PROPERTY_SESSION_INITIATOR_VERSION_INFO_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_STR;
-            value->str = make_shared<string>("");
+            value->str_ = make_shared<string>("");
             break;
         case MTP_DEVICE_PROPERTY_IMAGE_SIZE_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_STR;
-            value->str = make_shared<string>("");
+            value->str_ = make_shared<string>("");
             break;
         case MTP_DEVICE_PROPERTY_BATTERY_LEVEL_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_UINT8;
-            value->bin.ui8 = (uint8_t)MtpOperationUtils::GetBatteryLevel();
+            value->bin_.ui8 = (uint8_t)MtpOperationUtils::GetBatteryLevel();
             break;
         case MTP_DEVICE_PROPERTY_PERCEIVED_DEVICE_TYPE_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_UINT32;
-            value->bin.ui32 = MTP_PERCEIVED_DEVICE_TYPE_GENERIC;
+            value->bin_.ui32 = MTP_PERCEIVED_DEVICE_TYPE_GENERIC;
             break;
         default:
             MEDIA_INFO_LOG("property do not find");
@@ -678,20 +678,6 @@ int32_t MtpOperationUtils::GetHandleByPaths(string path, uint32_t &handle)
 int32_t MtpOperationUtils::GetBatteryLevel()
 {
     return BATTERY_FULL;
-}
-
-void MtpOperationUtils::WriteMock()
-{
-    std::string path = "/data/service/el0/battery/battery/capacity";
-    std::string content = "22";
-
-    std::ofstream stream(path.c_str());
-    if (!stream.is_open()) {
-        MEDIA_DEBUG_LOG("Cannot create file %{public}s", path.c_str());
-        return;
-    }
-    stream << content.c_str() << std::endl;
-    stream.close();
 }
 } // namespace Media
 } // namespace OHOS

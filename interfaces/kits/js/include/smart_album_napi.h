@@ -31,6 +31,7 @@
 #include "medialibrary_db_const.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "napi_error.h"
 #include "result_set.h"
 #include "uri.h"
 #include "values_bucket.h"
@@ -41,7 +42,6 @@ namespace OHOS {
 namespace Media {
 static const std::string SMART_ALBUM_NAPI_CLASS_NAME = "SmartAlbum";
 static const std::string USERFILEMGR_SMART_ALBUM_NAPI_CLASS_NAME = "UserFileMgrSmartAlbum";
-
 class SmartAlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
@@ -51,9 +51,15 @@ public:
     std::string GetSmartAlbumName() const;
     std::string GetSmartAlbumUri() const;
     int32_t GetAlbumPrivateType() const;
+    std::string GetDescription() const;
+    std::string GetCoverUri() const;
+    int32_t GetExpiredTime() const;
     void SetAlbumCapacity(int32_t albumCapacity);
     std::string GetNetworkId() const;
     std::string GetTypeMask() const;
+    void SetExpiredTime(int32_t expiredTime);
+    void SetDescription(std::string &description);
+    void SetCoverUri(std::string &coverUri);
     SmartAlbumNapi();
     ~SmartAlbumNapi();
 
@@ -71,31 +77,38 @@ private:
     static napi_value JSGetSmartAlbumCategoryName(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumCoverUri(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumDateModified(napi_env env, napi_callback_info info);
+    static napi_value JSGetSmartAlbumType(napi_env env, napi_callback_info info);
+    static napi_value JSGetSmartAlbumDescription(napi_env env, napi_callback_info info);
+    static napi_value JSGetSmartAlbumExpiredTime(napi_env env, napi_callback_info info);
 
     static napi_value JSSmartAlbumNameSetter(napi_env env, napi_callback_info info);
     static napi_value JSCommitModify(napi_env env, napi_callback_info info);
-    static napi_value JSAddAsset(napi_env env, napi_callback_info info);
-    static napi_value JSRemoveAsset(napi_env env, napi_callback_info info);
+    static napi_value JSAddFileAssets(napi_env env, napi_callback_info info);
+    static napi_value JSRemoveFileAssets(napi_env env, napi_callback_info info);
     static napi_value JSGetSmartAlbumFileAssets(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetAssets(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrRecoverAsset(napi_env env, napi_callback_info info);
+    static napi_value JSSmartAlbumDescriptionSetter(napi_env env, napi_callback_info info);
+    static napi_value JSSmartAlbumCoverUriSetter(napi_env env, napi_callback_info info);
+    static napi_value JSSmartAlbumExpiredTimeSetter(napi_env env, napi_callback_info info);
 
     static thread_local SmartAlbumAsset *sAlbumData_;
-    std::unique_ptr<SmartAlbumAsset> smartAlbumAssetPtr = nullptr;
+    std::shared_ptr<SmartAlbumAsset> smartAlbumAssetPtr = nullptr;
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
 };
-
+constexpr int32_t DEFAULT_CHANGEDROWS = -1;
 struct SmartAlbumNapiAsyncContext : public NapiError {
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
     SmartAlbumNapi *objectInfo;
+    std::shared_ptr<SmartAlbumAsset> objectPtr;
     bool status;
-    int32_t changedRows;
+    int32_t changedRows = DEFAULT_CHANGEDROWS;
     std::string selection;
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     std::vector<std::string> selectionArgs;

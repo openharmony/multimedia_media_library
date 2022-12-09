@@ -40,7 +40,7 @@ public:
     void SetAlbumDateModified(const int64_t albumDateModified);
     void SetCount(const int32_t count);
     void SetAlbumRelativePath(const string albumRelativePath);
-    void SetCoverUri(const string coverUri);
+    void SetCoverUri(const string &coverUri);
     void SetAlbumTypeMask(const string &typeMask);
 
     void SetAlbumPath(const string albumPath);

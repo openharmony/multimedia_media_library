@@ -21,6 +21,7 @@
 
 #include "datashare_abs_result_set.h"
 #include "datashare_values_bucket.h"
+#include "dir_asset.h"
 #include "file_asset.h"
 #include "medialibrary_command.h"
 #include "medialibrary_db_const.h"
@@ -35,6 +36,8 @@
 
 namespace OHOS {
 namespace Media {
+const std::string MEDIA_NO_FILE = ".nofile";
+
 class MediaLibraryObjectUtils {
 public:
     static int32_t CreateFileObj(MediaLibraryCommand &cmd);
@@ -50,7 +53,7 @@ public:
     static int32_t CloseFile(MediaLibraryCommand &cmd);
 
     static int32_t GetIdByPathFromDb(const std::string &path);
-    static std::string GetPathByIdFromDb(const std::string &id);
+    static std::string GetPathByIdFromDb(const std::string &id, const bool isDelete = false);
     static std::string GetRecyclePathByIdFromDb(const std::string &id);
     static int32_t GetParentIdByIdFromDb(const std::string &fileId);
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &uriStr);
@@ -59,20 +62,25 @@ public:
     static int32_t InsertInDb(MediaLibraryCommand &cmd);
     static int32_t ModifyInfoByIdInDb(MediaLibraryCommand &cmd, const std::string &fileId = "");
     static int32_t DeleteInfoByIdInDb(MediaLibraryCommand &cmd, const std::string &fileId = "");
-    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryWithCondition(MediaLibraryCommand &cmd,
+    static std::shared_ptr<NativeRdb::ResultSet> QueryWithCondition(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns, const std::string &conditionColumn = "");
 
     static bool IsColumnValueExist(const std::string &value, const std::string &column);
-    static bool IsAssetExistInDb(const int32_t id);
+    static bool IsAssetExistInDb(const int32_t id, const bool isIncludeTrash = false);
     static bool IsFileExistInDb(const std::string &path);
     static int32_t CopyAsset(const std::shared_ptr<FileAsset> &srcFileAsset, const std::string &relativePath);
     static int32_t CopyDir(const std::shared_ptr<FileAsset> &srcDirAsset, const std::string &relativePath);
+    static NativeAlbumAsset GetDirAsset(const std::string &relativePath);
+    static bool IsSmartAlbumExistInDb(const int32_t id);
+    static bool IsParentSmartAlbum(const int32_t id, const bool includeEmptyAlbum = false);
+    static int32_t CheckDirExtension(MediaLibraryCommand &cmd);
+    static void UpdateDateModified(const std::string &dirPath);
 
 private:
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);
     static int32_t DeleteInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);
-    static std::string GetStringColumnByIdFromDb(const std::string &id, const std::string &column);
-    static NativeAlbumAsset GetDirAsset(const std::string &relativePath);
+    static std::string GetStringColumnByIdFromDb(const std::string &id,
+        const std::string &column, const bool isDelete = false);
     static int32_t InsertFileInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset,
         const NativeAlbumAsset &dirAsset);
     static int32_t DeleteInvalidRowInDb(const std::string &path);
@@ -84,13 +92,25 @@ private:
     static int32_t ProcessHiddenDir(const std::string &dstDirName, const std::string &srcDirPath);
     static int32_t UpdateFileInfoInDb(MediaLibraryCommand &cmd, const std::string &dstPath,
         const int &bucketId, const std::string &bucketName);
-    static void UpdateDateModified(const std::string &dirPath);
     static void ScanFile(std::string &srcPath);
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
     static int32_t CopyAssetByFd(int32_t srcFd, int32_t srcId, int32_t destFd, int32_t destId);
     static void CloseFileById(int32_t fileId);
-    static int32_t GetFileResult(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+    static int32_t GetFileResult(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int count, const string &relativePath, const string &displayName);
+    static int32_t GetRootDirAndExtension(const std::string &relativePath,
+        const std::string &displayName, NativeRdb::ValuesBucket &outValues);
+    static int32_t CheckAssetDirExtension(MediaLibraryCommand &cmd);
+    static bool CheckMediaType(const std::string &mediaTypes, const int mediaType);
+    static bool CheckExtension(const std::string &extensions, const std::string &extension);
+    static bool CheckFileExtension(const std::unordered_map<std::string, DirAsset> &dirQuerySetMap,
+        const std::string &extension);
+    static bool CheckMediaTypeMatchExtension(const int mediaType, const std::string &extensions);
+    static DirAsset GetDirQuerySet(MediaLibraryCommand &cmd);
+    static int32_t GetExtension(const std::string &displayName, std::string &outExtension);
+    static int32_t GetRootDir(const std::string &relativePath, std::string &outRootDir);
+    static std::shared_ptr<NativeRdb::ResultSet> QuerySmartAlbum(MediaLibraryCommand &cmd);
+    static int32_t CheckUpdateMediaType(const std::string &dstPath, MediaLibraryCommand &outCmd);
 };
 } // namespace Media
 } // namespace OHOS

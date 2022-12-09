@@ -69,6 +69,9 @@
       },
       {
         "name": "ohos.permission.WRITE_MEDIA"
+      },
+      {
+        "name": "ohos.permission.START_ABILITIES_FROM_BACKGROUND"
       }
     ]
   }

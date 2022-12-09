@@ -24,11 +24,10 @@
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
-#include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_smartalbum_map_db.h"
 #include "medialibrary_tracer.h"
+#include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_unistore_manager.h"
 #include "native_album_asset.h"
 #include "rdb_utils.h"
@@ -92,22 +91,22 @@ int32_t MediaLibraryFileOperations::CloseFileOperation(MediaLibraryCommand &cmd)
     return MediaLibraryObjectUtils::CloseFile(cmd);
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFavFiles(MediaLibraryCommand &cmd)
+shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFavFiles(MediaLibraryCommand &cmd)
 {
     MEDIA_DEBUG_LOG("enter");
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_IS_FAV, "1");
-    cmd.GetAbsRdbPredicates()->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, "8");
+    cmd.GetAbsRdbPredicates()->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(MEDIA_TYPE_ALBUM));
 
     return MediaLibraryObjectUtils::QueryWithCondition(cmd, {});
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryTrashFiles(MediaLibraryCommand &cmd)
+shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryTrashFiles(MediaLibraryCommand &cmd)
 {
     MEDIA_DEBUG_LOG("enter");
     cmd.GetAbsRdbPredicates()
-        ->GreaterThan(MEDIA_DATA_DB_DATE_TRASHED, "0")
+        ->GreaterThan(MEDIA_DATA_DB_DATE_TRASHED, std::to_string(NOT_TRASHED))
         ->And()
-        ->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, "8");
+        ->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(MEDIA_TYPE_ALBUM));
 
     return MediaLibraryObjectUtils::QueryWithCondition(cmd, {});
 }
@@ -116,7 +115,7 @@ int32_t MediaLibraryFileOperations::GetAlbumCapacityOperation(MediaLibraryComman
 {
     MEDIA_DEBUG_LOG("enter");
     int32_t errorCode = E_FAIL;
-    shared_ptr<AbsSharedResultSet> resultSet = nullptr;
+    shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
 
     auto values = cmd.GetValueBucket();
     ValueObject valueObject;
@@ -145,8 +144,6 @@ int32_t MediaLibraryFileOperations::GetAlbumCapacityOperation(MediaLibraryComman
 
 int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_DEBUG_LOG("enter");
-
     string strFileId = cmd.GetOprnFileId();
     if (strFileId.empty()) {
         MEDIA_ERR_LOG("MediaLibraryFileOperations::ModifyFileOperation Get id from uri or valuesBucket failed!");
@@ -187,22 +184,14 @@ int32_t MediaLibraryFileOperations::DeleteFileOperation(MediaLibraryCommand &cmd
         return E_INVALID_FILEID;
     }
 
-    string srcPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strFileId);
+    string srcPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strFileId, true);
     if (srcPath.empty()) {
         MEDIA_ERR_LOG("MediaLibraryFileOperations::DeleteFileOperation Get path of id %{private}s from database file!",
             strFileId.c_str());
         return E_INVALID_FILEID;
     }
 
-    int32_t errCode = MediaFileUtils::IsDirectory(srcPath) ? MediaLibraryObjectUtils::DeleteDirObj(cmd, srcPath) :
-        MediaLibraryObjectUtils::DeleteFileObj(cmd, srcPath);
-    if (errCode > 0) {
-        MediaLibraryDirOperations dirOprn;
-        MediaLibrarySmartAlbumMapDb smartAlbumMapDbOprn;
-        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-        dirOprn.HandleDirOperations(MEDIA_DIROPRN_DELETEDIR, cmd.GetValueBucket(), rdbStore, dirQuerySetMap);
-        smartAlbumMapDbOprn.DeleteAllAssetsMapInfo(std::stoi(strFileId), rdbStore);
-    }
+    int32_t errCode = MediaLibraryObjectUtils::DeleteFileObj(cmd, srcPath);
     return errCode;
 }
 
@@ -229,7 +218,7 @@ int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cm
     return E_CHECK_DIR_FAIL;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFileOperation(
+shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFileOperation(
     MediaLibraryCommand &cmd, vector<string> columns)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -238,7 +227,6 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFileOperation(
         return nullptr;
     }
 
-    shared_ptr<AbsSharedResultSet> queryResultSet;
     string fileId = cmd.GetOprnFileId();
     if (cmd.GetAbsRdbPredicates()->GetWhereClause().empty() && !fileId.empty()) {
         cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, fileId);
@@ -251,12 +239,7 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFileOperation(
     }
     MediaLibraryTracer tracer;
     tracer.Start("QueryFile RdbStore->Query");
-    queryResultSet = uniStore->Query(cmd, columns);
-    tracer.Finish();
-    int32_t count = -1;
-    queryResultSet->GetRowCount(count);
-    MEDIA_INFO_LOG("QueryFile count is %{public}d", count);
-    return queryResultSet;
+    return uniStore->Query(cmd, columns);
 }
 
 int32_t MediaLibraryFileOperations::CopyFileOperation(MediaLibraryCommand &cmd)
