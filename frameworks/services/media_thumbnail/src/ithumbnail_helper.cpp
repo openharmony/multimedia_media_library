@@ -301,7 +301,7 @@ void ThumbnailConnection::OnAbilityConnectDone(
     }
     {
         unique_lock<mutex> lock(status_.mtx_);
-        dataShareProxy_ = iface_cast<DataShare::DataShareProxy>(remoteObject);
+        dataShareProxy_ = iface_cast<IDataShareThumb>(remoteObject);
     }
     status_.cond_.notify_all();
 }
