@@ -104,7 +104,7 @@ private:
                              const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     int32_t MakeRecycleDisplayName(const int32_t &assetId, std::string &outDisplayName, const std::string &trashDirPath,
                                    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    std::shared_ptr<AbsSharedResultSet> QueryAgeingTrashFiles(const std::shared_ptr<RdbStore> &rdbStore);
+    std::shared_ptr<NativeRdb::ResultSet> QueryAgeingTrashFiles(const std::shared_ptr<RdbStore> &rdbStore);
 };
 } // namespace Media
 } // namespace OHOS
