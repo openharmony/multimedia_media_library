@@ -20,8 +20,9 @@
 #include "hitrace_meter.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
+#include "rdb_helper.h"
+#include "single_kvstore.h"
 #include "thumbnail_const.h"
-#include "thumbnail_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;

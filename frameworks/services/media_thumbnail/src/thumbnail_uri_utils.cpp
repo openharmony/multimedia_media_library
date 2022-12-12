@@ -81,8 +81,6 @@ bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outF
         }
         ParseThumbnailKey(subKey, subVal, action, width, height);
     }
-    MEDIA_INFO_LOG("Action [%{private}s] id %{public}s width %{private}d height %{private}d",
-        action.c_str(), outFileId.c_str(), width, height);
     if (action != MEDIA_DATA_DB_THUMBNAIL || width <= 0 || height <= 0) {
         MEDIA_ERR_LOG("ParseThumbnailInfo | Error args");
         return false;
@@ -108,7 +106,6 @@ string ThumbnailUriUtils::GetNetworkIdFromUri(const string &uri)
     if (tempUri.empty()) {
         return deviceId;
     }
-    MEDIA_INFO_LOG("ThumbnailUriUtils::GetNetworkIdFromUri tempUri = %{private}s", tempUri.c_str());
     pos = tempUri.find_first_of('/');
     if (pos == 0 || pos == string::npos) {
         return deviceId;
