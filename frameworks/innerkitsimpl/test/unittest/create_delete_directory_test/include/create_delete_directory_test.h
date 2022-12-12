@@ -12,24 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef CREATE_DELETE_DIRECTORY_H
-#define CREATE_DELETE_DIRECTORY_H
+#ifndef MEDIALIBRARY_UNITTEST_CREATE_DELETE_DIRECTORY_H
+#define MEDIALIBRARY_UNITTEST_CREATE_DELETE_DIRECTORY_H
 
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include "system_ability_definition.h"
-#include "userfile_manager_types.h"
 #include "gtest/gtest.h"
-#include "iservice_registry.h"
-#include "media_log.h"
-#include "media_volume.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
-#include "media_library_manager.h"
-#include "datashare_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -43,4 +29,4 @@ public:
 
 } // namespace Media
 } // namespace OHOS
-#endif // CREATE_DELETE_DIRECTORY_H
+#endif // MEDIALIBRARY_UNITTEST_CREATE_DELETE_DIRECTORY_H

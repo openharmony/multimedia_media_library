@@ -14,152 +14,91 @@
  */
 
 #include "recycle_directory_test.h"
-#include "get_self_permissions.h"
+
 #include <unistd.h>
-#include "datashare_helper.h"
+
+#include "get_self_permissions.h"
 #include "iservice_registry.h"
-#include "medialibrary_db_const.h"
 #include "media_log.h"
-#include "media_thumbnail_helper.h"
-#include "scanner_utils.h"
-#include "result_set_utils.h"
 #include "media_library_manager.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_data_manager.h"
+#include "medialibrary_object_utils.h"
+#include "medialibrary_unittest_utils.h"
+#include "media_thumbnail_helper.h"
+#include "result_set_utils.h"
+#include "scanner_utils.h"
+
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-static const int UID = 5003;
-static const int STRASH_ALBUM_ID = 2;
-static const int SLEEP5 = 5;
+static constexpr int32_t g_stashAlbumID = 2;
 void RecycleDirectory::SetUpTestCase() {
     MEDIA_INFO_LOG("RecycleDirectory::SetUpTestCase:: invoked");
-    vector<string> perms;
-    perms.push_back("ohos.permission.READ_MEDIA");
-    perms.push_back("ohos.permission.WRITE_MEDIA");
-    perms.push_back("ohos.permission.FILE_ACCESS_MANAGER");
-    const string processName = "MediaDataShareUnitTest";
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission(processName, perms, tokenId);
-    EXPECT_TRUE(tokenId != 0);
-    sleep(SLEEP5);
+    MediaLibraryUnitTestUtils::Init();
     MEDIA_INFO_LOG("RecycleDirectory::SetUpTestCase:: Finish");
 }
 void RecycleDirectory::TearDownTestCase() {}
 void RecycleDirectory::SetUp() {}
 void RecycleDirectory::TearDown(void) {}
 
-std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
-void CreateDataAHelper(int32_t systemAbilityId)
+static int32_t GetAlbumId(std::string relativePath)
 {
-    MEDIA_INFO_LOG("CreateDataAHelper::CreateDataAHelper");
-    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saManager == nullptr) {
-        MEDIA_ERR_LOG("CreateDataAHelper:: Get system ability mgr failed.");
-    }
-    auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
-    if (remoteObj == nullptr) {
-        MEDIA_ERR_LOG("CreateDataAHelper:: GetSystemAbility Service Failed.");
-    }
-    if (sDataShareHelper_ == nullptr) {
-        const sptr<IRemoteObject> &token = remoteObj;
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-    }
+    return MediaLibraryObjectUtils::GetIdByPathFromDb("/storage/media/local/files/" + relativePath);
 }
 
-std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper()
+static int32_t CreateFile(std::string relativePath, std::string displayName)
 {
-    if (sDataShareHelper_ == nullptr) {
-        CreateDataAHelper(UID);
-    }
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("GetDataShareHelper ::sDataShareHelper_ is nullptr");
-    }
-    return sDataShareHelper_;
-}
-
-int32_t GetAlbumId(std::string relativePath)
-{
-    MEDIA_INFO_LOG("GetAlbumId:: start");
-    std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
-    DataShare::DataSharePredicates sharePredicates;
-    
-    sharePredicates.SetWhereClause(" data = ? ");
-    sharePredicates.SetWhereArgs({"/storage/media/local/files/" + relativePath});
-
-    vector<string> columns;
-    string queryUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
-
-    Uri uri(queryUri);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = helper->Query(
-        uri, sharePredicates, columns);
-
-    int32_t albumId = -1;
-    if (resultSet == nullptr) {
-        MEDIA_INFO_LOG("GetMediaResultData resultSet is nullptr");
-        EXPECT_EQ(false, true);
-        return albumId;
-    }
-    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        int index;
-        int integerVal;
-        resultSet->GetColumnIndex(MEDIA_DATA_DB_BUCKET_ID, index);
-        resultSet->GetInt(index, integerVal);
-        albumId = integerVal;
-    }
-    if (albumId < 0) {
-        EXPECT_EQ(false, true);
-    }
-    return albumId;
-}
-
-int32_t CreateFile(std::string relativePath, std::string displayName)
-{
-    std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" +
 		Media::MEDIA_FILEOPRN_CREATEASSET);
     DataShareValuesBucket valuesBucket;
-    
-    MediaType mediaType = MEDIA_TYPE_IMAGE;
-    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_IMAGE);
     valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    return helper->Insert(createAssetUri, valuesBucket);
+    int32_t res = MediaLibraryDataManager::GetInstance()->Insert(createAssetUri, valuesBucket);
+    if (res <= 0) {
+        MEDIA_ERR_LOG("Failed to create file, error: %{public}d", res);
+    }
+    return res;
 }
 
-int32_t CreateAlbum(std::string relativePath)
+static int32_t CreateAlbum(std::string relativePath)
 {
-    std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri createAssetUri(abilityUri + "/" + Media::MEDIA_DIROPRN + "/" +
 		Media::MEDIA_DIROPRN_FMS_CREATEDIR);
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    return helper->Insert(createAssetUri, valuesBucket);
+    int32_t res = MediaLibraryDataManager::GetInstance()->Insert(createAssetUri, valuesBucket);
+    if (res <= 0) {
+        MEDIA_ERR_LOG("Failed to create album, error: %{public}d", res);
+    }
+    return res;
 }
 
-void AddSmartAlbum(int32_t id)
+static void AddSmartAlbum(int32_t id)
 {
-    std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
     DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, STRASH_ALBUM_ID);
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, g_stashAlbumID);
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
     Uri AddAsseturi(MEDIALIBRARY_DATA_URI + "/"
     + MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
-    helper->Insert(AddAsseturi, valuesBucket);
+    MediaLibraryDataManager::GetInstance()->Insert(AddAsseturi, valuesBucket);
 }
 
-int32_t RemoveSmartAlbum(int32_t id)
+static int32_t RemoveSmartAlbum(int32_t id)
 {
-    std::shared_ptr<DataShare::DataShareHelper> helper = GetDataShareHelper();
     DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, STRASH_ALBUM_ID);
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, g_stashAlbumID);
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, id);
     Uri RemoveAsseturi(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN +
 		"/" + MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
-    return helper->Insert(RemoveAsseturi, valuesBucket);
+    return MediaLibraryDataManager::GetInstance()->Insert(RemoveAsseturi, valuesBucket);
 }
 
 /**
@@ -173,11 +112,11 @@ HWTEST_F(RecycleDirectory, recycle_directory_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("recycle_directory_001::Start");
     int32_t fileId = CreateFile("Pictures/test001/", "gtest_001.jpg");
-    MEDIA_INFO_LOG("recycle_directory_001 fileId::%d\n", fileId);
+    ASSERT_GT(fileId, 0);
     int32_t albumId = GetAlbumId("Pictures/test001");
     AddSmartAlbum(albumId);
     int32_t changedRows = RemoveSmartAlbum(albumId);
-    EXPECT_NE((changedRows < 0), true);
+    ASSERT_NE((changedRows < 0), true);
     MEDIA_INFO_LOG("recycle_directory_001::End");
 }
 
@@ -192,14 +131,13 @@ HWTEST_F(RecycleDirectory, recycle_directory_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("recycle_directory_002::Start");
     int32_t fileId_01 = CreateFile("Pictures/test002/", "gtest_002.jpg");
-    MEDIA_INFO_LOG("recycle_directory_002 fileId_01::%d\n", fileId_01);
     int32_t fileId_02 = CreateFile("Pictures/test002/test002/", "gtest_002.jpg");
-    MEDIA_INFO_LOG("recycle_directory_002 fileId_02::%d\n", fileId_02);
+    ASSERT_GT(fileId_01, 0);
+    ASSERT_GT(fileId_02, 0);
     int32_t albumId = GetAlbumId("Pictures/test002");
-    MEDIA_INFO_LOG("recycle_directory_002 albumId::%d\n", albumId);
     AddSmartAlbum(albumId);
     int32_t changedRows = RemoveSmartAlbum(albumId);
-    EXPECT_NE((changedRows < 0), true);
+    ASSERT_NE((changedRows < 0), true);
     MEDIA_INFO_LOG("recycle_directory_002::End");
 }
 
@@ -214,13 +152,12 @@ HWTEST_F(RecycleDirectory, recycle_directory_002, TestSize.Level0)
 HWTEST_F(RecycleDirectory, recycle_directory_003, TestSize.Level0)
 {
     int32_t fileId = CreateFile("Pictures/test003/", "gtest_003.jpg");
-    MEDIA_INFO_LOG("recycle_directory_003 fileId::%d\n", fileId);
+    ASSERT_GT(fileId, 0);
     int32_t albumId = GetAlbumId("Pictures/test003");
-    MEDIA_INFO_LOG("recycle_directory_003 albumId::%d\n", albumId);
     AddSmartAlbum(fileId);
     AddSmartAlbum(albumId);
     int32_t changedRows = RemoveSmartAlbum(fileId);
-    EXPECT_NE((changedRows < 0), true);
+    ASSERT_NE((changedRows < 0), true);
     MEDIA_INFO_LOG("recycle_directory_003::End");
 }
 
@@ -236,15 +173,14 @@ HWTEST_F(RecycleDirectory, recycle_directory_003, TestSize.Level0)
 HWTEST_F(RecycleDirectory, recycle_directory_004, TestSize.Level0)
 {
     int32_t fileId = CreateFile("Pictures/test004/", "gtest_004.jpg");
-    MEDIA_INFO_LOG("recycle_directory_004 fileId::%d\n", fileId);
+    ASSERT_GT(fileId, 0);
     int32_t albumId = GetAlbumId("Pictures/test004");
-    MEDIA_INFO_LOG("recycle_directory_004 albumId::%d\n", albumId);
     AddSmartAlbum(fileId);
     AddSmartAlbum(albumId);
     int32_t changedRows1 = RemoveSmartAlbum(fileId);
     int32_t changedRows2 = RemoveSmartAlbum(albumId);
-    EXPECT_NE((changedRows1 < 0), true);
-    EXPECT_NE((changedRows2 < 0), true);
+    ASSERT_NE((changedRows1 < 0), true);
+    ASSERT_NE((changedRows2 < 0), true);
     MEDIA_INFO_LOG("recycle_directory_004::End");
 }
 /**
@@ -258,14 +194,13 @@ HWTEST_F(RecycleDirectory, recycle_directory_004, TestSize.Level0)
 HWTEST_F(RecycleDirectory, recycle_directory_005, TestSize.Level0)
 {
     int32_t fileId = CreateFile("Pictures/test005/", "gtest_005.jpg");
-    MEDIA_INFO_LOG("recycle_directory_005 fileId::%d\n", fileId);
+    ASSERT_GT(fileId, 0);
     int32_t albumId = GetAlbumId("Pictures/test005");
-    MEDIA_INFO_LOG("recycle_directory_005 albumId::%d\n", albumId);
     AddSmartAlbum(albumId);
     int32_t albumIdSame = CreateAlbum("Pictures/test005/");
-    MEDIA_INFO_LOG("recycle_directory_005 albumIdSame::%d\n", albumIdSame);
+    ASSERT_GT(albumIdSame, 0);
     int32_t changedRows = RemoveSmartAlbum(albumId);
-    EXPECT_NE((changedRows < 0), true);
+    ASSERT_NE((changedRows < 0), true);
     MEDIA_INFO_LOG("recycle_directory_005::End");
 }
 /**
@@ -280,16 +215,16 @@ HWTEST_F(RecycleDirectory, recycle_directory_005, TestSize.Level0)
 HWTEST_F(RecycleDirectory, recycle_directory_006, TestSize.Level0)
 {
     int32_t fileId = CreateFile("Pictures/test006/", "gtest_006.jpg");
+    ASSERT_GT(fileId, 0);
     MEDIA_INFO_LOG("fileId::%d\n", fileId);
     int32_t albumId = GetAlbumId("Pictures/test006");
-    MEDIA_INFO_LOG("recycle_directory_006 albumId::%d\n", albumId);
     AddSmartAlbum(albumId);
     int32_t albumIdSame = CreateAlbum("Pictures/test006/");
-    MEDIA_INFO_LOG("recycle_directory_006 albumIdSame::%d\n", albumIdSame);
+    ASSERT_GT(albumIdSame, 0);
     int32_t albumIdSameRecycle = CreateAlbum("Pictures/test006_recycle/");
-    MEDIA_INFO_LOG("recycle_directory_006 albumIdSameRecycle::%d\n", albumIdSameRecycle);
+    ASSERT_GT(albumIdSameRecycle, 0);
     int32_t changedRows = RemoveSmartAlbum(albumId);
-    EXPECT_NE((changedRows < 0), true);
+    ASSERT_NE((changedRows < 0), true);
     MEDIA_INFO_LOG("recycle_directory_006::End");
 }
 /**
@@ -303,18 +238,15 @@ HWTEST_F(RecycleDirectory, recycle_directory_006, TestSize.Level0)
 HWTEST_F(RecycleDirectory, recycle_directory_007, TestSize.Level0)
 {
     int32_t fileId = CreateFile("Pictures/test007/", "gtest_007.jpg");
-    MEDIA_INFO_LOG("recycle_directory_007 fileId::%d\n", fileId);
     int32_t albumId = GetAlbumId("Pictures/test007");
-    MEDIA_INFO_LOG("recycle_directory_007 albumId::%d\n", albumId);
     AddSmartAlbum(albumId);
-
+    ASSERT_GT(fileId, 0);
     int32_t fileIdSame = CreateFile("Pictures/test007/", "gtest_007.jpg");
-    MEDIA_INFO_LOG("recycle_directory_007 fileIdSame::%d\n", fileIdSame);
+    ASSERT_GT(fileIdSame, 0);
     int32_t albumIdSame = GetAlbumId("Pictures/test007");
-    MEDIA_INFO_LOG("recycle_directory_007 albumIdSame::%d\n", albumIdSame);
+    ASSERT_GT(albumIdSame, 0);
     int32_t changedRows2 = RemoveSmartAlbum(albumId);
-    MEDIA_INFO_LOG("recycle_directory_007 changedRows2::%d\n", changedRows2);
-    EXPECT_NE((changedRows2 < 0), true);
+    ASSERT_NE((changedRows2 < 0), true);
     MEDIA_INFO_LOG("recycle_directory_007::End");
 }
 /**
@@ -329,15 +261,14 @@ HWTEST_F(RecycleDirectory, recycle_directory_007, TestSize.Level0)
 HWTEST_F(RecycleDirectory, recycle_directory_008, TestSize.Level0)
 {
     int32_t fileId = CreateFile("Pictures/test008/", "gtest_008.jpg");
-    MEDIA_INFO_LOG("recycle_directory_008 fileId::%d\n", fileId);
+    ASSERT_GT(fileId, 0);
     int32_t albumId = GetAlbumId("Pictures/test008");
-    MEDIA_INFO_LOG("recycle_directory_007 albumId::%d\n", albumId);
     AddSmartAlbum(albumId);
     int32_t changedRows1 = RemoveSmartAlbum(albumId);
-    MEDIA_INFO_LOG("recycle_directory_008 changedRows1::%d\n", changedRows1);
+    ASSERT_NE((changedRows1 < 0), true);
     AddSmartAlbum(albumId);
     int32_t changedRows2 = RemoveSmartAlbum(albumId);
-    EXPECT_NE((changedRows2 < 0), true);
+    ASSERT_NE((changedRows2 < 0), true);
     MEDIA_INFO_LOG("recycle_directory_008::End");
 }
 /**
@@ -353,19 +284,15 @@ HWTEST_F(RecycleDirectory, recycle_directory_008, TestSize.Level0)
 HWTEST_F(RecycleDirectory, recycle_directory_009, TestSize.Level0)
 {
     int32_t fileId = CreateFile("Pictures/test009/", "gtest_009.jpg");
-    MEDIA_INFO_LOG("recycle_directory_009fileId::%d\n", fileId);
+    ASSERT_GT(fileId, 0);
     int32_t albumId = GetAlbumId("Pictures/test009");
-    MEDIA_INFO_LOG("recycle_directory_009 albumId::%d\n", albumId);
     AddSmartAlbum(fileId);
     AddSmartAlbum(albumId);
-
     int32_t changedRows1 = RemoveSmartAlbum(fileId);
-    MEDIA_INFO_LOG("recycle_directory_009changedRows1::%d\n", changedRows1);
+    ASSERT_NE((changedRows1 < 0), true);
     AddSmartAlbum(fileId);
-
     int32_t changedRows2 = RemoveSmartAlbum(fileId);
-
-    EXPECT_NE((changedRows2 < 0), true);
+    ASSERT_NE((changedRows2 < 0), true);
     MEDIA_INFO_LOG("recycle_directory_009::End");
 }
 /**
@@ -382,20 +309,17 @@ HWTEST_F(RecycleDirectory, recycle_directory_009, TestSize.Level0)
 HWTEST_F(RecycleDirectory, recycle_directory_010, TestSize.Level0)
 {
     int32_t fileId = CreateFile("Pictures/test010/", "gtest_010.jpg");
-    MEDIA_INFO_LOG("recycle_directory_010 fileId::%d\n", fileId);
+    ASSERT_GT(fileId, 0);
     int32_t albumId = GetAlbumId("Pictures/test010");
-    MEDIA_INFO_LOG("recycle_directory_010 albumId::%d\n", albumId);
     AddSmartAlbum(fileId);
     AddSmartAlbum(albumId);
-
     int32_t changedRows = RemoveSmartAlbum(fileId);
-    MEDIA_INFO_LOG("recycle_directory_010 changedRows::%d\n", changedRows);
+    ASSERT_NE((changedRows < 0), true);
     AddSmartAlbum(fileId);
-
     int32_t changedRows1 = RemoveSmartAlbum(fileId);
-    MEDIA_INFO_LOG("recycle_directory_010 changedRows1::%d\n", changedRows1);
     int32_t changedRows2 = RemoveSmartAlbum(albumId);
-    EXPECT_NE((changedRows2 < 0), true);
+    ASSERT_NE((changedRows1 < 0), true);
+    ASSERT_NE((changedRows2 < 0), true);
     MEDIA_INFO_LOG("recycle_directory_010::End");
 }
 /**
@@ -411,22 +335,17 @@ HWTEST_F(RecycleDirectory, recycle_directory_010, TestSize.Level0)
 HWTEST_F(RecycleDirectory, recycle_directory_011, TestSize.Level0)
 {
     int32_t fileId = CreateFile("Pictures/test011/", "gtest011.jpg");
-    MEDIA_INFO_LOG("recycle_directory_011 fileId::%d\n", fileId);
     int32_t fileId_01 = CreateFile("Pictures/test011/01/", "01.jpg");
-    MEDIA_INFO_LOG("recycle_directory_011 fileId_01::%d\n", fileId_01);
+    ASSERT_GT(fileId, 0);
+    ASSERT_GT(fileId_01, 0);
     int32_t albumId_01 = GetAlbumId("Pictures/test011/01");
-    MEDIA_INFO_LOG("recycle_directory_011 albumId_01::%d\n", albumId_01);
     AddSmartAlbum(albumId_01);
-
     int32_t albumId = GetAlbumId("Pictures/test011");
-    MEDIA_INFO_LOG("recycle_directory_011 albumId::%d\n", albumId);
     AddSmartAlbum(albumId);
-
     int32_t changedRows1 = RemoveSmartAlbum(albumId_01);
-    MEDIA_INFO_LOG("recycle_directory_011 changedRows1::%d\n", changedRows1);
     int32_t changedRows2 = RemoveSmartAlbum(albumId);
-    MEDIA_INFO_LOG("recycle_directory_011 changedRows2::%d\n", changedRows2);
-    EXPECT_NE((changedRows2 < 0), true);
+    ASSERT_NE((changedRows1 < 0), true);
+    ASSERT_NE((changedRows2 < 0), true);
     MEDIA_INFO_LOG("recycle_directory_011::End");
 }
 
