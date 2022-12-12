@@ -20,8 +20,8 @@
 
 #include "ability_context.h"
 #include "pixel_map.h"
-#include "result_set_bridge.h"
 #include "rdb_helper.h"
+#include "result_set_bridge.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
 

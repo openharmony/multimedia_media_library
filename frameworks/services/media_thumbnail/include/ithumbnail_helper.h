@@ -16,17 +16,16 @@
 #ifndef FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_ITHUMBNAIL_HELPER_H_
 #define FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_ITHUMBNAIL_HELPER_H_
 
+#include <map>
+#include <shared_mutex>
+
 #include "ability_connect_callback_stub.h"
 #include "ability_context.h"
 #include "datashare_proxy.h"
 #include "medialibrary_async_worker.h"
-#include "pixel_map.h"
 #include "result_set_bridge.h"
-#include "rdb_helper.h"
-#include "single_kvstore.h"
 #include "thumbnail_utils.h"
-#include <map>
-#include <shared_mutex>
+#include "pixel_map.h"
 
 namespace OHOS {
 namespace Media {

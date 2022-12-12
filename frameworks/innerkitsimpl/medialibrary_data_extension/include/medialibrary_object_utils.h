@@ -29,7 +29,6 @@
 #include "medialibrary_unistore_manager.h"
 #include "native_album_asset.h"
 #include "rdb_utils.h"
-#include "result_set_bridge.h"
 #include "uri.h"
 #include "value_object.h"
 #include "values_bucket.h"

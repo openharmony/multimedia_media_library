@@ -42,7 +42,6 @@ std::vector<std::string> MediaDataShareStubImpl::GetFileTypes(const Uri &uri, co
 
 int MediaDataShareStubImpl::OpenFile(const Uri &uri, const std::string &mode)
 {
-    MEDIA_INFO_LOG("begin.");
     int ret = -1;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -51,7 +50,6 @@ int MediaDataShareStubImpl::OpenFile(const Uri &uri, const std::string &mode)
         return ret;
     }
     ret = extension->OpenFile(uri, mode);
-    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
@@ -72,7 +70,6 @@ int MediaDataShareStubImpl::OpenRawFile(const Uri &uri, const std::string &mode)
 
 int MediaDataShareStubImpl::Insert(const Uri &uri, const DataShareValuesBucket &value)
 {
-    MEDIA_INFO_LOG("begin.");
     int ret = 0;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -81,14 +78,12 @@ int MediaDataShareStubImpl::Insert(const Uri &uri, const DataShareValuesBucket &
         return ret;
     }
     ret = extension->Insert(uri, value);
-    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
 int MediaDataShareStubImpl::Update(const Uri &uri, const DataSharePredicates &predicates,
     const DataShareValuesBucket &value)
 {
-    MEDIA_INFO_LOG("begin.");
     int ret = 0;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -97,13 +92,11 @@ int MediaDataShareStubImpl::Update(const Uri &uri, const DataSharePredicates &pr
         return ret;
     }
     ret = extension->Update(uri, predicates, value);
-    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
 int MediaDataShareStubImpl::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
-    MEDIA_INFO_LOG("begin.");
     int ret = 0;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -112,14 +105,12 @@ int MediaDataShareStubImpl::Delete(const Uri &uri, const DataSharePredicates &pr
         return ret;
     }
     ret = extension->Delete(uri, predicates);
-    MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
     return ret;
 }
 
 std::shared_ptr<DataShareResultSet> MediaDataShareStubImpl::Query(const Uri &uri,
     const DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
-    MEDIA_INFO_LOG("begin.");
     std::shared_ptr<DataShareResultSet> resultSet = nullptr;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -128,7 +119,6 @@ std::shared_ptr<DataShareResultSet> MediaDataShareStubImpl::Query(const Uri &uri
         return nullptr;
     }
     resultSet = extension->Query(uri, predicates, columns);
-    MEDIA_INFO_LOG("end successfully.");
     return resultSet;
 }
 
