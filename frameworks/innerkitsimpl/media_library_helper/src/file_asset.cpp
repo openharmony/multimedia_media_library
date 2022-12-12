@@ -32,11 +32,14 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
+static constexpr int MAP_INT_MAX = 50;
 FileAsset::FileAsset()
     : albumUri_(DEFAULT_MEDIA_ALBUM_URI),
     typeMask_(DEFAULT_TYPE_MASK),
     resultNapiType_(ResultNapiType::TYPE_NAPI_MAX)
-{}
+{
+    member_.reserve(MAP_INT_MAX);
+}
 
 int32_t FileAsset::GetId() const
 {

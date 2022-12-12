@@ -59,7 +59,7 @@ public:
     static int32_t InsertInDb(MediaLibraryCommand &cmd);
     static int32_t ModifyInfoByIdInDb(MediaLibraryCommand &cmd, const std::string &fileId = "");
     static int32_t DeleteInfoByIdInDb(MediaLibraryCommand &cmd, const std::string &fileId = "");
-    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryWithCondition(MediaLibraryCommand &cmd,
+    static std::shared_ptr<NativeRdb::ResultSet> QueryWithCondition(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns, const std::string &conditionColumn = "");
 
     static bool IsColumnValueExist(const std::string &value, const std::string &column);

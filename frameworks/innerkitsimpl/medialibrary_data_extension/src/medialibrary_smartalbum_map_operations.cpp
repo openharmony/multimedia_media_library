@@ -146,7 +146,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::TrashChildAssetsInfoUtil(const int3
     AbsRdbPredicates dirAbsPred(MEDIALIBRARY_TABLE);
     dirAbsPred.EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId))->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH,
         to_string(NOT_ISTRASH));
-    shared_ptr<AbsSharedResultSet> queryResultSet = smartAlbumMapQueryData.rdbStore->Query(
+    shared_ptr<ResultSet> queryResultSet = smartAlbumMapQueryData.rdbStore->Query(
         dirAbsPred, columns);
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
@@ -413,7 +413,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleChildAssetsInfoUtil(const in
     AbsRdbPredicates dirAbsPred(MEDIALIBRARY_TABLE);
     dirAbsPred.EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId));
     dirAbsPred.EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(CHILD_ISTRASH));
-    shared_ptr<AbsSharedResultSet> queryResultSet = smartAlbumMapQueryData.rdbStore->Query(
+    shared_ptr<ResultSet> queryResultSet = smartAlbumMapQueryData.rdbStore->Query(
         dirAbsPred, columns);
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
@@ -542,7 +542,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::DeleteDirAssetsInfoUtil(const uniqu
 
 int32_t MediaLibrarySmartAlbumMapOperations::HandleAgeingOperations(SmartAlbumMapQueryData &smartAlbumMapQueryData)
 {
-    shared_ptr<AbsSharedResultSet> resultSet = QueryAgeingTrashFiles(smartAlbumMapQueryData.rdbStore);
+    shared_ptr<ResultSet> resultSet = QueryAgeingTrashFiles(smartAlbumMapQueryData.rdbStore);
     shared_ptr<ResultSetBridge> rsBridge = RdbUtils::ToResultSetBridge(resultSet);
     shared_ptr<DataShareResultSet> dataShareRs = make_shared<DataShareResultSet>(rsBridge);
     shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>(dataShareRs);
@@ -703,7 +703,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::MakeRecycleDisplayName(const int32_
     return errorCode;
 }
 
-shared_ptr<AbsSharedResultSet> MediaLibrarySmartAlbumMapOperations::QueryAgeingTrashFiles(
+shared_ptr<ResultSet> MediaLibrarySmartAlbumMapOperations::QueryAgeingTrashFiles(
     const shared_ptr<RdbStore> &rdbStore)
 {
     vector<string> selectionArgs = {SMARTALBUM_DB_EXPIRED_TIME};
@@ -714,7 +714,7 @@ shared_ptr<AbsSharedResultSet> MediaLibrarySmartAlbumMapOperations::QueryAgeingT
     vector<string> columns;
     int32_t columnIndex;
     int32_t recycleDays = DEFAULT_RECYCLE_DAYS;
-    shared_ptr<AbsSharedResultSet> resultSet = rdbStore->Query(absPredicates, columns);
+    shared_ptr<ResultSet> resultSet = rdbStore->Query(absPredicates, columns);
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         resultSet->GetColumnIndex(SMARTALBUM_DB_EXPIRED_TIME, columnIndex);
         resultSet->GetInt(columnIndex, recycleDays);
