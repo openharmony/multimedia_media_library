@@ -43,7 +43,7 @@ int32_t MediaLibraryDirOperations::DeleteDirInfoUtil(const int &parent,
     const shared_ptr<RdbStore> &rdbStore,
     const MediaLibraryDirDb &dirDbOprn)
 {
-    shared_ptr<ResultSet> queryResultSet, queryParentResultSet;
+    shared_ptr<AbsSharedResultSet> queryResultSet, queryParentResultSet;
     vector<string> columns, selectionArgs;
     selectionArgs.push_back(to_string(parent));
     AbsRdbPredicates mediaLibDirAbsPred(MEDIALIBRARY_TABLE);
@@ -97,7 +97,7 @@ int32_t MediaLibraryDirOperations::DeleteFMSDirInfoUtil(const std::string &relat
     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const MediaLibraryDirDb &dirDbOprn)
 {
-    shared_ptr<ResultSet> queryResultSet;
+    shared_ptr<AbsSharedResultSet> queryResultSet;
     vector<string> columns, selectionArgs;
     int32_t deleteErrorCode = E_FAIL;
     MEDIA_INFO_LOG("relativePath = %{private}s", relativePath.c_str());
