@@ -334,7 +334,7 @@ Status ThumbnailUtils::SaveImage(const shared_ptr<SingleKvStore> &kvStore, const
     return status;
 }
 
-shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
+shared_ptr<AbsSharedResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
 {
     MEDIA_DEBUG_LOG("ThumbnailUtils::QueryThumbnailSet IN row [%{public}s]", opts.row.c_str());
     vector<string> column = {
@@ -352,16 +352,16 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
-    auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<AbsSharedResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     return resultSet;
 }
 
-shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
+shared_ptr<AbsSharedResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
     ThumbnailData &data, int &err)
 {
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnailInfo");
-    auto resultSet = QueryThumbnailSet(opts);
+    shared_ptr<AbsSharedResultSet> resultSet = QueryThumbnailSet(opts);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return nullptr;
@@ -387,7 +387,7 @@ bool ThumbnailUtils::QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
-    auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("query failed");
         return false;
@@ -417,7 +417,7 @@ bool ThumbnailUtils::QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount
     RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
-    auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("query failed");
         return false;
@@ -450,7 +450,7 @@ bool ThumbnailUtils::QueryHasLcdFiles(ThumbRdbOpt &opts, vector<ThumbnailRdbData
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return false;
@@ -485,7 +485,7 @@ bool ThumbnailUtils::QueryHasThumbnailFiles(ThumbRdbOpt &opts, vector<ThumbnailR
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_THUMBNAIL);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return false;
@@ -521,7 +521,7 @@ bool ThumbnailUtils::QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimi
 
     rdbPredicates.Limit(LcdLimit);
     rdbPredicates.OrderByAsc(MEDIA_DATA_DB_TIME_VISIT);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return false;
@@ -562,7 +562,7 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
 
     rdbPredicates.Limit(LcdLimit);
     rdbPredicates.OrderByAsc(MEDIA_DATA_DB_TIME_VISIT);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return false;
@@ -603,7 +603,7 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
 
     rdbPredicates.Limit(LcdLimit);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return false;
@@ -645,7 +645,7 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailRd
     rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
 
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         if (err == E_EMPTY_VALUES_BUCKET) {
@@ -732,7 +732,7 @@ bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<
     };
     RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return false;
@@ -762,7 +762,7 @@ bool ThumbnailUtils::GetRemoteThumbnailInfo(ThumbRdbOpt &opts, const std::string
     RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_FILE_ID, id);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, udid);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return false;
@@ -780,7 +780,7 @@ bool ThumbnailUtils::GetUdidByNetworkId(ThumbRdbOpt &opts, const std::string &ne
     };
     RdbPredicates rdbPredicates(DEVICE_TABLE);
     rdbPredicates.EqualTo(DEVICE_DB_NETWORK_ID, networkId);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return false;
@@ -816,7 +816,7 @@ bool ThumbnailUtils::QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data
     RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_FILE_ID, data.id);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, data.udid);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    shared_ptr<ResultSet> resultSet = opts.store->Query(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return false;

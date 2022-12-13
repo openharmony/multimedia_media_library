@@ -82,7 +82,7 @@ string MediaLibraryAlbumOperations::GetDistributedAlbumSql(const string &strQuer
     return distributedAlbumSql;
 }
 
-shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
+shared_ptr<AbsSharedResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     MediaLibraryCommand &cmd, vector<string> columns)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();

@@ -29,7 +29,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-shared_ptr<ResultSet> IThumbnailHelper::QueryThumbnailInfo(ThumbRdbOpt &opts,
+shared_ptr<AbsSharedResultSet> IThumbnailHelper::QueryThumbnailInfo(ThumbRdbOpt &opts,
     ThumbnailData &outData, int &err)
 {
     if (opts.store == nullptr) {
@@ -43,7 +43,7 @@ shared_ptr<ResultSet> IThumbnailHelper::QueryThumbnailInfo(ThumbRdbOpt &opts,
 
     MEDIA_DEBUG_LOG("Get filesTableName [ %{public}s ] id [ %{public}s ]", filesTableName.c_str(), opts.row.c_str());
     opts.table = filesTableName;
-    auto rdbSet = ThumbnailUtils::QueryThumbnailInfo(opts, outData, err);
+    shared_ptr<AbsSharedResultSet> rdbSet = ThumbnailUtils::QueryThumbnailInfo(opts, outData, err);
     if (rdbSet == nullptr) {
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
         return nullptr;
@@ -284,7 +284,7 @@ bool IThumbnailHelper::DoThumbnailSync(ThumbRdbOpt &opts, ThumbnailData &outData
         MEDIA_INFO_LOG("GetThumbnailPixelMap SyncPullTable FALSE");
         return false;
     }
-    auto resultSet = QueryThumbnailInfo(opts, outData, ret);
+    shared_ptr<AbsSharedResultSet> resultSet = QueryThumbnailInfo(opts, outData, ret);
     if ((resultSet == nullptr)) {
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", ret);
         return false;
