@@ -22,6 +22,7 @@
 #include "ability_connect_callback_stub.h"
 #include "ability_context.h"
 #include "datashare_proxy.h"
+#include "datashare_values_bucket.h"
 #include "medialibrary_async_worker.h"
 #include "result_set_bridge.h"
 #include "thumbnail_utils.h"
@@ -81,6 +82,16 @@ protected:
     static bool DoThumbnailSync(ThumbRdbOpt &opts, ThumbnailData &outData);
 };
 
+// copy from foundation/distributeddatamgr/data_share/frameworks/native/common/include/idatashare.h
+class IDataShareThumb : public IRemoteBroker {
+public:
+    DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.DataShare.IDataShare");
+    enum {
+        CMD_INSERT = 4,
+    };
+    virtual int Insert(const Uri &uri, const DataShare::DataShareValuesBucket &value) = 0;
+};
+
 class ThumbnailConnection : public AAFwk::AbilityConnectionStub {
 public:
     ThumbnailConnection() = default;
@@ -91,7 +102,7 @@ public:
     int32_t GetRemoteDataShareHelper(ThumbRdbOpt &opts, sptr<AAFwk::IAbilityConnection> &callback);
 
 private:
-    sptr<DataShare::IDataShare> dataShareProxy_;
+    sptr<IDataShareThumb> dataShareProxy_;
     SyncStatus status_;
 };
 } // namespace Media
