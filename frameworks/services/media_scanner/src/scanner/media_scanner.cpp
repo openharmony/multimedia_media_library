@@ -18,6 +18,7 @@
 #include "media_scanner.h"
 
 #include "hitrace_meter.h"
+#include "directory_ex.h"
 
 #include "media_log.h"
 #include "medialibrary_errno.h"
@@ -30,13 +31,17 @@ using namespace OHOS::AppExecFwk;
 using namespace OHOS::DataShare;
 
 MediaScannerObj::MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
-    bool isDir) : isDir_(isDir), callback_(callback)
+    MediaScannerObj::ScanType type) : type_(type), callback_(callback)
 {
-    if (isDir) {
+    if (type_ == DIRECTORY) {
         dir_ = path;
-    } else {
+    } else if (type_ == FILE) {
         path_ = path;
     }
+}
+
+MediaScannerObj::MediaScannerObj(MediaScannerObj::ScanType type) : type_(type)
+{
 }
 
 void MediaScannerObj::SetStopFlag(std::shared_ptr<bool> &flag)
@@ -74,10 +79,21 @@ int32_t MediaScannerObj::ScanDir()
 
 void MediaScannerObj::Scan()
 {
-    if (isDir_) {
-        ScanDir();
-    } else {
-        ScanFile();
+    switch (type_) {
+        case FILE:
+            ScanFile();
+            break;
+        case DIRECTORY:
+            ScanDir();
+            break;
+        case START:
+            Start();
+            break;
+        case ERROR:
+            ScanError();
+            break;
+        default:
+            break;
     }
 }
 
@@ -427,8 +443,9 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
         return ERR_NOT_ACCESSIBLE;
     }
 
-    while ((ent = readdir(dirPath)) != nullptr && err != ERR_MEM_ALLOC_FAIL) {
+    while ((ent = readdir(dirPath)) != nullptr) {
         if (*stopFlag_) {
+            err = E_STOP;
             break;
         }
 
@@ -466,7 +483,7 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
     closedir(dirPath);
     FREE_MEMORY_AND_SET_NULL(fName);
 
-    return E_OK;
+    return err;
 }
 
 int32_t MediaScannerObj::ScanDirInternal()
@@ -486,6 +503,7 @@ int32_t MediaScannerObj::ScanDirInternal()
         return err;
     }
 
+    /* no further operation when stopped */
     err = WalkFileTree(dir_, NO_PARENT);
     if (err != E_OK) {
         MEDIA_ERR_LOG("walk file tree err %{public}d", err);
@@ -502,6 +520,66 @@ int32_t MediaScannerObj::ScanDirInternal()
     if (err != E_OK) {
         MEDIA_ERR_LOG("clean up dir err %{public}d", err);
         return err;
+    }
+
+    return E_OK;
+}
+
+int32_t MediaScannerObj::Start()
+{
+    int32_t ret = ScanError(true);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("scann error fail %{public}d", ret);
+        return ret;
+    }
+
+    /*
+     * primary key wouldn't be duplicate
+     */
+    ret = mediaScannerDb_->RecordError(ROOT_MEDIA_DIR);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("record err fail %{public}d", ret);
+        return ret;
+    }
+
+    return E_OK;
+}
+
+int32_t MediaScannerObj::ScanError(bool isBoot)
+{
+    auto errList = mediaScannerDb_->ReadError();
+    for (auto &err : errList) {
+        string realPath;
+        if (!PathToRealPath(err, realPath)) {
+            MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", err.c_str(), errno);
+            (void)mediaScannerDb_->DeleteError(err);
+            continue;
+        }
+
+        callback_ = make_shared<ScanErrCallback>(err);
+
+        /*
+         * Scan full path only when boot; all other errors are processed in
+         * broadcast receving context.
+         */
+        if (err == ROOT_MEDIA_DIR) {
+            if (isBoot) {
+                dir_ = move(realPath);
+                (void)ScanDir();
+                break;
+            } else {
+                continue;
+            }
+        }
+
+        /* assume err paths are correct */
+        if (ScannerUtils::IsDirectory(realPath)) {
+            dir_ = move(realPath);
+            (void)ScanDir();
+        } else if (ScannerUtils::IsRegularFile(realPath)) {
+            path_ = move(realPath);
+            (void)ScanFile();
+        }
     }
 
     return E_OK;

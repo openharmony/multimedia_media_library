@@ -19,7 +19,6 @@
 #include <string>
 #include <iostream>
 #include <queue>
-#include <future>
 #include <memory>
 
 #include "media_scanner.h"
@@ -39,7 +38,7 @@ public:
 private:
     void HandleScanExecution();
 
-    const size_t MAX_THREAD = 1;
+    const size_t MAX_THREAD = 4;
     size_t activeThread_ = 0;
 
     std::queue<std::unique_ptr<MediaScannerObj>> queue_;

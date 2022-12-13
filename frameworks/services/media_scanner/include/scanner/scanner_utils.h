@@ -184,6 +184,7 @@ public:
     static std::string GetParentPath(const std::string &path);
     static bool IsFileHidden(const std::string &path);
     static bool IsDirectory(const std::string &path);
+    static bool IsRegularFile(const std::string &path);
     static MediaType GetMediatypeFromMimetype(const std::string &mimetype);
     static void GetRootMediaDir(std::string &dir);
     static std::string GetFileTitle(const std::string &displayName);
