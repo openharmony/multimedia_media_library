@@ -74,7 +74,7 @@ public:
     static void CreateThumbnail(AsyncTaskData *data);
     static void AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront);
 protected:
-    static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailInfo(
+    static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryThumbnailInfo(
         ThumbRdbOpt &opts, ThumbnailData &outData, int &err);
     static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
     static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool force = false);

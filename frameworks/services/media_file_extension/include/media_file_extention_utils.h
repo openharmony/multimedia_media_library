@@ -50,7 +50,7 @@ public:
         const std::string &displayName);
     static bool GetAlbumRelativePathFromDB(const std::string &selectUri, const std::string &networkId,
         std::string &relativePath);
-    static std::shared_ptr<NativeRdb::ResultSet> GetFileFromDB(const std::string &selectUri,
+    static std::shared_ptr<NativeRdb::AbsSharedResultSet> GetFileFromDB(const std::string &selectUri,
         const std::string &networkId);
     static int32_t Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri);
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
