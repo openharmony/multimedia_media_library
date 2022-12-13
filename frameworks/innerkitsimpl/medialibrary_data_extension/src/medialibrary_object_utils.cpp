@@ -821,7 +821,7 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY, networkId);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, id);
 
-    auto resultSet = QueryWithCondition(cmd, {});
+    shared_ptr<AbsSharedResultSet> resultSet = QueryWithCondition(cmd, {});
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain file asset from database");
         return nullptr;
@@ -841,7 +841,7 @@ void MediaLibraryObjectUtils::GetDefaultRelativePath(const int32_t mediaType, st
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_DIR, OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(CATEGORY_MEDIATYPE_DIRECTORY_DB_MEDIA_TYPE, to_string(mediaType));
 
-    auto resultSet = QueryWithCondition(cmd, {});
+    shared_ptr<AbsSharedResultSet> resultSet = QueryWithCondition(cmd, {});
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain file asset from database, mediaType: %{public}d", static_cast<int>(mediaType));
         return;
@@ -1142,7 +1142,7 @@ int32_t MediaLibraryObjectUtils::ModifyInfoByIdInDb(MediaLibraryCommand &cmd, co
     return updatedRows;
 }
 
-shared_ptr<ResultSet> MediaLibraryObjectUtils::QueryWithCondition(MediaLibraryCommand &cmd,
+shared_ptr<AbsSharedResultSet> MediaLibraryObjectUtils::QueryWithCondition(MediaLibraryCommand &cmd,
     const vector<string> &columns, const string &conditionColumn)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();

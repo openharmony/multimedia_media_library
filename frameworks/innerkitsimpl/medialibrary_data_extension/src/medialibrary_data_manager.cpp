@@ -237,8 +237,9 @@ void MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAsset>
     int32_t columnIndexDir, columnIndexMedia, columnIndexEx, columnIndexDirType;
     string dirVal, mediaVal, exVal;
     vector<string> columns;
+    shared_ptr<AbsSharedResultSet> queryResultSet;
     AbsRdbPredicates dirAbsPred(MEDIATYPE_DIRECTORY_TABLE);
-    auto queryResultSet = rdbStore_->QueryByStep(dirAbsPred, columns);
+    queryResultSet = rdbStore_->Query(dirAbsPred, columns);
     auto ret = queryResultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdb failed");
@@ -666,7 +667,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     return queryResultSet;
 }
 
-shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
+shared_ptr<AbsSharedResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
     const DataSharePredicates &predicates)
 {
     std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
@@ -691,7 +692,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
 
-    shared_ptr<NativeRdb::ResultSet> queryResultSet;
+    shared_ptr<AbsSharedResultSet> queryResultSet;
     OperationObject oprnObject = cmd.GetOprnObject();
     auto it = queryConditionMap.find(oprnObject);
     if (it != queryConditionMap.end()) {

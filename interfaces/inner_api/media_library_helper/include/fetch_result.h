@@ -59,7 +59,7 @@ public:
     void SetNetworkId(const string &networkId);
     std::unique_ptr<T> GetObjectAtPosition(int32_t index);
     std::unique_ptr<T> GetFirstObject();
-    std::unique_ptr<T> GetObjectFromRdb(std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx);
+    std::unique_ptr<T> GetObjectFromRdb(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, int idx);
     std::unique_ptr<T> GetNextObject();
     std::unique_ptr<T> GetLastObject();
     std::unique_ptr<T> GetObject();
@@ -74,17 +74,18 @@ public:
     std::string typeMask_;
 
 private:
-    std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::ResultSet> &resultSet);
+    std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     std::variant<int32_t, int64_t, std::string> GetRowValFromColumn(std::string columnName,
-        ResultSetDataType dataType, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
+        ResultSetDataType dataType, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
     std::variant<int32_t, int64_t, string> GetValByIndex(int32_t index, ResultSetDataType dataType,
-        std::shared_ptr<NativeRdb::ResultSet> &resultSet);
-    void SetFileAsset(FileAsset *fileAsset, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
-    void SetAlbumAsset(AlbumAsset* albumData, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
-    void SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
-    void GetObjectFromAsset(FileAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
-    void GetObjectFromAsset(AlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
-    void GetObjectFromAsset(SmartAlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
+        std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    int32_t GetFileCount(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
+    void SetFileAsset(FileAsset *fileAsset, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    void SetAlbumAsset(AlbumAsset* albumData, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    void SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    void GetObjectFromAsset(FileAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    void GetObjectFromAsset(AlbumAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    void GetObjectFromAsset(SmartAlbumAsset *asset, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
 };
 } // namespace Media
 } // namespace OHOS

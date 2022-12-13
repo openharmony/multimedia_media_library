@@ -35,7 +35,7 @@ public:
     virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) override;
     virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &rowId) override;
     virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &rowId) override;
-    std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
+    std::shared_ptr<NativeRdb::AbsSharedResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns) override;
 
     bool SyncPullAllTableByDeviceId(const std::string &bundleName, std::vector<std::string> &devices) override;
@@ -44,7 +44,7 @@ public:
     bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
         const std::vector<std::string> &devices, bool isLast = false) override;
     int32_t ExecuteSql(const std::string &sql) override;
-    std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql) override;
+    std::shared_ptr<NativeRdb::AbsSharedResultSet> QuerySql(const std::string &sql) override;
 
     std::shared_ptr<NativeRdb::RdbStore> GetRaw() const;
     std::string ObtainTableName(MediaLibraryCommand &cmd) override;

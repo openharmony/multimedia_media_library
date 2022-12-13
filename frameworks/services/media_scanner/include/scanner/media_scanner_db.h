@@ -63,9 +63,9 @@ public:
 
 private:
     std::string GetMediaTypeUri(MediaType mediaType);
-    int32_t FillMetadata(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int32_t FillMetadata(const std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
         std::unique_ptr<Metadata> &ptr);
-    void ExtractMetaFromColumn(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    void ExtractMetaFromColumn(const std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
         std::unique_ptr<Metadata> &metadata, const std::string &col);
 };
 } // namespace Media
