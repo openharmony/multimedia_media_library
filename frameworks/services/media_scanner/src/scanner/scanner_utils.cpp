@@ -129,6 +129,20 @@ bool ScannerUtils::IsDirectory(const string &path)
     return false;
 }
 
+bool ScannerUtils::IsRegularFile(const string &path)
+{
+    struct stat s;
+    if (!path.empty()) {
+        if (stat(path.c_str(), &s) == 0) {
+            if (s.st_mode & S_IFREG) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 // Check if the given file starts with '.' , i.e. if it is hidden
 bool ScannerUtils::IsFileHidden(const string &path)
 {

@@ -60,6 +60,10 @@ public:
     int32_t GetIdFromPath(const std::string &path);
     int32_t GetFileBasicInfo(const std::string &path, std::unique_ptr<Metadata> &ptr);
 
+    int32_t RecordError(const std::string &err);
+    std::vector<std::string> ReadError();
+    int32_t DeleteError(const std::string &err);
+
 private:
     std::string GetMediaTypeUri(MediaType mediaType);
     int32_t FillMetadata(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,

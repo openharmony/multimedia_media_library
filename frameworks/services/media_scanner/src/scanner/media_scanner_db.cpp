@@ -21,6 +21,7 @@
 #include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
 #include "media_file_utils.h"
+#include "medialibrary_unistore_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -476,6 +477,83 @@ int32_t MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::ResultSet> &res
 
     for (const auto &col : columnNames) {
         ExtractMetaFromColumn(resultSet, ptr, col);
+    }
+
+    return E_OK;
+}
+
+int32_t MediaScannerDb::RecordError(const std::string &err)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return E_ERR;
+    }
+
+    ValuesBucket valuesBucket;
+    valuesBucket.PutString(MEDIA_DATA_ERROR, err);
+    int64_t outRowId = -1;
+    int32_t ret = rdbStore->GetRaw()->Insert(outRowId, MEDIALIBRARY_ERROR_TABLE, valuesBucket);
+    if (ret) {
+        MEDIA_ERR_LOG("rdb insert err %{public}d", ret);
+        return E_ERR;
+    }
+
+    return E_OK;
+}
+
+std::vector<std::string> MediaScannerDb::ReadError()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return {};
+    }
+
+    AbsRdbPredicates predicates(MEDIALIBRARY_ERROR_TABLE);
+    vector<string> columns = { MEDIA_DATA_ERROR };
+    auto resultSet = rdbStore->GetRaw()->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("rdb query return nullptr");
+        return {};
+    }
+
+    int32_t rowCount = 0;
+    if (resultSet->GetRowCount(rowCount) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("failed to get row count");
+        return {};
+    }
+
+    if (rowCount == 0) {
+        return {};
+    }
+
+    string str;
+    vector<string> errList;
+    errList.reserve(rowCount);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        resultSet->GetString(0, str);
+        errList.emplace_back(move(str));
+    }
+
+    return errList;
+}
+
+int32_t MediaScannerDb::DeleteError(const std::string &err)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return E_ERR;
+    }
+
+    int32_t outRowId = -1;
+    string whereClause = MEDIA_DATA_ERROR + " = ?";
+    vector<string> whereArgs= { err };
+    int32_t ret = rdbStore->GetRaw()->Delete(outRowId, MEDIALIBRARY_ERROR_TABLE, whereClause, whereArgs);
+    if (ret) {
+        MEDIA_ERR_LOG("rdb delete err %{public}d", ret);
+        return E_ERR;
     }
 
     return E_OK;

@@ -20,6 +20,7 @@
 
 #include "media_scanner.h"
 #include "media_scan_executor.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS {
 namespace Media {
@@ -29,13 +30,13 @@ public:
 
     virtual ~MediaScannerManager() = default;
 
-    std::string ScanCheck(const std::string &path, bool isDir);
+    void Start();
+    void Stop();
+    void ScanError();
+
     int32_t ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
     int32_t ScanFileSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
     int32_t ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
-
-    int32_t Start();
-    int32_t Stop();
 
 private:
     MediaScannerManager() = default;

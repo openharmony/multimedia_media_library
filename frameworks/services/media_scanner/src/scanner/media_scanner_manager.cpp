@@ -21,7 +21,7 @@
 
 #include "media_log.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_data_manager.h"
+#include "media_scanner_db.h"
 
 namespace OHOS {
 namespace Media {
@@ -43,41 +43,22 @@ std::shared_ptr<MediaScannerManager> MediaScannerManager::GetInstance()
     return instance_;
 }
 
-string MediaScannerManager::ScanCheck(const std::string &path, bool isDir) {
-    if (path.empty()) {
-        MEDIA_ERR_LOG("path is empty");
-        return "";
-    }
-
-    string realPath;
-    if (!PathToRealPath(path, realPath)) {
-        MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", path.c_str(), errno);
-        return "";
-    }
-
-    if (isDir && !ScannerUtils::IsDirectory(realPath)) {
-        MEDIA_ERR_LOG("path %{private}s isn't a dir", realPath.c_str());
-        return "";
-    }
-
-    if (!isDir && ScannerUtils::IsDirectory(realPath)) {
-        MEDIA_ERR_LOG("path %{private}s is a dir", realPath.c_str());
-        return "";
-    }
-
-    return realPath;
-}
-
 int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
 {
     MEDIA_DEBUG_LOG("scan file %{private}s", path.c_str());
 
-    string realPath = ScanCheck(path, false);
-    if (realPath.empty()) {
+    string realPath;
+    if (!PathToRealPath(path, realPath)) {
+        MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", path.c_str(), errno);
         return E_INVALID_PATH;
     }
 
-    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(realPath, callback, false);
+    if (!ScannerUtils::IsRegularFile(realPath)) {
+        MEDIA_ERR_LOG("the path %{private}s is not a regular file", realPath.c_str());
+        return E_INVALID_PATH;
+    }
+
+    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(realPath, callback, MediaScannerObj::FILE);
     executor_.Commit(move(scanner));
 
     return E_OK;
@@ -87,12 +68,18 @@ int32_t MediaScannerManager::ScanFileSync(const std::string &path, const std::sh
 {
     MEDIA_DEBUG_LOG("scan file %{private}s", path.c_str());
 
-    string realPath = ScanCheck(path, false);
-    if (realPath.empty()) {
+    string realPath;
+    if (!PathToRealPath(path, realPath)) {
+        MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", path.c_str(), errno);
         return E_INVALID_PATH;
     }
 
-    MediaScannerObj scanner = MediaScannerObj(realPath, callback, false);
+    if (!ScannerUtils::IsRegularFile(realPath)) {
+        MEDIA_ERR_LOG("the path %{private}s is not a regular file", realPath.c_str());
+        return E_INVALID_PATH;
+    }
+
+    MediaScannerObj scanner = MediaScannerObj(realPath, callback, MediaScannerObj::FILE);
     scanner.Scan();
 
     return E_OK;
@@ -102,27 +89,44 @@ int32_t MediaScannerManager::ScanDir(const std::string &path, const std::shared_
 {
     MEDIA_DEBUG_LOG("scan dir %{private}s", path.c_str());
 
-    string realPath = ScanCheck(path, true);
-    if (realPath.empty()) {
+    string realPath;
+    if (!PathToRealPath(path, realPath)) {
+        MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", path.c_str(), errno);
         return E_INVALID_PATH;
     }
 
-    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(realPath, callback, true);
+    if (!ScannerUtils::IsDirectory(realPath)) {
+        MEDIA_ERR_LOG("the path %{private}s is not a directory", realPath.c_str());
+        return E_INVALID_PATH;
+    }
+
+    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(realPath, callback,
+        MediaScannerObj::DIRECTORY);
     executor_.Commit(move(scanner));
 
     return E_OK;
 }
 
-int32_t MediaScannerManager::Start()
+void MediaScannerManager::Start()
 {
     executor_.Start();
-    return ScanDir(ROOT_MEDIA_DIR, nullptr);
+
+    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(MediaScannerObj::START);
+    executor_.Commit(move(scanner));
 }
 
-int32_t MediaScannerManager::Stop()
+void MediaScannerManager::Stop()
 {
-    executor_.Stop();
-    return E_OK;
+    /* stop all working threads */
+    this->executor_.Stop();
+
+    MediaScannerDb::GetDatabaseInstance()->DeleteError(ROOT_MEDIA_DIR);
+}
+
+void MediaScannerManager::ScanError()
+{
+    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(MediaScannerObj::ERROR);
+    executor_.Commit(move(scanner));
 }
 } // namespace Media
 } // namespace OHOS
