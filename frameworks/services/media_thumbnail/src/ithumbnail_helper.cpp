@@ -44,12 +44,7 @@ shared_ptr<ResultSet> IThumbnailHelper::QueryThumbnailInfo(ThumbRdbOpt &opts,
 
     MEDIA_DEBUG_LOG("Get filesTableName [ %{public}s ] id [ %{public}s ]", filesTableName.c_str(), opts.row.c_str());
     opts.table = filesTableName;
-    auto rdbSet = ThumbnailUtils::QueryThumbnailInfo(opts, outData, err);
-    if (rdbSet == nullptr) {
-        MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
-        return nullptr;
-    }
-    return rdbSet;
+    return ThumbnailUtils::QueryThumbnailInfo(opts, outData, err);
 }
 
 void IThumbnailHelper::CreateLcd(AsyncTaskData* data)

@@ -382,6 +382,7 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
         queryParentResultSet->GetInt(colIndex, parentIdVal);
         queryParentResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, colIndex);
         queryParentResultSet->GetString(colIndex, dirVal);
+        queryParentResultSet.reset();
         if (parentIdVal == 0) {
             return E_SUCCESS;
         }
@@ -965,7 +966,6 @@ int32_t MediaLibraryObjectUtils::GetParentIdByIdFromDb(const string &fileId)
 
 int32_t MediaLibraryObjectUtils::InsertInDb(MediaLibraryCommand &cmd)
 {
-    MEDIA_DEBUG_LOG("enter");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
@@ -1122,7 +1122,6 @@ bool MediaLibraryObjectUtils::IsColumnValueExist(const string &value, const stri
     if (queryResultSet != nullptr) {
         int32_t count = 0;
         queryResultSet->GetRowCount(count);
-        MEDIA_DEBUG_LOG("count is %{private}d", count);
         if (count > 0) {
             return true;
         }
@@ -1294,6 +1293,7 @@ int32_t MediaLibraryObjectUtils::CopyDir(const shared_ptr<FileAsset> &srcDirAsse
     }
 
     int err = GetFileResult(resultSet, count, relativePath, displayName);
+    resultSet.reset();
     if (err <= 0) {
         return err;
     }
@@ -1553,6 +1553,7 @@ bool MediaLibraryObjectUtils::IsParentSmartAlbum(const int32_t id, const bool is
             if (queryResultSet->GoToFirstRow() != NativeRdb::E_OK) {
                 return true;
             }
+            queryResultSet.reset();
         } else {
             MEDIA_ERR_LOG("QuerySmartAlbum failed");
             return false;

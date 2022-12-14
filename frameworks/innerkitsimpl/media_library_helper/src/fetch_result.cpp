@@ -86,7 +86,10 @@ FetchResult<T>::FetchResult()
       resultset_(nullptr) {}
 
 template <class T>
-FetchResult<T>::~FetchResult() {}
+FetchResult<T>::~FetchResult()
+{
+    resultset_.reset();
+}
 
 template <class T>
 void FetchResult<T>::Close()

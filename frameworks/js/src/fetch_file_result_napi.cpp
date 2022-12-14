@@ -741,7 +741,12 @@ napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
         NAPI_ERR_LOG("Invalid arguments!, status: %{public}d", status);
         return jsResult;
     }
-
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if ((status == napi_ok) && (obj != nullptr)) {
+        obj->sFetchFileResult_ = nullptr;
+        obj->sFetchAlbumResult_ = nullptr;
+        obj->sFetchSmartAlbumResult_ = nullptr;
+    }
     status = napi_remove_wrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         napi_create_int32(env, SUCCESS, &jsResult);
