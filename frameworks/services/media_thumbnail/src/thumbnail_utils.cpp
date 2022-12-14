@@ -352,8 +352,7 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
-    auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    return resultSet;
+    return opts.store->QueryByStep(rdbPredicates, column);
 }
 
 shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
@@ -468,8 +467,6 @@ bool ThumbnailUtils::QueryHasLcdFiles(ThumbRdbOpt &opts, vector<ThumbnailRdbData
             infos.push_back(data);
         }
     } while (resultSet->GoToNextRow() == E_OK);
-
-    resultSet.reset();
     return true;
 }
 
@@ -503,8 +500,6 @@ bool ThumbnailUtils::QueryHasThumbnailFiles(ThumbRdbOpt &opts, vector<ThumbnailR
             infos.push_back(data);
         }
     } while (resultSet->GoToNextRow() == E_OK);
-
-    resultSet.reset();
     return true;
 }
 
@@ -539,8 +534,6 @@ bool ThumbnailUtils::QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimi
             infos.push_back(data);
         }
     } while (resultSet->GoToNextRow() == E_OK);
-
-    resultSet.reset();
     return true;
 }
 
@@ -580,8 +573,6 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
             infos.push_back(data);
         }
     } while (resultSet->GoToNextRow() == E_OK);
-
-    resultSet.reset();
     return true;
 }
 
@@ -621,8 +612,6 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
             infos.push_back(data);
         }
     } while (resultSet->GoToNextRow() == E_OK);
-
-    resultSet.reset();
     return true;
 }
 
@@ -666,7 +655,6 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailRd
             infos.push_back(data);
         }
     } while (resultSet->GoToNextRow() == E_OK);
-    resultSet.reset();
     return true;
 }
 
@@ -748,8 +736,6 @@ bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, vector<Thumb
         ParseQueryResult(resultSet, data, err);
         infos.push_back(data);
     } while (resultSet->GoToNextRow() == E_OK);
-
-    resultSet.reset();
     return true;
 }
 
@@ -767,7 +753,6 @@ bool ThumbnailUtils::GetRemoteThumbnailInfo(ThumbRdbOpt &opts, const string &id,
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return false;
     }
-    resultSet.reset();
     return true;
 }
 

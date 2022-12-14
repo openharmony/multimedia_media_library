@@ -114,6 +114,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibrarySmartAlbumMapOperations::QueryAgein
         MEDIA_ERR_LOG("Failed to query rdb");
         return nullptr;
     }
+    resultSet.reset();
     int64_t dateAgeing = MediaFileUtils::UTCTimeSeconds();
     string strAgeingQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + "> 0" + " AND " + to_string(dateAgeing) + " - " +
         MEDIA_DATA_DB_DATE_TRASHED + " > " + to_string(recycleDays * ONEDAY_TO_SEC);

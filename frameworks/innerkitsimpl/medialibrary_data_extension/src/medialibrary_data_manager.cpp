@@ -289,7 +289,6 @@ int32_t MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAss
             ResultSetUtils::GetValFromColumn(DIRECTORY_DB_EXTENSION, queryResultSet, TYPE_STRING)));
         outDirQuerySetMap.insert(make_pair(dirVal, dirAsset));
     }
-    MEDIA_DEBUG_LOG("MakeDirQuerySetMap OUT");
     return E_OK;
 }
 
