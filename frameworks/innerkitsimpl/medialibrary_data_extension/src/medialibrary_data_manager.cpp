@@ -37,6 +37,7 @@
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
+#include "medialibrary_inotify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
@@ -140,10 +141,10 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS:
 
     ret = InitDeviceData();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init DeviceData");
-    
+
     ret = MakeDirQuerySetMap(dirQuerySetMap_);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to MakeDirQuerySetMap");
-    
+
     MakeRootDirs();
     ret = InitialiseKvStore();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init KvStore");
@@ -193,6 +194,10 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     if (thumbnailService_ != nullptr) {
         thumbnailService_->ReleaseService();
         thumbnailService_ = nullptr;
+    }
+    auto watch = MediaLibraryInotify::GetInstance();
+    if (watch != nullptr) {
+        watch->DoStop();
     }
     MediaLibraryUnistoreManager::GetInstance().Stop();
     extension_ = nullptr;
