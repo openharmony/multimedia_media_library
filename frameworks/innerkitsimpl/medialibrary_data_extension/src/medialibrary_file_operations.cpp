@@ -81,19 +81,16 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd
 
 int32_t MediaLibraryFileOperations::CreateFileOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_DEBUG_LOG("enter");
     return MediaLibraryObjectUtils::CreateFileObj(cmd);
 }
 
 int32_t MediaLibraryFileOperations::CloseFileOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_DEBUG_LOG("enter");
     return MediaLibraryObjectUtils::CloseFile(cmd);
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFavFiles(MediaLibraryCommand &cmd)
 {
-    MEDIA_DEBUG_LOG("enter");
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_IS_FAV, "1");
     cmd.GetAbsRdbPredicates()->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(MEDIA_TYPE_ALBUM));
 
@@ -102,7 +99,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFavFiles(Media
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryTrashFiles(MediaLibraryCommand &cmd)
 {
-    MEDIA_DEBUG_LOG("enter");
     cmd.GetAbsRdbPredicates()
         ->GreaterThan(MEDIA_DATA_DB_DATE_TRASHED, std::to_string(NOT_TRASHED))
         ->And()
@@ -113,7 +109,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryTrashFiles(Med
 
 int32_t MediaLibraryFileOperations::GetAlbumCapacityOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_DEBUG_LOG("enter");
     int32_t errorCode = E_FAIL;
     shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
 
@@ -197,7 +192,6 @@ int32_t MediaLibraryFileOperations::DeleteFileOperation(MediaLibraryCommand &cmd
 
 int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cmd)
 {
-    MEDIA_DEBUG_LOG("enter");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr");
