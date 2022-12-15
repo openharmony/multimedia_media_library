@@ -648,22 +648,19 @@ int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &file
     return E_SUCCESS;
 }
 
-int32_t HandleFileRename(const shared_ptr<NativeRdb::ResultSet> &result, const string &displayName,
-    const string &destRelativePath)
+int32_t HandleFileRename(const shared_ptr<FileAsset> &fileAsset)
 {
     string uri = MEDIALIBRARY_DATA_URI;
     Uri updateAssetUri(uri + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_MODIFYASSET);
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result));
-    string fileUri = GetStringVal(MEDIA_DATA_DB_URI, result) + SLASH_CHAR +
-        to_string(GetInt32Val(MEDIA_DATA_DB_ID, result));
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
+    string fileUri = fileAsset->GetUri() + SLASH_CHAR + to_string(fileAsset->GetId());
     valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
-    valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
-    predicates.SetWhereArgs({ to_string(GetInt32Val(MEDIA_DATA_DB_ID, result)) });
-    result->Close();
+    predicates.SetWhereArgs({ to_string(fileAsset->GetId()) });
     auto ret = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucket, predicates);
     if (ret > 0) {
         return E_SUCCESS;
@@ -724,15 +721,15 @@ int32_t UpdateSubFilesBucketName(const string &srcId, const string &displayName)
     return MediaLibraryDataManager::GetInstance()->rdbStore_->ExecuteSql(modifySql);
 }
 
-int32_t HandleAlbumRename(const shared_ptr<NativeRdb::ResultSet> &result, const string &displayName)
+int32_t HandleAlbumRename(const shared_ptr<FileAsset> &fileAsset)
 {
-    if (GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result).empty()) {
+    if (fileAsset->GetRelativePath().empty()) {
         MEDIA_ERR_LOG("Rename dir in root dir, denied");
         return E_DENIED_RENAME;
     }
-    string srcPath = GetStringVal(MEDIA_DATA_DB_FILE_PATH, result);
+    string srcPath = fileAsset->GetPath();
     size_t slashIndex = srcPath.rfind(SLASH_CHAR);
-    string destPath = srcPath.substr(0, slashIndex) + SLASH_CHAR + displayName;
+    string destPath = srcPath.substr(0, slashIndex) + SLASH_CHAR + fileAsset->GetDisplayName();
     if (MediaFileExtentionUtils::IsFileExistInDb(destPath)) {
         MEDIA_ERR_LOG("Rename file is existed %{private}s", destPath.c_str());
         return E_FILE_EXIST;
@@ -743,19 +740,19 @@ int32_t HandleAlbumRename(const shared_ptr<NativeRdb::ResultSet> &result, const 
         return E_MODIFY_DATA_FAIL;
     }
     // update parent info
-    string parentPath = ROOT_MEDIA_DIR + GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+    string parentPath = ROOT_MEDIA_DIR + fileAsset->GetRelativePath();
     parentPath.pop_back();
     MediaLibraryObjectUtils::UpdateDateModified(parentPath);
 
     // update album info
-    string srcId = to_string(GetInt32Val(MEDIA_DATA_DB_ID, result));
-    int32_t updateResult = UpdateRenamedAlbumInfo(srcId, displayName, destPath);
+    string srcId = to_string(fileAsset->GetId());
+    int32_t updateResult = UpdateRenamedAlbumInfo(srcId, fileAsset->GetDisplayName(), destPath);
     CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL, "UpdateRenamedAlbumInfo failed");
 
     // update child info
     updateResult = UpdateSubFilesPath(srcPath, destPath);
     CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL, "UpdateSubFilesPath failed");
-    updateResult = UpdateSubFilesBucketName(srcId, displayName);
+    updateResult = UpdateSubFilesBucketName(srcId, fileAsset->GetDisplayName());
     CHECK_AND_RETURN_RET_LOG(updateResult == NativeRdb::E_OK, E_UPDATE_DB_FAIL,
         "UpdateSubFilesBucketName failed");
     return E_SUCCESS;
@@ -775,11 +772,20 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const string &
     auto result = GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri, columns);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_MODIFY_DATA_FAIL, "Rename source uri is not correct %{public}s",
         sourceUri.c_str());
-    string destRelativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
-    if (GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result) == MediaType::MEDIA_TYPE_ALBUM) {
-        ret = HandleAlbumRename(result, displayName);
+
+    auto fileAsset = make_shared<FileAsset>();
+    fileAsset->SetId(GetInt32Val(MEDIA_DATA_DB_ID, result));
+    fileAsset->SetUri(GetStringVal(MEDIA_DATA_DB_URI, result));
+    fileAsset->SetPath(GetStringVal(MEDIA_DATA_DB_FILE_PATH, result));
+    fileAsset->SetDisplayName(displayName);
+    fileAsset->SetMediaType(static_cast<MediaType>(GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result)));
+    fileAsset->SetRelativePath(GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result));
+    result->Close();
+
+    if (fileAsset->GetMediaType() == MediaType::MEDIA_TYPE_ALBUM) {
+        ret = HandleAlbumRename(fileAsset);
     } else {
-        ret = HandleFileRename(result, displayName, destRelativePath);
+        ret = HandleFileRename(fileAsset);
     }
     if (ret == E_SUCCESS) {
         newFileUri = Uri(sourceUri);
