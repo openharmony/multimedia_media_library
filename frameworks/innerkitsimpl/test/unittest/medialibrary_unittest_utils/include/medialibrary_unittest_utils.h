@@ -45,6 +45,8 @@ public:
     static bool CreateFile(std::string displayName, std::shared_ptr<FileAsset> parentAlbumAsset,
         std::shared_ptr<FileAsset> &fileAsset);
     static bool DeleteDir(const std::string &path, const std::string &dirId);
+    static void TrashFile(std::shared_ptr<FileAsset> &fileAsset);
+    static void RecoveryFile(std::shared_ptr<FileAsset> &fileAsset);
 private:
     static inline bool isValid_ = false;
     static inline std::unordered_map<std::string, std::shared_ptr<FileAsset>> rootDirAssetMap_;

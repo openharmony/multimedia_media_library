@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 <configuration ver="2.0">
-    <target name="medialibrary_datashare_unittest">
+    <target name="medialibrary_datamanager_unittest">
         <preparer>
             <option name="shell" value="rm -rf /storage/media/100/local/files/*"/>
             <option name="shell" value="rm -rf /storage/media/100/local/files/.*"/>
