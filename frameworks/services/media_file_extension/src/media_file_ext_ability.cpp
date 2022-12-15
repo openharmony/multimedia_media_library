@@ -139,7 +139,6 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayN
     string parentUriStr = parentUri.ToString();
     auto ret = MediaFileExtentionUtils::CheckUriSupport(parentUriStr);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
-    Uri createFileUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_CREATEASSET);
     vector<string> columns = { MEDIA_DATA_DB_FILE_PATH };
     auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, parentUriStr, columns);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_URI_INVALID, "CreateFile parent uri is not correct: %{public}s",
@@ -152,6 +151,7 @@ int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayN
     valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, MediaFileUtils::GetMediaType(displayName));
+    Uri createFileUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_CREATEASSET);
     ret = MediaLibraryDataManager::GetInstance()->Insert(createFileUri, valuesBucket);
     if (ret > 0) {
         newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", ret));
