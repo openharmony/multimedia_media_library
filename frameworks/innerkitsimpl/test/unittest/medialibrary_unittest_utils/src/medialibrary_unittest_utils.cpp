@@ -182,5 +182,27 @@ bool MediaLibraryUnitTestUtils::DeleteDir(const string &path, const string &dirI
     int retVal =  MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, predicates);
     return retVal > 0;
 }
+
+void MediaLibraryUnitTestUtils::TrashFile(shared_ptr<FileAsset> &fileAsset)
+{
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileAsset->GetId());
+    string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM;
+    Uri uri(uriString);
+    MediaLibraryDataManager::GetInstance()->Insert(uri, valuesBucket);
+}
+
+void MediaLibraryUnitTestUtils::RecoveryFile(shared_ptr<FileAsset> &fileAsset)
+{
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileAsset->GetId());
+    string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
+        MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
+    Uri uri(uriString);
+    MediaLibraryDataManager::GetInstance()->Insert(uri, valuesBucket);
+}
 }
 }
