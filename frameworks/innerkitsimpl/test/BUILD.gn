@@ -16,8 +16,8 @@ group("test") {
 
   deps = [
     "fuzztest/medialibrary_fuzzer:fuzztest",
-    "unittest/mediadatashare_test:unittest",
     "unittest/medialib_statistic_test:unittest",
+    "unittest/medialibrary_datamanager_test:unittest",
     "unittest/medialibrary_fileext_test:unittest",
     "unittest/medialibrary_helper_test:unittest",
     "unittest/medialibrary_mtp_test:unittest",
