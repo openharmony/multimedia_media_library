@@ -33,8 +33,6 @@ public:
     static int32_t CloseFileOperation(MediaLibraryCommand &cmd);
     static int32_t GetAlbumCapacityOperation(MediaLibraryCommand &cmd);
     static int32_t ModifyFileOperation(MediaLibraryCommand &cmd);
-    static int32_t DeleteFileOperation(MediaLibraryCommand &cmd,
-        const std::unordered_map<std::string, DirAsset> &dirQuerySetMap);
     static int32_t CopyFileOperation(MediaLibraryCommand &cmd);
     static int32_t IsDirectoryOperation(MediaLibraryCommand &cmd);
     static std::shared_ptr<NativeRdb::ResultSet> QueryFileOperation(MediaLibraryCommand &cmd,

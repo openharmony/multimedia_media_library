@@ -38,17 +38,6 @@ int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &c
     return errCode;
 }
 
-int32_t MediaLibraryAlbumOperations::DeleteAlbumOperation(MediaLibraryCommand &cmd)
-{
-    string strId = cmd.GetOprnFileId();
-    string dirPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strId);
-    if (dirPath.empty()) {
-        MEDIA_ERR_LOG("Get path of id %{private}s from database file!", strId.c_str());
-        return E_INVALID_PATH;
-    }
-    return MediaLibraryObjectUtils::DeleteDirObj(cmd, dirPath);
-}
-
 // only support modify in the same parent folder, like: a/b/c --> a/b/d
 int32_t MediaLibraryAlbumOperations::ModifyAlbumOperation(MediaLibraryCommand &cmd)
 {

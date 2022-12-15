@@ -1306,7 +1306,9 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
     string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + "/" + deleteId;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, context->typeMask);
     Uri deleteAssetUri(deleteUri);
-    int retVal = UserFileClient::Delete(deleteAssetUri, {});
+    DataSharePredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_ID, deleteId);
+    int retVal = UserFileClient::Delete(deleteAssetUri, predicates);
     if (retVal < 0) {
         context->SaveError(retVal);
     } else {
