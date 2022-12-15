@@ -71,7 +71,8 @@ public:
     static bool CheckUriValid(const std::string &uri);
     static bool CheckDistributedUri(const std::string &uri);
     static int32_t CheckUriSupport(const std::string &uri);
-    static std::shared_ptr<NativeRdb::ResultSet> GetResultSetFromDb(std::string field, const std::string &uri);
+    static std::shared_ptr<NativeRdb::ResultSet> GetResultSetFromDb(std::string field, const std::string &uri,
+        const std::vector<std::string> &columns);
     static bool IsFileExistInDb(const std::string &path);
     static int32_t ResolveUri(const FileAccessFwk::FileInfo &fileInfo, MediaFileUriType &uriType);
     static bool CheckValidDirName(const std::string &displayName);
