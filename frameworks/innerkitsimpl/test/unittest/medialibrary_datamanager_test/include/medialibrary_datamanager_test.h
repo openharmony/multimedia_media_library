@@ -13,28 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIADATAABILITY_TEST_INCLUDE_MEDIADATAABILITY_UNIT_TEST_H
-#define FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIADATAABILITY_TEST_INCLUDE_MEDIADATAABILITY_UNIT_TEST_H
+#ifndef MEDIALIBRARY_DATAMANAGER_UNIT_TEST_H
+#define MEDIALIBRARY_DATAMANAGER_UNIT_TEST_H
 
 #include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-class MediaDataShareUnitTest : public testing::Test {
+class MediaLibraryDataManagerUnitTest : public testing::Test {
 public:
-    /* SetUpTestCase:The preset action of the test suite is executed before the first TestCase */
     static void SetUpTestCase(void);
-
-    /* TearDownTestCase:The test suite cleanup action is executed after the last TestCase */
     static void TearDownTestCase(void);
-
-    /* SetUp:Execute before each test case */
     void SetUp();
-
-    /* TearDown:Execute after each test case */
     void TearDown();
 };
 } // namespace Media
 } // namespace OHOS
-
-#endif  // FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIADATAABILITY_TEST_INCLUDE_MEDIADATAABILITY_UNIT_TEST_H
+#endif // MEDIALIBRARY_DATAMANAGER_UNIT_TEST_H
