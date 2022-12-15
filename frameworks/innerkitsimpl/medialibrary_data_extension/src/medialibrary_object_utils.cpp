@@ -167,7 +167,7 @@ void GetRelativePathFromValues(ValuesBucket &values, string &relativePath, int32
     if (values.GetObject(MEDIA_DATA_DB_URI, valueObject)) {
         string albumUri;
         valueObject.GetString(albumUri);
-        auto albumAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(albumUri);
+        auto albumAsset = MediaLibraryObjectUtils::GetFileAssetFromUri(albumUri);
         if (albumAsset != nullptr) {
             relativePath = albumAsset->GetRelativePath() + albumAsset->GetDisplayName() + SLASH_CHAR;
         }
@@ -427,78 +427,104 @@ static inline void InvalidateThumbnail(const string &id)
     }
 }
 
-// Restriction: input param cmd MUST have file id in either uri or valuebucket
-int32_t MediaLibraryObjectUtils::DeleteFileObj(MediaLibraryCommand &cmd, const string &filePath)
+int32_t MediaLibraryObjectUtils::DeleteMisc(const int32_t fileId, const string &filePath, const int32_t parentId)
 {
-    FileAsset fileAsset;
-    int32_t errCode = fileAsset.DeleteAsset(filePath);
-    if (errCode != E_SUCCESS) {
-        MEDIA_ERR_LOG("Delete file in filesystem failed! errorcode = %{public}d", errCode);
-        return errCode;
+    // 1) update parent's modify time
+    string parentPath = MediaLibraryDataManagerUtils::GetParentPath(filePath);
+    auto updatedRows = UpdateDateModified(parentPath);
+    if (updatedRows <= 0) {
+        MEDIA_ERR_LOG("Update album date_modified failed, path: %{private}s", parentPath.c_str());
     }
-    // must get parent id BEFORE deleting file in database
-    string fileId = cmd.GetOprnFileId();
-    if (fileId.empty()) {
-        MEDIA_ERR_LOG("Get id from uri or valuebucket failed!");
-        return E_INVALID_FILEID;
-    }
-    InvalidateThumbnail(fileId);
-    int32_t parentId = GetParentIdByIdFromDb(fileId);
-    int32_t deleteRows = DeleteInfoByIdInDb(cmd);
-    if (deleteRows <= 0) {
-        MEDIA_ERR_LOG("Delete file info in database failed!");
-        return deleteRows;
-    }
-    // if delete successfully, 1) update modify time
-    string dirPath = MediaLibraryDataManagerUtils::GetParentPath(filePath);
-    UpdateDateModified(dirPath);
     // 2) recursively delete empty parent dirs
     if (DeleteEmptyDirsRecursively(parentId) != E_SUCCESS) {
         return E_DELETE_DIR_FAIL;
     }
     // 3) delete relative records in smart album
     MediaLibraryCommand deleteSmartMapCmd(OperationObject::SMART_ALBUM_MAP, OperationType::DELETE);
-    deleteSmartMapCmd.GetAbsRdbPredicates()->EqualTo(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileId);
-    deleteRows = DeleteInfoByIdInDb(deleteSmartMapCmd);
-    return deleteRows;
+    deleteSmartMapCmd.GetAbsRdbPredicates()->EqualTo(SMARTALBUMMAP_DB_CHILD_ASSET_ID, to_string(fileId));
+    return DeleteInfoByIdInDb(deleteSmartMapCmd);
 }
 
-int32_t MediaLibraryObjectUtils::DeleteDirObj(MediaLibraryCommand &cmd, const string &dirPath)
+// Restriction: input param cmd MUST have file id in either uri or valuebucket
+int32_t MediaLibraryObjectUtils::DeleteFileObj(const std::shared_ptr<FileAsset> &fileAsset)
 {
-    MEDIA_DEBUG_LOG("enter, path = %{private}s", dirPath.c_str());
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr!");
-        return E_HAS_DB_ERROR;
+    // delete file in filesystem
+    string filePath = fileAsset->GetPath();
+    if (!MediaFileUtils::DeleteFile(filePath)) {
+        MEDIA_ERR_LOG("Delete file asset failed, errno: %{public}d", errno);
+        return E_HAS_FS_ERROR;
     }
 
-    AlbumAsset dirAsset;
-    if (!dirAsset.DeleteAlbumAsset(dirPath)) {
-        MEDIA_ERR_LOG("Delete album asset failed!");
-        return E_DELETE_DIR_FAIL;
-    }
+    // delete thumbnail
+    int32_t fileId = fileAsset->GetId();
+    InvalidateThumbnail(to_string(fileId));
 
-    int32_t parentId = GetParentIdByIdFromDb(cmd.GetOprnFileId());
+    // delete file in db
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
+    cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(fileId));
     int32_t deleteRows = DeleteInfoByIdInDb(cmd);
     if (deleteRows <= 0) {
-        MEDIA_ERR_LOG("Delete album info in database failed!");
-        return E_DELETE_DIR_FAIL;
+        MEDIA_ERR_LOG("Delete file info in database failed!");
+        return deleteRows;
     }
-    // need to delete subfiles in the album when deleting album, delete: xx/xxx/album_name/%
-    MediaLibraryCommand deleteSubfilesCmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
-    string pathPrefix = dirPath.back() != '/' ? (dirPath + "/") : dirPath;
-    deleteSubfilesCmd.GetAbsRdbPredicates()->BeginsWith(MEDIA_DATA_DB_FILE_PATH, pathPrefix);
 
-    int32_t deletedRows = -1;
-    int32_t deleteResult = uniStore->Delete(deleteSubfilesCmd, deletedRows);
-    if (deleteResult != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Delete subfiles in album %{private}s failed", pathPrefix.c_str());
-        return deleteResult;
+    return DeleteMisc(fileId, filePath, fileAsset->GetParent());
+}
+
+int32_t DeleteInfoRecursively(const shared_ptr<FileAsset> &fileAsset)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "UniStore is nullptr");
+
+    string fileId = to_string(fileAsset->GetId());
+    if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
+        MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+        queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, fileId);
+        if (fileAsset->GetIsTrash() == NOT_TRASHED) {
+            queryCmd.GetAbsRdbPredicates()->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
+        } else {
+            queryCmd.GetAbsRdbPredicates()->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(TRASHED_DIR_CHILD));
+        }
+        vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_TRASH };
+        auto result = uniStore->QueryOld(queryCmd, columns);
+        CHECK_AND_RETURN_RET_LOG(result != nullptr, E_DB_FAIL, "Get child assets failed.");
+
+        while (result->GoToNextRow() == NativeRdb::E_OK) {
+            auto childAsset = make_shared<FileAsset>();
+            childAsset->SetId(GetInt32Val(MEDIA_DATA_DB_ID, result));
+            childAsset->SetMediaType(static_cast<MediaType>(GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result)));
+            childAsset->SetIsTrash(GetInt32Val(MEDIA_DATA_DB_IS_TRASH, result));
+            auto ret = DeleteInfoRecursively(childAsset);
+            CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret,
+                "Delete file info in database failed, file_id: %{public}d, ret: %{public}d", childAsset->GetId(), ret);
+        }
     }
-    if (DeleteEmptyDirsRecursively(parentId) != E_SUCCESS) {
-        return E_DELETE_DIR_FAIL;
+
+    InvalidateThumbnail(fileId);
+    MediaLibraryCommand deleteCmd(Uri(MEDIALIBRARY_DATA_URI), OperationType::DELETE);
+    int32_t deleteRows = MediaLibraryObjectUtils::DeleteInfoByIdInDb(deleteCmd, fileId);
+    if (deleteRows <= 0) {
+        MEDIA_ERR_LOG("Delete file info in database failed, file_id: %{public}s", fileId.c_str());
+        return E_DB_FAIL;
     }
-    return deleteRows;
+    return E_SUCCESS;
+}
+
+int32_t MediaLibraryObjectUtils::DeleteDirObj(const std::shared_ptr<FileAsset> &dirAsset)
+{
+    // delete dir in filesystem
+    string dirPath = dirAsset->GetPath();
+    if (!MediaFileUtils::DeleteDir(dirPath)) {
+        MEDIA_ERR_LOG("Delete album asset failed, errno: %{public}d", errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    // delete dir and children in db
+    auto ret = DeleteInfoRecursively(dirAsset);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret,
+        "Delete file info in database failed, file_id: %{public}d, ret: %{public}d", dirAsset->GetId(), ret);
+
+    return DeleteMisc(dirAsset->GetId(), dirPath, dirAsset->GetParent());
 }
 
 // Restriction: input param cmd MUST have id in uri
@@ -607,7 +633,7 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
 {
     MEDIA_DEBUG_LOG("enter");
     string uriString = cmd.GetUri().ToString();
-    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(uriString);
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromUri(uriString);
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain path from Database");
         return E_INVALID_URI;
@@ -732,11 +758,11 @@ int32_t MediaLibraryObjectUtils::ProcessHiddenDir(const string &dstDirName, cons
     return E_SUCCESS;
 }
 
-void MediaLibraryObjectUtils::UpdateDateModified(const string &dirPath)
+int32_t MediaLibraryObjectUtils::UpdateDateModified(const string &dirPath)
 {
     if (dirPath.empty()) {
         MEDIA_ERR_LOG("Path is empty, update failed!");
-        return;
+        return E_INVALID_PATH;
     }
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
@@ -744,16 +770,11 @@ void MediaLibraryObjectUtils::UpdateDateModified(const string &dirPath)
     valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::GetAlbumDateModified(dirPath));
     cmd.SetValueBucket(valuesBucket);
 
-    (void)ModifyInfoByPathInDb(cmd, dirPath);
+    return ModifyInfoByPathInDb(cmd, dirPath);
 }
 
-shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &uriStr)
+shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromId(const string &id, const string &networkId)
 {
-    MEDIA_DEBUG_LOG("enter");
-
-    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriStr);
-    string networkId = MediaFileUtils::GetNetworkIdFromUri(uriStr);
-
     if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) || (stoi(id) == -1)) {
         MEDIA_ERR_LOG("Id for the path is incorrect: %{public}s", id.c_str());
         return nullptr;
@@ -775,6 +796,14 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromDb(const string &
     }
     fetchFileResult->SetNetworkId(networkId);
     return fetchFileResult->GetObjectFromRdb(resultSet, 0);
+}
+
+shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromUri(const string &uriStr)
+{
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriStr);
+    string networkId = MediaFileUtils::GetNetworkIdFromUri(uriStr);
+
+    return GetFileAssetFromId(id, networkId);
 }
 
 void MediaLibraryObjectUtils::GetDefaultRelativePath(const int32_t mediaType, string &relativePath)
@@ -1201,9 +1230,7 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
         MEDIA_ERR_LOG("Failed to obtain CreateFileObj");
         return outRow;
     }
-    Uri destUri(MEDIALIBRARY_DATA_URI + "/" + to_string(outRow));
-    string destUriString = destUri.ToString();
-    shared_ptr<FileAsset> destFileAsset = GetFileAssetFromDb(destUriString);
+    shared_ptr<FileAsset> destFileAsset = GetFileAssetFromId(to_string(outRow));
     if (destFileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain path from Database");
         return E_INVALID_URI;
@@ -1302,7 +1329,7 @@ int32_t MediaLibraryObjectUtils::CopyDir(const shared_ptr<FileAsset> &srcDirAsse
     }
     Uri srcUri(MEDIALIBRARY_DATA_URI + "/" + to_string(outRow));
     string srcUriString = srcUri.ToString();
-    shared_ptr<FileAsset> srcAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(srcUriString);
+    shared_ptr<FileAsset> srcAsset = MediaLibraryObjectUtils::GetFileAssetFromUri(srcUriString);
     if (srcAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain parentAsset from Database");
         return E_INVALID_URI;

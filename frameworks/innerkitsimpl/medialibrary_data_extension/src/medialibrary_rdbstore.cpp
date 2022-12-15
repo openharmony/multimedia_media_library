@@ -145,7 +145,7 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     return ret;
 }
 
-int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &rowId)
+int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedRows)
 {
     MEDIA_DEBUG_LOG("Delete");
     if (rdbStore_ == nullptr) {
@@ -153,7 +153,7 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &rowId)
         return E_HAS_DB_ERROR;
     }
 
-    int32_t ret = rdbStore_->Delete(rowId, cmd.GetTableName(), cmd.GetAbsRdbPredicates()->GetWhereClause(),
+    int32_t ret = rdbStore_->Delete(deletedRows, cmd.GetTableName(), cmd.GetAbsRdbPredicates()->GetWhereClause(),
         cmd.GetAbsRdbPredicates()->GetWhereArgs());
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Delete failed, ret = %{public}d", ret);
@@ -168,7 +168,7 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &rowId)
     return ret;
 }
 
-int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
+int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedRows)
 {
     MEDIA_DEBUG_LOG("Update");
     if (rdbStore_ == nullptr) {
@@ -176,7 +176,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
         return E_HAS_DB_ERROR;
     }
 
-    int32_t ret = rdbStore_->Update(rowId, cmd.GetTableName(), cmd.GetValueBucket(),
+    int32_t ret = rdbStore_->Update(changedRows, cmd.GetTableName(), cmd.GetValueBucket(),
         cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Update failed, ret = %{public}d", ret);

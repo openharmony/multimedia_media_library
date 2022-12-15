@@ -425,19 +425,19 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
     cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
 
-    vector<string> devices;
     switch (cmd.GetOprnObject()) {
-        case OperationObject::FILESYSTEM_ASSET: {
-            auto ret = MediaLibraryFileOperations::DeleteFileOperation(cmd, dirQuerySetMap_);
-            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-            return ret;
-        }
+        case OperationObject::FILESYSTEM_ASSET:
         case OperationObject::FILESYSTEM_DIR:
-            return MediaLibraryDirOperations::DeleteDirOperation(cmd);
         case OperationObject::FILESYSTEM_ALBUM: {
-            auto ret = MediaLibraryAlbumOperations::DeleteAlbumOperation(cmd);
-            MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName_, MEDIALIBRARY_TABLE, devices);
-            return ret;
+            string fileId = cmd.GetOprnFileId();
+            auto fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(fileId);
+            CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
+                fileId.c_str());
+            if (fileAsset->GetRelativePath() == "") {
+                return E_DELETE_DENIED;
+            }
+            return (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) ?
+                MediaLibraryObjectUtils::DeleteFileObj(fileAsset) : MediaLibraryObjectUtils::DeleteDirObj(fileAsset);
         }
         default:
             break;

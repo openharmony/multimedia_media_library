@@ -133,7 +133,7 @@ public:
 
     int32_t CreateAsset(const std::string &filePath);
     int32_t ModifyAsset(const std::string &oldPath, const std::string &newPath);
-    int32_t DeleteAsset(const std::string &filePath);
+    static int32_t DeleteAsset(const std::string &filePath);
     int32_t OpenAsset(const std::string &filePath, const std::string &mode);
     int32_t CloseAsset(int32_t fd);
     bool IsFileExists(const std::string &filePath);

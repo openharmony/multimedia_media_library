@@ -55,8 +55,8 @@ public:
 
 private:
     static std::string MakeSuffixPathName(std::string &assetPath);
-    static int32_t DeleteFileAssetsInfoUtil(const std::unique_ptr<FileAsset> &fileAsset);
-    static int32_t DeleteDirAssetsInfoUtil(const std::unique_ptr<FileAsset> &fileAsset);
+    static int32_t DeleteFileAssetsInfoUtil(std::unique_ptr<FileAsset> &fileAsset);
+    static int32_t DeleteDirAssetsInfoUtil(std::unique_ptr<FileAsset> &fileAsset);
     static int32_t UpdateFavoriteAssetsInfoUtil(const int32_t fileAssetId, const bool isFavorites);
     static int32_t InsertTrashAssetsInfoUtil(const int32_t fileAssetId, MediaLibraryCommand &cmd);
     static int32_t TrashFileAssetsInfoUtil(const int32_t assetId, MediaLibraryCommand &cmd);

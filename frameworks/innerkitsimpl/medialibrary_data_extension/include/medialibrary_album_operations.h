@@ -29,7 +29,6 @@ namespace Media {
 class MediaLibraryAlbumOperations {
 public:
     static int32_t CreateAlbumOperation(MediaLibraryCommand &cmd);
-    static int32_t DeleteAlbumOperation(MediaLibraryCommand &cmd);
     static int32_t ModifyAlbumOperation(MediaLibraryCommand &cmd);
     static shared_ptr<NativeRdb::ResultSet> QueryAlbumOperation(MediaLibraryCommand &cmd,
         std::vector<std::string> columns);
