@@ -48,7 +48,7 @@ int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, str
     CHECK_AND_RETURN_RET_LOG(fpath != nullptr, E_FAIL, "fpath == nullptr");
     int32_t errRet = remove(fpath);
     if (errRet) {
-        MEDIA_ERR_LOG("Failed to remove path: %{private}s, errno: %{public}d", fpath, errno);
+        MEDIA_ERR_LOG("Failed to remove errno: %{public}d, path: %{private}s", errno, fpath);
     }
 
     return errRet;
