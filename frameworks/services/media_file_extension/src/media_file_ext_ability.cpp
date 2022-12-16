@@ -191,11 +191,7 @@ int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, 
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
     if (ret > 0) {
-        vector<string> columns = { MEDIA_DATA_DB_PARENT_ID };
-        auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_ID, to_string(ret), columns);
-        CHECK_AND_RETURN_RET_LOG(result != nullptr, E_URI_INVALID, "The ret value is invalid: %{public}d", ret);
-        int32_t dirId = GetInt32Val(MEDIA_DATA_DB_PARENT_ID, result);
-        newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", dirId));
+        newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", ret));
         return E_SUCCESS;
     } else {
         MEDIA_ERR_LOG("mkdir insert fail, %{public}d", ret);

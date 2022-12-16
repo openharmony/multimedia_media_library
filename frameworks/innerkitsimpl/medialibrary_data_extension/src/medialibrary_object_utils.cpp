@@ -223,6 +223,9 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
         return errCode;
     }
 
+    if (mediaType == MEDIA_TYPE_NOFILE) {
+        return dirAsset.GetAlbumId();
+    }
     return InsertFileInDb(cmd, fileAsset, dirAsset);
 }
 
