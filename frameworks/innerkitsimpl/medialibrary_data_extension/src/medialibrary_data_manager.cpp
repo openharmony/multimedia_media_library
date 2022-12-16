@@ -140,10 +140,10 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS:
 
     ret = InitDeviceData();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init DeviceData");
-    
+
     ret = MakeDirQuerySetMap(dirQuerySetMap_);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to MakeDirQuerySetMap");
-    
+
     MakeRootDirs();
     ret = InitialiseKvStore();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init KvStore");
@@ -808,9 +808,6 @@ bool MediaLibraryDataManager::CheckFileNameValid(const DataShareValuesBucket &va
         return false;
     }
 
-    if (displayName.at(0) == '.') {
-        return PermissionUtils::CheckCallerSpecialFilePerm(displayName);
-    }
     return true;
 }
 
