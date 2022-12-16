@@ -37,7 +37,7 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
     std::vector<std::string> columns;
     AbsRdbPredicates absPredDevice(DEVICE_TABLE);
     absPredDevice.EqualTo(DEVICE_DB_UDID, deviceInfo.deviceUdid);
-    auto queryResultSet = rdbStore->Query(absPredDevice, columns);
+    auto queryResultSet = rdbStore->QueryByStep(absPredDevice, columns);
 
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
@@ -76,7 +76,7 @@ bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const std::shared_ptr<Native
     AbsRdbPredicates absPredDevice(DEVICE_TABLE);
     absPredDevice.EqualTo(DEVICE_DB_UDID, deviceInfo.deviceUdid);
     MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateDeviceInfo dev");
-    auto queryResultSet = rdbStore->Query(absPredDevice, columns);
+    auto queryResultSet = rdbStore->QueryByStep(absPredDevice, columns);
 
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
@@ -122,7 +122,7 @@ bool MediaLibraryDeviceOperations::UpdateSyncStatus(const std::shared_ptr<Native
     AbsRdbPredicates absPredDevice(DEVICE_TABLE);
 
     absPredDevice.EqualTo(DEVICE_DB_UDID, udid);
-    auto queryResultSet = rdbStore->Query(absPredDevice, columns);
+    auto queryResultSet = rdbStore->QueryByStep(absPredDevice, columns);
 
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
@@ -147,7 +147,7 @@ bool MediaLibraryDeviceOperations::GetSyncStatusById(const std::shared_ptr<Nativ
     AbsRdbPredicates absPredDevice(DEVICE_TABLE);
 
     absPredDevice.EqualTo(DEVICE_DB_UDID, udid);
-    auto queryResultSet = rdbStore->Query(absPredDevice, columns);
+    auto queryResultSet = rdbStore->QueryByStep(absPredDevice, columns);
     if (queryResultSet == nullptr) {
         return false;
     }
@@ -167,7 +167,7 @@ bool MediaLibraryDeviceOperations::QueryDeviceTable(const std::shared_ptr<Native
     const int SHORT_UDID_LEN = 8;
     std::vector<std::string> columns;
     AbsRdbPredicates absPredDevice(DEVICE_TABLE);
-    auto queryResultSet = rdbStore->Query(absPredDevice, columns);
+    auto queryResultSet = rdbStore->QueryByStep(absPredDevice, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("MediaLibraryDeviceOperations::QueryDeviceTable fail");
         return false;
@@ -196,7 +196,7 @@ bool MediaLibraryDeviceOperations::GetAllDeviceData(
 {
     std::vector<std::string> columns;
     AbsRdbPredicates absPredDevice(DEVICE_TABLE);
-    auto queryResultSet = rdbStore->Query(absPredDevice, columns);
+    auto queryResultSet = rdbStore->QueryByStep(absPredDevice, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("MediaLibraryDeviceOperations::GetAllDeviceData fail");
         return false;
@@ -227,7 +227,7 @@ bool MediaLibraryDeviceOperations::GetAgingDeviceData(
     AbsRdbPredicates absPredevice(DEVICE_TABLE);
     absPredevice.GreaterThan(DEVICE_DB_DATE_MODIFIED, to_string(0))->And()->
         LessThan(DEVICE_DB_DATE_MODIFIED, to_string(agingTime));
-    auto queryResultSet = rdbStore->Query(absPredevice, columns);
+    auto queryResultSet = rdbStore->QueryByStep(absPredevice, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("GetAgingDeviceData fail");
         return false;
@@ -260,7 +260,7 @@ bool MediaLibraryDeviceOperations::GetAllDeviceUdid(const shared_ptr<RdbStore> &
 {
     vector<string> columns;
     AbsRdbPredicates absPreDevice(DEVICE_TABLE);
-    auto queryResultSet = rdbStore->Query(absPreDevice, columns);
+    auto queryResultSet = rdbStore->QueryByStep(absPreDevice, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("MediaLibraryDeviceOperations::GetAllDeviceUdid fail");
         return false;

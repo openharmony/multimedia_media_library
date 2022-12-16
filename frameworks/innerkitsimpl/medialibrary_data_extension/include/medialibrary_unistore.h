@@ -43,6 +43,11 @@ public:
     {
         return nullptr;
     }
+    virtual std::shared_ptr<NativeRdb::ResultSet> QueryOld(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns)
+    {
+        return nullptr;
+    }
 
     virtual bool SyncPullAllTableByDeviceId(const std::string &bundleName, std::vector<std::string> &devices)
     {
