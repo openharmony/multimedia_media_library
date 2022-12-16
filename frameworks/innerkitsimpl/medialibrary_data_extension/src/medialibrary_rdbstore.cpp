@@ -213,6 +213,31 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCo
     MEDIA_DEBUG_LOG("limit = %d", predicates->GetLimit());
 #endif
 
+    return rdbStore_->QueryByStep(*predicates, columns);
+}
+
+std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryOld(MediaLibraryCommand &cmd,
+    const vector<string> &columns)
+{
+    MEDIA_DEBUG_LOG("QueryOld");
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        return nullptr;
+    }
+
+    auto predicates = cmd.GetAbsRdbPredicates();
+#ifdef ML_DEBUG
+    MEDIA_DEBUG_LOG("tablename = %s", cmd.GetTableName().c_str());
+    for (auto &col : columns) {
+        MEDIA_DEBUG_LOG("col = %s", col.c_str());
+    }
+    MEDIA_DEBUG_LOG("whereClause = %s", predicates->GetWhereClause().c_str());
+    for (auto &arg : predicates->GetWhereArgs()) {
+        MEDIA_DEBUG_LOG("whereArgs = %s", arg.c_str());
+    }
+    MEDIA_DEBUG_LOG("limit = %d", predicates->GetLimit());
+#endif
+
     return rdbStore_->Query(*predicates, columns);
 }
 

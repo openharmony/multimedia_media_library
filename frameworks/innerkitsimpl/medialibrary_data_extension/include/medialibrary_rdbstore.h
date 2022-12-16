@@ -37,6 +37,8 @@ public:
     virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &rowId) override;
     std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns) override;
+    std::shared_ptr<NativeRdb::ResultSet> QueryOld(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns) override;
 
     bool SyncPullAllTableByDeviceId(const std::string &bundleName, std::vector<std::string> &devices) override;
     bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
