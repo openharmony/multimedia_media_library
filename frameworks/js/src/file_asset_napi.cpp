@@ -2200,21 +2200,9 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     string inputKey;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, inputKey), asyncContext,
         JS_ERR_PARAMETER_INVALID);
-    napi_status status;
-    napi_value thisVar = nullptr;
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     napi_value jsResult = nullptr;
-    if ((status != napi_ok) || (thisVar == nullptr)) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
-        return jsResult;
-    }
-    FileAssetNapi *obj = nullptr;
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    auto obj = asyncContext->objectInfo;
     napi_get_undefined(env, &jsResult);
-    if ((status != napi_ok) || (obj == nullptr)) {
-        NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
-        return jsResult;
-    }
     if (obj->fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
         // no exist throw error
         NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
@@ -2267,21 +2255,9 @@ napi_value FileAssetNapi::UserFileMgrSet(napi_env env, napi_callback_info info)
     string value;
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[ARGS_ONE], value),
         asyncContext, JS_ERR_PARAMETER_INVALID);
-    napi_status status;
-    napi_value thisVar = nullptr;
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
     napi_value jsResult = nullptr;
     napi_get_undefined(env, &jsResult);
-    if ((status != napi_ok) || (thisVar == nullptr)) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
-        return jsResult;
-    }
-    FileAssetNapi *obj = nullptr;
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    if (status != napi_ok || obj == nullptr) {
-        NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
-        return jsResult;
-    }
+    auto obj = asyncContext->objectInfo;
     if (!obj->HandleParamSet(inputKey, value)) {
         NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
         return jsResult;
