@@ -76,40 +76,12 @@ int32_t MediaLibraryDirOperations::CreateDirOperation(MediaLibraryCommand &cmd)
     return MediaLibraryObjectUtils::CreateFileObj(cmd);
 }
 
-int32_t MediaLibraryDirOperations::DeleteDirOperation(MediaLibraryCommand &cmd)
-{
-    ValueObject valueObject;
-    if (!cmd.GetValueBucket().GetObject(MEDIA_DATA_DB_URI, valueObject)) {
-        return E_HAS_DB_ERROR;
-    }
-    string uri;
-    valueObject.GetString(uri);
-    if (uri.empty()) {
-        return E_GET_VALUEBUCKET_FAIL;
-    }
-    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(uri);
-    if (fileAsset == nullptr) {
-        return E_GET_ASSET_FAIL;
-    }
-    if (fileAsset->GetParent() == 0) {
-        return E_DIR_DELETE_DIR_FAIL;
-    }
-    if (fileAsset->GetPath().empty()) {
-        MEDIA_ERR_LOG("Get path of id %{private}d from database file!", fileAsset->GetId());
-        return E_DIR_DELETE_DIR_FAIL;
-    }
-    return MediaLibraryObjectUtils::DeleteDirObj(cmd, fileAsset->GetPath());
-}
-
 int32_t MediaLibraryDirOperations::HandleDirOperation(MediaLibraryCommand &cmd)
 {
     int32_t errCode = E_FAIL;
     switch (cmd.GetOprnType()) {
         case OperationType::CREATE:
             errCode = CreateDirOperation(cmd);
-            break;
-        case OperationType::DELETE:
-            errCode = DeleteDirOperation(cmd);
             break;
         case OperationType::TRASH:
             errCode = TrashDirOperation(cmd);

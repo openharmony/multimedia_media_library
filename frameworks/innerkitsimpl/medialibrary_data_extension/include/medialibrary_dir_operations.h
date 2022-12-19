@@ -38,7 +38,6 @@ class MediaLibraryDirOperations {
 public:
     static int32_t HandleDirOperation(MediaLibraryCommand &cmd);
     static int32_t CreateDirOperation(MediaLibraryCommand &cmd);
-    static int32_t DeleteDirOperation(MediaLibraryCommand &cmd);
     static int32_t TrashDirOperation(MediaLibraryCommand &cmd);
 };
 } // namespace Media

@@ -440,55 +440,79 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_00
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_004::End");
 }
 
+/**
+ * @tc.number    : DataManager_Delete_Dir_Test_001
+ * @tc.name      : test delete dir: normal case
+ * @tc.desc      : 1.Create the parent album to be deleted: Delete_Dir_001
+ *                 2.Create album in Delete_Dir_002: Delete_Dir_002/dir1
+ *                 3.Create file in dir1: Delete_Dir_002/dir1/file2.txt
+ *                 4.Create album in dir1: Delete_Dir_002/dir1/dir2
+ *                 5.Create file in dir2: Delete_Dir_002/dir1/dir2/file3.txt
+ *                 6.Trash file3.txt
+ *                 7.Trash dir1
+ *                 8.Trash Delete_Dir_002
+ *                 8.Delete Delete_Dir_002
+ */
 HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_001::Start");
-    shared_ptr<FileAsset> parentAsset = nullptr;
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("Delete_Dir_001", g_download, parentAsset));
-    shared_ptr<FileAsset> albumAsset = nullptr;
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("Delete_Dir_001", parentAsset, albumAsset));
-    shared_ptr<FileAsset> tempAsset = nullptr;
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("Delete_Dir_001.txt", albumAsset, tempAsset));
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("Delete_Dir_001", albumAsset, tempAsset));
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("Delete_Dir_001.txt", tempAsset, tempAsset));
+    shared_ptr<FileAsset> Delete_Dir_001 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("Delete_Dir_001", g_download, Delete_Dir_001));
+    shared_ptr<FileAsset> dir1 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("Delete_Dir_001", Delete_Dir_001, dir1));
+    shared_ptr<FileAsset> file2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("Delete_Dir_001.txt", dir1, file2));
+    shared_ptr<FileAsset> dir2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("Delete_Dir_001", dir1, dir2));
+    shared_ptr<FileAsset> file3 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("Delete_Dir_001.txt", dir2, file3));
 
     string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + "/" +
-        to_string(parentAsset->GetId());
+        to_string(Delete_Dir_001->GetId());
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_001::deleteUri: %s", deleteUri.c_str());
     Uri deleteAssetUri(deleteUri);
-    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_001::delete start");
     int retVal = MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, {});
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_001::delete end, retVal: %d", retVal);
-
-    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_001::End");
 }
 
+/**
+ * @tc.number    : DataManager_Delete_Dir_Test_002
+ * @tc.name      : test delete dir: exists trashed children
+ * @tc.desc      : 1.Create the parent album to be deleted: Delete_Dir_002
+ *                 2.Create album in Delete_Dir_002: Delete_Dir_002/dir1
+ *                 3.Create file in dir1: Delete_Dir_002/dir1/file2.txt
+ *                 4.Create album in dir1: Delete_Dir_002/dir1/dir2
+ *                 5.Create file in dir2: Delete_Dir_002/dir1/dir2/file3.txt
+ *                 6.Trash file3.txt
+ *                 7.Trash dir1
+ *                 8.Trash Delete_Dir_002
+ *                 8.Delete Delete_Dir_002
+ */
 HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::Start");
-    shared_ptr<FileAsset> parentAsset = nullptr;
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("Delete_Dir_002", g_download, parentAsset));
-    shared_ptr<FileAsset> albumAsset = nullptr;
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("Delete_Dir_002", parentAsset, albumAsset));
-    shared_ptr<FileAsset> tempAsset = nullptr;
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("Delete_Dir_002.txt", albumAsset, tempAsset));
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("Delete_Dir_002", albumAsset, tempAsset));
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("Delete_Dir_002.txt", tempAsset, tempAsset));
+    shared_ptr<FileAsset> Delete_Dir_002 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("Delete_Dir_002", g_download, Delete_Dir_002));
+    shared_ptr<FileAsset> dir1 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir1", Delete_Dir_002, dir1));
+    shared_ptr<FileAsset> file2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file2.txt", dir1, file2));
+    shared_ptr<FileAsset> dir2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir2", dir1, dir2));
+    shared_ptr<FileAsset> file3 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", dir2, file3));
 
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::trash start");
-    MediaLibraryUnitTestUtils::TrashFile(tempAsset);
-    MediaLibraryUnitTestUtils::TrashFile(albumAsset);
-    MediaLibraryUnitTestUtils::TrashFile(parentAsset);
+    MediaLibraryUnitTestUtils::TrashFile(file3);
+    MediaLibraryUnitTestUtils::TrashFile(dir1);
+    MediaLibraryUnitTestUtils::TrashFile(Delete_Dir_002);
 
     string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + "/" +
-        to_string(parentAsset->GetId());
+        to_string(Delete_Dir_002->GetId());
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::deleteUri: %s", deleteUri.c_str());
     Uri deleteAssetUri(deleteUri);
-    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::delete start");
     int retVal = MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, {});
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::delete end, retVal: %d", retVal);
-
-    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::End");
 }
 } // namespace Media
 } // namespace OHOS

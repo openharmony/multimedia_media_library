@@ -33,8 +33,8 @@ public:
     virtual void Stop() override;
 
     virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) override;
-    virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &rowId) override;
-    virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &rowId) override;
+    virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
+    virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows) override;
     std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns) override;
     std::shared_ptr<NativeRdb::ResultSet> QueryOld(MediaLibraryCommand &cmd,
