@@ -49,6 +49,7 @@ struct ThumbnailData {
     }
     int mediaType{0};
     int64_t dateModified{0};
+    float degrees;
     std::shared_ptr<PixelMap> source;
     std::vector<uint8_t> thumbnail;
     std::vector<uint8_t> lcd;
@@ -76,7 +77,8 @@ public:
     ~ThumbnailUtils() = delete;
     // utils
     static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
-    static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, const Size &size, std::vector<uint8_t> &data);
+    static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, const Size &size, std::vector<uint8_t> &data,
+        float degrees);
     static void ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData);
     static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
@@ -146,9 +148,9 @@ private:
     static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     static bool CheckResultSetColumn(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
-    static bool LoadImageFile(const std::string &path, std::shared_ptr<PixelMap> &pixelMap);
-    static bool LoadVideoFile(const std::string &path, std::shared_ptr<PixelMap> &pixelMap);
-    static bool LoadAudioFile(const std::string &path, std::shared_ptr<PixelMap> &pixelMap);
+    static bool LoadImageFile(const std::string &path, std::shared_ptr<PixelMap> &pixelMap, float &degrees);
+    static bool LoadVideoFile(const std::string &path, std::shared_ptr<PixelMap> &pixelMap, float &degrees);
+    static bool LoadAudioFile(const std::string &path, std::shared_ptr<PixelMap> &pixelMap, float &degrees);
     static bool GenKey(ThumbnailData &data, std::string &key);
     static std::string GetUdid();
     // KV Store
