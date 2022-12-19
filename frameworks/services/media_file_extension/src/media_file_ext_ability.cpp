@@ -29,6 +29,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {

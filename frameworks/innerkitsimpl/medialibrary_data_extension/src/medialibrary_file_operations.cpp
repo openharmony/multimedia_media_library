@@ -170,26 +170,6 @@ int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd
     return MediaLibraryObjectUtils::RenameFileObj(cmd, srcPath, dstFilePath);
 }
 
-int32_t MediaLibraryFileOperations::DeleteFileOperation(MediaLibraryCommand &cmd,
-    const unordered_map<string, DirAsset> &dirQuerySetMap)
-{
-    string strFileId = cmd.GetOprnFileId();
-    if (strFileId.empty()) {
-        MEDIA_ERR_LOG("MediaLibraryFileOperations::DeleteFileOperation Get id from uri or valuesBucket failed!");
-        return E_INVALID_FILEID;
-    }
-
-    string srcPath = MediaLibraryObjectUtils::GetPathByIdFromDb(strFileId, true);
-    if (srcPath.empty()) {
-        MEDIA_ERR_LOG("MediaLibraryFileOperations::DeleteFileOperation Get path of id %{private}s from database file!",
-            strFileId.c_str());
-        return E_INVALID_FILEID;
-    }
-
-    int32_t errCode = MediaLibraryObjectUtils::DeleteFileObj(cmd, srcPath);
-    return errCode;
-}
-
 int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cmd)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -247,7 +227,7 @@ int32_t MediaLibraryFileOperations::CopyFileOperation(MediaLibraryCommand &cmd)
     }
     Uri srcUri(MEDIALIBRARY_DATA_URI + "/" + assetId);
     string srcUriString = srcUri.ToString();
-    shared_ptr<FileAsset> srcFileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(srcUriString);
+    shared_ptr<FileAsset> srcFileAsset = MediaLibraryObjectUtils::GetFileAssetFromUri(srcUriString);
     if (srcFileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
         return MediaLibraryObjectUtils::CopyDir(srcFileAsset, relativePath);
     } else {

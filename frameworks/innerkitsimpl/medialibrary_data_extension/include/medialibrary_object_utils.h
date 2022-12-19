@@ -42,8 +42,9 @@ public:
     static int32_t CreateFileObj(MediaLibraryCommand &cmd);
     static int32_t CreateDirWithPath(const std::string &path);
     static int32_t CreateDirObj(MediaLibraryCommand &cmd, int64_t &rowId);
-    static int32_t DeleteFileObj(MediaLibraryCommand &cmd, const std::string &filePath);
-    static int32_t DeleteDirObj(MediaLibraryCommand &cmd, const std::string &dirPath);
+    static int32_t DeleteFileObj(const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t DeleteDirObj(const std::shared_ptr<FileAsset> &dirAsset);
+    static int32_t DeleteMisc(const int32_t fileId, const std::string &filePath, const int32_t parentId);
     static int32_t RenameFileObj(MediaLibraryCommand &cmd, const std::string &srcFilePath,
         const std::string &dstFilePath);
     static int32_t RenameDirObj(MediaLibraryCommand &cmd, const std::string &srcDirPath,
@@ -55,7 +56,8 @@ public:
     static std::string GetPathByIdFromDb(const std::string &id, const bool isDelete = false);
     static std::string GetRecyclePathByIdFromDb(const std::string &id);
     static int32_t GetParentIdByIdFromDb(const std::string &fileId);
-    static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &uriStr);
+    static std::shared_ptr<FileAsset> GetFileAssetFromId(const std::string &id, const std::string &networkId = "");
+    static std::shared_ptr<FileAsset> GetFileAssetFromUri(const std::string &uriStr);
     static void GetDefaultRelativePath(const int32_t mediaType, string &relativePath);
 
     static int32_t InsertInDb(MediaLibraryCommand &cmd);
@@ -73,7 +75,8 @@ public:
     static bool IsSmartAlbumExistInDb(const int32_t id);
     static bool IsParentSmartAlbum(const int32_t id, const bool includeEmptyAlbum = false);
     static int32_t CheckDirExtension(MediaLibraryCommand &cmd);
-    static void UpdateDateModified(const std::string &dirPath);
+    static int32_t UpdateDateModified(const std::string &dirPath);
+    static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
 
 private:
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);
@@ -92,7 +95,6 @@ private:
     static int32_t UpdateFileInfoInDb(MediaLibraryCommand &cmd, const std::string &dstPath,
         const int &bucketId, const std::string &bucketName);
     static void ScanFile(std::string &srcPath);
-    static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
     static int32_t CopyAssetByFd(int32_t srcFd, int32_t srcId, int32_t destFd, int32_t destId);
     static void CloseFileById(int32_t fileId);
     static int32_t GetFileResult(std::shared_ptr<NativeRdb::ResultSet> &resultSet,

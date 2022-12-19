@@ -47,7 +47,7 @@ constexpr int32_t E_INVALID_URI =           MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 7
 constexpr int32_t E_INVALID_FILEID =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 8);
 constexpr int32_t E_INVALID_PATH =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 9);
 constexpr int32_t E_VIOLATION_PARAMETERS =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 10);
-constexpr int32_t E_RDIR_FAIL =             MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 11);
+constexpr int32_t E_RENAME_DIR_FAIL  =      MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 11);
 constexpr int32_t E_GET_VALUEBUCKET_FAIL =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 12);
 constexpr int32_t E_GET_ASSET_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 13);
 constexpr int32_t E_GET_HASH_FAIL =         MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 14);
@@ -55,6 +55,9 @@ constexpr int32_t E_GET_CLIENTBUNDLE_FAIL = MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1
 constexpr int32_t E_EXIST_IN_DB =           MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 16);
 constexpr int32_t E_INVALID_MODE =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 17);
 constexpr int32_t E_INVALID_BUNDLENAME =    MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 18);
+constexpr int32_t E_RENAME_FILE_FAIL =      MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 19);
+constexpr int32_t E_DB_FAIL =               MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 20);
+constexpr int32_t E_DELETE_DENIED =         MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 21);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }
@@ -69,7 +72,6 @@ constexpr int32_t E_ALBUM_OPER_ERR =                        MEDIA_LIBRARY_ERR(E_
 constexpr int32_t E_DIR_OPER_ERR =                          MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 7);
 constexpr int32_t E_SAME_PATH =                             MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 8);
 constexpr int32_t E_DIR_CHECK_DIR_FAIL =                    MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 9);
-constexpr int32_t E_DIR_DELETE_DIR_FAIL =                   MEDIA_LIBRARY_ERR(E_DIR_CTRL_OFFSET, 10);
 
 // medialibary recycle, trash { 2100, 2199 }
 constexpr int32_t E_TRASH_OFFSET = 2100;

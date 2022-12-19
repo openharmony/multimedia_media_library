@@ -60,20 +60,17 @@ string MediaLibrarySmartAlbumMapOperations::MakeSuffixPathName(string &assetPath
     return outSuffixPath;
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::DeleteFileAssetsInfoUtil(const unique_ptr<FileAsset> &fileAsset)
+int32_t MediaLibrarySmartAlbumMapOperations::DeleteFileAssetsInfoUtil(unique_ptr<FileAsset> &fileAsset)
 {
     string recyclePath;
     if (!GetRecyclePath(fileAsset->GetId(), recyclePath)) {
         MEDIA_ERR_LOG("RecycleFile is null, fileId = %{private}d", fileAsset->GetId());
         return E_RECYCLE_FILE_IS_NULL;
     }
-    ValuesBucket values;
-    values.PutInt(MEDIA_DATA_DB_ID, fileAsset->GetId());
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE, values);
-    return MediaLibraryObjectUtils::DeleteFileObj(cmd, recyclePath);
+    return MediaLibraryObjectUtils::DeleteFileObj(move(fileAsset));
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::DeleteDirAssetsInfoUtil(const unique_ptr<FileAsset> &fileAsset)
+int32_t MediaLibrarySmartAlbumMapOperations::DeleteDirAssetsInfoUtil(unique_ptr<FileAsset> &fileAsset)
 {
     string recyclePath;
     int32_t errorCode;
@@ -83,8 +80,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::DeleteDirAssetsInfoUtil(const uniqu
             return E_RECYCLE_FILE_IS_NULL;
         }
         MEDIA_INFO_LOG("DeleteDirAssetsInfoUtil recyclePath = %{private}s", recyclePath.c_str());
-        MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
-        errorCode = MediaLibraryObjectUtils::DeleteFileObj(cmd, recyclePath);
+        errorCode = MediaLibraryObjectUtils::DeleteFileObj(move(fileAsset));
     } else {
         MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
         errorCode = MediaLibraryObjectUtils::DeleteInfoByIdInDb(cmd, to_string(fileAsset->GetId()));
@@ -185,8 +181,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::GetAssetRecycle(const int32_t asset
 
 bool MediaLibrarySmartAlbumMapOperations::GetRecyclePath(const int32_t assetId, string &outRecyclePath)
 {
-    string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(assetId);
-    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(uri);
+    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(to_string(assetId));
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to get asset, return false to indicate an error here");
         return false;
@@ -204,8 +199,7 @@ bool MediaLibrarySmartAlbumMapOperations::GetRecyclePath(const int32_t assetId, 
 int32_t MediaLibrarySmartAlbumMapOperations::MakeRecycleDisplayName(const int32_t assetId,
     const string &trashDirPath, string &outRecyclePath)
 {
-    string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(assetId);
-    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(uri);
+    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(to_string(assetId));
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to get asset, assetId = %{public}d", assetId);
         return E_GET_ASSET_FAIL;
@@ -535,8 +529,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::RecycleFileAssetsInfoUtil(const sha
 
 int32_t MediaLibrarySmartAlbumMapOperations::RemoveTrashAssetsInfoUtil(const int32_t fileAssetId)
 {
-    string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(fileAssetId);
-    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(uri);
+    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(to_string(fileAssetId));
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("fileAsset is nullptr, assetId: %{public}d", fileAssetId);
         return E_GET_ASSET_FAIL;
@@ -675,8 +668,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::TrashFileAssetsInfoUtil(const int32
 int32_t MediaLibrarySmartAlbumMapOperations::InsertTrashAssetsInfoUtil(const int32_t fileAssetId,
     MediaLibraryCommand &cmd)
 {
-    string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(fileAssetId);
-    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromDb(uri);
+    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(to_string(fileAssetId));
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("FileAsset is nullptr");
         return E_GET_ASSET_FAIL;

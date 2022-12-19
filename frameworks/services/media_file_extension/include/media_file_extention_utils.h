@@ -19,27 +19,10 @@
 #include "datashare_result_set.h"
 #include "file_access_extension_info.h"
 #include "file_filter.h"
-#include "result_set_utils.h"
 #include "uri.h"
 
 namespace OHOS {
 namespace Media {
-template<typename ResultSet>
-static inline std::string GetStringVal(const std::string &field, const ResultSet &result)
-{
-    return get<std::string>(ResultSetUtils::GetValFromColumn(field, result, TYPE_STRING));
-}
-template<typename ResultSet>
-static inline int32_t GetInt32Val(const std::string &field, const ResultSet &result)
-{
-    return get<int32_t>(ResultSetUtils::GetValFromColumn(field, result, TYPE_INT32));
-}
-template<typename ResultSet>
-static inline int64_t GetInt64Val(const std::string &field, const ResultSet &result)
-{
-    return get<int64_t>(ResultSetUtils::GetValFromColumn(field, result, TYPE_INT64));
-}
-
 // root dirs
 const std::vector<std::string> directoryEnumValues {
     "Camera/",
