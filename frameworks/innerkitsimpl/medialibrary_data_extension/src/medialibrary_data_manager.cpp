@@ -711,6 +711,9 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         queryResultSet = GetThumbnail(uriString);
     } else {
         auto absResultSet = QueryRdb(uri, columns, predicates);
+        if (absResultSet == nullptr) {
+            return nullptr;
+        }
         queryResultSet = RdbUtils::ToResultSetBridge(absResultSet);
     }
 
@@ -738,6 +741,12 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
         { OperationObject::SMART_ALBUM_ASSETS, "" },
         { OperationObject::BUNDLE_PERMISSION, "" },
     };
+
+    auto whereClause = predicates.GetWhereClause();
+    if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
+        MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
+        return nullptr;
+    }
 
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
     // MEDIALIBRARY_TABLE just for RdbPredicates

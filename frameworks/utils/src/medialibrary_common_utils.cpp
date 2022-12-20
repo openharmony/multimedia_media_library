@@ -75,7 +75,8 @@ const std::unordered_set<std::string> fileKeyWhiteListUSet {
     DEVICE_DB_NETWORK_ID,
     SMARTABLUMASSETS_PARENTID,
     SMARTALBUM_DB_ID,
-    MEDIA_DATA_DB_FILE_PATH
+    MEDIA_DATA_DB_FILE_PATH,
+    MEDIA_DATA_DB_IS_TRASH
 };
 
 void MediaLibraryCommonUtils::Char2Hex(const unsigned char *data, const size_t len, std::string &hexStr)
@@ -171,8 +172,10 @@ void MediaLibraryCommonUtils::removeSpecialCondition(std::string &hacker)
 {
     const std::string S1 = "not between ? and ?";
     const std::string S2 = "between ? and ?";
+    const std::string S3 = "limit ?, ?";
     removeSpecialCondition(hacker, S1);
     removeSpecialCondition(hacker, S2);
+    removeSpecialCondition(hacker, S3);
 }
 
 void MediaLibraryCommonUtils::SeprateSelection(std::string &strCondition, std::vector<std::string> &sepratedStr)
