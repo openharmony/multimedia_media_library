@@ -87,12 +87,12 @@ int SetObjectPropValueData::Maker(std::vector<uint8_t> &outBuffer)
 
 uint32_t SetObjectPropValueData::CalculateSize()
 {
-    std::vector<uint8_t> tmpUse;
-    int res = Maker(tmpUse);
+    std::vector<uint8_t> tmpVar;
+    int res = Maker(tmpVar);
     if (res != MTP_SUCCESS) {
         return res;
     }
-    return tmpUse.size();
+    return tmpVar.size();
 }
 
 bool SetObjectPropValueData::SetResult(uint16_t result)
@@ -141,20 +141,20 @@ bool SetObjectPropValueData::ReadInt8Value(const std::vector<uint8_t> &buffer, s
     int64_t& int64Value)
 {
     if (type == MTP_TYPE_INT8_CODE) {
-        int8_t tmpUse = 0;
-        if (!MtpPacketTool::GetInt8(buffer, offset, tmpUse)) {
+        int8_t tmpVar = 0;
+        if (!MtpPacketTool::GetInt8(buffer, offset, tmpVar)) {
             return false;
         }
-        int64Value = tmpUse;
+        int64Value = tmpVar;
         return true;
     }
 
     if (type == MTP_TYPE_UINT8_CODE) {
-        uint8_t tmpUse = 0;
-        if (!MtpPacketTool::GetUInt8(buffer, offset, tmpUse)) {
+        uint8_t tmpVar = 0;
+        if (!MtpPacketTool::GetUInt8(buffer, offset, tmpVar)) {
             return false;
         }
-        int64Value = tmpUse;
+        int64Value = tmpVar;
         return true;
     }
     return false;
@@ -164,20 +164,20 @@ bool SetObjectPropValueData::ReadInt16Value(const std::vector<uint8_t> &buffer, 
     int64_t& int64Value)
 {
     if (type == MTP_TYPE_INT16_CODE) {
-        int16_t tmpUse = 0;
-        if (!MtpPacketTool::GetInt16(buffer, offset, tmpUse)) {
+        int16_t tmpVar = 0;
+        if (!MtpPacketTool::GetInt16(buffer, offset, tmpVar)) {
             return false;
         }
-        int64Value = tmpUse;
+        int64Value = tmpVar;
         return true;
     }
 
     if (type == MTP_TYPE_UINT16_CODE) {
-        uint16_t tmpUse = 0;
-        if (!MtpPacketTool::GetUInt16(buffer, offset, tmpUse)) {
+        uint16_t tmpVar = 0;
+        if (!MtpPacketTool::GetUInt16(buffer, offset, tmpVar)) {
             return false;
         }
-        int64Value = tmpUse;
+        int64Value = tmpVar;
         return true;
     }
     return false;
@@ -187,20 +187,20 @@ bool SetObjectPropValueData::ReadInt32Value(const std::vector<uint8_t> &buffer, 
     int64_t& int64Value)
 {
     if (type == MTP_TYPE_INT32_CODE) {
-        int32_t tmpUse = 0;
-        if (!MtpPacketTool::GetInt32(buffer, offset, tmpUse)) {
+        int32_t tmpVar = 0;
+        if (!MtpPacketTool::GetInt32(buffer, offset, tmpVar)) {
             return false;
         }
-        int64Value = tmpUse;
+        int64Value = tmpVar;
         return true;
     }
 
     if (type == MTP_TYPE_UINT32_CODE) {
-        uint32_t tmpUse = 0;
-        if (!MtpPacketTool::GetUInt32(buffer, offset, tmpUse)) {
+        uint32_t tmpVar = 0;
+        if (!MtpPacketTool::GetUInt32(buffer, offset, tmpVar)) {
             return false;
         }
-        int64Value = tmpUse;
+        int64Value = tmpVar;
         return true;
     }
     return false;
@@ -210,20 +210,20 @@ bool SetObjectPropValueData::ReadInt64Value(const std::vector<uint8_t> &buffer, 
     int64_t& int64Value)
 {
     if (type == MTP_TYPE_INT64_CODE) {
-        int64_t tmpUse = 0;
-        if (!MtpPacketTool::GetInt64(buffer, offset, tmpUse)) {
+        int64_t tmpVar = 0;
+        if (!MtpPacketTool::GetInt64(buffer, offset, tmpVar)) {
             return false;
         }
-        int64Value = tmpUse;
+        int64Value = tmpVar;
         return true;
     }
 
     if (type == MTP_TYPE_UINT64_CODE) {
-        uint64_t tmpUse = 0;
-        if (!MtpPacketTool::GetUInt64(buffer, offset, tmpUse)) {
+        uint64_t tmpVar = 0;
+        if (!MtpPacketTool::GetUInt64(buffer, offset, tmpVar)) {
             return false;
         }
-        int64Value = static_cast<int64_t>(tmpUse);
+        int64Value = static_cast<int64_t>(tmpVar);
         return true;
     }
     return false;

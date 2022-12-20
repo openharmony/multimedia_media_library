@@ -86,12 +86,12 @@ int GetObjectPropValueData::Maker(std::vector<uint8_t> &outBuffer)
 
 uint32_t GetObjectPropValueData::CalculateSize()
 {
-    std::vector<uint8_t> tmpUse;
-    int res = Maker(tmpUse);
+    std::vector<uint8_t> tmpVar;
+    int res = Maker(tmpVar);
     if (res != MTP_SUCCESS) {
         return res;
     }
-    return tmpUse.size();
+    return tmpVar.size();
 }
 
 bool GetObjectPropValueData::SetPropValue(int type, uint64_t int64Value, const uint128_t int128Value,

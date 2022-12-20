@@ -27,6 +27,9 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+// MTP_OPERATION_OPEN_SESSION_CODE
+static std::vector<uint8_t> testData_open = { 0x0C, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00};
+
 void MediaLibraryMTPUnitTest::SetUpTestCase(void) {}
 void MediaLibraryMTPUnitTest::TearDownTestCase(void) {}
 // SetUp:Execute before each test case
@@ -48,11 +51,9 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_001, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // MTP_OPERATION_OPEN_SESSION_CODE
-    static std::vector<uint8_t> testData =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
-    mtpTest->setOutBuffer(testData);
+    mtpTest->setOutBuffer(testData_open);
     // execute
     operationPtr_->Execute();
     // get output
@@ -116,9 +117,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_003, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // MTP_OPERATION_OPEN_SESSION_CODE
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -156,9 +155,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_004, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // MTP_OPERATION_OPEN_SESSION_CODE
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -204,9 +201,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_005, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // OPEN_SESSION
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     mtpTest->setOutBuffer(testData_open);
     // execute
     operationPtr_->Execute();
@@ -260,8 +255,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_006, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    static std::vector<uint8_t> testData_open = { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00,
-        0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 }; // MTP_OPERATION_OPEN_SESSION_CODE
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -301,8 +295,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_007, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -341,8 +334,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_008, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -382,8 +374,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_009, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -422,9 +413,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_010, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // OPEN_SESSION
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     mtpTest->setOutBuffer(testData_open);
     // execute
     operationPtr_->Execute();
@@ -484,8 +473,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_011, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -526,8 +514,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_012, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -566,8 +553,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_013, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -605,9 +591,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_014, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // OPEN_SESSION
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     mtpTest->setOutBuffer(testData_open);
     // execute
     operationPtr_->Execute();
@@ -667,9 +651,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_015, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // OPEN_SESSION
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     mtpTest->setOutBuffer(testData_open);
     // execute
     operationPtr_->Execute();
@@ -729,9 +711,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_016, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // OPEN_SESSION
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     mtpTest->setOutBuffer(testData_open);
     // execute
     operationPtr_->Execute();
@@ -792,9 +772,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_017, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // OPEN_SESSION
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     mtpTest->setOutBuffer(testData_open);
     // execute
     operationPtr_->Execute();
@@ -854,9 +832,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_018, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // OPEN_SESSION
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     mtpTest->setOutBuffer(testData_open);
     // execute
     operationPtr_->Execute();
@@ -894,9 +870,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_019, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // MTP_OPERATION_OPEN_SESSION_CODE
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -936,9 +910,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_020, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // MTP_OPERATION_OPEN_SESSION_CODE
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -999,9 +971,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_021, TestS
     if (operationPtr_ == nullptr) {
         operationPtr_ = make_shared<MtpOperation>();
     }
-    // MTP_OPERATION_OPEN_SESSION_CODE
-    static std::vector<uint8_t> testData_open =
-        { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
     // set test data
     mtpTest->setOutBuffer(testData_open);
     // execute
@@ -1043,6 +1013,78 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_021, TestS
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
     std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 139, 0, 0, 0 };
+
+    MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
+    EXPECT_EQ(output == targetData, true);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function: 
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: MTP_SESSION_ALREADY_OPEN_CODE
+ */
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_022, TestSize.Level0)
+{
+    std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
+    std::shared_ptr<MtpOperation> operationPtr_;
+    if (operationPtr_ == nullptr) {
+        operationPtr_ = make_shared<MtpOperation>();
+    }
+
+    // set test data
+    mtpTest->setOutBuffer(testData_open);
+    // execute
+    operationPtr_->Execute();
+     // set test data
+    mtpTest->setOutBuffer(testData_open);
+    // execute
+    operationPtr_->Execute();
+   // get output
+    std::vector<uint8_t> output;
+    mtpTest->getOutBuffer(output);
+    for(auto&& i : output) {
+        MEDIA_DEBUG_LOG("i: %{public}d", i);
+    }
+    // MTP_SESSION_ALREADY_OPEN_CODE
+    std::vector<uint8_t> targetData = { 16, 0, 0, 0, 3, 0, 30, 32, 0, 0, 0, 0, 1, 0, 0, 0 };
+
+    MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
+    EXPECT_EQ(output == targetData, true);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function: 
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: MTP_SESSION_NOT_OPEN_CODE
+ */
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_023, TestSize.Level0)
+{
+    std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
+    std::shared_ptr<MtpOperation> operationPtr_;
+    if (operationPtr_ == nullptr) {
+        operationPtr_ = make_shared<MtpOperation>();
+    }
+
+    // MTP_OPERATION_GET_STORAGE_IDS_CODE
+    static std::vector<uint8_t> testData = { 0x0C, 0x00, 0x00, 0x00, 0x01, 0x00, 0x04, 0x10, 0x21, 0x00, 0x00, 0x00 };
+    // set test data
+    mtpTest->setOutBuffer(testData);
+    // execute
+    operationPtr_->Execute();
+    // get output
+    std::vector<uint8_t> output;
+    mtpTest->getOutBuffer(output);
+    for(auto&& i : output) {
+        MEDIA_DEBUG_LOG("i: %{public}d", i);
+    }
+    // MTP_SESSION_NOT_OPEN_CODE
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 3, 32, 33, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output == targetData, true);

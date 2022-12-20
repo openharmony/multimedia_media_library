@@ -79,12 +79,12 @@ int GetObjectPropDescData::Maker(std::vector<uint8_t> &outBuffer)
 
 uint32_t GetObjectPropDescData::CalculateSize()
 {
-    std::vector<uint8_t> tmpuse;
-    int res = Maker(tmpuse);
+    std::vector<uint8_t> tmpVar;
+    int res = Maker(tmpVar);
     if (res != MTP_SUCCESS) {
         return res;
     }
-    return tmpuse.size();
+    return tmpVar.size();
 }
 
 std::shared_ptr<Property> GetObjectPropDescData::GetProp()

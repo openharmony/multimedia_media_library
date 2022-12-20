@@ -162,14 +162,14 @@ int GetDeviceInfoData::Maker(std::vector<uint8_t> &outBuffer)
 
 uint32_t GetDeviceInfoData::CalculateSize()
 {
-    std::vector<uint8_t> tmpuse;
+    std::vector<uint8_t> tmpVar;
 
-    int res = Maker(tmpuse);
+    int res = Maker(tmpVar);
     if (res != MTP_SUCCESS) {
         return res;
     }
 
-    return tmpuse.size();
+    return tmpVar.size();
 }
 
 void GetDeviceInfoData::SetManufacturer(const std::string &manufacturer)
