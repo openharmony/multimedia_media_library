@@ -54,11 +54,11 @@ int OpenSessionData::Maker(vector<uint8_t> &outBuffer)
 
 uint32_t OpenSessionData::CalculateSize()
 {
-    std::vector<uint8_t> tmpUse;
+    std::vector<uint8_t> tmpVar;
     if (sessionID_ > 0) {
-        MtpPacketTool::PutUInt32(tmpUse, sessionID_);
+        MtpPacketTool::PutUInt32(tmpVar, sessionID_);
     }
-    return tmpUse.size();
+    return tmpVar.size();
 }
 
 void OpenSessionData::SetSessionId(uint32_t sessionID)

@@ -80,12 +80,12 @@ int GetObjectPropListData::Maker(std::vector<uint8_t> &outBuffer)
 
 uint32_t GetObjectPropListData::CalculateSize()
 {
-    std::vector<uint8_t> tmpuse;
-    int res = Maker(tmpuse);
+    std::vector<uint8_t> tmpVar;
+    int res = Maker(tmpVar);
     if (res != MTP_SUCCESS) {
         return res;
     }
-    return tmpuse.size();
+    return tmpVar.size();
 }
 
 bool GetObjectPropListData::SetProps(std::shared_ptr<std::vector<Property>> &props)

@@ -63,13 +63,13 @@ int SetDevicePropValueData::Maker(std::vector<uint8_t> &outBuffer)
 
 uint32_t SetDevicePropValueData::CalculateSize()
 {
-    std::vector<uint8_t> tmpUse;
-    MtpPacketTool::PutInt16(tmpUse, MTP_OK_CODE);
-    int res = Maker(tmpUse);
+    std::vector<uint8_t> tmpVar;
+    MtpPacketTool::PutInt16(tmpVar, MTP_OK_CODE);
+    int res = Maker(tmpVar);
     if (res != MTP_SUCCESS) {
         return res;
     }
-    return tmpUse.size();
+    return tmpVar.size();
 }
 
 void SetDevicePropValueData::PaserPropValue(const std::vector<uint8_t> &buffer, size_t &offset, uint32_t propertyCode)

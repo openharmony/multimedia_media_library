@@ -84,12 +84,12 @@ int GetObjectInfoData::Maker(std::vector<uint8_t> &outBuffer)
 
 uint32_t GetObjectInfoData::CalculateSize()
 {
-    std::vector<uint8_t> tmpUse;
-    int res = Maker(tmpUse);
+    std::vector<uint8_t> tmpVar;
+    int res = Maker(tmpVar);
     if (res != MTP_SUCCESS) {
         return res;
     }
-    return tmpUse.size();
+    return tmpVar.size();
 }
 
 bool GetObjectInfoData::SetObjectInfo(std::shared_ptr<ObjectInfo> &objectInfo)

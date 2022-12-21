@@ -69,14 +69,14 @@ int CopyObjectData::Maker(std::vector<uint8_t> &outBuffer)
 
 uint32_t CopyObjectData::CalculateSize()
 {
-    std::vector<uint8_t> tmpUse;
+    std::vector<uint8_t> tmpVar;
 
-    int res = Maker(tmpUse);
+    int res = Maker(tmpVar);
     if (res != MTP_SUCCESS) {
         return res;
     }
 
-    uint32_t size = tmpUse.size();
+    uint32_t size = tmpVar.size();
     return size;
 }
 
