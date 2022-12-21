@@ -55,14 +55,14 @@ int GetDevicePropValueData::Maker(std::vector<uint8_t> &outBuffer)
 
 uint32_t GetDevicePropValueData::CalculateSize()
 {
-    std::vector<uint8_t> tmpuse;
+    std::vector<uint8_t> tmpVar;
 
-    int res = Maker(tmpuse);
+    int res = Maker(tmpVar);
     if (res != MTP_SUCCESS) {
         return static_cast<uint32_t>(res);
     }
 
-    uint32_t size = tmpuse.size();
+    uint32_t size = tmpVar.size();
     return size;
 }
 

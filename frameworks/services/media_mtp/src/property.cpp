@@ -189,12 +189,12 @@ bool Property::Read(const std::vector<uint8_t> &buffer, size_t &offset)
         MEDIA_ERR_LOG("Property::read type error");
         return false;
     }
-    uint8_t tmpUse = 0;
-    if (!MtpPacketTool::GetUInt8(buffer, offset, tmpUse)) {
-        MEDIA_ERR_LOG("Property::read tmpUse error");
+    uint8_t tmpVar = 0;
+    if (!MtpPacketTool::GetUInt8(buffer, offset, tmpVar)) {
+        MEDIA_ERR_LOG("Property::read tmpVar error");
         return false;
     }
-    writeable_ = (tmpUse == 1);
+    writeable_ = (tmpVar == 1);
     if (!ReadValueData(buffer, offset)) {
         MEDIA_ERR_LOG("Property::read valuedata error");
         return false;
