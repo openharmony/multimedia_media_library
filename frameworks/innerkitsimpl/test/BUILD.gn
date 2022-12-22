@@ -20,6 +20,7 @@ group("test") {
     "unittest/medialibrary_datamanager_test:unittest",
     "unittest/medialibrary_fileext_test:unittest",
     "unittest/medialibrary_helper_test:unittest",
+    "unittest/medialibrary_manager_utils_test:unittest",
     "unittest/medialibrary_mtp_test:unittest",
     "unittest/mediascanner_test:unittest",
     "unittest/mediathumbnail_test:unittest",
