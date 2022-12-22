@@ -224,6 +224,10 @@ static int CheckOpenFilePermission(string &uri, string mode)
     }
     if (shouldCheckType) {
         uri = uri.substr(0, uri.find('#'));
+        if (!PermissionUtils::IsSystemApp()) {
+            MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
+            return E_CHECK_SYSTEMAPP_FAIL;
+        }
     }
 
     size_t rPos = mode.find('r');
@@ -248,18 +252,23 @@ static int CheckOpenFilePermission(string &uri, string mode)
     return E_SUCCESS;
 }
 
-static bool CheckPermFromUri(std::string &uri, bool isWrite)
+static int32_t CheckPermFromUri(std::string &uri, bool isWrite)
 {
     bool shouldCheckType = false;
     string typeMask;
-    if (ShouldCheckTypePermission(uri, shouldCheckType, typeMask) < 0) {
-        return false;
+    int32_t err = ShouldCheckTypePermission(uri, shouldCheckType, typeMask);
+    if (err < 0) {
+        return err;
     }
     if (shouldCheckType) {
         /* position of '#' should not be string::npos here */
         uri = uri.substr(0, uri.find('#'));
+        if (!PermissionUtils::IsSystemApp()) {
+            MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
+            return E_CHECK_SYSTEMAPP_FAIL;
+        }
     }
-    return CheckPerms(shouldCheckType, isWrite, typeMask);
+    return CheckPerms(shouldCheckType, isWrite, typeMask) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
@@ -292,9 +301,11 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
     string closeUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
     string insertUri = uri.ToString();
     bool isWrite = (insertUri == closeUri) ? false : true;
-    if ((insertUri.find(DISTRIBUTE_THU_OPRN_CREATE) == string::npos) &&
-        !CheckPermFromUri(insertUri, isWrite)) {
-        return E_PERMISSION_DENIED;
+    if (insertUri.find(DISTRIBUTE_THU_OPRN_CREATE) == string::npos) {
+        int32_t err = CheckPermFromUri(insertUri, isWrite);
+        if (err < 0) {
+            return err;
+        }
     }
 
     return MediaLibraryDataManager::GetInstance()->Insert(Uri(insertUri), value);
@@ -304,8 +315,9 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     const DataShareValuesBucket &value)
 {
     string updateUri = uri.ToString();
-    if (!CheckPermFromUri(updateUri, true)) {
-        return E_PERMISSION_DENIED;
+    int32_t err = CheckPermFromUri(updateUri, true);
+    if (err < 0) {
+        return err;
     }
 
     return MediaLibraryDataManager::GetInstance()->Update(Uri(updateUri), value, predicates);
@@ -314,6 +326,10 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
 int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
     string uriStr = uri.ToString();
+    if (!PermissionUtils::SystemApiCheck(uriStr)) {
+        MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
+        return E_CHECK_SYSTEMAPP_FAIL;
+    }
     int err = CheckPermFromUri(uriStr, true);
     if (err < 0) {
         return err;
@@ -332,7 +348,11 @@ std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &u
     };
 
     string uriStr = uri.ToString();
-    if ((noPermissionCheck.find(uriStr) == noPermissionCheck.end()) && !CheckPermFromUri(uriStr, false)) {
+    if (!PermissionUtils::SystemApiCheck(uriStr)) {
+        MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
+        return nullptr;
+    }
+    if ((noPermissionCheck.find(uriStr) == noPermissionCheck.end()) && (CheckPermFromUri(uriStr, false) < 0)) {
         return nullptr;
     }
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(Uri(uriStr), columns, predicates);
