@@ -19,10 +19,12 @@
 #include "accesstoken_kit.h"
 #include "ipc_skeleton.h"
 #include "media_log.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_tracer.h"
 #include "privacy_kit.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
+#include "tokenid_kit.h"
 
 namespace OHOS {
 namespace Media {
@@ -153,6 +155,25 @@ bool PermissionUtils::CheckCallerPermission(const std::array<std::string, PERM_G
     }
 
     return false;
+}
+
+bool PermissionUtils::SystemApiCheck(const std::string &uri)
+{
+    const static set<string> systemApiUri = {
+        MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN_DELETEASSET,
+        MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE,
+        MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE
+    };
+    if ((systemApiUri.find(uri) == systemApiUri.end())) {
+        return true;
+    }
+    return IsSystemApp();
+}
+
+bool PermissionUtils::IsSystemApp()
+{
+    uint64_t tokenId = IPCSkeleton::GetCallingFullTokenID();
+    return TokenIdKit::IsSystemAppByFullTokenID(tokenId);
 }
 }  // namespace Media
 }  // namespace OHOS
