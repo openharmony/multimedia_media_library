@@ -63,9 +63,6 @@ public:
 
     Uri DenormalizeUri(const Uri &uri) override;
 
-    std::vector<std::shared_ptr<DataShareResult>> ExecuteBatch(
-        const std::vector<std::shared_ptr<DataShareOperation>> &operations) override;
-
 private:
     std::shared_ptr<MediaDataShareExtAbility> GetOwner();
 
