@@ -53,6 +53,7 @@ bool MediaThumbnailHelper::ResizeImage(const std::vector<uint8_t> &data, const S
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize.width = size.width;
     decodeOpts.desiredSize.height = size.height;
+    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     if (errorCode != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to create pixelmap %{public}d", errorCode);
