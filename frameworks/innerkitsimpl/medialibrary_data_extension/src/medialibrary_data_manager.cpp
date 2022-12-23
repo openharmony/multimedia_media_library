@@ -44,6 +44,7 @@
 #include "medialibrary_sync_table.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_tracer.h"
+#include "mimetype_utils.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
@@ -140,6 +141,7 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS:
 
     InitDeviceData();
 
+    MimeTypeUtils::InitMimeTypeMap();
     MakeDirQuerySetMap(dirQuerySetMap_);
 
     MakeRootDirs();
