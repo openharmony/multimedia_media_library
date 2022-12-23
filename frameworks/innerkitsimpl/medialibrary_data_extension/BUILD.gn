@@ -14,6 +14,16 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
+ohos_prebuilt_etc("userfilemanager_mimetypes.json") {
+  module_install_dir = "etc/userfilemanager"
+
+  source =
+      "${MEDIA_LIB_COMMON_UTILS_DIR}/configs/userfilemanager_mimetypes.json"
+
+  subsystem_name = "multimedia"
+  part_name = "media_library"
+}
+
 config("media_data_extension_public_config") {
   include_fileext = [ "${MEDIA_FILEEXT_SOURCE_DIR}/include" ]
   include_scanner = [
