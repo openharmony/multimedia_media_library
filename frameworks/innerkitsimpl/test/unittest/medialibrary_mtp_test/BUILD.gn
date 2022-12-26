@@ -73,7 +73,7 @@ ohos_unittest("medialibrary_mtp_test") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
     "//base/powermgr/battery_manager/interfaces/innerkits:batterysrv_client",
     "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp",
-    "//third_party/openssl:libcrypto_static",
+    "//third_party/openssl:libcrypto_shared",
   ]
 
   external_deps = [
