@@ -114,7 +114,7 @@ ohos_shared_library("media_mtp") {
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
     "//base/powermgr/battery_manager/interfaces/innerkits:batterysrv_client",
-    "//third_party/openssl:libcrypto_static",
+    "//third_party/openssl:libcrypto_shared",
   ]
 
   external_deps = [
