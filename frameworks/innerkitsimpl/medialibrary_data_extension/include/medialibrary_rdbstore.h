@@ -53,6 +53,7 @@ private:
     bool SubscribeRdbStoreObserver();
     bool UnSubscribeRdbStoreObserver();
 
+    static constexpr int RDB_CONNECT_NUM = 10;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
     std::string bundleName_{BUNDLE_NAME};
