@@ -340,9 +340,9 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_008, TestS
     // execute
     operationPtr_->Execute();
 
-    // MTP_OPERATION_GET_OBJECT_PROPS_SUPPORTED_CODE
+    // MTP_OPERATION_GET_OBJECT_PROPS_SUPPORTED_CODE, MTP_FORMAT_EXIF_JPEG_CODE
     static std::vector<uint8_t> testData =
-       { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x98, 0x20, 0x00, 0x00, 0x00, 0x12, 0x38, 0x00, 0x00 };
+       { 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x98, 0x20, 0x00, 0x00, 0x00, 0x01, 0x38, 0x00, 0x00 };
     mtpTest->setOutBuffer(testData);
     operationPtr_->Execute();
 
@@ -352,8 +352,8 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_008, TestS
     for(auto&& i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData =  { 38, 0, 0, 0, 3, 0, 1, 32, 32, 0, 0, 0, 11, 0, 0, 0, 1, 220, 2, 220,
-        3, 220, 4, 220, 7, 220, 9, 220, 11, 220, 65, 220, 68, 220, 224, 220, 78, 220 };
+    std::vector<uint8_t> targetData =  { 40, 0, 0, 0, 3, 0, 1, 32, 32, 0, 0, 0, 12, 0, 0, 0, 1, 220, 2, 220,
+        3, 220, 4, 220, 7, 220, 9, 220, 11, 220, 65, 220, 68, 220, 224, 220, 78, 220, 72, 220 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output == targetData, true);
@@ -1086,6 +1086,158 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_023, TestS
     // MTP_SESSION_NOT_OPEN_CODE
     std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 3, 32, 33, 0, 0, 0 };
 
+    MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
+    EXPECT_EQ(output == targetData, true);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE
+ */
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_024, TestSize.Level0)
+{
+    std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
+    std::shared_ptr<MtpOperation> operationPtr_;
+    if (operationPtr_ == nullptr) {
+        operationPtr_ = make_shared<MtpOperation>();
+    }
+
+    // set test data
+    mtpTest->setOutBuffer(testData_open);
+    // execute
+    operationPtr_->Execute();
+
+    // MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE
+    static std::vector<uint8_t> testData = { 0x14, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x98, 0x24, 0x00,
+        0x00, 0x00, 0x09, 0xDC, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00 };// MTP_PROPERTY_DATE_MODIFIED_CODE
+    mtpTest->setOutBuffer(testData);
+    operationPtr_->Execute();
+
+    // get output
+    std::vector<uint8_t> output;
+    mtpTest->getOutBuffer(output);
+    for (auto&& i : output) {
+        MEDIA_DEBUG_LOG("i: %{public}d", i);
+    }
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 36, 0, 0, 0 };
+
+    MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
+    EXPECT_EQ(output == targetData, true);
+
+    // MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE
+    static std::vector<uint8_t> testData2 = { 0x14, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x98, 0x24, 0x00,
+        0x00, 0x00, 0x92, 0xDE, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00 }; // MTP_PROPERTY_BITRATE_TYPE_CODE
+    mtpTest->setOutBuffer(testData2);
+    operationPtr_->Execute();
+
+    // get output
+    output.clear();
+    mtpTest->getOutBuffer(output);
+    for (auto&& i : output) {
+        MEDIA_DEBUG_LOG("i: %{public}d", i);
+    }
+    MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
+    EXPECT_EQ(output == targetData, true);
+
+    // MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE
+    static std::vector<uint8_t> testData3 = { 0x14, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x98, 0x24, 0x00,
+        0x00, 0x00, 0x9A, 0xDE, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00 }; // MTP_PROPERTY_AUDIO_BITRATE_CODE
+    mtpTest->setOutBuffer(testData3);
+    operationPtr_->Execute();
+
+    // get output
+    output.clear();
+    mtpTest->getOutBuffer(output);
+    for (auto&& i : output) {
+        MEDIA_DEBUG_LOG("i: %{public}d", i);
+    }
+    MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
+    EXPECT_EQ(output == targetData, true);
+
+    // MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE
+    static std::vector<uint8_t> testData4 = { 0x14, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x98, 0x24, 0x00,
+        0x00, 0x00, 0x94, 0xDE, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00 }; // MTP_PROPERTY_NUMBER_OF_CHANNELS_CODE
+    mtpTest->setOutBuffer(testData4);
+    operationPtr_->Execute();
+
+    // get output
+    output.clear();
+    mtpTest->getOutBuffer(output);
+    for (auto&& i : output) {
+        MEDIA_DEBUG_LOG("i: %{public}d", i);
+    }
+    MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
+    EXPECT_EQ(output == targetData, true);
+
+    // MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE
+    static std::vector<uint8_t> testData5 = { 0x14, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x98, 0x24, 0x00,
+        0x00, 0x00, 0x93, 0xDE, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00 }; // MTP_PROPERTY_SAMPLE_RATE_CODE
+    mtpTest->setOutBuffer(testData5);
+    operationPtr_->Execute();
+
+    // get output
+    output.clear();
+    mtpTest->getOutBuffer(output);
+    for (auto&& i : output) {
+        MEDIA_DEBUG_LOG("i: %{public}d", i);
+    }
+    MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
+    EXPECT_EQ(output == targetData, true);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: MTP_OPERATION_GET_OBJECT_PROP_VALUE_CODE
+ */
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_025, TestSize.Level0)
+{
+    std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
+    std::shared_ptr<MtpOperation> operationPtr_;
+    if (operationPtr_ == nullptr) {
+        operationPtr_ = make_shared<MtpOperation>();
+    }
+
+    // set test data
+    mtpTest->setOutBuffer(testData_open);
+    // execute
+    operationPtr_->Execute();
+
+    // MTP_OPERATION_GET_OBJECT_PROP_VALUE_CODE
+    static std::vector<uint8_t> testData = { 0x0C, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0x98, 0x40, 0x00, 0x00, 0x00 };
+    mtpTest->setOutBuffer(testData);
+    operationPtr_->Execute();
+
+    // get output
+    std::vector<uint8_t> output;
+    mtpTest->getOutBuffer(output);
+    for (auto&& i : output) {
+        MEDIA_DEBUG_LOG("i: %{public}d", i);
+    }
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 1, 32, 64, 0, 0, 0 };
+
+    MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
+    EXPECT_EQ(output == targetData, true);
+
+    // MTP_OPERATION_GET_OBJECT_PROP_VALUE_CODE
+    static std::vector<uint8_t> testData2 = { 0x14, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0x98, 0x40, 0x00, 0x00,
+        0x00, 0x89, 0x00, 0x00, 0x00, 0x07, 0xDC, 0x00, 0x00 };
+    mtpTest->setOutBuffer(testData2);
+    operationPtr_->Execute();
+
+    // get output
+    output.clear();
+    mtpTest->getOutBuffer(output);
+    for (auto&& i : output) {
+        MEDIA_DEBUG_LOG("i: %{public}d", i);
+    }
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output == targetData, true);
 }
