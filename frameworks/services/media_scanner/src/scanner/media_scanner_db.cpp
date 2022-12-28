@@ -493,7 +493,12 @@ int32_t MediaScannerDb::RecordError(const std::string &err)
     ValuesBucket valuesBucket;
     valuesBucket.PutString(MEDIA_DATA_ERROR, err);
     int64_t outRowId = -1;
-    int32_t ret = rdbStore->GetRaw()->Insert(outRowId, MEDIALIBRARY_ERROR_TABLE, valuesBucket);
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("rdbStorePtr is nullptr");
+        return E_ERR;
+    }
+    int32_t ret = rdbStorePtr->Insert(outRowId, MEDIALIBRARY_ERROR_TABLE, valuesBucket);
     if (ret) {
         MEDIA_ERR_LOG("rdb insert err %{public}d", ret);
         return E_ERR;
@@ -512,7 +517,12 @@ std::vector<std::string> MediaScannerDb::ReadError()
 
     AbsRdbPredicates predicates(MEDIALIBRARY_ERROR_TABLE);
     vector<string> columns = { MEDIA_DATA_ERROR };
-    auto resultSet = rdbStore->GetRaw()->Query(predicates, columns);
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("rdbStorePtr is nullptr");
+        return {};
+    }
+    auto resultSet = rdbStorePtr->Query(predicates, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("rdb query return nullptr");
         return {};
@@ -550,7 +560,12 @@ int32_t MediaScannerDb::DeleteError(const std::string &err)
     int32_t outRowId = -1;
     string whereClause = MEDIA_DATA_ERROR + " = ?";
     vector<string> whereArgs= { err };
-    int32_t ret = rdbStore->GetRaw()->Delete(outRowId, MEDIALIBRARY_ERROR_TABLE, whereClause, whereArgs);
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("rdbStorePtr is nullptr");
+        return E_ERR;
+    }
+    int32_t ret = rdbStorePtr->Delete(outRowId, MEDIALIBRARY_ERROR_TABLE, whereClause, whereArgs);
     if (ret) {
         MEDIA_ERR_LOG("rdb delete err %{public}d", ret);
         return E_ERR;
