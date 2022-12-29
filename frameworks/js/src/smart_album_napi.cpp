@@ -15,7 +15,9 @@
 #define MLOG_TAG "SmartAlbumNapi"
 
 #include "smart_album_napi.h"
+#include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_tracer.h"
 #include "media_file_utils.h"
 #include "userfile_client.h"
 
@@ -680,7 +682,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NAPI_DEBUG_LOG("CommitModifyNative = %{private}s", context->objectInfo->GetSmartAlbumName().c_str());
     if (!MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName())) {
-        context->error = E_VIOLATION_PARAMETERS;
+        context->error = JS_E_DISPLAYNAME;
         NAPI_ERR_LOG("Failed to checkDisplayName");
         return;
     }

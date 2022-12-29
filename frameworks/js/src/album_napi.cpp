@@ -15,6 +15,7 @@
 #define MLOG_TAG "AlbumNapi"
 
 #include "album_napi.h"
+#include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
@@ -733,7 +734,7 @@ static void CommitModifyNative(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto objectPtr = context->objectPtr;
     if (!MediaFileUtils::CheckTitle(objectPtr->GetAlbumName())) {
-        context->error = JS_ERR_DISPLAYNAME_INVALID;
+        context->error = JS_E_DISPLAYNAME;
         NAPI_ERR_LOG("album name invalid = %{public}s", objectPtr->GetAlbumName().c_str());
         return;
     }
