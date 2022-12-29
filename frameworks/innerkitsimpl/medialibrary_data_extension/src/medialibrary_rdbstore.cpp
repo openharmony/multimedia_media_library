@@ -40,7 +40,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetPath(std::move(realPath));
     config_.SetBundleName(context->GetBundleName());
     config_.SetArea(context->GetArea());
-    config_.setReadConSize(RDB_CONNECT_NUM);
+    config_.SetReadConSize(RDB_CONNECT_NUM);
     Init();
 }
 
