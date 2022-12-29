@@ -38,7 +38,7 @@ constexpr int32_t E_COMMON_OFFSET = 200;
 constexpr int32_t E_COMMON_START =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 0);
 constexpr int32_t E_FAIL =                  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 0);
 constexpr int32_t E_FILE_OPER_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1);
-constexpr int32_t E_HAS_DB_ERROR =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 2);
+constexpr int32_t E_CHECK_SYSTEMAPP_FAIL =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 2);
 constexpr int32_t E_HAS_FS_ERROR =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 3);
 constexpr int32_t E_CHECK_DIR_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 4);
 constexpr int32_t E_MODIFY_DATA_FAIL =      MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 5);
@@ -58,6 +58,7 @@ constexpr int32_t E_INVALID_BUNDLENAME =    MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1
 constexpr int32_t E_RENAME_FILE_FAIL =      MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 19);
 constexpr int32_t E_DB_FAIL =               MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 20);
 constexpr int32_t E_DELETE_DENIED =         MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 21);
+constexpr int32_t E_HAS_DB_ERROR =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 22);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }
