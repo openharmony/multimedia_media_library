@@ -66,4 +66,11 @@
         }                                              \
     } while (0)
 
+#define CHECK_AND_RETURN_RET(cond, ret)  \
+    do {                                               \
+        if (!(cond)) {                                 \
+            return ret;                                \
+        }                                              \
+    } while (0)
+
 #endif // OHOS_MEDIA_LOG_H
