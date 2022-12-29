@@ -16,20 +16,14 @@
 #ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIALIBRARY_NAPI_UTILS_H_
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIALIBRARY_NAPI_UTILS_H_
 
-#include <tuple>
-#include <memory>
 #include <vector>
-#include <unordered_map>
+
+#include "datashare_predicates.h"
 #include "datashare_result_set.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_napi_log.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "hitrace_meter.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_napi_log.h"
-#include "medialibrary_tracer.h"
-#include "medialibrary_type_const.h"
-#include "datashare_predicates.h"
 
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \
     do {                                                                    \
@@ -129,10 +123,6 @@
         (context)->ThrowError(env, err);                            \
     } while (0)
 
-#define MODULE_OFFSET  100000
-#define MODULE_CODE(code) (((code) * MODULE_OFFSET))
-#define UFM_JS_ERR(moduleCode, errCode) ((MODULE_CODE(moduleCode))  + (errCode))
-
 namespace OHOS {
 namespace Media {
 /* Constants for array index */
@@ -153,26 +143,9 @@ constexpr uint32_t NAPI_INIT_REF_COUNT = 1;
 constexpr size_t NAPI_ARGC_MAX = 4;
 
 // Error codes
-constexpr int32_t FILEIO_MODULE_CODE = 139;
-constexpr int32_t UFM_MODULE_CODE = 140;
 const int32_t ERR_DEFAULT = 0;
 const int32_t ERR_MEM_ALLOCATION = 2;
 const int32_t ERR_INVALID_OUTPUT = 3;
-
-// file io common error code
-constexpr int32_t JS_ERR_NO_SUCH_FILE =      UFM_JS_ERR(FILEIO_MODULE_CODE, 2);         // no such file
-constexpr int32_t JS_ERR_PERMISSION_DENIED = UFM_JS_ERR(FILEIO_MODULE_CODE, 12);        // permission deny
-constexpr int32_t JS_ERR_FILE_EXIST =        UFM_JS_ERR(FILEIO_MODULE_CODE, 15);        // file has exist
-constexpr int32_t JS_ERR_PARAMETER_INVALID = UFM_JS_ERR(FILEIO_MODULE_CODE, 20);        // input parameter invalid
-
-// userfileMananger error code
-constexpr int32_t JS_ERR_DISPLAYNAME_INVALID            = UFM_JS_ERR(UFM_MODULE_CODE, 1);
-constexpr int32_t JS_RELATIVE_PATH_NOT_EXIST_OR_INVALID = UFM_JS_ERR(UFM_MODULE_CODE, 10);
-constexpr int32_t JS_ERR_INNER_FAIL                     = UFM_JS_ERR(UFM_MODULE_CODE, 11);
-// file type is not allow in the directory
-constexpr int32_t JS_ERR_WRONG_FILE_TYPE                = UFM_JS_ERR(UFM_MODULE_CODE, 12);
-constexpr int32_t JS_ERR_NO_MEMORY                      = UFM_JS_ERR(UFM_MODULE_CODE, 13);    // no memory left
-constexpr int32_t JS_ERR_WRONG_FILE_KEY                 = UFM_JS_ERR(UFM_MODULE_CODE, 14);    // wrong member name
 
 const int32_t TRASH_SMART_ALBUM_ID = 1;
 const std::string TRASH_SMART_ALBUM_NAME = "TrashAlbum";
@@ -225,29 +198,6 @@ const std::vector<std::string> directoryEnumValues {
     "Audios/",
     "Documents/",
     "Download/"
-};
-
-// trans server errorCode to js Error code
-const std::unordered_map<int, int> trans2JsError = {
-    { E_PERMISSION_DENIED,    JS_ERR_PERMISSION_DENIED },
-    { E_FAIL,                 JS_ERR_INNER_FAIL },
-    { E_NO_SUCH_FILE,         JS_ERR_NO_SUCH_FILE },
-    { E_FILE_EXIST,           JS_ERR_FILE_EXIST },
-    { E_NO_MEMORY,            JS_ERR_NO_MEMORY },
-    { E_FILE_NAME_INVALID,    JS_ERR_DISPLAYNAME_INVALID },
-    { E_CHECK_EXTENSION_FAIL, JS_ERR_WRONG_FILE_TYPE },
-    { E_FILE_OPER_FAIL,       JS_ERR_INNER_FAIL },
-};
-
-const std::unordered_map<int, std::string> jsErrMap = {
-    { JS_ERR_PERMISSION_DENIED,   "without medialibrary permission" },
-    { JS_ERR_INNER_FAIL,          "medialibrary inner fail" },
-    { JS_ERR_PARAMETER_INVALID,   "invalid parameter" },
-    { JS_ERR_DISPLAYNAME_INVALID, "display name invalid" },
-    { JS_ERR_NO_SUCH_FILE,        "no such file" },
-    { JS_ERR_FILE_EXIST,          "file has existed" },
-    { JS_ERR_WRONG_FILE_TYPE,     "file type is not allow in the directory" },
-    { JS_ERR_WRONG_FILE_KEY,      "member not exist" },
 };
 
 const std::vector<std::string> fileKeyEnumValues {
@@ -389,353 +339,67 @@ public:
 
     template <class AsyncContext>
     static napi_status AsyncContextSetObjectInfo(napi_env env, napi_callback_info info, AsyncContext &asyncContext,
-        const size_t minArgs, const size_t maxArgs)
-    {
-        napi_value thisVar = nullptr;
-        asyncContext->argc = maxArgs;
-        CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]), &thisVar,
-            nullptr), "Failed to get cb info");
-        CHECK_COND_RET(((asyncContext->argc >= minArgs) && (asyncContext->argc <= maxArgs)), napi_invalid_arg,
-            "Number of args is invalid");
-        if (minArgs > 0) {
-            CHECK_COND_RET(asyncContext->argv[ARGS_ZERO] != nullptr, napi_invalid_arg, "Argument list is empty");
-        }
-        CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)),
-            "Failed to unwrap thisVar");
-        CHECK_COND_RET(asyncContext->objectInfo != nullptr, napi_invalid_arg, "Failed to get object info");
-        return napi_ok;
-    }
+        const size_t minArgs, const size_t maxArgs);
 
     template <class AsyncContext>
-    static napi_status GetFetchOption(napi_env env, napi_value arg, AsyncContext &context)
-    {
-        /* Parse the argument into fetchOption if any */
-        bool hasOpt = false;
-        CHECK_STATUS_RET(hasFetchOpt(env, arg, hasOpt), "Failed to get fetchopt");
-        if (hasOpt) {
-            CHECK_STATUS_RET(GetProperty(env, arg, "selections", context->selection), "Failed to parse selections");
-            CHECK_STATUS_RET(GetProperty(env, arg, "order", context->order), "Failed to parse order");
-            CHECK_STATUS_RET(GetArrayProperty(env, arg, "selectionArgs", context->selectionArgs),
-                "Failed to parse selectionArgs");
-            CHECK_STATUS_RET(GetProperty(env, arg, "uri", context->uri), "Failed to parse uri");
-            CHECK_STATUS_RET(GetProperty(env, arg, "networkId", context->networkId), "Failed to parse networkId");
-        }
-        return napi_ok;
-    }
+    static napi_status GetFetchOption(napi_env env, napi_value arg, AsyncContext &context);
 
     template <class AsyncContext>
     static napi_status GetAssetFetchOption(napi_env env, napi_value arg, AsyncContext &context);
 
     template <class AsyncContext>
-    static napi_status GetParamCallback(napi_env env, AsyncContext &context)
-    {
-        /* Parse the last argument into callbackref if any */
-        bool isCallback = false;
-        CHECK_STATUS_RET(hasCallback(env, context->argc, context->argv, isCallback), "Failed to check callback");
-        if (isCallback) {
-            CHECK_STATUS_RET(GetParamFunction(env, context->argv[context->argc - 1], context->callbackRef),
-                "Failed to get callback");
-        }
-        return napi_ok;
-    }
+    static napi_status GetParamCallback(napi_env env, AsyncContext &context);
 
     template <class AsyncContext>
     static napi_status ParseAssetFetchOptCallback(napi_env env, napi_callback_info info,
         AsyncContext &context);
 
     template <class AsyncContext>
-    static napi_status ParseArgsTypeFetchOptCallback(napi_env env, napi_callback_info info, AsyncContext &context)
-    {
-        constexpr size_t minArgs = ARGS_TWO;
-        constexpr size_t maxArgs = ARGS_THREE;
-        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
-            "Failed to get object info");
-        /* Parse the first argument into typeMask */
-        CHECK_STATUS_RET(GetUInt32Array(env, context->argv[ARGS_ZERO], context->mediaTypes),
-            "Failed to get param array");
-        CHECK_COND_RET(context->mediaTypes.size() > 0, napi_invalid_arg, "Require at least one type");
-        GenTypeMaskFromArray(context->mediaTypes, context->typeMask);
-        CHECK_STATUS_RET(GetFetchOption(env, context->argv[ARGS_ONE], context), "Failed to get fetch option");
-        CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
-        return napi_ok;
-    }
-
-    template <class AsyncContext>
-    static napi_status ParseArgsBoolCallBack(napi_env env, napi_callback_info info, AsyncContext &context, bool &param)
-    {
-        constexpr size_t minArgs = ARGS_ONE;
-        constexpr size_t maxArgs = ARGS_TWO;
-        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
-            "Failed to get object info");
-
-        /* Parse the first argument into param */
-        CHECK_STATUS_RET(GetParamBool(env, context->argv[ARGS_ZERO], param), "Failed to get parameter");
-        CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
-        return napi_ok;
-    }
+    static napi_status ParseArgsBoolCallBack(napi_env env, napi_callback_info info, AsyncContext &context, bool &param);
 
     template <class AsyncContext>
     static napi_status ParseArgsStringCallback(napi_env env, napi_callback_info info, AsyncContext &context,
-        std::string &param)
-    {
-        constexpr size_t minArgs = ARGS_ONE;
-        constexpr size_t maxArgs = ARGS_TWO;
-        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
-            "Failed to get object info");
-
-        CHECK_STATUS_RET(GetParamStringPathMax(env, context->argv[ARGS_ZERO], param), "Failed to get string argument");
-        CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
-        return napi_ok;
-    }
+        std::string &param);
 
     template <class AsyncContext>
     static napi_status ParseArgsNumberCallback(napi_env env, napi_callback_info info, AsyncContext &context,
-        int32_t &value)
-    {
-        constexpr size_t minArgs = ARGS_ONE;
-        constexpr size_t maxArgs = ARGS_TWO;
-        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
-            "Failed to get object info");
-
-        CHECK_STATUS_RET(GetInt32(env, context->argv[ARGS_ZERO], value), "Failed to get number argument");
-        CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
-        return napi_ok;
-    }
+        int32_t &value);
 
     template <class AsyncContext>
-    static napi_status ParseArgsOnlyCallBack(napi_env env, napi_callback_info info, AsyncContext &context)
-    {
-        constexpr size_t minArgs = ARGS_ZERO;
-        constexpr size_t maxArgs = ARGS_ONE;
-        CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
-            "Failed to get object info");
+    static napi_status ParseArgsOnlyCallBack(napi_env env, napi_callback_info info, AsyncContext &context);
 
-        CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
-        return napi_ok;
-    }
+    static AssetType GetAssetType(MediaType type);
 
-    static AssetType GetAssetType(MediaType type)
-    {
-        AssetType result;
+    static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition);
 
-        switch (type) {
-            case MEDIA_TYPE_AUDIO:
-                result = ASSET_AUDIO;
-                break;
-            case MEDIA_TYPE_VIDEO:
-                result = ASSET_VIDEO;
-                break;
-            case MEDIA_TYPE_IMAGE:
-                result = ASSET_IMAGE;
-                break;
-            case MEDIA_TYPE_MEDIA:
-                result = ASSET_MEDIA;
-                break;
-            default:
-                result = ASSET_NONE;
-                break;
-        }
+    static std::string GetMediaTypeUri(MediaType mediaType);
 
-        return result;
-    }
+    static int TransErrorCode(const std::string &Name, std::shared_ptr<DataShare::DataShareResultSet> resultSet);
 
-    static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition)
-    {
-        if (!newCondition.empty()) {
-            if (!selection.empty()) {
-                selection = "(" + selection + ") AND " + newCondition;
-            } else {
-                selection = newCondition;
-            }
-        }
-    }
+    static int TransErrorCode(const std::string &Name, int error);
 
-    static std::string GetMediaTypeUri(MediaType mediaType)
-    {
-        switch (mediaType) {
-            case MEDIA_TYPE_AUDIO:
-                return MEDIALIBRARY_AUDIO_URI;
-            case MEDIA_TYPE_VIDEO:
-                return MEDIALIBRARY_VIDEO_URI;
-            case MEDIA_TYPE_IMAGE:
-                return MEDIALIBRARY_IMAGE_URI;
-            case MEDIA_TYPE_SMARTALBUM:
-                return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
-            case MEDIA_TYPE_DEVICE:
-                return MEDIALIBRARY_DEVICE_URI;
-            case MEDIA_TYPE_FILE:
-            default:
-                return MEDIALIBRARY_FILE_URI;
-        }
-    }
+    static void HandleError(napi_env env, int error, napi_value &errorObj, const std::string &Name);
 
-    static int TransErrorCode(const std::string &Name, std::shared_ptr<DataShare::DataShareResultSet> resultSet)
-    {
-        NAPI_ERR_LOG("interface: %{public}s, server return nullptr", Name.c_str());
-        // Query can't return errorcode, so assume nullptr as permission deny
-        if (resultSet == nullptr) {
-            return JS_ERR_PERMISSION_DENIED;
-        }
-        return ERR_DEFAULT;
-    }
+    static void CreateNapiErrorObject(napi_env env, napi_value &errorObj, const int32_t errCode,
+        const std::string errMsg);
 
-    static int TransErrorCode(const std::string &Name, int error)
-    {
-        NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
-        // Transfer Server error to napi error code
-        if (error <= E_COMMON_START && error >= E_COMMON_END) {
-            error = JS_ERR_INNER_FAIL;
-        } else if (trans2JsError.count(error)) {
-            error = trans2JsError.at(error);
-        }
-        return error;
-    }
-
-    static void HandleError(napi_env env, int error, napi_value &errorObj, const std::string &Name)
-    {
-        if (error == ERR_DEFAULT) {
-            return;
-        }
-
-        std::string errMsg = "operation fail";
-        if (jsErrMap.count(error) > 0) {
-            errMsg = jsErrMap.at(error);
-        }
-        CreateNapiErrorObject(env, errorObj, error, errMsg);
-        errMsg = Name + " " + errMsg;
-        NAPI_ERR_LOG("Error: %{public}s, js errcode:%{public}d ", errMsg.c_str(), error);
-    }
-
-    static void CreateNapiErrorObject(napi_env env, napi_value &errorObj,
-        const int32_t errCode, const std::string errMsg)
-    {
-        napi_status statusError;
-        napi_value napiErrorCode = nullptr;
-        napi_value napiErrorMsg = nullptr;
-        statusError = napi_create_string_utf8(env, std::to_string(errCode).c_str(), NAPI_AUTO_LENGTH, &napiErrorCode);
-        if (statusError == napi_ok) {
-            statusError = napi_create_string_utf8(env, errMsg.c_str(), NAPI_AUTO_LENGTH, &napiErrorMsg);
-            if (statusError == napi_ok) {
-                statusError = napi_create_error(env, napiErrorCode, napiErrorMsg, &errorObj);
-                if (statusError == napi_ok) {
-                    NAPI_DEBUG_LOG("napi_create_error success");
-                }
-            }
-        }
-    }
-
-    static void InvokeJSAsyncMethod(napi_env env, napi_deferred deferred,
-        napi_ref callbackRef, napi_async_work work, const JSAsyncContextOutput &asyncContext)
-    {
-        MediaLibraryTracer tracer;
-        tracer.Start("InvokeJSAsyncMethod");
-
-        NAPI_DEBUG_LOG("InvokeJSAsyncMethod IN");
-        napi_value retVal;
-        napi_value callback = nullptr;
-
-        /* Deferred is used when JS Callback method expects a promise value */
-        if (deferred) {
-            NAPI_DEBUG_LOG("InvokeJSAsyncMethod promise");
-            if (asyncContext.status) {
-                napi_resolve_deferred(env, deferred, asyncContext.data);
-            } else {
-                napi_reject_deferred(env, deferred, asyncContext.error);
-            }
-        } else {
-            NAPI_DEBUG_LOG("InvokeJSAsyncMethod callback");
-            napi_value result[ARGS_TWO];
-            result[PARAM0] = asyncContext.error;
-            result[PARAM1] = asyncContext.data;
-            napi_get_reference_value(env, callbackRef, &callback);
-            napi_call_function(env, nullptr, callback, ARGS_TWO, result, &retVal);
-            napi_delete_reference(env, callbackRef);
-        }
-        napi_delete_async_work(env, work);
-        NAPI_DEBUG_LOG("InvokeJSAsyncMethod OUT");
-    }
+    static void InvokeJSAsyncMethod(napi_env env, napi_deferred deferred, napi_ref callbackRef, napi_async_work work,
+        const JSAsyncContextOutput &asyncContext);
 
     template <class AsyncContext>
     static napi_value NapiCreateAsyncWork(napi_env env, std::unique_ptr<AsyncContext> &asyncContext,
         const std::string &resourceName,  void (*execute)(napi_env, void *),
-        void (*complete)(napi_env, napi_status, void *))
-    {
-        napi_value result = nullptr;
-        napi_value resource = nullptr;
-        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, resourceName.c_str(), asyncContext);
+        void (*complete)(napi_env, napi_status, void *));
 
-        NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, execute, complete,
-            static_cast<void*>(asyncContext.get()), &asyncContext->work));
-        NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
-        asyncContext.release();
+    static std::tuple<bool, std::unique_ptr<char[]>, size_t> ToUTF8String(napi_env env, napi_value value);
 
-        return result;
-    }
+    static bool IsExistsByPropertyName(napi_env env, napi_value jsObject, const char *propertyName);
 
-    static std::tuple<bool, std::unique_ptr<char[]>, size_t> ToUTF8String(napi_env env, napi_value value)
-    {
-        size_t strLen = 0;
-        napi_status status = napi_get_value_string_utf8(env, value, nullptr, -1, &strLen);
-        if (status != napi_ok) {
-            NAPI_ERR_LOG("ToUTF8String get fail, %{public}d", status);
-            return { false, nullptr, 0 };
-        }
+    static napi_value GetPropertyValueByName(napi_env env, napi_value jsObject, const char *propertyName);
 
-        size_t bufLen = strLen + 1;
-        std::unique_ptr<char[]> str = std::make_unique<char[]>(bufLen);
-        if (str == nullptr) {
-            NAPI_ERR_LOG("ToUTF8String get memory fail");
-            return { false, nullptr, 0 };
-        }
-        status = napi_get_value_string_utf8(env, value, str.get(), bufLen, &strLen);
-        return std::make_tuple(status == napi_ok, move(str), strLen);
-    }
+    static bool CheckJSArgsTypeAsFunc(napi_env env, napi_value arg);
 
-    static bool IsExistsByPropertyName(napi_env env, napi_value jsObject, const char *propertyName)
-    {
-        bool result = false;
-        if (napi_has_named_property(env, jsObject, propertyName, &result) == napi_ok) {
-            return result;
-        } else {
-            NAPI_ERR_LOG("IsExistsByPropertyName not exist %{public}s", propertyName);
-            return false;
-        }
-    }
-
-    static napi_value GetPropertyValueByName(napi_env env, napi_value jsObject, const char *propertyName)
-    {
-        napi_value value = nullptr;
-        if (IsExistsByPropertyName(env, jsObject, propertyName) == false) {
-            NAPI_ERR_LOG("GetPropertyValueByName not exist %{public}s", propertyName);
-            return nullptr;
-        }
-        if (napi_get_named_property(env, jsObject, propertyName, &value) != napi_ok) {
-            NAPI_ERR_LOG("GetPropertyValueByName get fail %{public}s", propertyName);
-            return nullptr;
-        }
-        return value;
-    }
-
-    static bool CheckJSArgsTypeAsFunc(napi_env env, napi_value arg)
-    {
-        napi_valuetype valueType = napi_undefined;
-        napi_typeof(env, arg, &valueType);
-        return (valueType == napi_function);
-    }
-
-    static bool IsArrayForNapiValue(napi_env env, napi_value param, uint32_t &arraySize)
-    {
-        bool isArray = false;
-        arraySize = 0;
-        if ((napi_is_array(env, param, &isArray) != napi_ok) || (isArray == false)) {
-            return false;
-        }
-        if (napi_get_array_length(env, param, &arraySize) != napi_ok) {
-            return false;
-        }
-        return true;
-    }
+    static bool IsArrayForNapiValue(napi_env env, napi_value param, uint32_t &arraySize);
 private:
     static napi_status hasCallback(napi_env env, const size_t argc, const napi_value argv[],
         bool &isCallback);

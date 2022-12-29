@@ -18,7 +18,10 @@
 
 #include "datashare_predicates_proxy.h"
 #include "media_library_napi.h"
+#include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 #include "smart_album_napi.h"
 
 using namespace std;
@@ -50,7 +53,7 @@ void MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(const string &uri, stri
     }
 
     pos = uri.rfind('/');
-    if (pos != std::string::npos) {
+    if (pos != string::npos) {
         fileId = uri.substr(pos + 1);
     } else {
         NAPI_ERR_LOG("get file_id failed, uri: %{private}s", uri.c_str());
@@ -68,7 +71,7 @@ napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value expor
 }
 
 napi_value MediaLibraryNapiUtils::NapiAddStaticProps(napi_env env, napi_value exports,
-    const std::vector<napi_property_descriptor> &staticProps)
+    const vector<napi_property_descriptor> &staticProps)
 {
     NAPI_CALL(env, napi_define_properties(env, exports, staticProps.size(), staticProps.data()));
     return exports;
@@ -101,7 +104,7 @@ napi_status MediaLibraryNapiUtils::GetParamBool(napi_env env, napi_value arg, bo
     return napi_ok;
 }
 
-napi_status MediaLibraryNapiUtils::GetUInt32Array(napi_env env, napi_value arg, std::vector<uint32_t> &result)
+napi_status MediaLibraryNapiUtils::GetUInt32Array(napi_env env, napi_value arg, vector<uint32_t> &result)
 {
     uint32_t arraySize = 0;
     CHECK_COND_RET(IsArrayForNapiValue(env, arg, arraySize), napi_array_expected, "Failed to check array type");
@@ -124,33 +127,33 @@ napi_status MediaLibraryNapiUtils::GetParamFunction(napi_env env, napi_value arg
     return napi_ok;
 }
 
-static napi_status GetParamStr(napi_env env, napi_value arg, const size_t size, std::string &result)
+static napi_status GetParamStr(napi_env env, napi_value arg, const size_t size, string &result)
 {
     size_t res = 0;
-    std::unique_ptr<char[]> buffer = std::make_unique<char[]>(size);
+    unique_ptr<char[]> buffer = make_unique<char[]>(size);
     CHECK_COND_RET(buffer != nullptr, napi_invalid_arg, "Failed to alloc buffer for parameter");
     napi_valuetype valueType = napi_undefined;
     CHECK_STATUS_RET(napi_typeof(env, arg, &valueType), "Failed to get type");
     CHECK_COND_RET(valueType == napi_string, napi_string_expected, "Type is not as expected string");
     CHECK_STATUS_RET(napi_get_value_string_utf8(env, arg, buffer.get(), size, &res), "Failed to get string value");
-    result = std::string(buffer.get());
+    result = string(buffer.get());
     return napi_ok;
 }
 
-napi_status MediaLibraryNapiUtils::GetParamString(napi_env env, napi_value arg, std::string &result)
+napi_status MediaLibraryNapiUtils::GetParamString(napi_env env, napi_value arg, string &result)
 {
     CHECK_STATUS_RET(GetParamStr(env, arg, ARG_BUF_SIZE, result), "Failed to get string parameter");
     return napi_ok;
 }
 
-napi_status MediaLibraryNapiUtils::GetParamStringPathMax(napi_env env, napi_value arg, std::string &result)
+napi_status MediaLibraryNapiUtils::GetParamStringPathMax(napi_env env, napi_value arg, string &result)
 {
     CHECK_STATUS_RET(GetParamStr(env, arg, PATH_MAX, result), "Failed to get string parameter");
     return napi_ok;
 }
 
-napi_status MediaLibraryNapiUtils::GetProperty(napi_env env, const napi_value arg, const std::string &propName,
-    std::string &propValue)
+napi_status MediaLibraryNapiUtils::GetProperty(napi_env env, const napi_value arg, const string &propName,
+    string &propValue)
 {
     bool present = false;
     napi_value property = nullptr;
@@ -163,8 +166,8 @@ napi_status MediaLibraryNapiUtils::GetProperty(napi_env env, const napi_value ar
     return napi_ok;
 }
 
-napi_status MediaLibraryNapiUtils::GetArrayProperty(napi_env env, napi_value arg, const std::string &propName,
-    std::vector<std::string> &array)
+napi_status MediaLibraryNapiUtils::GetArrayProperty(napi_env env, napi_value arg, const string &propName,
+    vector<string> &array)
 {
     bool present = false;
     CHECK_STATUS_RET(napi_has_named_property(env, arg, propName.c_str(), &present), "Failed to check property name");
@@ -179,7 +182,7 @@ napi_status MediaLibraryNapiUtils::GetArrayProperty(napi_env env, napi_value arg
         CHECK_STATUS_RET(napi_get_array_length(env, property, &len), "Failed to get array length");
         for (uint32_t i = 0; i < len; i++) {
             napi_value item = nullptr;
-            std::string val = "";
+            string val = "";
             CHECK_STATUS_RET(napi_get_element(env, property, i, &item), "Failed to get array item");
             CHECK_STATUS_RET(GetParamStringPathMax(env, item, val), "Failed to get string buffer");
             array.push_back(val);
@@ -188,12 +191,12 @@ napi_status MediaLibraryNapiUtils::GetArrayProperty(napi_env env, napi_value arg
     return napi_ok;
 }
 
-void MediaLibraryNapiUtils::GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask)
+void MediaLibraryNapiUtils::GenTypeMaskFromArray(const vector<uint32_t> types, string &typeMask)
 {
     typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
     for (auto &type : types) {
         if ((type >= MEDIA_TYPE_FILE) && (type <= MEDIA_TYPE_AUDIO)) {
-            typeMask[std::get<POS_TYPE_MASK_STRING_INDEX>(MEDIA_TYPE_TUPLE_VEC[type])] = TYPE_MASK_BIT_SET;
+            typeMask[get<POS_TYPE_MASK_STRING_INDEX>(MEDIA_TYPE_TUPLE_VEC[type])] = TYPE_MASK_BIT_SET;
         }
     }
 }
@@ -225,29 +228,29 @@ napi_status MediaLibraryNapiUtils::hasFetchOpt(napi_env env, const napi_value ar
     return napi_ok;
 }
 
-void MediaLibraryNapiUtils::UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask)
+void MediaLibraryNapiUtils::UriAddFragmentTypeMask(string &uri, const string &typeMask)
 {
     if (!typeMask.empty()) {
         uri += "#" + URI_PARAM_KEY_TYPE + ":" + typeMask;
     }
 }
 
-void MediaLibraryNapiUtils::UriRemoveAllFragment(std::string &uri)
+void MediaLibraryNapiUtils::UriRemoveAllFragment(string &uri)
 {
     size_t fragIndex = uri.find_first_of('#');
-    if (fragIndex != std::string::npos) {
+    if (fragIndex != string::npos) {
         uri = uri.substr(0, fragIndex);
     }
 }
 
-std::string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
+string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
 {
     string id = "-1";
 
     string temp = uri;
     UriRemoveAllFragment(temp);
     size_t pos = temp.rfind('/');
-    if (pos != std::string::npos) {
+    if (pos != string::npos) {
         id = temp.substr(pos + 1);
     }
 
@@ -274,26 +277,26 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
-    std::vector<OperationItem> operations;
+    vector<OperationItem> operations;
     auto &items = predicate->GetOperationList();
     for (auto &item : items) {
         // change uri ->file id
         // get networkid
         // replace networkid with file id
-        if (static_cast<std::string>(item.GetSingle(FIELD_IDX)) == DEVICE_DB_NETWORK_ID) {
-            if (item.operation != DataShare::EQUAL_TO || static_cast<std::string>(item.GetSingle(VALUE_IDX)).empty()) {
+        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == DEVICE_DB_NETWORK_ID) {
+            if (item.operation != DataShare::EQUAL_TO || static_cast<string>(item.GetSingle(VALUE_IDX)).empty()) {
                 NAPI_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
                 return false;
             }
-            context->networkId = static_cast<std::string>(item.GetSingle(VALUE_IDX));
+            context->networkId = static_cast<string>(item.GetSingle(VALUE_IDX));
             continue;
         }
-        if (static_cast<std::string>(item.GetSingle(FIELD_IDX)) == MEDIA_DATA_DB_URI) {
+        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MEDIA_DATA_DB_URI) {
             if (item.operation != DataShare::EQUAL_TO) {
                 NAPI_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
                 return false;
             }
-            string uri = static_cast<std::string>(item.GetSingle(VALUE_IDX));
+            string uri = static_cast<string>(item.GetSingle(VALUE_IDX));
             UriRemoveAllFragment(uri);
             string fileId;
             MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(uri, context->networkId, fileId);
@@ -303,7 +306,7 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
         }
         operations.push_back(item);
     }
-    context->predicates = DataSharePredicates(std::move(operations));
+    context->predicates = DataSharePredicates(move(operations));
     return true;
 }
 
@@ -318,7 +321,7 @@ napi_status MediaLibraryNapiUtils::GetAssetFetchOption(napi_env env, napi_value 
 }
 
 template <class AsyncContext>
-napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value arg, const std::string &propName,
+napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value arg, const string &propName,
     AsyncContext &context, bool isAlbum)
 {
     bool present = false;
@@ -378,6 +381,332 @@ void MediaLibraryNapiUtils::UpdateMediaTypeSelections(AsyncContext *context)
     predicates.EndWrap();
 }
 
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo(napi_env env, napi_callback_info info,
+    AsyncContext &asyncContext, const size_t minArgs, const size_t maxArgs)
+{
+    napi_value thisVar = nullptr;
+    asyncContext->argc = maxArgs;
+    CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]), &thisVar,
+        nullptr), "Failed to get cb info");
+    CHECK_COND_RET(((asyncContext->argc >= minArgs) && (asyncContext->argc <= maxArgs)), napi_invalid_arg,
+        "Number of args is invalid");
+    if (minArgs > 0) {
+        CHECK_COND_RET(asyncContext->argv[ARGS_ZERO] != nullptr, napi_invalid_arg, "Argument list is empty");
+    }
+    CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)),
+        "Failed to unwrap thisVar");
+    CHECK_COND_RET(asyncContext->objectInfo != nullptr, napi_invalid_arg, "Failed to get object info");
+    return napi_ok;
+}
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::GetFetchOption(napi_env env, napi_value arg, AsyncContext &context)
+{
+    /* Parse the argument into fetchOption if any */
+    bool hasOpt = false;
+    CHECK_STATUS_RET(hasFetchOpt(env, arg, hasOpt), "Failed to get fetchopt");
+    if (hasOpt) {
+        CHECK_STATUS_RET(GetProperty(env, arg, "selections", context->selection), "Failed to parse selections");
+        CHECK_STATUS_RET(GetProperty(env, arg, "order", context->order), "Failed to parse order");
+        CHECK_STATUS_RET(GetArrayProperty(env, arg, "selectionArgs", context->selectionArgs),
+            "Failed to parse selectionArgs");
+        CHECK_STATUS_RET(GetProperty(env, arg, "uri", context->uri), "Failed to parse uri");
+        CHECK_STATUS_RET(GetProperty(env, arg, "networkId", context->networkId), "Failed to parse networkId");
+    }
+    return napi_ok;
+}
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::GetParamCallback(napi_env env, AsyncContext &context)
+{
+    /* Parse the last argument into callbackref if any */
+    bool isCallback = false;
+    CHECK_STATUS_RET(hasCallback(env, context->argc, context->argv, isCallback), "Failed to check callback");
+    if (isCallback) {
+        CHECK_STATUS_RET(GetParamFunction(env, context->argv[context->argc - 1], context->callbackRef),
+            "Failed to get callback");
+    }
+    return napi_ok;
+}
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack(napi_env env, napi_callback_info info, AsyncContext &context,
+    bool &param)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        "Failed to get object info");
+
+    /* Parse the first argument into param */
+    CHECK_STATUS_RET(GetParamBool(env, context->argv[ARGS_ZERO], param), "Failed to get parameter");
+    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+    return napi_ok;
+}
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::ParseArgsStringCallback(napi_env env, napi_callback_info info, AsyncContext &context,
+    string &param)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        "Failed to get object info");
+
+    CHECK_STATUS_RET(GetParamStringPathMax(env, context->argv[ARGS_ZERO], param), "Failed to get string argument");
+    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+    return napi_ok;
+}
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback(napi_env env, napi_callback_info info, AsyncContext &context,
+    int32_t &value)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        "Failed to get object info");
+
+    CHECK_STATUS_RET(GetInt32(env, context->argv[ARGS_ZERO], value), "Failed to get number argument");
+    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+    return napi_ok;
+}
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack(napi_env env, napi_callback_info info, AsyncContext &context)
+{
+    constexpr size_t minArgs = ARGS_ZERO;
+    constexpr size_t maxArgs = ARGS_ONE;
+    CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        "Failed to get object info");
+
+    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+    return napi_ok;
+}
+
+AssetType MediaLibraryNapiUtils::GetAssetType(MediaType type)
+{
+    AssetType result;
+
+    switch (type) {
+        case MEDIA_TYPE_AUDIO:
+            result = ASSET_AUDIO;
+            break;
+        case MEDIA_TYPE_VIDEO:
+            result = ASSET_VIDEO;
+            break;
+        case MEDIA_TYPE_IMAGE:
+            result = ASSET_IMAGE;
+            break;
+        case MEDIA_TYPE_MEDIA:
+            result = ASSET_MEDIA;
+            break;
+        default:
+            result = ASSET_NONE;
+            break;
+    }
+
+    return result;
+}
+
+void MediaLibraryNapiUtils::AppendFetchOptionSelection(string &selection, const string &newCondition)
+{
+    if (!newCondition.empty()) {
+        if (!selection.empty()) {
+            selection = "(" + selection + ") AND " + newCondition;
+        } else {
+            selection = newCondition;
+        }
+    }
+}
+
+string MediaLibraryNapiUtils::GetMediaTypeUri(MediaType mediaType)
+{
+    switch (mediaType) {
+        case MEDIA_TYPE_AUDIO:
+            return MEDIALIBRARY_AUDIO_URI;
+        case MEDIA_TYPE_VIDEO:
+            return MEDIALIBRARY_VIDEO_URI;
+        case MEDIA_TYPE_IMAGE:
+            return MEDIALIBRARY_IMAGE_URI;
+        case MEDIA_TYPE_SMARTALBUM:
+            return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
+        case MEDIA_TYPE_DEVICE:
+            return MEDIALIBRARY_DEVICE_URI;
+        case MEDIA_TYPE_FILE:
+        default:
+            return MEDIALIBRARY_FILE_URI;
+    }
+}
+
+int MediaLibraryNapiUtils::TransErrorCode(const string &Name, shared_ptr<DataShare::DataShareResultSet> resultSet)
+{
+    NAPI_ERR_LOG("interface: %{public}s, server return nullptr", Name.c_str());
+    // Query can't return errorcode, so assume nullptr as permission deny
+    if (resultSet == nullptr) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+    return ERR_DEFAULT;
+}
+
+int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
+{
+    NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
+    // Transfer Server error to napi error code
+    if (error <= E_COMMON_START && error >= E_COMMON_END) {
+        error = JS_INNER_FAIL;
+    } else if (trans2JsError.count(error)) {
+        error = trans2JsError.at(error);
+    }
+    return error;
+}
+
+void MediaLibraryNapiUtils::HandleError(napi_env env, int error, napi_value &errorObj, const string &Name)
+{
+    if (error == ERR_DEFAULT) {
+        return;
+    }
+
+    string errMsg = "operation fail";
+    if (jsErrMap.count(error) > 0) {
+        errMsg = jsErrMap.at(error);
+    }
+    CreateNapiErrorObject(env, errorObj, error, errMsg);
+    errMsg = Name + " " + errMsg;
+    NAPI_ERR_LOG("Error: %{public}s, js errcode:%{public}d ", errMsg.c_str(), error);
+}
+
+void MediaLibraryNapiUtils::CreateNapiErrorObject(napi_env env, napi_value &errorObj, const int32_t errCode,
+    const string errMsg)
+{
+    napi_status statusError;
+    napi_value napiErrorCode = nullptr;
+    napi_value napiErrorMsg = nullptr;
+    statusError = napi_create_string_utf8(env, to_string(errCode).c_str(), NAPI_AUTO_LENGTH, &napiErrorCode);
+    if (statusError == napi_ok) {
+        statusError = napi_create_string_utf8(env, errMsg.c_str(), NAPI_AUTO_LENGTH, &napiErrorMsg);
+        if (statusError == napi_ok) {
+            statusError = napi_create_error(env, napiErrorCode, napiErrorMsg, &errorObj);
+            if (statusError == napi_ok) {
+                NAPI_DEBUG_LOG("napi_create_error success");
+            }
+        }
+    }
+}
+
+void MediaLibraryNapiUtils::InvokeJSAsyncMethod(napi_env env, napi_deferred deferred, napi_ref callbackRef,
+    napi_async_work work, const JSAsyncContextOutput &asyncContext)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("InvokeJSAsyncMethod");
+
+    NAPI_DEBUG_LOG("InvokeJSAsyncMethod IN");
+    napi_value retVal;
+    napi_value callback = nullptr;
+
+    /* Deferred is used when JS Callback method expects a promise value */
+    if (deferred) {
+        NAPI_DEBUG_LOG("InvokeJSAsyncMethod promise");
+        if (asyncContext.status) {
+            napi_resolve_deferred(env, deferred, asyncContext.data);
+        } else {
+            napi_reject_deferred(env, deferred, asyncContext.error);
+        }
+    } else {
+        NAPI_DEBUG_LOG("InvokeJSAsyncMethod callback");
+        napi_value result[ARGS_TWO];
+        result[PARAM0] = asyncContext.error;
+        result[PARAM1] = asyncContext.data;
+        napi_get_reference_value(env, callbackRef, &callback);
+        napi_call_function(env, nullptr, callback, ARGS_TWO, result, &retVal);
+        napi_delete_reference(env, callbackRef);
+    }
+    napi_delete_async_work(env, work);
+    NAPI_DEBUG_LOG("InvokeJSAsyncMethod OUT");
+}
+
+template <class AsyncContext>
+napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork(napi_env env, unique_ptr<AsyncContext> &asyncContext,
+    const string &resourceName,  void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *))
+{
+    napi_value result = nullptr;
+    napi_value resource = nullptr;
+    NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+    NAPI_CREATE_RESOURCE_NAME(env, resource, resourceName.c_str(), asyncContext);
+
+    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, execute, complete,
+        static_cast<void*>(asyncContext.get()), &asyncContext->work));
+    NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
+    asyncContext.release();
+
+    return result;
+}
+
+tuple<bool, unique_ptr<char[]>, size_t> MediaLibraryNapiUtils::ToUTF8String(napi_env env, napi_value value)
+{
+    size_t strLen = 0;
+    napi_status status = napi_get_value_string_utf8(env, value, nullptr, -1, &strLen);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("ToUTF8String get fail, %{public}d", status);
+        return { false, nullptr, 0 };
+    }
+
+    size_t bufLen = strLen + 1;
+    unique_ptr<char[]> str = make_unique<char[]>(bufLen);
+    if (str == nullptr) {
+        NAPI_ERR_LOG("ToUTF8String get memory fail");
+        return { false, nullptr, 0 };
+    }
+    status = napi_get_value_string_utf8(env, value, str.get(), bufLen, &strLen);
+    return make_tuple(status == napi_ok, move(str), strLen);
+}
+
+bool MediaLibraryNapiUtils::IsExistsByPropertyName(napi_env env, napi_value jsObject, const char *propertyName)
+{
+    bool result = false;
+    if (napi_has_named_property(env, jsObject, propertyName, &result) == napi_ok) {
+        return result;
+    } else {
+        NAPI_ERR_LOG("IsExistsByPropertyName not exist %{public}s", propertyName);
+        return false;
+    }
+}
+
+napi_value MediaLibraryNapiUtils::GetPropertyValueByName(napi_env env, napi_value jsObject, const char *propertyName)
+{
+    napi_value value = nullptr;
+    if (IsExistsByPropertyName(env, jsObject, propertyName) == false) {
+        NAPI_ERR_LOG("GetPropertyValueByName not exist %{public}s", propertyName);
+        return nullptr;
+    }
+    if (napi_get_named_property(env, jsObject, propertyName, &value) != napi_ok) {
+        NAPI_ERR_LOG("GetPropertyValueByName get fail %{public}s", propertyName);
+        return nullptr;
+    }
+    return value;
+}
+
+bool MediaLibraryNapiUtils::CheckJSArgsTypeAsFunc(napi_env env, napi_value arg)
+{
+    napi_valuetype valueType = napi_undefined;
+    napi_typeof(env, arg, &valueType);
+    return (valueType == napi_function);
+}
+
+bool MediaLibraryNapiUtils::IsArrayForNapiValue(napi_env env, napi_value param, uint32_t &arraySize)
+{
+    bool isArray = false;
+    arraySize = 0;
+    if ((napi_is_array(env, param, &isArray) != napi_ok) || (isArray == false)) {
+        return false;
+    }
+    if (napi_get_array_length(env, param, &arraySize) != napi_ok) {
+        return false;
+    }
+    return true;
+}
+
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
     unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate, bool isAlbum);
 
@@ -391,13 +720,13 @@ template napi_status MediaLibraryNapiUtils::GetAssetFetchOption<unique_ptr<Media
     napi_value arg, unique_ptr<MediaLibraryAsyncContext> &context);
 
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
-    const napi_value arg, const std::string &propName, unique_ptr<MediaLibraryAsyncContext> &context, bool isAlbum);
+    const napi_value arg, const string &propName, unique_ptr<MediaLibraryAsyncContext> &context, bool isAlbum);
 
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<AlbumNapiAsyncContext>>(napi_env env,
-    const napi_value arg, const std::string &propName, unique_ptr<AlbumNapiAsyncContext> &context, bool isAlbum);
+    const napi_value arg, const string &propName, unique_ptr<AlbumNapiAsyncContext> &context, bool isAlbum);
 
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<SmartAlbumNapiAsyncContext>>(napi_env env,
-    const napi_value arg, const std::string &propName, unique_ptr<SmartAlbumNapiAsyncContext> &context, bool isAlbum);
+    const napi_value arg, const string &propName, unique_ptr<SmartAlbumNapiAsyncContext> &context, bool isAlbum);
 
 template napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback<unique_ptr<MediaLibraryAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context);
@@ -419,5 +748,58 @@ template void MediaLibraryNapiUtils::UpdateMediaTypeSelections<AlbumNapiAsyncCon
 
 template void MediaLibraryNapiUtils::UpdateMediaTypeSelections<MediaLibraryAsyncContext>(
     MediaLibraryAsyncContext *context);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<FileAssetAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<FileAssetAsyncContext> &context, string &param);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<MediaLibraryAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context, string &param);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<SmartAlbumNapiAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &context, string &param);
+
+template napi_status MediaLibraryNapiUtils::GetParamCallback<unique_ptr<SmartAlbumNapiAsyncContext>>(napi_env env,
+    unique_ptr<SmartAlbumNapiAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
+    napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context, bool &param);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<FileAssetAsyncContext>>(napi_env env,
+    napi_callback_info info, unique_ptr<FileAssetAsyncContext> &context, bool &param);
+
+template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<SmartAlbumNapiAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,
+    const size_t maxArgs);
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaLibraryAsyncContext>(napi_env env,
+    unique_ptr<MediaLibraryAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<FileAssetAsyncContext>(napi_env env,
+    unique_ptr<FileAssetAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<AlbumNapiAsyncContext>(napi_env env,
+    unique_ptr<AlbumNapiAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<SmartAlbumNapiAsyncContext>(napi_env env,
+    unique_ptr<SmartAlbumNapiAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
+    napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context, int32_t &value);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<FileAssetAsyncContext>>(napi_env env,
+    napi_callback_info info, unique_ptr<FileAssetAsyncContext> &context, int32_t &value);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
+    napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<FileAssetAsyncContext>>(napi_env env,
+    napi_callback_info info, unique_ptr<FileAssetAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<AlbumNapiAsyncContext>>(napi_env env,
+    napi_callback_info info, unique_ptr<AlbumNapiAsyncContext> &context);
 } // namespace Media
 } // namespace OHOS
