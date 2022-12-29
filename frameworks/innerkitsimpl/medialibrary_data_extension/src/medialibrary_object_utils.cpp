@@ -299,7 +299,7 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
         if (!MediaFileUtils::CheckDisplayName(title)) {
             DeleteRows(outIds);
             MEDIA_ERR_LOG("Check display name failed!");
-            return E_VIOLATION_PARAMETERS;
+            return E_INVAVLID_DISPLAY_NAME;
         }
         values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
         values.PutString(MEDIA_DATA_DB_TITLE, title);
