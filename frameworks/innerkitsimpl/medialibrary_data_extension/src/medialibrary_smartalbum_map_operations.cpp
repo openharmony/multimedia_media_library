@@ -20,6 +20,7 @@
 #include "datashare_result_set.h"
 #include "fetch_result.h"
 #include "medialibrary_common_utils.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
@@ -42,10 +43,9 @@ static const std::string ASSET_RECYCLE_SUFFIX = "-copy";
 static const std::string DIR_RECYCLE_SUFFIX = "_recycle";
 const std::string RECYCLE_DIR = ".recycle/";
 constexpr int64_t ONEDAY_TO_SEC = 60 * 60 * 24;
-constexpr int32_t DEFAULT_RECYCLE_DAYS = 30;
 constexpr int32_t HASH_COLLISION_MAX_TRY = 10;
 std::atomic<bool> MediaLibrarySmartAlbumMapOperations::isInterrupt_ = false;
-string MediaLibrarySmartAlbumMapOperations::MakeSuffixPathName(string &assetPath)
+static string MakeSuffixPathName(const string &assetPath)
 {
     string outSuffixPath;
     size_t extensionIndex = assetPath.rfind(".");
@@ -60,61 +60,25 @@ string MediaLibrarySmartAlbumMapOperations::MakeSuffixPathName(string &assetPath
     return outSuffixPath;
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::DeleteFileAssetsInfoUtil(unique_ptr<FileAsset> &fileAsset)
-{
-    string recyclePath;
-    if (!GetRecyclePath(fileAsset->GetId(), recyclePath)) {
-        MEDIA_ERR_LOG("RecycleFile is null, fileId = %{private}d", fileAsset->GetId());
-        return E_RECYCLE_FILE_IS_NULL;
-    }
-    return MediaLibraryObjectUtils::DeleteFileObj(move(fileAsset));
-}
-
-int32_t MediaLibrarySmartAlbumMapOperations::DeleteDirAssetsInfoUtil(unique_ptr<FileAsset> &fileAsset)
-{
-    string recyclePath;
-    int32_t errorCode;
-    if (fileAsset->GetIsTrash() == TRASHED_DIR) {
-        if (!GetRecyclePath(fileAsset->GetId(), recyclePath)) {
-            MEDIA_ERR_LOG("RecycleFile is null, fileId = %{private}d", fileAsset->GetId());
-            return E_RECYCLE_FILE_IS_NULL;
-        }
-        MEDIA_INFO_LOG("DeleteDirAssetsInfoUtil recyclePath = %{private}s", recyclePath.c_str());
-        errorCode = MediaLibraryObjectUtils::DeleteFileObj(move(fileAsset));
-    } else {
-        MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
-        errorCode = MediaLibraryObjectUtils::DeleteInfoByIdInDb(cmd, to_string(fileAsset->GetId()));
-    }
-    return errorCode;
-}
-
-shared_ptr<NativeRdb::ResultSet> MediaLibrarySmartAlbumMapOperations::QueryAgeingTrashFiles()
+static shared_ptr<NativeRdb::ResultSet> QueryAgeingTrashFiles()
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("UniStore is nullptr");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, nullptr, "UniStore is nullptr");
+
     MediaLibraryCommand querySmartAlbumCmd(OperationObject::SMART_ALBUM, OperationType::QUERY);
     querySmartAlbumCmd.GetAbsRdbPredicates()->EqualTo(SMARTALBUM_DB_ID, to_string(TRASH_ALBUM_ID_VALUES));
-    vector<string> columns = { SMARTALBUM_DB_EXPIRED_TIME };
-    int32_t recycleDays = DEFAULT_RECYCLE_DAYS;
-    auto resultSet = uniStore->Query(querySmartAlbumCmd, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query rdb");
-        return nullptr;
-    }
-    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        recycleDays = get<int32_t>(ResultSetUtils::GetValFromColumn(SMARTALBUM_DB_EXPIRED_TIME, resultSet, TYPE_INT32));
-    } else {
-        MEDIA_ERR_LOG("Failed to query rdb");
-        return nullptr;
-    }
+    auto resultSet = uniStore->Query(querySmartAlbumCmd, { SMARTALBUM_DB_EXPIRED_TIME });
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Failed to query rdb");
+
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, nullptr, "Failed to query rdb");
+    auto recycleDays = GetInt32Val(SMARTALBUM_DB_EXPIRED_TIME, resultSet);
     resultSet.reset();
+
     int64_t dateAgeing = MediaFileUtils::UTCTimeSeconds();
     string strAgeingQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + "> 0" + " AND " + to_string(dateAgeing) + " - " +
         MEDIA_DATA_DB_DATE_TRASHED + " > " + to_string(recycleDays * ONEDAY_TO_SEC);
     MEDIA_INFO_LOG("StrAgeingQueryCondition = %{public}s", strAgeingQueryCondition.c_str());
+
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->SetWhereClause(strAgeingQueryCondition);
     return MediaLibraryObjectUtils::QueryWithCondition(cmd, {});
@@ -123,81 +87,54 @@ shared_ptr<NativeRdb::ResultSet> MediaLibrarySmartAlbumMapOperations::QueryAgein
 int32_t MediaLibrarySmartAlbumMapOperations::HandleAgingOperation()
 {
     auto resultSet = QueryAgeingTrashFiles();
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query ageing trash files");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Failed to query ageing trash files");
+
     int32_t count = 0;
-    auto ret = resultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Get rdbstore failed");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet->GetRowCount(count) == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Get query result count failed");
     if (count == 0) {
-        MEDIA_ERR_LOG("Have no ageing trash file");
+        MEDIA_INFO_LOG("Have no ageing trash file");
         return E_SUCCESS;
     }
-    int32_t errorCode = E_ERR;
+
     auto fetchFileResult = make_shared<FetchResult<FileAsset>>();
     for (int32_t row = 0; row < count; row++) {
         if (MediaLibrarySmartAlbumMapOperations::GetInterrupt()) {
-            break;
+            MEDIA_INFO_LOG("recieve interrupt, stop aging");
+            return E_ERR;
         }
+
         unique_ptr<FileAsset> fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, row);
-        if (fileAsset == nullptr) {
-            errorCode = E_HAS_DB_ERROR;
-            break;
-        }
+        CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR, "Get fileAsset failed");
+        int32_t errCode;
         if (fileAsset->GetIsTrash() == TRASHED_ASSET) {
-            errorCode = DeleteFileAssetsInfoUtil(fileAsset);
+            errCode = MediaLibraryObjectUtils::DeleteFileObj(move(fileAsset));
+        } else if (fileAsset->GetIsTrash() == TRASHED_DIR) {
+            errCode = MediaLibraryObjectUtils::DeleteDirObj(move(fileAsset));
         } else {
-            errorCode = DeleteDirAssetsInfoUtil(fileAsset);
+            MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
+            errCode = MediaLibraryObjectUtils::DeleteInfoByIdInDb(cmd, to_string(fileAsset->GetId()));
         }
-        if (errorCode < 0) {
-            MEDIA_ERR_LOG("Failed to delete during trash aging, error: %{public}d just continue here", errorCode);
-        }
+        CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "Failed to delete during trash aging: %{public}d", errCode);
     }
-    return errorCode;
+    return E_SUCCESS;
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::GetAssetRecycle(const int32_t assetId,
-    string &outOldPath, string &outTrashDirPath,
-    const unordered_map<string, DirAsset> &dirQuerySetMap)
+static string GetAssetRecycle(const int32_t assetId, string &filePath, string &outTrashDirPath)
 {
-    outOldPath = MediaLibraryObjectUtils::GetPathByIdFromDb(to_string(assetId));
-    int32_t errorCode = E_ERR;
-    string rootPath;
+    auto dirQuerySetMap = MediaLibraryDataManager::GetDirQuerySetMap();
     for (pair<string, DirAsset> dirPair : dirQuerySetMap) {
         DirAsset dirAsset = dirPair.second;
-        rootPath = ROOT_MEDIA_DIR + dirAsset.GetDirectory();
-        if (outOldPath.find(rootPath) != string::npos) {
-            errorCode = E_SUCCESS;
-            break;
+        string rootPath = ROOT_MEDIA_DIR + dirAsset.GetDirectory();
+        if (filePath.find(rootPath) == 0) {
+            string trashDirPath = rootPath + RECYCLE_DIR;
+            return trashDirPath;
         }
     }
-    outTrashDirPath = rootPath + RECYCLE_DIR;
-    return errorCode;
+    return "";
 }
 
-bool MediaLibrarySmartAlbumMapOperations::GetRecyclePath(const int32_t assetId, string &outRecyclePath)
-{
-    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(to_string(assetId));
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("Failed to get asset, return false to indicate an error here");
-        return false;
-    }
-    outRecyclePath = fileAsset->GetPath();
-    if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
-        MEDIA_INFO_LOG("AssetRescyclePath = %{private}s", outRecyclePath.c_str());
-        return MediaFileUtils::IsDirectory(outRecyclePath);
-    } else {
-        MEDIA_INFO_LOG("AssetRescyclePath = %{private}s", outRecyclePath.c_str());
-        return MediaFileUtils::IsFileExists(outRecyclePath);
-    }
-}
-
-int32_t MediaLibrarySmartAlbumMapOperations::MakeRecycleDisplayName(const int32_t assetId,
-    const string &trashDirPath, string &outRecyclePath)
+static int32_t MakeRecycleDisplayName(const int32_t assetId, const string &trashDirPath, string &outRecyclePath)
 {
     shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(to_string(assetId));
     if (fileAsset == nullptr) {
@@ -245,300 +182,263 @@ int32_t MediaLibrarySmartAlbumMapOperations::MakeRecycleDisplayName(const int32_
     return errorCode;
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::GetAlbumAsset(const std::string &id, NativeAlbumAsset &albumAsset)
-{
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
-    cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, id);
-    auto queryResultSet  = MediaLibraryObjectUtils::QueryWithCondition(cmd, {});
-    if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query rdb!");
-        return E_HAS_DB_ERROR;
-    }
-    if (queryResultSet->GoToNextRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to go to next row!");
-        return E_HAS_DB_ERROR;
-    }
-    albumAsset.SetAlbumId(get<int32_t>(
-        ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, queryResultSet, TYPE_INT32)));
-    albumAsset.SetAlbumName(get<string>(
-        ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_TITLE, queryResultSet, TYPE_STRING)));
-    return E_OK;
-}
-
-int32_t MediaLibrarySmartAlbumMapOperations::UpdateChildRecycleInfoInDb(const int32_t assetId,
-    const int64_t recycleDate)
+static int32_t UpdateChildRecycleInfoInDb(const int32_t assetId)
 {
     ValuesBucket values;
-    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, recycleDate);
     values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, 0);
     values.PutInt(MEDIA_DATA_DB_IS_TRASH, 0);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
     return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(assetId));
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::RecycleChildAssetsInfoUtil(const int32_t parentId,
-    const int64_t recycleDate)
+static int32_t RecycleChildAssetsInfoUtil(const int32_t parentId)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("UniStore is nullptr");
-        return E_HAS_DB_ERROR;
-    }
-    MediaLibraryCommand querySmartAlbumCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
-    querySmartAlbumCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId))->And()->
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "UniStore is nullptr");
+
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+    queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId))->And()->
         EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(TRASHED_DIR_CHILD));
-    vector<string> columns;
-    auto queryResultSet = uniStore->Query(querySmartAlbumCmd, columns);
-    if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("QueryResultSet is nullptr");
-        return E_HAS_DB_ERROR;
-    }
-    auto count = 0;
-    auto ret = queryResultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Get rdbstore failed");
-        return E_HAS_DB_ERROR;
-    }
+    auto resultSet = uniStore->QueryOld(queryCmd, { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE });
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "QueryResultSet is nullptr");
+
     int32_t errCode = E_SUCCESS;
-    if (count == 0) {
-        return errCode;
-    }
-    while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t idVal = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, queryResultSet, TYPE_INT32));
-        errCode = UpdateChildRecycleInfoInDb(idVal, recycleDate);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t fileId = GetInt32Val(MEDIA_DATA_DB_ID, resultSet);
+        errCode = UpdateChildRecycleInfoInDb(fileId);
         CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "Failed to UpdateChildRecycleInfoInDb");
-        errCode = RecycleChildAssetsInfoUtil(idVal, recycleDate);
-        CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "Failed to RecycleChildAssetsInfoUtil");
+
+        if (GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, resultSet) == MEDIA_TYPE_ALBUM) {
+            errCode = RecycleChildAssetsInfoUtil(fileId);
+            CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "Failed to RecycleChildAssetsInfoUtil");
+        }
     }
     return errCode;
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::UpdateChildPathInfoInDb(const int32_t assetId,
-    const string &path, const string &relativePath, const int32_t isTrash)
+static string GetNewPath(const string &path, const string &srcRelPath, const string &newRelPath)
 {
-    ValuesBucket values;
-    if (isTrash == TRASHED_DIR_CHILD) {
-        values.PutString(MEDIA_DATA_DB_FILE_PATH, path);
-    } else {
-        values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, path);
+    if ((path.find(srcRelPath) != 0) && (path.find(ROOT_MEDIA_DIR + srcRelPath) != 0)) {
+        return "";
     }
-    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
-    return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(assetId));
+    string newPath = newRelPath;
+    if (path.find(ROOT_MEDIA_DIR) != string::npos) {
+        newPath = ROOT_MEDIA_DIR + newPath;
+    }
+    newPath += path.substr(path.find(srcRelPath) + srcRelPath.length());
+    return newPath;
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::RecycleChildSameNameInfoUtil(const int32_t parentId,
-    const string &relativePath)
+static int32_t RecycleChildSameNameInfoUtil(const int32_t parentId, const string &srcRelPath, const string &newRelPath,
+    bool isFirstLevel)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("UniStore is nullptr");
-        return E_HAS_DB_ERROR;
-    }
-    MediaLibraryCommand querySmartAlbumCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
-    querySmartAlbumCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId));
-    vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_RELATIVE_PATH, MEDIA_DATA_DB_IS_TRASH };
-    auto queryResultSet = uniStore->Query(querySmartAlbumCmd, columns);
-    if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("QueryResultSet is nullptr");
-        return E_HAS_DB_ERROR;
-    }
-    auto count = 0;
-    auto ret = queryResultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Get rdbstore failed");
-        return E_HAS_DB_ERROR;
-    }
-    int32_t errCode = E_SUCCESS;
-    if (count == 0) {
-        return E_SUCCESS;
-    }
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "UniStore is nullptr");
 
-    while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t idVal = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, queryResultSet, TYPE_INT32));
-        int32_t isTrashVal = get<int32_t>(
-            ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_IS_TRASH, queryResultSet, TYPE_INT32));
-        string nameVal = get<string>(
-            ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_NAME, queryResultSet, TYPE_STRING));
-        string newPath = ROOT_MEDIA_DIR + relativePath + nameVal;
-        string childRelativePath = relativePath + nameVal + "/";
-        errCode = UpdateChildPathInfoInDb(idVal, newPath, relativePath, isTrashVal);
-        CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "Failed to updateChildPathInfoInDb");
-        errCode = RecycleChildSameNameInfoUtil(idVal, childRelativePath);
-        CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "Failed to recycleChildSameNameInfoUtil");
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+    queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId));
+    vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_IS_TRASH, MEDIA_DATA_DB_RECYCLE_PATH, MEDIA_DATA_DB_RELATIVE_PATH };
+    auto result = uniStore->QueryOld(queryCmd, columns);
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_HAS_DB_ERROR, "Failed to obtain value from database");
+
+    int32_t count = -1;
+    CHECK_AND_RETURN_RET(result->GetRowCount(count) == NativeRdb::E_OK, E_HAS_DB_ERROR);
+    for (int32_t i = 0; i < count; i++) {
+        CHECK_AND_RETURN_RET(result->GoToNextRow() == NativeRdb::E_OK, E_HAS_DB_ERROR);
+        ValuesBucket values;
+        string relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+        values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, GetNewPath(relativePath, srcRelPath, newRelPath));
+
+        int32_t mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
+        if (isFirstLevel && (mediaType != MEDIA_TYPE_ALBUM)) {
+            string newParentName = newRelPath;
+            // delete the final '/' in relative_path
+            newParentName.pop_back();
+            newParentName = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(newParentName);
+            values.PutString(MEDIA_DATA_DB_BUCKET_NAME, newParentName);
+        }
+
+        // Update recycle_path for TRASHED_ASSET and TRASHED_DIR, update data for TRASHED_DIR_CHILD.
+        int32_t isTrash = GetInt32Val(MEDIA_DATA_DB_IS_TRASH, result);
+        if (isTrash == TRASHED_DIR_CHILD) {
+            string path = GetStringVal(MEDIA_DATA_DB_FILE_PATH, result);
+            values.PutString(MEDIA_DATA_DB_FILE_PATH, GetNewPath(path, srcRelPath, newRelPath));
+        } else {
+            string recyclePath = GetStringVal(MEDIA_DATA_DB_RECYCLE_PATH, result);
+            values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, GetNewPath(recyclePath, srcRelPath, newRelPath));
+        }
+
+        int32_t fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
+        MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
+        updateCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(fileId));
+        int32_t changedRows = -1;
+        auto ret = uniStore->Update(updateCmd, changedRows);
+        if ((ret != NativeRdb::E_OK) || (changedRows <= 0)) {
+            MEDIA_ERR_LOG("Update DB failed. Ret: %{public}d. Update fileId: %{public}d", ret, fileId);
+            return E_HAS_DB_ERROR;
+        }
+
+        if (mediaType == MEDIA_TYPE_ALBUM) {
+            ret = RecycleChildSameNameInfoUtil(fileId, srcRelPath, newRelPath, false);
+            CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_HAS_DB_ERROR, "Update DB failed. fileId: %{public}d", fileId);
+        }
     }
-    return errCode;
+    return E_SUCCESS;
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::RecycleDir(const shared_ptr<FileAsset> &fileAsset,
-    const string &recyclePath, string &outSameNamePath)
+static int32_t RecycleDir(const shared_ptr<FileAsset> &fileAsset)
 {
-    int32_t errorCode = E_ERR;
-    NativeAlbumAsset nativeAlbumAsset;
-    string assetPath = fileAsset->GetRecyclePath();
-    MEDIA_INFO_LOG("RecycleDir assetPath = %{private}s", assetPath.c_str());
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "UniStore is nullptr");
+
+    ValuesBucket values;
     if (!MediaLibraryObjectUtils::IsAssetExistInDb(fileAsset->GetParent())) {
-        MEDIA_INFO_LOG("RecycleDir getRelativePath() = %{private}s", fileAsset->GetRelativePath().c_str());
-        nativeAlbumAsset = MediaLibraryObjectUtils::GetDirAsset((ROOT_MEDIA_DIR + fileAsset->GetRelativePath()));
-        if (!MediaFileUtils::RenameDir(recyclePath, assetPath)) {
-            return E_RECYCLE_DIR_FAIL;
-        }
-        errorCode = UpdateParentDirRecycleInfoInDb(fileAsset->GetId(), nativeAlbumAsset.GetAlbumId(),
-            nativeAlbumAsset.GetAlbumName());
-    } else {
-        bool hasSameName = false;
-        while (MediaLibraryObjectUtils::IsFileExistInDb(assetPath)) {
-            hasSameName = true;
-            assetPath = assetPath + DIR_RECYCLE_SUFFIX;
-        }
-        if (!MediaFileUtils::RenameDir(recyclePath, assetPath)) {
-            return E_RECYCLE_DIR_FAIL;
-        }
-        if (!hasSameName) {
-            return E_SUCCESS;
-        }
-        string assetDisplayName, childRelativePath;
-        assetDisplayName = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(assetPath);
-        string assetRelativePath = fileAsset->GetRelativePath();
-        childRelativePath = assetRelativePath + assetDisplayName + "/";
-        errorCode = RecycleChildSameNameInfoUtil(fileAsset->GetId(), childRelativePath);
-        CHECK_AND_RETURN_RET_LOG(errorCode >= 0,
-            errorCode, "Failed to recycleChildSameNameInfoUtil");
-        errorCode = UpdateSameNameInfoInDb(fileAsset->GetId(), assetDisplayName, assetPath);
-        outSameNamePath = assetPath;
+        int32_t parentId = MediaLibraryObjectUtils::CreateDirWithPath(ROOT_MEDIA_DIR + fileAsset->GetRelativePath());
+        values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentId);
     }
-    return errorCode;
+
+    bool hasSameName = false;
+    string assetPath = fileAsset->GetRecyclePath();
+    while (MediaLibraryObjectUtils::IsFileExistInDb(assetPath)) {
+        hasSameName = true;
+        assetPath = assetPath + DIR_RECYCLE_SUFFIX;
+    }
+
+    if (!MediaFileUtils::RenameDir(fileAsset->GetPath(), assetPath)) {
+        return E_RENAME_DIR_FAIL;
+    }
+
+    if (hasSameName) {
+        fileAsset->SetRecyclePath(assetPath);
+        // update dir info
+        string newName = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(assetPath);
+        values.PutString(MEDIA_DATA_DB_NAME, newName);
+        values.PutString(MEDIA_DATA_DB_TITLE, newName);
+        values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, assetPath);
+
+        // update child info
+        string srcRelPath = fileAsset->GetRelativePath() + fileAsset->GetDisplayName() + "/";
+        string newRelPath = fileAsset->GetRelativePath() + newName + "/";
+        RecycleChildSameNameInfoUtil(fileAsset->GetId(), srcRelPath, newRelPath, true);
+    }
+
+    if (!values.IsEmpty()) {
+        MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
+        updateCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(fileAsset->GetId()));
+        int32_t changedRows = -1;
+        return uniStore->Update(updateCmd, changedRows);
+    }
+
+    return E_SUCCESS;
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::RecycleDirAssetsInfoUtil(const shared_ptr<FileAsset> &fileAsset)
-{
-    string recyclePath;
-    int32_t errorCode = E_ERR;
-    if (!GetRecyclePath(fileAsset->GetId(), recyclePath)) {
-        MEDIA_ERR_LOG("RecycleFile is null, fileid = %{private}d", fileAsset->GetId());
-        return E_RECYCLE_FILE_IS_NULL;
-    }
-    MEDIA_INFO_LOG("RecyclePath = %{private}s", recyclePath.c_str());
-    string sameNamePath;
-    errorCode = RecycleDir(fileAsset, recyclePath, sameNamePath);
-    CHECK_AND_RETURN_RET_LOG(errorCode >= 0, errorCode, "Failed to recycleDir");
-    int64_t recycleDate = MediaFileUtils::UTCTimeSeconds();
-    errorCode = RecycleChildAssetsInfoUtil(fileAsset->GetId(), recycleDate);
-    CHECK_AND_RETURN_RET_LOG(errorCode >= 0, errorCode, "Failed to recycleChildAssetsInfoUtil");
-    string dirRealPath;
-    if (sameNamePath.empty()) {
-        dirRealPath = fileAsset->GetRecyclePath();
-    } else {
-        dirRealPath = sameNamePath;
-    }
-    int64_t date = MediaFileUtils::UTCTimeSeconds();
-    string dirRecyclePath;
-    return UpdateRecycleInfoInDb(fileAsset->GetId(), date, dirRecyclePath, dirRealPath);
-}
-
-int32_t MediaLibrarySmartAlbumMapOperations::UpdateRecycleInfoInDb(const int32_t assetId,
-    const int64_t recycleDate, const string &recyclePath, const string &realPath)
+static int32_t UpdateRecycleInfoInDb(const int32_t assetId, const string &realPath)
 {
     ValuesBucket values;
     values.PutString(MEDIA_DATA_DB_FILE_PATH, realPath);
-    values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, recyclePath);
-    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, recycleDate);
+    values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, "");
     values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, 0);
     values.PutInt(MEDIA_DATA_DB_IS_TRASH, 0);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
     return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(assetId));
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::UpdateParentDirRecycleInfoInDb(const int32_t assetId,
-    const int32_t parentId, const string &parentName)
+static int32_t RecycleDirAssetsInfoUtil(const shared_ptr<FileAsset> &fileAsset)
 {
-    if (parentId < 0) {
-        MEDIA_ERR_LOG("ParentId is invalid");
-        return E_INVALID_VALUES;
+    if (!MediaFileUtils::IsDirectory(fileAsset->GetPath())) {
+        MEDIA_ERR_LOG("recycle dir is not exists");
+        return E_RECYCLE_FILE_IS_NULL;
     }
-    ValuesBucket values;
-    values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentId);
-    if (!parentName.empty()) {
-        values.PutInt(MEDIA_DATA_DB_BUCKET_ID, parentId);
-        values.PutString(MEDIA_DATA_DB_BUCKET_NAME, parentName);
-    }
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
-    return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(assetId));
+
+    auto errorCode = RecycleDir(fileAsset);
+    CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to RecycleDir");
+
+    errorCode = RecycleChildAssetsInfoUtil(fileAsset->GetId());
+    CHECK_AND_RETURN_RET_LOG(errorCode >= 0, errorCode, "Failed to recycleChildAssetsInfoUtil");
+
+    string dirRealPath = fileAsset->GetRecyclePath();
+    return UpdateRecycleInfoInDb(fileAsset->GetId(), dirRealPath);
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::UpdateSameNameInfoInDb(const int32_t assetId,
-    const string &displayName, const string &path)
+static int32_t RecycleFile(const shared_ptr<FileAsset> &fileAsset)
 {
-    ValuesBucket values;
-    values.PutString(MEDIA_DATA_DB_NAME, displayName);
-    values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, path);
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
-    return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(assetId));
-}
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "UniStore is nullptr");
 
-int32_t MediaLibrarySmartAlbumMapOperations::RecycleFile(const shared_ptr<FileAsset> &fileAsset,
-    const string &recyclePath, string &sameNamePath)
-{
-    int32_t errorCode;
-    string assetPath = fileAsset->GetRecyclePath();
+    ValuesBucket values;
     if (!MediaLibraryObjectUtils::IsAssetExistInDb(fileAsset->GetParent())) {
-        MEDIA_INFO_LOG("RecycleFile getRelativePath() = %{private}s", fileAsset->GetRelativePath().c_str());
-        int32_t albumId = MediaLibraryObjectUtils::CreateDirWithPath(ROOT_MEDIA_DIR + fileAsset->GetRelativePath());
-        NativeAlbumAsset nativeAlbumAsset;
-        nativeAlbumAsset.SetAlbumId(albumId);
-        errorCode = fileAsset->ModifyAsset(recyclePath, assetPath);
-        CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "IsAlbumExistInDb failed to modifyAsset");
-        errorCode = GetAlbumAsset(to_string(albumId), nativeAlbumAsset);
-        CHECK_AND_RETURN_RET_LOG(errorCode == E_OK, errorCode, "Failed to get album asset");
-        errorCode = UpdateParentDirRecycleInfoInDb(fileAsset->GetId(), nativeAlbumAsset.GetAlbumId(),
-            nativeAlbumAsset.GetAlbumName());
-    } else {
-        bool hasSameName = false;
-        while (MediaLibraryObjectUtils::IsFileExistInDb(assetPath)) {
-            hasSameName = true;
-            assetPath = MakeSuffixPathName(assetPath);
-        }
-        errorCode = fileAsset->ModifyAsset(recyclePath, assetPath);
-        CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to modifyAsset");
-        if (hasSameName) {
-            string assetDisplayName = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(assetPath);
-            errorCode = UpdateSameNameInfoInDb(fileAsset->GetId(), assetDisplayName, assetPath);
-            sameNamePath = assetPath;
+        int32_t parentId = MediaLibraryObjectUtils::CreateDirWithPath(ROOT_MEDIA_DIR + fileAsset->GetRelativePath());
+        values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentId);
+        values.PutInt(MEDIA_DATA_DB_BUCKET_ID, parentId);
+    }
+
+    bool hasSameName = false;
+    string assetPath = fileAsset->GetRecyclePath();
+    while (MediaLibraryObjectUtils::IsFileExistInDb(assetPath)) {
+        hasSameName = true;
+        assetPath = MakeSuffixPathName(assetPath);
+    }
+
+    if (!MediaFileUtils::MoveFile(fileAsset->GetPath(), assetPath)) {
+        return E_RENAME_FILE_FAIL;
+    }
+
+    if (hasSameName) {
+        fileAsset->SetRecyclePath(assetPath);
+        string newName = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(assetPath);
+        values.PutString(MEDIA_DATA_DB_NAME, newName);
+        values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, assetPath);
+        MediaType mediaType = fileAsset->GetMediaType();
+        if ((mediaType != MEDIA_TYPE_VIDEO) && (mediaType != MEDIA_TYPE_AUDIO)) {
+            values.PutString(MEDIA_DATA_DB_TITLE, newName);
         }
     }
-    return errorCode;
+
+    if (!values.IsEmpty()) {
+        MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
+        updateCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(fileAsset->GetId()));
+        int32_t changedRows = -1;
+        return uniStore->Update(updateCmd, changedRows);
+    }
+
+    return E_SUCCESS;
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::RecycleFileAssetsInfoUtil(const shared_ptr<FileAsset> &fileAsset)
+static int32_t RecycleFileAssetsInfoUtil(const shared_ptr<FileAsset> &fileAsset)
 {
-    string recyclePath;
-    if (!GetRecyclePath(fileAsset->GetId(), recyclePath)) {
+    string recyclePath = fileAsset->GetPath();
+    if (!MediaFileUtils::IsFileExists(recyclePath)) {
         MEDIA_ERR_LOG("RecycleFile is null, fileid = %{private}d", fileAsset->GetId());
         return E_RECYCLE_FILE_IS_NULL;
     }
-    MEDIA_INFO_LOG("RecyclePath = %{private}s", recyclePath.c_str());
-    string sameNamePath;
-    int32_t errorCode = RecycleFile(fileAsset, recyclePath, sameNamePath);
+
+    int32_t errorCode = RecycleFile(fileAsset);
     CHECK_AND_RETURN_RET_LOG(errorCode >= 0, errorCode, "Failed to recycleFile");
-    string fileRealPath = sameNamePath.empty() ? fileAsset->GetRecyclePath() : sameNamePath;
-    string fileRecyclePath;
-    int64_t date = MediaFileUtils::UTCTimeSeconds();
-    return UpdateRecycleInfoInDb(fileAsset->GetId(), date, fileRecyclePath, fileRealPath);
+
+    string fileRealPath = fileAsset->GetRecyclePath();
+    return UpdateRecycleInfoInDb(fileAsset->GetId(), fileRealPath);
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::RemoveTrashAssetsInfoUtil(const int32_t fileAssetId)
+static int32_t RemoveTrashAssetsInfoUtil(const int32_t fileAssetId)
 {
     shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(to_string(fileAssetId));
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("fileAsset is nullptr, assetId: %{public}d", fileAssetId);
-        return E_GET_ASSET_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_GET_ASSET_FAIL, "fileAsset is nullptr, assetId: %{public}d",
+        fileAssetId);
+
     if (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {
         return RecycleFileAssetsInfoUtil(fileAsset);
     } else {
         return RecycleDirAssetsInfoUtil(fileAsset);
     }
+}
+
+static int32_t UpdateFavoriteAssetsInfoUtil(const int32_t fileAssetId, const bool isFavorites)
+{
+    ValuesBucket values;
+    values.PutBool(MEDIA_DATA_DB_IS_FAV, isFavorites);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
+    return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(fileAssetId));
 }
 
 int32_t MediaLibrarySmartAlbumMapOperations::HandleRemoveAssetOperation(const int32_t albumId,
@@ -556,69 +456,60 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleRemoveAssetOperation(const in
     return MediaLibraryObjectUtils::DeleteInfoByIdInDb(cmd);
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::UpdateDirTrashInfoInDb(const int32_t assetId, const int64_t trashDate,
-    string &recyclePath, const string &oldPath)
-{
-    return UpdateTrashInfoInDb(assetId, trashDate, recyclePath, oldPath, TRASHED_DIR);
-}
-
-int32_t MediaLibrarySmartAlbumMapOperations::UpdateChildTrashInfoInDb(const int32_t assetId, const int64_t trashDate)
+static int32_t UpdateChildTrashInfoInDb(const int32_t assetId, const int64_t trashDate)
 {
     ValuesBucket values;
     values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, trashDate);
-    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, trashDate);
     values.PutInt(MEDIA_DATA_DB_IS_TRASH, TRASHED_DIR_CHILD);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
     return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(assetId));
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::TrashChildAssetsInfoUtil(const int32_t parentId, const int64_t &trashDate)
+static int32_t TrashChildAssetsInfoUtil(const int32_t parentId, const int64_t &trashDate)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("UniStore is nullptr");
-        return E_HAS_DB_ERROR;
-    }
-    MediaLibraryCommand querySmartAlbumCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "UniStore is nullptr");
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     string parentPath = MediaLibraryObjectUtils::GetPathByIdFromDb(to_string(parentId));
-    querySmartAlbumCmd.GetAbsRdbPredicates()->Like(MEDIA_DATA_DB_FILE_PATH, parentPath + "%")->And()->
+    cmd.GetAbsRdbPredicates()->Like(MEDIA_DATA_DB_FILE_PATH, parentPath + "%")->And()->
         EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
-    vector<string> columns = { MEDIA_DATA_DB_ID };
-    auto queryResultSet = uniStore->Query(querySmartAlbumCmd, columns);
-    if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("QueryResultSet is nullptr");
-        return E_HAS_DB_ERROR;
-    }
+
+    auto result = uniStore->Query(cmd, { MEDIA_DATA_DB_ID });
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_HAS_DB_ERROR, "QueryResultSet is nullptr");
+
     auto count = 0;
-    int32_t err = queryResultSet->GetRowCount(count);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Get count failed, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(result->GetRowCount(count) == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Get query result count failed");
     if (count == 0) {
-        MEDIA_ERR_LOG("Have no child assets");
+        MEDIA_INFO_LOG("Have no child assets");
         return E_SUCCESS;
     }
-    err = queryResultSet->GoToFirstRow();
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GoToFirstRow failed, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
+
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        auto ret = UpdateChildTrashInfoInDb(GetInt32Val(MEDIA_DATA_DB_ID, result), trashDate);
+        CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "Failed to updateChildTrashInfoInDb");
     }
-    do {
-        err = UpdateChildTrashInfoInDb(get<int32_t>(
-            ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, queryResultSet, TYPE_INT32)), trashDate);
-        CHECK_AND_RETURN_RET_LOG(err > 0, err, "Failed to updateChildTrashInfoInDb");
-        err = queryResultSet->GoToNextRow();
-    } while (err == NativeRdb::E_OK);
     return E_SUCCESS;
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::TrashDirAssetsInfoUtil(const int32_t assetId, MediaLibraryCommand &cmd)
+static int32_t UpdateTrashInfoInDb(const int32_t assetId, const int64_t trashDate, string &recyclePath,
+    const string &oldPath, const uint32_t trashType)
 {
-    string oldPath;
-    string trashDirPath;
-    int32_t errorCode = GetAssetRecycle(assetId, oldPath, trashDirPath, cmd.GetDirQuerySetMap());
-    CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to getAssetRecycle");
+    ValuesBucket values;
+    values.PutString(MEDIA_DATA_DB_FILE_PATH, recyclePath);
+    values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, oldPath);
+    values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, trashDate);
+    values.PutInt(MEDIA_DATA_DB_IS_TRASH, trashType);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
+    return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(assetId));
+}
+
+static int32_t TrashDirAssetsInfoUtil(const int32_t assetId)
+{
+    string oldPath = MediaLibraryObjectUtils::GetPathByIdFromDb(to_string(assetId));
+    string trashDirPath = GetAssetRecycle(assetId, oldPath, trashDirPath);
+    CHECK_AND_RETURN_RET_LOG(!trashDirPath.empty(), E_CHECK_ROOT_DIR_FAIL, "Failed to get recycle dir");
     if (!MediaFileUtils::IsDirectory(trashDirPath)) {
         if (!MediaFileUtils::CreateDirectory(trashDirPath)) {
             MEDIA_ERR_LOG("TrashDirPath create failed");
@@ -626,7 +517,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::TrashDirAssetsInfoUtil(const int32_
         }
     }
     string recyclePath;
-    errorCode = MakeRecycleDisplayName(assetId, trashDirPath, recyclePath);
+    auto errorCode = MakeRecycleDisplayName(assetId, trashDirPath, recyclePath);
     CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to makeRecycleDisplayName");
     if (!MediaFileUtils::RenameDir(oldPath, recyclePath)) {
         return E_MODIFY_DATA_FAIL;
@@ -634,21 +525,14 @@ int32_t MediaLibrarySmartAlbumMapOperations::TrashDirAssetsInfoUtil(const int32_
     int64_t trashDate = MediaFileUtils::UTCTimeSeconds();
     errorCode = TrashChildAssetsInfoUtil(assetId, trashDate);
     CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to trashChildAssetsInfoUtil");
-    return UpdateDirTrashInfoInDb(assetId, trashDate, recyclePath, oldPath);
+    return UpdateTrashInfoInDb(assetId, trashDate, recyclePath, oldPath, TRASHED_DIR);
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::UpdateAssetTrashInfoInDb(const int32_t assetId,
-    const int64_t trashDate, string &recyclePath, const string &oldPath)
+static int32_t TrashFileAssetsInfoUtil(const int32_t assetId)
 {
-    return UpdateTrashInfoInDb(assetId, trashDate, recyclePath, oldPath, TRASHED_ASSET);
-}
-
-int32_t MediaLibrarySmartAlbumMapOperations::TrashFileAssetsInfoUtil(const int32_t assetId, MediaLibraryCommand &cmd)
-{
-    string trashDirPath;
-    string oldPath;
-    int32_t errorCode = GetAssetRecycle(assetId, oldPath, trashDirPath, cmd.GetDirQuerySetMap());
-    CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to getAssetRecycle");
+    string oldPath = MediaLibraryObjectUtils::GetPathByIdFromDb(to_string(assetId));
+    string trashDirPath = GetAssetRecycle(assetId, oldPath, trashDirPath);
+    CHECK_AND_RETURN_RET_LOG(!trashDirPath.empty(), E_CHECK_ROOT_DIR_FAIL, "Failed to get recycle dir");
     if (!MediaFileUtils::IsDirectory(trashDirPath)) {
         if (!MediaFileUtils::CreateDirectory(trashDirPath)) {
             MEDIA_ERR_LOG("TrashDirPath create failed");
@@ -656,17 +540,16 @@ int32_t MediaLibrarySmartAlbumMapOperations::TrashFileAssetsInfoUtil(const int32
         }
     }
     string recyclePath;
-    errorCode = MakeRecycleDisplayName(assetId, trashDirPath, recyclePath);
+    auto errorCode = MakeRecycleDisplayName(assetId, trashDirPath, recyclePath);
     CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to make recycle display name");
     FileAsset fileAsset;
     errorCode = fileAsset.ModifyAsset(oldPath, recyclePath);
     CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to modifyAsset");
     int64_t trashDate = MediaFileUtils::UTCTimeSeconds();
-    return UpdateAssetTrashInfoInDb(assetId, trashDate, recyclePath, oldPath);
+    return UpdateTrashInfoInDb(assetId, trashDate, recyclePath, oldPath, TRASHED_ASSET);
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::InsertTrashAssetsInfoUtil(const int32_t fileAssetId,
-    MediaLibraryCommand &cmd)
+static int32_t InsertTrashAssetsInfoUtil(const int32_t fileAssetId)
 {
     shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(to_string(fileAssetId));
     if (fileAsset == nullptr) {
@@ -677,19 +560,10 @@ int32_t MediaLibrarySmartAlbumMapOperations::InsertTrashAssetsInfoUtil(const int
         return E_IS_RECYCLED;
     }
     if (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {
-        return TrashFileAssetsInfoUtil(fileAssetId, cmd);
+        return TrashFileAssetsInfoUtil(fileAssetId);
     } else {
-        return TrashDirAssetsInfoUtil(fileAssetId, cmd);
+        return TrashDirAssetsInfoUtil(fileAssetId);
     }
-}
-
-int32_t MediaLibrarySmartAlbumMapOperations::UpdateFavoriteAssetsInfoUtil(const int32_t fileAssetId,
-    const bool isFavorites)
-{
-    ValuesBucket values;
-    values.PutBool(MEDIA_DATA_DB_IS_FAV, isFavorites);
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
-    return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(fileAssetId));
 }
 
 int32_t MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(const int32_t albumId,
@@ -699,7 +573,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(const int32
         albumId, childFileAssetId);
     int32_t errorCode = E_SUCCESS;
     if (albumId == TRASH_ALBUM_ID_VALUES) {
-        errorCode = InsertTrashAssetsInfoUtil(childFileAssetId, cmd);
+        errorCode = InsertTrashAssetsInfoUtil(childFileAssetId);
     } else if (albumId == FAVOURITE_ALBUM_ID_VALUES) {
         errorCode = UpdateFavoriteAssetsInfoUtil(childFileAssetId, true);
     }
@@ -717,19 +591,6 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(const int32
         }
     }
     return MediaLibraryObjectUtils::InsertInDb(cmd);
-}
-
-int32_t MediaLibrarySmartAlbumMapOperations::UpdateTrashInfoInDb(const int32_t assetId, const int64_t trashDate,
-    string &recyclePath, const string &oldPath, const uint32_t trashType)
-{
-    ValuesBucket values;
-    values.PutString(MEDIA_DATA_DB_FILE_PATH, recyclePath);
-    values.PutString(MEDIA_DATA_DB_RECYCLE_PATH, oldPath);
-    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, trashDate);
-    values.PutLong(MEDIA_DATA_DB_DATE_TRASHED, trashDate);
-    values.PutInt(MEDIA_DATA_DB_IS_TRASH, trashType);
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
-    return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(assetId));
 }
 
 int32_t MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(MediaLibraryCommand &cmd)
@@ -774,6 +635,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(MediaL
             break;
         case OperationType::AGING:
             errCode = HandleAgingOperation();
+            break;
         default:
             MEDIA_WARN_LOG("Unknown operation type %{private}d", cmd.GetOprnType());
             break;
