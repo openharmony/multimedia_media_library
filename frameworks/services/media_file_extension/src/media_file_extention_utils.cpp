@@ -16,6 +16,8 @@
 
 #include "media_file_extention_utils.h"
 
+#include <fcntl.h>
+
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
