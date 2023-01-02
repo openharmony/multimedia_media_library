@@ -48,7 +48,6 @@ void SmartAlbumNapi::SmartAlbumNapiDestructor(napi_env env, void *nativeObject, 
 
 napi_value SmartAlbumNapi::Init(napi_env env, napi_value exports)
 {
-    NAPI_DEBUG_LOG("SmartAlbumNapi::Init");
     napi_status status;
     napi_value ctorObj;
     int32_t refCount = 1;
