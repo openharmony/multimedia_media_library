@@ -162,7 +162,9 @@ bool PermissionUtils::SystemApiCheck(const std::string &uri)
     const static set<string> systemApiUri = {
         MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN_DELETEASSET,
         MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE,
-        MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE
+        MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE,
+        // MediaLibrary.getPrivateAlbum
+        MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTALBUM_TABLE
     };
     if ((systemApiUri.find(uri) == systemApiUri.end())) {
         return true;
