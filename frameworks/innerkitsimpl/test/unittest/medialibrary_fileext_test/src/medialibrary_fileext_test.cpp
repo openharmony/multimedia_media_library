@@ -72,7 +72,7 @@ public:
     {
         return true;
     };
-    bool RunScript(const string& path, const string& hapPath)
+    bool RunScript(const string& path, const string& hapPath, bool useCommonChunk = false)
     {
         return true;
     };
