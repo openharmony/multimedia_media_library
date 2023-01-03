@@ -80,7 +80,7 @@ ohos_unittest("mtp_native_test") {
     "//base/powermgr/battery_manager/interfaces/innerkits:batterysrv_client",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
     "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp",
-    "//third_party/openssl:libcrypto_static",
+    "//third_party/openssl:libcrypto_shared",
   ]
 
   external_deps = [
