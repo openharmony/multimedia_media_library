@@ -1,0 +1,65 @@
+# Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
+
+group("unittest") {
+  testonly = true
+
+  deps = [ ":medialibrary_rdb_test" ]
+}
+
+ohos_unittest("medialibrary_rdb_test") {
+  module_out_path = "media_library/medialibraryextention"
+  include_dirs = [
+    "./include",
+    "../get_self_permissions/include",
+    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native",
+    "${MEDIA_LIB_BASE_DIR}/innerkitsimpl/medialibrary_data_extension/include/distributed_media_library/device_manage",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include/distributed_media_library/database_manage",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include/distributed_media_library/devices_info_interact",
+    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
+    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
+    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension/include",
+    "${MEDIA_LIB_SERVICES_DIR}/media_thumbnail/include",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include",
+  ]
+
+  sources = [ "./src/medialibrary_rdb_test.cpp" ]
+  deps = [
+    "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager:ability_manager",
+    "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
+    "${ABILITY_RUNTIME_INNER_API_PATH}/runtime:runtime",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_thumbnail:medialibrary_thumbnail",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}:permission_utils",
+    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
+    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "ability_runtime:ability_context_native",
+    "ability_runtime:app_context",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "data_share:datashare_common",
+    "data_share:datashare_provider",
+    "device_manager:devicemanagersdk",
+    "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
+  ]
+
+  resource_config_file =
+      "${MEDIA_LIB_INNERKITS_DIR}/test/unittest/resources/ohos_test.xml"
+}
