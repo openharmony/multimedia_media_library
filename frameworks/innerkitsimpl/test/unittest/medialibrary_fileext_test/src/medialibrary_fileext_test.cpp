@@ -19,6 +19,7 @@
 #include "file_asset.h"
 #include "js_runtime.h"
 #include "media_file_ext_ability.h"
+#include "media_file_extention_utils.h"
 #include "media_log.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_db_const.h"
@@ -103,14 +104,6 @@ void MediaLibraryFileExtUnitTest::SetUp()
 
 void MediaLibraryFileExtUnitTest::TearDown(void) {}
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check openfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_OpenFile_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -149,14 +142,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_OpenFile_test_001, TestSize.Level
     }
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check openfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_OpenFile_test_002, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -174,14 +159,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_OpenFile_test_002, TestSize.Level
     EXPECT_EQ(ret, JS_INNER_FAIL);
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check createfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -203,14 +180,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_001, TestSize.Lev
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_001 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check createfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_002, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -229,14 +198,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_002, TestSize.Lev
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_002 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check createfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_003, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -253,14 +214,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_003, TestSize.Lev
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_003 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check createfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_004, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -277,14 +230,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_004, TestSize.Lev
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_004 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check createfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_005, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -305,14 +250,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_005, TestSize.Lev
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_005 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check mkdir
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -334,14 +271,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_001, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_001 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check mkdir
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_002, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -358,14 +287,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_002, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_002 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check mkdir
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_003, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -382,14 +303,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_003, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_003 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check mkdir
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_004, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -408,14 +321,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_004, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_004 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check mkdir
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_005, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -432,14 +337,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_005, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_005 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check mkdir
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_006, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -456,14 +353,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_006, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_006 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check mkdir
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_007, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -480,14 +369,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_007, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_007 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check mkdir
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_008, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -506,14 +387,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_008, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_008 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check delete file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Delete_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -532,14 +405,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Delete_test_001, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Delete_test_001 ret: %{public}d", ret);
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check delete file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Delete_test_002, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -553,14 +418,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Delete_test_002, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Delete_test_002 ret: %{public}d", ret);
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check move file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -591,14 +448,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_001, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_001 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check move file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_002, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -629,14 +478,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_002, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_002 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check move file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_003, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -655,14 +496,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_003, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_003 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check move file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_004, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -681,14 +514,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_004, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_004 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check move file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_005, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -707,14 +532,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_005, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_005 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check move file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_006, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -733,14 +550,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_006, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_006 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check move file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_007, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -763,14 +572,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_007, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_007 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check move file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_008, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -802,14 +603,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_008, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_008 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check move file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_009, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -833,14 +626,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_009, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_009 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check move file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_010, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -874,14 +659,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_010, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_010 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check move file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_011, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -909,14 +686,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_011, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Move_test_011 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check rename file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -942,14 +711,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_001, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_001 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check rename file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_002, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -977,14 +738,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_002, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_002 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check rename file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_003, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1001,14 +754,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_003, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_003 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check rename file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_004, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1025,14 +770,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_004, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_004 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check rename file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_005, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1051,14 +788,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_005, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_005 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check rename file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_006, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1079,14 +808,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_006, TestSize.Level0)
     MEDIA_DEBUG_LOG("medialib_Rename_test_006 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check rename file
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_007, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1165,14 +886,6 @@ void ListFileFromRootResult(vector<FileInfo> rootFileList, int offset, int maxCo
     }
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check listfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ListFile_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1277,14 +990,6 @@ void ListFileTestFilter(FileInfo dirInfo)
     }
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check listfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ListFile_test_002, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1340,14 +1045,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ListFile_test_002, TestSize.Level
     ListFileTestFilter(fileInfo);
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check getroots
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetRoots_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1377,14 +1074,6 @@ inline void InitScanFile(shared_ptr<FileAsset> &albumAsset)
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("ScanFile_test_8.jpg", albumAsset2, tempAsset), true);
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check scanfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1420,14 +1109,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_001, TestSize.Level
     EXPECT_EQ(limitDirFileList2.size(), 3);
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check scanfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_002, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1462,14 +1143,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_002, TestSize.Level
     EXPECT_EQ(limitDirFileList2.size(), 3);
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check scanfile
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_003, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1506,14 +1179,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_003, TestSize.Level
     EXPECT_EQ(limitDirFileList2.size(), 1);
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check access
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Access_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
@@ -1539,60 +1204,99 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Access_test_001, TestSize.Level0)
     EXPECT_EQ(isExist, false);
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check uritofileinfo
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
+void PrintFileInfo(const FileInfo &fileInfo, const string &testcase)
+{
+    MEDIA_INFO_LOG("testcase: %{public}s FileInfo uri: %{public}s, fileName: %{public}s, mode: %{public}d",
+        testcase.c_str(), fileInfo.uri.c_str(), fileInfo.fileName.c_str(), fileInfo.mode);
+    MEDIA_INFO_LOG("testcase: %{public}s FileInfo size: %{public}lld, mtime: %{public}lld, mimeType: %{public}s",
+        testcase.c_str(), fileInfo.size, fileInfo.mtime, fileInfo.mimeType.c_str());
+}
+
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_001, TestSize.Level0)
+{
+    Uri uri(MEDIALIBRARY_MEDIA_PREFIX + MEDIALIBRARY_ROOT);
+    FileInfo fileInfo;
+    auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_001");
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_002, TestSize.Level0)
+{
+    Uri uri(MEDIALIBRARY_MEDIA_PREFIX + MEDIALIBRARY_ROOT + MEDIALIBRARY_TYPE_FILE_URI);
+    FileInfo fileInfo;
+    auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_002");
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_003, TestSize.Level0)
+{
+    Uri uri(MEDIALIBRARY_MEDIA_PREFIX + MEDIALIBRARY_ROOT + MEDIALIBRARY_TYPE_IMAGE_URI);
+    FileInfo fileInfo;
+    auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_003");
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_004, TestSize.Level0)
+{
+    Uri uri(MEDIALIBRARY_MEDIA_PREFIX + MEDIALIBRARY_ROOT + MEDIALIBRARY_TYPE_VIDEO_URI);
+    FileInfo fileInfo;
+    auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_004");
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_005, TestSize.Level0)
+{
+    Uri uri(MEDIALIBRARY_MEDIA_PREFIX + MEDIALIBRARY_ROOT + MEDIALIBRARY_TYPE_AUDIO_URI);
+    FileInfo fileInfo;
+    auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_005");
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_006, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
     shared_ptr<FileAsset> albumAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("UriToFileInfo_test_001.jpg", g_pictures, albumAsset), true);
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("UriToFileInfo_test_006.jpg", g_pictures, albumAsset), true);
     shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("UriToFileInfo_test_001.jpg", albumAsset, fileAsset), true);
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("UriToFileInfo_test_006.jpg", albumAsset, fileAsset), true);
     Uri uri(fileAsset->GetUri());
     FileInfo fileInfo;
     auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_006");
     EXPECT_EQ(ret, E_SUCCESS);
 
     int32_t fileMode = DOCUMENT_FLAG_REPRESENTS_FILE | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
-    EXPECT_EQ(fileInfo.fileName, "UriToFileInfo_test_001.jpg");
+    EXPECT_EQ(fileInfo.fileName, "UriToFileInfo_test_006.jpg");
     EXPECT_EQ(fileInfo.size, 0);
     EXPECT_EQ(fileInfo.uri, fileAsset->GetUri());
     EXPECT_EQ(fileInfo.mtime, fileAsset->GetDateModified());
     EXPECT_EQ(fileInfo.mode, fileMode);
 }
 
-/*
- * Feature: MediaLibraryFileExtUnitTest
- * Function: check uritofileinfo
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
-HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_007, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
     shared_ptr<FileAsset> albumAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("UriToFileInfo_test_002", g_pictures, albumAsset), true);
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("UriToFileInfo_test_007", g_pictures, albumAsset), true);
     Uri uri(albumAsset->GetUri());
     FileInfo albumInfo;
     auto ret = mediaFileExtAbility->UriToFileInfo(uri, albumInfo);
+    PrintFileInfo(albumInfo, "medialib_UriToFileInfo_test_007");
     EXPECT_EQ(ret, E_SUCCESS);
 
     int32_t albumMode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
-    EXPECT_EQ(albumInfo.fileName, "UriToFileInfo_test_002");
+    EXPECT_EQ(albumInfo.fileName, "UriToFileInfo_test_007");
     EXPECT_EQ(albumInfo.size, 0);
     EXPECT_EQ(albumInfo.uri, albumAsset->GetUri());
     EXPECT_EQ(albumInfo.mtime, albumAsset->GetDateModified());

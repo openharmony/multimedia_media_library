@@ -48,6 +48,7 @@ enum MediaFileUriType {
     URI_FILE_ROOT,
     URI_DIR,
     URI_ALBUM,
+    URI_FILE,
 };
 class MediaFileExtentionUtils {
 public:
