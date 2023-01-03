@@ -1916,6 +1916,7 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
     auto resultSet = UserFileClient::Query(uri, context->predicates, columns);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr");
+        context->error = E_PERMISSION_DENIED;
         return;
     }
 
