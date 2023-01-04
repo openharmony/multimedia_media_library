@@ -1209,7 +1209,7 @@ void PrintFileInfo(const FileInfo &fileInfo, const string &testcase)
     MEDIA_INFO_LOG("testcase: %{public}s FileInfo uri: %{public}s, fileName: %{public}s, mode: %{public}d",
         testcase.c_str(), fileInfo.uri.c_str(), fileInfo.fileName.c_str(), fileInfo.mode);
     MEDIA_INFO_LOG("testcase: %{public}s FileInfo size: %{public}lld, mtime: %{public}lld, mimeType: %{public}s",
-        testcase.c_str(), fileInfo.size, fileInfo.mtime, fileInfo.mimeType.c_str());
+        testcase.c_str(), (long long)fileInfo.size, (long long)fileInfo.mtime, fileInfo.mimeType.c_str());
 }
 
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_001, TestSize.Level0)
