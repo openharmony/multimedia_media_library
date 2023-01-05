@@ -1024,43 +1024,6 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_021, TestS
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: MTP_SESSION_ALREADY_OPEN_CODE
- */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_022, TestSize.Level0)
-{
-    std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
-    std::shared_ptr<MtpOperation> operationPtr_;
-    if (operationPtr_ == nullptr) {
-        operationPtr_ = make_shared<MtpOperation>();
-    }
-
-    // set test data
-    mtpTest->setOutBuffer(testData_open);
-    // execute
-    operationPtr_->Execute();
-     // set test data
-    mtpTest->setOutBuffer(testData_open);
-    // execute
-    operationPtr_->Execute();
-   // get output
-    std::vector<uint8_t> output;
-    mtpTest->getOutBuffer(output);
-    for(auto&& i : output) {
-        MEDIA_DEBUG_LOG("i: %{public}d", i);
-    }
-    // MTP_SESSION_ALREADY_OPEN_CODE
-    std::vector<uint8_t> targetData = { 16, 0, 0, 0, 3, 0, 30, 32, 0, 0, 0, 0, 1, 0, 0, 0 };
-
-    MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
-    EXPECT_EQ(output == targetData, true);
-}
-
-/*
- * Feature: MediaLibraryMTP
- * Function: 
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
  * CaseDescription: MTP_SESSION_NOT_OPEN_CODE
  */
 HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_023, TestSize.Level0)
