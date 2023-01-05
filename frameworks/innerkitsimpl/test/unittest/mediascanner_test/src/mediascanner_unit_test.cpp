@@ -12,286 +12,271 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "datashare_helper.h"
-#include "fetch_result.h"
-#include "get_self_permissions.h"
-#include "iservice_registry.h"
-#include "medialibrary_errno.h"
+
 #include "mediascanner_unit_test.h"
-#include "media_file_utils.h"
-#include "media_library_manager.h"
+
+#include "medialibrary_errno.h"
+#include "medialibrary_unittest_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
-#include "system_ability_definition.h"
+#include "scanner_utils.h"
 
 using namespace std;
+using namespace OHOS;
 using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
 namespace {
-    string g_prefixPath = "/storage/media/local/files";
-    const mode_t CHOWN_RW_UG = 0660;
-}
-constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
-std::shared_ptr<DataShare::DataShareHelper> g_mediaDataShareHelper;
+    shared_ptr<MediaScannerManager> mediaScannerManager = nullptr;
+} // namespace
 
-std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t systemAbilityId)
-{
-    MEDIA_INFO_LOG("CreateDataShareHelper::CreateFileExtHelper ");
-    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saManager == nullptr) {
-        MEDIA_INFO_LOG("CreateDataShareHelper::CreateFileExtHelper Get system ability mgr failed.");
-        return nullptr;
-    }
-    auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
-    while (remoteObj == nullptr) {
-        MEDIA_INFO_LOG("CreateDataShareHelper::CreateFileExtHelper GetSystemAbility Service Failed.");
-        return nullptr;
-    }
-    return DataShare::DataShareHelper::Creator(remoteObj, MEDIALIBRARY_DATA_URI);
-}
-bool CreateFile(const string &filePath)
-{
-    bool errCode = false;
-
-    if (filePath.empty()) {
-        return errCode;
-    }
-
-    ofstream file(filePath);
-    if (!file) {
-        MEDIA_ERR_LOG("Output file path could not be created");
-        return errCode;
-    }
-
-    if (chmod(filePath.c_str(), CHOWN_RW_UG) == 0) {
-        errCode = true;
-    }
-
-    file.close();
-
-    return errCode;
-}
 
 void MediaScannerUnitTest::SetUpTestCase(void)
 {
-    vector<string> perms;
-    perms.push_back("ohos.permission.READ_MEDIA");
-    perms.push_back("ohos.permission.WRITE_MEDIA");
-    perms.push_back("ohos.permission.FILE_ACCESS_MANAGER");
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaDataShareUnitTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
+    MediaLibraryUnitTestUtils::Init();
 
-    MEDIA_INFO_LOG("SetUpTestCase invoked");
-    g_mediaDataShareHelper = CreateDataShareHelper(STORAGE_MANAGER_MANAGER_ID);
-    ASSERT_TRUE(g_mediaDataShareHelper != nullptr);
-
-    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
-    DataShare::DataSharePredicates predicates;
-    string selections = MEDIA_DATA_DB_ID + " <> 0 ";
-    predicates.SetWhereClause(selections);
-    int retVal = g_mediaDataShareHelper->Delete(deleteAssetUri, predicates);
-    MEDIA_INFO_LOG("SetUpTestCase Delete retVal: %{public}d", retVal);
-    EXPECT_EQ((retVal >= 0), true);
+    mediaScannerManager = MediaScannerManager::GetInstance();
 }
 
 void MediaScannerUnitTest::TearDownTestCase(void) {}
-string ConvertPath(string path)
+
+// SetUp:Execute before each test case
+void MediaScannerUnitTest::SetUp()
 {
-    string tmp = "/storage/media/100/";
-    path = tmp + path.substr(strlen("/storage/media/"));
-    return path;
+    MediaLibraryUnitTestUtils::CleanTestFiles();
+    MediaLibraryUnitTestUtils::InitRootDirs();
 }
-void MediaScannerUnitTest::SetUp(void) {}
+
 void MediaScannerUnitTest::TearDown(void) {}
 
-/*
- * Feature: MediaScanner
- * Function: Scan a directory with media files
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
+/**
+ * @tc.number    : MediaScanner_ScanDir_test_001
+ * @tc.name      : scan root dir
+ * @tc.desc      : scan root dir with six dirs
  */
-HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_test_001, TestSize.Level0)
 {
-    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
-    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
-    EXPECT_EQ(ret, E_SUCCESS);
+    if (mediaScannerManager == nullptr) {
+        MEDIA_ERR_LOG("MediaScannerManager invalid");
+        exit(1);
+    }
+
+    auto scannerCallback = make_shared<TestScannerCallback>();
+    int result = mediaScannerManager->ScanDir(ROOT_MEDIA_DIR, scannerCallback);
+    EXPECT_EQ(result, E_OK);
+
+    if (result == 0) {
+        MediaLibraryUnitTestUtils::WaitForCallback(scannerCallback);
+        EXPECT_EQ(scannerCallback->status_, E_OK);
+    }
 }
 
-/*
- * Feature : MediaScannerUnitTest
- * Function : Scan a jpg image file
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
+/**
+ * @tc.number    : MediaScanner_ScanImage_Test_001
+ * @tc.name      : scan jpg file
+ * @tc.desc      : 1.create jpg file Scanner_Image1.jpg
+ *                 2.scan this file
  */
-HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_001, TestSize.Level0)
 {
-    bool createRes = CreateFile("/storage/media/100/local/files/Pictures/gtest_Image1.jpg");
-    EXPECT_EQ(createRes, true);
+    if (mediaScannerManager == nullptr) {
+        MEDIA_ERR_LOG("MediaScannerManager invalid");
+        exit(1);
+    }
 
-    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
-    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
-    EXPECT_EQ(ret, E_SUCCESS);
+    string path = ROOT_MEDIA_DIR + "Pictures/Scanner_Image1.jpg";
+    EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
+
+    auto scannerCallback = make_shared<TestScannerCallback>();
+    int result = mediaScannerManager->ScanFile(path, scannerCallback);
+    EXPECT_EQ(result, E_OK);
+
+    if (result == 0) {
+        MediaLibraryUnitTestUtils::WaitForCallback(scannerCallback);
+        EXPECT_EQ(scannerCallback->status_, E_OK);
+    }
 }
 
-/*
- * Feature : MediaScannerUnitTest
- * Function : Scan a png image file
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
+/**
+ * @tc.number    : MediaScanner_ScanImage_Test_002
+ * @tc.name      : scan png file
+ * @tc.desc      : 1.create png file Scanner_Image2.png
+ *                 2.scan this file
  */
-HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_002, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_002, TestSize.Level0)
 {
-    bool createRes = CreateFile("/storage/media/100/local/files/Pictures/gtest_Image2.png");
-    EXPECT_EQ(createRes, true);
+    if (mediaScannerManager == nullptr) {
+        MEDIA_ERR_LOG("MediaScannerManager invalid");
+        exit(1);
+    }
 
-    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
-    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
-    EXPECT_EQ(ret, E_SUCCESS);
+    string path = ROOT_MEDIA_DIR + "Pictures/Scanner_Image2.png";
+    EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
+
+    auto scannerCallback = make_shared<TestScannerCallback>();
+    int result = mediaScannerManager->ScanFile(path, scannerCallback);
+    EXPECT_EQ(result, E_OK);
+
+    if (result == 0) {
+        MediaLibraryUnitTestUtils::WaitForCallback(scannerCallback);
+        EXPECT_EQ(scannerCallback->status_, E_OK);
+    }
 }
 
-/*
- * Feature : MediaScannerUnitTest
- * Function : Scan an audio file
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
+/**
+ * @tc.number    : MediaScanner_ScanImage_Test_003
+ * @tc.name      : scan jpeg file
+ * @tc.desc      : 1.create jpeg file Scanner_Image3.jpeg
+ *                 2.scan this file
  */
-HWTEST_F(MediaScannerUnitTest, mediascanner_ScanImage_Test_003, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_003, TestSize.Level0)
 {
-    bool createRes = CreateFile("/storage/media/100/local/files/Pictures/gtest_Image3.jpeg");
-    EXPECT_EQ(createRes, true);
+    if (mediaScannerManager == nullptr) {
+        MEDIA_ERR_LOG("MediaScannerManager invalid");
+        exit(1);
+    }
 
-    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
-    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
-    EXPECT_EQ(ret, E_SUCCESS);
+    string path = ROOT_MEDIA_DIR + "Pictures/Scanner_Image3.jpeg";
+    EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
+
+    auto scannerCallback = make_shared<TestScannerCallback>();
+    int result = mediaScannerManager->ScanFile(path, scannerCallback);
+    EXPECT_EQ(result, E_OK);
+
+    if (result == 0) {
+        MediaLibraryUnitTestUtils::WaitForCallback(scannerCallback);
+        EXPECT_EQ(scannerCallback->status_, E_OK);
+    }
 }
 
-/*
- * Feature : MediaScannerUnitTest
- * Function : Scan a normal text file
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
+/**
+ * @tc.number    : MediaScanner_ScanTextFile_Test_001
+ * @tc.name      : scan text file
+ * @tc.desc      : 1.create text file Scanner_Text1.txt
+ *                 2.scan this text file
  */
-HWTEST_F(MediaScannerUnitTest, mediascanner_ScanTextFile_Test_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanTextFile_Test_001, TestSize.Level0)
 {
-    bool createRes = CreateFile("/storage/media/100/local/files/Documents/gtest_Text1.txt");
-    EXPECT_EQ(createRes, true);
+    if (mediaScannerManager == nullptr) {
+        MEDIA_ERR_LOG("MediaScannerManager invalid");
+        exit(1);
+    }
 
-    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
-    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
-    EXPECT_EQ(ret, E_SUCCESS);
+    string path = ROOT_MEDIA_DIR + "Documents/Scanner_Text1.txt";
+    EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
+
+    auto scannerCallback = make_shared<TestScannerCallback>();
+    int result = mediaScannerManager->ScanFile(path, scannerCallback);
+    EXPECT_EQ(result, E_OK);
+
+    if (result == 0) {
+        MediaLibraryUnitTestUtils::WaitForCallback(scannerCallback);
+        EXPECT_EQ(scannerCallback->status_, E_OK);
+    }
 }
 
-/*
- * Feature : MediaScannerUnitTest
- * Function : Scan a hidden file
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
+/**
+ * @tc.number    : MediaScanner_ScanHiddenFile_Test_001
+ * @tc.name      : scan hidden file
+ * @tc.desc      : 1.create hidden file .HiddenFile
+ *                 2.scan this hidden file
+ *                 3.expect return error
  */
-HWTEST_F(MediaScannerUnitTest, mediascanner_ScanHiddenFile_Test_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanHiddenFile_Test_001, TestSize.Level0)
 {
-    bool createRes = CreateFile("/storage/media/100/local/files/Download/.HiddenFile");
-    EXPECT_EQ(createRes, true);
+    if (mediaScannerManager == nullptr) {
+        MEDIA_ERR_LOG("MediaScannerManager invalid");
+        exit(1);
+    }
 
-    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
-    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
-    EXPECT_EQ(ret, E_SUCCESS);
+    string path = ROOT_MEDIA_DIR + "Download/.HiddenFile";
+    EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
+
+    auto scannerCallback = make_shared<TestScannerCallback>();
+    int result = mediaScannerManager->ScanFile(path, scannerCallback);
+    EXPECT_EQ(result, E_OK);
+
+    if (result == 0) {
+        MediaLibraryUnitTestUtils::WaitForCallback(scannerCallback);
+        EXPECT_EQ(scannerCallback->status_, E_FILE_HIDDEN);
+    }
 }
 
-/*
- * Feature: MediaScanner
- * Function: Scan a directory with image, video, audio and other type of files
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
+/**
+ * @tc.number    : MediaScanner_ScanDir_CanonicalPathtest_001
+ * @tc.name      : scan dir with uncanonical path
+ * @tc.desc      : 1.pass dir's uncanonical path
  */
-HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_test_002, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_CanonicalPathtest_001, TestSize.Level0)
 {
-    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
-    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
-    EXPECT_EQ(ret, E_SUCCESS);
+    if (mediaScannerManager == nullptr) {
+        MEDIA_ERR_LOG("MediaScannerManager invalid");
+        exit(1);
+    }
+
+    string path = ROOT_MEDIA_DIR + "../files";
+
+    auto scannerCallback = make_shared<TestScannerCallback>();
+    int result = mediaScannerManager->ScanDir(path, scannerCallback);
+    EXPECT_EQ(result, E_OK);
+
+    if (result == 0) {
+        MediaLibraryUnitTestUtils::WaitForCallback(scannerCallback);
+        EXPECT_EQ(scannerCallback->status_, E_OK);
+    }
 }
 
-/*
- * Feature: MediaScanner
- * Function: Scan a directory with path provided as relative, must convert to canonical form
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
+/**
+ * @tc.number    : MediaScanner_ScanFile_CanonicalPathtest_001
+ * @tc.name      : scan file with uncanonical path
+ * @tc.desc      : 1.create file
+ *                 2.pass file's uncanonical path
  */
-HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanDir_CononicalPathtest_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanFile_CanonicalPathtest_001, TestSize.Level0)
 {
-    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
-    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
-    EXPECT_EQ(ret, E_SUCCESS);
+    if (mediaScannerManager == nullptr) {
+        MEDIA_ERR_LOG("MediaScannerManager invalid");
+        exit(1);
+    }
+
+    string path = ROOT_MEDIA_DIR + "../files/Pictures/Canonical1.jpg";
+    EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
+
+    auto scannerCallback = make_shared<TestScannerCallback>();
+    int result = mediaScannerManager->ScanFile(path, scannerCallback);
+    EXPECT_EQ(result, E_OK);
+
+    if (result == 0) {
+        MediaLibraryUnitTestUtils::WaitForCallback(scannerCallback);
+        EXPECT_EQ(scannerCallback->status_, E_OK);
+    }
 }
 
-/*
- * Feature: MediaScanner
- * Function: Scan an image file with path provided as relative, must convert to canonical form
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
+/**
+ * @tc.number    : MediaScanner_ScanFile_CanonicalPathtest_002
+ * @tc.name      : scan file with uncanonical path
+ * @tc.desc      : 1.create file
+ *                 2.pass file's uncanonical path
  */
-HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanFile_CanonicalPathtest_002, TestSize.Level0)
 {
-    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
-    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
-    EXPECT_EQ(ret, E_SUCCESS);
-}
+    if (mediaScannerManager == nullptr) {
+        MEDIA_ERR_LOG("MediaScannerManager invalid");
+        exit(1);
+    }
 
-/*
- * Feature: MediaScanner
- * Function: Scan a text file with path provided as relative, must convert to canonical form
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription:
- */
-HWTEST_F(MediaScannerUnitTest,  mediascanner_ScanFile_CononicalPathtest_002, TestSize.Level0)
-{
-    MEDIA_DEBUG_LOG("mediascanner_ScanFile_CononicalPathtest_002 start");
-    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
-    auto ret = g_mediaDataShareHelper->Insert(scanUri, valuesBucket);
-    EXPECT_EQ(ret, E_SUCCESS);
-    MEDIA_DEBUG_LOG("mediascanner_ScanFile_CononicalPathtest_002 end");
+    string path = ROOT_MEDIA_DIR + "../files/Documents/Canonical2.txt";
+    EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
+
+    auto scannerCallback = make_shared<TestScannerCallback>();
+    int result = mediaScannerManager->ScanFile(path, scannerCallback);
+    EXPECT_EQ(result, E_OK);
+
+    if (result == 0) {
+        MediaLibraryUnitTestUtils::WaitForCallback(scannerCallback);
+        EXPECT_EQ(scannerCallback->status_, E_OK);
+    }
 }
 } // namespace Media
 } // namespace OHOS

@@ -15,6 +15,8 @@
 
 #include "medialibrary_unittest_utils.h"
 
+#include <fstream>
+
 #include "ability_context_impl.h"
 #include "fetch_result.h"
 #include "media_log.h"
@@ -168,6 +170,30 @@ bool MediaLibraryUnitTestUtils::CreateFile(string displayName, shared_ptr<FileAs
     return true;
 }
 
+bool MediaLibraryUnitTestUtils::CreateFileFS(const string &filePath)
+{
+    bool errCode = false;
+
+    if (filePath.empty()) {
+        return errCode;
+    }
+
+    ofstream file(filePath);
+    if (!file) {
+        MEDIA_ERR_LOG("Output file path could not be created");
+        return errCode;
+    }
+
+    const mode_t CHOWN_RW_UG = 0660;
+    if (chmod(filePath.c_str(), CHOWN_RW_UG) == 0) {
+        errCode = true;
+    }
+
+    file.close();
+
+    return errCode;
+}
+
 bool MediaLibraryUnitTestUtils::DeleteDir(const string &path, const string &dirId)
 {
     string cmd = "rm -rf " + path;
@@ -203,6 +229,23 @@ void MediaLibraryUnitTestUtils::RecoveryFile(shared_ptr<FileAsset> &fileAsset)
         MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
     Uri uri(uriString);
     MediaLibraryDataManager::GetInstance()->Insert(uri, valuesBucket);
+}
+
+void MediaLibraryUnitTestUtils::WaitForCallback(shared_ptr<TestScannerCallback> callback)
+{
+    std::mutex mutex;
+    std::unique_lock<std::mutex> lock(mutex);
+    const int waitSeconds = 10;
+    callback->condVar_.wait_until(lock, std::chrono::system_clock::now() + std::chrono::seconds(waitSeconds));
+}
+
+TestScannerCallback::TestScannerCallback() : status_(-1) {}
+
+int32_t TestScannerCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)
+{
+    status_ = status;
+    condVar_.notify_all();
+    return E_OK;
 }
 }
 }
