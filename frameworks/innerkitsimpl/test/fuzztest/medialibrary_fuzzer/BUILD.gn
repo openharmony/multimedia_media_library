@@ -15,7 +15,7 @@ import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
 ohos_fuzztest("MediaLibraryFuzzTest") {
-  module_out_path = "multimedia/media_library/medialibrary_test"
+  module_out_path = "media_library/medialibrary_test"
   fuzz_config_file = "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/fuzztest/medialibrary_fuzzer"
   include_dirs = [
     "./include",
