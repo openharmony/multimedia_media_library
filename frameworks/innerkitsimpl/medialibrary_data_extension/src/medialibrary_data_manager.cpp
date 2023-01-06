@@ -755,6 +755,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+    cmd.GetAbsRdbPredicates()->Limit(rdbPredicate.GetLimit());
     NeedQuerySync(cmd.GetOprnDevice(), cmd.GetOprnObject());
 
     shared_ptr<NativeRdb::ResultSet> queryResultSet;

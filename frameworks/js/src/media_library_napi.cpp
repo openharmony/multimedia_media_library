@@ -769,6 +769,8 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     predicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = ? ");
     predicates.SetWhereArgs({ std::to_string(album->GetAlbumId()) });
     predicates.SetOrder(MEDIA_DATA_DB_DATE_ADDED + " DESC");
+    // Fetch the first object at offset 0
+    predicates.Limit(1, 0);
     vector<string> columns;
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!context->networkId.empty()) {
@@ -1854,11 +1856,10 @@ static void SetSmartAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<
     predicates.SetOrder(SMARTALBUMMAP_DB_ID + " DESC");
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
+    // Fetch the first object at offset 0
+    predicates.Limit(1, 0);
     std::vector<std::string> columns;
-    Uri uri(MEDIALIBRARY_DATA_URI + "/"
-               + MEDIA_ALBUMOPRN_QUERYALBUM + "/"
-               + ASSETMAP_VIEW_NAME);
-
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME);
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns);
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
