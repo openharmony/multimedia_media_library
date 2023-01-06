@@ -267,47 +267,63 @@ int32_t MediaLibraryObjectUtils::DeleteRows(const std::vector<int64_t> &rowIds)
     return errCode;
 }
 
+int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t parentId)
+{
+    string title = MediaLibraryDataManagerUtils::GetFileName(path);
+    if (!MediaFileUtils::CheckDisplayName(title)) {
+        MEDIA_ERR_LOG("Check display name failed!");
+        return E_INVAVLID_DISPLAY_NAME;
+    }
+
+    string relativePath;
+    string parentPath = MediaLibraryDataManagerUtils::GetParentPath(path);
+    if (parentPath.length() > ROOT_MEDIA_DIR.length()) {
+        relativePath = parentPath.substr(ROOT_MEDIA_DIR.length()) + "/";
+    }
+
+    values.PutString(MEDIA_DATA_DB_FILE_PATH, path);
+    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    values.PutString(MEDIA_DATA_DB_TITLE, title);
+    values.PutString(MEDIA_DATA_DB_NAME, title);
+    values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MediaType::MEDIA_TYPE_ALBUM);
+    values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentId);
+    values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
+
+    struct stat statInfo {};
+    if (stat(path.c_str(), &statInfo) == 0) {
+        values.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
+        values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
+    }
+    return E_SUCCESS;
+}
+
 int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dirPath, int64_t &rowId)
 {
-    if (dirPath.empty()) {
-        MEDIA_ERR_LOG("Input parameter dirPath is empty!");
-        return E_VIOLATION_PARAMETERS;
-    }
+    CHECK_AND_RETURN_RET_LOG(!dirPath.empty(), E_VIOLATION_PARAMETERS, "Input parameter dirPath is empty!");
+
     NativeAlbumAsset dirAsset = GetLastDirExistInDb(dirPath);
     string parentPath = dirAsset.GetAlbumPath();
-    int64_t parentId = dirAsset.GetAlbumId();
-    string path = dirPath;
+    int32_t parentId = dirAsset.GetAlbumId();
+    if ((parentId == 0) && ((parentPath + "/") != ROOT_MEDIA_DIR)) {
+        return E_INVALID_PATH;
+    }
     vector<int64_t> outIds;
     rowId = parentId;
-
-    while (parentPath.length() < path.length() - 1) {
-        ValuesBucket values;
-        string relativePath;
-        if (path.substr(path.length() - 1) != "/") {
-            path = path + "/";
-        }
+    string path = dirPath;
+    if (path.back() != '/') {
+        path.append("/");
+    }
+    while (parentPath.length() < (path.length() - 1)) {
         size_t index = path.find("/", parentPath.length() + 1);
-        parentPath = path.substr(0, index);
-        values.PutString(MEDIA_DATA_DB_FILE_PATH, parentPath);
-        string title = MediaLibraryDataManagerUtils::GetFileName(parentPath);
-        if (index != string::npos) {
-            string tmpPath = MediaLibraryDataManagerUtils::GetParentPath(parentPath);
-            if (tmpPath.length() > ROOT_MEDIA_DIR.length()) {
-                relativePath = tmpPath.substr(ROOT_MEDIA_DIR.length()) + "/";
-            }
-        }
-        if (!MediaFileUtils::CheckDisplayName(title)) {
+        string currentPath = path.substr(0, index);
+        ValuesBucket values;
+        auto ret = SetDirValuesByPath(values, currentPath, parentId);
+        if (ret == E_INVAVLID_DISPLAY_NAME) {
             DeleteRows(outIds);
-            MEDIA_ERR_LOG("Check display name failed!");
-            return E_INVAVLID_DISPLAY_NAME;
         }
-        values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-        values.PutString(MEDIA_DATA_DB_TITLE, title);
-        values.PutString(MEDIA_DATA_DB_NAME, title);
-        values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MediaType::MEDIA_TYPE_ALBUM);
-        values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentId);
-        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
-        values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::GetAlbumDateModified(path));
+        if (ret != E_SUCCESS) {
+            return ret;
+        }
 
         MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::CREATE, values);
         rowId = InsertInDb(cmd);
@@ -316,6 +332,7 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
             return E_HAS_DB_ERROR;
         }
         parentId = rowId;
+        parentPath = currentPath;
         outIds.push_back(rowId);
     }
     return E_SUCCESS;
