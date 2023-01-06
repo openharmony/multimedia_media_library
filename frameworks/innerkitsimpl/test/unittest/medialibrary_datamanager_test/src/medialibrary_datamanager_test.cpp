@@ -16,6 +16,7 @@
 
 #include "medialibrary_datamanager_test.h"
 
+#include "media_file_extention_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
@@ -320,7 +321,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_001, TestSiz
  *                 3.trash file1
  *                 4.recovery file1
  */
-HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_001::Start");
     shared_ptr<FileAsset> trashRecovery_File_001 = nullptr;
@@ -329,7 +330,9 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_0
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file1.txt", trashRecovery_File_001, file1));
 
     MediaLibraryUnitTestUtils::TrashFile(file1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), false);
     MediaLibraryUnitTestUtils::RecoveryFile(file1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_001::End");
 }
 
@@ -342,7 +345,7 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_0
  *                 4.recreate file1
  *                 5.recovery file1
  */
-HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_002::Start");
     shared_ptr<FileAsset> trashRecovery_File_002 = nullptr;
@@ -351,9 +354,11 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_0
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file1.txt", trashRecovery_File_002, file1));
 
     MediaLibraryUnitTestUtils::TrashFile(file1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), false);
     shared_ptr<FileAsset> sameFile = nullptr;
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file1.txt", trashRecovery_File_002, sameFile));
     MediaLibraryUnitTestUtils::RecoveryFile(file1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_002::End");
 }
 
@@ -366,7 +371,7 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_0
  *                 4.trash parent dir trashRecovery_File_003
  *                 5.recovery file1
  */
-HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_003::Start");
     shared_ptr<FileAsset> trashRecovery_File_003 = nullptr;
@@ -375,8 +380,10 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_0
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file1.txt", trashRecovery_File_003, file1));
 
     MediaLibraryUnitTestUtils::TrashFile(file1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), false);
     MediaLibraryUnitTestUtils::TrashFile(trashRecovery_File_003);
     MediaLibraryUnitTestUtils::RecoveryFile(file1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_003::End");
 }
 
@@ -392,7 +399,7 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_0
  *                 6.recreate file1
  *                 7.recovery file1
  */
-HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_004::Start");
     shared_ptr<FileAsset> trashRecovery_File_004 = nullptr;
@@ -401,13 +408,43 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_0
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file1.txt", trashRecovery_File_004, file1));
 
     MediaLibraryUnitTestUtils::TrashFile(file1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), false);
     MediaLibraryUnitTestUtils::TrashFile(trashRecovery_File_004);
     shared_ptr<FileAsset> sameParent = nullptr;
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("trashRecovery_File_004", g_download, sameParent));
     shared_ptr<FileAsset> sameFile = nullptr;
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file1.txt", sameParent, sameFile));
     MediaLibraryUnitTestUtils::RecoveryFile(file1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_004::End");
+}
+
+/**
+ * @tc.number    : DataManager_TrashRecovery_File_Test_005
+ * @tc.name      : test trash and recovery file: the parent dir is not existed in db(is_trash != 0) and
+ *                                               there is the same name file in file system when recovering
+ * @tc.desc      : 1.Create the parent dir: trashRecovery_File_005
+ *                 2.Create file1 in trashRecovery_File_005: trashRecovery_File_005/file1
+ *                 3.trash file1
+ *                 4.rename parent dir trashRecovery_Dir_005
+ *                 5.recovery dir1
+ */
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_005::Start");
+    shared_ptr<FileAsset> trashRecovery_File_005 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("trashRecovery_File_005", g_download, trashRecovery_File_005));
+    shared_ptr<FileAsset> file1 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file1.txt", trashRecovery_File_005, file1));
+
+    MediaLibraryUnitTestUtils::TrashFile(file1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), false);
+    Uri parent(trashRecovery_File_005->GetUri());
+    Uri newUri("");
+    ASSERT_EQ(MediaFileExtentionUtils::Rename(parent, "trashRecovery_File_005_renamed", newUri), E_SUCCESS);
+    MediaLibraryUnitTestUtils::RecoveryFile(file1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), true);
+    MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_005::End");
 }
 
 /**
@@ -418,7 +455,7 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_0
  *                 3.trash trashRecovery_Dir_001
  *                 4.recovery trashRecovery_Dir_001
  */
-HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_001::Start");
     shared_ptr<FileAsset> trashRecovery_Dir_001 = nullptr;
@@ -429,7 +466,9 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_00
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", childAsset, childAsset));
 
     MediaLibraryUnitTestUtils::TrashFile(trashRecovery_Dir_001);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(trashRecovery_Dir_001->GetPath()), false);
     MediaLibraryUnitTestUtils::RecoveryFile(trashRecovery_Dir_001);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(trashRecovery_Dir_001->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_001::End");
 }
 
@@ -442,7 +481,7 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_00
  *                 4.recreate trashRecovery_Dir_002
  *                 5.recovery trashRecovery_Dir_002
  */
-HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_002::Start");
     shared_ptr<FileAsset> trashRecovery_Dir_002 = nullptr;
@@ -453,9 +492,11 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_00
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", childAsset, childAsset));
 
     MediaLibraryUnitTestUtils::TrashFile(trashRecovery_Dir_002);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(trashRecovery_Dir_002->GetPath()), false);
     shared_ptr<FileAsset> sameDir = nullptr;
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("trashRecovery_Dir_002", g_download, sameDir));
     MediaLibraryUnitTestUtils::RecoveryFile(trashRecovery_Dir_002);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(trashRecovery_Dir_002->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_002::End");
 }
 
@@ -469,7 +510,7 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_00
  *                 5.trash parent dir trashRecovery_Dir_003
  *                 6.recovery dir1
  */
-HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_003::Start");
     shared_ptr<FileAsset> trashRecovery_Dir_003 = nullptr;
@@ -482,8 +523,10 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_00
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", childAsset, childAsset));
 
     MediaLibraryUnitTestUtils::TrashFile(dir1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), false);
     MediaLibraryUnitTestUtils::TrashFile(trashRecovery_Dir_003);
     MediaLibraryUnitTestUtils::RecoveryFile(dir1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_003::End");
 }
 
@@ -500,7 +543,7 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_00
  *                 7.recreate dir1
  *                 8.recovery dir1
  */
-HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_004::Start");
     shared_ptr<FileAsset> trashRecovery_Dir_004 = nullptr;
@@ -513,13 +556,47 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_00
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", childAsset, childAsset));
 
     MediaLibraryUnitTestUtils::TrashFile(dir1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), false);
     MediaLibraryUnitTestUtils::TrashFile(trashRecovery_Dir_004);
     shared_ptr<FileAsset> sameParent = nullptr;
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("trashRecovery_Dir_004", g_download, sameParent));
     shared_ptr<FileAsset> sameDir = nullptr;
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir1", sameParent, sameDir));
     MediaLibraryUnitTestUtils::RecoveryFile(dir1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_004::End");
+}
+
+/**
+ * @tc.number    : DataManager_TrashRecovery_Dir_Test_005
+ * @tc.name      : test trash and recovery dir: the parent dir is renamed when recovering
+ * @tc.desc      : 1.Create the parent dir: trashRecovery_Dir_005
+ *                 2.Create dir1 in trashRecovery_Dir_005: trashRecovery_Dir_005/dir1
+ *                 3.Create childAsset in dir1
+ *                 4.trash dir1
+ *                 5.rename parent dir trashRecovery_Dir_005
+ *                 6.recovery dir1
+ */
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_005::Start");
+    shared_ptr<FileAsset> trashRecovery_Dir_005 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("trashRecovery_Dir_005", g_download, trashRecovery_Dir_005));
+    shared_ptr<FileAsset> dir1 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir1", trashRecovery_Dir_005, dir1));
+    shared_ptr<FileAsset> childAsset = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file2.txt", dir1, childAsset));
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir2", dir1, childAsset));
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", childAsset, childAsset));
+
+    MediaLibraryUnitTestUtils::TrashFile(dir1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), false);
+    Uri parent(trashRecovery_Dir_005->GetUri());
+    Uri newUri("");
+    ASSERT_EQ(MediaFileExtentionUtils::Rename(parent, "trashRecovery_Dir_005_renamed", newUri), E_SUCCESS);
+    MediaLibraryUnitTestUtils::RecoveryFile(dir1);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), true);
+    MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_005::End");
 }
 
 /**
@@ -532,7 +609,7 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_00
  *                 5.Create file3 in dir2: delete_Dir_001/dir1/dir2/file3.txt
  *                 6.Delete delete_Dir_001
  */
-HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_001::Start");
     shared_ptr<FileAsset> delete_Dir_001 = nullptr;
@@ -551,6 +628,7 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_001, Test
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_001::deleteUri: %s", deleteUri.c_str());
     Uri deleteAssetUri(deleteUri);
     int retVal = MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, {});
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(delete_Dir_001->GetPath()), false);
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_001::delete end, retVal: %d", retVal);
 }
 
@@ -567,7 +645,7 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_001, Test
  *                 8.Trash delete_Dir_002
  *                 9.Delete delete_Dir_002
  */
-HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::Start");
     shared_ptr<FileAsset> delete_Dir_002 = nullptr;
@@ -591,6 +669,7 @@ HWTEST_F( MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_002, Test
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::deleteUri: %s", deleteUri.c_str());
     Uri deleteAssetUri(deleteUri);
     int retVal = MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, {});
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(delete_Dir_002->GetPath()), false);
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::delete end, retVal: %d", retVal);
 }
 } // namespace Media
