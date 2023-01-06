@@ -865,7 +865,8 @@ int32_t UpdateSubFilesPath(const string &srcPath, const string &newAlbumPath)
         + ", '" + GetRelativePathFromPath(srcPath) + "/', '" + GetRelativePathFromPath(newAlbumPath) + "/'), ";
     // Update date_modified "old time" -> "new time"
     modifySql += MEDIA_DATA_DB_DATE_MODIFIED + " = " + to_string(date_modified);
-    modifySql += " WHERE " + MEDIA_DATA_DB_FILE_PATH + " LIKE '" + srcPath + "/%'";
+    modifySql += " WHERE " + MEDIA_DATA_DB_FILE_PATH + " LIKE '" + srcPath + "/%' AND " +
+        MEDIA_DATA_DB_IS_TRASH + " = " + to_string(NOT_TRASHED);
     MEDIA_DEBUG_LOG("UpdateSubFilesPath modifySql %{private}s", modifySql.c_str());
     return MediaLibraryDataManager::GetInstance()->rdbStore_->ExecuteSql(modifySql);
 }
@@ -875,7 +876,8 @@ int32_t UpdateSubFilesBucketName(const string &srcId, const string &displayName)
     // Update bucket_display_name "old album displayName" -> "new album displayName"
     string modifySql = "UPDATE " + MEDIALIBRARY_TABLE + " SET " + MEDIA_DATA_DB_BUCKET_NAME + " = '" + displayName;
     modifySql += "' WHERE " + MEDIA_DATA_DB_PARENT_ID + " = " + srcId + " AND " +
-        MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+        MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM) + " AND " +
+        MEDIA_DATA_DB_IS_TRASH + " = " + to_string(NOT_TRASHED);
     MEDIA_DEBUG_LOG("UpdateSubFilesBucketName modifySql %{private}s", modifySql.c_str());
     return MediaLibraryDataManager::GetInstance()->rdbStore_->ExecuteSql(modifySql);
 }
