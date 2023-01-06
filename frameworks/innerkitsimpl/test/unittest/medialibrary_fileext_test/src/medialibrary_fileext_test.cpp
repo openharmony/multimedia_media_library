@@ -1264,7 +1264,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_006, TestSize.
         exit(1);
     }
     shared_ptr<FileAsset> albumAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("UriToFileInfo_test_006.jpg", g_pictures, albumAsset), true);
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("UriToFileInfo_test_006", g_pictures, albumAsset), true);
     shared_ptr<FileAsset> fileAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("UriToFileInfo_test_006.jpg", albumAsset, fileAsset), true);
     Uri uri(fileAsset->GetUri());
@@ -1298,6 +1298,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_007, TestSize.
     int32_t albumMode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
     EXPECT_EQ(albumInfo.fileName, "UriToFileInfo_test_007");
     EXPECT_EQ(albumInfo.size, 0);
+    EXPECT_NE(albumAsset->GetSize(), 0);
     EXPECT_EQ(albumInfo.uri, albumAsset->GetUri());
     EXPECT_EQ(albumInfo.mtime, albumAsset->GetDateModified());
     EXPECT_EQ(albumInfo.mode, albumMode);

@@ -460,8 +460,7 @@ shared_ptr<NativeRdb::ResultSet> GetListRootResult(const FileInfo &parentInfo, M
 {
     string selection = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? AND " +
         MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT ?, ?";
-    vector<string> selectionArgs = { to_string(ROOT_PARENT_ID),
-        to_string(MEDIA_TYPE_NOFILE), to_string(NOT_TRASHED),
+    vector<string> selectionArgs = { to_string(ROOT_PARENT_ID), to_string(MEDIA_TYPE_NOFILE), to_string(NOT_TRASHED),
         to_string(offset), to_string(maxCount) };
     Uri uri(GetQueryUri(parentInfo, uriType));
     return GetResult(uri, uriType, selection, selectionArgs);
@@ -501,6 +500,24 @@ shared_ptr<NativeRdb::ResultSet> GetListAlbumResult(const FileInfo &parentInfo, 
     return GetResult(uri, uriType, selection, selectionArgs);
 }
 
+int GetFileInfo(FileInfo &fileInfo, const shared_ptr<NativeRdb::ResultSet> &result, const string &networkId = "")
+{
+    int fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
+    int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
+    fileInfo.uri =
+        MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
+    fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
+    fileInfo.mimeType = GetStringVal(MEDIA_DATA_DB_MIME_TYPE, result);
+    if (mediaType == MEDIA_TYPE_ALBUM) {
+        fileInfo.mode = ALBUM_MODE_RW;
+    } else {
+        fileInfo.size = GetInt64Val(MEDIA_DATA_DB_SIZE, result);
+        fileInfo.mode = FILE_MODE_RW;
+    }
+    fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
+    return E_SUCCESS;
+}
+
 int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::ResultSet> &result,
     vector<FileInfo> &fileList)
 {
@@ -525,21 +542,9 @@ int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::
 {
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "ResultSet is nullptr");
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
-    FileInfo fileInfo;
     while (result->GoToNextRow() == NativeRdb::E_OK) {
-        int fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
-        int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
-        fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
-        fileInfo.mimeType = GetStringVal(MEDIA_DATA_DB_MIME_TYPE, result);
-        fileInfo.size = GetInt64Val(MEDIA_DATA_DB_SIZE, result);
-        fileInfo.uri =
-            MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
-        fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
-        if (mediaType == MEDIA_TYPE_ALBUM) {
-            fileInfo.mode = ALBUM_MODE_RW;
-        } else {
-            fileInfo.mode = FILE_MODE_RW;
-        }
+        FileInfo fileInfo;
+        GetFileInfo(fileInfo, result, networkId);
         fileList.push_back(fileInfo);
     }
     return E_SUCCESS;
@@ -581,17 +586,9 @@ int32_t GetScanFileFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<Nat
 {
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "the result is nullptr");
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
-    FileInfo fileInfo;
     while (result->GoToNextRow() == NativeRdb::E_OK) {
-        int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
-        int fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
-        fileInfo.uri =
-            MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
-        fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
-        fileInfo.mimeType = GetStringVal(MEDIA_DATA_DB_MIME_TYPE, result);
-        fileInfo.size = GetInt64Val(MEDIA_DATA_DB_SIZE, result);
-        fileInfo.mode = FILE_MODE_RW;
-        fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
+        FileInfo fileInfo;
+        GetFileInfo(fileInfo, result, networkId);
         fileList.push_back(fileInfo);
     }
     return E_SUCCESS;
@@ -759,38 +756,17 @@ int GetVirtualNodeFileInfo(const string &uri, FileInfo &fileInfo)
     }
 }
 
-int GetFileInfo(const string &uri, FileInfo &fileInfo)
-{
-    vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
-        MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_TRASH };
-    auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, uri, columns);
-    if ((result == nullptr) || (GetInt32Val(MEDIA_DATA_DB_IS_TRASH, result) != NOT_TRASHED)) {
-        MEDIA_ERR_LOG("UriToFileInfo::uri is not correct: %{public}s", uri.c_str());
-        return E_INVALID_URI;
-    }
-    fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
-    fileInfo.mimeType = GetStringVal(MEDIA_DATA_DB_MIME_TYPE, result);
-    fileInfo.size = GetInt64Val(MEDIA_DATA_DB_SIZE, result);
-    fileInfo.uri = MediaFileUtils::GetFileMediaTypeUri(MediaType(GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result)), "") +
-        SLASH_CHAR + to_string(GetInt32Val(MEDIA_DATA_DB_ID, result));
-    fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
-    if (GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result) == MEDIA_TYPE_ALBUM) {
-        fileInfo.mode = ALBUM_MODE_RW;
-    } else {
-        fileInfo.mode = FILE_MODE_RW;
-    }
-    return E_SUCCESS;
-}
-
 int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &fileInfo)
 {
     string uri = selectFile.ToString();
+    MediaFileUriType uriType = URI_FILE;
+
     FileInfo tempInfo;
     tempInfo.uri = uri;
     tempInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
-    MediaFileUriType uriType = URI_FILE;
     auto ret = MediaFileExtentionUtils::ResolveUri(tempInfo, uriType);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "UriToFileInfo::invalid uri: %{public}s", uri.c_str());
+
     switch (uriType) {
         case URI_ROOT:
             fileInfo.uri = uri;
@@ -800,8 +776,15 @@ int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &file
             return GetVirtualNodeFileInfo(uri, fileInfo);
         case URI_DIR:
         case URI_ALBUM:
-        case URI_FILE:
-            return GetFileInfo(uri, fileInfo);
+        case URI_FILE: {
+            vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
+                MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_TRASH };
+            auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, uri, columns);
+            CHECK_AND_RETURN_RET_LOG(result != nullptr, E_INVALID_URI, "UriToFileInfo::uri is not correct: %{public}s",
+                uri.c_str());
+            const string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
+            return GetFileInfo(fileInfo, result, networkId);
+        }
         default:
             return E_INVALID_URI;
     }
