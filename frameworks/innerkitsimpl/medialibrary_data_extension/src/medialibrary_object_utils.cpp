@@ -34,6 +34,7 @@
 #include "string_ex.h"
 #include "thumbnail_service.h"
 #include "value_object.h"
+#include "medialibrary_inotify.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -202,6 +203,7 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
         fileAsset.SetRelativePath(relativePath);
         fileAsset.SetPath(path);
     }
+
     // check dir and extension
     int32_t errCode = CheckDirExtension(cmd);
     CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "CreateFileAsset: check file asset failed");
@@ -646,8 +648,22 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
         return E_HAS_FS_ERROR;
     }
 
+    if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos) {
+        auto watch = MediaLibraryInotify::GetInstance();
+        if (watch != nullptr) {
+            MEDIA_DEBUG_LOG("enter, path = %{private}s", path.c_str());
+            watch->AddWatchList(path, fileAsset->GetId());
+        }
+    }
     MEDIA_DEBUG_LOG("MediaLibraryDataManager OpenFile: Success");
     return fd;
+}
+
+int32_t MediaLibraryObjectUtils::CloseFile(string &srcPath, string &id)
+{
+    InvalidateThumbnail(id);
+    ScanFile(srcPath);
+    return E_SUCCESS;
 }
 
 int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
@@ -671,6 +687,12 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
         UpdateDateModified(dirPath);
     }
 
+    // remove inotify event since there is close cmd
+    auto watch = MediaLibraryInotify::GetInstance();
+    if (watch != nullptr) {
+        watch->RemoveByFileId(stoi(strFileId));
+        MEDIA_ERR_LOG("watch RemoveByFileId");
+    }
     InvalidateThumbnail(strFileId);
     ScanFile(srcPath);
     return E_SUCCESS;
@@ -1479,7 +1501,7 @@ bool MediaLibraryObjectUtils::CheckExtension(const string &extensions, const str
     vector<string> extensionList;
     SplitStr(extensions, QUESTION_MARK, extensionList, false, false);
     if (find(extensionList.begin(), extensionList.end(), extension) == extensionList.end()) {
-        MEDIA_ERR_LOG("Check extension failed");
+        MEDIA_ERR_LOG("Check extension failed: %s in %s",extensions.c_str(), extension.c_str());
         return false;
     }
     return true;

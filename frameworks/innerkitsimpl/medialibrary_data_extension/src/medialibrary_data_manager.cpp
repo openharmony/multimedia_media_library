@@ -37,6 +37,7 @@
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
+#include "medialibrary_inotify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
@@ -193,6 +194,10 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     if (thumbnailService_ != nullptr) {
         thumbnailService_->ReleaseService();
         thumbnailService_ = nullptr;
+    }
+    auto watch = MediaLibraryInotify::GetInstance();
+    if (watch != nullptr) {
+        watch->DoStop();
     }
     MediaLibraryUnistoreManager::GetInstance().Stop();
     extension_ = nullptr;

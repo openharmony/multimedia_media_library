@@ -26,9 +26,9 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
+#include "medialibrary_inotify.h"
 #include "application_context.h"
 #include "ability_manager_client.h"
-
 using namespace OHOS::AAFwk;
 
 namespace OHOS {
@@ -100,7 +100,10 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         if (result != E_OK) {
             MEDIA_ERR_LOG("DoTrashAging faild");
         }
-
+        auto watch = MediaLibraryInotify::GetInstance();
+        if (watch != nullptr) {
+            watch->DoAging();
+        }
         auto scannerManager = MediaScannerManager::GetInstance();
         if (scannerManager == nullptr) {
             return;
