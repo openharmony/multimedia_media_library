@@ -80,6 +80,7 @@ ohos_shared_library("medialibrary_thumbnail") {
     "hitrace_native:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_core",
+    "kv_store:distributeddata_inner",
     "multimedia_image_framework:image_native",
     "multimedia_player_framework:media_client",
     "relational_store:native_rdb",
