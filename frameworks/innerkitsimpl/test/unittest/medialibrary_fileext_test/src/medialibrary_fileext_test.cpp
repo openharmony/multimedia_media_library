@@ -16,6 +16,8 @@
 
 #include "medialibrary_fileext_test.h"
 
+#include <regex>
+
 #include "file_asset.h"
 #include "js_runtime.h"
 #include "media_file_ext_ability.h"
@@ -40,16 +42,18 @@ namespace {
     shared_ptr<FileAsset> g_pictures = nullptr;
     shared_ptr<FileAsset> g_camera = nullptr;
     shared_ptr<FileAsset> g_videos = nullptr;
+    shared_ptr<FileAsset> g_audios = nullptr;
+    shared_ptr<FileAsset> g_documents = nullptr;
     shared_ptr<FileAsset> g_download = nullptr;
     shared_ptr<MediaFileExtAbility> mediaFileExtAbility = nullptr;
-    const string g_distributedPrefix =
+    const string DISTRIBUTED_PREFIX =
         "datashare://1d3cb099659d53b3ee15faaab3c00a8ff983382ebc8b01aabde039ed084e167b/media/";
-    const string g_commonPrefix = "datashare:///media/";
-    const string g_rootUri = "root";
-    const string g_commonUri = "file/1";
-    const string g_invalidUri = "file/test";
-    const string g_invalidFileName = "te/st.jpg";
-    const string g_invalidDirName = "te/st";
+    const string COMMON_PREFIX = "datashare:///media/";
+    const string ROOT_URI = "root";
+    const string COMMON_URI = "file/1";
+    const string INVALID_URI = "file/test";
+    const string INVALID_FILE_NAME = "te/st.jpg";
+    const string INVALID_DIR_NAME = "te/st";
 } // namespace
 
 class ArkJsRuntime : public AbilityRuntime::JsRuntime {
@@ -99,6 +103,8 @@ void MediaLibraryFileExtUnitTest::SetUp()
     g_pictures = MediaLibraryUnitTestUtils::GetRootAsset(TEST_PICTURES);
     g_camera = MediaLibraryUnitTestUtils::GetRootAsset(TEST_CAMERA);
     g_videos = MediaLibraryUnitTestUtils::GetRootAsset(TEST_VIDEOS);
+    g_audios =  MediaLibraryUnitTestUtils::GetRootAsset(TEST_AUDIOS);
+    g_documents =  MediaLibraryUnitTestUtils::GetRootAsset(TEST_DOCUMENTS);
     g_download = MediaLibraryUnitTestUtils::GetRootAsset(TEST_DOWNLOAD);
 }
 
@@ -190,7 +196,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_002, TestSize.Lev
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("CreateFile_test_002", g_pictures, albumAsset), true);
     Uri parentUri(albumAsset->GetUri());
     Uri newUri("");
-    string displayName = g_invalidFileName;
+    string displayName = INVALID_FILE_NAME;
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_002 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     int32_t ret = mediaFileExtAbility->CreateFile(parentUri, displayName, newUri);
@@ -204,7 +210,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_003, TestSize.Lev
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
-    Uri parentUri(g_commonPrefix + g_invalidUri);
+    Uri parentUri(COMMON_PREFIX + INVALID_URI);
     Uri newUri("");
     string displayName = "CreateFile001.jpg";
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_003 parentUri: %{public}s, displayName: %{public}s",
@@ -220,7 +226,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_004, TestSize.Lev
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
-    Uri parentUri(g_distributedPrefix + g_commonUri);
+    Uri parentUri(DISTRIBUTED_PREFIX + COMMON_URI);
     Uri newUri("");
     string displayName = "CreateFile001.jpg";
     MEDIA_DEBUG_LOG("medialib_CreateFile_test_004 parentUri: %{public}s, displayName: %{public}s",
@@ -259,7 +265,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_001, TestSize.Level0)
     auto audioAsset = MediaLibraryUnitTestUtils::GetRootAsset(TEST_AUDIOS);
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_001 delete audios start, uri: %{public}s", audioAsset->GetUri().c_str());
     ASSERT_EQ(MediaLibraryUnitTestUtils::DeleteDir(audioAsset->GetPath(), to_string(audioAsset->GetId())), true);
-    Uri parentUri(g_commonPrefix + g_rootUri + MEDIALIBRARY_TYPE_FILE_URI);
+    Uri parentUri(COMMON_PREFIX + ROOT_URI + MEDIALIBRARY_TYPE_FILE_URI);
     string displayName = "Audios";
     string dirPath = ROOT_MEDIA_DIR + displayName;
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_001 parentUri: %{public}s, displayName: %{public}s",
@@ -277,7 +283,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_002, TestSize.Level0)
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
-    Uri parentUri(g_distributedPrefix + g_rootUri + MEDIALIBRARY_TYPE_FILE_URI);
+    Uri parentUri(DISTRIBUTED_PREFIX + ROOT_URI + MEDIALIBRARY_TYPE_FILE_URI);
     string displayName = "Mkdir_test_002";
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_002 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
@@ -293,7 +299,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_003, TestSize.Level0)
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
-    Uri parentUri(g_commonPrefix + g_rootUri + MEDIALIBRARY_TYPE_FILE_URI);
+    Uri parentUri(COMMON_PREFIX + ROOT_URI + MEDIALIBRARY_TYPE_FILE_URI);
     string displayName = "Mkdir_test_003";
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_003 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
@@ -327,7 +333,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_005, TestSize.Level0)
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
-    Uri parentUri(g_commonPrefix + g_invalidUri);
+    Uri parentUri(COMMON_PREFIX + INVALID_URI);
     string displayName = "Mkdir_test_005";
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_005 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
@@ -343,7 +349,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_006, TestSize.Level0)
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
-    Uri parentUri(g_distributedPrefix + g_commonUri);
+    Uri parentUri(DISTRIBUTED_PREFIX + COMMON_URI);
     string displayName = "Mkdir_test_006";
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_006 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
@@ -360,7 +366,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_007, TestSize.Level0)
         exit(1);
     }
     Uri parentUri(g_pictures->GetUri());
-    string displayName = g_invalidDirName;
+    string displayName = INVALID_DIR_NAME;
     MEDIA_DEBUG_LOG("medialib_Mkdir_test_007 parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     Uri newUri("");
@@ -411,7 +417,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Delete_test_002, TestSize.Level0)
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
-    Uri sourceUri(g_distributedPrefix + g_commonUri);
+    Uri sourceUri(DISTRIBUTED_PREFIX + COMMON_URI);
     MEDIA_DEBUG_LOG("medialib_Delete_test_002 sourceUri %{public}s", sourceUri.ToString().c_str());
     int32_t ret = mediaFileExtAbility->Delete(sourceUri);
     EXPECT_EQ(ret, JS_E_URI);
@@ -487,7 +493,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_003, TestSize.Level0)
     shared_ptr<FileAsset> fileAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Move_test_003.jpg", g_pictures, fileAsset), true);
     Uri sourceUri(fileAsset->GetUri());
-    Uri targetUri(g_commonPrefix + g_invalidUri);
+    Uri targetUri(COMMON_PREFIX + INVALID_URI);
     Uri newUri("");
     MEDIA_DEBUG_LOG("medialib_Move_test_003 sourceUri: %{public}s, targetUri: %{public}s",
         sourceUri.ToString().c_str(), targetUri.ToString().c_str());
@@ -505,7 +511,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_004, TestSize.Level0)
     shared_ptr<FileAsset> fileAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Move_test_004.jpg", g_pictures, fileAsset), true);
     Uri sourceUri(fileAsset->GetUri());
-    Uri targetUri(g_distributedPrefix + g_commonUri);
+    Uri targetUri(DISTRIBUTED_PREFIX + COMMON_URI);
     Uri newUri("");
     MEDIA_DEBUG_LOG("medialib_Move_test_004 sourceUri: %{public}s, targetUri: %{public}s",
         sourceUri.ToString().c_str(), targetUri.ToString().c_str());
@@ -522,7 +528,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_005, TestSize.Level0)
     }
     shared_ptr<FileAsset> albumAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("Move_test_005_dest", g_pictures, albumAsset), true);
-    Uri sourceUri(g_commonPrefix + g_invalidUri);
+    Uri sourceUri(COMMON_PREFIX + INVALID_URI);
     Uri targetUri(albumAsset->GetUri());
     Uri newUri("");
     MEDIA_DEBUG_LOG("medialib_Move_test_005 sourceUri: %{public}s, targetUri: %{public}s",
@@ -540,7 +546,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_006, TestSize.Level0)
     }
     shared_ptr<FileAsset> albumAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("Move_test_006_dest", g_pictures, albumAsset), true);
-    Uri sourceUri(g_distributedPrefix + g_commonUri);
+    Uri sourceUri(DISTRIBUTED_PREFIX + COMMON_URI);
     Uri targetUri(albumAsset->GetUri());
     Uri newUri("");
     MEDIA_DEBUG_LOG("medialib_Move_test_006 sourceUri: %{public}s, targetUri: %{public}s",
@@ -744,7 +750,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_003, TestSize.Level0)
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
-    Uri sourceUri(g_commonPrefix + g_invalidUri);
+    Uri sourceUri(COMMON_PREFIX + INVALID_URI);
     Uri newUri("");
     string displayName = "rename";
     MEDIA_DEBUG_LOG("medialib_Rename_test_003 sourceUri: %{public}s, displayName: %{public}s",
@@ -760,7 +766,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_004, TestSize.Level0)
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
-    Uri sourceUri(g_distributedPrefix + g_commonUri);
+    Uri sourceUri(DISTRIBUTED_PREFIX + COMMON_URI);
     Uri newUri("");
     string displayName = "rename";
     MEDIA_DEBUG_LOG("medialib_Rename_test_004 sourceUri: %{public}s, displayName: %{public}s",
@@ -780,7 +786,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_005, TestSize.Level0)
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Rename_test_005.jpg", g_pictures, fileAsset), true);
     Uri sourceUri(fileAsset->GetUri());
     Uri newUri("");
-    string displayName = g_invalidFileName;
+    string displayName = INVALID_FILE_NAME;
     MEDIA_DEBUG_LOG("medialib_Rename_test_005 sourceUri: %{public}s, displayName: %{public}s",
         sourceUri.ToString().c_str(), displayName.c_str());
     int32_t ret = mediaFileExtAbility->Rename(sourceUri, displayName, newUri);
@@ -907,7 +913,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ListFile_test_001, TestSize.Level
 
     // URI_ROOT
     FileInfo rootInfo;
-    rootInfo.uri = g_commonPrefix + g_rootUri;
+    rootInfo.uri = COMMON_PREFIX + ROOT_URI;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ROOT uri: %{public}s", rootInfo.uri.c_str());
     vector<FileInfo> rootFileList;
     auto ret = mediaFileExtAbility->ListFile(rootInfo, offset, maxCount, filter, rootFileList);
@@ -1301,6 +1307,126 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_007, TestSize.
     EXPECT_EQ(albumInfo.uri, albumAsset->GetUri());
     EXPECT_EQ(albumInfo.mtime, albumAsset->GetDateModified());
     EXPECT_EQ(albumInfo.mode, albumMode);
+}
+
+void MediaFileExtensionCheck(const shared_ptr<FileAsset> &parent, const unordered_set<string> extensions,
+    const string &title, bool expect)
+{
+    Uri parentUri(parent->GetUri());
+    Uri newUri("");
+
+    for (const auto &extension : extensions) {
+        string displayName = title + "." + extension;
+        string filePath = parent->GetPath() + "/" + displayName;
+        int32_t ret = mediaFileExtAbility->CreateFile(parentUri, displayName, newUri);
+        if (expect) {
+            EXPECT_EQ(ret, E_SUCCESS);
+            EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), true);
+        } else {
+            EXPECT_NE(ret, E_SUCCESS);
+            EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), false);
+        }
+        if (expect && ret) {
+            MEDIA_INFO_LOG("Root dir: %{public}s, file: %{public}s, path: %{private}s, CreateFile ret: %{public}d",
+                parent->GetDisplayName().c_str(), displayName.c_str(), filePath.c_str(), ret);
+        }
+    }
+}
+
+void DocumentsExtensionCheck(const shared_ptr<FileAsset> &parent, const string &title, bool expect)
+{
+    const unordered_set<string> extensions = { "", ".jpg1", ".txt" };
+
+    Uri parentUri(parent->GetUri());
+    Uri newUri("");
+
+    for (const auto &extension : extensions) {
+        string displayName = title + extension;
+        string filePath = parent->GetPath() + "/" + displayName;
+        int32_t ret = mediaFileExtAbility->CreateFile(parentUri, displayName, newUri);
+        if (expect) {
+            EXPECT_EQ(ret, E_SUCCESS);
+            EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), true);
+        } else {
+            EXPECT_NE(ret, E_SUCCESS);
+            EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), false);
+        }
+        if (expect && ret) {
+            MEDIA_ERR_LOG("Root dir: %{public}s, file: %{public}s, path: %{private}s, CreateFile ret: %{public}d",
+                parent->GetDisplayName().c_str(), displayName.c_str(), filePath.c_str(), ret);
+        }
+    }
+}
+
+void SpecialCharacterExtensionCheck(const shared_ptr<FileAsset> &parent, const string &title, bool expect)
+{
+    Uri parentUri(parent->GetUri());
+    Uri newUri("");
+
+    const int32_t MAX_ASCII = 127;
+    for (int i = 0; i <= MAX_ASCII; i ++) {
+        string displayName = title + "." + static_cast<char>(i);
+        string filePath = parent->GetPath() + "/" + displayName;
+        std::regex express(DISPLAYNAME_REGEX_CHECK);
+        bool bValid = std::regex_search(displayName, express);
+        int32_t ret = mediaFileExtAbility->CreateFile(parentUri, displayName, newUri);
+        if (expect && (!bValid)) {
+            EXPECT_EQ(ret, E_SUCCESS);
+            EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), true);
+        } else {
+            EXPECT_NE(ret, E_SUCCESS);
+            EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), false);
+        }
+        if (expect && (!bValid) && ret) {
+            MEDIA_ERR_LOG("Dir: %{public}s, name: %{public}s, ret: %{public}d, suffix: %{public}c, bValid: %{public}d",
+                parent->GetDisplayName().c_str(), displayName.c_str(), ret, static_cast<char>(i), bValid);
+        }
+    }
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ExtensionCheck_test_001, TestSize.Level0)
+{
+    if (!MediaLibraryUnitTestUtils::IsValid()) {
+        MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
+        exit(1);
+    }
+
+    const string title = "Extention001";
+    MediaFileExtensionCheck(g_pictures, SUPPORTED_IMAGE_FORMATS_SET, title, true);
+    MediaFileExtensionCheck(g_pictures, SUPPORTED_VIDEO_FORMATS_SET, title, false);
+    MediaFileExtensionCheck(g_pictures, SUPPORTED_AUDIO_FORMATS_SET, title, false);
+    DocumentsExtensionCheck(g_pictures, title, false);
+    SpecialCharacterExtensionCheck(g_pictures, title, false);
+
+    MediaFileExtensionCheck(g_camera, SUPPORTED_IMAGE_FORMATS_SET, title, true);
+    MediaFileExtensionCheck(g_camera, SUPPORTED_VIDEO_FORMATS_SET, title, true);
+    MediaFileExtensionCheck(g_camera, SUPPORTED_AUDIO_FORMATS_SET, title, false);
+    DocumentsExtensionCheck(g_camera, title, false);
+    SpecialCharacterExtensionCheck(g_camera, title, false);
+
+    MediaFileExtensionCheck(g_audios, SUPPORTED_IMAGE_FORMATS_SET, title, false);
+    MediaFileExtensionCheck(g_audios, SUPPORTED_VIDEO_FORMATS_SET, title, false);
+    MediaFileExtensionCheck(g_audios, SUPPORTED_AUDIO_FORMATS_SET, title, true);
+    DocumentsExtensionCheck(g_audios, title, false);
+    SpecialCharacterExtensionCheck(g_audios, title, false);
+
+    MediaFileExtensionCheck(g_videos, SUPPORTED_IMAGE_FORMATS_SET, title, false);
+    MediaFileExtensionCheck(g_videos, SUPPORTED_VIDEO_FORMATS_SET, title, true);
+    MediaFileExtensionCheck(g_videos, SUPPORTED_AUDIO_FORMATS_SET, title, false);
+    DocumentsExtensionCheck(g_videos, title, false);
+    SpecialCharacterExtensionCheck(g_videos, title, false);
+
+    MediaFileExtensionCheck(g_documents, SUPPORTED_IMAGE_FORMATS_SET, title, false);
+    MediaFileExtensionCheck(g_documents, SUPPORTED_VIDEO_FORMATS_SET, title, false);
+    MediaFileExtensionCheck(g_documents, SUPPORTED_AUDIO_FORMATS_SET, title, false);
+    DocumentsExtensionCheck(g_documents, title, true);
+    SpecialCharacterExtensionCheck(g_documents, title, true);
+
+    MediaFileExtensionCheck(g_download, SUPPORTED_IMAGE_FORMATS_SET, title, true);
+    MediaFileExtensionCheck(g_download, SUPPORTED_VIDEO_FORMATS_SET, title, true);
+    MediaFileExtensionCheck(g_download, SUPPORTED_AUDIO_FORMATS_SET, title, true);
+    DocumentsExtensionCheck(g_download, title, true);
+    SpecialCharacterExtensionCheck(g_download, title, true);
 }
 } // namespace Media
 } // namespace OHOS
