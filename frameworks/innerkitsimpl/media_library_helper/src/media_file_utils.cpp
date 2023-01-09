@@ -303,7 +303,7 @@ bool MediaFileUtils::CheckDisplayName(const std::string &displayName)
         MEDIA_ERR_LOG("display name size err, size = %{public}zu", size);
         return false;
     }
-    std::regex express("[\\\\/:*?\"\'`<>|{}\\[\\]]");
+    std::regex express(DISPLAYNAME_REGEX_CHECK);
     bool bValid = std::regex_search(displayName, express);
     if ((displayName.at(0) == '.') || bValid) {
         MEDIA_ERR_LOG("CheckDisplayName fail %{private}s", displayName.c_str());
