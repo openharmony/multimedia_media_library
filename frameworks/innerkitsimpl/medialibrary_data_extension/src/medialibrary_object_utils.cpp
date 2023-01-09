@@ -1397,21 +1397,25 @@ int32_t MediaLibraryObjectUtils::GetRootDirAndExtension(const string &relativePa
         MEDIA_ERR_LOG("CheckDisplayName failed");
         return E_FILE_NAME_INVALID;
     }
-    string extension;
-    int errCode = GetExtension(displayName, extension);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "Failed to getExtension");
     string rootDir;
-    errCode = GetRootDir(relativePath, rootDir);
+    int errCode = GetRootDir(relativePath, rootDir);
     CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "Failed to getRootDir");
+    string extension;
+    errCode = GetExtension(displayName, rootDir, extension);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "Failed to getExtension");
     outValues.PutString(DIRECTORY_DB_EXTENSION, extension);
     outValues.PutString(DIRECTORY_DB_DIRECTORY, rootDir);
     return errCode;
 }
 
-int32_t MediaLibraryObjectUtils::GetExtension(const string &displayName, string &outExtension)
+int32_t MediaLibraryObjectUtils::GetExtension(const string &displayName, const string &rootDir, string &outExtension)
 {
     size_t extensionIndex = displayName.rfind(".");
     if (extensionIndex == string::npos) {
+        if ((rootDir.compare(DOC_DIR_VALUES) == 0) || (rootDir.compare(DOWNLOAD_DIR_VALUES) == 0)) {
+            outExtension = " ";
+            return E_SUCCESS;
+        }
         return E_FILE_NAME_INVALID;
     }
     outExtension = displayName.substr(extensionIndex);
@@ -1428,11 +1432,11 @@ int32_t MediaLibraryObjectUtils::GetRootDir(const string &relativePath, string &
     return E_SUCCESS;
 }
 
-bool MediaLibraryObjectUtils::CheckMediaTypeMatchExtension(const int mediaType, const string &extensions)
+bool MediaLibraryObjectUtils::CheckMediaTypeMatchExtension(const int mediaType, const string &extension)
 {
     if (mediaType == MEDIA_TYPE_FILE) {
         for (auto mtr : mediaTypeMap) {
-            if (CheckExtension(mtr.second, extensions)) {
+            if (CheckExtension(mtr.second, extension)) {
                 return false;
             }
         }
@@ -1443,10 +1447,10 @@ bool MediaLibraryObjectUtils::CheckMediaTypeMatchExtension(const int mediaType, 
         MEDIA_ERR_LOG("Check checkMediaTypeMatchExtension failed, mediaType is undefind %{public}d", mediaType);
         return false;
     }
-    if (CheckExtension(mediaTypeMap.at(mediaType), extensions)) {
+    if (CheckExtension(mediaTypeMap.at(mediaType), extension)) {
         return true;
     } else {
-        MEDIA_ERR_LOG("Check checkMediaTypeMatchExtension failed, mediatype = %{public}d, extensions = %{public}s",
+        MEDIA_ERR_LOG("Check checkMediaTypeMatchExtension failed, mediatype = %{public}d, extension = %{public}s",
             mediaType, (mediaTypeMap.at(mediaType)).c_str());
         return false;
     }
@@ -1475,8 +1479,9 @@ bool MediaLibraryObjectUtils::CheckFileExtension(const unordered_map<string, Dir
         if (dirAsset.GetDirType() == DIR_VIDEO ||
             dirAsset.GetDirType() == DIR_IMAGE ||
             dirAsset.GetDirType() == DIR_AUDIOS) {
-            size_t extensionIndex = dirAsset.GetExtensions().find(extension);
-            if (extensionIndex != string::npos) {
+            vector<string> extensionList;
+            SplitStr(dirAsset.GetExtensions(), QUESTION_MARK, extensionList, false, false);
+            if (find(extensionList.begin(), extensionList.end(), extension) != extensionList.end()) {
                 isFileExtension = false;
             }
         }
@@ -1497,7 +1502,6 @@ bool MediaLibraryObjectUtils::CheckExtension(const string &extensions, const str
     vector<string> extensionList;
     SplitStr(extensions, QUESTION_MARK, extensionList, false, false);
     if (find(extensionList.begin(), extensionList.end(), extension) == extensionList.end()) {
-        MEDIA_ERR_LOG("Check extension failed: %s in %s",extensions.c_str(), extension.c_str());
         return false;
     }
     return true;

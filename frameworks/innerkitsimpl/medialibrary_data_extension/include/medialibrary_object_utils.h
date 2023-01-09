@@ -106,9 +106,9 @@ private:
     static bool CheckExtension(const std::string &extensions, const std::string &extension);
     static bool CheckFileExtension(const std::unordered_map<std::string, DirAsset> &dirQuerySetMap,
         const std::string &extension);
-    static bool CheckMediaTypeMatchExtension(const int mediaType, const std::string &extensions);
+    static bool CheckMediaTypeMatchExtension(const int mediaType, const std::string &extension);
     static DirAsset GetDirQuerySet(MediaLibraryCommand &cmd);
-    static int32_t GetExtension(const std::string &displayName, std::string &outExtension);
+    static int32_t GetExtension(const std::string &displayName, const std::string &rootDir, std::string &outExtension);
     static int32_t GetRootDir(const std::string &relativePath, std::string &outRootDir);
     static std::shared_ptr<NativeRdb::ResultSet> QuerySmartAlbum(MediaLibraryCommand &cmd);
     static int32_t CheckUpdateMediaType(const std::string &dstPath, MediaLibraryCommand &outCmd);
