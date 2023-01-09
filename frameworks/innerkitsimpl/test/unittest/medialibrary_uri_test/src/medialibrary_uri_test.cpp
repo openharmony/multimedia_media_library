@@ -54,16 +54,16 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ParseThumbnailInfo_test_001, TestSize
     uriString = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL;
     ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize, ourNetworkId);
     EXPECT_EQ(ret, false);
-    uriString = "ParseThumbnailInfo?=" + MEDIA_DATA_DB_THUMBNAIL + "&" + THUMBNAIL_WIDTH + "=" +  "&"
-        + THUMBNAIL_HEIGHT + "=";
+    uriString = "ParseThumbnailInfo?=" + MEDIA_DATA_DB_THUMBNAIL + "&" + THUMBNAIL_WIDTH + "=&" +
+        THUMBNAIL_HEIGHT + "=";
     ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize, ourNetworkId);
     EXPECT_EQ(ret, false);
-    uriString = "ParseThumbnailInfo?test=" + MEDIA_DATA_DB_THUMBNAIL + "&" + THUMBNAIL_WIDTH + "="
-        +  "&" + THUMBNAIL_HEIGHT + "=";
+    uriString = "ParseThumbnailInfo?test=" + MEDIA_DATA_DB_THUMBNAIL + "&" + THUMBNAIL_WIDTH + "=&" +
+        THUMBNAIL_HEIGHT + "=";
     ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize, ourNetworkId);
     EXPECT_EQ(ret, false);
-    uriString = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&"
-        + THUMBNAIL_WIDTH + "=1" +  "&" + THUMBNAIL_HEIGHT + "=1";
+    uriString = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
+        THUMBNAIL_WIDTH + "=1&" + THUMBNAIL_HEIGHT + "=1";
     ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize, ourNetworkId);
     EXPECT_EQ(ret, true);
 }
@@ -73,8 +73,8 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ParseThumbnailInfo_test_002, TestSize
     string uri = "";
     bool ret = ThumbnailUriUtils::ParseThumbnailInfo(uri);
     EXPECT_EQ(ret, false);
-    uri = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + THUMBNAIL_WIDTH
-        + "=1" +  "&" + THUMBNAIL_HEIGHT + "=1";
+    uri = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + THUMBNAIL_WIDTH +
+        "=1&" + THUMBNAIL_HEIGHT + "=1";
     ret = ThumbnailUriUtils::ParseThumbnailInfo(uri);
     EXPECT_EQ(ret, true);
 }

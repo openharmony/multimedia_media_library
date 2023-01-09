@@ -16,6 +16,9 @@
 #ifndef MEDIALIBRARY_UNITTEST_UTILS_H
 #define MEDIALIBRARY_UNITTEST_UTILS_H
 
+#include <condition_variable>
+
+#include "imedia_scanner_callback.h"
 #include "file_asset.h"
 
 namespace OHOS {
@@ -28,6 +31,16 @@ const static inline std::string TEST_DOCUMENTS = "Documents";
 const static inline std::string TEST_DOWNLOAD = "Download";
 const static inline std::vector<std::string> TEST_ROOT_DIRS = { TEST_CAMERA, TEST_VIDEOS, TEST_PICTURES, TEST_AUDIOS,
     TEST_DOCUMENTS, TEST_DOWNLOAD };
+
+class TestScannerCallback : public IMediaScannerCallback {
+public:
+    TestScannerCallback();
+    ~TestScannerCallback() = default;
+
+    int32_t status_;
+    std::condition_variable condVar_;
+    int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
+};
 
 class MediaLibraryUnitTestUtils {
 public:
@@ -44,9 +57,11 @@ public:
         std::shared_ptr<FileAsset> &albumAsset);
     static bool CreateFile(std::string displayName, std::shared_ptr<FileAsset> parentAlbumAsset,
         std::shared_ptr<FileAsset> &fileAsset);
+    static bool CreateFileFS(const std::string& filePath);
     static bool DeleteDir(const std::string &path, const std::string &dirId);
     static void TrashFile(std::shared_ptr<FileAsset> &fileAsset);
     static void RecoveryFile(std::shared_ptr<FileAsset> &fileAsset);
+    static void WaitForCallback(std::shared_ptr<TestScannerCallback> callback);
 private:
     static inline bool isValid_ = false;
     static inline std::unordered_map<std::string, std::shared_ptr<FileAsset>> rootDirAssetMap_;

@@ -37,6 +37,7 @@
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
+#include "medialibrary_inotify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
@@ -193,6 +194,10 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     if (thumbnailService_ != nullptr) {
         thumbnailService_->ReleaseService();
         thumbnailService_ = nullptr;
+    }
+    auto watch = MediaLibraryInotify::GetInstance();
+    if (watch != nullptr) {
+        watch->DoStop();
     }
     MediaLibraryUnistoreManager::GetInstance().Stop();
     extension_ = nullptr;
@@ -755,6 +760,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+    cmd.GetAbsRdbPredicates()->Limit(rdbPredicate.GetLimit());
     NeedQuerySync(cmd.GetOprnDevice(), cmd.GetOprnObject());
 
     shared_ptr<NativeRdb::ResultSet> queryResultSet;
