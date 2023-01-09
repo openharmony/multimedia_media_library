@@ -15,10 +15,19 @@
 
 #include "mtp_native_test.h"
 #include "get_self_permissions.h"
+#include "header_data.h"
 #include "hilog/log.h"
 #include "media_log.h"
+#include "media_mtp_utils.h"
 #include "mtp_constants.h"
+#include "mtp_error_utils.h"
+#include "mtp_event.h"
+#include "mtp_operation_context.h"
+#include "mtp_service.h"
 #include "object_info.h"
+#include "payload_data/close_session_data.h"
+#include "payload_data/resp_common_data.h"
+#include "payload_data/object_event_data.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -42,7 +51,6 @@ void MtpNativeTest::TearDown(void) {}
 static constexpr int TEST_UID = 5003;
 static const string TEST_NAME = "test.jpg";
 static const string PROP_VALUE = "01.jpg";
-
 /**
  * @tc.number    : mtp_native_test_001
  * @tc.name      : mtp_native_test_001
@@ -1984,6 +1992,269 @@ HWTEST_F(MtpNativeTest, mtp_native_test_086, TestSize.Level0)
         MtpMedialibraryManager::GetInstance()->CloseFd(context, fd);
     }
     MEDIA_INFO_LOG("mtp_native_test_086::End");
+}
+
+/**
+ * @tc.number    : mtp_header_data_001
+ * @tc.name      : mtp_header_data_001
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_header_data_001, TestSize.Level0)
+{
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    shared_ptr<HeaderData> headerData = make_shared<HeaderData>(context);
+    headerData->Reset();
+    headerData->SetCode(0);
+    headerData->SetContainerType(0);
+    uint32_t len = headerData->GetContainerLength();
+    EXPECT_EQ(len == 0, true);
+    headerData->SetTransactionId(1);
+    uint32_t id = headerData->GetTransactionId();
+    EXPECT_EQ(id == 1, true);
+
+    MEDIA_INFO_LOG("mtp_header_data_001::End");
+}
+
+/**
+ * @tc.number    : mtp_driver_001
+ * @tc.name      : mtp_driver_001
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_driver_001, TestSize.Level0)
+{
+    shared_ptr<MtpDriver> mtpDriver = make_shared<MtpDriver>();
+    mtpDriver->OpenDriver();
+    vector<uint8_t> buffer;
+    uint32_t size = 0;
+    mtpDriver->Read(buffer, size);
+    mtpDriver->Write(buffer, size);
+    MtpFileRange mfr;
+    mtpDriver->SendObj(mfr);
+    mtpDriver->ReceiveObj(mfr);
+    mtpDriver->CloseDriver();
+
+    MEDIA_INFO_LOG("mtp_driver_001::End");
+}
+
+/**
+ * @tc.number    : mtp_error_utils_001
+ * @tc.name      : mtp_error_utils_001
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_error_utils_001, TestSize.Level0)
+{
+    MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
+    MtpErrorUtils::SolveGetObjectInfoError(E_SUCCESS);
+    MtpErrorUtils::SolveSendObjectInfoError(E_SUCCESS);
+    MtpErrorUtils::SolveMoveObjectError(E_SUCCESS);
+    MtpErrorUtils::SolveCopyObjectError(E_SUCCESS);
+    MtpErrorUtils::SolveDeleteObjectError(E_SUCCESS);
+    MtpErrorUtils::SolveObjectPropValueError(E_SUCCESS);
+    MtpErrorUtils::SolveCloseFdError(E_SUCCESS);
+
+    MEDIA_INFO_LOG("mtp_error_utils_001::End");
+}
+
+/**
+ * @tc.number    : mtp_event_001
+ * @tc.name      : mtp_event_001
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_event_001, TestSize.Level0)
+{
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    shared_ptr<MtpEvent> mtpEvent = make_shared<MtpEvent>(context);
+    string path;
+    mtpEvent->SendObjectAdded(path);
+    mtpEvent->SendObjectRemoved(path);
+    mtpEvent->SendObjectInfoChanged(path);
+
+    MEDIA_INFO_LOG("mtp_event_001::End");
+}
+
+/**
+ * @tc.number    : mtp_service_001
+ * @tc.name      : mtp_service_001
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_service_001, TestSize.Level0)
+{
+    MtpServcie::GetInstance()->StartService();
+    MtpServcie::GetInstance()->StopService();
+
+    MEDIA_INFO_LOG("mtp_service_001::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_property_001
+ * @tc.name      : mtp_operation_utils_property_001
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_001, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    context->property = MTP_DEVICE_PROPERTY_SYNCHRONIZATION_PARTNER_CODE;
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
+    shared_ptr<PayloadData> data;
+    int errorCode = 0;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    mtpOperUtils->GetPropDesc(data, containerType, errorCode);
+    mtpOperUtils->GetPropValue(data, containerType, errorCode);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_property_001::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_property_002
+ * @tc.name      : mtp_operation_utils_property_002
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_002, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    context->property = MTP_DEVICE_PROPERTY_DEVICE_FRIENDLY_NAME_CODE;
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
+    shared_ptr<PayloadData> data;
+    int errorCode = 0;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    mtpOperUtils->GetPropDesc(data, containerType, errorCode);
+    mtpOperUtils->GetPropValue(data, containerType, errorCode);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_property_002::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_property_003
+ * @tc.name      : mtp_operation_utils_property_003
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_003, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    context->property = MTP_DEVICE_PROPERTY_SESSION_INITIATOR_VERSION_INFO_CODE;
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
+    shared_ptr<PayloadData> data;
+    int errorCode = 0;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    mtpOperUtils->GetPropDesc(data, containerType, errorCode);
+    mtpOperUtils->GetPropValue(data, containerType, errorCode);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_property_003::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_property_004
+ * @tc.name      : mtp_operation_utils_property_004
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_004, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    context->property = MTP_DEVICE_PROPERTY_IMAGE_SIZE_CODE;
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
+    shared_ptr<PayloadData> data;
+    int errorCode = 0;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    mtpOperUtils->GetPropDesc(data, containerType, errorCode);
+    mtpOperUtils->GetPropValue(data, containerType, errorCode);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_property_004::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_property_005
+ * @tc.name      : mtp_operation_utils_property_005
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_005, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    context->property = MTP_DEVICE_PROPERTY_BATTERY_LEVEL_CODE;
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
+    shared_ptr<PayloadData> data;
+    int errorCode = 0;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    mtpOperUtils->GetPropDesc(data, containerType, errorCode);
+    mtpOperUtils->GetPropValue(data, containerType, errorCode);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_property_005::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_property_006
+ * @tc.name      : mtp_operation_utils_property_006
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_006, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    context->property = MTP_DEVICE_PROPERTY_PERCEIVED_DEVICE_TYPE_CODE;
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
+    shared_ptr<PayloadData> data;
+    int errorCode = 0;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    mtpOperUtils->GetPropDesc(data, containerType, errorCode);
+    mtpOperUtils->GetPropValue(data, containerType, errorCode);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_property_006::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_property_007
+ * @tc.name      : mtp_operation_utils_property_007
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_007, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    context->property = 0;
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
+    shared_ptr<PayloadData> data;
+    int errorCode = 0;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    mtpOperUtils->GetPropDesc(data, containerType, errorCode);
+    mtpOperUtils->GetPropValue(data, containerType, errorCode);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_property_007::End");
 }
 
 } // namespace Media

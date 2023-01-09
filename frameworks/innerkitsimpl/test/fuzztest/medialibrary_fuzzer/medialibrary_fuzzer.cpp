@@ -49,6 +49,9 @@ bool MediaLibraryFuzzTest(const uint8_t *data, size_t size)
     predicates.SetWhereClause(selections);
 
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saManager == nullptr) {
+        return false;
+    }
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
     if (remoteObj == nullptr) {
         return false;

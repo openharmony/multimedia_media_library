@@ -300,6 +300,10 @@ int32_t MediaFileExtentionUtils::ResolveUri(const FileInfo &fileInfo, MediaFileU
     if (uri.find(MEDIALIBRARY_TYPE_FILE_URI) == 0) {
         return ResolveUriWithType(fileInfo.mimeType, uriType);
     }
+    if (MediaFileExtentionUtils::CheckUriValid(fileInfo.uri)) {
+        uriType = MediaFileUriType::URI_FILE;
+        return E_SUCCESS;
+    }
     return E_INVALID_URI;
 }
 
@@ -404,25 +408,15 @@ int32_t GetListFilePredicates(const FileInfo &parentInfo, const DistributedFS::F
 
 static int32_t RootListFile(const FileInfo &parentInfo, vector<FileInfo> &fileList)
 {
-    FileInfo fileInfo;
-    fileInfo.mode = ALBUM_MODE_READONLY;
     string selectUri = parentInfo.uri;
-    fileInfo.fileName = "MEDIA_TYPE_FILE";
-    fileInfo.uri = selectUri + MEDIALIBRARY_TYPE_FILE_URI;
-    fileInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
-    fileList.push_back(fileInfo);
-    fileInfo.fileName = "MEDIA_TYPE_IMAGE";
-    fileInfo.uri = selectUri + MEDIALIBRARY_TYPE_IMAGE_URI;
-    fileInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE;
-    fileList.push_back(fileInfo);
-    fileInfo.fileName = "MEDIA_TYPE_VIDEO";
-    fileInfo.uri = selectUri + MEDIALIBRARY_TYPE_VIDEO_URI;
-    fileInfo.mimeType = DEFAULT_VIDEO_MIME_TYPE;
-    fileList.push_back(fileInfo);
-    fileInfo.fileName = "MEDIA_TYPE_AUDIO";
-    fileInfo.uri = selectUri + MEDIALIBRARY_TYPE_AUDIO_URI;
-    fileInfo.mimeType = DEFAULT_AUDIO_MIME_TYPE;
-    fileList.push_back(fileInfo);
+    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_FILE_URI, "MEDIA_TYPE_FILE", ALBUM_MODE_READONLY,
+        DEFAULT_FILE_MIME_TYPE);
+    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_IMAGE_URI, "MEDIA_TYPE_IMAGE", ALBUM_MODE_READONLY,
+        DEFAULT_IMAGE_MIME_TYPE);
+    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_VIDEO_URI, "MEDIA_TYPE_VIDEO", ALBUM_MODE_READONLY,
+        DEFAULT_VIDEO_MIME_TYPE);
+    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_AUDIO_URI, "MEDIA_TYPE_AUDIO", ALBUM_MODE_READONLY,
+        DEFAULT_AUDIO_MIME_TYPE);
     return E_SUCCESS;
 }
 
@@ -743,14 +737,33 @@ int MediaFileExtentionUtils::Access(const Uri &uri, bool &isExist)
     return E_SUCCESS;
 }
 
-int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &fileInfo)
+int GetVirtualNodeFileInfo(const string &uri, FileInfo &fileInfo)
 {
-    string uri = selectFile.ToString();
-    CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckUriValid(uri), E_URI_INVALID,
-        "UriToFileInfo::invalid uri: %{public}s", uri.c_str());
+    size_t pos = uri.rfind('/');
+    if (pos == string::npos) {
+        return E_INVALID_URI;
+    }
+
+    static const unordered_map<string, FileInfo> virtualNodes = {
+        { MEDIALIBRARY_TYPE_AUDIO_URI, { uri, "MEDIA_TYPE_AUDIO", ALBUM_MODE_READONLY, DEFAULT_AUDIO_MIME_TYPE } },
+        { MEDIALIBRARY_TYPE_VIDEO_URI, { uri, "MEDIA_TYPE_VIDEO", ALBUM_MODE_READONLY, DEFAULT_VIDEO_MIME_TYPE } },
+        { MEDIALIBRARY_TYPE_IMAGE_URI, { uri, "MEDIA_TYPE_IMAGE", ALBUM_MODE_READONLY, DEFAULT_IMAGE_MIME_TYPE } },
+        { MEDIALIBRARY_TYPE_FILE_URI, { uri, "MEDIA_TYPE_FILE", ALBUM_MODE_READONLY, DEFAULT_FILE_MIME_TYPE } },
+    };
+    string uriSuffix = uri.substr(pos);
+    if (virtualNodes.find(uriSuffix) != virtualNodes.end()) {
+        fileInfo = virtualNodes.at(uriSuffix);
+        return E_SUCCESS;
+    } else {
+        return E_INVALID_URI;
+    }
+}
+
+int GetFileInfo(const string &uri, FileInfo &fileInfo)
+{
     vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_TRASH };
-    auto result = GetResultSetFromDb(MEDIA_DATA_DB_URI, uri, columns);
+    auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, uri, columns);
     if ((result == nullptr) || (GetInt32Val(MEDIA_DATA_DB_IS_TRASH, result) != NOT_TRASHED)) {
         MEDIA_ERR_LOG("UriToFileInfo::uri is not correct: %{public}s", uri.c_str());
         return E_INVALID_URI;
@@ -767,6 +780,31 @@ int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &file
         fileInfo.mode = FILE_MODE_RW;
     }
     return E_SUCCESS;
+}
+
+int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &fileInfo)
+{
+    string uri = selectFile.ToString();
+    FileInfo tempInfo;
+    tempInfo.uri = uri;
+    tempInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
+    MediaFileUriType uriType = URI_FILE;
+    auto ret = MediaFileExtentionUtils::ResolveUri(tempInfo, uriType);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "UriToFileInfo::invalid uri: %{public}s", uri.c_str());
+    switch (uriType) {
+        case URI_ROOT:
+            fileInfo.uri = uri;
+            return E_SUCCESS;
+        case URI_MEDIA_ROOT:
+        case URI_FILE_ROOT:
+            return GetVirtualNodeFileInfo(uri, fileInfo);
+        case URI_DIR:
+        case URI_ALBUM:
+        case URI_FILE:
+            return GetFileInfo(uri, fileInfo);
+        default:
+            return E_INVALID_URI;
+    }
 }
 
 int32_t HandleFileRename(const shared_ptr<FileAsset> &fileAsset)
