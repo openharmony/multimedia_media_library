@@ -474,7 +474,7 @@ uint16_t MtpOperationUtils::GetPartialObject(shared_ptr<PayloadData> &data)
 {
     if (context_ == nullptr) {
         MEDIA_ERR_LOG("context_ is null");
-        return MTP_ERROR_CONTEXT_IS_NULL;
+        return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
     }
 
     uint32_t length = 0;
@@ -488,7 +488,7 @@ uint16_t MtpOperationUtils::GetObjectPropsSupported(shared_ptr<PayloadData> &dat
 {
     if (context_ == nullptr) {
         MEDIA_ERR_LOG("context_ is null");
-        return MTP_ERROR_CONTEXT_IS_NULL;
+        return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
     }
 
     data = make_shared<GetObjectPropsSupportedData>(context_);

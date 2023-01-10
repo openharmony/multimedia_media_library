@@ -48,6 +48,7 @@ void MtpNativeTest::SetUpTestCase()
 void MtpNativeTest::TearDownTestCase() {}
 void MtpNativeTest::SetUp() {}
 void MtpNativeTest::TearDown(void) {}
+static constexpr int ERROR_BATTERY = -1;
 static constexpr int TEST_UID = 5003;
 static const string TEST_NAME = "test.jpg";
 static const string PROP_VALUE = "01.jpg";
@@ -2255,6 +2256,199 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_property_007, TestSize.Level0)
     mtpOperUtils->GetPropValue(data, containerType, errorCode);
 
     MEDIA_INFO_LOG("mtp_operation_utils_property_007::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_property_008
+ * @tc.name      : mtp_operation_utils_property_008
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_008, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    context->property = 0;
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
+    shared_ptr<PayloadData> data;
+    int errorCode = 0;
+    uint16_t containerType = UNDEFINED_CONTAINER_TYPE;
+
+    uint16_t ret = mtpOperUtils->GetPropDesc(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetPropValue(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_property_008::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_001
+ * @tc.name      : mtp_operation_utils_001
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_001, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(nullptr);
+    shared_ptr<PayloadData> data;
+    uint16_t containerType = UNDEFINED_CONTAINER_TYPE;
+    int errorCode = 0;
+
+    uint16_t ret = mtpOperUtils->GetDeviceInfo(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetNumObjects(data);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    mtpOperUtils->DoSetObjectPropValue(errorCode);
+    ret = mtpOperUtils->GetObjectHandles(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetObjectPropDesc(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetObjectPropValue(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetObjectPropList(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->SendObjectInfo(data, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetPartialObject(data);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetObjectPropsSupported(data);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->DeleteObject(data, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->MoveObject(data, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->CopyObject(data, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetStorageIDs(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetStorageInfo(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    string path, realPath;
+    uint32_t handle = 0;
+    ret = mtpOperUtils->GetPathByHandle(handle, path, realPath);
+    EXPECT_TRUE(ret == MTP_UNDEFINED_CODE);
+    int32_t retInt = mtpOperUtils->GetHandleByPaths(path, handle);
+    EXPECT_TRUE(retInt == MTP_UNDEFINED_CODE);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_001::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_002
+ * @tc.name      : mtp_operation_utils_002
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_002, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(nullptr);
+    shared_ptr<PayloadData> data;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    int errorCode = 0;
+
+    uint16_t ret = mtpOperUtils->GetObjectPropDesc(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetObjectPropValue(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetObjectPropList(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_002::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_003
+ * @tc.name      : mtp_operation_utils_003
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_003, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    context->sessionOpen = false;
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
+    shared_ptr<PayloadData> data;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    int errorCode = 0;
+
+    uint16_t ret = mtpOperUtils->GetObjectHandles(data, containerType, errorCode);
+    EXPECT_TRUE(ret != MTP_SUCCESS);
+    ret = mtpOperUtils->GetStorageIDs(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_SESSION_NOT_OPEN_CODE);
+    ret = mtpOperUtils->GetStorageInfo(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_SESSION_NOT_OPEN_CODE);
+    string path("test/");
+    uint32_t handle = 0;
+    int32_t retInt = mtpOperUtils->GetHandleByPaths(path, handle);
+    EXPECT_TRUE(retInt != MTP_UNDEFINED_CODE);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_003::End");
+}
+
+/**
+ * @tc.number    : mtp_operation_utils_004
+ * @tc.name      : mtp_operation_utils_004
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_operation_utils_004, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
+    shared_ptr<PayloadData> data;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    int errorCode = 0;
+
+    uint16_t ret = mtpOperUtils->GetDeviceInfo(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    mtpOperUtils->GetObjectInfo(data, containerType, errorCode);
+    ret = mtpOperUtils->GetObjectPropDesc(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetObjectPropValue(data, containerType, errorCode);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->SendObjectInfo(data, errorCode);
+    EXPECT_TRUE(ret != MTP_OK_CODE);
+    ret = mtpOperUtils->GetPartialObject(data);
+    EXPECT_TRUE(ret == MTP_SUCCESS);
+    ret = mtpOperUtils->GetObjectPropsSupported(data);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->GetOpenSession(data, errorCode);
+    EXPECT_TRUE(ret != MTP_OK_CODE);
+    ret = mtpOperUtils->GetCloseSession(data);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->SetDevicePropValueResp(data);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    ret = mtpOperUtils->ResetDevicePropResp(data);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    int32_t payload = 0;
+    ret = mtpOperUtils->ObjectEvent(data, payload);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    uint32_t handle = 1;
+    string path, realPath;
+    ret = mtpOperUtils->GetPathByHandle(handle, path, realPath);
+    EXPECT_TRUE(ret == MTP_OK_CODE);
+    path = "/test";
+    mtpOperUtils->GetHandleByPaths(path, handle);
+    int32_t retInt = mtpOperUtils->GetBatteryLevel();
+    EXPECT_TRUE(retInt != ERROR_BATTERY);
+
+    MEDIA_INFO_LOG("mtp_operation_utils_004::End");
 }
 
 } // namespace Media
