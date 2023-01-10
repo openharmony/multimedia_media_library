@@ -21,6 +21,7 @@
 #include "medialibrary_object_utils.h"
 #include "media_log.h"
 #include "permission_utils.h"
+#include "result_set_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -29,12 +30,21 @@ using namespace OHOS::DataShare;
 namespace OHOS {
 namespace Media {
 
-static bool CheckMode(const string& mode)
+static bool CheckMode(string& mode)
 {
-    if (mode != MEDIA_FILEMODE_READONLY) {
+    transform(mode.begin(), mode.end(), mode.begin(), ::tolower);
+    if (MEDIA_OPEN_MODES.find(mode) == MEDIA_OPEN_MODES.end()) {
         MEDIA_ERR_LOG("mode format is error: %{public}s", mode.c_str());
         return false;
     }
+    string tempMode;
+    if (mode.find(MEDIA_FILEMODE_READONLY) != string::npos) {
+        tempMode += MEDIA_FILEMODE_READONLY;
+    }
+    if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos) {
+        tempMode += MEDIA_FILEMODE_WRITEONLY;
+    }
+    mode = tempMode;
     return true;
 }
 
@@ -60,28 +70,27 @@ int32_t UriPermissionOperations::HandleUriPermOperations(MediaLibraryCommand &cm
     return errCode;
 }
 
-int32_t UriPermissionOperations::IsUriPermissionExists(const string &fileId, const string &bundleName,
-    const string &mode)
+int32_t UriPermissionOperations::GetUriPermissionMode(const string &fileId, const string &bundleName, string &mode)
 {
     MediaLibraryCommand cmd(Uri(MEDIALIBRARY_BUNDLEPERM_URI), OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(PERMISSION_FILE_ID, fileId);
     cmd.GetAbsRdbPredicates()->And()->EqualTo(PERMISSION_BUNDLE_NAME, bundleName);
-    cmd.GetAbsRdbPredicates()->And()->EqualTo(PERMISSION_MODE, mode);
     auto queryResult = MediaLibraryObjectUtils::QueryWithCondition(cmd, {}, "");
     CHECK_AND_RETURN_RET_LOG(queryResult != nullptr, E_HAS_DB_ERROR, "Failed to obtain value from database");
-    int32_t count = -1;
-    auto ret = queryResult->GetRowCount(count);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "Failed to obtain value from database");
+    int count = -1;
+    CHECK_AND_RETURN_RET_LOG(queryResult->GetRowCount(count) == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Failed to get query result row count");
     if (count <= 0) {
         return E_PERMISSION_DENIED;
     }
-    return E_OK;
+    CHECK_AND_RETURN_RET_LOG(queryResult->GoToFirstRow() == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Failed to go to first row");
+    mode = GetStringVal(PERMISSION_MODE, queryResult);
+    return E_SUCCESS;
 }
 
-int32_t UriPermissionOperations::HandleUriPermInsert(MediaLibraryCommand &cmd)
+int32_t CheckUriPermValues(ValuesBucket &valuesBucket, int32_t &fileId, string &bundleName, string &inputMode)
 {
-    ValuesBucket valuesBucket = cmd.GetValueBucket();
-    int32_t fileId = -1;
     ValueObject valueObject;
     if (valuesBucket.GetObject(PERMISSION_FILE_ID, valueObject)) {
         valueObject.GetInt(fileId);
@@ -90,7 +99,6 @@ int32_t UriPermissionOperations::HandleUriPermInsert(MediaLibraryCommand &cmd)
         return E_INVALID_VALUES;
     }
 
-    string bundleName;
     if (valuesBucket.GetObject(PERMISSION_BUNDLE_NAME, valueObject)) {
         valueObject.GetString(bundleName);
     } else {
@@ -98,34 +106,55 @@ int32_t UriPermissionOperations::HandleUriPermInsert(MediaLibraryCommand &cmd)
         return E_INVALID_VALUES;
     }
 
-    string mode;
     if (valuesBucket.GetObject(PERMISSION_MODE, valueObject)) {
-        valueObject.GetString(mode);
+        valueObject.GetString(inputMode);
     } else {
         MEDIA_ERR_LOG("ValueBucket does not have PERMISSION_MODE");
         return E_INVALID_VALUES;
     }
-    if (!CheckMode(mode)) {
+    if (!CheckMode(inputMode)) {
         return E_INVALID_MODE;
     }
+    valuesBucket.Delete(PERMISSION_MODE);
+    valuesBucket.PutString(PERMISSION_MODE, inputMode);
+    return E_SUCCESS;
+}
 
-    if (IsUriPermissionExists(to_string(fileId), bundleName, mode) == E_OK) {
-        return E_OK;
+int32_t UriPermissionOperations::HandleUriPermInsert(MediaLibraryCommand &cmd)
+{
+    int32_t fileId;
+    string bundleName;
+    string inputMode;
+    ValuesBucket &valuesBucket = cmd.GetValueBucket();
+    auto ret = CheckUriPermValues(valuesBucket, fileId, bundleName, inputMode);
+    CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
+
+    string permissionMode;
+    ret = GetUriPermissionMode(to_string(fileId), bundleName, permissionMode);
+    if ((ret != E_SUCCESS) && (ret != E_PERMISSION_DENIED)) {
+        return ret;
     }
 
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr!");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "uniStore is nullptr!");
 
-    int64_t outRowId = -1;
-    int32_t errCode = uniStore->Insert(cmd, outRowId);
-    return (errCode == NativeRdb::E_OK) ? outRowId : errCode;
+    if (ret == E_PERMISSION_DENIED) {
+        int64_t outRowId = -1;
+        return uniStore->Insert(cmd, outRowId);
+    }
+    if (permissionMode.find(inputMode) != string::npos) {
+        return E_SUCCESS;
+    }
+    ValuesBucket updateValues;
+    updateValues.PutString(PERMISSION_MODE, MEDIA_FILEMODE_READWRITE);
+    MediaLibraryCommand updateCmd(Uri(MEDIALIBRARY_BUNDLEPERM_URI), updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PERMISSION_FILE_ID, to_string(fileId))->And()->
+        EqualTo(PERMISSION_BUNDLE_NAME, bundleName);
+    int32_t updatedRows = -1;
+    return uniStore->Update(updateCmd, updatedRows);
 }
 
-// you can only set mode "r"
-int32_t UriPermissionOperations::CheckUriPermission(const std::string &fileUri, const std::string &mode)
+int32_t UriPermissionOperations::CheckUriPermission(const std::string &fileUri, std::string mode)
 {
     if (!CheckMode(mode)) {
         return E_INVALID_MODE;
@@ -134,7 +163,10 @@ int32_t UriPermissionOperations::CheckUriPermission(const std::string &fileUri, 
     bool isSystemApp = false;
     PermissionUtils::GetClientBundle(IPCSkeleton::GetCallingUid(), bundleName, isSystemApp);
     string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(fileUri);
-    return IsUriPermissionExists(fileId, bundleName, mode);
+    string permissionMode;
+    int32_t ret = GetUriPermissionMode(fileId, bundleName, permissionMode);
+    CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
+    return (permissionMode.find(mode) != string::npos) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 }   // Media
 }   // OHOS

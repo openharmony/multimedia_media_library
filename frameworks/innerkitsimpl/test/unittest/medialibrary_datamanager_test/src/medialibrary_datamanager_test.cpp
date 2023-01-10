@@ -23,6 +23,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unittest_utils.h"
+#include "medialibrary_uripermission_operations.h"
 #include "uri.h"
 
 using namespace std;
@@ -45,6 +46,7 @@ void MediaLibraryDataManagerUnitTest::TearDownTestCase(void) {}
 void MediaLibraryDataManagerUnitTest::SetUp(void)
 {
     MediaLibraryUnitTestUtils::CleanTestFiles();
+    MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
     g_pictures = MediaLibraryUnitTestUtils::GetRootAsset(TEST_PICTURES);
     g_download = MediaLibraryUnitTestUtils::GetRootAsset(TEST_DOWNLOAD);
@@ -301,16 +303,41 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_001, TestSiz
     MEDIA_INFO_LOG("DataManager_OpenFile_Test_001::Start");
     shared_ptr<FileAsset> fileAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("OpenFile_Test_001.jpg", g_pictures, fileAsset), true);
-    string fileUri = fileAsset->GetUri();
-    string mode = MEDIA_FILEMODE_READONLY;
-    Uri openFileUri(fileUri);
+    Uri openFileUri(fileAsset->GetUri());
     MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
+    for (auto const &mode : MEDIA_OPEN_MODES) {
+        int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(openFileUri, mode);
+        EXPECT_GT(fd, 0);
+        if (fd > 0) {
+            close(fd);
+        }
+        MEDIA_INFO_LOG("DataManager_OpenFile_Test_001 mode: %{public}s, fd: %{public}d.", mode.c_str(), fd);
+    }
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_OpenFile_Test_002::Start");
+    shared_ptr<FileAsset> fileAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("OpenFile_Test_001.jpg", g_pictures, fileAsset), true);
+    Uri openFileUri(fileAsset->GetUri());
+    MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
+
+    string mode = "rt";
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(openFileUri, mode);
-    EXPECT_EQ(fd > 0, true);
+    EXPECT_LT(fd, 0);
     if (fd > 0) {
         close(fd);
     }
-    MEDIA_INFO_LOG("DataManager_OpenFile_Test_001::fd = %{public}d. End", fd);
+    MEDIA_INFO_LOG("DataManager_OpenFile_Test_002 mode: %{public}s, fd: %{public}d.", mode.c_str(), fd);
+
+    mode = "ra";
+    fd = MediaLibraryDataManager::GetInstance()->OpenFile(openFileUri, mode);
+    EXPECT_LT(fd, 0);
+    if (fd > 0) {
+        close(fd);
+    }
+    MEDIA_INFO_LOG("DataManager_OpenFile_Test_002 mode: %{public}s, fd: %{public}d.", mode.c_str(), fd);
 }
 
 /**
@@ -671,6 +698,176 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_002, TestS
     int retVal = MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, {});
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(delete_Dir_002->GetPath()), false);
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::delete end, retVal: %d", retVal);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_UriPermission_Test_001::Start");
+    shared_ptr<FileAsset> UriPermission001 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("UriPermission001.txt", g_download, UriPermission001));
+
+    int32_t fileId = UriPermission001->GetId();
+    string bundleName = BUNDLE_NAME;
+    for (const auto &mode : MEDIA_OPEN_MODES) {
+        EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode), E_SUCCESS);
+    }
+
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PERMISSION_FILE_ID, to_string(fileId))->And()->EqualTo(PERMISSION_BUNDLE_NAME, bundleName);
+    Uri queryUri(MEDIALIBRARY_BUNDLEPERM_URI);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
+    ASSERT_NE(resultSet, nullptr);
+    int count = -1;
+    ASSERT_EQ(resultSet->GetRowCount(count), E_OK);
+    EXPECT_EQ(count, 1);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_UriPermission_Test_002::Start");
+    Uri addPermission(MEDIALIBRARY_BUNDLEPERM_URI + "/" + BUNDLE_PERMISSION_INSERT);
+    DataShare::DataShareValuesBucket values;
+    int retVal = MediaLibraryDataManager::GetInstance()->Insert(addPermission, values);
+    EXPECT_EQ(retVal, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("DataManager_UriPermission_Test_002::ret: %d", retVal);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_UriPermission_Test_003::Start");
+    Uri addPermission(MEDIALIBRARY_BUNDLEPERM_URI + "/" + BUNDLE_PERMISSION_INSERT);
+    DataShare::DataShareValuesBucket values;
+    values.Put(PERMISSION_FILE_ID, 1);
+    int retVal = MediaLibraryDataManager::GetInstance()->Insert(addPermission, values);
+    EXPECT_EQ(retVal, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("DataManager_UriPermission_Test_003::ret: %d", retVal);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_UriPermission_Test_004::Start");
+    Uri addPermission(MEDIALIBRARY_BUNDLEPERM_URI + "/" + BUNDLE_PERMISSION_INSERT);
+    DataShare::DataShareValuesBucket values;
+    values.Put(PERMISSION_FILE_ID, 1);
+    values.Put(PERMISSION_BUNDLE_NAME, BUNDLE_NAME);
+    int retVal = MediaLibraryDataManager::GetInstance()->Insert(addPermission, values);
+    EXPECT_EQ(retVal, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("DataManager_UriPermission_Test_004::ret: %d", retVal);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_UriPermission_Test_005::Start");
+    int32_t fileId = 1;
+    string bundleName = BUNDLE_NAME;
+    string mode = "ra";
+    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode), E_INVALID_MODE);
+
+    mode = "rt";
+    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode), E_INVALID_MODE);
+
+    fileId = -1;
+    bundleName = "";
+    mode = MEDIA_FILEMODE_READONLY;
+    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode), E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_001::Start");
+    shared_ptr<FileAsset> file = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("CheckUriPermission001.txt", g_download, file));
+
+    int32_t fileId = file->GetId();
+    string bundleName = BUNDLE_NAME;
+    string mode = MEDIA_FILEMODE_READONLY;
+    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode), E_SUCCESS);
+
+    string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
+    unordered_map<string, int32_t> expect {
+        { MEDIA_FILEMODE_READONLY, E_SUCCESS },
+        { MEDIA_FILEMODE_WRITEONLY, E_PERMISSION_DENIED },
+        { MEDIA_FILEMODE_READWRITE, E_PERMISSION_DENIED },
+        { MEDIA_FILEMODE_WRITETRUNCATE, E_PERMISSION_DENIED },
+        { MEDIA_FILEMODE_WRITEAPPEND, E_PERMISSION_DENIED },
+        { MEDIA_FILEMODE_READWRITETRUNCATE, E_PERMISSION_DENIED },
+        { MEDIA_FILEMODE_READWRITEAPPEND, E_PERMISSION_DENIED },
+    };
+    for (const auto &inputMode : MEDIA_OPEN_MODES) {
+        auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
+        EXPECT_EQ(ret, expect[inputMode]);
+        MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
+            mode.c_str(), inputMode.c_str(), ret);
+    }
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_002::Start");
+    shared_ptr<FileAsset> file = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("CheckUriPermission002.txt", g_download, file));
+
+    int32_t fileId = file->GetId();
+    string bundleName = BUNDLE_NAME;
+    string mode = MEDIA_FILEMODE_WRITEONLY;
+    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode), E_SUCCESS);
+
+    string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
+    unordered_map<string, int32_t> expect {
+        { MEDIA_FILEMODE_READONLY, E_PERMISSION_DENIED },
+        { MEDIA_FILEMODE_WRITEONLY, E_SUCCESS },
+        { MEDIA_FILEMODE_READWRITE, E_PERMISSION_DENIED },
+        { MEDIA_FILEMODE_WRITETRUNCATE, E_SUCCESS },
+        { MEDIA_FILEMODE_WRITEAPPEND, E_SUCCESS },
+        { MEDIA_FILEMODE_READWRITETRUNCATE, E_PERMISSION_DENIED },
+        { MEDIA_FILEMODE_READWRITEAPPEND, E_PERMISSION_DENIED },
+    };
+    for (const auto &inputMode : MEDIA_OPEN_MODES) {
+        auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
+        EXPECT_EQ(ret, expect[inputMode]);
+        MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
+            mode.c_str(), inputMode.c_str(), ret);
+    }
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_003::Start");
+    shared_ptr<FileAsset> file = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("CheckUriPermission003.txt", g_download, file));
+
+    int32_t fileId = file->GetId();
+    string bundleName = BUNDLE_NAME;
+    string mode = MEDIA_FILEMODE_READWRITE;
+    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode), E_SUCCESS);
+
+    string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
+    for (const auto &inputMode : MEDIA_OPEN_MODES) {
+        auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
+        EXPECT_EQ(ret, E_SUCCESS);
+        MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
+            mode.c_str(), inputMode.c_str(), ret);
+    }
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_004::Start");
+    shared_ptr<FileAsset> file = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("CheckUriPermission004.txt", g_download, file));
+
+    int32_t fileId = file->GetId();
+    string bundleName = BUNDLE_NAME;
+    string mode = "Rw";
+    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode), E_SUCCESS);
+
+    string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
+    string inputMode = "rWt";
+    auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
+    EXPECT_EQ(ret, E_SUCCESS);
+    MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
+        mode.c_str(), inputMode.c_str(), ret);
 }
 } // namespace Media
 } // namespace OHOS
