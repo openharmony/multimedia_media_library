@@ -744,6 +744,9 @@ napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if ((status == napi_ok) && (obj != nullptr)) {
         obj->propertyPtr = nullptr;
+    }
+    status = napi_remove_wrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if ((status == napi_ok) && (obj != nullptr)) {
         napi_create_int32(env, SUCCESS, &jsResult);
     } else {
         NAPI_INFO_LOG("JSClose obj == nullptr");
