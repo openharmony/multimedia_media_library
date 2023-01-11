@@ -20,6 +20,7 @@
 #include <fstream>
 #include <unistd.h>
 
+#include "directory_ex.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
@@ -452,7 +453,7 @@ int32_t FileAsset::DeleteAsset(const string &filePath)
 
 int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
 {
-    MediaFileUtils::OpenFile(filePath, mode);
+    return MediaFileUtils::OpenFile(filePath, mode);
 }
 
 std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> &FileAsset::GetMemberMap()

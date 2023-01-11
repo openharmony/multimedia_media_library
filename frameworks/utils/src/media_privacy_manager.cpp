@@ -92,27 +92,6 @@ static bool CheckFsMounted(const string &fsType, const string &mountPoint)
     return false;
 }
 
-static int32_t ModeToFlags(const string &mode)
-{
-    int32_t flags = O_RDONLY;
-    if (mode == MEDIA_FILEMODE_READONLY) {
-        flags = O_RDONLY;
-    } else if (mode == MEDIA_FILEMODE_WRITEONLY) {
-        flags = O_WRONLY;
-    } else if (mode == MEDIA_FILEMODE_WRITETRUNCATE) {
-        flags = O_WRONLY | O_TRUNC;
-    } else if (mode == MEDIA_FILEMODE_WRITEAPPEND) {
-        flags = O_WRONLY | O_APPEND;
-    } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE) {
-        flags = O_RDWR | O_TRUNC;
-    } else if (mode == MEDIA_FILEMODE_READWRITE) {
-        flags = O_RDWR;
-    } else {
-        MEDIA_ERR_LOG("Invalid mode: %{public}s, will open with read only mode", mode.c_str());
-    }
-    return flags;
-}
-
 static int32_t BindFilterProxyFdToOrigin(const int32_t originFd, int32_t &proxyFd)
 {
     int ret = ioctl(proxyFd, IOC_SET_ORIGIN_FD, &originFd);
@@ -149,11 +128,7 @@ static int32_t SendRangesToIoctl(const int32_t originFd, const int32_t proxyFd, 
 /* Caller is responsible to close the returned fd */
 static int32_t OpenOriginFd(const string &path, const string &mode)
 {
-    int32_t fd = open(path.c_str(), ModeToFlags(mode));
-    if (fd < 0) {
-        MEDIA_ERR_LOG("Failed to OpenFile, errno: %{public}d, path: %{private}s", errno, path.c_str());
-    }
-    return fd;
+    return MediaFileUtils::OpenFile(path, mode);
 }
 
 /*

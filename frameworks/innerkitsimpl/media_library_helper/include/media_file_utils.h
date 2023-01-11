@@ -17,6 +17,7 @@
 #define FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_
 
 #include <string>
+#include <unordered_set>
 
 #include "userfile_manager_types.h"
 
@@ -29,15 +30,15 @@ const std::string MEDIA_FILEMODE_WRITETRUNCATE = "wt";
 const std::string MEDIA_FILEMODE_WRITEAPPEND = "wa";
 const std::string MEDIA_FILEMODE_READWRITETRUNCATE = "rwt";
 const std::string MEDIA_FILEMODE_READWRITEAPPEND = "rwa";
-const std::unordered_set<std::string> MEDIA_OPEN_MODES {
-                                        MEDIA_FILEMODE_READONLY,
-                                        MEDIA_FILEMODE_WRITEONLY,
-                                        MEDIA_FILEMODE_READWRITE,
-                                        MEDIA_FILEMODE_WRITETRUNCATE,
-                                        MEDIA_FILEMODE_WRITEAPPEND,
-                                        MEDIA_FILEMODE_READWRITETRUNCATE,
-                                        MEDIA_FILEMODE_READWRITEAPPEND
-                                        };
+const std::unordered_set<std::string> MEDIA_OPEN_MODES = {
+    MEDIA_FILEMODE_READONLY,
+    MEDIA_FILEMODE_WRITEONLY,
+    MEDIA_FILEMODE_READWRITE,
+    MEDIA_FILEMODE_WRITETRUNCATE,
+    MEDIA_FILEMODE_WRITEAPPEND,
+    MEDIA_FILEMODE_READWRITETRUNCATE,
+    MEDIA_FILEMODE_READWRITEAPPEND
+};
 
 /**
  * @brief Utility class for file operations
@@ -71,6 +72,7 @@ public:
     static MediaType GetMediaType(const std::string &filePath);
     static std::string SplitByChar(const std::string &str, const char split);
     static std::string GetExtensionFromPath(const std::string &path);
+    static int32_t OpenFile(const std::string &path, const std::string &mode);
 };
 } // namespace Media
 } // namespace  OHOS

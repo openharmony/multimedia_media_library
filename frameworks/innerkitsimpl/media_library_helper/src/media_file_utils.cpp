@@ -25,6 +25,7 @@
 #include <sys/sendfile.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <unordered_map>
 
 #include "directory_ex.h"
 #include "media_log.h"
@@ -468,6 +469,7 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
     int32_t errCode = E_ERR;
 
     if (filePath.empty() || mode.empty()) {
+        MEDIA_ERR_LOG("Invalid open argument! mode: %{public}s, path: %{private}s", mode.c_str(), filePath.c_str());
         return errCode;
     }
 
@@ -488,15 +490,14 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
         MEDIA_ERR_LOG("File path too long %{public}d", (int)filePath.size());
         return errCode;
     }
-    MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
-    std::string absFilePath = "";
+    string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
         return errCode;
     }
     if (absFilePath.empty()) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{private}s %{public}d",
-                      filePath.c_str(), errno);
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{public}d %{private}s",
+                      errno, filePath.c_str());
         return errCode;
     }
 
