@@ -17,6 +17,7 @@
 
 #include "album_asset.h"
 #include "file_asset.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -304,29 +305,29 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_CloseAsset_Test_001, Te
     EXPECT_EQ(fileAsset.CreateAsset(filePath), E_SUCCESS);
 
     string mode = MEDIA_FILEMODE_READONLY;
-    int fd = fileAsset.OpenAsset(filePath, mode);
+    int fd = MediaFileUtils::OpenFile(filePath, mode);
     EXPECT_EQ(fd > 0, true);
-    EXPECT_EQ(fileAsset.CloseAsset(fd), 0);
+    EXPECT_EQ(close(fd), 0);
 
     mode = MEDIA_FILEMODE_WRITEONLY;
-    fd = fileAsset.OpenAsset(filePath, mode);
+    fd = MediaFileUtils::OpenFile(filePath, mode);
     EXPECT_EQ(fd > 0, true);
-    EXPECT_EQ(fileAsset.CloseAsset(fd), 0);
+    EXPECT_EQ(close(fd), 0);
 
     mode = MEDIA_FILEMODE_WRITETRUNCATE;
-    fd = fileAsset.OpenAsset(filePath, mode);
+    fd = MediaFileUtils::OpenFile(filePath, mode);
     EXPECT_EQ(fd > 0, true);
-    EXPECT_EQ(fileAsset.CloseAsset(fd), 0);
+    EXPECT_EQ(close(fd), 0);
 
     mode = MEDIA_FILEMODE_WRITEAPPEND;
-    fd = fileAsset.OpenAsset(filePath, mode);
+    fd = MediaFileUtils::OpenFile(filePath, mode);
     EXPECT_EQ(fd > 0, true);
-    EXPECT_EQ(fileAsset.CloseAsset(fd), 0);
+    EXPECT_EQ(close(fd), 0);
 
     mode = MEDIA_FILEMODE_READWRITETRUNCATE;
-    fd = fileAsset.OpenAsset(filePath, mode);
+    fd = MediaFileUtils::OpenFile(filePath, mode);
     EXPECT_EQ(fd > 0, true);
-    EXPECT_EQ(fileAsset.CloseAsset(fd), 0);
+    EXPECT_EQ(close(fd), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_002, TestSize.Level0)
@@ -334,7 +335,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_002, TestSize.Leve
     FileAsset fileAsset;
     string filePath = "";
     string mode = "";
-    EXPECT_EQ(fileAsset.OpenAsset(filePath, mode), E_ERR);
+    EXPECT_EQ(MediaFileUtils::OpenFile(filePath, mode), E_ERR);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_003, TestSize.Level0)
@@ -345,7 +346,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_003, TestSize.Leve
         filePath += filePath;
     }
     string mode = MEDIA_FILEMODE_READONLY;
-    EXPECT_EQ(fileAsset.OpenAsset(filePath, mode), E_ERR);
+    EXPECT_EQ(MediaFileUtils::OpenFile(filePath, mode), E_ERR);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_004, TestSize.Level0)
@@ -353,7 +354,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_004, TestSize.Leve
     FileAsset fileAsset;
     string filePath = "data/test/OpenAsset_004.jpg";
     string mode = MEDIA_FILEMODE_READONLY;
-    EXPECT_EQ(fileAsset.OpenAsset(filePath, mode), E_ERR);
+    EXPECT_EQ(MediaFileUtils::OpenFile(filePath, mode), E_ERR);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_005, TestSize.Level0)
@@ -361,7 +362,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_OpenAsset_Test_005, TestSize.Leve
     FileAsset fileAsset;
     string filePath = "";
     string mode = MEDIA_FILEMODE_READONLY;
-    EXPECT_EQ(fileAsset.OpenAsset(filePath, mode), E_ERR);
+    EXPECT_EQ(MediaFileUtils::OpenFile(filePath, mode), E_ERR);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_IsFileExists_Test_001, TestSize.Level0)

@@ -35,9 +35,9 @@ struct __attribute__((packed)) FilterProxyRanges {
     } range[0];
 };
 
-#define EPFS_IOCTL_MAGIC 0x71
-#define IOC_SET_ORIGIN_FD           _IOW(EPFS_IOCTL_MAGIC, 1, int32_t)
-#define IOC_SET_FILTER_PROXY_RANGE     _IOW(EPFS_IOCTL_MAGIC, 2, FilterProxyRanges)
+#define EPFS_IOCTL_MAGIC                  0x71
+#define IOC_SET_ORIGIN_FD                 _IOW(EPFS_IOCTL_MAGIC, 1, int32_t)
+#define IOC_SET_FILTER_PROXY_RANGE        _IOW(EPFS_IOCTL_MAGIC, 2, FilterProxyRanges)
 #define EPFS_IOCTL_MAXNR 3
 } // namespace Media
 } // namespace OHOS
