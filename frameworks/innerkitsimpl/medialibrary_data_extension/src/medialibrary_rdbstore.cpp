@@ -195,7 +195,6 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &rowId)
 std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
-    MEDIA_DEBUG_LOG("Query");
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
         return nullptr;
