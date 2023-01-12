@@ -22,9 +22,8 @@ namespace OHOS {
 namespace Media {
 class UriPermissionOperations {
 public:
-    static int32_t IsUriPermissionExists(const std::string &fileId, const std::string &bundleName,
-        const std::string &mode);
-    static int32_t CheckUriPermission(const std::string &fileUri, const std::string &mode);
+    static int32_t GetUriPermissionMode(const std::string &fileId, const std::string &bundleName, std::string &mode);
+    static int32_t CheckUriPermission(const std::string &fileUri, std::string mode);
     static int32_t HandleUriPermOperations(MediaLibraryCommand &cmd);
     static int32_t HandleUriPermInsert(MediaLibraryCommand &cmd);
 };

@@ -50,6 +50,7 @@ public:
     static void Init();
     static void InitRootDirs();
     static void CleanTestFiles();
+    static void CleanBundlePermission();
     static std::shared_ptr<FileAsset> GetRootAsset(const std::string &dir);
     static bool IsFileExists(const std::string filePath);
     static bool GetFileAsset(const int fileId, std::shared_ptr<FileAsset> &fileAsset);
@@ -62,6 +63,7 @@ public:
     static void TrashFile(std::shared_ptr<FileAsset> &fileAsset);
     static void RecoveryFile(std::shared_ptr<FileAsset> &fileAsset);
     static void WaitForCallback(std::shared_ptr<TestScannerCallback> callback);
+    static int32_t GrantUriPermission(const int32_t fileId, const std::string &bundleName, const std::string &mode);
 private:
     static inline bool isValid_ = false;
     static inline std::unordered_map<std::string, std::shared_ptr<FileAsset>> rootDirAssetMap_;
