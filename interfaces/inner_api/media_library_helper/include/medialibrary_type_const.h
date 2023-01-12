@@ -165,6 +165,8 @@ const std::string VIDEO_CONTAINER_TYPE_MKV = "mkv";
 const std::string VIDEO_CONTAINER_TYPE_H264 = "h264";
 const std::string VIDEO_CONTAINER_TYPE_MPEG = "mpeg";
 const std::string VIDEO_CONTAINER_TYPE_TS = "ts";
+const std::string VIDEO_CONTAINER_TYPE_M4V = "m4v";
+const std::string VIDEO_CONTAINER_TYPE_3G2 = "3g2";
 
 const std::string DIR_ALL_VIDEO_CONTAINER_TYPE = "." + VIDEO_CONTAINER_TYPE_MP4 + "?" +
                                                  "." + VIDEO_CONTAINER_TYPE_3GP + "?" +
@@ -174,7 +176,9 @@ const std::string DIR_ALL_VIDEO_CONTAINER_TYPE = "." + VIDEO_CONTAINER_TYPE_MP4 
                                                  "." + VIDEO_CONTAINER_TYPE_MKV + "?" +
                                                  "." + VIDEO_CONTAINER_TYPE_H264 + "?" +
                                                  "." + VIDEO_CONTAINER_TYPE_MPEG + "?" +
-                                                 "." + VIDEO_CONTAINER_TYPE_TS + "?";
+                                                 "." + VIDEO_CONTAINER_TYPE_TS + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_M4V + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_3G2 + "?";
 
 /** Supported image types */
 const std::string IMAGE_CONTAINER_TYPE_BMP = "bmp";
@@ -259,7 +263,9 @@ const std::unordered_set<std::string> SUPPORTED_VIDEO_FORMATS_SET {
                                                 VIDEO_CONTAINER_TYPE_MKV,
                                                 VIDEO_CONTAINER_TYPE_H264,
                                                 VIDEO_CONTAINER_TYPE_MPEG,
-                                                VIDEO_CONTAINER_TYPE_TS
+                                                VIDEO_CONTAINER_TYPE_TS,
+                                                VIDEO_CONTAINER_TYPE_M4V,
+                                                VIDEO_CONTAINER_TYPE_3G2
                                                 };
 
 // Unordered set contains list supported image formats
