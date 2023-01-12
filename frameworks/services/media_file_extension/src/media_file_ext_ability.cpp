@@ -164,5 +164,10 @@ int MediaFileExtAbility::UriToFileInfo(const Uri &selectFile, FileInfo &fileInfo
 {
     return ConvertErrno(MediaFileExtentionUtils::UriToFileInfo(selectFile, fileInfo));
 }
+
+int MediaFileExtAbility::GetFileInfoFromRelativePath(const string &relativePath, FileAccessFwk::FileInfo &fileInfo)
+{
+    return ConvertErrno(MediaFileExtentionUtils::GetFileInfoFromRelativePath(relativePath, fileInfo));
+}
 } // Media
 } // OHOS
