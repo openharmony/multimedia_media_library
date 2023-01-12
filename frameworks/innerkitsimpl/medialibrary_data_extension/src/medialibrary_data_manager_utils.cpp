@@ -54,7 +54,6 @@ bool MediaLibraryDataManagerUtils::IsNumber(const string &str)
 
     for (char const &c : str) {
         if (isdigit(c) == 0) {
-            MEDIA_ERR_LOG("Index is not a number");
             return false;
         }
     }
@@ -112,7 +111,6 @@ string MediaLibraryDataManagerUtils::GetNetworkIdFromUri(const string &uri)
     if (tempUri.empty()) {
         return networkId;
     }
-    MEDIA_INFO_LOG("tempUri = %{public}s", tempUri.c_str());
     pos = tempUri.find_first_of('/');
     if (pos == 0 || pos == string::npos) {
         return networkId;
