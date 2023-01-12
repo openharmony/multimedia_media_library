@@ -195,7 +195,6 @@ const unordered_map<string, DirAsset> &MediaLibraryCommand::GetDirQuerySetMap()
 void MediaLibraryCommand::ParseOprnObjectFromUri()
 {
     string uri = uri_.ToString();
-    MEDIA_DEBUG_LOG("uri: %{private}s", uri.c_str());
 
     const static map<string, OperationObject> oprnMap = {
         // use in Insert...
@@ -230,8 +229,6 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
             break;
         }
     }
-
-    MEDIA_DEBUG_LOG("Command operation object is %{public}d", oprnObject_);
 }
 
 void MediaLibraryCommand::ParseOprnTypeFromUri()
@@ -352,7 +349,6 @@ void MediaLibraryCommand::ParseFileId()
         uriInValue = uri_.ToString();
     }
     MediaLibraryDataManagerUtils::RemoveTypeValueFromUri(uriInValue);
-    MEDIA_DEBUG_LOG("ParseFileId: uriInValue is %{private}s", uriInValue.c_str());
     string idFromUri = MediaLibraryDataManagerUtils::GetIdFromUri(uriInValue);
     if (!MediaLibraryDataManagerUtils::IsNumber(idFromUri)) {
         return;
