@@ -66,6 +66,16 @@ void MediaLibraryUnitTestUtils::CleanTestFiles()
     MEDIA_INFO_LOG("CleanTestFiles Delete retVal: %{public}d", retVal);
 }
 
+void MediaLibraryUnitTestUtils::CleanBundlePermission()
+{
+    Uri deleteAssetUri(MEDIALIBRARY_BUNDLEPERM_URI);
+    DataShare::DataSharePredicates predicates;
+    string selections = MEDIA_DATA_DB_ID + " <> 0 ";
+    predicates.SetWhereClause(selections);
+    int retVal =  MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, predicates);
+    MEDIA_INFO_LOG("CleanBundlePermission Delete retVal: %{public}d", retVal);
+}
+
 shared_ptr<FileAsset> MediaLibraryUnitTestUtils::GetRootAsset(const string &dir)
 {
     if (rootDirAssetMap_.find(dir) != rootDirAssetMap_.end()) {
@@ -237,6 +247,17 @@ void MediaLibraryUnitTestUtils::WaitForCallback(shared_ptr<TestScannerCallback> 
     std::unique_lock<std::mutex> lock(mutex);
     const int waitSeconds = 10;
     callback->condVar_.wait_until(lock, std::chrono::system_clock::now() + std::chrono::seconds(waitSeconds));
+}
+
+int32_t MediaLibraryUnitTestUtils::GrantUriPermission(const int32_t fileId, const string &bundleName,
+    const string &mode)
+{
+    Uri addPermission(MEDIALIBRARY_BUNDLEPERM_URI + "/" + BUNDLE_PERMISSION_INSERT);
+    DataShare::DataShareValuesBucket values;
+    values.Put(PERMISSION_FILE_ID, fileId);
+    values.Put(PERMISSION_BUNDLE_NAME, bundleName);
+    values.Put(PERMISSION_MODE, mode);
+    return MediaLibraryDataManager::GetInstance()->Insert(addPermission, values);
 }
 
 TestScannerCallback::TestScannerCallback() : status_(-1) {}
