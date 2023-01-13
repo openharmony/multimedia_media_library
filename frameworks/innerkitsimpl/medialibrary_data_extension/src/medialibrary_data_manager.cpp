@@ -45,7 +45,6 @@
 #include "medialibrary_tracer.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
-#include "sa_mgr_client.h"
 #include "system_ability_definition.h"
 #include "timer.h"
 #include "permission_utils.h"
