@@ -161,7 +161,6 @@ bool ThumbnailUriUtils::IsNumber(const string &str)
 
     for (char const &c : str) {
         if (isdigit(c) == 0) {
-            MEDIA_ERR_LOG("Index is not a number %{public}s", str.c_str());
             return false;
         }
     }
