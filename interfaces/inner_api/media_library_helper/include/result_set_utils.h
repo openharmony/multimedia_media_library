@@ -44,33 +44,28 @@ public:
             case ResultSetDataType::TYPE_STRING: {
                 std::string stringVal;
                 err = resultSet->GetString(index, stringVal);
-                CHECK_AND_ERR_LOG(!err, "get string err %{public}d", err);
                 data = stringVal;
                 break;
             }
             case ResultSetDataType::TYPE_INT32: {
                 int32_t integerVal;
                 err = resultSet->GetInt(index, integerVal);
-                CHECK_AND_ERR_LOG(!err, "get int err %{public}d", err);
                 data = integerVal;
                 break;
             }
             case ResultSetDataType::TYPE_INT64: {
                 int64_t integer64Val;
                 err = resultSet->GetLong(index, integer64Val);
-                CHECK_AND_ERR_LOG(!err, "get int64 err %{public}d", err);
                 data = integer64Val;
                 break;
             }
             case ResultSetDataType::TYPE_DOUBLE: {
                 double doubleVal;
                 err = resultSet->GetDouble(index, doubleVal);
-                CHECK_AND_ERR_LOG(!err, "get double err %{public}d", err);
                 data = doubleVal;
                 break;
             }
             default: {
-                COMMON_ERR_LOG("invalid data type %{public}d", type);
                 break;
             }
         }
