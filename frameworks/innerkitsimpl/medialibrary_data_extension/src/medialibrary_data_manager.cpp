@@ -136,22 +136,17 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS:
     }
 
     context_ = context;
-    int32_t ret = InitMediaLibraryRdbStore();
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init MediaLibraryLibraryRdbStore");
+    InitMediaLibraryRdbStore();
 
-    ret = InitDeviceData();
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init DeviceData");
+    InitDeviceData();
 
-    ret = MakeDirQuerySetMap(dirQuerySetMap_);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to MakeDirQuerySetMap");
+    MakeDirQuerySetMap(dirQuerySetMap_);
 
     MakeRootDirs();
-    ret = InitialiseKvStore();
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init KvStore");
+    InitialiseKvStore();
 
-    ret = InitialiseThumbnailService(extensionContext);
+    InitialiseThumbnailService(extensionContext);
     DoTrashAging();
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to init ThumbnailService");
     refCnt_++;
     return E_OK;
 }
