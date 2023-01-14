@@ -21,6 +21,7 @@
 #include "album_asset.h"
 #include "datashare_predicates.h"
 #include "device_manager.h"
+#include "directory_ex.h"
 #include "fetch_result.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -30,6 +31,7 @@
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_errno.h"
+#include "media_privacy_manager.h"
 #include "result_set_utils.h"
 #include "string_ex.h"
 #include "thumbnail_service.h"
@@ -642,6 +644,18 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
     return E_SUCCESS;
 }
 
+static int32_t OpenAsset(const string &filePath, const string &mode)
+{
+    std::string absFilePath;
+    if (!PathToRealPath(filePath, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to get real path: %{private}s", filePath.c_str());
+        return E_ERR;
+    }
+    MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
+
+    return MediaPrivacyManager(absFilePath, mode).Open();
+}
+
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
     MEDIA_DEBUG_LOG("enter");
@@ -653,7 +667,7 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     }
 
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
-    int32_t fd = fileAsset->OpenAsset(path, mode);
+    int32_t fd = OpenAsset(path, mode);
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
         return E_HAS_FS_ERROR;
@@ -1244,7 +1258,7 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
         return E_INVALID_URI;
     }
     string srcPath = MediaFileUtils::UpdatePath(srcFileAsset->GetPath(), srcFileAsset->GetUri());
-    int32_t srcFd = srcFileAsset->OpenAsset(srcPath, MEDIA_FILEMODE_READWRITE);
+    int32_t srcFd = OpenAsset(srcPath, MEDIA_FILEMODE_READWRITE);
     // dest asset
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     ValuesBucket values;
@@ -1269,7 +1283,7 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
         return E_INVALID_URI;
     }
     string destPath = MediaFileUtils::UpdatePath(destFileAsset->GetPath(), destFileAsset->GetUri());
-    int32_t destFd = destFileAsset->OpenAsset(destPath, MEDIA_FILEMODE_READWRITE);
+    int32_t destFd = OpenAsset(destPath, MEDIA_FILEMODE_READWRITE);
     return CopyAssetByFd(srcFd, srcFileAsset->GetId(), destFd, outRow);
 }
 

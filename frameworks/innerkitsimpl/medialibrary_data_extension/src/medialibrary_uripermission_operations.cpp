@@ -19,6 +19,7 @@
 #include "ipc_skeleton.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "permission_utils.h"
 #include "result_set_utils.h"
