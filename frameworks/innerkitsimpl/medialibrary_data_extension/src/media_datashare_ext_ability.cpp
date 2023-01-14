@@ -214,7 +214,7 @@ std::vector<std::string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, 
     return ret;
 }
 
-static int CheckOpenFilePermission(string &uri, string mode)
+static int CheckOpenFilePermission(string &uri, string &mode)
 {
     bool shouldCheckType = false;
     string typeMask;
