@@ -21,12 +21,6 @@
 
 using namespace std;
 
-namespace {
-    const int ARG_INT32 = 0;
-    const int ARG_INT64 = 1;
-    const int ARG_STRING = 2;
-}
-
 namespace OHOS {
 namespace Media {
 static const unordered_map<string, ResultSetDataType> RESULT_TYPE_MAP = {
@@ -333,23 +327,14 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Ab
         resultset_->GetAllColumnNames(columnNames);
     }
     int32_t index = -1;
+    auto &map = fileAsset->GetMemberMap();
     for (const auto &name : columnNames) {
         index++;
         if (RESULT_TYPE_MAP.count(name) == 0) {
             continue;
         }
         auto memberType = RESULT_TYPE_MAP.at(name);
-        auto &memberValue = fileAsset->GetMemberValue(name);
-        const auto &result = GetValByIndex(index, memberType, resultSet);
-        if (result.index() == ARG_INT32) {
-            memberValue = get<ARG_INT32>(result);
-        } else if (result.index() == ARG_INT64) {
-            memberValue = get<ARG_INT64>(result);
-        } else if (result.index() == ARG_STRING) {
-            memberValue = get<ARG_STRING>(result);
-        } else {
-            MEDIA_ERR_LOG("args %{public}s fail, type:%{public}d", name.c_str(), static_cast<int>(result.index()));
-        }
+        map.emplace(move(name), move(GetValByIndex(index, memberType, resultSet)));
     }
     fileAsset->SetResultNapiType(resultNapiType_);
     fileAsset->SetCount(GetFileCount(resultset_));
