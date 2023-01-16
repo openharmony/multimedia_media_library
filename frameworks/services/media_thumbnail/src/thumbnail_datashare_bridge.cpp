@@ -16,6 +16,7 @@
 
 #include "thumbnail_datashare_bridge.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 #include "media_log.h"
 
 namespace OHOS {
@@ -50,21 +51,7 @@ int ThumbnailDataShareBridge::GetRowCount(int32_t &count)
         MEDIA_ERR_LOG("singleKvStorePtr_ nullptr");
         return E_ERR;
     }
-    sem_.Wait();
-    singleKvStorePtr_->GetResultSet(thumbnailKey_, kvResultSet);
-    if (kvResultSet == nullptr) {
-        MEDIA_ERR_LOG("kvResultSet nullptr");
-        sem_.Signal();
-        return E_ERR;
-    }
-    count = kvResultSet->GetCount();
-    if (count < 0) {
-        MEDIA_ERR_LOG("kvResultSet count error: %{public}d", count);
-        sem_.Signal();
-        return E_ERR;
-    }
-    singleKvStorePtr_->CloseResultSet(kvResultSet);
-    sem_.Signal();
+    count = 1;
     return E_OK;
 }
 
@@ -81,69 +68,38 @@ bool ThumbnailDataShareBridge::FillBlock(int pos, ResultSetBridge::Writer &write
         return false;
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("ThumbnailDataShareBridge::Get");
     sem_.Wait();
-    std::shared_ptr<KvStoreResultSet> kvResultSet;
-    singleKvStorePtr_->GetResultSet(thumbnailKey_, kvResultSet);
-    if (kvResultSet == nullptr) {
-        MEDIA_ERR_LOG("kvResultSet nullptr");
-        sem_.Signal();
-        return false;
-    }
-    if (!kvResultSet->MoveToPosition(pos)) {
-        MEDIA_ERR_LOG("MoveToPosition failed");
-        sem_.Signal();
-        return false;
-    }
-    Entry entry;
-    Status status = kvResultSet->GetEntry(entry);
+    Key key(thumbnailKey_);
+    Value value;
+    Status status = singleKvStorePtr_->Get(key, value);
     if (status != Status::SUCCESS) {
         MEDIA_ERR_LOG("GetEntry failed: %{public}d", status);
         sem_.Signal();
         return false;
     }
-    status = singleKvStorePtr_->CloseResultSet(kvResultSet);
-    if (status != Status::SUCCESS) {
-        MEDIA_ERR_LOG("CloseResultSet failed: %{public}d", status);
-        sem_.Signal();
-        return false;
-    }
     sem_.Signal();
+    tracer.Finish();
 
+    tracer.Start("ThumbnailDataShareBridge::Writer");
     int statusAlloc = writer.AllocRow();
     if (statusAlloc != E_OK) {
         MEDIA_ERR_LOG("ShraedBlock is full: %{public}d", statusAlloc);
         return false;
     }
-    int keyStatus = writer.Write(0, entry.key.ToString().c_str(), entry.key.Size() + 1);
+    int keyStatus = writer.Write(0, key.ToString().c_str(), key.Size() + 1);
     if (keyStatus != E_OK) {
         MEDIA_ERR_LOG("WriterBlob key error: %{public}d", keyStatus);
         return false;
     }
-    int valueStatus = writer.Write(1, entry.value.ToString().c_str(), entry.value.Size() + 1);
+    int valueStatus = writer.Write(1, value.ToString().c_str(), value.Size() + 1);
     if (valueStatus != E_OK) {
         MEDIA_ERR_LOG("WriterBlob key error: %{public}d", valueStatus);
         return false;
     }
 
     return true;
-}
-
-int ThumbnailDataShareBridge::Count(std::shared_ptr<KvStoreResultSet> &kvResultSet)
-{
-    if (kvResultSet == nullptr) {
-        MEDIA_ERR_LOG("kvResultSet nullptr");
-        return E_ERR;
-    }
-    if (resultRowCount_ != INVALID_COUNT) {
-        return resultRowCount_;
-    }
-    int count = kvResultSet->GetCount();
-    if (count < 0) {
-        MEDIA_ERR_LOG("kvResultSet count invalid: %{pubilc}d", count);
-        return E_ERR;
-    }
-    resultRowCount_ = count;
-    return count;
 }
 
 int ThumbnailDataShareBridge::OnGo(int32_t start, int32_t target, ResultSetBridge::Writer &writer)
