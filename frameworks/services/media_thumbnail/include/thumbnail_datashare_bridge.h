@@ -52,11 +52,8 @@ public:
 private:
     ThumbnailDataShareBridge() = default;
     ThumbnailDataShareBridge(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore, const std::string &key);
-    int Count(std::shared_ptr<DistributedKv::KvStoreResultSet> &kvResultSet);
     bool FillBlock(int startRowIndex, DataShare::ResultSetBridge::Writer &Writer);
 
-    static constexpr int32_t INVALID_COUNT = -1;
-    int32_t resultRowCount_ {INVALID_COUNT};
     std::shared_ptr<DistributedKv::SingleKvStore> singleKvStorePtr_;
     std::string thumbnailKey_;
     static ThumbnailSemaphore sem_;
