@@ -1407,12 +1407,6 @@ static unique_ptr<PixelMap> QueryThumbnail(std::string &uri, Size &size, const s
         NAPI_ERR_LOG("Query thumbnail error");
         return nullptr;
     }
-    int rowCount = 0;
-    int err = resultSet->GetRowCount(rowCount);
-    if ((err != DataShare::E_OK) || (rowCount <= 0)) {
-        NAPI_ERR_LOG("GetRowCount err %{public}d", err);
-        return nullptr;
-    }
     tracer.Finish();
 
     unique_ptr<PixelMap> pixelMap;
