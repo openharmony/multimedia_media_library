@@ -19,6 +19,7 @@
 #include <regex>
 
 #include "file_asset.h"
+#include "get_self_permissions.h"
 #include "js_runtime.h"
 #include "media_file_ext_ability.h"
 #include "media_file_extention_utils.h"
@@ -92,6 +93,11 @@ void MediaLibraryFileExtUnitTest::SetUpTestCase(void)
 
     ArkJsRuntime runtime;
     mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
+
+    vector<string> perms = { "ohos.permission.MEDIA_LOCATION" };
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryQueryPerfUnitTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
 }
 
 void MediaLibraryFileExtUnitTest::TearDownTestCase(void) {}

@@ -25,6 +25,7 @@ ohos_unittest("medialibrary_fileext_unittest") {
 
   include_dirs = [
     "./include",
+    "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
     "${MEDIA_LIB_INTERFACES_INNER_DIR}/media_library_helper/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_file_extension/include",
@@ -32,6 +33,7 @@ ohos_unittest("medialibrary_fileext_unittest") {
   ]
 
   sources = [
+    "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_fileext_test.cpp",
   ]
@@ -50,6 +52,9 @@ ohos_unittest("medialibrary_fileext_unittest") {
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
     "ability_runtime:runtime",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken",
+    "access_token:libtoken_setproc",
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_provider",
