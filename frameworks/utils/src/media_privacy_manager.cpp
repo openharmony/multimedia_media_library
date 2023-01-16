@@ -189,7 +189,7 @@ static int32_t SortRangesAndCheck(PrivacyRanges &ranges)
     if (ranges.empty()) {
         return E_SUCCESS;
     }
-    auto size = ranges.size();
+    int32_t size = ranges.size();
     if (size > PRIVACY_MAX_RANGES) {
         MEDIA_ERR_LOG("Privacy ranges size invalid: %{public}d", size);
         return -EINVAL;
@@ -202,7 +202,7 @@ static int32_t SortRangesAndCheck(PrivacyRanges &ranges)
         return -EINVAL;
     }
 
-    for (size_t i = 1; i < size; i++) {
+    for (int32_t i = 1; i < size; i++) {
         if ((ranges[i].first >= ranges[i].second) || (ranges[i].first < ranges[i - 1].second)) {
             MEDIA_ERR_LOG("Invalid ranges: [%{public}u, %{public}u), last range is [%{public}u, %{public}u)",
                           ranges[i].first, ranges[i].second, ranges[i - 1].first, ranges[i - 1].second);
