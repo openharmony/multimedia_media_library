@@ -249,9 +249,6 @@ shared_ptr<AbsSharedResultSet> MediaLibraryFileOperations::QueryFileOperation(
     tracer.Start("QueryFile RdbStore->Query");
     queryResultSet = uniStore->Query(cmd, columns);
     tracer.Finish();
-    int32_t count = -1;
-    queryResultSet->GetRowCount(count);
-    MEDIA_INFO_LOG("QueryFile count is %{public}d", count);
     return queryResultSet;
 }
 } // namespace Media
