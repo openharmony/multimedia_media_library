@@ -2451,5 +2451,56 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_004, TestSize.Level0)
     MEDIA_INFO_LOG("mtp_operation_utils_004::End");
 }
 
+/**
+ * @tc.number    : mtp_medialibrary_manager_001
+ * @tc.name      : mtp_medialibrary_manager_001
+ * @tc.desc      :
+ */
+HWTEST_F(MtpNativeTest, mtp_medialibrary_manager_001, TestSize.Level0)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
+    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = MTP_FORMAT_TEXT_CODE;
+    context->handle = 1;
+    context->property = 1;
+    uint64_t outIntVal = 0;
+    uint128_t outLongVal = {0};
+    string outStrVal;
+    shared_ptr<vector<Property>> outProps;
+
+    int32_t ret = MtpMedialibraryManager::GetInstance()->GetObjectPropValue(context, outIntVal, outLongVal, outStrVal);
+    EXPECT_TRUE(ret == E_SUCCESS);
+    context->depth = 0;
+    ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
+    EXPECT_TRUE(ret == MTP_ERROR_INVALID_OBJECTHANDLE);
+    context->handle = MTP_ALL_HANDLE_ID;
+    ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
+    EXPECT_TRUE(ret == MTP_ERROR_INVALID_OBJECTHANDLE);
+    context->depth = 1;
+    ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
+    EXPECT_TRUE(ret == E_SUCCESS);
+    context->handle = 1;
+    ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
+    EXPECT_TRUE(ret != E_SUCCESS);
+    context->depth = -1; // unsupport depth
+    ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
+    EXPECT_TRUE(ret == MTP_ERROR_SPECIFICATION_BY_DEPTH_UNSUPPORTED);
+    context->depth = MTP_ALL_DEPTH;
+    context->handle = 0;
+    ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
+    EXPECT_TRUE(ret == MTP_ERROR_INVALID_OBJECTHANDLE);
+    context->property = 0;
+    context->groupCode = 0;
+    ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
+    EXPECT_TRUE(ret == MTP_ERROR_PARAMETER_NOT_SUPPORTED);
+    context->groupCode = 1;
+    ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
+    EXPECT_TRUE(ret == MTP_ERROR_SPECIFICATION_BY_GROUP_UNSUPPORTED);
+
+    MEDIA_INFO_LOG("mtp_medialibrary_manager_001::End");
+}
+
 } // namespace Media
 } // ohos
