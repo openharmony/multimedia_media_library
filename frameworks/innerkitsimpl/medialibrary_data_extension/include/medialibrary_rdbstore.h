@@ -48,12 +48,18 @@ public:
     std::shared_ptr<NativeRdb::RdbStore> GetRaw() const;
     std::string ObtainTableName(MediaLibraryCommand &cmd) override;
 
+    static int32_t InsertWithWhereExists(const std::string &table,
+        const NativeRdb::ValuesBucket &values,
+        const bool exists, const NativeRdb::AbsRdbPredicates &predicates);
+    static std::shared_ptr<NativeRdb::ResultSet> Query(const NativeRdb::AbsRdbPredicates &predicates,
+        const std::vector<std::string> &columns);
+
 private:
     bool SubscribeRdbStoreObserver();
     bool UnSubscribeRdbStoreObserver();
 
     static constexpr int RDB_CONNECT_NUM = 10;
-    std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
     std::string bundleName_{BUNDLE_NAME};
     NativeRdb::RdbStoreConfig config_{""};

@@ -17,6 +17,9 @@
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_DATA_ABILITY_CONST_H_
 
 #include "medialibrary_type_const.h"
+#include "media_column.h"
+#include "userfilemgr_uri.h"
+
 namespace OHOS {
 namespace Media {
 #ifdef RDB_UPGRADE_MOCK
@@ -54,7 +57,6 @@ const std::string MEDIALIBRARY_TYPE_SMARTALBUM_CHANGE_URI  =  "/smartalbum";
 const std::string MEDIALIBRARY_TYPE_DEVICE_URI  =  "/device";
 const std::string MEDIALIBRARY_TYPE_SMART_URI = "/smart";
 
-const std::string MEDIALIBRARY_DATA_URI = "datashare:///media";
 const std::string MEDIALIBRARY_SMARTALBUM_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_TABLE;
 const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_MAP_TABLE;
 const std::string MEDIALIBRARY_CATEGORY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/"
@@ -193,7 +195,7 @@ const std::string CREATE_BUNDLE_PREMISSION_TABLE = "CREATE TABLE IF NOT EXISTS "
                                       PERMISSION_FILE_ID + " INT NOT NULL, " +
                                       PERMISSION_MODE + " TEXT NOT NULL)";
 
-const std::string CREATE_IMAGE_VIEW = "CREATE VIEW Image AS SELECT " +
+const std::string CREATE_IMAGE_VIEW = "CREATE VIEW IF NOT EXISTS Image AS SELECT " +
                                       MEDIA_DATA_DB_ID + ", " +
                                       MEDIA_DATA_DB_FILE_PATH + ", " +
                                       MEDIA_DATA_DB_SIZE + ", " +
@@ -217,7 +219,7 @@ const std::string CREATE_IMAGE_VIEW = "CREATE VIEW Image AS SELECT " +
                                       "FROM Files WHERE " +
                                       MEDIA_DATA_DB_MEDIA_TYPE + " = 3";
 
-const std::string CREATE_VIDEO_VIEW = "CREATE VIEW Video AS SELECT " +
+const std::string CREATE_VIDEO_VIEW = "CREATE VIEW IF NOT EXISTS Video AS SELECT " +
                                       MEDIA_DATA_DB_ID + ", " +
                                       MEDIA_DATA_DB_FILE_PATH + ", " +
                                       MEDIA_DATA_DB_SIZE + ", " +
@@ -238,7 +240,7 @@ const std::string CREATE_VIDEO_VIEW = "CREATE VIEW Video AS SELECT " +
                                       "FROM Files WHERE " +
                                       MEDIA_DATA_DB_MEDIA_TYPE + " = 4";
 
-const std::string CREATE_AUDIO_VIEW = "CREATE VIEW Audio AS SELECT " +
+const std::string CREATE_AUDIO_VIEW = "CREATE VIEW IF NOT EXISTS Audio AS SELECT " +
                                       MEDIA_DATA_DB_ID + ", " +
                                       MEDIA_DATA_DB_FILE_PATH + ", " +
                                       MEDIA_DATA_DB_SIZE + ", " +
@@ -446,59 +448,6 @@ const std::string MEDIALIBRARY_ERROR_TABLE = "Error";
 const std::string MEDIA_DATA_ERROR = "err";
 const std::string CREATE_MEDIALIBRARY_ERROR_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_ERROR_TABLE + " ("
     + MEDIA_DATA_ERROR + " TEXT PRIMARY KEY)";
-
-// File operations constants
-const std::string MEDIA_OPERN_KEYWORD = "operation";
-const std::string MEDIA_FILEOPRN = "file_operation";
-const std::string MEDIA_PHOTOOPRN = "photo_operation";
-const std::string MEDIA_AUDIOOPRN = "audio_operation";
-const std::string MEDIA_DOCUMENTOPRN = "document_operation";
-const std::string MEDIA_ALBUMOPRN = "album_operation";
-const std::string MEDIA_DIROPRN = "dir_operation";
-const std::string MEDIA_QUERYOPRN = "query_operation";
-const std::string MEDIA_SMARTALBUMOPRN = "albumsmart_operation";
-const std::string MEDIA_SMARTALBUMMAPOPRN = "smartalbummap_operation";
-const std::string MEDIA_FILEOPRN_CREATEASSET = "create_asset";
-const std::string MEDIA_FILEOPRN_MODIFYASSET = "modify_asset";
-const std::string MEDIA_FILEOPRN_DELETEASSET = "delete_asset";
-const std::string MEDIA_FILEOPRN_TRASHASSET = "trash_asset";
-const std::string MEDIA_FILEOPRN_COPYASSET = "copy_asset";
-const std::string MEDIA_FILEOPRN_GETALBUMCAPACITY = "get_album_capacity";
-const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
-const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
-const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
-
-// BoardCast operation
-const std::string MEDIA_BOARDCASTOPRN = "boardcast";
-const std::string MEDIA_SCAN_OPERATION = "boardcast_scan";
-
-const std::string THU_OPRN_GENERATES = "thumbnail_generate_operation";
-const std::string THU_OPRN_AGING = "thumbnail_aging_operation";
-const std::string DISTRIBUTE_THU_OPRN_GENERATES = "thumbnail_distribute_generate_operation";
-const std::string DISTRIBUTE_THU_OPRN_AGING = "thumbnail_distribute_aging_operation";
-const std::string DISTRIBUTE_THU_OPRN_CREATE = "thumbnail_distribute_create_operation";
-const std::string BUNDLE_PERMISSION_INSERT = "bundle_permission_insert_operation";
-
-const std::string MEDIA_ALBUMOPRN_CREATEALBUM = "create_album";
-const std::string MEDIA_ALBUMOPRN_MODIFYALBUM = "modify_album";
-const std::string MEDIA_ALBUMOPRN_DELETEALBUM = "delete_album";
-const std::string MEDIA_ALBUMOPRN_QUERYALBUM = "query_album";
-const std::string MEDIA_SMARTALBUMOPRN_CREATEALBUM = "create_smartalbum";
-const std::string MEDIA_SMARTALBUMOPRN_MODIFYALBUM = "modify_smartalbum";
-const std::string MEDIA_SMARTALBUMOPRN_DELETEALBUM = "delete_smartalbum";
-const std::string MEDIA_DIROPRN_DELETEDIR = "delete_dir";
-const std::string MEDIA_DIROPRN_CHECKDIR_AND_EXTENSION = "check_dir_and_extension";
-const std::string MEDIA_DIROPRN_FMS_CREATEDIR = "fms_create_dir";
-const std::string MEDIA_DIROPRN_FMS_DELETEDIR = "fms_delete_dir";
-const std::string MEDIA_DIROPRN_FMS_TRASHDIR = "fms_trash_dir";
-const std::string MEDIA_QUERYOPRN_QUERYVOLUME = "query_media_volume";
-const std::string MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM = "add_smartalbum_map";
-const std::string MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM = "remove_smartalbum_map";
-const std::string MEDIA_SMARTALBUMMAPOPRN_AGEINGSMARTALBUM = "ageing_smartalbum_map";
-const std::string MEDIA_FILEMODE = "mode";
-
-const std::string MEDIA_DEVICE_QUERYALLDEVICE = "query_all_device";
-const std::string MEDIA_DEVICE_QUERYACTIVEDEVICE = "query_active_device";
 } // namespace Media
 } // namespace OHOS
 

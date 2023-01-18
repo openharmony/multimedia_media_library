@@ -21,8 +21,8 @@
 
 #include "userfile_manager_types.h"
 
-namespace OHOS {
-namespace Media {
+namespace OHOS::Media {
+
 const std::string MEDIA_FILEMODE_READONLY = "r";
 const std::string MEDIA_FILEMODE_WRITEONLY = "w";
 const std::string MEDIA_FILEMODE_READWRITE = "rw";
@@ -50,19 +50,22 @@ class MediaFileUtils {
 public:
     static bool IsFileExists(const std::string &fileName);
     static bool IsDirEmpty(const std::string &path);
-    static bool CreateFile(const std::string &fileName);
+    static bool CreateFile(const std::string &filePath);
     static bool DeleteFile(const std::string &fileName);
     static bool DeleteDir(const std::string &dirName);
     static int32_t RemoveDirectory(const std::string &path);
     static std::string GetFilename(const std::string &filePath);
-    static std::string GetParentPath(const std::string &path);
+    static std::string GetFirstDentry(const std::string &path);
+    static std::string GetLastDentry(const std::string &path);
     static bool IsDirectory(const std::string &dirName);
     static bool MoveFile(const std::string &oldPath, const std::string &newPath);
     static bool CopyFile(const std::string &filePath, const std::string &newPath);
     static bool RenameDir(const std::string &oldPath, const std::string &newPath);
     static bool CreateDirectory(const std::string &dirPath);
-    static bool CheckDisplayName(const std::string &displayName);
-    static bool CheckTitle(const std::string &title);
+    static int32_t CheckStringSize(const std::string &str, const size_t max);
+    static int32_t CheckAlbumName(const std::string &albumName);
+    static int32_t CheckDisplayName(const std::string &displayName);
+    static int32_t CheckTitle(const std::string &title);
     static int64_t GetAlbumDateModified(const std::string &albumPath);
     static int64_t UTCTimeSeconds();
     static std::string GetNetworkIdFromUri(const std::string &uri);
@@ -74,7 +77,6 @@ public:
     static std::string GetExtensionFromPath(const std::string &path);
     static int32_t OpenFile(const std::string &path, const std::string &mode);
 };
-} // namespace Media
-} // namespace  OHOS
+} // namespace OHOS::Media
 
 #endif // FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_

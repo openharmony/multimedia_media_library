@@ -46,6 +46,7 @@ using std::string;
 namespace OHOS {
 namespace Media {
 static const std::string MEDIA_FILEDESCRIPTOR = "fd";
+static const std::string MEDIA_FILEMODE = "mode";
 
 thread_local napi_ref FileAssetNapi::sConstructor_ = nullptr;
 thread_local FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
@@ -968,8 +969,8 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     MediaLibraryTracer tracer;
     tracer.Start("JSCommitModifyExecute");
 
-    if (!MediaFileUtils::CheckTitle(context->objectPtr->GetTitle()) ||
-        !MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName())) {
+    if ((MediaFileUtils::CheckTitle(context->objectPtr->GetTitle()) < 0) ||
+        (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) < 0)) {
         NAPI_ERR_LOG("JSCommitModify CheckDisplayName fail");
         context->error = JS_E_DISPLAYNAME;
         return;
