@@ -613,9 +613,8 @@ static void GetFileAssetsExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     GetFileAssetUpdateSelections(context);
-
-    if (context->fetchColumn.size() == 0) {
-        context->fetchColumn.push_back("*");
+    if (context->fetchColumn.empty()) {
+        context->fetchColumn = FILE_ASSET_COLUMNS;
     }
 
     if (context->extendArgs.find(DATE_FUNCTION) != string::npos) {
