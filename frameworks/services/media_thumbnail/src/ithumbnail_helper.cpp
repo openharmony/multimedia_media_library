@@ -168,7 +168,9 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, true);
+    int err = 0;
     if (ret == WaitStatus::WAIT_SUCCESS) {
+        ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
         return true;
     }
 
@@ -177,7 +179,6 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
     }
 
     if (data.dateModified == 0) {
-        int err = 0;
         ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
     }
 
@@ -205,7 +206,6 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
     }
 
     data.lcd.clear();
-    int err;
     if ((data.dateModified == 0) || force) {
         ThumbnailUtils::DeleteOriginImage(opts, data);
     }
