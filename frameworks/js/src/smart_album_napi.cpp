@@ -1166,7 +1166,7 @@ static void GetFileAssetsNative(napi_env env, void *data)
     context->predicates.SetWhereArgs(context->selectionArgs);
     context->predicates.SetOrder(context->order);
     if (context->fetchColumn.empty()) {
-        context->fetchColumn.push_back("*");
+        context->fetchColumn = FILE_ASSET_COLUMNS;
     }
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         (MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri())) +
