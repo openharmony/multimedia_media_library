@@ -24,6 +24,7 @@ ohos_unittest("medialibrary_datamanager_unittest") {
   module_out_path = "media_library/media_library_datamanager"
   include_dirs = [
     "./include",
+    "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
     "${MEDIA_LIB_INTERFACES_INNER_DIR}/media_library_helper/include",
 
@@ -33,6 +34,7 @@ ohos_unittest("medialibrary_datamanager_unittest") {
   ]
 
   sources = [
+    "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_datamanager_test.cpp",
   ]
@@ -50,6 +52,9 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
     "ability_runtime:runtime",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken",
+    "access_token:libtoken_setproc",
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_provider",

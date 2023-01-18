@@ -16,6 +16,7 @@
 
 #include "medialibrary_datamanager_test.h"
 
+#include "get_self_permissions.h"
 #include "media_file_extention_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -39,6 +40,10 @@ namespace {
 void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
+    vector<string> perms = { "ohos.permission.MEDIA_LOCATION" };
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryQueryPerfUnitTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
 }
 
 void MediaLibraryDataManagerUnitTest::TearDownTestCase(void) {}
