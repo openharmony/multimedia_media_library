@@ -733,7 +733,7 @@ static void CommitModifyNative(napi_env env, void *data)
     auto *context = static_cast<AlbumNapiAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto objectPtr = context->objectPtr;
-    if (!MediaFileUtils::CheckTitle(objectPtr->GetAlbumName())) {
+    if (MediaFileUtils::CheckTitle(objectPtr->GetAlbumName()) < 0) {
         context->error = JS_E_DISPLAYNAME;
         NAPI_ERR_LOG("album name invalid = %{public}s", objectPtr->GetAlbumName().c_str());
         return;

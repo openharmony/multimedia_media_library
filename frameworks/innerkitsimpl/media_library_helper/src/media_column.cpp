@@ -148,5 +148,51 @@ const std::string DocumentColumn::CREATE_DOCUMENT_TABLE = "CREATE TABLE IF NOT E
     MEDIA_PARENT_ID + " INT DEFAULT 0, " +
     MEDIA_RELATIVE_PATH + " TEXT)";
 
+// PhotoAlbum table
+const std::string PhotoAlbum::TABLE = "PhotoAlbum";
+const std::string PhotoAlbum::ALBUM_ID = "album_id";
+const std::string PhotoAlbum::ALBUM_TYPE = "album_type";
+const std::string PhotoAlbum::ALBUM_SUBTYPE = "album_subtype";
+const std::string PhotoAlbum::ALBUM_URI = "album_uri";
+const std::string PhotoAlbum::ALBUM_NAME = "album_name";
+const std::string PhotoAlbum::ALBUM_COVER_URI = "cover_uri";
+const std::string PhotoAlbum::ALBUM_COUNT = "count";
+// For api9 compatibility
+const std::string PhotoAlbum::ALBUM_RELATIVE_PATH = "relative_path";
+
+const std::string PhotoAlbum::ALBUM_URI_PREFIX = "'file://media/album/'";
+
+const std::string PhotoAlbum::CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " +
+    TABLE + " (" +
+    ALBUM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    ALBUM_TYPE + " INT, " +
+    ALBUM_SUBTYPE + " INT, " +
+    ALBUM_URI + " TEXT, " +
+    ALBUM_NAME + " TEXT, " +
+    ALBUM_COVER_URI + " TEXT, " +
+    ALBUM_COUNT + " INT DEFAULT 0, " +
+    ALBUM_RELATIVE_PATH + " TEXT)";
+
+const std::string PhotoAlbum::TRIGGER_UPDATE_ALBUM_URI =
+    "CREATE TRIGGER IF NOT EXISTS photo_album_update_uri AFTER INSERT ON " + TABLE +
+    " BEGIN " +
+        "UPDATE " + TABLE + " SET " + ALBUM_URI + "=" + ALBUM_URI_PREFIX + "||" + "LAST_INSERT_ROWID() " +
+        "WHERE " + ALBUM_ID + "=" + "LAST_INSERT_ROWID();" +
+    " END;";
+
+// PhotoMap table
+const std::string PhotoMap::TABLE = "PhotoMap";
+const std::string PhotoMap::ALBUM_ID = "album_id";
+const std::string PhotoMap::ASSET_ID = "asset_id";
+
+const std::string PhotoMap::CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE +
+    " (" +
+    ALBUM_ID + " INT, " +
+    ASSET_ID + " INT, " +
+    "PRIMARY KEY (" + ALBUM_ID + "," + ASSET_ID + ")" +
+    ")";
+
+const std::string PhotoMap::INDEX_PRIMARY_KEY = "CREATE UNIQUE INDEX map_primary_key ON " + TABLE +
+    " (" + ALBUM_ID + "," + ASSET_ID + ");";
 }  // namespace Media
 }  // namespace OHOS

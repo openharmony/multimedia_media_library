@@ -16,18 +16,23 @@
 
 #include "medialibrary_album_operations.h"
 
+#include "directory_ex.h"
+#include "media_column.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
+
+#include "result_set_utils.h"
 #include "values_bucket.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 
-namespace OHOS {
-namespace Media {
+namespace OHOS::Media {
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
     int64_t outRow = -1;
@@ -72,7 +77,7 @@ string MediaLibraryAlbumOperations::GetDistributedAlbumSql(const string &strQuer
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
-    MediaLibraryCommand &cmd, vector<string> columns)
+    MediaLibraryCommand &cmd, const vector<string> &columns)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
@@ -106,5 +111,87 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperatio
     string querySql = "SELECT * FROM " + cmd.GetTableName();
     return uniStore->QuerySql(querySql);
 }
-} // namespace Media
-} // namespace OHOS
+
+inline int32_t GetStringObject(const ValuesBucket &values, const string &key, string &value)
+{
+    value = "";
+    ValueObject valueObject;
+    if (values.GetObject(PhotoAlbum::ALBUM_NAME, valueObject)) {
+        valueObject.GetString(value);
+    } else {
+        return -EINVAL;
+    }
+    return E_OK;
+}
+
+inline void PrepareUserAlbum(const string &albumName, const string &relativePath, ValuesBucket &values)
+{
+    values.PutString(PhotoAlbum::ALBUM_NAME, albumName);
+    values.PutInt(PhotoAlbum::ALBUM_TYPE, PhotoAlbumType::USER);
+    values.PutInt(PhotoAlbum::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
+
+    if (!relativePath.empty()) {
+        values.PutString(PhotoAlbum::ALBUM_RELATIVE_PATH, relativePath);
+    }
+}
+
+inline void PrepareWhere(const string &albumName, const string &relativePath, NativeRdb::RdbPredicates &predicates)
+{
+    predicates.EqualTo(PhotoAlbum::ALBUM_NAME, albumName);
+    if (relativePath.empty()) {
+        predicates.IsNull(PhotoAlbum::ALBUM_RELATIVE_PATH);
+    } else {
+        predicates.EqualTo(PhotoAlbum::ALBUM_RELATIVE_PATH, relativePath);
+    }
+}
+
+// Caller is responsible for checking @albumName AND @relativePath
+int DoCreatePhotoAlbum(const string &albumName, const string &relativePath)
+{
+    ValuesBucket albumValues;
+    PrepareUserAlbum(albumName, relativePath, albumValues);
+
+    NativeRdb::RdbPredicates wherePredicates(PhotoAlbum::TABLE);
+    PrepareWhere(albumName, relativePath, wherePredicates);
+
+    return MediaLibraryRdbStore::InsertWithWhereExists(PhotoAlbum::TABLE,
+        albumValues, false, wherePredicates);
+}
+
+inline int CreatePhotoAlbum(const string &albumName)
+{
+    int32_t err = MediaFileUtils::CheckAlbumName(albumName);
+    if (err < 0) {
+        return err;
+    }
+
+    return DoCreatePhotoAlbum(albumName, "");
+}
+
+int CreatePhotoAlbum(MediaLibraryCommand &cmd)
+{
+    string albumName;
+    int err = GetStringObject(cmd.GetValueBucket(), PhotoAlbum::ALBUM_NAME, albumName);
+    if (err < 0) {
+        return err;
+    }
+    return CreatePhotoAlbum(albumName);
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
+    const vector<string> &columns)
+{
+    return MediaLibraryRdbStore::Query(*(cmd.GetAbsRdbPredicates()), columns);
+}
+
+int MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(MediaLibraryCommand &cmd)
+{
+    switch (cmd.GetOprnType()) {
+        case OperationType::CREATE:
+            return CreatePhotoAlbum(cmd);
+        default:
+            MEDIA_ERR_LOG("Unknown operation type: %{public}d", cmd.GetOprnType());
+            return E_ERR;
+    }
+}
+} // namespace OHOS::Media

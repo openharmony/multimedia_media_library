@@ -35,11 +35,10 @@
 
 using namespace std;
 
-namespace OHOS {
-namespace Media {
+namespace OHOS::Media {
 static const mode_t CHOWN_RWX_USR_GRP = 02770;
 static const mode_t CHOWN_RW_USR_GRP = 0660;
-static const size_t DISPLAYNAME_MAX = 255;
+constexpr size_t DISPLAYNAME_MAX = 255;
 const int32_t OPEN_FDS = 64;
 constexpr size_t EMPTY_DIR_ENTRY_COUNT = 2;  // Empty dir has 2 entry: . and ..
 
@@ -56,11 +55,7 @@ int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, str
 
 int32_t MediaFileUtils::RemoveDirectory(const string &path)
 {
-    int32_t errCode;
-    char *dirPath = const_cast<char*>(path.c_str());
-
-    errCode = nftw(dirPath, UnlinkCb, OPEN_FDS, FTW_DEPTH | FTW_PHYS);
-    return errCode;
+    return nftw(path.c_str(), UnlinkCb, OPEN_FDS, FTW_DEPTH | FTW_PHYS);
 }
 
 bool MediaFileUtils::CreateDirectory(const string &dirPath)
@@ -73,16 +68,16 @@ bool MediaFileUtils::CreateDirectory(const string &dirPath)
      *  Created directory will be the base path for the next sub directory.
      */
 
-    stringstream folderStream(dirPath.c_str());
-    while (std::getline(folderStream, segment, '/')) {
-        if (segment == "")    // skip the first "/" in case of "/storage/media/local/files"
+    stringstream folderStream(dirPath);
+    while (getline(folderStream, segment, '/')) {
+        if (segment.empty()) {    // skip the first "/" in case of "/storage/media/local/files"
             continue;
+        }
 
-        subStr = subStr + SLASH_CHAR + segment;
+        subStr.append(SLASH_CHAR + segment);
         if (!IsDirectory(subStr)) {
-            string folderPath = subStr;
             mode_t mask = umask(0);
-            if (mkdir(folderPath.c_str(), CHOWN_RWX_USR_GRP) == -1) {
+            if (mkdir(subStr.c_str(), CHOWN_RWX_USR_GRP) == -1) {
                 MEDIA_ERR_LOG("Failed to create directory %{public}d", errno);
                 umask(mask);
                 return false;
@@ -109,9 +104,8 @@ bool MediaFileUtils::IsDirEmpty(const string &path)
             path.c_str(), errno);
         return false;
     }
-    struct dirent *ent = nullptr;
     size_t entCount = 0;
-    while ((ent = readdir(dir)) != nullptr) {
+    while (readdir(dir) != nullptr) {
         if (++entCount > EMPTY_DIR_ENTRY_COUNT) {
             break;
         }
@@ -119,15 +113,15 @@ bool MediaFileUtils::IsDirEmpty(const string &path)
     if (closedir(dir) < 0) {
         MEDIA_ERR_LOG("Fail to closedir: %{private}s, errno: %{public}d.", path.c_str(), errno);
     }
-    return (entCount > EMPTY_DIR_ENTRY_COUNT) ? false : true;
+    return entCount <= EMPTY_DIR_ENTRY_COUNT;
 }
 
 string MediaFileUtils::GetFilename(const string &filePath)
 {
-    string fileName = "";
+    string fileName;
 
     if (!(filePath.empty())) {
-        size_t lastSlash = filePath.rfind("/");
+        size_t lastSlash = filePath.rfind('/');
         if (lastSlash != string::npos) {
             if (filePath.size() > (lastSlash + 1)) {
                 fileName = filePath.substr(lastSlash + 1, filePath.length() - lastSlash);
@@ -178,7 +172,7 @@ bool MediaFileUtils::DeleteFile(const string &fileName)
     return (remove(fileName.c_str()) == SUCCESS);
 }
 
-bool MediaFileUtils::DeleteDir(const std::string &dirName)
+bool MediaFileUtils::DeleteDir(const string &dirName)
 {
     bool errRet = false;
 
@@ -202,14 +196,14 @@ bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath)
 
 bool CopyFileUtil(const string &filePath, const string &newPath)
 {
-    struct stat fst;
+    struct stat fst{};
     bool errCode = false;
     if (filePath.size() >= PATH_MAX) {
         MEDIA_ERR_LOG("File path too long %{public}d", static_cast<int>(filePath.size()));
         return errCode;
     }
     MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
-    std::string absFilePath = "";
+    string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
         return errCode;
@@ -235,7 +229,7 @@ bool CopyFileUtil(const string &filePath, const string &newPath)
 
     if (fstat(source, &fst) == SUCCESS) {
         // Copy file content
-        if (sendfile(dest, source, 0, fst.st_size) != E_ERR) {
+        if (sendfile(dest, source, nullptr, fst.st_size) != E_ERR) {
             // Copy ownership and mode of source file
             if (fchown(dest, fst.st_uid, fst.st_gid) == SUCCESS &&
                 fchmod(dest, fst.st_mode) == SUCCESS) {
@@ -268,7 +262,7 @@ bool MediaFileUtils::CopyFile(const string &filePath, const string &newPath)
             errCode = CreateDirectory(newPath);
         }
         if (errCode) {
-            string canonicalDirPath = "";
+            string canonicalDirPath;
             if (!PathToRealPath(newPath, canonicalDirPath)) {
                 MEDIA_ERR_LOG("Failed to obtain the canonical path for newpath %{private}s %{public}d",
                               filePath.c_str(), errno);
@@ -296,35 +290,80 @@ bool MediaFileUtils::RenameDir(const string &oldPath, const string &newPath)
     return errRet;
 }
 
-bool MediaFileUtils::CheckDisplayName(const std::string &displayName)
+int32_t MediaFileUtils::CheckStringSize(const string &str, const size_t max)
 {
-    size_t size = displayName.length();
-    if (size == 0 || size > DISPLAYNAME_MAX) {
-        MEDIA_ERR_LOG("display name size err, size = %{public}zu", size);
-        return false;
+    size_t size = str.length();
+    if (size == 0) {
+        return -EINVAL;
     }
-    std::regex express(DISPLAYNAME_REGEX_CHECK);
-    bool bValid = std::regex_search(displayName, express);
-    if ((displayName.at(0) == '.') || bValid) {
-        MEDIA_ERR_LOG("CheckDisplayName fail %{private}s", displayName.c_str());
-        return false;
+    if (size > max) {
+        return -ENAMETOOLONG;
     }
-    return true;
+    return E_OK;
 }
 
-bool MediaFileUtils::CheckTitle(const std::string &title)
+static inline bool RegexCheck(const string &str, const string &regexStr)
 {
-    size_t size = title.length();
-    if (size == 0 || size > DISPLAYNAME_MAX) {
-        MEDIA_ERR_LOG("title size err, size = %{public}zu", size);
-        return false;
+    const regex express(regexStr);
+    return regex_search(str, express);
+}
+
+int32_t MediaFileUtils::CheckDisplayName(const string &displayName)
+{
+    int err = CheckStringSize(displayName, DISPLAYNAME_MAX);
+    if (err < 0) {
+        return err;
     }
-    std::regex express("[\\.\\\\/:*?\"\'`<>|{}\\[\\]]");
-    bool bValid = std::regex_search(title, express);
-    if (bValid) {
-        MEDIA_ERR_LOG("CheckTitle title fail %{private}s", title.c_str());
+    if (displayName.at(0) == '.') {
+        return -EINVAL;
     }
-    return !bValid;
+
+    const static string DISPLAYNAME_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
+    if (RegexCheck(displayName, DISPLAYNAME_REGEX_CHECK)) {
+        return -EINVAL;
+    }
+    return E_OK;
+}
+
+int32_t MediaFileUtils::CheckTitle(const string &title)
+{
+    int err = CheckStringSize(title, DISPLAYNAME_MAX);
+    if (err < 0) {
+        return err;
+    }
+
+    const static string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
+    if (RegexCheck(title, TITLE_REGEX_CHECK)) {
+        MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
+        return -EINVAL;
+    }
+    return E_OK;
+}
+
+int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
+{
+    return CheckTitle(albumName);
+}
+
+string MediaFileUtils::GetLastDentry(const string &path)
+{
+    string dentry = path;
+    size_t slashIndex = path.rfind('/');
+    if (slashIndex != string::npos) {
+        dentry = path.substr(slashIndex + 1);
+    }
+    return dentry;
+}
+
+// @path should NOT start with OR end with '/'
+string MediaFileUtils::GetFirstDentry(const string &path)
+{
+    string dentry = path;
+    size_t slashIndex = path.find('/');
+    if (slashIndex != string::npos) {
+        dentry = path.substr(0, slashIndex);
+    }
+    return dentry;
 }
 
 int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)
@@ -338,12 +377,13 @@ int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)
 
 int64_t MediaFileUtils::UTCTimeSeconds()
 {
-    struct timespec t;
+    struct timespec t{};
     t.tv_sec = 0;
     t.tv_nsec = 0;
     clock_gettime(CLOCK_REALTIME, &t);
     return (int64_t)(t.tv_sec);
 }
+
 string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
 {
     string networkId;
@@ -422,11 +462,11 @@ string MediaFileUtils::GetUriByNameAndId(const string &displayName, const string
     return MediaFileUtils::GetFileMediaTypeUri(mediaType, networkId) + SLASH_CHAR + to_string(id);
 }
 
-MediaType MediaFileUtils::GetMediaType(const std::string &filePath)
+MediaType MediaFileUtils::GetMediaType(const string &filePath)
 {
     MediaType mediaType = MEDIA_TYPE_FILE;
 
-    if (filePath.size() == 0) {
+    if (filePath.empty()) {
         return MEDIA_TYPE_ALL;
     }
 
@@ -502,5 +542,4 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
     MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath.c_str());
     return open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
 }
-} // namespace Media
-} // namespace OHOS
+} // namespace OHOS::Media
