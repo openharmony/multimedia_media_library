@@ -1000,10 +1000,6 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     unique_ptr<FileAsset> fileAsset = context->fetchFileResult->GetFirstObject();
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "getFileAssetById: fileAsset is nullptr");
     context->fileAsset = std::move(fileAsset);
-    Media::MediaType mediaType = context->fileAsset->GetMediaType();
-    string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
-    Uri modifyNotify(notifyUri);
-    UserFileClient::NotifyChange(modifyNotify);
 }
 
 static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void *data)
