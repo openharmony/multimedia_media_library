@@ -80,6 +80,8 @@ public:
     void UnRegisterFromDM();
     void DevOnlineProcess(const DistributedHardware::DmDeviceInfo &devInfo);
     void TryToGetTargetDevMLInfos(const std::string &udid, const std::string &networkId);
+    bool IsHasActiveDevice();
+
 private:
     static constexpr int SHORT_UDID_LEN = 8;
     static constexpr int RANDOM_NUM = 999;

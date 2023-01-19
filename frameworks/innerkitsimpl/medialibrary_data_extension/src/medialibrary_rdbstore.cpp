@@ -19,6 +19,7 @@
 #include "media_log.h"
 #include "medialibrary_device.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 #include "medialibrary_sync_table.h"
 #include "sqlite_database_utils.h"
 using namespace std;
@@ -127,6 +128,8 @@ bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
 int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 {
     MEDIA_DEBUG_LOG("Insert");
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::Insert");
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
@@ -137,11 +140,14 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
         MEDIA_ERR_LOG("rdbStore_->Insert failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-
-    std::vector<std::string> devices = std::vector<std::string>();
-    if (!SyncPushTable(bundleName_, cmd.GetTableName(), devices)) {
-        MEDIA_ERR_LOG("SyncPushTable Error");
+    
+    if (MediaLibraryDevice::GetInstance()->IsHasActiveDevice()) {
+        std::vector<std::string> devices = std::vector<std::string>();
+        if (!SyncPushTable(bundleName_, cmd.GetTableName(), devices)) {
+            MEDIA_ERR_LOG("SyncPushTable Error");
+        }
     }
+    
     MEDIA_DEBUG_LOG("rdbStore_->Insert end, rowId = %d, ret = %{public}d", (int)rowId, ret);
     return ret;
 }
