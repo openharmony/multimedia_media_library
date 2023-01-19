@@ -56,6 +56,7 @@ public:
 
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResult() const;
     FetchResType GetFetchResType();
+    bool CheckIfPropertyPtrNull();
 
 private:
     static void FetchFileResultNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
