@@ -42,27 +42,19 @@ public:
         std::variant<int32_t, std::string, int64_t, double> data;
         switch (type) {
             case ResultSetDataType::TYPE_STRING: {
-                std::string stringVal;
-                err = resultSet->GetString(index, stringVal);
-                data = stringVal;
+                data = GetStringValFromColumn(index, resultSet);
                 break;
             }
             case ResultSetDataType::TYPE_INT32: {
-                int32_t integerVal;
-                err = resultSet->GetInt(index, integerVal);
-                data = integerVal;
+                data = GetIntValFromColumn(index, resultSet);
                 break;
             }
             case ResultSetDataType::TYPE_INT64: {
-                int64_t integer64Val;
-                err = resultSet->GetLong(index, integer64Val);
-                data = integer64Val;
+                data = GetLongValFromColumn(index, resultSet);
                 break;
             }
             case ResultSetDataType::TYPE_DOUBLE: {
-                double doubleVal;
-                err = resultSet->GetDouble(index, doubleVal);
-                data = doubleVal;
+                data = GetDoubleValFromColumn(index, resultSet);
                 break;
             }
             default: {
@@ -71,6 +63,46 @@ public:
         }
 
         return data;
+    }
+
+    template<typename T>
+    static inline std::string GetStringValFromColumn(int index, T &resultSet)
+    {
+        std::string stringVal;
+        if (resultSet->GetString(index, stringVal)) {
+            return "";
+        }
+        return stringVal;
+    }
+
+    template<typename T>
+    static inline int32_t GetIntValFromColumn(int index, T &resultSet)
+    {
+        int32_t integerVal;
+        if (resultSet->GetInt(index, integerVal)) {
+            return 0;
+        }
+        return integerVal;
+    }
+
+    template<typename T>
+    static inline int64_t GetLongValFromColumn(int index, T &resultSet)
+    {
+        int64_t integer64Val;
+        if (resultSet->GetLong(index, integer64Val)) {
+            return 0;
+        }
+        return integer64Val;
+    }
+
+    template<typename T>
+    static inline double GetDoubleValFromColumn(int index, T &resultSet)
+    {
+        double doubleVal;
+        if (resultSet->GetDouble(index, doubleVal)) {
+            return 0;
+        }
+        return doubleVal;
     }
 
 private:
