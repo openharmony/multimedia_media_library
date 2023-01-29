@@ -24,6 +24,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "hitrace_meter.h"
+#include "medialibrary_client_errno.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
@@ -129,10 +130,6 @@
         (context)->ThrowError(env, err);                            \
     } while (0)
 
-#define MODULE_OFFSET  100000
-#define MODULE_CODE(code) (((code) * MODULE_OFFSET))
-#define UFM_JS_ERR(moduleCode, errCode) ((MODULE_CODE(moduleCode))  + (errCode))
-
 namespace OHOS {
 namespace Media {
 /* Constants for array index */
@@ -153,26 +150,9 @@ constexpr uint32_t NAPI_INIT_REF_COUNT = 1;
 constexpr size_t NAPI_ARGC_MAX = 4;
 
 // Error codes
-constexpr int32_t FILEIO_MODULE_CODE = 139;
-constexpr int32_t UFM_MODULE_CODE = 140;
 const int32_t ERR_DEFAULT = 0;
 const int32_t ERR_MEM_ALLOCATION = 2;
 const int32_t ERR_INVALID_OUTPUT = 3;
-
-// file io common error code
-constexpr int32_t JS_ERR_NO_SUCH_FILE =      UFM_JS_ERR(FILEIO_MODULE_CODE, 2);         // no such file
-constexpr int32_t JS_ERR_PERMISSION_DENIED = UFM_JS_ERR(FILEIO_MODULE_CODE, 12);        // permission deny
-constexpr int32_t JS_ERR_FILE_EXIST =        UFM_JS_ERR(FILEIO_MODULE_CODE, 15);        // file has exist
-constexpr int32_t JS_ERR_PARAMETER_INVALID = UFM_JS_ERR(FILEIO_MODULE_CODE, 20);        // input parameter invalid
-
-// userfileMananger error code
-constexpr int32_t JS_ERR_DISPLAYNAME_INVALID            = UFM_JS_ERR(UFM_MODULE_CODE, 1);
-constexpr int32_t JS_RELATIVE_PATH_NOT_EXIST_OR_INVALID = UFM_JS_ERR(UFM_MODULE_CODE, 10);
-constexpr int32_t JS_ERR_INNER_FAIL                     = UFM_JS_ERR(UFM_MODULE_CODE, 11);
-// file type is not allow in the directory
-constexpr int32_t JS_ERR_WRONG_FILE_TYPE                = UFM_JS_ERR(UFM_MODULE_CODE, 12);
-constexpr int32_t JS_ERR_NO_MEMORY                      = UFM_JS_ERR(UFM_MODULE_CODE, 13);    // no memory left
-constexpr int32_t JS_ERR_WRONG_FILE_KEY                 = UFM_JS_ERR(UFM_MODULE_CODE, 14);    // wrong member name
 
 const int32_t TRASH_SMART_ALBUM_ID = 1;
 const std::string TRASH_SMART_ALBUM_NAME = "TrashAlbum";
@@ -225,29 +205,6 @@ const std::vector<std::string> directoryEnumValues {
     "Audios/",
     "Documents/",
     "Download/"
-};
-
-// trans server errorCode to js Error code
-const std::unordered_map<int, int> trans2JsError = {
-    { E_PERMISSION_DENIED,    JS_ERR_PERMISSION_DENIED },
-    { E_FAIL,                 JS_ERR_INNER_FAIL },
-    { E_NO_SUCH_FILE,         JS_ERR_NO_SUCH_FILE },
-    { E_FILE_EXIST,           JS_ERR_FILE_EXIST },
-    { E_NO_MEMORY,            JS_ERR_NO_MEMORY },
-    { E_FILE_NAME_INVALID,    JS_ERR_DISPLAYNAME_INVALID },
-    { E_CHECK_EXTENSION_FAIL, JS_ERR_WRONG_FILE_TYPE },
-    { E_FILE_OPER_FAIL,       JS_ERR_INNER_FAIL },
-};
-
-const std::unordered_map<int, std::string> jsErrMap = {
-    { JS_ERR_PERMISSION_DENIED,   "without medialibrary permission" },
-    { JS_ERR_INNER_FAIL,          "medialibrary inner fail" },
-    { JS_ERR_PARAMETER_INVALID,   "invalid parameter" },
-    { JS_ERR_DISPLAYNAME_INVALID, "display name invalid" },
-    { JS_ERR_NO_SUCH_FILE,        "no such file" },
-    { JS_ERR_FILE_EXIST,          "file has existed" },
-    { JS_ERR_WRONG_FILE_TYPE,     "file type is not allow in the directory" },
-    { JS_ERR_WRONG_FILE_KEY,      "member not exist" },
 };
 
 const std::vector<std::string> fileKeyEnumValues {
@@ -584,7 +541,7 @@ public:
         NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
         // Transfer Server error to napi error code
         if (error <= E_COMMON_START && error >= E_COMMON_END) {
-            error = JS_ERR_INNER_FAIL;
+            error = JS_INNER_FAIL;
         } else if (trans2JsError.count(error)) {
             error = trans2JsError.at(error);
         }

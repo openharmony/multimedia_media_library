@@ -15,6 +15,7 @@
 
 #include "napi_error.h"
 
+#include "medialibrary_client_errno.h"
 #include "medialibrary_napi_utils.h"
 using namespace std;
 

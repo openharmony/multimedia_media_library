@@ -15,7 +15,9 @@
 #define MLOG_TAG "SmartAlbumNapi"
 
 #include "smart_album_napi.h"
+#include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_tracer.h"
 #include "media_file_utils.h"
 #include "userfile_client.h"
 
@@ -486,7 +488,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
                             "/" + MEDIA_SMARTALBUMOPRN_MODIFYALBUM);
         changedRows = UserFileClient::Update(commitModifyUri, predicates, valuesBucket);
     } else {
-        changedRows = E_VIOLATION_PARAMETERS;
+        changedRows = JS_E_DISPLAYNAME;
     }
     context->changedRows = changedRows;
 }

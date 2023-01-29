@@ -261,7 +261,7 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
 {
     if (dirPath.empty()) {
         MEDIA_ERR_LOG("Input parameter dirPath is empty!");
-        return E_VIOLATION_PARAMETERS;
+        return E_INVAVLID_DISPLAY_NAME;
     }
     NativeAlbumAsset dirAsset = GetLastDirExistInDb(dirPath);
     string parentPath = dirAsset.GetAlbumPath();
