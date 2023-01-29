@@ -16,22 +16,18 @@
 
 #include "media_file_ext_ability.h"
 
-#include <fcntl.h>
 #include "extension_context.h"
 #include "file_access_ext_stub_impl.h"
 #include "js_runtime_utils.h"
-#include "js_runtime.h"
 #include "media_file_extention_utils.h"
-#include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_object_utils.h"
-#include "medialibrary_type_const.h"
-#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
+using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::AbilityRuntime;
 using namespace OHOS::FileAccessFwk;
@@ -41,13 +37,13 @@ MediaFileExtAbility::MediaFileExtAbility(JsRuntime& jsRuntime) : jsRuntime_(jsRu
 
 MediaFileExtAbility::~MediaFileExtAbility() {}
 
-MediaFileExtAbility* MediaFileExtAbility::Create(const std::unique_ptr<Runtime>& runtime)
+MediaFileExtAbility* MediaFileExtAbility::Create(const unique_ptr<Runtime>& runtime)
 {
     MEDIA_INFO_LOG("create MediaFileExtAbility");
     return new MediaFileExtAbility(static_cast<JsRuntime&>(*runtime));
 }
 
-static MediaFileExtAbility* MediaFileExtCreator(const std::unique_ptr<Runtime>& runtime)
+static MediaFileExtAbility* MediaFileExtCreator(const unique_ptr<Runtime>& runtime)
 {
     MEDIA_INFO_LOG("MediaFileExtCreator::%s", __func__);
     return  MediaFileExtAbility::Create(runtime);
@@ -59,8 +55,8 @@ __attribute__((constructor)) void RegisterFileExtCreator()
     FileAccessExtAbility::SetCreator(MediaFileExtCreator);
 }
 
-void MediaFileExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &record,
-    const std::shared_ptr<OHOSApplication> &application, std::shared_ptr<AbilityHandler> &handler,
+void MediaFileExtAbility::Init(const shared_ptr<AbilityLocalRecord> &record,
+    const shared_ptr<OHOSApplication> &application, shared_ptr<AbilityHandler> &handler,
     const sptr<IRemoteObject> &token)
 {
     MEDIA_INFO_LOG("Init MediaFileExtAbility");
@@ -89,8 +85,8 @@ sptr<IRemoteObject> MediaFileExtAbility::OnConnect(const AAFwk::Want &want)
 {
     MEDIA_DEBUG_LOG("OnConnect MediaFileExtAbility");
     Extension::OnConnect(want);
-    sptr<FileAccessExtStubImpl> remoteObject = new (std::nothrow) FileAccessExtStubImpl(
-        std::static_pointer_cast<MediaFileExtAbility>(shared_from_this()),
+    sptr<FileAccessExtStubImpl> remoteObject = new (nothrow) FileAccessExtStubImpl(
+        static_pointer_cast<MediaFileExtAbility>(shared_from_this()),
         reinterpret_cast<napi_env>(&jsRuntime_.GetNativeEngine()));
     if (remoteObject == nullptr) {
         MEDIA_ERR_LOG("OnConnect MediaFileExtAbility get obj fail");
@@ -100,164 +96,68 @@ sptr<IRemoteObject> MediaFileExtAbility::OnConnect(const AAFwk::Want &want)
     return remoteObject->AsObject();
 }
 
-int MediaFileExtAbility::OpenFile(const Uri &uri, const int flags, int &fd)
+int32_t ConvertErrno(int32_t innerErr)
 {
-    fd = -1;
-    if (!MediaFileExtentionUtils::CheckUriValid(uri.ToString())) {
-        return E_URI_INVALID;
-    }
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri.ToString());
-    if (!networkId.empty() && flags != O_RDONLY) {
-        return E_OPENFILE_INVALID_FLAG;
-    }
-    string mode;
-    if (flags == O_RDONLY) {
-        mode = MEDIA_FILEMODE_READONLY;
-    } else if (flags == O_WRONLY) {
-        mode = MEDIA_FILEMODE_WRITEONLY;
-    } else if (flags == O_RDWR) {
-        mode = MEDIA_FILEMODE_READWRITE;
-    } else {
-        MEDIA_ERR_LOG("invalid OpenFile flags %{private}d", flags);
-        return E_OPENFILE_INVALID_FLAG;
-    }
-    auto ret = MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
-    if (ret < 0) {
-        return ret;
-    } else {
-        fd = ret;
+    if (innerErr >= 0) {
         return E_SUCCESS;
     }
+    int32_t err = JS_INNER_FAIL;
+    if (ClientErrTable.find(innerErr) != ClientErrTable.end()) {
+        err = ClientErrTable.at(innerErr);
+    }
+    return err;
+}
+
+int MediaFileExtAbility::OpenFile(const Uri &uri, const int flags, int &fd)
+{
+    return ConvertErrno(MediaFileExtentionUtils::OpenFile(uri, flags, fd));
 }
 
 int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayName,  Uri &newFileUri)
 {
-    if (!MediaFileUtils::CheckDisplayName(displayName)) {
-        MEDIA_ERR_LOG("invalid file displayName %{private}s", displayName.c_str());
-        return E_INVAVLID_DISPLAY_NAME;
-    }
-    string parentUriStr = parentUri.ToString();
-    auto ret = MediaFileExtentionUtils::CheckUriSupport(parentUriStr);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
-    Uri createFileUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_CREATEASSET);
-    string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(parentUriStr);
-    string albumPath = MediaLibraryObjectUtils::GetPathByIdFromDb(albumId);
-    string relativePath = albumPath.substr(ROOT_MEDIA_DIR.size()) + SLASH_CHAR;
-    string destPath = albumPath + SLASH_CHAR + displayName;
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, MediaFileUtils::GetMediaType(displayName));
-    ret = MediaLibraryDataManager::GetInstance()->Insert(createFileUri, valuesBucket);
-    if (ret > 0) {
-        newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", ret));
-        return E_SUCCESS;
-    } else {
-        MEDIA_ERR_LOG("CreateFile insert fail, %{public}d", ret);
-        return ret;
-    }
+    return ConvertErrno(MediaFileExtentionUtils::CreateFile(parentUri, displayName, newFileUri));
 }
 
 int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, Uri &newFileUri)
 {
-    string parentUriStr = parentUri.ToString();
-    MediaFileUriType uriType;
-    FileAccessFwk::FileInfo parentInfo;
-    parentInfo.uri = parentUriStr;
-    auto ret = MediaFileExtentionUtils::ResolveUri(parentInfo, uriType);
-    if (ret != E_SUCCESS) {
-        MEDIA_ERR_LOG("Mkdir::invalid input fileInfo");
-        return ret;
-    }
-    string relativePath;
-    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
-    if (uriType != MediaFileUriType::URI_FILE_ROOT) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::GetAlbumRelativePathFromDB(parentUriStr, "", relativePath),
-            E_URI_IS_NOT_ALBUM, "selectUri is not valid album uri %{private}s", parentUriStr.c_str());
-    }
-    Uri mkdirUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR + MEDIA_DIROPRN_FMS_CREATEDIR);
-    string dirPath = ROOT_MEDIA_DIR + relativePath + displayName;
-    if (MediaLibraryObjectUtils::IsFileExistInDb(dirPath)) {
-        MEDIA_ERR_LOG("Create dir is existed %{private}s", dirPath.c_str());
-        return E_FILE_EXIST;
-    }
-    relativePath = relativePath + displayName + SLASH_CHAR;
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
-    if (ret > 0) {
-        int32_t dirId = MediaLibraryObjectUtils::GetParentIdByIdFromDb(to_string(ret));
-        newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", dirId));
-        return E_SUCCESS;
-    } else {
-        MEDIA_ERR_LOG("mkdir insert fail, %{public}d", ret);
-        return ret;
-    }
+    return ConvertErrno(MediaFileExtentionUtils::Mkdir(parentUri, displayName, newFileUri));
 }
 
 int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
 {
-    string sourceUri = sourceFileUri.ToString();
-    auto ret = MediaFileExtentionUtils::CheckUriSupport(sourceUri);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
-    auto result = MediaFileExtentionUtils::GetFileFromDB(sourceUri, "");
-    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "GetFileFromDB result set is nullptr");
-    int count = 0;
-    result->GetRowCount(count);
-    CHECK_AND_RETURN_RET_LOG(count > 0, E_FAIL, "AbsSharedResultSet empty");
-    ret = result->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(ret == 0, E_FAIL, "Failed to shift at first row");
-    int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
-    string id = MediaLibraryDataManagerUtils::GetIdFromUri(sourceUri);
-    int fileId = stoi(id);
-    int errCode = 0;
-    DataShareValuesBucket valuesBucket;
-    if (mediaType == MEDIA_TYPE_ALBUM) {
-        valuesBucket.Put(MEDIA_DATA_DB_ID, fileId);
-        Uri trashAlbumUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR +
-            MEDIA_DIROPRN_FMS_TRASHDIR);
-        errCode = MediaLibraryDataManager::GetInstance()->Insert(trashAlbumUri, valuesBucket);
-    } else {
-        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
-        valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileId);
-        Uri trashAssetUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_SMARTALBUMMAPOPRN + SLASH_CHAR +
-            MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
-        errCode = MediaLibraryDataManager::GetInstance()->Insert(trashAssetUri, valuesBucket);
-    }
-    return errCode;
+    return ConvertErrno(MediaFileExtentionUtils::Delete(sourceFileUri));
 }
 
 int MediaFileExtAbility::ListFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-    const DistributedFS::FileFilter &filter, std::vector<FileInfo> &fileList)
+    const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
 {
-    return MediaFileExtentionUtils::ListFile(parentInfo, offset, maxCount, filter, fileList);
+    return ConvertErrno(MediaFileExtentionUtils::ListFile(parentInfo, offset, maxCount, filter, fileList));
 }
 
 int MediaFileExtAbility::ScanFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-    const DistributedFS::FileFilter &filter, std::vector<FileInfo> &fileList)
+    const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
 {
-    return MediaFileExtentionUtils::ScanFile(parentInfo, offset, maxCount, filter, fileList);
+    return ConvertErrno(MediaFileExtentionUtils::ScanFile(parentInfo, offset, maxCount, filter, fileList));
 }
 
-int MediaFileExtAbility::GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList)
+int MediaFileExtAbility::GetRoots(vector<FileAccessFwk::RootInfo> &rootList)
 {
-    return MediaFileExtentionUtils::GetRoots(rootList);
+    return ConvertErrno(MediaFileExtentionUtils::GetRoots(rootList));
 }
 
 int MediaFileExtAbility::Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri)
 {
-    return MediaFileExtentionUtils::Move(sourceFileUri, targetParentUri, newFileUri);
+    return ConvertErrno(MediaFileExtentionUtils::Move(sourceFileUri, targetParentUri, newFileUri));
 }
 
 int MediaFileExtAbility::Rename(const Uri &sourceFileUri, const string &displayName, Uri &newFileUri)
 {
-    return MediaFileExtentionUtils::Rename(sourceFileUri, displayName, newFileUri);
+    return ConvertErrno(MediaFileExtentionUtils::Rename(sourceFileUri, displayName, newFileUri));
 }
 
 int MediaFileExtAbility::Access(const Uri &uri, bool &isExist)
 {
-    return MediaFileExtentionUtils::Access(uri, isExist);
+    return ConvertErrno(MediaFileExtentionUtils::Access(uri, isExist));
 }
 } // Media
 } // OHOS

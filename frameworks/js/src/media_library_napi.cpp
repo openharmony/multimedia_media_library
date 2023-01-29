@@ -20,11 +20,12 @@
 #include <sys/sendfile.h>
 #include "media_file_utils.h"
 #include "hitrace_meter.h"
-#include "medialibrary_peer_info.h"
+#include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_peer_info.h"
 #include "medialibrary_tracer.h"
 #include "smart_album_napi.h"
 #include "directory_ex.h"
@@ -476,12 +477,12 @@ static void GetPublicDirectoryExecute(napi_env env, void *data)
         auto ret = resultSet->GetRowCount(count);
         if (ret != NativeRdb::E_OK) {
             NAPI_ERR_LOG("get rdbstore failed");
-            context->error = JS_ERR_INNER_FAIL;
+            context->error = JS_INNER_FAIL;
             return;
         }
         if (count == 0) {
             NAPI_ERR_LOG("Query for get publicDirectory form db failed");
-            context->error = JS_ERR_INNER_FAIL;
+            context->error = JS_INNER_FAIL;
             return;
         }
         NAPI_ERR_LOG("Query for get publicDirectory count = %{private}d", count);
@@ -1238,11 +1239,11 @@ static void JSCreateAssetExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     if (!CheckTitlePrams(context)) {
-        context->error = JS_ERR_DISPLAYNAME_INVALID;
+        context->error = JS_E_DISPLAYNAME;
         return;
     }
     if ((context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) && (!CheckRelativePathPrams(context))) {
-        context->error = JS_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
+        context->error = JS_E_RELATIVEPATH;
         return;
     }
     string uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
@@ -2633,7 +2634,7 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         NAPI_ERR_LOG("src path is not exist, %{public}d", errno);
         return;
     }
-    context->error = JS_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
+    context->error = JS_E_RELATIVEPATH;
     int32_t srcFd = open(realPath.c_str(), O_RDWR);
     if (srcFd == -1) {
         NAPI_ERR_LOG("src path open fail, %{public}d", errno);
@@ -2764,7 +2765,7 @@ static napi_value GetStoreMediaAssetArgs(napi_env env, napi_value param,
     string fileName = MediaFileUtils::GetFilename(context->storeMediaSrc);
     if (fileName.empty() || (fileName.at(0) == '.')) {
         NAPI_ERR_LOG("src file name is not proper");
-        context->error = JS_RELATIVE_PATH_NOT_EXIST_OR_INVALID;
+        context->error = JS_E_RELATIVEPATH;
         return nullptr;
     };
     context->valuesBucket.Put(MEDIA_DATA_DB_NAME, fileName);

@@ -23,6 +23,7 @@
 #include "fetch_result.h"
 #include "hilog/log.h"
 #include "media_file_utils.h"
+#include "medialibrary_client_errno.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
@@ -971,7 +972,7 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     if (!MediaFileUtils::CheckTitle(context->objectPtr->GetTitle()) ||
         !MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName())) {
         NAPI_ERR_LOG("JSCommitModify CheckDisplayName fail");
-        context->error = JS_ERR_DISPLAYNAME_INVALID;
+        context->error = JS_E_DISPLAYNAME;
         return;
     }
 
@@ -2212,12 +2213,12 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     napi_get_undefined(env, &jsResult);
     if ((status != napi_ok) || (obj == nullptr)) {
-        NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
+        NAPI_THROW(env, asyncContext, JS_E_FILE_KEY);
         return jsResult;
     }
     if (obj->fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
         // no exist throw error
-        NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
+        NAPI_THROW(env, asyncContext, JS_E_FILE_KEY);
         return jsResult;
     }
     auto m = obj->fileAssetPtr->GetMemberMap().at(inputKey);
@@ -2279,11 +2280,11 @@ napi_value FileAssetNapi::UserFileMgrSet(napi_env env, napi_callback_info info)
     FileAssetNapi *obj = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status != napi_ok || obj == nullptr) {
-        NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
+        NAPI_THROW(env, asyncContext, JS_E_FILE_KEY);
         return jsResult;
     }
     if (!obj->HandleParamSet(inputKey, value)) {
-        NAPI_THROW(env, asyncContext, JS_ERR_WRONG_FILE_KEY);
+        NAPI_THROW(env, asyncContext, JS_E_FILE_KEY);
         return jsResult;
     }
     return jsResult;
