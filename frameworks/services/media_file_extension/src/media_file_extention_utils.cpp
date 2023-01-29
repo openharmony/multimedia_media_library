@@ -43,6 +43,11 @@ constexpr int32_t ALBUM_MODE_RW =
 constexpr int32_t FILE_MODE_RW =
     DOCUMENT_FLAG_REPRESENTS_FILE | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
 
+static const std::vector<std::string> FILEINFO_COLUMNS = {
+    MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED, MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME,
+    MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_TRASH, MEDIA_DATA_DB_RELATIVE_PATH
+};
+
 int MediaFileExtentionUtils::OpenFile(const Uri &uri, const int flags, int &fd)
 {
     fd = -1;
@@ -409,13 +414,13 @@ int32_t GetListFilePredicates(const FileInfo &parentInfo, const DistributedFS::F
 static int32_t RootListFile(const FileInfo &parentInfo, vector<FileInfo> &fileList)
 {
     string selectUri = parentInfo.uri;
-    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_FILE_URI, "MEDIA_TYPE_FILE", ALBUM_MODE_READONLY,
+    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_FILE_URI, "", "MEDIA_TYPE_FILE", ALBUM_MODE_READONLY,
         DEFAULT_FILE_MIME_TYPE);
-    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_IMAGE_URI, "MEDIA_TYPE_IMAGE", ALBUM_MODE_READONLY,
+    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_IMAGE_URI, "", "MEDIA_TYPE_IMAGE", ALBUM_MODE_READONLY,
         DEFAULT_IMAGE_MIME_TYPE);
-    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_VIDEO_URI, "MEDIA_TYPE_VIDEO", ALBUM_MODE_READONLY,
+    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_VIDEO_URI, "", "MEDIA_TYPE_VIDEO", ALBUM_MODE_READONLY,
         DEFAULT_VIDEO_MIME_TYPE);
-    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_AUDIO_URI, "MEDIA_TYPE_AUDIO", ALBUM_MODE_READONLY,
+    fileList.emplace_back(selectUri + MEDIALIBRARY_TYPE_AUDIO_URI, "", "MEDIA_TYPE_AUDIO", ALBUM_MODE_READONLY,
         DEFAULT_AUDIO_MIME_TYPE);
     return E_SUCCESS;
 }
@@ -427,7 +432,7 @@ shared_ptr<NativeRdb::ResultSet> GetResult(const Uri &uri, MediaFileUriType uriT
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
     vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
-        MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE };
+        MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_RELATIVE_PATH };
     return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
@@ -451,7 +456,8 @@ shared_ptr<NativeRdb::ResultSet> GetMediaRootResult(const FileInfo &parentInfo, 
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, MimeType2MediaType(parentInfo.mimeType));
     predicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
     predicates.Limit(maxCount, offset);
-    vector<string> columns = { MEDIA_DATA_DB_BUCKET_ID, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_DATE_MODIFIED };
+    vector<string> columns = { MEDIA_DATA_DB_BUCKET_ID, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_RELATIVE_PATH };
     return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
 
@@ -506,6 +512,7 @@ int GetFileInfo(FileInfo &fileInfo, const shared_ptr<NativeRdb::ResultSet> &resu
     int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
     fileInfo.uri =
         MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
+    fileInfo.relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
     fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
     fileInfo.mimeType = GetStringVal(MEDIA_DATA_DB_MIME_TYPE, result);
     if (mediaType == MEDIA_TYPE_ALBUM) {
@@ -530,6 +537,7 @@ int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb:
         fileInfo.mimeType = parentInfo.mimeType;
         fileInfo.uri =
             MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) + SLASH_CHAR + to_string(fileId);
+        fileInfo.relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
         fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
         fileInfo.mode = ALBUM_MODE_RW;
         fileList.push_back(fileInfo);
@@ -608,7 +616,8 @@ shared_ptr<NativeRdb::ResultSet> GetScanFileResult(const Uri &uri, MediaFileUriT
         MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_MIME_TYPE,
         MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_MEDIA_TYPE
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_RELATIVE_PATH
     };
     return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
 }
@@ -742,10 +751,10 @@ int GetVirtualNodeFileInfo(const string &uri, FileInfo &fileInfo)
     }
 
     static const unordered_map<string, FileInfo> virtualNodes = {
-        { MEDIALIBRARY_TYPE_AUDIO_URI, { uri, "MEDIA_TYPE_AUDIO", ALBUM_MODE_READONLY, DEFAULT_AUDIO_MIME_TYPE } },
-        { MEDIALIBRARY_TYPE_VIDEO_URI, { uri, "MEDIA_TYPE_VIDEO", ALBUM_MODE_READONLY, DEFAULT_VIDEO_MIME_TYPE } },
-        { MEDIALIBRARY_TYPE_IMAGE_URI, { uri, "MEDIA_TYPE_IMAGE", ALBUM_MODE_READONLY, DEFAULT_IMAGE_MIME_TYPE } },
-        { MEDIALIBRARY_TYPE_FILE_URI, { uri, "MEDIA_TYPE_FILE", ALBUM_MODE_READONLY, DEFAULT_FILE_MIME_TYPE } },
+        { MEDIALIBRARY_TYPE_AUDIO_URI, { uri, "", "MEDIA_TYPE_AUDIO", ALBUM_MODE_READONLY, DEFAULT_AUDIO_MIME_TYPE } },
+        { MEDIALIBRARY_TYPE_VIDEO_URI, { uri, "", "MEDIA_TYPE_VIDEO", ALBUM_MODE_READONLY, DEFAULT_VIDEO_MIME_TYPE } },
+        { MEDIALIBRARY_TYPE_IMAGE_URI, { uri, "", "MEDIA_TYPE_IMAGE", ALBUM_MODE_READONLY, DEFAULT_IMAGE_MIME_TYPE } },
+        { MEDIALIBRARY_TYPE_FILE_URI, { uri, "", "MEDIA_TYPE_FILE", ALBUM_MODE_READONLY, DEFAULT_FILE_MIME_TYPE } },
     };
     string uriSuffix = uri.substr(pos);
     if (virtualNodes.find(uriSuffix) != virtualNodes.end()) {
@@ -777,8 +786,7 @@ int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &file
         case URI_DIR:
         case URI_ALBUM:
         case URI_FILE: {
-            vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
-                MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_TRASH };
+            vector<string> columns = FILEINFO_COLUMNS;
             auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, uri, columns);
             CHECK_AND_RETURN_RET_LOG(result != nullptr, E_INVALID_URI, "UriToFileInfo::uri is not correct: %{public}s",
                 uri.c_str());
@@ -788,6 +796,25 @@ int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &file
         default:
             return E_INVALID_URI;
     }
+}
+
+int MediaFileExtentionUtils::GetFileInfoFromRelativePath(const string &relativePath, FileAccessFwk::FileInfo &fileInfo)
+{
+    if (relativePath.empty()) {
+        fileInfo = { MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI, "", "MEDIA_TYPE_FILE", ALBUM_MODE_READONLY,
+            DEFAULT_FILE_MIME_TYPE };
+        return E_SUCCESS;
+    }
+
+    string path = ROOT_MEDIA_DIR + relativePath;
+    if (path.back() == '/') {
+        path.pop_back();
+    }
+    vector<string> columns = FILEINFO_COLUMNS;
+    auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_FILE_PATH, path, columns);
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_NO_SUCH_FILE,
+        "GetFileInfoFromRelativePath::Get FileInfo failed, relativePath: %{private}s", relativePath.c_str());
+    return GetFileInfo(fileInfo, result);
 }
 
 int32_t HandleFileRename(const shared_ptr<FileAsset> &fileAsset)
@@ -1022,7 +1049,7 @@ void GetMoveSubFile(const string &srcPath, shared_ptr<NativeRdb::ResultSet> &res
     string queryUri = MEDIALIBRARY_DATA_URI;
     string selection = MEDIA_DATA_DB_FILE_PATH + " LIKE ? ";
     vector<string> selectionArgs = { srcPath + SLASH_CHAR + "%" };
-    vector<string> columns;
+    vector<string> columns = { MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE };
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
