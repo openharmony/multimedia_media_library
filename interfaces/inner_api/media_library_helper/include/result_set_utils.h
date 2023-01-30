@@ -97,6 +97,22 @@ private:
         return 0;
     }
 };
+
+template<typename ResultSet>
+static inline std::string GetStringVal(const std::string &field, const ResultSet &result)
+{
+    return get<std::string>(ResultSetUtils::GetValFromColumn(field, result, TYPE_STRING));
+}
+template<typename ResultSet>
+static inline int32_t GetInt32Val(const std::string &field, const ResultSet &result)
+{
+    return get<int32_t>(ResultSetUtils::GetValFromColumn(field, result, TYPE_INT32));
+}
+template<typename ResultSet>
+static inline int64_t GetInt64Val(const std::string &field, const ResultSet &result)
+{
+    return get<int64_t>(ResultSetUtils::GetValFromColumn(field, result, TYPE_INT64));
+}
 } // namespace Media
 } // namespace  OHOS
 #endif // INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_RESULT_SET_UTILS_H_
