@@ -29,6 +29,7 @@ using namespace OHOS::AppExecFwk;
 std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::mlDMInstance_ = nullptr;
 
 constexpr int TRIM_LENGTH = 4;
+constexpr int MIN_ACTIVE_DEVICE_NUMBER = 0;
 MediaLibraryDevice::MediaLibraryDevice()
 {
     MEDIA_DEBUG_LOG("MediaLibraryDevice::constructor");
@@ -448,5 +449,18 @@ bool MediaLibraryDevice::DeleteDeviceInfo(const string &udid)
 {
     return MediaLibraryDeviceOperations::DeleteDeviceInfo(rdbStore_, udid);
 }
+
+bool MediaLibraryDevice::IsHasActiveDevice()
+{
+    lock_guard<mutex> autoLock(devMtx_);
+    int deviceNumber = deviceInfoMap_.size();
+    if (deviceNumber > MIN_ACTIVE_DEVICE_NUMBER) {
+        MEDIA_DEBUG_LOG("device number = %{public}d", deviceNumber);
+        return true;
+    } else {
+        return false;
+    }
+}
+
 } // namespace Media
 } // namespace OHOS

@@ -19,6 +19,7 @@
 #include <regex>
 
 #include "file_asset.h"
+#include "get_self_permissions.h"
 #include "js_runtime.h"
 #include "media_file_ext_ability.h"
 #include "media_file_extention_utils.h"
@@ -92,6 +93,11 @@ void MediaLibraryFileExtUnitTest::SetUpTestCase(void)
 
     ArkJsRuntime runtime;
     mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
+
+    vector<string> perms = { "ohos.permission.MEDIA_LOCATION" };
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryQueryPerfUnitTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
 }
 
 void MediaLibraryFileExtUnitTest::TearDownTestCase(void) {}
@@ -1308,6 +1314,90 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_007, TestSize.
     EXPECT_EQ(albumInfo.uri, albumAsset->GetUri());
     EXPECT_EQ(albumInfo.mtime, albumAsset->GetDateModified());
     EXPECT_EQ(albumInfo.mode, albumMode);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromRelativePath_test_001, TestSize.Level0)
+{
+    if (!MediaLibraryUnitTestUtils::IsValid()) {
+        MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
+        exit(1);
+    }
+    shared_ptr<FileAsset> albumAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("GetFileInfoFromRelativePath_001", g_pictures, albumAsset), true);
+    FileInfo parentInfo;
+    auto ret = mediaFileExtAbility->GetFileInfoFromRelativePath(albumAsset->GetRelativePath(), parentInfo);
+    PrintFileInfo(parentInfo, "medialib_GetFileInfoFromRelativePath_test_001");
+    EXPECT_EQ(ret, E_SUCCESS);
+
+    int32_t albumMode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
+    EXPECT_EQ(parentInfo.fileName, g_pictures->GetDisplayName());
+    EXPECT_EQ(parentInfo.size, 0);
+    EXPECT_EQ(parentInfo.uri, g_pictures->GetUri());
+    EXPECT_EQ(parentInfo.mtime, g_pictures->GetDateModified());
+    EXPECT_EQ(parentInfo.mode, albumMode);
+    EXPECT_EQ(parentInfo.relativePath, "");
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromRelativePath_test_002, TestSize.Level0)
+{
+    if (!MediaLibraryUnitTestUtils::IsValid()) {
+        MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
+        exit(1);
+    }
+    shared_ptr<FileAsset> fileAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("GetFileInfoFromRelativePath_002.jpg", g_pictures, fileAsset), true);
+    FileInfo parentInfo;
+    auto ret = mediaFileExtAbility->GetFileInfoFromRelativePath(fileAsset->GetRelativePath(), parentInfo);
+    PrintFileInfo(parentInfo, "medialib_GetFileInfoFromRelativePath_test_002");
+    EXPECT_EQ(ret, E_SUCCESS);
+
+    int32_t albumMode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
+    EXPECT_EQ(parentInfo.fileName, g_pictures->GetDisplayName());
+    EXPECT_EQ(parentInfo.size, 0);
+    EXPECT_EQ(parentInfo.uri, g_pictures->GetUri());
+    EXPECT_EQ(parentInfo.mtime, g_pictures->GetDateModified());
+    EXPECT_EQ(parentInfo.mode, albumMode);
+    EXPECT_EQ(parentInfo.relativePath, "");
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromRelativePath_test_003, TestSize.Level0)
+{
+    if (!MediaLibraryUnitTestUtils::IsValid()) {
+        MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
+        exit(1);
+    }
+    FileInfo rootInfo;
+    auto ret = mediaFileExtAbility->GetFileInfoFromRelativePath("", rootInfo);
+    PrintFileInfo(rootInfo, "medialib_GetFileInfoFromRelativePath_test_003");
+    EXPECT_EQ(ret, E_SUCCESS);
+
+    int32_t albumReadOnlyMode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ;
+    EXPECT_EQ(rootInfo.fileName, "MEDIA_TYPE_FILE");
+    EXPECT_EQ(rootInfo.size, 0);
+    EXPECT_EQ(rootInfo.uri, MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI);
+    EXPECT_EQ(rootInfo.mtime, 0);
+    EXPECT_EQ(rootInfo.mode, albumReadOnlyMode);
+    EXPECT_EQ(rootInfo.relativePath, "");
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromRelativePath_test_004, TestSize.Level0)
+{
+    if (!MediaLibraryUnitTestUtils::IsValid()) {
+        MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
+        exit(1);
+    }
+
+    FileInfo parentInfo;
+    string testRelativePath = "Pictures/";
+    EXPECT_EQ(mediaFileExtAbility->GetFileInfoFromRelativePath(testRelativePath, parentInfo), E_SUCCESS);
+
+    testRelativePath = "Pictures";
+    EXPECT_EQ(mediaFileExtAbility->GetFileInfoFromRelativePath(testRelativePath, parentInfo), E_SUCCESS);
+
+    shared_ptr<FileAsset> fileAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("GetFileInfoFromRelativePath_004.jpg", g_pictures, fileAsset), true);
+    testRelativePath = "Pictures/GetFileInfoFromRelativePath_004.jpg";
+    EXPECT_EQ(mediaFileExtAbility->GetFileInfoFromRelativePath(testRelativePath, parentInfo), E_SUCCESS);
 }
 
 void MediaFileExtensionCheck(const shared_ptr<FileAsset> &parent, const unordered_set<string> extensions,
