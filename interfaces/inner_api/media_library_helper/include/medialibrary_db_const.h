@@ -481,6 +481,16 @@ const std::string MEDIA_FILEMODE_READWRITE = "rw";
 const std::string MEDIA_FILEMODE_WRITETRUNCATE = "wt";
 const std::string MEDIA_FILEMODE_WRITEAPPEND = "wa";
 const std::string MEDIA_FILEMODE_READWRITETRUNCATE = "rwt";
+const std::string MEDIA_FILEMODE_READWRITEAPPEND = "rwa";
+const std::unordered_set<std::string> MEDIA_OPEN_MODES {
+                                        MEDIA_FILEMODE_READONLY,
+                                        MEDIA_FILEMODE_WRITEONLY,
+                                        MEDIA_FILEMODE_READWRITE,
+                                        MEDIA_FILEMODE_WRITETRUNCATE,
+                                        MEDIA_FILEMODE_WRITEAPPEND,
+                                        MEDIA_FILEMODE_READWRITETRUNCATE,
+                                        MEDIA_FILEMODE_READWRITEAPPEND
+                                        };
 
 const std::string MEDIA_DEVICE_QUERYALLDEVICE = "query_all_device";
 const std::string MEDIA_DEVICE_QUERYACTIVEDEVICE = "query_active_device";
