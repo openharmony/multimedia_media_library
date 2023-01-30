@@ -255,6 +255,10 @@ static int32_t GetPrivacyRanges(const string &path, const string &mode, PrivacyR
         return E_SUCCESS;
     }
 
+    if (mode.find('w') != string::npos) {
+        return E_SUCCESS;
+    }
+
     for (auto &item : PRIVACY_PERMISSION_MAP) {
         const string &perm = item.second;
         bool result = PermissionUtils::CheckCallerPermission(perm);

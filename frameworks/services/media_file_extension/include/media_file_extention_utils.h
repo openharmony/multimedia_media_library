@@ -77,6 +77,7 @@ public:
     static int32_t GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList);
     static int Access(const Uri &uri, bool &isExist);
     static int UriToFileInfo(const Uri &selectFile, FileAccessFwk::FileInfo &fileInfo);
+    static int GetFileInfoFromRelativePath(const std::string &relativePath, FileAccessFwk::FileInfo &fileInfo);
 };
 } // Media
 } // OHOS

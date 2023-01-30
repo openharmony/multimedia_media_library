@@ -352,7 +352,6 @@ Status ThumbnailUtils::SaveImage(const shared_ptr<SingleKvStore> &kvStore, const
 
 shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
 {
-    MEDIA_DEBUG_LOG("ThumbnailUtils::QueryThumbnailSet IN row [%{public}s]", opts.row.c_str());
     vector<string> column = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
@@ -382,8 +381,9 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
         return nullptr;
     }
 
-    if (!CheckResultSetColumn(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetColumn failed %{public}d", err);
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return nullptr;
     }
 
@@ -471,8 +471,9 @@ bool ThumbnailUtils::QueryHasLcdFiles(ThumbRdbOpt &opts, vector<ThumbnailRdbData
         return false;
     }
 
-    if (!CheckResultSetColumn(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetColumn failed %{public}d", err);
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return false;
     }
 
@@ -504,8 +505,9 @@ bool ThumbnailUtils::QueryHasThumbnailFiles(ThumbRdbOpt &opts, vector<ThumbnailR
         return false;
     }
 
-    if (!CheckResultSetColumn(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetColumn failed %{public}d", err);
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return false;
     }
 
@@ -538,8 +540,9 @@ bool ThumbnailUtils::QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimi
         return false;
     }
 
-    if (!CheckResultSetColumn(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetColumn failed %{public}d", err);
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return false;
     }
 
@@ -577,8 +580,9 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
         return false;
     }
 
-    if (!CheckResultSetColumn(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetColumn failed %{public}d", err);
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return false;
     }
 
@@ -616,8 +620,9 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
         return false;
     }
 
-    if (!CheckResultSetColumn(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetColumn failed %{public}d", err);
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return false;
     }
 
@@ -659,8 +664,9 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailRd
         return false;
     }
 
-    if (!CheckResultSetColumn(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetColumn failed %{public}d", err);
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return false;
     }
 
@@ -742,8 +748,9 @@ bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, vector<Thumb
         return false;
     }
 
-    if (!CheckResultSetColumn(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetColumn failed %{public}d", err);
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return false;
     }
 
@@ -1359,12 +1366,10 @@ bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, co
     int count = 0;
     auto status = kvStore->GetCount(query, count);
     if (status == Status::SUCCESS && count > 0) {
-        MEDIA_DEBUG_LOG("kvStore_->GetCount key [%{public}s] status %{public}d", key.c_str(), status);
         ret = true;
     }
 
     if (!ret) {
-        MEDIA_DEBUG_LOG("IsImageExist failed!, key [%{public}s]", key.c_str());
         if (!networkId.empty()) {
             MediaLibraryTracer tracer;
             tracer.Start("SyncPullKvstore");
@@ -1412,33 +1417,6 @@ bool ThumbnailUtils::CheckResultSetCount(const shared_ptr<ResultSet> &resultSet,
 
     if (rowCount <= 0) {
         MEDIA_ERR_LOG("CheckCount No match!");
-        err = E_EMPTY_VALUES_BUCKET;
-        return false;
-    }
-
-    return true;
-}
-
-bool ThumbnailUtils::CheckResultSetColumn(const shared_ptr<ResultSet> &resultSet, int &err)
-{
-    if (resultSet == nullptr) {
-        return false;
-    }
-    err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
-
-    int columnCount = 0;
-    err = resultSet->GetColumnCount(columnCount);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get column count %{public}d", err);
-        return false;
-    }
-
-    if (columnCount <= 0) {
-        MEDIA_ERR_LOG("No column!");
         err = E_EMPTY_VALUES_BUCKET;
         return false;
     }
