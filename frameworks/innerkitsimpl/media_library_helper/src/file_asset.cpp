@@ -449,17 +449,17 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
         return errCode;
     }
 
-    int32_t flags = O_RDWR;
-    if (mode == MEDIA_FILEMODE_READONLY) {
-        flags = O_RDONLY;
-    } else if (mode == MEDIA_FILEMODE_WRITEONLY) {
-        flags = O_WRONLY;
-    } else if (mode == MEDIA_FILEMODE_WRITETRUNCATE) {
-        flags = O_WRONLY | O_TRUNC;
-    } else if (mode == MEDIA_FILEMODE_WRITEAPPEND) {
-        flags = O_WRONLY | O_APPEND;
-    } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE) {
-        flags = O_RDWR | O_TRUNC;
+    static const unordered_map<string, int32_t> MEDIA_OPEN_MODE_MAP = {
+        { MEDIA_FILEMODE_READONLY, O_RDONLY },
+        { MEDIA_FILEMODE_WRITEONLY, O_WRONLY },
+        { MEDIA_FILEMODE_READWRITE, O_RDWR },
+        { MEDIA_FILEMODE_WRITETRUNCATE, O_WRONLY | O_TRUNC },
+        { MEDIA_FILEMODE_WRITEAPPEND, O_WRONLY | O_APPEND },
+        { MEDIA_FILEMODE_READWRITETRUNCATE, O_RDWR | O_TRUNC },
+        { MEDIA_FILEMODE_READWRITEAPPEND, O_RDWR | O_APPEND },
+    };
+    if (MEDIA_OPEN_MODE_MAP.find(mode) == MEDIA_OPEN_MODE_MAP.end()) {
+        return E_ERR;
     }
 
     if (filePath.size() >= PATH_MAX) {
@@ -479,7 +479,7 @@ int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
     }
 
     MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath.c_str());
-    return open(absFilePath.c_str(), flags);
+    return open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
 }
 
 int32_t FileAsset::CloseAsset(int32_t fd)

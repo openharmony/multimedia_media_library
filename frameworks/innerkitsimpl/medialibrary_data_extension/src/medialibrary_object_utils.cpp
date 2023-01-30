@@ -172,7 +172,7 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
     int32_t mediaType = static_cast<int32_t>(MEDIA_TYPE_FILE);
     FileAsset fileAsset;
     ValueObject valueObject;
-    ValuesBucket values = cmd.GetValueBucket();
+    ValuesBucket &values = cmd.GetValueBucket();
     if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
         valueObject.GetString(displayName);
         fileAsset.SetDisplayName(displayName);
@@ -637,11 +637,10 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
         return E_SUCCESS;
     }
 
-    ValuesBucket values = cmd.GetValueBucket();
+    ValuesBucket &values = cmd.GetValueBucket();
     values.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, MediaLibraryDataManagerUtils::GetParentPath(dstDirPath));
     values.PutString(Media::MEDIA_DATA_DB_FILE_PATH, dstDirPath);
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::GetAlbumDateModified(dstDirPath));
-    cmd.SetValueBucket(values);
     int32_t retVal = ModifyInfoByIdInDb(cmd);
     if (retVal <= 0) {
         return retVal;
