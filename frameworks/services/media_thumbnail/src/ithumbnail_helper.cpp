@@ -217,7 +217,9 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, true);
+    int err = 0;
     if (ret == WaitStatus::WAIT_SUCCESS) {
+        ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
         return true;
     }
     if (!opts.networkId.empty()) {
@@ -225,7 +227,6 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
     }
 
     if (data.dateModified == 0) {
-        int err = 0;
         ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
     }
 
@@ -249,7 +250,6 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
             return false;
         }
     }
-    int err;
     data.thumbnail.clear();
     if ((data.dateModified == 0) || force) {
         ThumbnailUtils::DeleteOriginImage(opts, data);
