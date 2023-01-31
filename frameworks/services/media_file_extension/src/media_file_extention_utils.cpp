@@ -765,7 +765,7 @@ int GetVirtualNodeFileInfo(const string &uri, FileInfo &fileInfo)
     }
 }
 
-int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &fileInfo)
+int MediaFileExtentionUtils::GetFileInfoFromUri(const Uri &selectFile, FileInfo &fileInfo)
 {
     string uri = selectFile.ToString();
     MediaFileUriType uriType = URI_FILE;
@@ -774,7 +774,7 @@ int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &file
     tempInfo.uri = uri;
     tempInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
     auto ret = MediaFileExtentionUtils::ResolveUri(tempInfo, uriType);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "UriToFileInfo::invalid uri: %{public}s", uri.c_str());
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "GetFileInfoFromUri::invalid uri: %{public}s", uri.c_str());
 
     switch (uriType) {
         case URI_ROOT:
@@ -788,8 +788,8 @@ int MediaFileExtentionUtils::UriToFileInfo(const Uri &selectFile, FileInfo &file
         case URI_FILE: {
             vector<string> columns = FILEINFO_COLUMNS;
             auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, uri, columns);
-            CHECK_AND_RETURN_RET_LOG(result != nullptr, E_INVALID_URI, "UriToFileInfo::uri is not correct: %{public}s",
-                uri.c_str());
+            CHECK_AND_RETURN_RET_LOG(result != nullptr, E_INVALID_URI,
+                "GetFileInfoFromUri::uri is not correct: %{public}s", uri.c_str());
             const string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
             return GetFileInfo(fileInfo, result, networkId);
         }
