@@ -160,9 +160,9 @@ int MediaFileExtAbility::Access(const Uri &uri, bool &isExist)
     return ConvertErrno(MediaFileExtentionUtils::Access(uri, isExist));
 }
 
-int MediaFileExtAbility::UriToFileInfo(const Uri &selectFile, FileInfo &fileInfo)
+int MediaFileExtAbility::GetFileInfoFromUri(const Uri &selectFile, FileInfo &fileInfo)
 {
-    return ConvertErrno(MediaFileExtentionUtils::UriToFileInfo(selectFile, fileInfo));
+    return ConvertErrno(MediaFileExtentionUtils::GetFileInfoFromUri(selectFile, fileInfo));
 }
 
 int MediaFileExtAbility::GetFileInfoFromRelativePath(const string &relativePath, FileAccessFwk::FileInfo &fileInfo)

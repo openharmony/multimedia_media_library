@@ -1224,91 +1224,91 @@ void PrintFileInfo(const FileInfo &fileInfo, const string &testcase)
         testcase.c_str(), (long long)fileInfo.size, (long long)fileInfo.mtime, fileInfo.mimeType.c_str());
 }
 
-HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromUri_test_001, TestSize.Level0)
 {
     Uri uri(MEDIALIBRARY_MEDIA_PREFIX + MEDIALIBRARY_ROOT);
     FileInfo fileInfo;
-    auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
-    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_001");
+    auto ret = mediaFileExtAbility->GetFileInfoFromUri(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_GetFileInfoFromUri_test_001");
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromUri_test_002, TestSize.Level0)
 {
     Uri uri(MEDIALIBRARY_MEDIA_PREFIX + MEDIALIBRARY_ROOT + MEDIALIBRARY_TYPE_FILE_URI);
     FileInfo fileInfo;
-    auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
-    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_002");
+    auto ret = mediaFileExtAbility->GetFileInfoFromUri(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_GetFileInfoFromUri_test_002");
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromUri_test_003, TestSize.Level0)
 {
     Uri uri(MEDIALIBRARY_MEDIA_PREFIX + MEDIALIBRARY_ROOT + MEDIALIBRARY_TYPE_IMAGE_URI);
     FileInfo fileInfo;
-    auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
-    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_003");
+    auto ret = mediaFileExtAbility->GetFileInfoFromUri(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_GetFileInfoFromUri_test_003");
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromUri_test_004, TestSize.Level0)
 {
     Uri uri(MEDIALIBRARY_MEDIA_PREFIX + MEDIALIBRARY_ROOT + MEDIALIBRARY_TYPE_VIDEO_URI);
     FileInfo fileInfo;
-    auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
-    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_004");
+    auto ret = mediaFileExtAbility->GetFileInfoFromUri(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_GetFileInfoFromUri_test_004");
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromUri_test_005, TestSize.Level0)
 {
     Uri uri(MEDIALIBRARY_MEDIA_PREFIX + MEDIALIBRARY_ROOT + MEDIALIBRARY_TYPE_AUDIO_URI);
     FileInfo fileInfo;
-    auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
-    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_005");
+    auto ret = mediaFileExtAbility->GetFileInfoFromUri(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_GetFileInfoFromUri_test_005");
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromUri_test_006, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
     shared_ptr<FileAsset> albumAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("UriToFileInfo_test_006", g_pictures, albumAsset), true);
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("GetFileInfoFromUri_test_006", g_pictures, albumAsset), true);
     shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("UriToFileInfo_test_006.jpg", albumAsset, fileAsset), true);
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("GetFileInfoFromUri_test_006.jpg", albumAsset, fileAsset), true);
     Uri uri(fileAsset->GetUri());
     FileInfo fileInfo;
-    auto ret = mediaFileExtAbility->UriToFileInfo(uri, fileInfo);
-    PrintFileInfo(fileInfo, "medialib_UriToFileInfo_test_006");
+    auto ret = mediaFileExtAbility->GetFileInfoFromUri(uri, fileInfo);
+    PrintFileInfo(fileInfo, "medialib_GetFileInfoFromUri_test_006");
     EXPECT_EQ(ret, E_SUCCESS);
 
     int32_t fileMode = DOCUMENT_FLAG_REPRESENTS_FILE | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
-    EXPECT_EQ(fileInfo.fileName, "UriToFileInfo_test_006.jpg");
+    EXPECT_EQ(fileInfo.fileName, "GetFileInfoFromUri_test_006.jpg");
     EXPECT_EQ(fileInfo.size, 0);
     EXPECT_EQ(fileInfo.uri, fileAsset->GetUri());
     EXPECT_EQ(fileInfo.mtime, fileAsset->GetDateModified());
     EXPECT_EQ(fileInfo.mode, fileMode);
 }
 
-HWTEST_F(MediaLibraryFileExtUnitTest, medialib_UriToFileInfo_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromUri_test_007, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
     shared_ptr<FileAsset> albumAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("UriToFileInfo_test_007", g_pictures, albumAsset), true);
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("GetFileInfoFromUri_test_007", g_pictures, albumAsset), true);
     Uri uri(albumAsset->GetUri());
     FileInfo albumInfo;
-    auto ret = mediaFileExtAbility->UriToFileInfo(uri, albumInfo);
-    PrintFileInfo(albumInfo, "medialib_UriToFileInfo_test_007");
+    auto ret = mediaFileExtAbility->GetFileInfoFromUri(uri, albumInfo);
+    PrintFileInfo(albumInfo, "medialib_GetFileInfoFromUri_test_007");
     EXPECT_EQ(ret, E_SUCCESS);
 
     int32_t albumMode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
-    EXPECT_EQ(albumInfo.fileName, "UriToFileInfo_test_007");
+    EXPECT_EQ(albumInfo.fileName, "GetFileInfoFromUri_test_007");
     EXPECT_EQ(albumInfo.size, 0);
     EXPECT_NE(albumAsset->GetSize(), 0);
     EXPECT_EQ(albumInfo.uri, albumAsset->GetUri());
