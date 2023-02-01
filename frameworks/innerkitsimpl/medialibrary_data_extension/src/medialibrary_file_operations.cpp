@@ -152,7 +152,8 @@ int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd
         return E_INVALID_FILEID;
     }
 
-    string dstFileName, dstReFilePath;
+    string dstFileName;
+    string dstReFilePath;
     auto values = cmd.GetValueBucket();
     ValueObject valueObject;
     if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {

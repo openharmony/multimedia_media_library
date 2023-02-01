@@ -182,7 +182,9 @@ void GetRelativePathFromValues(ValuesBucket &values, string &relativePath, int32
 // create
 int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
 {
-    string relativePath(""), path(""), displayName("");
+    string relativePath;
+    string path;
+    string displayName;
     int32_t mediaType = static_cast<int32_t>(MEDIA_TYPE_FILE);
     FileAsset fileAsset;
     ValueObject valueObject;
