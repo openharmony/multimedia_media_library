@@ -194,9 +194,16 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_004, TestSize.Lev
     predicates.OrderByAsc(MEDIA_DATA_DB_DATE_ADDED);
     vector<string> columns;
 
-    int32_t mediaType, parentId, bucketId;
-    int64_t dateAdded, dateModified;
-    string relativePath, mimeType, displayName, title, bucketName;
+    int32_t mediaType;
+    int32_t parentId;
+    int32_t bucketId;
+    int64_t dateAdded;
+    int64_t dateModified;
+    string relativePath;
+    string mimeType;
+    string displayName;
+    string title;
+    string bucketName;
 
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
@@ -245,9 +252,16 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_005, TestSize.Lev
         MEDIA_DATA_DB_DATE_MODIFIED
     };
 
-    int32_t mediaType, parentId, bucketId;
-    int64_t dateAdded, dateModified;
-    string relativePath, mimeType, displayName, title, bucketName;
+    int32_t mediaType;
+    int32_t parentId;
+    int32_t bucketId;
+    int64_t dateAdded;
+    int64_t dateModified;
+    string relativePath;
+    string mimeType;
+    string displayName;
+    string title;
+    string bucketName;
 
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
@@ -297,9 +311,16 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_006, TestSize.Lev
         MEDIA_DATA_DB_DATE_MODIFIED
     };
 
-    int32_t mediaType, parentId, bucketId;
-    int64_t dateAdded, dateModified;
-    string relativePath, mimeType, displayName, title, bucketName;
+    int32_t mediaType;
+    int32_t parentId;
+    int32_t bucketId;
+    int64_t dateAdded;
+    int64_t dateModified;
+    string relativePath;
+    string mimeType;
+    string displayName;
+    string title;
+    string bucketName;
 
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
@@ -420,9 +441,16 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_010, TestSi
     DataSharePredicates predicates;
     vector<string> columns;
 
-    int32_t mediaType, parentId, bucketId;
-    int64_t dateAdded, dateModified;
-    string relativePath, mimeType, displayName, title, bucketName;
+    int32_t mediaType;
+    int32_t parentId;
+    int32_t bucketId;
+    int64_t dateAdded;
+    int64_t dateModified;
+    string relativePath;
+    string mimeType;
+    string displayName;
+    string title;
+    string bucketName;
 
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
@@ -470,9 +498,16 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_011, TestSi
         MEDIA_DATA_DB_DATE_MODIFIED
     };
 
-    int32_t mediaType, parentId, bucketId;
-    int64_t dateAdded, dateModified;
-    string relativePath, mimeType, displayName, title, bucketName;
+    int32_t mediaType;
+    int32_t parentId;
+    int32_t bucketId;
+    int64_t dateAdded;
+    int64_t dateModified;
+    string relativePath;
+    string mimeType;
+    string displayName;
+    string title;
+    string bucketName;
 
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
@@ -524,9 +559,16 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_012, TestSi
         MEDIA_DATA_DB_DATE_MODIFIED
     };
 
-    int32_t mediaType, parentId, bucketId;
-    int64_t dateAdded, dateModified;
-    string relativePath, mimeType, displayName, title, bucketName;
+    int32_t mediaType;
+    int32_t parentId;
+    int32_t bucketId;
+    int64_t dateAdded;
+    int64_t dateModified;
+    string relativePath;
+    string mimeType;
+    string displayName;
+    string title;
+    string bucketName;
 
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
