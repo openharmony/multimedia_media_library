@@ -73,7 +73,7 @@
 #define NAPI_CREATE_RESOURCE_NAME(env, resource, resourceName, context)         \
     do {                                                                            \
         napi_create_string_utf8(env, resourceName, NAPI_AUTO_LENGTH, &(resource));  \
-        context->SetApiName(resourceName);                                          \
+        (context)->SetApiName(resourceName);                                        \
     } while (0)
 
 #define CHECK_NULL_PTR_RETURN_UNDEFINED(env, ptr, ret, message)     \

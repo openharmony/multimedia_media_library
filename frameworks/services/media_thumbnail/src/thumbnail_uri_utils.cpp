@@ -72,7 +72,8 @@ bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outF
     string action;
     int width = 0;
     int height = 0;
-    string subKey, subVal;
+    string subKey;
+    string subVal;
     for (uint32_t i = 0; i < vectorKeys.size(); i++) {
         SplitKeyValue(vectorKeys[i], subKey, subVal);
         if (subKey.empty()) {
@@ -169,7 +170,8 @@ bool ThumbnailUriUtils::IsNumber(const string &str)
 
 bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString)
 {
-    string outFileId, ourNetworkId;
+    string outFileId;
+    string ourNetworkId;
     Size outSize;
     return ParseThumbnailInfo(uriString, outFileId, outSize, ourNetworkId);
 }

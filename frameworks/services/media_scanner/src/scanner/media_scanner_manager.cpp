@@ -83,7 +83,8 @@ int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared
     return E_OK;
 }
 
-int32_t MediaScannerManager::ScanFileSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
+int32_t MediaScannerManager::ScanFileSync(const std::string &path,
+    const std::shared_ptr<IMediaScannerCallback> &callback)
 {
     MEDIA_DEBUG_LOG("scan file %{private}s", path.c_str());
 
