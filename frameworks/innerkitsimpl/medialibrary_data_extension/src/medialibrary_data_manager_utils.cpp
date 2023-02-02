@@ -76,7 +76,7 @@ std::string MediaLibraryDataManagerUtils::GetFileTitle(const std::string &displa
 
 string MediaLibraryDataManagerUtils::GetOperationType(const string &uri)
 {
-    string oprn("");
+    string oprn;
     size_t found = uri.rfind('/');
     if (found != string::npos) {
         oprn = uri.substr(found + 1);

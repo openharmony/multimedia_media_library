@@ -303,7 +303,7 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
 
 string MediaScannerDb::GetFileDBUriFromPath(const string &path)
 {
-    string uri("");
+    string uri;
 
     vector<string> columns = {};
     columns.push_back(MEDIA_DATA_DB_URI);
@@ -369,7 +369,7 @@ int32_t MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Met
     }
 
     int32_t intValue(0);
-    string strValue("");
+    string strValue;
     int64_t dateModified(0);
 
     int32_t columnIndexId(0);
