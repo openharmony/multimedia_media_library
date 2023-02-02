@@ -93,7 +93,8 @@ void ThumbnailService::ReleaseService()
 
 shared_ptr<DataShare::ResultSetBridge> ThumbnailService::GetThumbnail(const string &uri)
 {
-    string fileId, networkId;
+    string fileId;
+    string networkId;
     string uriString = uri;
 
     Size size;
@@ -128,7 +129,8 @@ shared_ptr<DataShare::ResultSetBridge> ThumbnailService::GetThumbnail(const stri
 
 int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri)
 {
-    string fileId, networkId;
+    string fileId;
+    string networkId;
     if (!ThumbnailUriUtils::ParseFileUri(uri, fileId, networkId)) {
         MEDIA_ERR_LOG("ParseThumbnailInfo faild");
         return E_ERR;
@@ -168,7 +170,8 @@ int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri)
 
 int32_t ThumbnailService::CreateThumbnail(const std::string &uri)
 {
-    string fileId, networkId;
+    string fileId;
+    string networkId;
     Size size;
     bool success = ThumbnailUriUtils::ParseThumbnailInfo(uri, fileId, size, networkId);
     if (!success) {

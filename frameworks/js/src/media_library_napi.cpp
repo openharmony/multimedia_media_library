@@ -398,7 +398,8 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const MediaLibrar
 {
     MediaLibraryAsyncContext *asyncContext = const_cast<MediaLibraryAsyncContext *>(&context);
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "Async context is null");
-    napi_value property = nullptr, stringItem = nullptr;
+    napi_value property = nullptr;
+    napi_value stringItem = nullptr;
     bool present = false;
     DealWithCommonParam(env, arg, context, err, present);
     napi_has_named_property(env, arg, "selectionArgs", &present);
@@ -462,7 +463,8 @@ static void GetPublicDirectoryExecute(napi_env env, void *data)
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    vector<string> selectionArgs, columns;
+    vector<string> selectionArgs;
+    vector<string> columns;
     DataSharePredicates predicates;
     NAPI_ERR_LOG("context->dirType is = %{public}d", context->dirType);
     selectionArgs.push_back(to_string(context->dirType));
@@ -2183,7 +2185,9 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {0}, thisVar = nullptr, resource = nullptr;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
+    napi_value resource = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
