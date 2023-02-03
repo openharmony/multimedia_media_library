@@ -752,9 +752,6 @@ bool MediaLibraryDataManager::CheckFileNameValid(const DataShareValuesBucket &va
         return false;
     }
 
-    if (displayName.at(0) == '.') {
-        return PermissionUtils::CheckCallerSpecialFilePerm(displayName);
-    }
     return true;
 }
 
