@@ -43,7 +43,8 @@ std::shared_ptr<MediaScannerManager> MediaScannerManager::GetInstance()
     return instance_;
 }
 
-string MediaScannerManager::ScanCheck(const std::string &path, bool isDir) {
+string MediaScannerManager::ScanCheck(const std::string &path, bool isDir)
+{
     if (path.empty()) {
         MEDIA_ERR_LOG("path is empty");
         return "";
