@@ -33,13 +33,6 @@ using namespace OHOS::AppExecFwk::Constants;
 sptr<AppExecFwk::IBundleMgr> PermissionUtils::bundleMgr_ = nullptr;
 mutex PermissionUtils::bundleMgrMutex_;
 
-constexpr int UID_FILEMANAGER = 1006;
-const unordered_set<int32_t> UID_FREE_CHECK {
-    UID_FILEMANAGER
-};
-const string FILE_USR_CREATED = ".nofile";
-const string FILE_USR_CREATED_OWNER = "fms_service";
-
 sptr<AppExecFwk::IBundleMgr> PermissionUtils::GetSysBundleManager()
 {
     if (bundleMgr_ != nullptr) {
@@ -115,12 +108,6 @@ bool PermissionUtils::CheckCallerPermission(const string &permission)
     MediaLibraryTracer tracer;
     tracer.Start("CheckCallerPermission");
 
-    int uid = IPCSkeleton::GetCallingUid();
-    if (UID_FREE_CHECK.find(uid) != UID_FREE_CHECK.end()) {
-        MEDIA_INFO_LOG("CheckCallingPermission: Pass the uid check list");
-        return true;
-    }
-
     AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
     int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
     if (res != PermissionState::PERMISSION_GRANTED) {
@@ -166,18 +153,6 @@ bool PermissionUtils::CheckCallerPermission(const std::array<std::string, PERM_G
         return true;
     }
 
-    return false;
-}
-
-bool PermissionUtils::CheckCallerSpecialFilePerm(const string &displayName)
-{
-    string bundleName;
-    bool isSystemApp = false;
-    int uid = IPCSkeleton::GetCallingUid();
-    GetClientBundle(uid, bundleName, isSystemApp);
-    if (IsSameTextStr(displayName, FILE_USR_CREATED) && IsSameTextStr(bundleName, FILE_USR_CREATED_OWNER)) {
-        return true;
-    }
     return false;
 }
 }  // namespace Media
