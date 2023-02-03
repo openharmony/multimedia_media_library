@@ -102,6 +102,8 @@ config("napi_config") {
 ohos_shared_library("medialibrary") {
   configs = [ ":napi_config" ]
 
+  version_script = "libmedialibrary.map"
+
   sources = [
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/src/media_thumbnail_helper.cpp",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_data_manager_utils.cpp",
