@@ -20,9 +20,11 @@
 
 #include "album_asset.h"
 #include "datashare_predicates.h"
+#include "directory_ex.h"
 #include "fetch_result.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_privacy_manager.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
@@ -663,6 +665,18 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
     return E_SUCCESS;
 }
 
+static int32_t OpenAsset(const string &filePath, const string &mode)
+{
+    std::string absFilePath;
+    if (!PathToRealPath(filePath, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to get real path: %{private}s", filePath.c_str());
+        return E_ERR;
+    }
+    MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
+
+    return MediaPrivacyManager(absFilePath, mode).Open();
+}
+
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
     MEDIA_DEBUG_LOG("enter");
@@ -674,7 +688,7 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     }
 
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
-    int32_t fd = fileAsset->OpenAsset(path, mode);
+    int32_t fd = OpenAsset(path, mode);
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
         return E_HAS_FS_ERROR;
