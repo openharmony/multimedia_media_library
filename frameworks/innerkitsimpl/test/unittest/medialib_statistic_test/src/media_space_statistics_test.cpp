@@ -21,6 +21,7 @@
 #include "iservice_registry.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "media_file_utils.h"
 #include "media_library_manager.h"
 #include "media_log.h"
 #include "media_volume.h"

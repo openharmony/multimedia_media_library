@@ -112,6 +112,7 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   sources = [
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/src/media_privacy_manager.cpp",
     "src/distributed_media_library/database_manage/medialibrary_device_db.cpp",
     "src/distributed_media_library/database_manage/medialibrary_device_operations.cpp",
     "src/distributed_media_library/database_manage/medialibrary_sync_table.cpp",
