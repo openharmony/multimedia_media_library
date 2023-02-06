@@ -315,7 +315,7 @@ napi_status MediaLibraryNapiUtils::GetAssetFetchOption(napi_env env, napi_value 
 {
     // Parse the argument into fetchOption if any
     CHECK_STATUS_RET(GetPredicate(env, arg, "predicates", context, false), "invalid predicate");
-    CHECK_STATUS_RET(GetArrayProperty(env, arg, "fetchColumn", context->fetchColumn),
+    CHECK_STATUS_RET(GetArrayProperty(env, arg, "fetchColumns", context->fetchColumn),
         "Failed to parse fetchColumn");
     return napi_ok;
 }
