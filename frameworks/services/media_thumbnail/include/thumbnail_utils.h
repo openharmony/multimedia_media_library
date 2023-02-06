@@ -146,7 +146,6 @@ private:
         int index, std::string &data, int &err);
 
     static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
-    static bool CheckResultSetColumn(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
     static bool LoadImageFile(const std::string &path, std::shared_ptr<PixelMap> &pixelMap, float &degrees);
     static bool LoadVideoFile(const std::string &path, std::shared_ptr<PixelMap> &pixelMap, float &degrees);

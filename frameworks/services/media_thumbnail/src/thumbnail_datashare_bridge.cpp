@@ -46,11 +46,6 @@ static constexpr int32_t THUMBNAIL_SEM_NUM = 4;
 ThumbnailSemaphore ThumbnailDataShareBridge::sem_(THUMBNAIL_SEM_NUM);
 int ThumbnailDataShareBridge::GetRowCount(int32_t &count)
 {
-    std::shared_ptr<KvStoreResultSet> kvResultSet;
-    if (singleKvStorePtr_ == nullptr) {
-        MEDIA_ERR_LOG("singleKvStorePtr_ nullptr");
-        return E_ERR;
-    }
     count = 1;
     return E_OK;
 }

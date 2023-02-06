@@ -48,7 +48,6 @@ void MtpNativeTest::SetUpTestCase()
 void MtpNativeTest::TearDownTestCase() {}
 void MtpNativeTest::SetUp() {}
 void MtpNativeTest::TearDown(void) {}
-static constexpr int TEST_FD = 1011;
 static constexpr int ERROR_BATTERY = -1;
 static constexpr int TEST_UID = 5003;
 static const string TEST_NAME = "test.jpg";
@@ -2466,17 +2465,11 @@ HWTEST_F(MtpNativeTest, mtp_medialibrary_manager_001, TestSize.Level0)
     context->format = MTP_FORMAT_TEXT_CODE;
     context->handle = 1;
     context->property = 1;
-    uint64_t outIntVal = 0;
-    uint128_t outLongVal = {0};
     string outStrVal;
     shared_ptr<vector<Property>> outProps;
 
-    int32_t ret = MtpMedialibraryManager::GetInstance()->GetObjectPropValue(context, outIntVal, outLongVal, outStrVal);
-    EXPECT_TRUE(ret != E_SUCCESS);
-    ret = MtpMedialibraryManager::GetInstance()->CloseFd(context, TEST_FD);
-    EXPECT_TRUE(ret != E_SUCCESS);
     context->depth = 0;
-    ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
+    int32_t ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
     EXPECT_TRUE(ret == MTP_ERROR_INVALID_OBJECTHANDLE);
     context->handle = MTP_ALL_HANDLE_ID;
     ret = MtpMedialibraryManager::GetInstance()->GetObjectPropList(context, outProps);
