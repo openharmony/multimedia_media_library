@@ -17,7 +17,9 @@
 #include "thumbnail_utils.h"
 
 #include <fcntl.h>
+#include <malloc.h>
 #include <sys/stat.h>
+
 #include "datashare_abs_result_set.h"
 #include "device_manager.h"
 #include "distributed_kv_data_manager.h"
@@ -190,6 +192,9 @@ bool ThumbnailUtils::LoadVideoFile(const string &path, shared_ptr<PixelMap> &pix
 
 bool ThumbnailUtils::LoadImageFile(const string &path, shared_ptr<PixelMap> &pixelMap, float &degrees)
 {
+    mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
+    mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
+
     uint32_t err = 0;
     SourceOptions opts;
 
