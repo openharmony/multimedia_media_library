@@ -91,7 +91,9 @@ void MediaLibraryInotify::DoStop()
 {
     lock_guard<mutex> lock(mutex_);
     for (auto iter = watchList_.begin(); iter != watchList_.end(); iter++) {
-        Remove(iter->first);
+        if (inotify_rm_watch(inotifyFd_, iter->first) != 0) {
+            MEDIA_ERR_LOG("rm watch fd: %{public}d, fail: %{public}d", iter->first, errno);
+        }
     }
     isWatching_ = false;
     watchList_.clear();
