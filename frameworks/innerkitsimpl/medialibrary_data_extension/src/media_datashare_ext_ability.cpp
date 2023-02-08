@@ -326,7 +326,7 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
 int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
     string uriStr = uri.ToString();
-    if (!PermissionUtils::SystemApiCheck(uriStr)) {
+    if (!PermissionUtils::CheckMediaLibraryDeleteUriIsSystemApi(uriStr)) {
         MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
         return E_CHECK_SYSTEMAPP_FAIL;
     }
@@ -348,7 +348,7 @@ std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &u
     };
 
     string uriStr = uri.ToString();
-    if (!PermissionUtils::SystemApiCheck(uriStr)) {
+    if (!PermissionUtils::CheckMediaLibraryQueryUriIsSystemApi(uriStr)) {
         MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
         return nullptr;
     }
