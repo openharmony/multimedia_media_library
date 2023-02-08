@@ -499,7 +499,6 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
                       errno, filePath.c_str());
         return errCode;
     }
-
     MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath.c_str());
     return open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
 }
