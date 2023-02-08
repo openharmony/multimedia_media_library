@@ -19,6 +19,7 @@
 #include "accesstoken_kit.h"
 #include "ipc_skeleton.h"
 #include "media_log.h"
+#include "media_file_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_tracer.h"
 #include "privacy_kit.h"
@@ -157,19 +158,47 @@ bool PermissionUtils::CheckCallerPermission(const std::array<std::string, PERM_G
     return false;
 }
 
-bool PermissionUtils::SystemApiCheck(const std::string &uri)
+bool PermissionUtils::CheckMediaLibraryDeleteUriIsSystemApi(const std::string &uri)
 {
+    bool isSystemUri = false;
+    auto deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
+    if (uri.substr(0, deleteUri.length()) == deleteUri) {
+        isSystemUri = true;
+    }
+
+    if (isSystemUri) {
+        return IsSystemApp();
+    }
+
+    // non-system api don't check IsSystemApp
+    return true;
+}
+
+bool PermissionUtils::CheckMediaLibraryQueryUriIsSystemApi(const std::string &uri)
+{
+    bool isSystemUri = false;
     const static set<string> systemApiUri = {
-        MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN_DELETEASSET,
         MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE,
         MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE,
-        // MediaLibrary.getPrivateAlbum
         MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTALBUM_TABLE
     };
-    if ((systemApiUri.find(uri) == systemApiUri.end())) {
-        return true;
+
+    if ((systemApiUri.find(uri) != systemApiUri.end())) {
+        isSystemUri = true;
     }
-    return IsSystemApp();
+
+    // Check distributed smartalbum
+    string networkId = MediaFileUtils::GetNetworkIdFromUri(uri);
+    if (!networkId.empty()) {
+        isSystemUri = true;
+    }
+
+    if (isSystemUri) {
+        return IsSystemApp();
+    }
+
+    // non-system api don't check IsSystemApp
+    return true;
 }
 
 bool PermissionUtils::IsSystemApp()
