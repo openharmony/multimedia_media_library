@@ -202,7 +202,6 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
         UserFileClient::Init(env, info);
         if (!UserFileClient::IsValid()) {
             NAPI_ERR_LOG("UserFileClient creation failed");
-            napi_get_undefined(env, &(result));
             return result;
         }
     }
@@ -220,6 +219,24 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     return result;
 }
 
+static bool CheckWhetherInitSuccess(napi_env env, napi_value value)
+{
+    napi_value propertyNames;
+    uint32_t propertyLength;
+    napi_valuetype valueType = napi_undefined;
+    NAPI_CALL_BASE(env, napi_typeof(env, value, &valueType), false);
+    if (valueType != napi_object) {
+        return false;
+    }
+
+    NAPI_CALL_BASE(env, napi_get_property_names(env, value, &propertyNames), false);
+    NAPI_CALL_BASE(env, napi_get_array_length(env, propertyNames, &propertyLength), false);
+    if (propertyLength == 0 || !UserFileClient::IsValid()) {
+        return false;
+    }
+    return true;
+}
+
 static napi_value CreateNewInstance(napi_env env, napi_callback_info info, napi_ref ref)
 {
     constexpr size_t ARG_CONTEXT = 1;
@@ -233,6 +250,10 @@ static napi_value CreateNewInstance(napi_env env, napi_callback_info info, napi_
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, ctor, argc, argv, &result));
+    if (!CheckWhetherInitSuccess(env, result)) {
+        NAPI_ERR_LOG("Init MediaLibrary Instance is failed");
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+    }
     return result;
 }
 
@@ -251,16 +272,19 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
     if (status == napi_ok) {
         status = napi_new_instance(env, ctor, argc, argv, &result);
         if (status == napi_ok) {
-            return result;
+            if (CheckWhetherInitSuccess(env, result)) {
+                return result;
+            } else {
+                NAPI_ERR_LOG("Init MediaLibrary Instance is failed");
+            }
         } else {
             NAPI_ERR_LOG("New instance could not be obtained status: %{public}d", status);
         }
     } else {
-            NAPI_ERR_LOG("status = %{public}d", status);
+        NAPI_ERR_LOG("status = %{public}d", status);
     }
 
     napi_get_undefined(env, &result);
-
     return result;
 }
 
