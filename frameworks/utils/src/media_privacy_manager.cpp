@@ -36,6 +36,10 @@ using PrivacyRanges = vector<pair<uint32_t, uint32_t>>;
 
 namespace OHOS {
 namespace Media {
+
+constexpr uint32_t E_NO_EXIF = 1;
+constexpr uint32_t E_NO_PRIVACY_EXIF_TAG = 2;
+
 MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode) : path_(path), mode_(mode)
 {}
 
@@ -226,7 +230,7 @@ static int32_t CollectRanges(const string &path, const PrivacyType &type, Privac
 
     PrivacyRanges areas;
     err = imageSource->GetFilterArea(type, areas);
-    if (err != E_SUCCESS && err != E_NO_EXIF) {
+    if ((err != E_SUCCESS) && (err != E_NO_EXIF) && (err != E_NO_PRIVACY_EXIF_TAG)) {
         MEDIA_ERR_LOG("Failed to get privacy area with type %{public}d, err: %{public}u", type, err);
         return E_ERR;
     }
