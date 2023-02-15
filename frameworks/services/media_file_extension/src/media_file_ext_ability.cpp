@@ -16,6 +16,8 @@
 
 #include "media_file_ext_ability.h"
 
+#include <cstdlib>
+
 #include "extension_context.h"
 #include "file_access_ext_stub_impl.h"
 #include "js_runtime_utils.h"
@@ -64,9 +66,13 @@ void MediaFileExtAbility::Init(const shared_ptr<AbilityLocalRecord> &record,
     auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
         MEDIA_ERR_LOG("Failed to get context");
-        return;
+        exit(0);
     }
-    MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr);
+    int32_t errCode = MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("failed to init MediaLibraryManager, exit");
+        exit(0);
+    }
 }
 
 void MediaFileExtAbility::OnStart(const AAFwk::Want &want)
