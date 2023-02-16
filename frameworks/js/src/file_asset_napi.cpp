@@ -1335,11 +1335,9 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose", asyncContext);
+        JSCloseExecute(asyncContext.get());
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
-                auto context = static_cast<FileAssetAsyncContext*>(data);
-                JSCloseExecute(context);
-            },
+            env, nullptr, resource, [](napi_env env, void* data) {},
             reinterpret_cast<CompleteCallback>(JSCloseCompleteCallback),
             static_cast<void*>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
