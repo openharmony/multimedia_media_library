@@ -216,7 +216,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
 bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool force)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.InsertAndWait(data.id, true);
+    auto ret = thumbnailWait.InsertAndWait(data.id, false);
     int err = 0;
     if (ret == WaitStatus::WAIT_SUCCESS) {
         ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
