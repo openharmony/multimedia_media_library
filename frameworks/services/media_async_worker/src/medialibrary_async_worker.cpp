@@ -25,8 +25,9 @@ namespace Media {
 static const int32_t SUCCESS = 0;
 static const int32_t BG_SLEEP_COUNT = 500;
 static const int32_t FG_SLEEP_COUNT = 50;
-static const int32_t REST_FOR_MILLISECOND = 200;
+static const int32_t REST_FOR_MILLISECOND = 20;
 static const int32_t REST_FOR_LONG_SECOND = 2;
+static const int32_t THREAD_NUM = 2;
 shared_ptr<MediaLibraryAsyncWorker> MediaLibraryAsyncWorker::asyncWorkerInstance_{nullptr};
 mutex MediaLibraryAsyncWorker::instanceLock_;
 
@@ -49,8 +50,10 @@ MediaLibraryAsyncWorker::~MediaLibraryAsyncWorker()
 {
     isThreadRunning_ = false;
     bgWorkCv_.notify_all();
-    if (thread_.joinable()) {
-        thread_.join();
+    for (auto &thread : threads_) {
+        if (thread.joinable()) {
+            thread.join();
+        }
     }
 }
 
@@ -58,8 +61,9 @@ void MediaLibraryAsyncWorker::Init()
 {
     isThreadRunning_ = true;
     doneTotal_ = 0;
-    thread_ = thread(&MediaLibraryAsyncWorker::StartWorker, this);
-    pthread_setname_np(thread_.native_handle(), "MediaLibraryAsyncWorker");
+    for (auto i = 0; i < THREAD_NUM; i++) {
+        threads_.emplace_back(bind(&MediaLibraryAsyncWorker::StartWorker, this, i));
+    }
 }
 
 void MediaLibraryAsyncWorker::Interrupt()
@@ -159,8 +163,11 @@ void MediaLibraryAsyncWorker::SleepBgWork()
     }
 }
 
-void MediaLibraryAsyncWorker::StartWorker()
+void MediaLibraryAsyncWorker::StartWorker(int num)
 {
+    string name("MediaLibraryAsyncWorker");
+    name.append(to_string(num));
+    pthread_setname_np(pthread_self(), name.c_str());
     while (true) {
         WaitForTask();
         if (!isThreadRunning_) {
