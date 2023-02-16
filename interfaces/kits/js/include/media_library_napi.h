@@ -50,8 +50,7 @@ enum ListenerType {
     SMARTALBUM_LISTENER,
     DEVICE_LISTENER,
     REMOTEFILE_LISTENER,
-    ALBUM_LISTENER,
-    CLOSEASSET_LISTENER
+    ALBUM_LISTENER    
 };
 
 struct MediaChangeListener {
@@ -99,7 +98,6 @@ public:
     sptr<AAFwk::IDataAbilityObserver> deviceDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> remoteFileDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> albumDataObserver_ = nullptr;
-    sptr<AAFwk::IDataAbilityObserver> closeAssetObserver_ = nullptr;
 
 private:
     napi_env env_ = nullptr;

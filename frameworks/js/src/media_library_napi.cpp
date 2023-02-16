@@ -57,8 +57,7 @@ static map<string, ListenerType> ListenerTypeMaps = {
     {"fileChange", FILE_LISTENER},
     {"albumChange", ALBUM_LISTENER},
     {"deviceChange", DEVICE_LISTENER},
-    {"remoteFileChange", REMOTEFILE_LISTENER},
-    {"closeAssetChange", CLOSEASSET_LISTENER}
+    {"remoteFileChange", REMOTEFILE_LISTENER}
 };
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
@@ -1012,10 +1011,6 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     unique_ptr<FileAsset> fileAsset = context->fetchFileResult->GetFirstObject();
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "getFileAssetById: fileAsset is nullptr");
     context->fileAsset = std::move(fileAsset);
-    Media::MediaType mediaType = context->fileAsset->GetMediaType();
-    string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
-    Uri modifyNotify(notifyUri);
-    UserFileClient::NotifyChange(modifyNotify);
 }
 
 static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void *data)
@@ -1583,10 +1578,6 @@ void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, Cha
             listObj.albumDataObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_ALBUM);
             UserFileClient::RegisterObserver(Uri(MEDIALIBRARY_ALBUM_URI), listObj.albumDataObserver_);
             break;
-        case CLOSEASSET_LISTENER:
-            listObj.closeAssetObserver_ = new(nothrow) MediaObserver(listObj, MEDIA_TYPE_FILE);
-            UserFileClient::RegisterObserver(Uri(MEDIALIBRARY_CLOSEASSET_URI_FORNOTIFY), listObj.closeAssetObserver_);
-            break;
         default:
             NAPI_ERR_LOG("Invalid Media Type!");
     }
@@ -1696,12 +1687,6 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
             mediaType = MEDIA_TYPE_ALBUM;
             UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_ALBUM_URI), listObj.albumDataObserver_);
             listObj.albumDataObserver_ = nullptr;
-            break;
-        case CLOSEASSET_LISTENER:
-            CHECK_NULL_PTR_RETURN_VOID(listObj.closeAssetObserver_, "Failed to obtain close asset observer");
-            mediaType = MEDIA_TYPE_FILE;
-            UserFileClient::UnregisterObserver(Uri(MEDIALIBRARY_CLOSEASSET_URI_FORNOTIFY), listObj.closeAssetObserver_);
-            listObj.closeAssetObserver_ = nullptr;
             break;
         default:
             NAPI_ERR_LOG("Invalid Media Type");

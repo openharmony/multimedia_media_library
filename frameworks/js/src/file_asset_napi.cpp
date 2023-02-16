@@ -1266,7 +1266,6 @@ static void JSCloseCompleteCallback(napi_env env, napi_status status,
         napi_create_int32(env, E_SUCCESS, &jsContext->data);
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
-        UserFileClient::NotifyChange(Uri(MEDIALIBRARY_CLOSEASSET_URI_FORNOTIFY));
     } else {
         context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
