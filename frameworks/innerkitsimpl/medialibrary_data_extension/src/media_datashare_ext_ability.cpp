@@ -16,6 +16,8 @@
 
 #include "media_datashare_ext_ability.h"
 
+#include <cstdlib>
+
 #include "ability_info.h"
 #include "dataobs_mgr_client.h"
 #include "media_datashare_stub_impl.h"
@@ -63,33 +65,36 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
     const sptr<IRemoteObject> &token)
 {
     if ((record == nullptr) || (application == nullptr) || (handler == nullptr) || (token == nullptr)) {
-        std::string errLog = "MediaDataShareExtAbility::init failed, some object is nullptr";
-        return;
+        MEDIA_ERR_LOG("MediaDataShareExtAbility::init failed, some object is nullptr");
+        exit(0);
     }
     DataShareExtAbility::Init(record, application, handler, token);
     auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
         MEDIA_ERR_LOG("Failed to get context");
-        return;
+        exit(0);
     }
     MEDIA_INFO_LOG("%{public}s runtime language  %{public}d", __func__, runtime_.GetLanguage());
 
     auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
         MEDIA_ERR_LOG("Failed to get dataManager");
-        return;
+        exit(0);
     }
     auto extensionContext = GetContext();
     int32_t ret = dataManager->InitMediaLibraryMgr(context, extensionContext);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to init MediaLibraryMgr");
-        return;
+        exit(0);
     }
     dataManager->SetOwner(static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()));
 
     auto scannerManager = MediaScannerManager::GetInstance();
     if (scannerManager != nullptr) {
         scannerManager->Start();
+    } else {
+        MEDIA_ERR_LOG("Failed to get scanner manager");
+        exit(0);
     }
 }
 
@@ -141,18 +146,18 @@ static uint32_t TypeMaskStringToInteger(const std::string &typeMask)
 // Parse uri(eg. datashare::///media/image/10#key1:value1#key2:value2#key3:value3) to key-value pairs
 static int32_t GetKeyValueFromUri(const std::string &uri, std::vector<std::pair<std::string, std::string>> &pairs)
 {
-    constexpr size_t SHARP_POS = 1;
+    constexpr size_t sharpPos = 1;
     size_t nextPairIndex = uri.find('#');
     if (nextPairIndex == std::string::npos) {
         return E_SUCCESS;
     }
     std::string keyValueString;
     for (std::string remain = uri.substr(nextPairIndex); nextPairIndex != std::string::npos;) {
-        nextPairIndex = remain.find('#', SHARP_POS);
+        nextPairIndex = remain.find('#', sharpPos);
         if (nextPairIndex == std::string::npos) {
-            keyValueString = remain.substr(SHARP_POS);
+            keyValueString = remain.substr(sharpPos);
         } else {
-            keyValueString = remain.substr(SHARP_POS, nextPairIndex - 1);
+            keyValueString = remain.substr(sharpPos, nextPairIndex - 1);
             remain = remain.substr(nextPairIndex);
         }
         size_t splitIndex = keyValueString.find(':');
