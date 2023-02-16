@@ -137,18 +137,25 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS:
     }
 
     context_ = context;
-    InitMediaLibraryRdbStore();
+    int32_t errCode = InitMediaLibraryRdbStore();
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitMediaLibraryRdbStore");
 
-    InitDeviceData();
+    errCode = InitDeviceData();
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitDeviceData");
 
     MimeTypeUtils::InitMimeTypeMap();
-    MakeDirQuerySetMap(dirQuerySetMap_);
+    errCode = MakeDirQuerySetMap(dirQuerySetMap_);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at MakeDirQuerySetMap");
 
     MakeRootDirs();
-    InitialiseKvStore();
+    errCode = InitialiseKvStore();
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseKvStore");
 
-    InitialiseThumbnailService(extensionContext);
-    DoTrashAging();
+    errCode = InitialiseThumbnailService(extensionContext);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
+
+    errCode = DoTrashAging();
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at DoTrashAging");
     refCnt_++;
     return E_OK;
 }
