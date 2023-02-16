@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <list>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -58,7 +59,7 @@ public:
 
 private:
     MediaLibraryAsyncWorker();
-    void StartWorker();
+    void StartWorker(int num);
     void Init();
     std::shared_ptr<MediaLibraryAsyncTask> GetFgTask();
     std::shared_ptr<MediaLibraryAsyncTask> GetBgTask();
@@ -83,7 +84,7 @@ private:
     std::condition_variable bgWorkCv_;
     std::atomic<uint32_t> doneTotal_;
 
-    std::thread thread_;
+    std::list<std::thread> threads_;
 };
 } // namespace Media
 } // namespace OHOS
