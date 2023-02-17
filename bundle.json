@@ -83,7 +83,7 @@
                     "medialibrary_db_const.h"
                   ]
                 },
-                "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library"
+                "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager"
             }
         ],
         "test": [
