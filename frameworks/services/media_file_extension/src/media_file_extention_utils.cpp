@@ -36,6 +36,11 @@ using namespace OHOS::FileAccessFwk;
 
 namespace OHOS {
 namespace Media {
+constexpr int32_t ALBUM_MODE_RW =
+    DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
+constexpr int32_t FILE_MODE_RW =
+    DOCUMENT_FLAG_REPRESENTS_FILE | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
+
 int MediaFileExtentionUtils::OpenFile(const Uri &uri, const int flags, int &fd)
 {
     fd = -1;
@@ -502,6 +507,24 @@ std::shared_ptr<AbsSharedResultSet> GetListAlbumResult(const FileInfo &parentInf
     return GetResult(uri, uriType, selection, selectionArgs);
 }
 
+int GetFileInfo(FileInfo &fileInfo, const shared_ptr<NativeRdb::ResultSet> &result, const string &networkId = "")
+{
+    int fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
+    int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
+    fileInfo.uri =
+        MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
+    fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
+    fileInfo.mimeType = GetStringVal(MEDIA_DATA_DB_MIME_TYPE, result);
+    if (mediaType == MEDIA_TYPE_ALBUM) {
+        fileInfo.mode = ALBUM_MODE_RW;
+    } else {
+        fileInfo.size = GetInt64Val(MEDIA_DATA_DB_SIZE, result);
+        fileInfo.mode = FILE_MODE_RW;
+    }
+    fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
+    return E_SUCCESS;
+}
+
 int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedResultSet> &result,
     vector<FileInfo> &fileList)
 {
@@ -527,23 +550,9 @@ int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<AbsSharedRe
 {
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "AbsSharedResultSet is nullptr");
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
-    FileInfo fileInfo;
     while (result->GoToNextRow() == NativeRdb::E_OK) {
-        int fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, result, TYPE_INT32));
-        string mimeType = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MIME_TYPE, result, TYPE_STRING));
-        int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
-        fileInfo.fileName = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_NAME, result, TYPE_STRING));
-        fileInfo.mimeType = mimeType;
-        fileInfo.size =  get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, result, TYPE_INT64));
-        fileInfo.uri =
-            MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
-        fileInfo.mtime =
-            get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED, result, TYPE_INT64));
-        if (mediaType == MEDIA_TYPE_ALBUM) {
-            fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
-        } else {
-            fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_FILE | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
-        }
+        FileInfo fileInfo;
+        GetFileInfo(fileInfo, result, networkId);
         fileList.push_back(fileInfo);
     }
     return E_SUCCESS;
@@ -587,19 +596,9 @@ int32_t GetScanFileFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<Abs
         return E_FAIL;
     }
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
-    FileInfo fileInfo;
     while (result->GoToNextRow() == NativeRdb::E_OK) {
-        int mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE, result, TYPE_INT32));
-        int fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, result, TYPE_INT32));
-        string mimeType = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MIME_TYPE, result, TYPE_STRING));
-        fileInfo.uri =
-            MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
-        fileInfo.fileName = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_NAME, result, TYPE_STRING));
-        fileInfo.mimeType = mimeType;
-        fileInfo.size =  get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, result, TYPE_INT64));
-        fileInfo.mode = DOCUMENT_FLAG_REPRESENTS_FILE | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
-        fileInfo.mtime =
-            get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED, result, TYPE_INT64));
+        FileInfo fileInfo;
+        GetFileInfo(fileInfo, result, networkId);
         fileList.push_back(fileInfo);
     }
     return E_SUCCESS;
