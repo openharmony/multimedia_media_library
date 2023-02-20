@@ -504,7 +504,7 @@ int32_t DeleteInfoRecursively(const shared_ptr<FileAsset> &fileAsset)
             queryCmd.GetAbsRdbPredicates()->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(TRASHED_DIR_CHILD));
         }
         vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_TRASH };
-        auto result = uniStore->QueryOld(queryCmd, columns);
+        auto result = uniStore->Query(queryCmd, columns);
         CHECK_AND_RETURN_RET_LOG(result != nullptr, E_DB_FAIL, "Get child assets failed.");
 
         while (result->GoToNextRow() == NativeRdb::E_OK) {
