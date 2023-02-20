@@ -199,7 +199,7 @@ static int32_t RecycleChildAssetsInfoUtil(const int32_t parentId)
     MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId))->And()->
         EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(TRASHED_DIR_CHILD));
-    auto resultSet = uniStore->QueryOld(queryCmd, { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE });
+    auto resultSet = uniStore->Query(queryCmd, { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE });
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "QueryResultSet is nullptr");
 
     int32_t errCode = E_SUCCESS;
@@ -239,7 +239,7 @@ static int32_t RecycleChildSameNameInfoUtil(const int32_t parentId, const string
     queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_PARENT_ID, to_string(parentId));
     vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_IS_TRASH, MEDIA_DATA_DB_RECYCLE_PATH, MEDIA_DATA_DB_RELATIVE_PATH };
-    auto result = uniStore->QueryOld(queryCmd, columns);
+    auto result = uniStore->Query(queryCmd, columns);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_HAS_DB_ERROR, "Failed to obtain value from database");
 
     int32_t count = -1;
