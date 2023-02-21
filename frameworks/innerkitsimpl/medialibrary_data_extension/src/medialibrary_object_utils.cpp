@@ -1565,6 +1565,9 @@ int32_t MediaLibraryObjectUtils::CheckAssetDirExtension(MediaLibraryCommand &cmd
     if (dirAsset.GetDirType() == DEFAULT_DIR_TYPE) {
         return E_DIR_CHECK_DIR_FAIL;
     }
+    if (dirAsset.GetDirectory() == DOWNLOAD_DIR_VALUES) {
+        return E_SUCCESS;
+    }    
     ValueObject valueObject;
     auto values = cmd.GetValueBucket();
     if (!values.GetObject(DIRECTORY_DB_EXTENSION, valueObject)) {
