@@ -1115,6 +1115,11 @@ static void JSOpenExecute(napi_env env, void *data)
         NAPI_ERR_LOG("File open asset failed, ret: %{public}d", retVal);
     } else {
         context->fd = retVal;
+        if (mode.find('w') != string::npos) {
+            context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_WRITE);
+        } else {
+            context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_READONLY);
+        }
     }
 }
 
@@ -1208,6 +1213,22 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
     return result;
 }
 
+static bool CheckFileOpenStatus(FileAssetAsyncContext *context, int fd)
+{
+    auto fileAssetPtr = context->objectPtr;
+    int ret = fileAssetPtr->GetOpenStatus(fd);
+    if (ret < 0) {
+        return false;
+    } else {
+        fileAssetPtr->RemoveOpenStatus(fd);
+        if (ret == OPEN_TYPE_READONLY) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+}
+
 static void JSCloseExecute(FileAssetAsyncContext *context)
 {
     MediaLibraryTracer tracer;
@@ -1226,11 +1247,16 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
         NAPI_ERR_LOG("getting fd is invalid");
         return;
     }
+    bool openStatus = CheckFileOpenStatus(context, fd);
 
     int32_t retVal = close(fd);
     if (retVal != E_SUCCESS)  {
         context->SaveError(retVal);
         NAPI_ERR_LOG("call close failed %{public}d", retVal);
+        return;
+    }
+
+    if (!openStatus) {
         return;
     }
 
@@ -1335,6 +1361,10 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
         ASSERT_NULLPTR_CHECK(env, result);
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSClose", asyncContext);
+
+        asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
+
         JSCloseExecute(asyncContext.get());
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void* data) {},
