@@ -16,6 +16,7 @@
 
 #include "medialibrary_object_utils.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <sys/sendfile.h>
 #include "album_asset.h"
@@ -1579,6 +1580,7 @@ int32_t MediaLibraryObjectUtils::CheckAssetDirExtension(MediaLibraryCommand &cmd
     if (!values.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject)) {
         return E_HAS_DB_ERROR;
     }
+    transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
     int mediaType = MEDIA_TYPE_DEFAULT;
     valueObject.GetInt(mediaType);
     CHECK_AND_RETURN_RET_LOG(mediaType != MEDIA_TYPE_DEFAULT, E_GET_VALUEBUCKET_FAIL, "Failed to get mediaType");
