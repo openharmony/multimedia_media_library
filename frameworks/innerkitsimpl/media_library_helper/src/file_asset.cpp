@@ -368,6 +368,38 @@ void FileAsset::SetResultNapiType(const ResultNapiType type)
     resultNapiType_ = type;
 }
 
+void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
+{
+    lock_guard<mutex> lock(openStatusMapMutex_);
+    if (openStatusMap_ == nullptr) {
+        openStatusMap_ = make_shared<std::unordered_map<int32_t, int32_t>>();
+    }
+    openStatusMap_->insert({fd, openStatus});
+}
+
+void FileAsset::RemoveOpenStatus(int32_t fd)
+{
+    lock_guard<mutex> lock(openStatusMapMutex_);
+    if (openStatusMap_ == nullptr) {
+        return;
+    }
+    openStatusMap_->erase(fd);
+}
+
+int32_t FileAsset::GetOpenStatus(int32_t fd)
+{
+    lock_guard<mutex> lock(openStatusMapMutex_);
+    if (openStatusMap_ == nullptr) {
+        return E_INVALID_VALUES;
+    }
+    if (openStatusMap_->find(fd) != openStatusMap_->end()) {
+        return openStatusMap_->at(fd);
+    } else {
+        MEDIA_ERR_LOG("can not find this fd: [%{public}d]", fd);
+        return E_INVALID_VALUES;
+    }
+}
+
 int32_t FileAsset::CreateAsset(const string &filePath)
 {
     MEDIA_ERR_LOG("CreateAsset in");
