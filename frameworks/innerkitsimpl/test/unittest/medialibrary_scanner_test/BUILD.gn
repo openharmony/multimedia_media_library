@@ -63,8 +63,15 @@ ohos_unittest("medialibrary_scanner_test") {
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_provider",
+    "napi:ace_napi",
     "relational_store:native_rdb",
   ]
+
+  if (is_standard_system) {
+    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
+  } else {
+    external_deps += [ "hilog:libhilog" ]
+  }
 
   resource_config_file =
       "${MEDIA_LIB_INNERKITS_DIR}/test/unittest/resources/ohos_test.xml"
