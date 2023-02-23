@@ -1704,9 +1704,6 @@ static void JSIsDirectoryCallbackComplete(napi_env env, napi_status status,
 static napi_value GetJSArgsForIsDirectory(napi_env env, size_t argc, const napi_value argv[],
                                           FileAssetAsyncContext &asyncContext)
 {
-    string str = "";
-    vector<string> strArr;
-    string order = "";
     const int32_t refCount = 1;
     napi_value result;
     auto context = &asyncContext;
@@ -1715,11 +1712,7 @@ static napi_value GetJSArgsForIsDirectory(napi_env env, size_t argc, const napi_
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
-        if (i == PARAM0 && valueType == napi_object) {
-        } else if (i == PARAM0 && valueType == napi_function) {
-            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
-            break;
-        } else if (i == PARAM1 && valueType == napi_function) {
+        if (i == PARAM0 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
@@ -1889,9 +1882,6 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
 static napi_value GetJSArgsForIsFavorite(napi_env env, size_t argc, const napi_value argv[],
                                          FileAssetAsyncContext &asyncContext)
 {
-    string str = "";
-    vector<string> strArr;
-    string order = "";
     const int32_t refCount = 1;
     napi_value result;
     auto context = &asyncContext;
@@ -1900,11 +1890,7 @@ static napi_value GetJSArgsForIsFavorite(napi_env env, size_t argc, const napi_v
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
-        if (i == PARAM0 && valueType == napi_object) {
-        } else if (i == PARAM0 && valueType == napi_function) {
-            napi_create_reference(env, argv[i], refCount, &context->callbackRef);
-            break;
-        } else if (i == PARAM1 && valueType == napi_function) {
+        if (i == PARAM0 && valueType == napi_function) {
             napi_create_reference(env, argv[i], refCount, &context->callbackRef);
             break;
         } else {
@@ -2110,9 +2096,6 @@ static void JSIsTrashCallbackComplete(napi_env env, napi_status status,
 static napi_value GetJSArgsForIsTrash(napi_env env, size_t argc, const napi_value argv[],
                                       FileAssetAsyncContext &asyncContext)
 {
-    string str = "";
-    vector<string> strArr;
-    string order = "";
     const int32_t refCount = 1;
     napi_value result;
     auto context = &asyncContext;
