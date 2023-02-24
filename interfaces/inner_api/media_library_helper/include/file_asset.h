@@ -16,6 +16,8 @@
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_FILE_ASSET_H_
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_FILE_ASSET_H_
 
+#include <memory>
+#include <mutex>
 #include <string>
 #include <variant>
 #include <unordered_map>
@@ -27,6 +29,9 @@ namespace Media {
 constexpr int MEMBER_TYPE_INT32 = 0;
 constexpr int MEMBER_TYPE_INT64 = 1;
 constexpr int MEMBER_TYPE_STRING = 2;
+
+constexpr int OPEN_TYPE_READONLY = 0;
+constexpr int OPEN_TYPE_WRITE = 1;
 
 /**
  * @brief Class for filling all file asset parameters
@@ -131,6 +136,10 @@ public:
     ResultNapiType GetResultNapiType() const;
     void SetResultNapiType(const ResultNapiType type);
 
+    void SetOpenStatus(int32_t fd, int32_t openStatus);
+    void RemoveOpenStatus(int32_t fd);
+    int32_t GetOpenStatus(int32_t fd);
+
     int32_t CreateAsset(const std::string &filePath);
     int32_t ModifyAsset(const std::string &oldPath, const std::string &newPath);
     static int32_t DeleteAsset(const std::string &filePath);
@@ -147,6 +156,8 @@ private:
     ResultNapiType resultNapiType_;
     int32_t count_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> member_;
+    std::mutex openStatusMapMutex_;
+    std::shared_ptr<std::unordered_map<int32_t, int32_t>> openStatusMap_;
 };
 } // namespace Media
 } // namespace OHOS
