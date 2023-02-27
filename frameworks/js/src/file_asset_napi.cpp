@@ -16,6 +16,7 @@
 
 #include "file_asset_napi.h"
 
+#include <algorithm>
 #include <cstring>
 
 #include "abs_shared_result_set.h"
@@ -1105,6 +1106,7 @@ static void JSOpenExecute(napi_env env, void *data)
         NAPI_ERR_LOG("getting mode invalid");
         return;
     }
+    transform(mode.begin(), mode.end(), mode.begin(), ::tolower);
 
     string fileUri = context->objectPtr->GetUri();
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(fileUri, context->objectPtr->GetTypeMask());
