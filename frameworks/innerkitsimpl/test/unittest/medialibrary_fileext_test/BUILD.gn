@@ -41,7 +41,6 @@ ohos_unittest("medialibrary_fileext_unittest") {
   deps = [
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
     "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
-    "//foundation/filemanagement/user_file_service/frameworks/innerkits/file_access:file_access_extension_ability_kit",
   ]
 
   external_deps = [
@@ -60,5 +59,6 @@ ohos_unittest("medialibrary_fileext_unittest") {
     "data_share:datashare_provider",
     "multimedia_image_framework:image_native",
     "relational_store:native_rdb",
+    "user_file_service:file_access_extension_ability_kit",
   ]
 }
