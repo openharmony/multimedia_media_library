@@ -46,7 +46,6 @@ config("media_data_extension_public_config") {
     "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
     "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_thumbnail/include",
-    "//base/security/device_auth/interfaces/innerkits",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/appmgr",
     "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
     "//foundation/bundlemanager/bundle_framework/interfaces/kits/js/common",
@@ -161,7 +160,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIA_LIB_COMMON_UTILS_DIR}:medialibrary_common_utils",
     "${MEDIA_LIB_COMMON_UTILS_DIR}:permission_utils",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
-    "//base/security/device_auth/services:deviceauth_sdk",
     "//foundation/distributedhardware/device_manager/interfaces/inner_kits/native_cpp:devicemanagersdk",
     "//foundation/filemanagement/user_file_service/frameworks/innerkits/file_access:file_access_extension_ability_kit",
   ]
