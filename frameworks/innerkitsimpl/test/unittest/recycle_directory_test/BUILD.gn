@@ -69,7 +69,6 @@ ohos_unittest("recycle_directory_test") {
     "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
     "//base/security/device_auth/services:deviceauth_sdk",
     "//foundation/distributedhardware/device_manager/interfaces/inner_kits/native_cpp:devicemanagersdk",
-    "//foundation/filemanagement/user_file_service/frameworks/innerkits/file_access:file_access_extension_ability_kit",
   ]
 
   external_deps = [
@@ -94,6 +93,7 @@ ohos_unittest("recycle_directory_test") {
     "multimedia_player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "user_file_service:file_access_extension_ability_kit",
   ]
 
   resource_config_file =

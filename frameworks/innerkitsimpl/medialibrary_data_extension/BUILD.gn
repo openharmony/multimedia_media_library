@@ -55,7 +55,6 @@ config("media_data_extension_public_config") {
     "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler/include",
     "//foundation/communication/dsoftbus/interfaces/kits/bus_center",
     "//foundation/communication/dsoftbus/interfaces/kits/common",
-    "//foundation/filemanager/user_file_service/frameworks/innerkits/file_access/include/",
     "//foundation/systemabilitymgr/safwk/services/safwk/include",
     "//foundation/multimedia/player_framework/interfaces/inner_api/native",
     "//commonlibrary/c_utils/base/include",
@@ -163,7 +162,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
     "//base/security/device_auth/services:deviceauth_sdk",
     "//foundation/distributedhardware/device_manager/interfaces/inner_kits/native_cpp:devicemanagersdk",
-    "//foundation/filemanagement/user_file_service/frameworks/innerkits/file_access:file_access_extension_ability_kit",
   ]
 
   external_deps = [
@@ -188,6 +186,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "multimedia_player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "user_file_service:file_access_extension_ability_kit",
   ]
 
   sanitize = {
