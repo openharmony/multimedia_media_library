@@ -22,6 +22,7 @@
 #include <securec.h>
 #include <unistd.h>
 #include <unordered_map>
+#include <fcntl.h>
 
 #include "epfs.h"
 #include "image_source.h"

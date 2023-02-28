@@ -46,6 +46,7 @@ config("media_library_config") {
   cflags = [
     "-Wall",
     "-Werror",
+    "-Wno-unused-but-set-variable",
   ]
 }
 
