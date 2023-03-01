@@ -52,6 +52,7 @@
 #include "timer.h"
 #include "permission_utils.h"
 #include "trash_async_worker.h"
+#include "media_column.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -436,6 +437,9 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
 
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET:
+        case OperationObject::FILESYSTEM_PHOTO:
+        case OperationObject::FILESYSTEM_AUDIO:
+        case OperationObject::FILESYSTEM_DOCUMENT:
         case OperationObject::FILESYSTEM_DIR:
         case OperationObject::FILESYSTEM_ALBUM: {
             string fileId = cmd.GetOprnFileId();
@@ -679,10 +683,24 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationOb
     }
     // tabletype mapping into tablename
     std::string tableName = MEDIALIBRARY_TABLE;
-    if (oprnObject == OperationObject::SMART_ALBUM) {
-        tableName = SMARTALBUM_TABLE;
-    } else if (oprnObject == OperationObject::SMART_ALBUM_MAP) {
-        tableName = SMARTALBUM_MAP_TABLE;
+    switch (oprnObject) {
+        case OperationObject::SMART_ALBUM:
+            tableName = SMARTALBUM_TABLE;
+            break;
+        case OperationObject::SMART_ALBUM_MAP:
+            tableName = SMARTALBUM_MAP_TABLE;
+            break;
+        case OperationObject::FILESYSTEM_PHOTO:
+            tableName = PhotoColumn::PHOTOS_TABLE;
+            break;
+        case OperationObject::FILESYSTEM_AUDIO:
+            tableName = AudioColumn::AUDIOS_TABLE;
+            break;
+        case OperationObject::FILESYSTEM_DOCUMENT:
+            tableName = DocumentColumn::DOCUMENTS_TABLE;
+            break;
+        default:
+            break;
     }
 
     if ((oprnObject != OperationObject::ASSETMAP) && (oprnObject != OperationObject::SMART_ALBUM_ASSETS)) {

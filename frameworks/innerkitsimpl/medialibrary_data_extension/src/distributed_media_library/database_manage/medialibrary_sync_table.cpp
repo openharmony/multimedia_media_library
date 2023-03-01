@@ -17,14 +17,15 @@
 #include "medialibrary_sync_table.h"
 #include "media_log.h"
 #include "medialibrary_tracer.h"
+#include "media_column.h"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::AppExecFwk;
-constexpr int TABLE_NUM = 4;
-static std::array<std::string, TABLE_NUM> table_arr = {
-    MEDIALIBRARY_TABLE, SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE
+static std::vector<std::string> table_arr = {
+    MEDIALIBRARY_TABLE, PhotoColumn::PHOTOS_TABLE, AudioColumn::AUDIOS_TABLE,
+    DocumentColumn::DOCUMENTS_TABLE, SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE
 };
 
 bool MediaLibrarySyncTable::SyncPullAllTableByDeviceId(
