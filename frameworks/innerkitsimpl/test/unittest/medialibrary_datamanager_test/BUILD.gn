@@ -30,7 +30,6 @@ ohos_unittest("medialibrary_datamanager_unittest") {
 
     #"${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension/include",
     "${MEDIA_LIB_SERVICES_DIR}/media_file_extension/include",
-    "//foundation/filemanager/user_file_service/frameworks/innerkits/file_access/include/",
   ]
 
   sources = [
@@ -41,7 +40,6 @@ ohos_unittest("medialibrary_datamanager_unittest") {
   deps = [
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
     "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
-    "//foundation/filemanagement/user_file_service/frameworks/innerkits/file_access:file_access_extension_ability_kit",
   ]
 
   external_deps = [
@@ -60,6 +58,7 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "data_share:datashare_provider",
     "multimedia_image_framework:image_native",
     "relational_store:native_rdb",
+    "user_file_service:file_access_extension_ability_kit",
   ]
 
   resource_config_file =
