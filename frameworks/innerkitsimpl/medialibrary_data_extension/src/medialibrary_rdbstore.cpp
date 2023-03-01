@@ -16,6 +16,7 @@
 
 #include "medialibrary_rdbstore.h"
 
+#include "media_column.h"
 #include "media_log.h"
 #include "medialibrary_device.h"
 #include "medialibrary_errno.h"
@@ -62,7 +63,9 @@ int32_t MediaLibraryRdbStore::Init()
 
     if (rdbDataCallBack.HasDistributedTables()) {
         auto ret = rdbStore_->SetDistributedTables(
-            {MEDIALIBRARY_TABLE, SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE});
+            { MEDIALIBRARY_TABLE, PhotoColumn::PHOTOS_TABLE, AudioColumn::AUDIOS_TABLE,
+            DocumentColumn::DOCUMENTS_TABLE, SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE,
+            CATEGORY_SMARTALBUM_MAP_TABLE });
         MEDIA_DEBUG_LOG("ret = %{private}d", ret);
     }
 
@@ -370,6 +373,9 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 {
     vector<string> executeSqlStrs = {
         CREATE_MEDIA_TABLE,
+        PhotoColumn::CREATE_PHOTO_TABLE,
+        AudioColumn::CREATE_AUDIO_TABLE,
+        DocumentColumn::CREATE_DOCUMENT_TABLE,
         CREATE_SMARTALBUM_TABLE,
         CREATE_SMARTALBUMMAP_TABLE,
         CREATE_DEVICE_TABLE,

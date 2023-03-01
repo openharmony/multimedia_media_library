@@ -31,6 +31,9 @@ namespace Media {
 enum class OperationObject : uint32_t {
     UNKNOWN_OBJECT = 0,
     FILESYSTEM_ASSET,
+    FILESYSTEM_PHOTO,
+    FILESYSTEM_AUDIO,
+    FILESYSTEM_DOCUMENT,
     FILESYSTEM_DIR,
     FILESYSTEM_ALBUM,
     SMART_ALBUM,
