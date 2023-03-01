@@ -127,7 +127,6 @@ bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
 
 int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 {
-    MEDIA_DEBUG_LOG("Insert");
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryRdbStore::Insert");
     if (rdbStore_ == nullptr) {
@@ -154,7 +153,6 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 
 int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedRows)
 {
-    MEDIA_DEBUG_LOG("Delete");
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
@@ -177,7 +175,6 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
 
 int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedRows)
 {
-    MEDIA_DEBUG_LOG("Update");
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
         return E_HAS_DB_ERROR;
@@ -224,8 +221,6 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCo
 
 int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
 {
-    MEDIA_DEBUG_LOG("ExecuteSql");
-
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
@@ -241,8 +236,6 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql)
 {
-    MEDIA_DEBUG_LOG("ExecuteSql");
-
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return nullptr;
