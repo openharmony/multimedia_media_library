@@ -19,6 +19,7 @@
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "media_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -199,6 +200,9 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
     const static map<string, OperationObject> oprnMap = {
         // use in Insert...
         { MEDIA_FILEOPRN, OperationObject::FILESYSTEM_ASSET },
+        { MEDIA_PHOTOOPRN, OperationObject::FILESYSTEM_PHOTO },
+        { MEDIA_AUDIOOPRN, OperationObject::FILESYSTEM_AUDIO },
+        { MEDIA_DOCUMENTOPRN, OperationObject::FILESYSTEM_DOCUMENT },
         { MEDIA_DIROPRN, OperationObject::FILESYSTEM_DIR },
         { MEDIA_ALBUMOPRN, OperationObject::FILESYSTEM_ALBUM },
         { MEDIA_SMARTALBUMOPRN, OperationObject::SMART_ALBUM },
@@ -288,6 +292,9 @@ void MediaLibraryCommand::ParseTableName()
         { OperationObject::ALL_DEVICE, { { OperationType::UNKNOWN_TYPE, DEVICE_TABLE } } },
         { OperationObject::ACTIVE_DEVICE, { { OperationType::UNKNOWN_TYPE, DEVICE_TABLE } } },
         { OperationObject::BUNDLE_PERMISSION, { { OperationType::UNKNOWN_TYPE, BUNDLE_PERMISSION_TABLE } } },
+        { OperationObject::FILESYSTEM_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
+        { OperationObject::FILESYSTEM_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
+        { OperationObject::FILESYSTEM_DOCUMENT, { { OperationType::UNKNOWN_TYPE, DocumentColumn::DOCUMENTS_TABLE } } },
     };
 
     if (tableNameMap.find(oprnObject_) != tableNameMap.end()) {
@@ -316,6 +323,10 @@ void MediaLibraryCommand::ParseTableName()
     if (rdbStore != nullptr) {
         auto rdbStorePtr = rdbStore->GetRaw();
         if (rdbStorePtr != nullptr) {
+            if (tableName_ == PhotoColumn::PHOTOS_TABLE || tableName_ == AudioColumn::AUDIOS_TABLE ||
+                tableName_ == DocumentColumn::DOCUMENTS_TABLE) {
+                tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, tableName_);
+            }
             tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
         }
     }

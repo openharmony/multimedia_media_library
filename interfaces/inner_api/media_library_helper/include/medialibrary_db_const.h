@@ -450,6 +450,9 @@ const std::string CREATE_MEDIALIBRARY_ERROR_TABLE = "CREATE TABLE IF NOT EXISTS 
 // File operations constants
 const std::string MEDIA_OPERN_KEYWORD = "operation";
 const std::string MEDIA_FILEOPRN = "file_operation";
+const std::string MEDIA_PHOTOOPRN = "photo_operation";
+const std::string MEDIA_AUDIOOPRN = "audio_operation";
+const std::string MEDIA_DOCUMENTOPRN = "document_operation";
 const std::string MEDIA_ALBUMOPRN = "album_operation";
 const std::string MEDIA_DIROPRN = "dir_operation";
 const std::string MEDIA_QUERYOPRN = "query_operation";
