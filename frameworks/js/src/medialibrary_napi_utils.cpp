@@ -601,20 +601,17 @@ void MediaLibraryNapiUtils::InvokeJSAsyncMethod(napi_env env, napi_deferred defe
     MediaLibraryTracer tracer;
     tracer.Start("InvokeJSAsyncMethod");
 
-    NAPI_DEBUG_LOG("InvokeJSAsyncMethod IN");
     napi_value retVal;
     napi_value callback = nullptr;
 
     /* Deferred is used when JS Callback method expects a promise value */
     if (deferred) {
-        NAPI_DEBUG_LOG("InvokeJSAsyncMethod promise");
         if (asyncContext.status) {
             napi_resolve_deferred(env, deferred, asyncContext.data);
         } else {
             napi_reject_deferred(env, deferred, asyncContext.error);
         }
     } else {
-        NAPI_DEBUG_LOG("InvokeJSAsyncMethod callback");
         napi_value result[ARGS_TWO];
         result[PARAM0] = asyncContext.error;
         result[PARAM1] = asyncContext.data;
@@ -623,7 +620,6 @@ void MediaLibraryNapiUtils::InvokeJSAsyncMethod(napi_env env, napi_deferred defe
         napi_delete_reference(env, callbackRef);
     }
     napi_delete_async_work(env, work);
-    NAPI_DEBUG_LOG("InvokeJSAsyncMethod OUT");
 }
 
 template <class AsyncContext>
