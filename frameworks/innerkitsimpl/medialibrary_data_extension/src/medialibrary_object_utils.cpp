@@ -237,7 +237,6 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
 
 NativeAlbumAsset MediaLibraryObjectUtils::GetLastDirExistInDb(const std::string &dirPath)
 {
-    MEDIA_DEBUG_LOG("enter");
     NativeAlbumAsset dirAsset;
     string lastPath = dirPath;
     if (lastPath.back() == '/') {
@@ -346,7 +345,6 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
 
 int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t &rowId)
 {
-    MEDIA_DEBUG_LOG("enter");
     string dirPath;
     ValueObject valueObject;
     const ValuesBucket &values = cmd.GetValueBucket();
@@ -661,7 +659,6 @@ static int32_t OpenAsset(const string &filePath, const string &mode)
 
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
-    MEDIA_DEBUG_LOG("enter");
     string uriString = cmd.GetUri().ToString();
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromUri(uriString);
     if (fileAsset == nullptr) {
@@ -696,7 +693,6 @@ int32_t MediaLibraryObjectUtils::CloseFile(string &srcPath, string &id)
 
 int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
 {
-    MEDIA_DEBUG_LOG("enter");
     string strFileId = cmd.GetOprnFileId();
     if (strFileId.empty()) {
         MEDIA_ERR_LOG("Get id from uri or valuesBucket failed!");

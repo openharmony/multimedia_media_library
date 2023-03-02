@@ -68,13 +68,11 @@ void MediaLibraryAsyncWorker::Init()
 
 void MediaLibraryAsyncWorker::Interrupt()
 {
-    MEDIA_DEBUG_LOG("Interrupt");
     ReleaseBgTask();
 }
 
 void MediaLibraryAsyncWorker::Stop()
 {
-    MEDIA_DEBUG_LOG("Stop");
     ReleaseBgTask();
     ReleaseFgTask();
 }
