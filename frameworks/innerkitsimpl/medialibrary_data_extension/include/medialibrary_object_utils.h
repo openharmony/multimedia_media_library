@@ -77,6 +77,7 @@ public:
     static int32_t CheckDirExtension(MediaLibraryCommand &cmd);
     static int32_t UpdateDateModified(const std::string &dirPath);
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
+    static void ScanFile(std::string &srcPath);
 
 private:
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);
@@ -94,7 +95,6 @@ private:
     static int32_t ProcessHiddenDir(const std::string &dstDirName, const std::string &srcDirPath);
     static int32_t UpdateFileInfoInDb(MediaLibraryCommand &cmd, const std::string &dstPath,
         const int &bucketId, const std::string &bucketName);
-    static void ScanFile(std::string &srcPath);
     static int32_t CopyAssetByFd(int32_t srcFd, int32_t srcId, int32_t destFd, int32_t destId);
     static void CloseFileById(int32_t fileId);
     static int32_t GetFileResult(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
