@@ -32,6 +32,7 @@
 #include "rdb_errno.h"
 #include "string_ex.h"
 #include "thumbnail_const.h"
+#include "thumbnail_utils.h"
 #include "userfile_client.h"
 
 using OHOS::HiviewDFX::HiLog;
@@ -1383,43 +1384,6 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     return result;
 }
 
-static int GetImageFromResult(const shared_ptr<DataShare::DataShareResultSet> &resultSet, Size &size,
-    unique_ptr<PixelMap> &outPixelMap)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("MediaThumbnailHelper::GetKv");
-    int ret = resultSet->GoToFirstRow();
-    if (ret != DataShare::E_OK) {
-        NAPI_ERR_LOG("GoToFirstRow error %{public}d", ret);
-        return ret;
-    }
-
-    vector<uint8_t> key;
-    ret = resultSet->GetBlob(PARAM0, key);
-    if (ret != DataShare::E_OK) {
-        NAPI_ERR_LOG("GetBlob key error %{public}d", ret);
-        return ret;
-    }
-    vector<uint8_t> image;
-    ret = resultSet->GetBlob(PARAM1, image);
-    if (ret != DataShare::E_OK) {
-        NAPI_ERR_LOG("GetBlob image error %{public}d", ret);
-        return ret;
-    }
-    resultSet->Close();
-    tracer.Finish();
-
-    NAPI_DEBUG_LOG("key %{public}s key len %{public}d len %{public}d", string(key.begin(),
-        key.end()).c_str(), static_cast<int>(key.size()), static_cast<int>(image.size()));
-
-    tracer.Start("MediaThumbnailHelper::ResizeImage");
-    if (!MediaThumbnailHelper::ResizeImage(image, size, outPixelMap)) {
-        NAPI_ERR_LOG("ResizeImage error");
-        return E_FAIL;
-    }
-    return ret;
-}
-
 static unique_ptr<PixelMap> QueryThumbnail(std::string &uri, Size &size, const std::string &typeMask)
 {
     MediaLibraryTracer tracer;
@@ -1440,7 +1404,7 @@ static unique_ptr<PixelMap> QueryThumbnail(std::string &uri, Size &size, const s
     tracer.Finish();
 
     unique_ptr<PixelMap> pixelMap;
-    auto ret = GetImageFromResult(resultSet, size, pixelMap);
+    auto ret = ThumbnailUtils::GetPixelMapFromResult(resultSet, size, pixelMap);
     if (ret != DataShare::E_OK) {
         NAPI_ERR_LOG("getImageFromResult error %{public}d", ret);
     }
