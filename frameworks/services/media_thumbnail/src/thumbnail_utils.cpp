@@ -42,6 +42,8 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+constexpr int32_t KEY_INDEX = 0;
+constexpr int32_t VALUE_INDEX = 1;
 bool ThumbnailUtils::UpdateRemotePath(string &path, const string &networkId)
 {
     MEDIA_DEBUG_LOG("ThumbnailUtils::UpdateRemotePath IN path = %{private}s, networkId = %{private}s",
@@ -1273,6 +1275,7 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize.width = size.width;
     decodeOpts.desiredSize.height = size.height;
+    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     if (err != Media::SUCCESS) {
         MEDIA_ERR_LOG("Failed to create pixelmap %{public}d", err);
@@ -1280,6 +1283,46 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
     }
 
     return true;
+}
+
+int ThumbnailUtils::GetPixelMapFromResult(const shared_ptr<DataShare::DataShareResultSet> &resultSet, const Size &size,
+    unique_ptr<PixelMap> &outPixelMap)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ThumbnailUtils::GetKv");
+    int ret = resultSet->GoToFirstRow();
+    if (ret != DataShare::E_OK) {
+        MEDIA_ERR_LOG("GoToFirstRow error %{public}d", ret);
+        return ret;
+    }
+
+    vector<uint8_t> key;
+    ret = resultSet->GetBlob(KEY_INDEX, key);
+    if (ret != DataShare::E_OK) {
+        MEDIA_ERR_LOG("GetBlob key error %{public}d", ret);
+        return ret;
+    }
+
+    vector<uint8_t> image;
+    ret = resultSet->GetBlob(VALUE_INDEX, image);
+    if (ret != DataShare::E_OK) {
+        MEDIA_ERR_LOG("GetBlob image error %{public}d", ret);
+        return ret;
+    }
+
+    resultSet->Close();
+    tracer.Finish();
+
+    MEDIA_DEBUG_LOG("key %{public}s key len %{public}d len %{public}d", string(key.begin(),
+        key.end()).c_str(), static_cast<int>(key.size()), static_cast<int>(image.size()));
+
+    tracer.Start("ThumbnailUtils::ResizeImage");
+    if (!ResizeImage(image, size, outPixelMap)) {
+        MEDIA_ERR_LOG("ResizeImage error");
+        return E_FAIL;
+    }
+
+    return ret;
 }
 
 bool ThumbnailUtils::GetKvResultSet(const shared_ptr<SingleKvStore> &kvStore, const string &key,

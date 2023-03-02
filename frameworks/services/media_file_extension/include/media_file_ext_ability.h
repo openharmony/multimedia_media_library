@@ -17,6 +17,7 @@
 
 #include "file_access_ext_ability.h"
 #include "file_filter.h"
+#include "image_source.h"
 #include "js_runtime.h"
 
 namespace OHOS {
@@ -46,6 +47,7 @@ public:
     int Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri) override;
     int Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri) override;
     int Access(const Uri &uri, bool &isExist) override;
+    int GetThumbnail(const Uri &uri, const Size &size, std::unique_ptr<PixelMap> &pixelMap) override;
     int GetFileInfoFromUri(const Uri &selectFile, FileAccessFwk::FileInfo &fileInfo) override;
     int GetFileInfoFromRelativePath(const std::string &relativePath, FileAccessFwk::FileInfo &fileInfo) override;
 private:
