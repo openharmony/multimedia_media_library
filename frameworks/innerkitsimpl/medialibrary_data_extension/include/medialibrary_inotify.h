@@ -25,19 +25,19 @@
 namespace OHOS {
 namespace Media {
 struct WatchInfo {
-    WatchInfo(std::string path, int32_t fileId) : path_(path), fileId_(fileId), meetEvent_(0) {};
+    WatchInfo(const std::string &path, const std::string &uri): path_(path), uri_(uri), meetEvent_(0){};
     std::string path_;
-    int32_t fileId_;
+    std::string uri_;
     int32_t meetEvent_;
 };
 
 class MediaLibraryInotify {
 public:
     static std::shared_ptr<MediaLibraryInotify> GetInstance();
-    int32_t AddWatchList(const std::string &path, int32_t fileId);
+    int32_t AddWatchList(const std::string &path, const std::string &uri);
     MediaLibraryInotify() = default;
     ~MediaLibraryInotify() = default;
-    int32_t RemoveByFileId(int fileId);
+    int32_t RemoveByFileUri(const std::string &uri);
     void DoAging();
     void DoStop();
 private:

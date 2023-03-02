@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "file_asset.h"
 #define MLOG_TAG "ObjectUtils"
 
 #include "medialibrary_object_utils.h"
@@ -680,7 +681,7 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
         auto watch = MediaLibraryInotify::GetInstance();
         if (watch != nullptr) {
             MEDIA_DEBUG_LOG("enter, path = %{private}s", path.c_str());
-            watch->AddWatchList(path, fileAsset->GetId());
+            watch->AddWatchList(path, fileAsset->GetUri());
         }
     }
     MEDIA_DEBUG_LOG("MediaLibraryDataManager OpenFile: Success");
@@ -703,12 +704,13 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
         return E_INVALID_FILEID;
     }
 
-    string srcPath = GetPathByIdFromDb(strFileId);
-    if (srcPath.empty()) {
-        MEDIA_ERR_LOG("Get path of id %{public}s from database file!", strFileId.c_str());
+    auto fileAsset = GetFileAssetFromId(strFileId);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get fileAsset from database fail!");
         return E_INVALID_FILEID;
     }
 
+    string srcPath = fileAsset->GetPath();
     string fileName = MediaLibraryDataManagerUtils::GetFileName(srcPath);
     if ((fileName.length() != 0) && (fileName.at(0) != '.')) {
         string dirPath = MediaLibraryDataManagerUtils::GetParentPath(srcPath);
@@ -718,8 +720,8 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     // remove inotify event since there is close cmd
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
-        watch->RemoveByFileId(stoi(strFileId));
-        MEDIA_ERR_LOG("watch RemoveByFileId");
+        watch->RemoveByFileUri(fileAsset->GetUri());
+        MEDIA_ERR_LOG("watch RemoveByFileUri");
     }
     InvalidateThumbnail(strFileId);
     ScanFile(srcPath);
