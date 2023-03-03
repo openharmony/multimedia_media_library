@@ -165,6 +165,11 @@ int MediaFileExtAbility::Access(const Uri &uri, bool &isExist)
     return ConvertErrno(MediaFileExtentionUtils::Access(uri, isExist));
 }
 
+int MediaFileExtAbility::GetThumbnail(const Uri &uri, const Size &size, std::unique_ptr<PixelMap> &pixelMap)
+{
+    return ConvertErrno(MediaFileExtentionUtils::GetThumbnail(uri, size, pixelMap));
+}
+
 int MediaFileExtAbility::GetFileInfoFromUri(const Uri &selectFile, FileInfo &fileInfo)
 {
     return ConvertErrno(MediaFileExtentionUtils::GetFileInfoFromUri(selectFile, fileInfo));

@@ -21,6 +21,7 @@
 
 #include "ability_context.h"
 #include "avmetadatahelper.h"
+#include "datashare_result_set.h"
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_datashare_bridge.h"
@@ -81,6 +82,8 @@ public:
         float degrees);
     static void ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData);
     static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
+    static int GetPixelMapFromResult(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, const Size &size,
+        std::unique_ptr<PixelMap> &outPixelMap);
 
     // URI utils
     std::string GetDeviceIdByUri(const std::string &uri);
