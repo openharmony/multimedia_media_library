@@ -14,11 +14,15 @@
  */
 #define MLOG_TAG "FileInotify"
 #include "medialibrary_inotify.h"
+
+#include <string>
 #include <thread>
+
 #include "unistd.h"
 #include "media_log.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_data_manager_utils.h"
 
 using namespace std;
 namespace OHOS {
@@ -67,9 +71,11 @@ void MediaLibraryInotify::WatchCallBack()
             meetEvent = (eventMask & IN_CLOSE_NOWRITE) ? (meetEvent | IN_CLOSE_NOWRITE) : meetEvent;
             if (((meetEvent & IN_CLOSE_WRITE) && (meetEvent & IN_MODIFY)) ||
                 ((meetEvent & IN_CLOSE_NOWRITE) && (meetEvent & IN_MODIFY))) {
-                MEDIA_DEBUG_LOG("path:%s, meetEvent:%x file_id:%d",item.path_.c_str(), meetEvent, item.fileId_);
+                MEDIA_DEBUG_LOG("path:%s, meetEvent:%x file_id:%s", item.path_.c_str(),
+                    meetEvent, item.uri_.c_str());
                 string path = item.path_;
-                string id = to_string(item.fileId_);
+                string uri = item.uri_;
+                string id = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
                 Remove(event->wd);
                 MediaLibraryObjectUtils::CloseFile(path, id);
             }
@@ -100,19 +106,20 @@ void MediaLibraryInotify::DoStop()
     inotifyFd_ = 0;
 }
 
-int32_t MediaLibraryInotify::RemoveByFileId(int fileId)
+int32_t MediaLibraryInotify::RemoveByFileUri(const string &uri)
 {
     lock_guard<mutex> lock(mutex_);
     int32_t wd = -1;
     for (auto iter = watchList_.begin(); iter != watchList_.end(); iter++) {
-        if (iter->second.fileId_ == fileId) {
+        if (iter->second.uri_ == uri) {
             wd = iter->first;
-            MEDIA_DEBUG_LOG("remove fileId:%d wd:%d path:%s", fileId, wd, iter->second.path_.c_str());
+            MEDIA_DEBUG_LOG("remove uri:%s wd:%d path:%s",
+                iter->second.uri_.c_str(), wd, iter->second.path_.c_str());
             break;
         }
     }
     if (wd < 0) {
-        MEDIA_DEBUG_LOG("remove fileId:%d fail", fileId);
+        MEDIA_DEBUG_LOG("remove uri:%s fail", uri.c_str());
         return E_FAIL;
     }
     return Remove(wd);
@@ -140,16 +147,16 @@ int32_t MediaLibraryInotify::Init()
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryInotify::AddWatchList(const string &path, int32_t fileId)
+int32_t MediaLibraryInotify::AddWatchList(const string &path, const string &uri)
 {
     lock_guard<mutex> lock(mutex_);
     if (watchList_.size() > MAX_WATCH_LIST) {
-        MEDIA_ERR_LOG("watch list full, add fileId:%d fail", fileId);
+        MEDIA_ERR_LOG("watch list full, add uri:%s fail", uri.c_str());
         return E_FAIL;
     }
     int32_t wd = inotify_add_watch(inotifyFd_, path.c_str(), IN_CLOSE | IN_MODIFY);
     if (wd > 0) {
-        struct WatchInfo item(path, fileId);
+        struct WatchInfo item(path, uri);
         watchList_.emplace(wd, item);
     }
     if (!isWatching_.load()) {
