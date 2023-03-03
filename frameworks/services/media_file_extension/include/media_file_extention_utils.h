@@ -19,6 +19,7 @@
 #include "datashare_result_set.h"
 #include "file_access_extension_info.h"
 #include "file_filter.h"
+#include "image_source.h"
 #include "uri.h"
 
 namespace OHOS {
@@ -76,6 +77,7 @@ public:
         const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
     static int32_t GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList);
     static int Access(const Uri &uri, bool &isExist);
+    static int GetThumbnail(const Uri &uri, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
     static int GetFileInfoFromUri(const Uri &selectFile, FileAccessFwk::FileInfo &fileInfo);
     static int GetFileInfoFromRelativePath(const std::string &relativePath, FileAccessFwk::FileInfo &fileInfo);
 };

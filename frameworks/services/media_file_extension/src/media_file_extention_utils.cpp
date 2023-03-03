@@ -20,6 +20,7 @@
 
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_thumbnail_helper.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
@@ -28,6 +29,7 @@
 #include "medialibrary_type_const.h"
 #include "result_set_utils.h"
 #include "scanner_utils.h"
+#include "thumbnail_utils.h"
 #include "uri_helper.h"
 
 using namespace std;
@@ -763,6 +765,34 @@ int GetVirtualNodeFileInfo(const string &uri, FileInfo &fileInfo)
     } else {
         return E_INVALID_URI;
     }
+}
+
+int MediaFileExtentionUtils::GetThumbnail(const Uri &uri, const Size &size, std::unique_ptr<PixelMap> &pixelMap)
+{
+    string queryUriStr = uri.ToString();
+    if (!CheckUriValid(queryUriStr)) {
+        MEDIA_ERR_LOG("GetThumbnail::invalid uri: %{public}s", queryUriStr.c_str());
+        return E_URI_INVALID;
+    }
+    string pixelMapUri = queryUriStr + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
+        MEDIA_DATA_DB_WIDTH + "=" + std::to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" +
+        std::to_string(size.height);
+    Uri queryUri(pixelMapUri);
+    DataShare::DataSharePredicates predicates;
+    std::vector<std::string> columns;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
+    if (queryResultSet == nullptr) {
+        MEDIA_ERR_LOG("queryResultSet is nullptr");
+        return E_FAIL;
+    }
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(queryResultSet);
+    int rowCount = 0;
+    int err = resultSet->GetRowCount(rowCount);
+    if ((err != DataShare::E_OK) || (rowCount <= 0)) {
+        MEDIA_ERR_LOG("GetRowCount err %{public}d", err);
+        return E_FAIL;
+    }
+    return ThumbnailUtils::GetPixelMapFromResult(resultSet, size, pixelMap);
 }
 
 int MediaFileExtentionUtils::GetFileInfoFromUri(const Uri &selectFile, FileInfo &fileInfo)
