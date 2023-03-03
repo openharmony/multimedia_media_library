@@ -91,6 +91,7 @@ ohos_unittest("recycle_directory_test") {
     "ipc:ipc_core",
     "kv_store:distributeddata_inner",
     "multimedia_player_framework:media_client",
+    "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "user_file_service:file_access_extension_ability_kit",

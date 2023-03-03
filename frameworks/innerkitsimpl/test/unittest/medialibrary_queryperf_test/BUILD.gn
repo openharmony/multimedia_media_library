@@ -54,10 +54,17 @@ ohos_unittest("medialibrary_queryperf_unittest") {
     "c_utils:utils",
     "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
+    "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
   ]
+
+  if (is_standard_system) {
+    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
+  } else {
+    external_deps += [ "hilog:libhilog" ]
+  }
 
   resource_config_file =
       "${MEDIA_LIB_INNERKITS_DIR}/test/unittest/resources/ohos_test.xml"
