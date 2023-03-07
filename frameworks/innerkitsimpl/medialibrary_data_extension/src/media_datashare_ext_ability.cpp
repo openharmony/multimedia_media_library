@@ -69,6 +69,12 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
         exit(0);
     }
     DataShareExtAbility::Init(record, application, handler, token);
+}
+
+void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
+{
+    MEDIA_INFO_LOG("%{public}s begin.", __func__);
+    Extension::OnStart(want);
     auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
         MEDIA_ERR_LOG("Failed to get context");
@@ -96,12 +102,7 @@ void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &r
         MEDIA_ERR_LOG("Failed to get scanner manager");
         exit(0);
     }
-}
 
-void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
-{
-    MEDIA_INFO_LOG("%{public}s begin.", __func__);
-    Extension::OnStart(want);
     Media::MedialibrarySubscriber::Subscribe();
     MEDIA_INFO_LOG("%{public}s end.", __func__);
 }

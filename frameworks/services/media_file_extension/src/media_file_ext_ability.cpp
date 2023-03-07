@@ -63,6 +63,12 @@ void MediaFileExtAbility::Init(const shared_ptr<AbilityLocalRecord> &record,
 {
     MEDIA_INFO_LOG("Init MediaFileExtAbility");
     FileAccessExtAbility::Init(record, application, handler, token);
+}
+
+void MediaFileExtAbility::OnStart(const AAFwk::Want &want)
+{
+    MEDIA_INFO_LOG("Onstart MediaFileExtAbility");
+    Extension::OnStart(want);
     auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
         MEDIA_ERR_LOG("Failed to get context");
@@ -73,12 +79,6 @@ void MediaFileExtAbility::Init(const shared_ptr<AbilityLocalRecord> &record,
         MEDIA_ERR_LOG("failed to init MediaLibraryManager, exit");
         exit(0);
     }
-}
-
-void MediaFileExtAbility::OnStart(const AAFwk::Want &want)
-{
-    MEDIA_INFO_LOG("Onstart MediaFileExtAbility");
-    Extension::OnStart(want);
 }
 
 void MediaFileExtAbility::OnStop()
