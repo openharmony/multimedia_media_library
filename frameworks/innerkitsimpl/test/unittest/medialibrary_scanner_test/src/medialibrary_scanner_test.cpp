@@ -18,6 +18,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_scanner_test.h"
 #include "medialibrary_unittest_utils.h"
+#include "mimetype_utils.h"
 #include "scanner_utils.h"
 #include "userfile_manager_types.h"
 
@@ -93,29 +94,29 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileExtensionFromFileUri_test_001,
 HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMediatypeFromMimetype_test_001, TestSize.Level0)
 {
     string path = "";
-    MediaType mediaType = ScannerUtils::GetMediatypeFromMimetype(path);
+    MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(path);
     EXPECT_EQ(mediaType, MEDIA_TYPE_FILE);
     path = DEFAULT_AUDIO_MIME_TYPE;
-    mediaType = ScannerUtils::GetMediatypeFromMimetype(path);
+    mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(path);
     EXPECT_EQ(mediaType, MEDIA_TYPE_AUDIO);
     path = DEFAULT_VIDEO_MIME_TYPE;
-    mediaType = ScannerUtils::GetMediatypeFromMimetype(path);
+    mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(path);
     EXPECT_EQ(mediaType, MEDIA_TYPE_VIDEO);
     path = DEFAULT_IMAGE_MIME_TYPE;
-    mediaType = ScannerUtils::GetMediatypeFromMimetype(path);
+    mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(path);
     EXPECT_EQ(mediaType, MEDIA_TYPE_IMAGE);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMimeTypeFromExtension_test_001, TestSize.Level0)
 {
     string extension = "";
-    string mediaType = ScannerUtils::GetMimeTypeFromExtension(extension);
+    string mediaType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     EXPECT_EQ(mediaType, DEFAULT_FILE_MIME_TYPE);
     extension = "medialib_GetMimeTypeFromExtension_test";
-    mediaType = ScannerUtils::GetMimeTypeFromExtension(extension);
+    mediaType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     EXPECT_EQ(mediaType, DEFAULT_FILE_MIME_TYPE);
     extension = AUDIO_CONTAINER_TYPE_WAV;
-    mediaType = ScannerUtils::GetMimeTypeFromExtension(extension);
+    mediaType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     EXPECT_EQ(mediaType, DEFAULT_AUDIO_MIME_TYPE);
 }
 
