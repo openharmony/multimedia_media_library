@@ -345,7 +345,7 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 }
 
 std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
-    const DataSharePredicates &predicates, std::vector<std::string> &columns)
+    const DataSharePredicates &predicates, std::vector<std::string> &columns, DatashareBusinessError &businessError)
 {
     const static set<string> noPermissionCheck = {
         MEDIALIBRARY_DIRECTORY_URI,
