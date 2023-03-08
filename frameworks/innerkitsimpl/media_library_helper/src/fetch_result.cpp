@@ -357,8 +357,6 @@ void FetchResult<T>::GetObjectFromAsset(SmartAlbumAsset *asset, shared_ptr<Nativ
 template<class T>
 unique_ptr<T> FetchResult<T>::GetObject(shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("FetchResult::GetObject");
     unique_ptr<T> asset = make_unique<T>();
     GetObjectFromAsset(asset.get(), resultSet);
     return asset;
