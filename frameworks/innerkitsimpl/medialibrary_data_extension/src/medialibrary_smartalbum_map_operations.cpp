@@ -472,7 +472,7 @@ static int32_t TrashChildAssetsInfoUtil(const int32_t parentId, const int64_t &t
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     string parentPath = MediaLibraryObjectUtils::GetPathByIdFromDb(to_string(parentId));
-    cmd.GetAbsRdbPredicates()->Like(MEDIA_DATA_DB_FILE_PATH, parentPath + "%")->And()->
+    cmd.GetAbsRdbPredicates()->Like(MEDIA_DATA_DB_FILE_PATH, parentPath + "/%")->And()->
         EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
 
     auto result = uniStore->Query(cmd, { MEDIA_DATA_DB_ID });
