@@ -188,9 +188,6 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
 
 napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &iAsset)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("CreateFileAsset");
-
     if (iAsset == nullptr) {
         return nullptr;
     }
