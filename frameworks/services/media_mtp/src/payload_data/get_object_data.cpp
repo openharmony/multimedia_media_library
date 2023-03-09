@@ -42,7 +42,13 @@ int GetObjectData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
         return MTP_INVALID_OBJECTHANDLE_CODE;
     }
 
-    int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
+    if (readSize < MTP_CONTAINER_HEADER_SIZE) {
+        MEDIA_ERR_LOG("GetObjectData::parser read size must greater than mtp container header size,"
+            "readSize=%{public}d, mtpContainerHeadSize=%{public}d", readSize, MTP_CONTAINER_HEADER_SIZE);
+        return MTP_INVALID_PARAMETER_CODE;
+    }
+
+    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetObjectData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);
