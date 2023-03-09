@@ -79,7 +79,7 @@ MediaType MimeTypeUtils::GetMediaTypeFromMimeType(const string &mimeType)
     size_t pos = mimeType.find_first_of("/");
     if (pos == string::npos) {
         MEDIA_ERR_LOG("Invalid mime type: %{public}s", mimeType.c_str());
-        return MEDIA_TYPE_DEFAULT;
+        return MEDIA_TYPE_FILE;
     }
     string prefix = mimeType.substr(0, pos);
     if (prefix == "audio") {
@@ -88,11 +88,8 @@ MediaType MimeTypeUtils::GetMediaTypeFromMimeType(const string &mimeType)
         return MEDIA_TYPE_VIDEO;
     } else if (prefix == "image") {
         return MEDIA_TYPE_IMAGE;
-    } else if (prefix == "text" || prefix == "application") {
-        return MEDIA_TYPE_FILE;
     } else {
-        MEDIA_ERR_LOG("Failed to get media type from mime type: %{public}s", mimeType.c_str());
-        return MEDIA_TYPE_DEFAULT;
+        return MEDIA_TYPE_FILE;
     }
 }
 }
