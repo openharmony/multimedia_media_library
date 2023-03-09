@@ -72,46 +72,6 @@ string ScannerUtils::GetFileExtensionFromFileUri(const string &path)
     return "";
 }
 
-MediaType ScannerUtils::GetMediatypeFromMimetype(const string &mimetype)
-{
-    MediaType mediaType = MEDIA_TYPE_FILE;
-
-    if (!mimetype.empty()) {
-        if (mimetype == DEFAULT_AUDIO_MIME_TYPE) {
-            mediaType = MEDIA_TYPE_AUDIO;
-        } else if (mimetype == DEFAULT_VIDEO_MIME_TYPE) {
-            mediaType = MEDIA_TYPE_VIDEO;
-        } else if (mimetype == DEFAULT_IMAGE_MIME_TYPE) {
-            mediaType = MEDIA_TYPE_IMAGE;
-        }
-    }
-
-    return mediaType;
-}
-
-// Obtain Mime type from the file extension
-string ScannerUtils::GetMimeTypeFromExtension(const string &extension)
-{
-    string mimeType = DEFAULT_FILE_MIME_TYPE;
-    string extn = extension;
-
-    if (extn.empty()) {
-        MEDIA_ERR_LOG("Given file extension is empty");
-        return mimeType;
-    }
-
-    transform(extn.begin(), extn.end(), extn.begin(), ::tolower);
-    if (SUPPORTED_AUDIO_FORMATS_SET.find(extn) != SUPPORTED_AUDIO_FORMATS_SET.end()) {
-        mimeType = DEFAULT_AUDIO_MIME_TYPE;
-    } else if (SUPPORTED_VIDEO_FORMATS_SET.find(extn) != SUPPORTED_VIDEO_FORMATS_SET.end()) {
-        mimeType = DEFAULT_VIDEO_MIME_TYPE;
-    } else if (SUPPORTED_IMAGE_FORMATS_SET.find(extn) != SUPPORTED_IMAGE_FORMATS_SET.end()) {
-        mimeType = DEFAULT_IMAGE_MIME_TYPE;
-    }
-
-    return mimeType;
-}
-
 // Check if the given path is a directory path
 bool ScannerUtils::IsDirectory(const string &path)
 {
