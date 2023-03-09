@@ -34,6 +34,7 @@
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_errno.h"
 #include "media_privacy_manager.h"
+#include "mimetype_utils.h"
 #include "result_set_utils.h"
 #include "string_ex.h"
 #include "thumbnail_service.h"
@@ -140,7 +141,7 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     assetInfo.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset.GetMediaType());
     assetInfo.PutString(MEDIA_DATA_DB_URI, MediaLibraryDataManagerUtils::GetMediaTypeUri(fileAsset.GetMediaType()));
     string extension = ScannerUtils::GetFileExtensionFromFileUri(displayName);
-    assetInfo.PutString(MEDIA_DATA_DB_MIME_TYPE, ScannerUtils::GetMimeTypeFromExtension(extension));
+    assetInfo.PutString(MEDIA_DATA_DB_MIME_TYPE, MimeTypeUtils::GetMimeTypeFromExtension(extension));
     assetInfo.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset.GetRelativePath());
     assetInfo.PutString(MEDIA_DATA_DB_NAME, displayName);
     assetInfo.PutString(MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(displayName));
@@ -905,8 +906,8 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
         return E_HAS_FS_ERROR;
     }
     string fileId = cmd.GetOprnFileId();
-    string mimeType = ScannerUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtensionFromFileUri(dstPath));
-    MediaType mediaType = ScannerUtils::GetMediatypeFromMimetype(mimeType);
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtensionFromFileUri(dstPath));
+    MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
     string displayName = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(dstPath);
     ValuesBucket values;
     values.PutString(MEDIA_DATA_DB_NAME, displayName);
@@ -1670,7 +1671,7 @@ int32_t MediaLibraryObjectUtils::CheckUpdateMediaType(const string &dstPath, Med
 {
     string extension = ScannerUtils::GetFileExtensionFromFileUri(dstPath);
     CHECK_AND_RETURN_RET_LOG(!(extension.empty()), E_GET_VALUEBUCKET_FAIL, "Failed to get extension");
-    MediaType mediaType = ScannerUtils::GetMediatypeFromMimetype(ScannerUtils::GetMimeTypeFromExtension(extension));
+    MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(MimeTypeUtils::GetMimeTypeFromExtension(extension));
     outCmd.GetValueBucket().PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     MEDIA_INFO_LOG("CheckUpdateMediaType mediaType = %{public}d", mediaType);
     return E_SUCCESS;

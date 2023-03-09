@@ -23,6 +23,7 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_data_manager_utils.h"
+#include "mimetype_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -164,8 +165,10 @@ int32_t MediaScannerObj::Commit()
 
 int32_t MediaScannerObj::GetMediaInfo()
 {
+    auto pos = data_->GetFileMimeType().find_first_of("/");
+    string mimePrefix = data_->GetFileMimeType().substr(0, pos) + "/*";
     if (find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(),
-        data_->GetFileMimeType()) != EXTRACTOR_SUPPORTED_MIME.end()) {
+        mimePrefix) != EXTRACTOR_SUPPORTED_MIME.end()) {
         return MetadataExtractor::Extract(data_);
     }
 
@@ -242,10 +245,10 @@ int32_t MediaScannerObj::GetFileMetadata()
 
     // extension and type
     string extension = ScannerUtils::GetFileExtensionFromFileUri(path_);
-    string mimeType = ScannerUtils::GetMimeTypeFromExtension(extension);
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     data_->SetFileExtension(extension);
     data_->SetFileMimeType(mimeType);
-    data_->SetFileMediaType(ScannerUtils::GetMediatypeFromMimetype(mimeType));
+    data_->SetFileMediaType(MimeTypeUtils::GetMediaTypeFromMimeType(mimeType));
 
     return E_OK;
 }
