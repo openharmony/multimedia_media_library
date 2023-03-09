@@ -93,31 +93,31 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileExtensionFromFileUri_test_001,
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMediatypeFromMimetype_test_001, TestSize.Level0)
 {
-    string path = "";
+    string path = "text/html";
     MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(path);
     EXPECT_EQ(mediaType, MEDIA_TYPE_FILE);
-    path = DEFAULT_AUDIO_MIME_TYPE;
+    path = "audio/mp3";
     mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(path);
     EXPECT_EQ(mediaType, MEDIA_TYPE_AUDIO);
-    path = DEFAULT_VIDEO_MIME_TYPE;
+    path = "video/mp4";
     mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(path);
     EXPECT_EQ(mediaType, MEDIA_TYPE_VIDEO);
-    path = DEFAULT_IMAGE_MIME_TYPE;
+    path = "image/jpeg";
     mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(path);
     EXPECT_EQ(mediaType, MEDIA_TYPE_IMAGE);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMimeTypeFromExtension_test_001, TestSize.Level0)
 {
-    string extension = "";
+    string extension = "html";
     string mediaType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
-    EXPECT_EQ(mediaType, DEFAULT_FILE_MIME_TYPE);
+    EXPECT_EQ(mediaType, "text/html");
     extension = "medialib_GetMimeTypeFromExtension_test";
     mediaType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
-    EXPECT_EQ(mediaType, DEFAULT_FILE_MIME_TYPE);
+    EXPECT_EQ(mediaType, "");
     extension = AUDIO_CONTAINER_TYPE_WAV;
     mediaType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
-    EXPECT_EQ(mediaType, DEFAULT_AUDIO_MIME_TYPE);
+    EXPECT_EQ(mediaType, "audio/wav");
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_IsDirectory_test_001, TestSize.Level0)
