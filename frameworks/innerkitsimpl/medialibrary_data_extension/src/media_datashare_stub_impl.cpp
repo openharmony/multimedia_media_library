@@ -117,7 +117,7 @@ std::shared_ptr<DataShareResultSet> MediaDataShareStubImpl::Query(const Uri &uri
         MEDIA_ERR_LOG("%{public}s end failed.", __func__);
         return nullptr;
     }
-    return extension->Query(uri, predicates, columns);
+    return extension->Query(uri, predicates, columns, businessError);
 }
 
 std::string MediaDataShareStubImpl::GetType(const Uri &uri)
