@@ -2761,6 +2761,7 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
     string realPath;
     if (!PathToRealPath(context->storeMediaSrc, realPath)) {
         NAPI_ERR_LOG("src path is not exist, %{public}d", errno);
+        context->error = JS_ERR_NO_SUCH_FILE;
         return;
     }
     context->error = JS_E_RELATIVEPATH;
