@@ -34,10 +34,8 @@ class ScannerMessaageClient {
                     console.log("[MediaScannerSubscriber] sendRequest: " + result);
                     let msg = reply.readInt();
                     console.log("[MediaScannerSubscriber] sendRequest:msg: " + msg);
-                    //this.outObj.remoteCallback(SUCCESS_CODE, msg);
                 }).catch((e) => {
                     console.log("[MediaScannerSubscriber] error sendRequest error: " + e);
-                    //this.outObj.remoteCallback(ERROR_CODE, ERROR_CODE);
                 });
             },
             onDisconnect: function () {

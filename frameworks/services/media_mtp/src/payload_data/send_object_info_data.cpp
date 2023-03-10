@@ -42,8 +42,14 @@ int SendObjectInfoData::Parser(const std::vector<uint8_t> &buffer, int32_t readS
         return MTP_ERROR_INVALID_OBJECTHANDLE;
     }
 
+    if (readSize < MTP_CONTAINER_HEADER_SIZE) {
+        MEDIA_ERR_LOG("SendObjectInfoData::parser read size must greater than mtp container header size,"
+            "readSize=%{public}d, mtpContainerHeadSize=%{public}d", readSize, MTP_CONTAINER_HEADER_SIZE);
+        return MTP_ERROR_PACKET_INCORRECT;
+    }
+
     if (!context_->indata) {
-        int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
+        uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
         if (parameterCount < PARSER_PARAM_SUM) {
             MEDIA_ERR_LOG("SendObjectInfoData::parser paramCount=%{public}u, needCount=%{public}d",
                 parameterCount, PARSER_PARAM_SUM);
