@@ -101,6 +101,7 @@ private:
     std::atomic<bool> localSecLevelGot_ {false};
     std::mutex gotSecLevelMtx_;
     std::condition_variable localSecLevelDoneCv_;
+    volatile bool isStart = false;
 };
 } // namespace Media
 } // namespace OHOS

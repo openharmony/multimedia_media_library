@@ -55,6 +55,9 @@ void MediaLibraryDevice::Start()
         std::string local = "";
         localUdid_ = GetUdidByNetworkId(local);
         devsInfoInter_->PutMLDeviceInfos(localUdid_);
+        isStart = true;
+    } else {
+        MEDIA_ERR_LOG("init devsInfoInter failed");
     }
 }
 
@@ -63,7 +66,9 @@ void MediaLibraryDevice::Stop()
     MEDIA_DEBUG_LOG("Stop enter");
     UnRegisterFromDM();
     ClearAllDevices();
+    isStart = false;
     devsInfoInter_ = nullptr;
+    kvSyncDoneCv_.notify_all();
 }
 
 std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::GetInstance()
@@ -97,7 +102,7 @@ void MediaLibraryDevice::OnSyncCompleted(const std::string &devId, const Distrib
 
 void MediaLibraryDevice::TryToGetTargetDevMLInfos(const std::string &udid, const std::string &networkId)
 {
-    constexpr int SLEEP_WAITOUT = 500;
+    static constexpr int SLEEP_WAITOUT = 500;
     if (devsInfoInter_ == nullptr) {
         MEDIA_ERR_LOG("devsInfoInter_ is nullptr");
         return;
@@ -110,13 +115,17 @@ void MediaLibraryDevice::TryToGetTargetDevMLInfos(const std::string &udid, const
         {
             std::unique_lock<std::mutex> lock(cvMtx_);
             if (kvSyncDoneCv_.wait_for(lock, std::chrono::milliseconds(SLEEP_WAITOUT)) == std::cv_status::timeout) {
-                MEDIA_INFO_LOG("get ml infos sync timeout");
+                MEDIA_DEBUG_LOG("get ml infos sync timeout");
+            }
+            if (!isStart) {
+                MEDIA_ERR_LOG("MediaLibraryDevice is stopped, this thread will exit");
+                return;
             }
         }
-        MEDIA_INFO_LOG("get ml infos sync done, wakeup, try to get again");
+        MEDIA_DEBUG_LOG("get ml infos sync done, wakeup, try to get again");
         ret = devsInfoInter_->GetMLDeviceInfos(udid, version);
         if (!ret) {
-            MEDIA_INFO_LOG("get ml infos failed again, maybe target dev have never init");
+            MEDIA_ERR_LOG("get ml infos failed again, maybe target dev have never init");
             return;
         }
     }
