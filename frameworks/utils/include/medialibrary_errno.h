@@ -59,6 +59,7 @@ constexpr int32_t E_RENAME_FILE_FAIL =      MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1
 constexpr int32_t E_DB_FAIL =               MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 20);
 constexpr int32_t E_DELETE_DENIED =         MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 21);
 constexpr int32_t E_HAS_DB_ERROR =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 22);
+constexpr int32_t E_INVALID_ARGUMENTS =     MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 23);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }
