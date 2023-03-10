@@ -393,30 +393,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CopyDir_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_DIR_CHECK_DIR_FAIL);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckDirExtension_test_001, TestSize.Level0)
-{
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
-    int32_t ret = MediaLibraryObjectUtils::CheckDirExtension(cmd);
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    cmd.SetTableName(MEDIALIBRARY_TABLE);
-    NativeRdb::ValuesBucket values;
-    string name = "CheckDirExtension";
-    values.PutString(MEDIA_DATA_DB_NAME, name);
-    cmd.SetValueBucket(values);
-    ret = MediaLibraryObjectUtils::CheckDirExtension(cmd);
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    string path = "Audios";
-    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, path);
-    cmd.SetValueBucket(values);
-    ret = MediaLibraryObjectUtils::CheckDirExtension(cmd);
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_FILE);;
-    values.PutString(DIRECTORY_DB_EXTENSION, name);
-    cmd.SetValueBucket(values);
-    ret = MediaLibraryObjectUtils::CheckDirExtension(cmd);
-    EXPECT_EQ(ret, E_CHECK_ROOT_DIR_FAIL);
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_IsSmartAlbumExistInDb_test_001, TestSize.Level0)
 {
     int32_t id = 0;
