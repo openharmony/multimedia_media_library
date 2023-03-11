@@ -21,16 +21,24 @@ async function startMediaSelect(option, asyncCallback)
     console.log("MediaLibrary startMediaSelectInner param num " + arguments.length);
     console.log("MediaLibrary startMediaSelectInner param " + JSON.stringify(option));
     let select = "singleselect"
-    if (option.count > 1) {
-        select = "multipleselect"
-    }
     let parameter = {
-        want:
-        {
-            parameters: {uri : select},
-            bundleName: "com.ohos.photos",
-            abilityName: "com.ohos.photos.MainAbility",
+        "action": "ohos.want.action.photoPicker",
+        "type": select,
+        parameters: {
+            uri : select,
+            filterMediaType: "FILTER_MEDIA_TYPE_ALL",
+            maxSelectCount: 1,
         },
+    }
+    if (option != undefined && typeof option == 'object') {
+        if (option.count != undefined && option.count > 1) {
+            parameter.type = "multipleselect";
+            parameter.parameters.uri = "multipleselect";
+            parameter.parameters.maxSelectCount = option.count;
+        }
+        if (option.type != undefined) {
+            parameter.parameters.filterMediaType = option.type;
+        }
     }
     if (arguments.length == 2 && typeof asyncCallback != "function") {
         console.log("MediaLibrary startMediaSelectInner callback invalid");
