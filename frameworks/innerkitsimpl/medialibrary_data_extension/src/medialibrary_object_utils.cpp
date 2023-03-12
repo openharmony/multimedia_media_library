@@ -211,7 +211,7 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
     }
 
     // check dir and extension
-    int32_t errCode = CheckDirExtension(cmd);
+    int32_t errCode = CheckDirExtension(relativePath, displayName);
     CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "CreateFileAsset: check file asset failed");
     NativeAlbumAsset dirAsset = GetDirAsset(ROOT_MEDIA_DIR + relativePath);
     if (dirAsset.GetAlbumId() < 0) {
@@ -558,9 +558,7 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
         MEDIA_DEBUG_LOG("Skip modify the file, the path of new file is the same as old");
         return E_SUCCESS;
     }
-    int32_t errCode = CheckUpdateMediaType(dstFilePath, cmd);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "CreateFileAsset: update file mediatype failed");
-    errCode = CheckDirExtension(cmd);
+    auto errCode = CheckDirExtension(dstFilePath);
     CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "CreateFileAsset: check file asset failed");
     if (errCode != E_SUCCESS) {
         return errCode;
@@ -1386,231 +1384,69 @@ int32_t MediaLibraryObjectUtils::CopyDir(const shared_ptr<FileAsset> &srcDirAsse
     return srcAsset->GetParent();
 }
 
-int32_t MediaLibraryObjectUtils::CheckDirExtension(MediaLibraryCommand &cmd)
+static string GetRelativePathFromPath(const string &path)
 {
-    ValueObject valueObject;
-    auto values = cmd.GetValueBucket();
-    if (!values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
-        return E_HAS_DB_ERROR;
-    }
-    string displayName;
-    valueObject.GetString(displayName);
-    CHECK_AND_RETURN_RET_LOG(!displayName.empty(), E_INVALID_VALUES, "Failed to get displayName");
-    if (!values.GetObject(MEDIA_DATA_DB_RELATIVE_PATH, valueObject)) {
-        return E_HAS_DB_ERROR;
-    }
     string relativePath;
-    valueObject.GetString(relativePath);
-    CHECK_AND_RETURN_RET_LOG(!relativePath.empty(), E_INVALID_VALUES, "Failed to get relativePath");
-    if (!values.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject)) {
-        return E_HAS_DB_ERROR;
+    if (path.find(ROOT_MEDIA_DIR) == 0) {
+        relativePath = path.substr(ROOT_MEDIA_DIR.length());
     }
-    int mediaType = MEDIA_TYPE_DEFAULT;
-    valueObject.GetInt(mediaType);
-    CHECK_AND_RETURN_RET_LOG(mediaType != MEDIA_TYPE_DEFAULT, E_INVALID_VALUES, "Failed to get mediaType");
-    ValuesBucket dirAndExtValues;
-    int errorCode = GetRootDirAndExtension(relativePath, displayName, dirAndExtValues);
-    CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "GetRootDirAndExtension fail");
-    string path = ROOT_MEDIA_DIR + relativePath;
-    if (path.back() == '/') {
-        path.pop_back();
+    auto pos = relativePath.rfind('/');
+    if (pos == string::npos) {
+        return "";
     }
-    dirAndExtValues.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    dirAndExtValues.PutString(MEDIA_DATA_DB_FILE_PATH, path);
-    cmd.SetValueBucket(dirAndExtValues);
-    return CheckAssetDirExtension(cmd);
+    return relativePath.substr(0, pos + 1);
 }
 
-int32_t MediaLibraryObjectUtils::GetRootDirAndExtension(const string &relativePath,
-    const string &displayName, ValuesBucket &outValues)
+int32_t MediaLibraryObjectUtils::CheckDirExtension(const string &destFilePath)
 {
-    if (displayName.compare(MEDIA_NO_FILE) != 0 && !MediaFileUtils::CheckDisplayName(displayName)) {
-        MEDIA_ERR_LOG("CheckDisplayName failed");
-        return E_FILE_NAME_INVALID;
-    }
-    string rootDir;
-    int errCode = GetRootDir(relativePath, rootDir);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "Failed to getRootDir");
-    string extension;
-    errCode = GetExtension(displayName, rootDir, extension);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "Failed to getExtension");
-    outValues.PutString(DIRECTORY_DB_EXTENSION, extension);
-    outValues.PutString(DIRECTORY_DB_DIRECTORY, rootDir);
-    return errCode;
+    string relativePath = GetRelativePathFromPath(destFilePath);
+    string displayName = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(destFilePath);
+    return CheckDirExtension(relativePath, displayName);
 }
 
-int32_t MediaLibraryObjectUtils::GetExtension(const string &displayName, const string &rootDir, string &outExtension)
+static int32_t GetRootDirAssetByRelativePath(const string &relativePath, DirAsset &dirAsset)
 {
-    size_t extensionIndex = displayName.rfind(".");
-    if (extensionIndex == string::npos) {
-        if ((rootDir.compare(DOC_DIR_VALUES) == 0) || (rootDir.compare(DOWNLOAD_DIR_VALUES) == 0)) {
-            outExtension = " ";
-            return E_SUCCESS;
-        }
-        return E_FILE_NAME_INVALID;
+    auto pos = relativePath.find('/');
+    if (pos == string::npos) {
+        return E_CHECK_EXTENSION_FAIL;
     }
-    outExtension = displayName.substr(extensionIndex);
+    string rootDir = relativePath.substr(0, pos + 1);
+    auto dirMap = MediaLibraryDataManager::GetDirQuerySetMap();
+    if (dirMap.find(rootDir) == dirMap.end()) {
+        return E_CHECK_EXTENSION_FAIL;
+    }
+    dirAsset = dirMap.at(rootDir);
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryObjectUtils::GetRootDir(const string &relativePath, string &outRootDir)
+int32_t MediaLibraryObjectUtils::CheckDirExtension(const string &relativePath, const string &displayName)
 {
-    size_t dirIndex = relativePath.find("/");
-    if (dirIndex == string::npos) {
-        return E_CHECK_ROOT_DIR_FAIL;
+    if (relativePath.empty() || displayName.empty()) {
+        return E_INVALID_ARGUMENTS;
     }
-    outRootDir = relativePath.substr(0, dirIndex + 1);
-    return E_SUCCESS;
-}
-
-bool MediaLibraryObjectUtils::CheckMediaTypeMatchExtension(const int mediaType, const string &extension)
-{
-    if (mediaType == MEDIA_TYPE_FILE) {
-        for (auto mtr : mediaTypeMap) {
-            if (CheckExtension(mtr.second, extension)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    if (mediaTypeMap.find(mediaType) == mediaTypeMap.end()) {
-        MEDIA_ERR_LOG("Check checkMediaTypeMatchExtension failed, mediaType is undefind %{public}d", mediaType);
-        return false;
-    }
-    if (CheckExtension(mediaTypeMap.at(mediaType), extension)) {
-        return true;
-    } else {
-        MEDIA_ERR_LOG("Check checkMediaTypeMatchExtension failed, mediatype = %{public}d, extension = %{public}s",
-            mediaType, (mediaTypeMap.at(mediaType)).c_str());
-        return false;
-    }
-}
-
-bool MediaLibraryObjectUtils::CheckMediaType(const string &mediaTypes, const int mediaType)
-{
-    if (mediaTypes.compare(DIR_ALL_TYPE_VALUES) == 0) {
-        MEDIA_INFO_LOG("Check mediaType all type");
-        return true;
-    }
-    size_t mediaTypeIndex = mediaTypes.find(to_string(mediaType));
-    if (mediaTypeIndex != string::npos) {
-        return true;
-    } else {
-        MEDIA_ERR_LOG("Check mediaType failed");
-        return false;
-    }
-}
-
-bool MediaLibraryObjectUtils::CheckFileExtension(const unordered_map<string, DirAsset> &dirQuerySetMap,
-    const string &extension)
-{
-    bool isFileExtension = true;
-    for (auto &[_, dirAsset] : dirQuerySetMap) {
-        if (dirAsset.GetDirType() == DIR_VIDEO ||
-            dirAsset.GetDirType() == DIR_IMAGE ||
-            dirAsset.GetDirType() == DIR_AUDIOS) {
-            vector<string> extensionList;
-            SplitStr(dirAsset.GetExtensions(), QUESTION_MARK, extensionList, false, false);
-            if (find(extensionList.begin(), extensionList.end(), extension) != extensionList.end()) {
-                isFileExtension = false;
-            }
-        }
-    }
-    return isFileExtension;
-}
-
-bool MediaLibraryObjectUtils::CheckExtension(const string &extensions, const string &extension)
-{
-    if (extensions.compare(DIR_ALL_CONTAINER_TYPE) == 0) {
-        MEDIA_INFO_LOG("Check extension all type");
-        return true;
-    }
-    if (extension.find(QUESTION_MARK) != string::npos) {
-        MEDIA_INFO_LOG("Extension can not content ?");
-        return false;
-    }
-    vector<string> extensionList;
-    SplitStr(extensions, QUESTION_MARK, extensionList, false, false);
-    if (find(extensionList.begin(), extensionList.end(), extension) == extensionList.end()) {
-        return false;
-    }
-    return true;
-}
-
-DirAsset MediaLibraryObjectUtils::GetDirQuerySet(MediaLibraryCommand &cmd)
-{
-    ValueObject valueObject;
-    auto values = cmd.GetValueBucket();
-    DirAsset dirAsset;
-    if (!values.GetObject(DIRECTORY_DB_DIRECTORY, valueObject)) {
-        MEDIA_ERR_LOG("GetObject DIRECTORY_DB_DIRECTORY failed");
-        return dirAsset;
-    }
-    string rootDir;
-    valueObject.GetString(rootDir);
-    auto dirQuerySetMap = cmd.GetDirQuerySetMap();
-    for (const auto &item : dirQuerySetMap) {
-        if (rootDir.compare(item.first) == 0) {
-            dirAsset = item.second;
-            break;
-        }
-    }
-    return dirAsset;
-}
-
-int32_t MediaLibraryObjectUtils::CheckAssetDirExtension(MediaLibraryCommand &cmd)
-{
-    DirAsset dirAsset = GetDirQuerySet(cmd);
-    if (dirAsset.GetDirType() == DEFAULT_DIR_TYPE) {
-        return E_DIR_CHECK_DIR_FAIL;
-    }
-    if (dirAsset.GetDirectory() == DOWNLOAD_DIR_VALUES) {
-        return E_SUCCESS;
-    }    
-    ValueObject valueObject;
-    auto values = cmd.GetValueBucket();
-    if (!values.GetObject(DIRECTORY_DB_EXTENSION, valueObject)) {
-        return E_HAS_DB_ERROR;
-    }
-    string extension;
-    valueObject.GetString(extension);
-    CHECK_AND_RETURN_RET_LOG(!(extension.empty()), E_GET_VALUEBUCKET_FAIL, "Failed to get extension");
-    if (!values.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject)) {
-        return E_HAS_DB_ERROR;
-    }
-    transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-    int mediaType = MEDIA_TYPE_DEFAULT;
-    valueObject.GetInt(mediaType);
-    CHECK_AND_RETURN_RET_LOG(mediaType != MEDIA_TYPE_DEFAULT, E_GET_VALUEBUCKET_FAIL, "Failed to get mediaType");
-    if (!values.GetObject(MEDIA_DATA_DB_FILE_PATH, valueObject)) {
-        return E_HAS_DB_ERROR;
-    }
-    string path;
-    valueObject.GetString(path);
-    CHECK_AND_RETURN_RET_LOG(!(path.empty()), E_GET_VALUEBUCKET_FAIL, "Failed to get path");
-    if (extension.compare(MEDIA_NO_FILE) == 0) {
-        if (IsFileExistInDb(path)) {
-            return E_FILE_EXIST;
-        }
+    if (displayName.compare(MEDIA_NO_FILE) == 0) {
         return E_SUCCESS;
     }
-    if (!CheckMediaTypeMatchExtension(mediaType, extension)) {
-        return E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL;
+    if (!MediaFileUtils::CheckDisplayName(displayName)) {
+        MEDIA_ERR_LOG("CheckDisplayName failed, displayName: %{private}s", displayName.c_str());
+        return E_FILE_NAME_INVALID;
     }
-    string extensionVal = dirAsset.GetExtensions();
-    string mediaTypeVal = dirAsset.GetMediaTypes();
-    if (!CheckMediaType(mediaTypeVal, mediaType)) {
-        return E_CHECK_MEDIATYPE_FAIL;
+    DirAsset rootDirAsset;
+    auto ret = GetRootDirAssetByRelativePath(relativePath, rootDirAsset);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "get root dir from relativePath failed, path: %{private}s",
+        relativePath.c_str());
+    
+    string dirMediaTypes = rootDirAsset.GetMediaTypes();
+    if (dirMediaTypes == DIR_ALL_TYPE_VALUES) {
+        return E_SUCCESS;
     }
-    if (mediaType == MEDIA_TYPE_FILE) {
-        if (!CheckFileExtension(cmd.GetDirQuerySetMap(), extension)) {
-            return E_CHECK_EXTENSION_FAIL;
-        }
-    } else {
-        if (!CheckExtension(extensionVal, extension)) {
-            return E_CHECK_EXTENSION_FAIL;
-        }
+    string fileExtension = MediaFileUtils::GetExtensionFromPath(displayName);
+    string fileMimeType = MimeTypeUtils::GetMimeTypeFromExtension(fileExtension);
+    string fileMediaType = to_string(static_cast<int32_t>(MimeTypeUtils::GetMediaTypeFromMimeType(fileMimeType)));
+    if (dirMediaTypes.find(fileMediaType) == string::npos) {
+        MEDIA_ERR_LOG("CheckDirExtension failed, file extension: %{private}s, root dir media_type: %{public}s",
+            fileExtension.c_str(), dirMediaTypes.c_str());
+        return E_CHECK_EXTENSION_FAIL;
     }
     return E_SUCCESS;
 }
@@ -1665,16 +1501,6 @@ shared_ptr<ResultSet> MediaLibraryObjectUtils::QuerySmartAlbum(MediaLibraryComma
     }
     vector<string> columns;
     return uniStore->Query(cmd, columns);
-}
-
-int32_t MediaLibraryObjectUtils::CheckUpdateMediaType(const string &dstPath, MediaLibraryCommand &outCmd)
-{
-    string extension = ScannerUtils::GetFileExtensionFromFileUri(dstPath);
-    CHECK_AND_RETURN_RET_LOG(!(extension.empty()), E_GET_VALUEBUCKET_FAIL, "Failed to get extension");
-    MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(MimeTypeUtils::GetMimeTypeFromExtension(extension));
-    outCmd.GetValueBucket().PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    MEDIA_INFO_LOG("CheckUpdateMediaType mediaType = %{public}d", mediaType);
-    return E_SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS

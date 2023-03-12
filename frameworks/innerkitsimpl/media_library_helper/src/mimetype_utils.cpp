@@ -30,6 +30,7 @@ using MimeTypeMap = std::unordered_map<string, vector<string>>;
 
 MimeTypeMap MimeTypeUtils::mediaJsonMap_;
 const string MIMETYPE_JSON_PATH = "/system/etc/userfilemanager/userfilemanager_mimetypes.json";
+const string DEFAULT_MIME_TYPE = "application/octet-stream";
 
 /**
  * The format of the target json file:
@@ -70,8 +71,7 @@ string MimeTypeUtils::GetMimeTypeFromExtension(const string &extension)
             }
         }
     }
-    MEDIA_ERR_LOG("Failed to get mimetype from extension: %{public}s", extension.c_str());
-    return "";
+    return DEFAULT_MIME_TYPE;
 }
 
 MediaType MimeTypeUtils::GetMediaTypeFromMimeType(const string &mimeType)
