@@ -1063,17 +1063,6 @@ int32_t HandleAlbumMove(const shared_ptr<FileAsset> &fileAsset, const string &de
     return E_SUCCESS;
 }
 
-int32_t CheckFileExtension(const string &relativePath, const string &name, int32_t mediaType)
-{
-    ValuesBucket values;
-    values.PutString(MEDIA_DATA_DB_NAME, name);
-    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    MediaLibraryCommand cmd(Uri(MEDIALIBRARY_DATA_URI), values);
-    cmd.SetDirQuerySetMap(MediaLibraryDataManager::GetInstance()->GetDirQuerySetMap());
-    return MediaLibraryObjectUtils::CheckDirExtension(cmd);
-}
-
 void GetMoveSubFile(const string &srcPath, shared_ptr<NativeRdb::ResultSet> &result)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
@@ -1102,7 +1091,7 @@ bool CheckSubFileExtension(const string &srcPath, const string &destRelPath)
         if (mediaType == MEDIA_TYPE_ALBUM) {
             continue;
         }
-        if (CheckFileExtension(destRelPath, name, mediaType) != E_SUCCESS) {
+        if (MediaLibraryObjectUtils::CheckDirExtension(destRelPath, name) != E_SUCCESS) {
             return false;
         }
     }

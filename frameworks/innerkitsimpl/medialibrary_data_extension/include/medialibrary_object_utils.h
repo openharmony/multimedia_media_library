@@ -74,7 +74,8 @@ public:
     static NativeAlbumAsset GetDirAsset(const std::string &relativePath);
     static bool IsSmartAlbumExistInDb(const int32_t id);
     static bool IsParentSmartAlbum(const int32_t id, const bool includeEmptyAlbum = false);
-    static int32_t CheckDirExtension(MediaLibraryCommand &cmd);
+    static int32_t CheckDirExtension(const std::string &destFilePath);
+    static int32_t CheckDirExtension(const std::string &relativePath, const std::string &displayName);
     static int32_t UpdateDateModified(const std::string &dirPath);
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
     static void ScanFile(std::string &srcPath);
@@ -99,19 +100,7 @@ private:
     static void CloseFileById(int32_t fileId);
     static int32_t GetFileResult(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int count, const string &relativePath, const string &displayName);
-    static int32_t GetRootDirAndExtension(const std::string &relativePath,
-        const std::string &displayName, NativeRdb::ValuesBucket &outValues);
-    static int32_t CheckAssetDirExtension(MediaLibraryCommand &cmd);
-    static bool CheckMediaType(const std::string &mediaTypes, const int mediaType);
-    static bool CheckExtension(const std::string &extensions, const std::string &extension);
-    static bool CheckFileExtension(const std::unordered_map<std::string, DirAsset> &dirQuerySetMap,
-        const std::string &extension);
-    static bool CheckMediaTypeMatchExtension(const int mediaType, const std::string &extension);
-    static DirAsset GetDirQuerySet(MediaLibraryCommand &cmd);
-    static int32_t GetExtension(const std::string &displayName, const std::string &rootDir, std::string &outExtension);
-    static int32_t GetRootDir(const std::string &relativePath, std::string &outRootDir);
     static std::shared_ptr<NativeRdb::ResultSet> QuerySmartAlbum(MediaLibraryCommand &cmd);
-    static int32_t CheckUpdateMediaType(const std::string &dstPath, MediaLibraryCommand &outCmd);
 };
 } // namespace Media
 } // namespace OHOS
