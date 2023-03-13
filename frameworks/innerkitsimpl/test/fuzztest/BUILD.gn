@@ -15,7 +15,6 @@ group("media_library_fuzztest") {
   testonly = true
   deps = [
     # deps file
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/fuzztest/medialibrary_fuzzer:MediaLibraryFuzzTest",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/fuzztest/medialibrary_helper_fuzzer:MediaLibraryHelperFuzzTest",
   ]
 }
