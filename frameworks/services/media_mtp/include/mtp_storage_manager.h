@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "mtp_constants.h"
-#include "ipc/storage_manager.h"
+#include "storage_manager_proxy.h"
 #include "storage.h"
 
 namespace OHOS {
