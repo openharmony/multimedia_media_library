@@ -228,19 +228,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QuerySql_test_002, TestSize.Level0)
     EXPECT_EQ(queryResultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPullAllTableByDeviceId_test_001, TestSize.Level0)
-{
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
-    vector<string> devices;
-    devices.push_back("MediaLibrary");
-    string testName = "medialib_SyncPullAllTableByDeviceId_test_001";
-    rdbStorePtr->Init();
-    bool ret = rdbStorePtr->SyncPullAllTableByDeviceId(testName, devices);
-    EXPECT_TRUE(ret);
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPullTable_test_001, TestSize.Level0)
 {
     if (rdbStorePtr == nullptr) {

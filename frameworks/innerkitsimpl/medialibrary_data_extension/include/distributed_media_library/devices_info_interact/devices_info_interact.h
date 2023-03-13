@@ -34,7 +34,7 @@ public:
     void Init();
     void PutMLDeviceInfos(const std::string &udid);
     bool GetMLDeviceInfos(const std::string &udid, std::string &version);
-    void SyncMLDeviceInfos(const std::string &udid, const std::string &devId);
+    void SyncMLDeviceInfos(const std::string &udid, const std::string &networkId);
     void SyncCompleted(const std::map<std::string, DistributedKv::Status> &results) override;
 private:
     std::string GenerateKey(const std::string &udid);

@@ -38,7 +38,6 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns) override;
 
-    bool SyncPullAllTableByDeviceId(const std::string &bundleName, std::vector<std::string> &devices) override;
     bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
         const std::vector<std::string> &devices, bool isLast = false) override;
     bool SyncPushTable(const std::string &bundleName, const std::string &tableName,

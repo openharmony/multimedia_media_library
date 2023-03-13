@@ -28,7 +28,7 @@ static std::vector<std::string> table_arr = {
     DocumentColumn::DOCUMENTS_TABLE, SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE
 };
 
-bool MediaLibrarySyncTable::SyncPullAllTableByDeviceId(
+bool MediaLibrarySyncTable::SyncPullAllTableByNetworkId(
     const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName, std::vector<std::string> &devices)
 {
     if (rdbStore == nullptr) {

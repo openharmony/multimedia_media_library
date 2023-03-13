@@ -83,7 +83,7 @@ std::shared_ptr<MediaLibraryDevice> MediaLibraryDevice::GetInstance()
     return mlDMInstance_;
 }
 
-void MediaLibraryDevice::GetAllDeviceId(
+void MediaLibraryDevice::GetAllNetworkId(
     std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList)
 {
     std::string extra = "";
@@ -202,7 +202,7 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
     }
 
     std::vector<std::string> devices = { mldevInfo.networkId };
-    MediaLibrarySyncTable::SyncPullAllTableByDeviceId(rdbStore_, bundleName_, devices);
+    MediaLibrarySyncTable::SyncPullAllTableByNetworkId(rdbStore_, bundleName_, devices);
 
     auto getTargetMLInfoTask = std::make_unique<std::thread>(&MediaLibraryDevice::TryToGetTargetDevMLInfos,
         this, mldevInfo.deviceUdid, mldevInfo.networkId);
@@ -303,7 +303,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     }
     // 获取同一网络中的所有设备Id
     std::vector<OHOS::DistributedHardware::DmDeviceInfo> deviceList;
-    GetAllDeviceId(deviceList);
+    GetAllNetworkId(deviceList);
     MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
     for (auto& deviceInfo : deviceList) {
         DevOnlineProcess(deviceInfo);
@@ -336,14 +336,14 @@ bool MediaLibraryDevice::UpdateDeviceSyncStatus(const std::string &networkId, in
     return MediaLibraryDeviceOperations::UpdateSyncStatus(rdbStore_, udid, syncStatus);
 }
 
-bool MediaLibraryDevice::GetDevicieSyncStatus(const std::string &networkId, int32_t &syncStatus)
+bool MediaLibraryDevice::GetDeviceSyncStatus(const std::string &networkId, int32_t &syncStatus)
 {
     std::string udid;
     {
         lock_guard<mutex> autoLock(devMtx_);
         auto info = deviceInfoMap_.find(networkId);
         if (info == deviceInfoMap_.end()) {
-            MEDIA_ERR_LOG("GetDevicieSyncStatus can not find networkId:%{private}s", networkId.c_str());
+            MEDIA_ERR_LOG("GetDeviceSyncStatus can not find networkId:%{private}s", networkId.c_str());
             return false;
         }
         udid = info->second.deviceUdid;

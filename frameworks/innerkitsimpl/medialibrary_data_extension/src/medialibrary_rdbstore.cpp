@@ -262,11 +262,6 @@ std::string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
     return cmd.GetTableName();
 }
 
-bool MediaLibraryRdbStore::SyncPullAllTableByDeviceId(const std::string &bundleName, std::vector<std::string> &devices)
-{
-    return MediaLibrarySyncTable::SyncPullAllTableByDeviceId(rdbStore_, bundleName, devices);
-}
-
 bool MediaLibraryRdbStore::SyncPullTable(const std::string &bundleName, const std::string &tableName,
                                          const std::vector<std::string> &devices, bool isLast)
 {

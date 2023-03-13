@@ -75,7 +75,7 @@ std::string DevicesInfoInteract::GenerateKey(const std::string &udid)
     return (udid + bundleName_ + MEDIA_LIBRARY_SERVICE_TYPE);
 }
 
-void DevicesInfoInteract::SyncMLDeviceInfos(const std::string &udid, const std::string &devId)
+void DevicesInfoInteract::SyncMLDeviceInfos(const std::string &udid, const std::string &networkId)
 {
     if (kvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("kvstore is nullptr");
@@ -85,8 +85,8 @@ void DevicesInfoInteract::SyncMLDeviceInfos(const std::string &udid, const std::
     std::string key = GenerateKey(udid);
     DistributedKv::DataQuery dataQuery;
     dataQuery.KeyPrefix(key);
-    std::vector<std::string> deviceIds = { devId };
-    DistributedKv::Status status = kvStorePtr_->Sync(deviceIds, DistributedKv::SyncMode::PULL,
+    std::vector<std::string> devices = { networkId };
+    DistributedKv::Status status = kvStorePtr_->Sync(devices, DistributedKv::SyncMode::PULL,
         dataQuery, shared_from_this());
     MEDIA_ERR_LOG("kvstore sync end, status %{public}d", status);
 }
