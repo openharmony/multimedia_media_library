@@ -256,7 +256,7 @@ std::shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
 std::string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
 {
     const std::string &networkId = cmd.GetOprnDevice();
-    int errCode = E_OK;
+    int errCode = E_ERR;
     if (!networkId.empty()) {
         return rdbStore_->ObtainDistributedTableName(networkId, cmd.GetTableName(), errCode);
     }
