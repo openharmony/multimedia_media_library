@@ -43,12 +43,7 @@ public:
     {
         return nullptr;
     }
-
-    virtual bool SyncPullAllTableByDeviceId(const std::string &bundleName, std::vector<std::string> &devices)
-    {
-        return false;
-    }
-
+    
     virtual bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
         const std::vector<std::string> &devices, bool isLast = false)
     {

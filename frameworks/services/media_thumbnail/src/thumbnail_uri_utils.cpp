@@ -94,25 +94,25 @@ bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outF
 
 string ThumbnailUriUtils::GetNetworkIdFromUri(const string &uri)
 {
-    string deviceId;
+    string networkId;
     if (uri.empty()) {
-        return deviceId;
+        return networkId;
     }
     size_t pos = uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX);
     if (pos == string::npos) {
-        return deviceId;
+        return networkId;
     }
 
     string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
     if (tempUri.empty()) {
-        return deviceId;
+        return networkId;
     }
     pos = tempUri.find_first_of('/');
     if (pos == 0 || pos == string::npos) {
-        return deviceId;
+        return networkId;
     }
-    deviceId = tempUri.substr(0, pos);
-    return deviceId;
+    networkId = tempUri.substr(0, pos);
+    return networkId;
 }
 
 string ThumbnailUriUtils::GetIdFromUri(const string &uri)
