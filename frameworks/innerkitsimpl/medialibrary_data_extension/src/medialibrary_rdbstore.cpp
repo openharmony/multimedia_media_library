@@ -107,7 +107,7 @@ bool MediaLibraryRdbStore::SubscribeRdbStoreObserver()
     int ret = rdbStore_->Subscribe(option, rdbStoreObs_.get());
     MEDIA_DEBUG_LOG("Subscribe ret = %d", ret);
 
-    return ret;
+    return ret == E_OK ? true : false;
 }
 
 bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
