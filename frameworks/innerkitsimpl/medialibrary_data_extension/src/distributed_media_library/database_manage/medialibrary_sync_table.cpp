@@ -18,6 +18,7 @@
 #include "media_log.h"
 #include "medialibrary_tracer.h"
 #include "media_column.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS {
 namespace Media {
@@ -83,9 +84,9 @@ bool MediaLibrarySyncTable::SyncPullTable(
     while (count++ < RETRY_COUNT) {
         MediaLibraryTracer tracer;
         tracer.Start("abilityHelper->Query");
-        auto ret = rdbStore->Sync(option, predicate, callback);
-        if (ret) {
-            return ret;
+        int ret = rdbStore->Sync(option, predicate, callback);
+        if (ret == E_OK) {
+            return true;
         }
     }
     return false;
@@ -122,9 +123,9 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
 
     MediaLibraryTracer tracer;
     tracer.Start("SyncPushTable rdbStore->Sync");
-    bool ret = rdbStore->Sync(option, predicate, callback);
+    int ret = rdbStore->Sync(option, predicate, callback);
 
-    return ret;
+    return ret == E_OK;
 }
 } // namespace Media
 } // namespace OHOS

@@ -1150,10 +1150,10 @@ bool ThumbnailUtils::SyncPushTable(ThumbRdbOpt &opts, vector<string> &devices, b
     };
 
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "SyncPushTable rdbStore->Sync");
-    bool ret = opts.store->Sync(option, predicate, callback);
+    int ret = opts.store->Sync(option, predicate, callback);
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 
-    return ret;
+    return ret == E_OK;
 }
 
 bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, vector<string> &devices, bool isBlock)
@@ -1186,9 +1186,9 @@ bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, vector<string> &devices, b
 
     MediaLibraryTracer tracer;
     tracer.Start("SyncPullTable rdbStore->Sync");
-    bool ret = opts.store->Sync(option, predicate, callback);
-    if (!ret || !isBlock) {
-        return ret;
+    int ret = opts.store->Sync(option, predicate, callback);
+    if (ret != E_OK || !isBlock) {
+        return false;
     }
 
     unique_lock<mutex> lock(status->mtx_);
@@ -1200,7 +1200,7 @@ bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, vector<string> &devices, b
         MEDIA_INFO_LOG("wait_for timeout");
     }
 
-    return ret;
+    return true;
 }
 
 Status ThumbnailUtils::SyncPullKvstore(const shared_ptr<SingleKvStore> &kvStore, const string key,

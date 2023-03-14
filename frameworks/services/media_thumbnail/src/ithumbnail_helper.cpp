@@ -38,8 +38,9 @@ shared_ptr<ResultSet> IThumbnailHelper::QueryThumbnailInfo(ThumbRdbOpt &opts,
         return nullptr;
     }
     string filesTableName = MEDIALIBRARY_TABLE;
+    int errCode = E_ERR;
     if (!opts.networkId.empty()) {
-        filesTableName = opts.store->ObtainDistributedTableName(opts.networkId, MEDIALIBRARY_TABLE);
+        filesTableName = opts.store->ObtainDistributedTableName(opts.networkId, MEDIALIBRARY_TABLE, errCode);
     }
 
     MEDIA_DEBUG_LOG("Get filesTableName [ %{public}s ] id [ %{public}s ]", filesTableName.c_str(), opts.row.c_str());
