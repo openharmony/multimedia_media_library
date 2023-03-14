@@ -1519,5 +1519,244 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ExtensionCheck_test_001, TestSize
     DocumentsExtensionCheck(g_download, title, true);
     SpecialCharacterExtensionCheck(g_download, title, true);
 }
+
+int RenameTest(const shared_ptr<FileAsset> &parent, string nameCreate, string nameRename)
+{
+    Uri parentUri(parent->GetUri());
+    Uri newUri("");
+    Uri newUriTest("");
+    if (mediaFileExtAbility->CreateFile(parentUri, nameCreate, newUri) != E_SUCCESS) {
+        return -1;
+    }
+    int32_t ret = mediaFileExtAbility->Rename(newUri, nameRename, newUriTest);
+    mediaFileExtAbility->Delete(newUri);
+    return ret;
+}
+
+/**
+ * @tc.number    : medialib_Rename_test_008
+ * @tc.name      : file rename function test under pictures
+ * @tc.desc      : Create files to invoke the Rename() interface.
+ */
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_008, TestSize.Level0)
+{
+    string nameCreate = "pictures_test." + *SUPPORTED_IMAGE_FORMATS_SET.begin();
+    string nameRename = "pictures_test." + *++SUPPORTED_IMAGE_FORMATS_SET.begin();
+    EXPECT_EQ(RenameTest(g_pictures, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "pictures_test.BMP";
+    EXPECT_EQ(RenameTest(g_pictures, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "pictures@@.BMP";
+    EXPECT_EQ(RenameTest(g_pictures, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "picturesTEST.BMP";
+    EXPECT_EQ(RenameTest(g_pictures, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "pictures1234.BMP";
+    EXPECT_EQ(RenameTest(g_pictures, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "测试.BMP";
+    EXPECT_EQ(RenameTest(g_pictures, nameCreate, nameRename), E_SUCCESS);
+}
+
+/**
+ * @tc.number    : medialib_Rename_test_009
+ * @tc.name      : file rename function test under pictures
+ * @tc.desc      : Create files to invoke the Rename() interface.
+ */
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_009, TestSize.Level0)
+{
+    string nameCreate = "pictures_test." + *SUPPORTED_IMAGE_FORMATS_SET.begin();
+    string nameRename = "pictures_test." + *SUPPORTED_VIDEO_FORMATS_SET.begin();
+    EXPECT_NE(RenameTest(g_pictures, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "pictures_test." + *SUPPORTED_AUDIO_FORMATS_SET.begin();
+    EXPECT_NE(RenameTest(g_pictures, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "pictures_test.1234";
+    EXPECT_NE(RenameTest(g_pictures, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "pictures.@@@";
+    EXPECT_NE(RenameTest(g_pictures, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "pictures.   name";
+    EXPECT_NE(RenameTest(g_pictures, nameCreate, nameRename), E_SUCCESS);
+}
+
+/**
+ * @tc.number    : medialib_Rename_test_0010
+ * @tc.name      : file rename function test under videos
+ * @tc.desc      : Create files to invoke the Rename() interface.
+ */
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_010, TestSize.Level0)
+{
+    string nameCreate = "videos_test." + *SUPPORTED_VIDEO_FORMATS_SET.begin();
+    string nameRename = "videos_test." + *++SUPPORTED_VIDEO_FORMATS_SET.begin();
+    EXPECT_EQ(RenameTest(g_videos, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "videos12.MP4";
+    EXPECT_EQ(RenameTest(g_videos, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "videos@@.MP4";
+    EXPECT_EQ(RenameTest(g_videos, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "1111.mov";
+    EXPECT_EQ(RenameTest(g_videos, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "测试.mov";
+    EXPECT_EQ(RenameTest(g_videos, nameCreate, nameRename), E_SUCCESS);
+}
+
+/**
+ * @tc.number    : medialib_Rename_test_011
+ * @tc.name      : file rename function test under videos
+ * @tc.desc      : Create files to invoke the Rename() interface.
+ */
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_011, TestSize.Level0)
+{
+    string nameCreate = "videos_test." + *SUPPORTED_VIDEO_FORMATS_SET.begin();
+    string nameRename = "videos_test." + *SUPPORTED_IMAGE_FORMATS_SET.begin();
+    EXPECT_NE(RenameTest(g_videos, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "videos_test." + *SUPPORTED_AUDIO_FORMATS_SET.begin();
+    EXPECT_NE(RenameTest(g_videos, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "videos.1234";
+    EXPECT_NE(RenameTest(g_videos, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "1111.@@@";
+    EXPECT_NE(RenameTest(g_videos, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "videos1223.   name";
+    EXPECT_NE(RenameTest(g_videos, nameCreate, nameRename), E_SUCCESS);
+}
+
+/**
+ * @tc.number    : medialib_Rename_test_012
+ * @tc.name      : file rename function test under audios
+ * @tc.desc      : Create files to invoke the Rename() interface.
+ */
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_012, TestSize.Level0)
+{
+    string nameCreate = "audios_test." + *SUPPORTED_AUDIO_FORMATS_SET.begin();
+    string nameRename = "audios_test." + *++SUPPORTED_AUDIO_FORMATS_SET.begin();
+    EXPECT_EQ(RenameTest(g_audios, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "audios_test.AAC";
+    EXPECT_EQ(RenameTest(g_audios, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "audios&&&.AAC";
+    EXPECT_EQ(RenameTest(g_audios, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "1.AAC";
+    EXPECT_EQ(RenameTest(g_audios, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "测试.AAC";
+    EXPECT_EQ(RenameTest(g_audios, nameCreate, nameRename), E_SUCCESS);
+}
+
+/**
+ * @tc.number    : medialib_Rename_test_013
+ * @tc.name      : file rename function test under audios
+ * @tc.desc      : Create files to invoke the Rename() interface.
+ */
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_013, TestSize.Level0)
+{
+    string nameCreate = "audios_test." + *SUPPORTED_AUDIO_FORMATS_SET.begin();
+    string nameRename = "audios_test." + *SUPPORTED_IMAGE_FORMATS_SET.begin();
+    EXPECT_NE(RenameTest(g_audios, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "audios_test." + *SUPPORTED_VIDEO_FORMATS_SET.begin();
+    EXPECT_NE(RenameTest(g_audios, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "audios.1234";
+    EXPECT_NE(RenameTest(g_audios, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "audios.@@@";
+    EXPECT_NE(RenameTest(g_audios, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "1234.   name";
+    EXPECT_NE(RenameTest(g_audios, nameCreate, nameRename), E_SUCCESS);
+}
+
+/**
+ * @tc.number    : medialib_Rename_test_014
+ * @tc.name      : file rename function test under camera
+ * @tc.desc      : Create files to invoke the Rename() interface.
+ */
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_014, TestSize.Level0)
+{
+    string nameCreate = "camera_test." + *SUPPORTED_IMAGE_FORMATS_SET.begin();
+    string nameRename = "camera_test." + *++SUPPORTED_IMAGE_FORMATS_SET.begin();
+    EXPECT_EQ(RenameTest(g_camera, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "camera.BMP";
+    EXPECT_EQ(RenameTest(g_camera, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "@@@.BMP";
+    EXPECT_EQ(RenameTest(g_camera, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "测试.BMP";
+    EXPECT_EQ(RenameTest(g_camera, nameCreate, nameRename), E_SUCCESS);
+}
+
+/**
+ * @tc.number    : medialib_Rename_test_015
+ * @tc.name      : file rename function test under camera
+ * @tc.desc      : Create files to invoke the Rename() interface.
+ */
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_015, TestSize.Level0)
+{
+    string nameCreate = "camera_test." + *SUPPORTED_IMAGE_FORMATS_SET.begin();
+    string nameRename = "camera_test." + *SUPPORTED_AUDIO_FORMATS_SET.begin();
+    EXPECT_NE(RenameTest(g_camera, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "camera.1234";
+    EXPECT_NE(RenameTest(g_camera, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "&&&&.@@@";
+    EXPECT_NE(RenameTest(g_camera, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "1234.   name";
+    EXPECT_NE(RenameTest(g_camera, nameCreate, nameRename), E_SUCCESS);
+}
+
+/**
+ * @tc.number    : medialib_Rename_test_016
+ * @tc.name      : file rename function test under download
+ * @tc.desc      : Create files to invoke the Rename() interface.
+ */
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_016, TestSize.Level0)
+{
+    string nameCreate = "download_test." + *SUPPORTED_IMAGE_FORMATS_SET.begin();
+    string nameRename = "download_test." + *++SUPPORTED_IMAGE_FORMATS_SET.begin();
+    EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "download." + *SUPPORTED_AUDIO_FORMATS_SET.begin();
+    EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "&%^&." + *SUPPORTED_VIDEO_FORMATS_SET.begin();
+    EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "124.BMP";
+    EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "ABC.1234";
+    EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "asd.@@@";
+    EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "medialib_Rename_test.   name";
+    EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "5678";
+    EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "测试.bmp";
+    EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
+}
+
+/**
+ * @tc.number    : medialib_Rename_test_017
+ * @tc.name      : file rename function test under documents
+ * @tc.desc      : Create files to invoke the Rename() interface.
+ */
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_017, TestSize.Level0)
+{
+    string nameCreate = "documents_test.gz";
+    string nameRename = "documents_test.GZ";
+    EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "documents.1234";
+    EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "9%1.@@@";
+    EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "ABC.   name";
+    EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "测试.   name";
+    EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "1234";
+    EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+}
+
+/**
+ * @tc.number    : medialib_Rename_test_018
+ * @tc.name      : file rename function test under documents
+ * @tc.desc      : Create files to invoke the Rename() interface.
+ */
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_018, TestSize.Level0)
+{
+    string nameCreate = "documents_test.gz";
+    string nameRename = "documents_test." + *SUPPORTED_IMAGE_FORMATS_SET.begin();
+    EXPECT_NE(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "documents." + *SUPPORTED_AUDIO_FORMATS_SET.begin();
+    EXPECT_NE(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "%&$." + *SUPPORTED_VIDEO_FORMATS_SET.begin();
+    EXPECT_NE(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    nameRename = "ASX.BMP";
+    EXPECT_NE(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+}
 } // namespace Media
 } // namespace OHOS
