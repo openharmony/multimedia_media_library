@@ -20,6 +20,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_column.h"
+#include "medialibrary_errno.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -322,12 +323,13 @@ void MediaLibraryCommand::ParseTableName()
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore != nullptr) {
         auto rdbStorePtr = rdbStore->GetRaw();
+        int errCode = E_ERR;
         if (rdbStorePtr != nullptr) {
             if (tableName_ == PhotoColumn::PHOTOS_TABLE || tableName_ == AudioColumn::AUDIOS_TABLE ||
                 tableName_ == DocumentColumn::DOCUMENTS_TABLE) {
-                tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, tableName_);
+                tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, tableName_, errCode);
             }
-            tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE);
+            tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE, errCode);
         }
     }
     MEDIA_INFO_LOG("Table name is %{public}s", tableName_.c_str());
