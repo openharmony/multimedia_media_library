@@ -1137,7 +1137,7 @@ bool ThumbnailUtils::SyncPushTable(ThumbRdbOpt &opts, vector<string> &devices, b
     DistributedRdb::SyncCallback callback = [](const DistributedRdb::SyncResult& syncResult) {
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
             if (iter->first.empty()) {
-                MEDIA_ERR_LOG("SyncPushTable deviceId is empty");
+                MEDIA_ERR_LOG("SyncPushTable networkId is empty");
                 continue;
             }
             if (iter->second != 0) {
@@ -1220,11 +1220,11 @@ Status ThumbnailUtils::SyncPullKvstore(const shared_ptr<SingleKvStore> &kvStore,
     DataQuery dataQuery;
     dataQuery.KeyPrefix(key);
     dataQuery.Limit(1, 0); // for force to sync single key
-    vector<string> deviceIds = { networkId };
+    vector<string> devices = { networkId };
     MediaLibraryTracer tracer;
     tracer.Start("SyncPullKvstore kvStore->SyncPull");
     auto callback = make_shared<MediaLibrarySyncCallback>();
-    Status status = kvStore->Sync(deviceIds, OHOS::DistributedKv::SyncMode::PULL, dataQuery, callback);
+    Status status = kvStore->Sync(devices, OHOS::DistributedKv::SyncMode::PULL, dataQuery, callback);
     if (!callback->WaitFor()) {
         MEDIA_DEBUG_LOG("wait_for timeout");
         status = Status::ERROR;
@@ -1245,10 +1245,10 @@ Status ThumbnailUtils::SyncPushKvstore(const shared_ptr<SingleKvStore> &kvStore,
     }
     DistributedKv::DataQuery dataQuery;
     dataQuery.KeyPrefix(key);
-    vector<string> deviceIds = { networkId };
+    vector<string> devices = { networkId };
     MediaLibraryTracer tracer;
     tracer.Start("SyncPushKvstore kvStore->SyncPush");
-    return kvStore->Sync(deviceIds, OHOS::DistributedKv::SyncMode::PUSH, dataQuery);
+    return kvStore->Sync(devices, OHOS::DistributedKv::SyncMode::PUSH, dataQuery);
 }
 
 bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, unique_ptr<PixelMap> &pixelMap)

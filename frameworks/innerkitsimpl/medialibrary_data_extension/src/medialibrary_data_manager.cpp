@@ -817,7 +817,7 @@ bool MediaLibraryDataManager::QuerySync(const std::string &networkId, const std:
     }
 
     int32_t syncStatus = DEVICE_SYNCSTATUSING;
-    auto result = MediaLibraryDevice::GetInstance()->GetDevicieSyncStatus(networkId, syncStatus);
+    auto result = MediaLibraryDevice::GetInstance()->GetDeviceSyncStatus(networkId, syncStatus);
     if (result && syncStatus == DEVICE_SYNCSTATUS_COMPLETE) {
         return true;
     }
