@@ -21,6 +21,7 @@
 #include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
 #include "media_file_utils.h"
+#include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_unistore_manager.h"
 
 namespace OHOS {
@@ -222,8 +223,9 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
     };
 
     DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = ?");
-    predicates.SetWhereArgs(vector<string>({ path }));
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = ? And " + MEDIA_DATA_DB_IS_TRASH + " = ? ");
+    vector<string> args = { path, to_string(NOT_TRASHED) };
+    predicates.SetWhereArgs(args);
 
     auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(abilityUri, columns, predicates);
     if (resultSet == nullptr) {
@@ -268,8 +270,8 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
 
     DataShare::DataSharePredicates predicates;
     // Append % to end of the path for using LIKE statement
-    vector<string> args= { path.back() != '/' ? path + "/%" : path + "%" };
-    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " like ?");
+    vector<string> args= { path.back() != '/' ? path + "/%" : path + "%", to_string(NOT_TRASHED) };
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " like ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? ");
     predicates.SetWhereArgs(args);
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
@@ -310,8 +312,9 @@ string MediaScannerDb::GetFileDBUriFromPath(const string &path)
     columns.push_back(MEDIA_DATA_DB_URI);
 
     DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = ?");
-    predicates.SetWhereArgs(vector<string>({ path }));
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ?");
+    vector<string> args = { path, to_string(NOT_TRASHED) };
+    predicates.SetWhereArgs(args);
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
     auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates);
@@ -335,8 +338,9 @@ int32_t MediaScannerDb::GetIdFromPath(const string &path)
     int32_t columnIndex = -1;
 
     DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = ?");
-    predicates.SetWhereArgs(vector<string>({ path }));
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ?");
+    vector<string> args = { path, to_string(NOT_TRASHED) };
+    predicates.SetWhereArgs(args);
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {MEDIA_DATA_DB_ID};
@@ -355,9 +359,10 @@ int32_t MediaScannerDb::GetIdFromPath(const string &path)
 int32_t MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap)
 {
     DataShare::DataSharePredicates predicates;
-    string queryCmd = MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND " + MEDIA_DATA_DB_FILE_PATH + " like ? ";
+    string queryCmd = MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND " + MEDIA_DATA_DB_FILE_PATH + " like ? AND " +
+        MEDIA_DATA_DB_IS_TRASH + " = ?";
     string queryPath = path.back() != '/' ? path + "/%" : path + "%";
-    vector<string> args= { to_string(MediaType::MEDIA_TYPE_ALBUM), queryPath };
+    vector<string> args = { to_string(MediaType::MEDIA_TYPE_ALBUM), queryPath, to_string(NOT_TRASHED) };
     predicates.SetWhereClause(queryCmd);
     predicates.SetWhereArgs(args);
 
