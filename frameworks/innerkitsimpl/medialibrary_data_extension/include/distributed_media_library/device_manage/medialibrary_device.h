@@ -55,12 +55,13 @@ public:
     void OnDeviceChanged(const OHOS::DistributedHardware::DmDeviceInfo &deviceInfo) override;
     void OnRemoteDied() override;
 
-    void GetAllDeviceId(std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList);
+    void GetAllNetworkId(std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList);
     bool InitDeviceRdbStore(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void NotifyDeviceChange();
     void NotifyRemoteFileChange();
     bool UpdateDeviceSyncStatus(const std::string &networkId, int32_t syncStatus);
-    bool GetDevicieSyncStatus(const std::string &networkId, int32_t &syncStatus);
+    bool GetDeviceSyncStatus(const std::string &networkId, int32_t &syncStatus);
+    bool GetDeviceIdByNetworkId(const std::string &networkId, std::string &deviceId);
     std::string GetNetworkIdBySelfId(const std::string &selfId);
     std::string GetUdidByNetworkId(std::string &networkId);
     void OnSyncCompleted(const std::string &devId, const DistributedKv::Status staus);

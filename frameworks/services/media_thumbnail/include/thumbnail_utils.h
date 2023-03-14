@@ -86,7 +86,6 @@ public:
         std::unique_ptr<PixelMap> &outPixelMap);
 
     // URI utils
-    std::string GetDeviceIdByUri(const std::string &uri);
     static bool UpdateRemotePath(std::string &path, const std::string &networkId);
 
     // RDB Store Query
@@ -140,7 +139,6 @@ public:
     static DistributedKv::Status SyncPullKvstore(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
         const std::string key, const std::string &networkId);
 private:
-    const int RETRY_COUNT = 3;
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     static int64_t UTCTimeSeconds();
     static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
