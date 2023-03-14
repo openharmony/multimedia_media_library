@@ -84,6 +84,14 @@ enum class FetchResType : int32_t {
     TYPE_PHOTOALBUM
 };
 
+enum class DirtyType : int32_t {
+    TYPE_SYNCED,
+    TYPE_NEW,
+    TYPE_MDIRTY,
+    TYPE_FDIRTY,
+    TYPE_DELETED
+};
+
 const int32_t SUCCESS = 0;
 
 constexpr int32_t DEFAULT_INT32 = 0;

@@ -362,7 +362,8 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
         MEDIA_DATA_DB_THUMBNAIL,
         MEDIA_DATA_DB_LCD,
         MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_DATE_MODIFIED
+        MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_GID
     };
 
     vector<string> selectionArgs;
@@ -701,6 +702,11 @@ bool ThumbnailUtils::UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data,
         values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
         int64_t timeNow = UTCTimeSeconds();
         values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
+        if (data.gid == 0) {
+            values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        } else {
+            values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_FDIRTY));
+        }
     }
 
     MediaLibraryTracer tracer;
@@ -949,6 +955,7 @@ bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool 
     if (withLcd) {
         values.PutNull(MEDIA_DATA_DB_LCD);
         values.PutLong(MEDIA_DATA_DB_TIME_VISIT, 0);
+        values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     }
     int changedRows;
     auto err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
@@ -1449,6 +1456,7 @@ void ThumbnailUtils::ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rd
     data.lcdKey = rdbData.lcdKey;
     data.mediaType = rdbData.mediaType;
     data.dateModified = rdbData.dateModified;
+    data.gid = rdbData.gid;
 }
 
 int64_t ThumbnailUtils::UTCTimeSeconds()
@@ -1546,6 +1554,13 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         err = resultSet->GetLong(index, data.dateModified);
     } else {
         MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_DATE_MODIFIED.c_str(), err);
+    }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_GID, index);
+    if (err == NativeRdb::E_OK) {
+        err = resultSet->GetLong(index, data.gid);
+    } else {
+        MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_GID.c_str(), err);
     }
 }
 
