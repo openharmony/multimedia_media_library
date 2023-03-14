@@ -98,13 +98,11 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateFileObj_test_001, TestSize.Leve
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_FILE);
     cmd.SetValueBucket(values);
-    ret = MediaLibraryObjectUtils::CreateFileObj(cmd);
-    EXPECT_EQ(ret, E_DIR_CHECK_DIR_FAIL);
     string path = "//storage/media/local/files/CreateFileObj_test_001";
     values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, path);
     cmd.SetValueBucket(values);
     ret = MediaLibraryObjectUtils::CreateFileObj(cmd);
-    EXPECT_EQ(ret, E_FILE_NAME_INVALID);
+    EXPECT_EQ(ret, E_CHECK_EXTENSION_FAIL);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
@@ -135,17 +133,15 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_RenameFileObj_test_001, TestSize.Leve
     ret = MediaLibraryObjectUtils::RenameFileObj(cmd, srcFilePath, dstFilePath);
     EXPECT_EQ(ret, E_SUCCESS);
     dstFilePath = "RenameFileObj.test/media";
-    ret = MediaLibraryObjectUtils::RenameFileObj(cmd, srcFilePath, dstFilePath);
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
     cmd.SetTableName(MEDIALIBRARY_TABLE);
     NativeRdb::ValuesBucket values;
-    string name = "RenameFileObj_test_001";
+    string name = "RenameFileObj_test_001.nofile";
     string path = "/storage/media";
     values.PutString(MEDIA_DATA_DB_NAME, name);
     values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, path);
     cmd.SetValueBucket(values);
     ret = MediaLibraryObjectUtils::RenameFileObj(cmd, srcFilePath, dstFilePath);
-    EXPECT_EQ(ret, E_FILE_NAME_INVALID);
+    EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_RenameDirObj_test_001, TestSize.Level0)
@@ -384,13 +380,11 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CopyDir_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_INVALID_URI);
     relativePath = "medialib_CopyDir_test_001";
     shared_ptr<FileAsset> srcDirAssetPtr = make_shared<FileAsset>();
-    srcDirAssetPtr->SetDisplayName("medialib_CopyDir_test_001");
-    ret = MediaLibraryObjectUtils::CopyDir(srcDirAssetPtr, relativePath);
-    EXPECT_EQ(ret, E_DIR_CHECK_DIR_FAIL);
+    srcDirAssetPtr->SetDisplayName(MEDIA_NO_FILE);
     srcDirAssetPtr->SetId(id);
-    relativePath = "//data/test";
+    relativePath = "/storage/media/local/files/";
     ret = MediaLibraryObjectUtils::CopyDir(srcDirAssetPtr, relativePath);
-    EXPECT_EQ(ret, E_DIR_CHECK_DIR_FAIL);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_IsSmartAlbumExistInDb_test_001, TestSize.Level0)
@@ -441,6 +435,25 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteMisc_test_001, TestSize.Level0)
     int32_t ret = MediaLibraryObjectUtils::DeleteMisc(fileId, path, parentId);
     EXPECT_EQ(ret, E_SUCCESS);
     MediaLibraryUnistoreManager::GetInstance().Stop();
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckDirExtension_test_001, TestSize.Level0)
+{
+    string relativePath = "";
+    string displayName = "";
+    int32_t ret = MediaLibraryObjectUtils::CheckDirExtension(relativePath, displayName);
+    EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
+    displayName = MEDIA_NO_FILE;
+    relativePath = "medialib_CheckDirExtension_test_001";
+    ret = MediaLibraryObjectUtils::CheckDirExtension(relativePath, displayName);
+    EXPECT_EQ(ret, E_SUCCESS);
+    displayName = "medialib_CheckDirExtension_test_001";
+    relativePath = "/storage/media/local/files/medialib_CheckDirExtension_test_001";
+    ret = MediaLibraryObjectUtils::CheckDirExtension(relativePath, displayName);
+    EXPECT_EQ(ret, E_CHECK_EXTENSION_FAIL);
+    string name(256, 'a');
+    ret = MediaLibraryObjectUtils::CheckDirExtension(relativePath, name);
+    EXPECT_EQ(ret, E_FILE_NAME_INVALID);
 }
 
 } // namespace Media
