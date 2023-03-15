@@ -162,6 +162,8 @@
             "_binary_medialibraryinf_abc_end";
             "_binary_medialibraryinf_js_start";
             "_binary_medialibraryinf_js_end";
+            "NAPI_multimedia_mediaLibrary_GetJSCode";
+            "NAPI_multimedia_mediaLibrary_GetABCCode";
     };
   local:
     *;
