@@ -271,9 +271,9 @@ void MediaLibraryCommand::ParseTableName()
         return;
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    int errCode = E_ERR;
     if (rdbStore != nullptr) {
         auto rdbStorePtr = rdbStore->GetRaw();
+        int errCode = E_ERR;
         if (rdbStorePtr != nullptr) {
             tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE, errCode);
         }
