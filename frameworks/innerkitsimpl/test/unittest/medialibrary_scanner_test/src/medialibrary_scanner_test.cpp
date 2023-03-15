@@ -114,7 +114,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMimeTypeFromExtension_test_001, Te
     EXPECT_EQ(mediaType, "text/html");
     extension = "medialib_GetMimeTypeFromExtension_test";
     mediaType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
-    EXPECT_EQ(mediaType, "");
+    EXPECT_EQ(mediaType, "application/octet-stream");
     extension = AUDIO_CONTAINER_TYPE_WAV;
     mediaType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     EXPECT_EQ(mediaType, "audio/wav");
