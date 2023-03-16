@@ -1199,7 +1199,7 @@ bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, std::vector<std::string> &
     tracer.Start("SyncPullTable rdbStore->Sync");
     int ret = opts.store->Sync(option, predicate, callback);
     if (ret != E_OK || !isBlock) {
-        return false;
+        return ret == E_OK;
     }
 
     std::unique_lock<std::mutex> lock(status->mtx_);
