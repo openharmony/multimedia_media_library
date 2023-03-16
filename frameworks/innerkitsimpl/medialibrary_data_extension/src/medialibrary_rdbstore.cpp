@@ -61,7 +61,7 @@ void MediaLibraryRdbStore::Init()
     }
 
     if (rdbDataCallBack.HasDistributedTables()) {
-        auto ret = rdbStore_->SetDistributedTables(
+        int ret = rdbStore_->SetDistributedTables(
             {MEDIALIBRARY_TABLE, SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE});
         MEDIA_DEBUG_LOG("ret = %{private}d", ret);
     }
@@ -100,10 +100,10 @@ bool MediaLibraryRdbStore::SubscribeRdbStoreObserver()
 
     DistributedRdb::SubscribeOption option;
     option.mode = DistributedRdb::SubscribeMode::REMOTE;
-    bool ret = rdbStore_->Subscribe(option, rdbStoreObs_.get());
+    int ret = rdbStore_->Subscribe(option, rdbStoreObs_.get());
     MEDIA_DEBUG_LOG("Subscribe ret = %d", ret);
 
-    return ret;
+    return ret == E_OK;
 }
 
 bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
@@ -115,13 +115,14 @@ bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
 
     DistributedRdb::SubscribeOption option;
     option.mode = DistributedRdb::SubscribeMode::REMOTE;
-    bool ret = rdbStore_->UnSubscribe(option, rdbStoreObs_.get());
+    int ret = rdbStore_->UnSubscribe(option, rdbStoreObs_.get());
     MEDIA_DEBUG_LOG("UnSubscribe ret = %d", ret);
-    if (ret) {
+    if (ret == E_OK) {
         rdbStoreObs_ = nullptr;
+        return true;
     }
 
-    return ret;
+    return false;
 }
 
 int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
@@ -247,8 +248,9 @@ std::shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
 std::string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
 {
     const std::string &networkId = cmd.GetOprnDevice();
+    int errCode = E_ERR;
     if (!networkId.empty()) {
-        return rdbStore_->ObtainDistributedTableName(networkId, cmd.GetTableName());
+        return rdbStore_->ObtainDistributedTableName(networkId, cmd.GetTableName(), errCode);
     }
 
     return cmd.GetTableName();
