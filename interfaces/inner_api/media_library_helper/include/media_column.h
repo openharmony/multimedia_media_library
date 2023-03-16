@@ -30,12 +30,11 @@ public:
     const static std::string MEDIA_SIZE;
     const static std::string MEDIA_TITLE;
     const static std::string MEDIA_NAME;
-    const static std::string MEDIA_MEDIA_TYPE;
+    const static std::string MEDIA_TYPE;
     const static std::string MEDIA_MIME_TYPE;
     const static std::string MEDIA_OWNER_PACKAGE;
     const static std::string MEDIA_DEVICE_NAME;
     const static std::string MEDIA_THUMBNAIL;
-    const static std::string MEDIA_ARTIST;
 
     // As set Parameter about time
     const static std::string MEDIA_DATE_MODIFIED;
@@ -63,6 +62,7 @@ public:
     const static std::string PHOTO_LCD;
     const static std::string PHOTO_HEIGHT;
     const static std::string PHOTO_WIDTH;
+    const static std::string PHOTO_LCD_VISIT_TIME;
 
     // table name
     const static std::string PHOTOS_TABLE;
@@ -75,6 +75,7 @@ class AudioColumn : public MediaColumn {
 public:
     // column only in AudioTable
     const static std::string AUDIO_ALBUM;
+    const static std::string AUDIO_ARTIST;
 
     // table name
     const static std::string AUDIOS_TABLE;
@@ -85,6 +86,10 @@ public:
 
 class DocumentColumn : public MediaColumn {
 public:
+    // column only in DocumentColumn
+    const static std::string DOCUMENT_LCD;
+    const static std::string DOCUMENT_LCD_VISIT_TIME;
+
     // table name
     const static std::string DOCUMENTS_TABLE;
 

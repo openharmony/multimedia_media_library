@@ -26,12 +26,11 @@ const std::string MediaColumn::MEDIA_FILE_PATH = "data";
 const std::string MediaColumn::MEDIA_SIZE = "size";
 const std::string MediaColumn::MEDIA_TITLE = "title";
 const std::string MediaColumn::MEDIA_NAME = "display_name";
-const std::string MediaColumn::MEDIA_MEDIA_TYPE = "media_type";
+const std::string MediaColumn::MEDIA_TYPE = "media_type";
 const std::string MediaColumn::MEDIA_MIME_TYPE = "mime_type";
 const std::string MediaColumn::MEDIA_OWNER_PACKAGE = "owner_package";
 const std::string MediaColumn::MEDIA_DEVICE_NAME = "device_name";
 const std::string MediaColumn::MEDIA_THUMBNAIL = "thumbnail";
-const std::string MediaColumn::MEDIA_ARTIST = "artist";
 const std::string MediaColumn::MEDIA_DATE_MODIFIED = "date_modified";
 const std::string MediaColumn::MEDIA_DATE_ADDED = "date_added";
 const std::string MediaColumn::MEDIA_DATE_TAKEN = "date_taken";
@@ -51,6 +50,7 @@ const std::string PhotoColumn::PHOTO_LONGITUDE = "longitude";
 const std::string PhotoColumn::PHOTO_LCD = "lcd";
 const std::string PhotoColumn::PHOTO_HEIGHT = "height";
 const std::string PhotoColumn::PHOTO_WIDTH = "width";
+const std::string PhotoColumn::PHOTO_LCD_VISIT_TIME = "lcd_visit_time";
 
 const std::string PhotoColumn::PHOTOS_TABLE = "Photos";
 
@@ -62,12 +62,11 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_SIZE + " BIGINT, " +
     MEDIA_TITLE + " TEXT, " +
     MEDIA_NAME + " TEXT, " +
-    MEDIA_MEDIA_TYPE + " INT, " +
+    MEDIA_TYPE + " INT, " +
     MEDIA_MIME_TYPE + " TEXT, " +
     MEDIA_OWNER_PACKAGE + " TEXT, " +
     MEDIA_DEVICE_NAME + " TEXT, " +
     MEDIA_THUMBNAIL + " TEXT, " +
-    MEDIA_ARTIST + " TEXT, " +
     MEDIA_DATE_ADDED + " BIGINT, " +
     MEDIA_DATE_MODIFIED + " BIGINT, " +
     MEDIA_DATE_TAKEN + " BIGINT DEFAULT 0, " +
@@ -85,9 +84,11 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_LONGITUDE + " DOUBLE DEFAULT 0, " +
     PHOTO_LCD + " TEXT, " +
     PHOTO_HEIGHT + " INT, " +
-    PHOTO_WIDTH + " INT)";
+    PHOTO_WIDTH + " INT, " +
+    PHOTO_LCD_VISIT_TIME + " BIGINT DEFAULT 0)";
 
 const std::string AudioColumn::AUDIO_ALBUM = "audio_album";
+const std::string AudioColumn::AUDIO_ARTIST = "artist";
 
 const std::string AudioColumn::AUDIOS_TABLE = "Audios";
 
@@ -99,12 +100,12 @@ const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_SIZE + " BIGINT, " +
     MEDIA_TITLE + " TEXT, " +
     MEDIA_NAME + " TEXT, " +
-    MEDIA_MEDIA_TYPE + " INT, " +
+    MEDIA_TYPE + " INT, " +
     MEDIA_MIME_TYPE + " TEXT, " +
     MEDIA_OWNER_PACKAGE + " TEXT, " +
     MEDIA_DEVICE_NAME + " TEXT, " +
     MEDIA_THUMBNAIL + " TEXT, " +
-    MEDIA_ARTIST + " TEXT, " +
+    AUDIO_ARTIST + " TEXT, " +
     MEDIA_DATE_ADDED + " BIGINT, " +
     MEDIA_DATE_MODIFIED + " BIGINT, " +
     MEDIA_DATE_TAKEN + " BIGINT DEFAULT 0, " +
@@ -119,6 +120,9 @@ const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_RELATIVE_PATH + " TEXT, " +
     AUDIO_ALBUM + " TEXT)";
 
+const std::string DocumentColumn::DOCUMENT_LCD = "lcd";
+const std::string DocumentColumn::DOCUMENT_LCD_VISIT_TIME = "lcd_visit_time";
+
 const std::string DocumentColumn::DOCUMENTS_TABLE = "Documents";
 
 const std::string DocumentColumn::CREATE_DOCUMENT_TABLE = "CREATE TABLE IF NOT EXISTS " +
@@ -129,12 +133,11 @@ const std::string DocumentColumn::CREATE_DOCUMENT_TABLE = "CREATE TABLE IF NOT E
     MEDIA_SIZE + " BIGINT, " +
     MEDIA_TITLE + " TEXT, " +
     MEDIA_NAME + " TEXT, " +
-    MEDIA_MEDIA_TYPE + " INT, " +
+    MEDIA_TYPE + " INT, " +
     MEDIA_MIME_TYPE + " TEXT, " +
     MEDIA_OWNER_PACKAGE + " TEXT, " +
     MEDIA_DEVICE_NAME + " TEXT, " +
     MEDIA_THUMBNAIL + " TEXT, " +
-    MEDIA_ARTIST + " TEXT, " +
     MEDIA_DATE_ADDED + " BIGINT, " +
     MEDIA_DATE_MODIFIED + " BIGINT, " +
     MEDIA_DATE_TAKEN + " BIGINT DEFAULT 0, " +
@@ -146,7 +149,9 @@ const std::string DocumentColumn::CREATE_DOCUMENT_TABLE = "CREATE TABLE IF NOT E
     MEDIA_DATE_DELETED + " BIGINT DEFAULT 0, " +
     MEDIA_HIDDEN + "INT DEFAULT 0, " +
     MEDIA_PARENT_ID + " INT DEFAULT 0, " +
-    MEDIA_RELATIVE_PATH + " TEXT)";
+    MEDIA_RELATIVE_PATH + " TEXT, " +
+    DOCUMENT_LCD + " TEXT, " +
+    DOCUMENT_LCD_VISIT_TIME + " BIGINT DEFAULT 0)";
 
 }  // namespace Media
 }  // namespace OHOS
