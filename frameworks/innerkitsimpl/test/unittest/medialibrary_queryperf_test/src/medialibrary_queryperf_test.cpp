@@ -23,6 +23,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "mimetype_utils.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "scanner_utils.h"
@@ -597,6 +598,49 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_012, TestSi
     int64_t end = UTCTimeSeconds();
 
     GTEST_LOG_(INFO) << "DataShareGet10Columnlimit50 Cost: " << ((double)(end - start)/50) << "ms";
+}
+
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_013, TestSize.Level0)
+{
+    AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
+    predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    vector<string> columns;
+
+    int64_t timeSum = 0;
+    for (int i = 0; i < 50; i++) {
+        auto result = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
+        EXPECT_NE(result, nullptr);
+        int count;
+        int64_t start = UTCTimeSeconds();
+        result->GetRowCount(count);
+        int64_t end = UTCTimeSeconds();
+        EXPECT_TRUE(count > 0);
+        timeSum += end - start;
+    }
+
+    GTEST_LOG_(INFO) << "rdb GetRowCount Cost: " << ((double)(timeSum)/50) << "ms";
+}
+
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_014, TestSize.Level0)
+{
+    Uri uri(MEDIALIBRARY_DATA_URI);
+    DataSharePredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    vector<string> columns;
+
+    int64_t timeSum = 0;
+    for (int i = 0; i < 50; i++) {
+        auto result = sDataShareHelper_->Query(uri, predicates, columns);
+        EXPECT_NE(result, nullptr);
+        int count;
+        int64_t start = UTCTimeSeconds();
+        result->GetRowCount(count);
+        int64_t end = UTCTimeSeconds();
+        EXPECT_TRUE(count > 0);
+        timeSum += end - start;
+    }
+
+    GTEST_LOG_(INFO) << "DataShare GetRowCount Cost: " << ((double)(timeSum)/50) << "ms";
 }
 } // namespace Media
 } // namespace OHOS
