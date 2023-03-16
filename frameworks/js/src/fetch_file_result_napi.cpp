@@ -37,7 +37,7 @@ FetchFileResultNapi::FetchFileResultNapi()
 
 FetchFileResultNapi::~FetchFileResultNapi()
 {
-    propertyPtr->fetchFileResult_ = nullptr;
+    propertyPtr = nullptr;
 }
 
 void FetchFileResultNapi::FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
@@ -226,6 +226,19 @@ napi_value FetchFileResultNapi::UserFileMgrInit(napi_env env, napi_value exports
     return exports;
 }
 
+static bool CheckIfFFRNapiNotEmpty(FetchFileResultNapi* obj)
+{
+    if (obj == nullptr) {
+        NAPI_INFO_LOG("FetchFileResultNapi is nullptr");
+        return false;
+    }
+    if (obj->CheckIfPropertyPtrNull()) {
+        NAPI_INFO_LOG("PropertyPtr in FetchFileResultNapi is nullptr");
+        return false;
+    }
+    return true;
+}
+
 napi_value FetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -245,7 +258,7 @@ napi_value FetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    if ((status == napi_ok) && (obj != nullptr)) {
+    if ((status == napi_ok) && CheckIfFFRNapiNotEmpty(obj)) {
         switch (obj->GetFetchResType()) {
             case FetchResType::TYPE_FILE:
                 count = obj->GetFetchFileResultObject()->GetCount();
@@ -288,7 +301,7 @@ napi_value FetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info i
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    if ((status == napi_ok) && (obj != nullptr)) {
+    if ((status == napi_ok) && CheckIfFFRNapiNotEmpty(obj)) {
         switch (obj->GetFetchResType()) {
             case FetchResType::TYPE_FILE:
                 isAfterLast = obj->GetFetchFileResultObject()->IsAtLastRow();
@@ -382,7 +395,7 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
 
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+    if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
         if (argc == ARGS_ONE) {
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
         }
@@ -433,7 +446,7 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+    if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
         if (argc == ARGS_ONE) {
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
         }
@@ -484,7 +497,7 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+    if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
         if (argc == ARGS_ONE) {
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
         }
@@ -536,7 +549,7 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+    if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
         // Check the arguments and their types
         napi_typeof(env, argv[PARAM0], &type);
         if (type == napi_number) {
@@ -693,7 +706,7 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
+    if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
         if (argc == ARGS_ONE) {
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
         }
@@ -741,9 +754,12 @@ napi_value FetchFileResultNapi::JSClose(napi_env env, napi_callback_info info)
         NAPI_ERR_LOG("Invalid arguments!, status: %{public}d", status);
         return jsResult;
     }
-
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
+    if ((status == napi_ok) && (obj != nullptr)) {
+        obj->propertyPtr = nullptr;
+    }
     status = napi_remove_wrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    if (status == napi_ok && obj != nullptr) {
+    if ((status == napi_ok) && (obj != nullptr)) {
         napi_create_int32(env, SUCCESS, &jsResult);
     } else {
         NAPI_INFO_LOG("JSClose obj == nullptr");
@@ -871,6 +887,11 @@ void FetchFileResultAsyncContext::GetAllObjectFromFetchResult()
             NAPI_ERR_LOG("unsupported FetchResType");
             break;
     }
+}
+
+bool FetchFileResultNapi::CheckIfPropertyPtrNull()
+{
+    return propertyPtr == nullptr;
 }
 } // namespace Media
 } // namespace OHOS
