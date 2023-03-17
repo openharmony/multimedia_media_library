@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define MLOG_TAG "FileExtUnitTest"
 
+#include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
 #include "thumbnail_utils.h"
 #include "thumbnail_service.h"
@@ -391,6 +391,139 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_WaitFor_test_001, TestSize.Level0)
 {
     MediaLibrarySyncCallback mediaLibrary;
     bool ret = mediaLibrary.WaitFor();
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteLcdData_test_001, TestSize.Level0)
+{
+    ThumbnailData thumbnailData;
+    ThumbRdbOpt opts;
+    bool ret = ThumbnailUtils::DeleteLcdData(opts, thumbnailData);
+    EXPECT_EQ(ret, false);
+    thumbnailData.lcdKey = "DeleteLcdData";
+    ret = ThumbnailUtils::DeleteLcdData(opts, thumbnailData);
+    EXPECT_EQ(ret, true);
+    opts.networkId = "medialib_DeleteLcdData_test_001";
+    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    opts.kvStore = kvStorePtr;
+    ret = ThumbnailUtils::DeleteLcdData(opts, thumbnailData);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteDistributeLcdData_test_001, TestSize.Level0)
+{
+    ThumbnailData thumbnailData;
+    ThumbRdbOpt opts;
+    bool ret = ThumbnailUtils::DeleteDistributeLcdData(opts, thumbnailData);
+    EXPECT_EQ(ret, false);
+    thumbnailData.lcdKey = "DeleteDistributeLcdData";
+    ret = ThumbnailUtils::DeleteDistributeLcdData(opts, thumbnailData);
+    EXPECT_EQ(ret, true);
+    opts.networkId = "medialib_DeleteDistributeLcdData_test_001";
+    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    opts.kvStore = kvStorePtr;
+    ret = ThumbnailUtils::DeleteDistributeLcdData(opts, thumbnailData);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_ClearThumbnailAllRecord_test_001, TestSize.Level0)
+{
+    ThumbnailData thumbnailData;
+    ThumbRdbOpt opts;
+    bool ret = ThumbnailUtils::ClearThumbnailAllRecord(opts, thumbnailData);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_DoUpdateRemoteThumbnail_test_001, TestSize.Level0)
+{
+    ThumbnailData thumbnailData;
+    ThumbRdbOpt opts;
+    int err = 0;
+    bool ret = ThumbnailUtils::DoUpdateRemoteThumbnail(opts, thumbnailData, err);
+    EXPECT_EQ(ret, false);
+    opts.networkId = "medialib_DoUpdateRemoteThumbnail_test_001";
+    ret = ThumbnailUtils::DoUpdateRemoteThumbnail(opts, thumbnailData, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteOriginImage_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    ThumbnailData thumbnailData;
+    string row = "medialib_DeleteOriginImage_test_001";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = MEDIALIBRARY_TABLE,
+        .row = row
+    };
+    bool ret = ThumbnailUtils::DeleteOriginImage(opts, thumbnailData);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPullKvstore_test_001, TestSize.Level0)
+{
+    string key = "SyncPullKvstore";
+    auto ret = ThumbnailUtils::SyncPullKvstore(nullptr, key, "");
+    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
+    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    ret = ThumbnailUtils::SyncPullKvstore(kvStorePtr, key, "");
+    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
+    string networkId = "Kvstore";
+    ret = ThumbnailUtils::SyncPullKvstore(kvStorePtr, key, networkId);
+    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPushKvstore_test_001, TestSize.Level0)
+{
+    string key = "SyncPushKvstore";
+    auto ret = ThumbnailUtils::SyncPushKvstore(nullptr, key, "");
+    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
+    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    ret = ThumbnailUtils::SyncPushKvstore(kvStorePtr, key, "");
+    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
+    string networkId = "Kvstore";
+    ret = ThumbnailUtils::SyncPushKvstore(kvStorePtr, key, networkId);
+    EXPECT_NE(ret, DistributedKv::Status::ERROR);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_GetKvResultSet_test_001, TestSize.Level0)
+{
+    string networkId = "medialib_GetKvResultSet_test_001";
+    shared_ptr<DataShare::ResultSetBridge> outResultSet = nullptr;
+    bool ret = ThumbnailUtils::GetKvResultSet(nullptr, "", networkId, outResultSet);
+    EXPECT_EQ(ret, false);
+    string key = "GetKvResultSet";
+    ret = ThumbnailUtils::GetKvResultSet(nullptr, key, networkId, outResultSet);
+    EXPECT_EQ(ret, false);
+    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    ret = ThumbnailUtils::GetKvResultSet(kvStorePtr, key, networkId, outResultSet);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_RemoveDataFromKv_test_001, TestSize.Level0)
+{
+    bool ret = ThumbnailUtils::RemoveDataFromKv(nullptr, "");
+    EXPECT_EQ(ret, false);
+    string key = "RemoveDataFromKv";
+    ret = ThumbnailUtils::RemoveDataFromKv(nullptr, key);
+    EXPECT_EQ(ret, false);
+    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    ret = ThumbnailUtils::RemoveDataFromKv(kvStorePtr, key);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_IsImageExist_test_001, TestSize.Level0)
+{
+    string networkId = "medialib_IsImageExist_test_001";
+    bool ret = ThumbnailUtils::IsImageExist("", networkId, nullptr);
+    EXPECT_EQ(ret, false);
+    string key = "IsImageExist";
+    ret = ThumbnailUtils::IsImageExist(key, networkId, nullptr);
+    EXPECT_EQ(ret, false);
+    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    ret = ThumbnailUtils::IsImageExist(key, networkId, kvStorePtr);
     EXPECT_EQ(ret, false);
 }
 
