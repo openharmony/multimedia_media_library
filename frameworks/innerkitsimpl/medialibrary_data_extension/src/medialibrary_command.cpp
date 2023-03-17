@@ -27,77 +27,50 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-MediaLibraryCommand::MediaLibraryCommand(const Uri &uri)
+MediaLibraryCommand::MediaLibraryCommand(const Uri &uri) : uri_(uri)
 {
-    uri_ = uri;
     ParseOprnObjectFromUri();
     ParseOprnTypeFromUri();
     ParseTableName();
 }
 
-MediaLibraryCommand::MediaLibraryCommand(const Uri &uri, const ValuesBucket &value)
+MediaLibraryCommand::MediaLibraryCommand(const Uri &uri, const ValuesBucket &value) : uri_(uri), insertValue_(value)
 {
-    uri_ = uri;
     ParseOprnObjectFromUri();
     ParseOprnTypeFromUri();
     ParseTableName();
-    insertValue_ = value;
 }
 
-MediaLibraryCommand::MediaLibraryCommand(const Uri &uri, const OperationType &oprnType)
+MediaLibraryCommand::MediaLibraryCommand(const Uri &uri, const OperationType &oprnType) : uri_(uri), oprnType_(oprnType)
 {
-    uri_ = uri;
     ParseOprnObjectFromUri();
-    SetOprnType(oprnType);
     ParseTableName();
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType)
+    : oprnObject_(oprnObject), oprnType_(oprnType)
 {
-    SetOprnObject(oprnObject);
-    SetOprnType(oprnType);
     ParseTableName();
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
-    const ValuesBucket &value)
+    const ValuesBucket &value) : insertValue_(value), oprnObject_(oprnObject), oprnType_(oprnType)
 {
-    SetOprnObject(oprnObject);
-    SetOprnType(oprnType);
     ParseTableName();
-    insertValue_ = value;
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
-    const string &networkId)
+    const string &networkId) : oprnObject_(oprnObject), oprnType_(oprnType), oprnDevice_(networkId)
 {
-    SetOprnObject(oprnObject);
-    SetOprnType(oprnType);
-    SetOprnDevice(networkId);
     ParseTableName();
 }
 
 MediaLibraryCommand::~MediaLibraryCommand() {}
 
 // set functions
-void MediaLibraryCommand::SetOprnObject(const OperationObject &oprnObject)
-{
-    oprnObject_ = oprnObject;
-}
-
-void MediaLibraryCommand::SetOprnType(const OperationType &oprnType)
-{
-    oprnType_ = oprnType;
-}
-
 void MediaLibraryCommand::SetOprnAssetId(const std::string &oprnId)
 {
     oprnFileId_ = oprnId;
-}
-
-void MediaLibraryCommand::SetOprnDevice(const std::string &networkId)
-{
-    oprnDevice_ = networkId;
 }
 
 void MediaLibraryCommand::SetValueBucket(const NativeRdb::ValuesBucket &value)
@@ -213,6 +186,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { DISTRIBUTE_THU_OPRN_AGING, OperationObject::THUMBNAIL },
         { DISTRIBUTE_THU_OPRN_CREATE, OperationObject::THUMBNAIL },
         { BUNDLE_PERMISSION_INSERT, OperationObject::BUNDLE_PERMISSION },
+        { PHOTO_ALBUM_OPRN, OperationObject::PHOTO_ALBUM },
 
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -272,7 +246,12 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM, OperationType::DELETE },
         { MEDIA_SMARTALBUMMAPOPRN_AGEINGSMARTALBUM, OperationType::AGING },
         { MEDIA_SMARTALBUMOPRN_MODIFYALBUM, OperationType::UPDATE },
-        { BUNDLE_PERMISSION_INSERT, OperationType::INSERT_PERMISSION }
+        { BUNDLE_PERMISSION_INSERT, OperationType::INSERT_PERMISSION },
+        { OPRN_CREATE, OperationType::CREATE },
+        { OPRN_DELETE, OperationType::DELETE },
+        { OPRN_QUERY, OperationType::QUERY },
+        { OPRN_ALBUM_ADD_ASSETS, OperationType::ALBUM_ADD_ASSETS },
+        { OPRN_ALBUM_REMOVE_ASSETS, OperationType::ALBUM_REMOVE_ASSETS },
     };
 
     if (oprnTypeMap.find(oprnName) != oprnTypeMap.end()) {
@@ -296,6 +275,7 @@ void MediaLibraryCommand::ParseTableName()
         { OperationObject::FILESYSTEM_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::FILESYSTEM_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
         { OperationObject::FILESYSTEM_DOCUMENT, { { OperationType::UNKNOWN_TYPE, DocumentColumn::DOCUMENTS_TABLE } } },
+        { OperationObject::PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbum::TABLE } } },
     };
 
     if (tableNameMap.find(oprnObject_) != tableNameMap.end()) {

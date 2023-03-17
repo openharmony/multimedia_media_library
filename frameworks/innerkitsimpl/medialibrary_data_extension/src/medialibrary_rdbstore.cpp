@@ -20,14 +20,19 @@
 #include "media_log.h"
 #include "medialibrary_device.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_tracer.h"
 #include "medialibrary_sync_table.h"
+#include "medialibrary_tracer.h"
+#include "result_set_utils.h"
 #include "sqlite_database_utils.h"
+#include "sqlite_sql_builder.h"
+#include "sqlite_utils.h"
+
 using namespace std;
 using namespace OHOS::NativeRdb;
 
-namespace OHOS {
-namespace Media {
+namespace OHOS::Media {
+std::shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
+
 MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
     if (context == nullptr) {
@@ -78,8 +83,7 @@ int32_t MediaLibraryRdbStore::Init()
     return E_OK;
 }
 
-MediaLibraryRdbStore::~MediaLibraryRdbStore()
-{}
+MediaLibraryRdbStore::~MediaLibraryRdbStore() = default;
 
 void MediaLibraryRdbStore::Stop()
 {
@@ -102,7 +106,7 @@ bool MediaLibraryRdbStore::SubscribeRdbStoreObserver()
         return false;
     }
 
-    DistributedRdb::SubscribeOption option;
+    DistributedRdb::SubscribeOption option{};
     option.mode = DistributedRdb::SubscribeMode::REMOTE;
     int ret = rdbStore_->Subscribe(option, rdbStoreObs_.get());
     MEDIA_DEBUG_LOG("Subscribe ret = %d", ret);
@@ -117,7 +121,7 @@ bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
         return false;
     }
 
-    DistributedRdb::SubscribeOption option;
+    DistributedRdb::SubscribeOption option{};
     option.mode = DistributedRdb::SubscribeMode::REMOTE;
     int ret = rdbStore_->UnSubscribe(option, rdbStoreObs_.get());
     MEDIA_DEBUG_LOG("UnSubscribe ret = %d", ret);
@@ -207,7 +211,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCo
         return nullptr;
     }
 
-    auto predicates = cmd.GetAbsRdbPredicates();
+    auto *predicates = cmd.GetAbsRdbPredicates();
 #ifdef ML_DEBUG
     MEDIA_DEBUG_LOG("tablename = %s", cmd.GetTableName().c_str());
     for (auto &col : columns) {
@@ -223,6 +227,16 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCo
     return rdbStore_->Query(*predicates, columns);
 }
 
+std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredicates &predicates,
+    const vector<string> &columns)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        return nullptr;
+    }
+    return rdbStore_->Query(predicates, columns);
+}
+
 int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
 {
     if (rdbStore_ == nullptr) {
@@ -236,6 +250,57 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
         return E_HAS_DB_ERROR;
     }
     return ret;
+}
+
+void BuildSqlString(const NativeRdb::ValuesBucket &values, vector<ValueObject> &bindArgs, stringstream &sql)
+{
+    map<string, ValueObject> valuesMap;
+    values.GetAll(valuesMap);
+    sql << '(';
+    for (auto iter = valuesMap.begin(); iter != valuesMap.end(); iter++) {
+        sql << ((iter == valuesMap.begin()) ? "" : ",");
+        sql << iter->first;               // columnName
+        bindArgs.push_back(iter->second); // columnValue
+    }
+
+    sql << ") select ";
+    for (size_t i = 0; i < valuesMap.size(); i++) {
+        sql << ((i == 0) ? "?" : ",?");
+    }
+    sql << ' ';
+}
+
+void BuildSqlString(const bool exists, const AbsRdbPredicates &predicates,
+    vector<ValueObject> &bindArgs, stringstream &sql)
+{
+    string querySql = SqliteSqlBuilder::BuildQueryString(predicates, {});
+    for (auto &arg : predicates.GetWhereArgs()) {
+        bindArgs.emplace_back(arg);
+    }
+    sql << (exists ? (" WHERE EXISTS (") : (" WHERE NOT EXISTS (")) << querySql << ")";
+}
+
+/**
+ * Returns last insert row id. If insert succeed but no new rows inserted, then return -1.
+ * Return E_HAS_DB_ERROR on error cases.
+ */
+int32_t MediaLibraryRdbStore::InsertWithWhereExists(const string &table, const NativeRdb::ValuesBucket &values,
+    const bool exists, const AbsRdbPredicates &predicates)
+{
+    stringstream sql;
+    sql << "INSERT" << " OR ROLLBACK " << " INTO " << table << ' ';
+
+    vector<ValueObject> bindArgs;
+    BuildSqlString(values, bindArgs, sql);
+    BuildSqlString(exists, predicates, bindArgs, sql);
+
+    int64_t rowId = 0;
+    int32_t err = rdbStore_->ExecuteForLastInsertedRowId(rowId, sql.str(), bindArgs);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to execute insert, err: %{public}d", err);
+        return E_HAS_DB_ERROR;
+    }
+    return rowId;
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql)
@@ -303,7 +368,7 @@ int32_t MediaLibraryDataCallBack::PrepareDir(RdbStore &store)
         cameraDir, videoDir, pictureDir, audioDir, documentDir, downloadDir
     };
 
-    for (auto dirValuesBucket : dirValuesBuckets) {
+    for (const auto& dirValuesBucket : dirValuesBuckets) {
         if (InsertDirValues(dirValuesBucket, store) != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("PrepareDir failed");
             return NativeRdb::E_ERROR;
@@ -339,7 +404,7 @@ int32_t MediaLibraryDataCallBack::PrepareSmartAlbum(RdbStore &store)
         trashAlbum, favAlbum
     };
 
-    for (auto smartAlbum : smartAlbumValuesBuckets) {
+    for (const auto& smartAlbum : smartAlbumValuesBuckets) {
         if (InsertSmartAlbumValues(smartAlbum, store) != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Prepare smartAlbum failed");
             return NativeRdb::E_ERROR;
@@ -379,10 +444,14 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         CREATE_MEDIATYPE_DIRECTORY_TABLE,
         CREATE_BUNDLE_PREMISSION_TABLE,
         CREATE_MEDIALIBRARY_ERROR_TABLE,
-        CREATE_REMOTE_THUMBNAIL_TABLE
+        CREATE_REMOTE_THUMBNAIL_TABLE,
+        PhotoAlbum::CREATE_TABLE,
+        PhotoMap::CREATE_TABLE,
+        PhotoAlbum::TRIGGER_UPDATE_ALBUM_URI,
+        PhotoMap::INDEX_PRIMARY_KEY,
     };
 
-    for (string sqlStr : executeSqlStrs) {
+    for (const string& sqlStr : executeSqlStrs) {
         if (store.ExecuteSql(sqlStr) != NativeRdb::E_OK) {
             return NativeRdb::E_ERROR;
         }
@@ -458,5 +527,4 @@ void MediaLibraryRdbStoreObserver::NotifyDeviceChange()
         isNotifyDeviceChange_ = false;
     }
 }
-} // namespace Media
-} // namespace OHOS
+} // namespace OHOS::Media

@@ -31,7 +31,11 @@ public:
     static int32_t CreateAlbumOperation(MediaLibraryCommand &cmd);
     static int32_t ModifyAlbumOperation(MediaLibraryCommand &cmd);
     static shared_ptr<NativeRdb::ResultSet> QueryAlbumOperation(MediaLibraryCommand &cmd,
-        std::vector<std::string> columns);
+        const std::vector<std::string> &columns);
+
+    static int32_t HandlePhotoAlbumOperations(MediaLibraryCommand &cmd);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryPhotoAlbum(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns);
 
 private:
     static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);

@@ -45,6 +45,7 @@ enum class OperationObject : uint32_t {
     ACTIVE_DEVICE,
     MEDIA_VOLUME,
     BUNDLE_PERMISSION,
+    PHOTO_ALBUM,
 };
 
 enum class OperationType : uint32_t {
@@ -64,7 +65,9 @@ enum class OperationType : uint32_t {
     DISTRIBUTE_AGING,
     DISTRIBUTE_CREATE,
     COPY,
-    INSERT_PERMISSION
+    INSERT_PERMISSION,
+    ALBUM_ADD_ASSETS,
+    ALBUM_REMOVE_ASSETS
 };
 
 class MediaLibraryCommand {
@@ -104,8 +107,6 @@ public:
     void SetDirQuerySetMap(const std::unordered_map<std::string, DirAsset> &dirQuerySetMap);
 
 private:
-    void SetOprnObject(const OperationObject &oprnObject);
-    void SetOprnType(const OperationType &oprnType);
     void SetOprnDevice(const std::string &networkId);
     void ParseOprnObjectFromUri();
     void ParseOprnTypeFromUri();

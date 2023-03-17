@@ -15,9 +15,10 @@
 #ifndef OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H
 #define OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H
 
+#include <limits>
 #include <string>
-#include <vector>
 #include <tuple>
+#include <vector>
 
 namespace OHOS {
 namespace Media {
@@ -44,6 +45,23 @@ enum MediaType {
     MEDIA_TYPE_DEFAULT,
 };
 
+enum PhotoAlbumType : int32_t {
+    USER = 0,
+    SYSTEM = 100
+};
+
+enum PhotoAlbumSubType : int32_t {
+    USER_GENERIC = 1,
+
+    VIDEO = 101,
+    FAVORITE,
+    HIDDEN,
+    TRASH,
+    SCREENSHOTS,
+    CAMERA,
+    ANY = std::numeric_limits<int32_t>::max()
+};
+
 enum class MediaTypeMaskInteger: std::uint32_t {
     BIT_IMAGEVIDEO = 0x01,
     BIT_AUDIO = 0x02,
@@ -52,7 +70,7 @@ enum class MediaTypeMaskInteger: std::uint32_t {
 
 /* Constant definitions about media type mask */
 constexpr size_t TYPE_MASK_STRING_SIZE = 3;
-const std::string DEFAULT_TYPE_MASK = "";
+const std::string DEFAULT_TYPE_MASK;
 const std::string URI_PARAM_KEY_TYPE = "type";
 enum {
     TYPE_MASK_BIT_DEFAULT = '0',

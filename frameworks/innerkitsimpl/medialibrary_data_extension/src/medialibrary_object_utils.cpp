@@ -277,7 +277,7 @@ int32_t MediaLibraryObjectUtils::DeleteRows(const std::vector<int64_t> &rowIds)
 int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t parentId)
 {
     string title = MediaLibraryDataManagerUtils::GetFileName(path);
-    if (!MediaFileUtils::CheckDisplayName(title)) {
+    if (MediaFileUtils::CheckDisplayName(title) < 0) {
         MEDIA_ERR_LOG("Check display name failed!");
         return E_INVAVLID_DISPLAY_NAME;
     }
@@ -1427,7 +1427,7 @@ int32_t MediaLibraryObjectUtils::CheckDirExtension(const string &relativePath, c
     if (displayName.compare(MEDIA_NO_FILE) == 0) {
         return E_SUCCESS;
     }
-    if (!MediaFileUtils::CheckDisplayName(displayName)) {
+    if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
         MEDIA_ERR_LOG("CheckDisplayName failed, displayName: %{private}s", displayName.c_str());
         return E_FILE_NAME_INVALID;
     }

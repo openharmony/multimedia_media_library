@@ -212,43 +212,43 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RenameDir_Test_002, TestSize
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_001, TestSize.Level0)
 {
     string displayName = "";
-    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), false);
+    EXPECT_LT(MediaFileUtils::CheckDisplayName(displayName), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_002, TestSize.Level0)
 {
     string displayName = ".nofile";
-    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), false);
+    EXPECT_LT(MediaFileUtils::CheckDisplayName(displayName), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_003, TestSize.Level0)
 {
     string displayName = "test";
-    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), true);
+    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_004, TestSize.Level0)
 {
     string displayName = "test:*\'";
-    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), false);
+    EXPECT_LT(MediaFileUtils::CheckDisplayName(displayName), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckTitle_Test_001, TestSize.Level0)
 {
     string title = "test";
-    EXPECT_EQ(MediaFileUtils::CheckTitle(title), true);
+    EXPECT_EQ(MediaFileUtils::CheckTitle(title), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckTitle_Test_002, TestSize.Level0)
 {
     string title = "";
-    EXPECT_EQ(MediaFileUtils::CheckTitle(title), false);
+    EXPECT_LT(MediaFileUtils::CheckTitle(title), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckTitle_Test_003, TestSize.Level0)
 {
     string title = "test\\.";
-    EXPECT_EQ(MediaFileUtils::CheckTitle(title), false);
+    EXPECT_LT(MediaFileUtils::CheckTitle(title), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAlbumDateModified_Test_001, TestSize.Level0)
