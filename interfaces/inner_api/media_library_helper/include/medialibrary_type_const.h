@@ -22,7 +22,6 @@
 
 namespace OHOS {
 namespace Media {
-const std::string DISPLAYNAME_REGEX_CHECK = "[\\\\/:*?\"\'`<>|{}\\[\\]]";
 enum {
     MEDIA_GET_MEDIA_ASSETS = 0,
     MEDIA_GET_IMAGE_ASSETS = 1,

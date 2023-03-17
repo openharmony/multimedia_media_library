@@ -61,6 +61,7 @@ config("media_data_extension_public_config") {
     "//third_party/json/include",
     "//base/notification/common_event_service/interfaces/innerkits/native/include",
     "//foundation/distributeddatamgr/distributedfile/interfaces/kits/js/src/common",
+    "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/include",
   ]
   include_dirs += include_fileext
   include_dirs += include_scanner
@@ -121,6 +122,8 @@ ohos_shared_library("medialibrary_data_extension") {
 
   sources = [
     "${MEDIA_LIB_COMMON_UTILS_DIR}/src/media_privacy_manager.cpp",
+    "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/src/sqlite_sql_builder.cpp",
+    "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/src/string_utils.cpp",
     "src/distributed_media_library/database_manage/medialibrary_device_db.cpp",
     "src/distributed_media_library/database_manage/medialibrary_device_operations.cpp",
     "src/distributed_media_library/database_manage/medialibrary_sync_table.cpp",

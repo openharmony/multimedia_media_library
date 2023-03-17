@@ -316,6 +316,9 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::FILESYSTEM_ALBUM: {
             return MediaLibraryAlbumOperations::CreateAlbumOperation(cmd);
         }
+        case OperationObject::PHOTO_ALBUM: {
+            return MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(cmd);
+        }
         case OperationObject::FILESYSTEM_DIR: {
             return MediaLibraryDirOperations::HandleDirOperation(cmd);
         }
@@ -755,7 +758,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return nullptr;
     }
-
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataManager::QueryRdb");
     static const map<OperationObject, string> queryConditionMap {
@@ -791,6 +793,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
         queryResultSet = MediaLibraryObjectUtils::QueryWithCondition(cmd, columns, it->second);
     } else if (oprnObject == OperationObject::FILESYSTEM_ALBUM || oprnObject == OperationObject::MEDIA_VOLUME) {
         queryResultSet = MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
+    } else if (oprnObject == OperationObject::PHOTO_ALBUM) {
+        queryResultSet = MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
     } else {
         tracer.Start("QueryFile");
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
@@ -917,7 +921,8 @@ bool MediaLibraryDataManager::ShouldCheckFileName(const OperationObject &oprnObj
 {
     if ((oprnObject == OperationObject::SMART_ALBUM_MAP) ||
         (oprnObject == OperationObject::SMART_ALBUM) ||
-        (oprnObject == OperationObject::FILESYSTEM_DIR)) {
+        (oprnObject == OperationObject::FILESYSTEM_DIR) ||
+        (oprnObject == OperationObject::PHOTO_ALBUM)) {
         return false;
     } else {
         return true;
