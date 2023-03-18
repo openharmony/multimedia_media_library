@@ -152,11 +152,9 @@ static int32_t MakeRecycleDisplayName(const int32_t assetId, const string &trash
     outRecyclePath = trashDirPath + hashDisplayName;
     if (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {
         size_t extensionIndex = fileAsset->GetDisplayName().rfind(".");
-        if (extensionIndex == string::npos) {
-            MEDIA_ERR_LOG("Can not get extension");
-            return E_GET_EXTENSION_FAIL;
+        if (extensionIndex != string::npos) {
+            extension = fileAsset->GetDisplayName().substr(extensionIndex);
         }
-        extension = fileAsset->GetDisplayName().substr(extensionIndex);
         outRecyclePath += extension;
         MEDIA_INFO_LOG("Asset outRecyclePath = %{private}s", outRecyclePath.c_str());
     }
