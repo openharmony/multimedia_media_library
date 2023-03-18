@@ -759,7 +759,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
         return nullptr;
     }
     MediaLibraryTracer tracer;
-    tracer.Start("MediaLibraryDataManager::QueryRdb");
+    tracer.Start("QueryRdb");
     static const map<OperationObject, string> queryConditionMap {
         { OperationObject::SMART_ALBUM, SMARTALBUM_DB_ID },
         { OperationObject::SMART_ALBUM_MAP, SMARTALBUMMAP_DB_ALBUM_ID },
@@ -771,11 +771,13 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
         { OperationObject::BUNDLE_PERMISSION, "" },
     };
 
+    tracer.Start("CheckWhereClause");
     auto whereClause = predicates.GetWhereClause();
     if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
         MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
         return nullptr;
     }
+    tracer.Finish();
 
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
     // MEDIALIBRARY_TABLE just for RdbPredicates
