@@ -16,10 +16,11 @@
 #ifndef OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
 #define OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
 
-#include <string>
 #include <securec.h>
+#include <string>
 
 #include "abs_shared_result_set.h"
+#include "datashare_predicates.h"
 #include "medialibrary_command.h"
 #include "native_album_asset.h"
 #include "rdb_result_set_bridge.h"
@@ -36,6 +37,7 @@ public:
     static int32_t HandlePhotoAlbumOperations(MediaLibraryCommand &cmd);
     static std::shared_ptr<NativeRdb::ResultSet> QueryPhotoAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
+    static int32_t DeletePhotoAlbum(const DataShare::DataSharePredicates &predicates);
 
 private:
     static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);
