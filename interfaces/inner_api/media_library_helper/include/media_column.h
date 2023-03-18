@@ -95,46 +95,5 @@ public:
     // create DocumentTable sql
     const static std::string CREATE_DOCUMENT_TABLE;
 };
-
-class PhotoAlbumColumns {
-public:
-    // columns only in PhotoAlbumTable
-    const static std::string ALBUM_ID;
-    const static std::string ALBUM_TYPE;
-    const static std::string ALBUM_SUBTYPE;
-    const static std::string ALBUM_URI;
-    const static std::string ALBUM_NAME;
-    const static std::string ALBUM_COVER_URI;
-    const static std::string ALBUM_COUNT;
-    // For api9 compatibility
-    const static std::string ALBUM_RELATIVE_PATH;
-
-    // table name
-    const static std::string TABLE;
-
-    // create PhotoAlbumTable sql
-    const static std::string CREATE_TABLE;
-
-    // create triggers for PhotoMap
-    const static std::string TRIGGER_UPDATE_ALBUM_URI;
-    const static std::string TRIGGER_CLEAR_MAP;
-
-    // util constants
-    const static std::string ALBUM_URI_PREFIX;
-};
-
-class PhotoMap {
-public:
-    // columns only in PhotoMapTable
-    const static std::string ALBUM_ID;
-    const static std::string ASSET_ID;
-
-    // table name
-    const static std::string TABLE;
-    // Sql to create the table
-    const static std::string CREATE_TABLE;
-    // create triggers for PhotoMap
-    const static std::string INDEX_PRIMARY_KEY;
-};
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_COLUMN_H_

@@ -18,6 +18,7 @@
 #include "album_asset.h"
 #include "media_log.h"
 #include "medialibrary_tracer.h"
+#include "photo_album_column.h"
 
 using namespace std;
 
@@ -418,12 +419,13 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
 template<class T>
 void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
-    photoAlbumData->SetAlbumId(get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_ID, TYPE_INT32, resultSet)));
+    int32_t albumId = get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_ID, TYPE_INT32, resultSet));
+    photoAlbumData->SetAlbumId(albumId);
     photoAlbumData->SetPhotoAlbumType(static_cast<PhotoAlbumType>(
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32, resultSet))));
     photoAlbumData->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, resultSet))));
-    photoAlbumData->SetAlbumUri(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_URI, TYPE_STRING, resultSet)));
+    photoAlbumData->SetAlbumUri(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(albumId));
     photoAlbumData->SetAlbumName(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_NAME, TYPE_STRING,
         resultSet)));
     photoAlbumData->SetRelativePath(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, TYPE_STRING,

@@ -16,12 +16,13 @@
 
 #include "medialibrary_rdbstore.h"
 
-#include "media_column.h"
 #include "media_log.h"
 #include "medialibrary_device.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_sync_table.h"
 #include "medialibrary_tracer.h"
+#include "photo_album_column.h"
+#include "photo_map_column.h"
 #include "result_set_utils.h"
 #include "sqlite_database_utils.h"
 #include "sqlite_sql_builder.h"
@@ -110,7 +111,7 @@ bool MediaLibraryRdbStore::SubscribeRdbStoreObserver()
     int ret = rdbStore_->Subscribe(option, rdbStoreObs_.get());
     MEDIA_DEBUG_LOG("Subscribe ret = %d", ret);
 
-    return ret == E_OK ? true : false;
+    return ret == E_OK;
 }
 
 bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
@@ -325,6 +326,25 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
     return deletedRows;
 }
 
+/**
+ * Return changed rows on success, or negative values on error cases.
+ */
+int32_t MediaLibraryRdbStore::Update(int32_t &changedRows, const ValuesBucket &values,
+    const AbsRdbPredicates &predicates)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+
+    int err = rdbStore_->Update(changedRows, values, predicates);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", err);
+        return E_HAS_DB_ERROR;
+    }
+    return changedRows;
+}
+
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql)
 {
     if (rdbStore_ == nullptr) {
@@ -363,6 +383,44 @@ bool MediaLibraryRdbStore::SyncPushTable(const std::string &bundleName, const st
 {
     std::vector<std::string> devList(devices);
     return MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName, tableName, devList, isBlock);
+}
+
+inline void BuildInsertSystemAlbumSql(const ValuesBucket &values, const AbsRdbPredicates &predicates,
+    string &sql, vector<ValueObject> &bindArgs)
+{
+    // Build insert sql
+    sql.append("INSERT").append(" OR ROLLBACK ").append(" INTO ").append(PhotoAlbumColumns::TABLE).append(" ");
+    BuildValuesSql(values, bindArgs, sql);
+    sql.append(" WHERE NOT EXISTS (");
+    BuildQuerySql(predicates, { PhotoAlbumColumns::ALBUM_ID }, bindArgs, sql);
+    sql.append(");");
+}
+
+int32_t PrepareSystemAlbums(RdbStore &store)
+{
+    ValuesBucket values;
+    int32_t err = E_FAIL;
+    store.BeginTransaction();
+    for (int32_t i = PhotoAlbumSubType::VIDEO; i <= PhotoAlbumSubType::CAMERA; i++) {
+        values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SYSTEM);
+        values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, i);
+
+        AbsRdbPredicates predicates(PhotoAlbumColumns::TABLE);
+        predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
+        predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(i));
+
+        string sql;
+        vector<ValueObject> bindArgs;
+        BuildInsertSystemAlbumSql(values, predicates, sql, bindArgs);
+        err = store.ExecuteSql(sql, bindArgs);
+        if (err != E_OK) {
+            store.RollBack();
+            return err;
+        }
+        values.Clear();
+    }
+    store.Commit();
+    return E_OK;
 }
 
 int32_t MediaLibraryDataCallBack::PrepareDir(RdbStore &store)
@@ -468,16 +526,18 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         CREATE_MEDIALIBRARY_ERROR_TABLE,
         CREATE_REMOTE_THUMBNAIL_TABLE,
         PhotoAlbumColumns::CREATE_TABLE,
+        PhotoAlbumColumns::INDEX_ALBUM_TYPES,
         PhotoMap::CREATE_TABLE,
-        PhotoAlbumColumns::TRIGGER_UPDATE_ALBUM_URI,
         PhotoAlbumColumns::TRIGGER_CLEAR_MAP,
-        PhotoMap::INDEX_PRIMARY_KEY,
     };
 
     for (const string& sqlStr : executeSqlStrs) {
         if (store.ExecuteSql(sqlStr) != NativeRdb::E_OK) {
             return NativeRdb::E_ERROR;
         }
+    }
+    if (PrepareSystemAlbums(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
     }
 
     if (PrepareDir(store) != NativeRdb::E_OK) {
