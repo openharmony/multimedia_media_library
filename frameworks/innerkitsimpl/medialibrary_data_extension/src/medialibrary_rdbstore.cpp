@@ -252,32 +252,31 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
     return ret;
 }
 
-void BuildSqlString(const NativeRdb::ValuesBucket &values, vector<ValueObject> &bindArgs, stringstream &sql)
+void BuildValuesSql(const NativeRdb::ValuesBucket &values, vector<ValueObject> &bindArgs, string &sql)
 {
     map<string, ValueObject> valuesMap;
     values.GetAll(valuesMap);
-    sql << '(';
+    sql.append("(");
     for (auto iter = valuesMap.begin(); iter != valuesMap.end(); iter++) {
-        sql << ((iter == valuesMap.begin()) ? "" : ",");
-        sql << iter->first;               // columnName
+        sql.append(((iter == valuesMap.begin()) ? "" : ","));
+        sql.append(iter->first);               // columnName
         bindArgs.push_back(iter->second); // columnValue
     }
 
-    sql << ") select ";
+    sql.append(") select ");
     for (size_t i = 0; i < valuesMap.size(); i++) {
-        sql << ((i == 0) ? "?" : ",?");
+        sql.append(((i == 0) ? "?" : ",?"));
     }
-    sql << ' ';
+    sql.append(" ");
 }
 
-void BuildSqlString(const bool exists, const AbsRdbPredicates &predicates,
-    vector<ValueObject> &bindArgs, stringstream &sql)
+void BuildQuerySql(const AbsRdbPredicates &predicates, const vector<string> &columns,
+    vector<ValueObject> &bindArgs, string &sql)
 {
-    string querySql = SqliteSqlBuilder::BuildQueryString(predicates, {});
+    sql.append(SqliteSqlBuilder::BuildQueryString(predicates, columns));
     for (auto &arg : predicates.GetWhereArgs()) {
         bindArgs.emplace_back(arg);
     }
-    sql << (exists ? (" WHERE EXISTS (") : (" WHERE NOT EXISTS (")) << querySql << ")";
 }
 
 /**
@@ -287,20 +286,44 @@ void BuildSqlString(const bool exists, const AbsRdbPredicates &predicates,
 int32_t MediaLibraryRdbStore::InsertWithWhereExists(const string &table, const NativeRdb::ValuesBucket &values,
     const bool exists, const AbsRdbPredicates &predicates)
 {
-    stringstream sql;
-    sql << "INSERT" << " OR ROLLBACK " << " INTO " << table << ' ';
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
 
+    // Build insert sql
+    string sql;
     vector<ValueObject> bindArgs;
-    BuildSqlString(values, bindArgs, sql);
-    BuildSqlString(exists, predicates, bindArgs, sql);
+    sql.append("INSERT").append(" OR ROLLBACK ").append(" INTO ").append(table).append(" ");
+    BuildValuesSql(values, bindArgs, sql);
+    sql.append((exists ? (" WHERE EXISTS (") : (" WHERE NOT EXISTS (")));
+    BuildQuerySql(predicates, { }, bindArgs, sql);
+    sql.append(");");
+    MEDIA_DEBUG_LOG("InsertSql: %{private}s", sql.c_str());
 
-    int64_t rowId = 0;
-    int32_t err = rdbStore_->ExecuteForLastInsertedRowId(rowId, sql.str(), bindArgs);
+    int64_t lastInsertRowId = 0;
+    int32_t err = rdbStore_->ExecuteForLastInsertedRowId(lastInsertRowId, sql, bindArgs);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to execute insert, err: %{public}d", err);
         return E_HAS_DB_ERROR;
     }
-    return rowId;
+    return lastInsertRowId;
+}
+
+int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t deletedRows = 0;
+    int err = rdbStore_->Delete(deletedRows, predicates);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to execute delete, err: %{public}d", err);
+        return E_HAS_DB_ERROR;
+    }
+    return deletedRows;
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql)
@@ -448,6 +471,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         PhotoAlbum::CREATE_TABLE,
         PhotoMap::CREATE_TABLE,
         PhotoAlbum::TRIGGER_UPDATE_ALBUM_URI,
+        PhotoAlbum::TRIGGER_CLEAR_MAP,
         PhotoMap::INDEX_PRIMARY_KEY,
     };
 

@@ -117,8 +117,9 @@ public:
 
     // create triggers for PhotoMap
     const static std::string TRIGGER_UPDATE_ALBUM_URI;
+    const static std::string TRIGGER_CLEAR_MAP;
 
-private:
+    // util constants
     const static std::string ALBUM_URI_PREFIX;
 };
 

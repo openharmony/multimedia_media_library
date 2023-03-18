@@ -455,6 +455,9 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
             return (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) ?
                 MediaLibraryObjectUtils::DeleteFileObj(fileAsset) : MediaLibraryObjectUtils::DeleteDirObj(fileAsset);
         }
+        case OperationObject::PHOTO_ALBUM: {
+            return MediaLibraryAlbumOperations::DeletePhotoAlbum(predicates);
+        }
         default:
             break;
     }
