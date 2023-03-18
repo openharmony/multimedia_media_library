@@ -17,7 +17,6 @@
 #include "medialibrary_album_operations.h"
 
 #include "directory_ex.h"
-#include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
@@ -25,6 +24,7 @@
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
+#include "photo_album_column.h"
 
 #include "result_set_utils.h"
 #include "values_bucket.h"
@@ -138,6 +138,8 @@ inline void PrepareUserAlbum(const string &albumName, const string &relativePath
 inline void PrepareWhere(const string &albumName, const string &relativePath, RdbPredicates &predicates)
 {
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
     if (relativePath.empty()) {
         predicates.IsNull(PhotoAlbumColumns::ALBUM_RELATIVE_PATH);
     } else {
@@ -194,6 +196,49 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryC
     const vector<string> &columns)
 {
     return MediaLibraryRdbStore::Query(*(cmd.GetAbsRdbPredicates()), columns);
+}
+
+int32_t PrepareUpdateValues(const ValuesBucket &values, ValuesBucket &updateValues)
+{
+    // Collect albumName if exists and check
+    string albumName;
+    if (GetStringObject(values, PhotoAlbumColumns::ALBUM_NAME, albumName) == E_OK) {
+        int32_t err = MediaFileUtils::CheckAlbumName(albumName);
+        if (err < 0) {
+            return err;
+        }
+        updateValues.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    }
+
+    // Collect coverUri if exists
+    string coverUri;
+    if (GetStringObject(values, PhotoAlbumColumns::ALBUM_COVER_URI, coverUri) == E_OK) {
+        updateValues.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
+    }
+
+    if (updateValues.IsEmpty()) {
+        return -EINVAL;
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values,
+    const DataShare::DataSharePredicates &predicates)
+{
+    ValuesBucket rdbValues;
+    int32_t err = PrepareUpdateValues(values, rdbValues);
+    if (err < 0) {
+        return err;
+    }
+
+    RdbPredicates rdbPredicates = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
+    // Only user generic albums can be updated
+    rdbPredicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
+    rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
+    rdbPredicates.EndWrap();
+
+    int32_t changedRows = 0;
+    return MediaLibraryRdbStore::Update(changedRows, rdbValues, rdbPredicates);
 }
 
 int MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(MediaLibraryCommand &cmd)

@@ -19,7 +19,7 @@
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_unistore_manager.h"
-#include "media_column.h"
+#include "photo_album_column.h"
 #include "medialibrary_errno.h"
 
 using namespace std;
@@ -250,6 +250,7 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { OPRN_CREATE, OperationType::CREATE },
         { OPRN_DELETE, OperationType::DELETE },
         { OPRN_QUERY, OperationType::QUERY },
+        { OPRN_UPDATE, OperationType::UPDATE },
         { OPRN_ALBUM_ADD_ASSETS, OperationType::ALBUM_ADD_ASSETS },
         { OPRN_ALBUM_REMOVE_ASSETS, OperationType::ALBUM_REMOVE_ASSETS },
     };

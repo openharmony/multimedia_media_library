@@ -54,6 +54,8 @@ public:
     static std::shared_ptr<NativeRdb::ResultSet> Query(const NativeRdb::AbsRdbPredicates &predicates,
         const std::vector<std::string> &columns);
     static int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates);
+    static int32_t Update(int32_t &changedRows, const NativeRdb::ValuesBucket &values,
+        const NativeRdb::AbsRdbPredicates &predicates);
 
 private:
     bool SubscribeRdbStoreObserver();

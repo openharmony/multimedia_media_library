@@ -24,6 +24,7 @@
 #include "medialibrary_napi_log.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "photo_album_column.h"
 
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \
     do {                                                                    \
@@ -132,8 +133,7 @@ static const std::vector<std::string> FILE_ASSET_COLUMNS = {
 
 static const std::vector<std::string> PHOTO_ALBUM_COLUMNS = {
     PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE,
-    PhotoAlbumColumns::ALBUM_URI, PhotoAlbumColumns::ALBUM_COVER_URI, PhotoAlbumColumns::ALBUM_NAME,
-    PhotoAlbumColumns::ALBUM_COUNT
+    PhotoAlbumColumns::ALBUM_COVER_URI, PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_COUNT
 };
 
 /* Constants for array index */
