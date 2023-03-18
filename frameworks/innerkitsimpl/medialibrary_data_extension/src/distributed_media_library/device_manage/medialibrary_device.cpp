@@ -46,7 +46,7 @@ void MediaLibraryDevice::Start()
     bundleName_ = BUNDLE_NAME;
     RegisterToDM();
     if (deviceHandler_ == nullptr) {
-        auto runner = AppExecFwk::EventRunner::Create(false);
+        auto runner = AppExecFwk::EventRunner::Create("MediaLibraryDevice");
         deviceHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
     }
     devsInfoInter_ = make_shared<DevicesInfoInteract>();
