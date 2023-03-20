@@ -14,10 +14,12 @@
  */
 #define MLOG_TAG "FileExtUnitTest"
 #include "medialibrary_uri_test.h"
-#include "thumbnail_uri_utils.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "thumbnail_const.h"
+#define private public
+#include "thumbnail_uri_utils.h"
+#undef private
 
 using namespace std;
 using namespace OHOS;
@@ -78,5 +80,86 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ParseThumbnailInfo_test_002, TestSize
     ret = ThumbnailUriUtils::ParseThumbnailInfo(uri);
     EXPECT_EQ(ret, true);
 }
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_SplitKeyValue_test_001, TestSize.Level0)
+{
+    string keyValue = "SplitKeyValue=SplitKeyValue";
+    string key = "";
+    string value = "";
+    ThumbnailUriUtils::SplitKeyValue(keyValue, key, value);
+    EXPECT_EQ(key, "SplitKeyValue");
+    string keyValueTest = "SplitKeyValue";
+    string testKey = "";
+    ThumbnailUriUtils::SplitKeyValue(keyValueTest, testKey, value);
+    EXPECT_EQ(testKey, "");
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_SplitKeys_test_001, TestSize.Level0)
+{
+    string query = "";
+    vector<string> keys;
+    ThumbnailUriUtils::SplitKeys(query, keys);
+    EXPECT_EQ(keys.begin(), keys.end());
+    string queryTest = "SplitKeys&SplitKeys";
+    ThumbnailUriUtils::SplitKeys(queryTest, keys);
+    EXPECT_NE(keys.begin(), keys.end());
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_IsNumber_test_001, TestSize.Level0)
+{
+    bool ret = ThumbnailUriUtils::IsNumber("");
+    EXPECT_EQ(ret, false);
+    string strTest = "test";
+    ret = ThumbnailUriUtils::IsNumber(strTest);
+    EXPECT_EQ(ret, false);
+    string str = "1";
+    ret = ThumbnailUriUtils::IsNumber(str);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_ParseThumbnailKey_test_001, TestSize.Level0)
+{
+    string outAction = "";
+    string value  = "";
+    int outWidth = 0;
+    int outHeight = 0;
+    ThumbnailUriUtils::ParseThumbnailKey("", value, outAction, outWidth, outHeight);
+    EXPECT_EQ(value, "");
+    string key = THUMBNAIL_OPERN_KEYWORD;
+    ThumbnailUriUtils::ParseThumbnailKey(key, value, outAction, outWidth, outHeight);
+    EXPECT_EQ(outAction, value);
+    ThumbnailUriUtils::ParseThumbnailKey(THUMBNAIL_WIDTH, value, outAction, outWidth, outHeight);
+    EXPECT_EQ(outWidth, 0);
+    string valueTest = "1";
+    ThumbnailUriUtils::ParseThumbnailKey(THUMBNAIL_WIDTH, valueTest, outAction, outWidth, outHeight);
+    EXPECT_EQ(outWidth, 1);
+    ThumbnailUriUtils::ParseThumbnailKey(THUMBNAIL_HEIGHT, value, outAction, outWidth, outHeight);
+    EXPECT_EQ(outHeight, 0);
+    ThumbnailUriUtils::ParseThumbnailKey(THUMBNAIL_HEIGHT, valueTest, outAction, outWidth, outHeight);
+    EXPECT_EQ(outHeight, 1);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_GetNetworkIdFromUri_test_001, TestSize.Level0)
+{
+    string deviceId = ThumbnailUriUtils::GetNetworkIdFromUri("");
+    EXPECT_EQ(deviceId, "");
+    deviceId = ThumbnailUriUtils::GetNetworkIdFromUri("GetNetworkIdFromUri");
+    EXPECT_EQ(deviceId, "");
+    deviceId = ThumbnailUriUtils::GetNetworkIdFromUri(MEDIALIBRARY_DATA_ABILITY_PREFIX);
+    EXPECT_EQ(deviceId, "");
+    deviceId = ThumbnailUriUtils::GetNetworkIdFromUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + "test");
+    EXPECT_EQ(deviceId, "");
+    deviceId = ThumbnailUriUtils::GetNetworkIdFromUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + "Uri/test");
+    EXPECT_EQ(deviceId, "Uri");
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdFromUri_test_001, TestSize.Level0)
+{
+    string rowNum = ThumbnailUriUtils::GetIdFromUri("");
+    EXPECT_EQ(rowNum, "-1");
+    rowNum = ThumbnailUriUtils::GetIdFromUri("GetIdFromUri/test");
+    EXPECT_EQ(rowNum, "test");
+}
+
 }// namespace Media
 } // namespace OHOS
