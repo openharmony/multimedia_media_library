@@ -15,6 +15,7 @@
 
 #include "mimetype_utils.h"
 
+#include <algorithm>
 #include <fstream>
 
 #include "media_log.h"
@@ -64,9 +65,11 @@ int32_t MimeTypeUtils::InitMimeTypeMap()
 
 string MimeTypeUtils::GetMimeTypeFromExtension(const string &extension)
 {
+    std::string tmp = std::move(extension);
+    std::transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
     for (auto &item : mediaJsonMap_) {
         for (auto &ext : item.second) {
-            if (ext == extension) {
+            if (ext == tmp) {
                 return item.first;
             }
         }
