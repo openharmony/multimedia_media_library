@@ -91,8 +91,8 @@ private:
     static NativeAlbumAsset GetLastDirExistInDb(const std::string &dirPath);
     static int32_t DeleteRows(const std::vector<int64_t> &rowIds);
     static int32_t InsertDirToDbRecursively(const std::string &dirPath, int64_t &rowId);
-    static bool ProcessNoMediaFile(const std::string &dstFileName, const std::string &dstAlbumPath);
-    static bool ProcessHiddenFile(const std::string &dstFileName, const std::string &srcPath);
+    static int32_t ProcessNoMediaFile(const std::string &dstFileName, const std::string &dstAlbumPath);
+    static int32_t ProcessHiddenFile(const std::string &dstFileName, const std::string &srcPath);
     static int32_t ProcessHiddenDir(const std::string &dstDirName, const std::string &srcDirPath);
     static int32_t UpdateFileInfoInDb(MediaLibraryCommand &cmd, const std::string &dstPath,
         const int &bucketId, const std::string &bucketName);
