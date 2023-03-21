@@ -33,7 +33,7 @@ HeaderData::~HeaderData()
 {
 }
 
-int HeaderData::Parser(vector<uint8_t> &buffer, int32_t readSize)
+int HeaderData::Parser(vector<uint8_t> &buffer, uint32_t readSize)
 {
     if (readSize < PACKET_HEADER_LENGETH) {
         MEDIA_ERR_LOG("readSize incorrect : < PACKET_HEADER_LENGETH!");
