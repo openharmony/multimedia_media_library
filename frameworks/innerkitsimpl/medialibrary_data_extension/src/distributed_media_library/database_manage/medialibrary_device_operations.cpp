@@ -14,11 +14,14 @@
  */
 #define MLOG_TAG "Distributed"
 
+#include <map>
+
 #include "medialibrary_device_operations.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
+#include "media_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -26,6 +29,12 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 static const int64_t AGING_DEVICE_INTERVAL = 14 * 24 * 60 * 60LL;
+
+const static map<string, string> TABLE_SYNC_STATUS_MAP = {
+    { MEDIALIBRARY_TABLE, DEVICE_DB_SYNC_STATUS },
+    { PhotoColumn::PHOTOS_TABLE, DEVICE_DB_PHOTO_SYNC_STATUS }
+    // AudiosTable and DocumentsTable is not synchronized yet
+};
 
 bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName)
@@ -49,6 +58,7 @@ bool MediaLibraryDeviceOperations::InsertDeviceInfo(const std::shared_ptr<Native
             valuesBucket.PutString(DEVICE_DB_UDID, deviceInfo.deviceUdid);
             valuesBucket.PutString(DEVICE_DB_NETWORK_ID, deviceInfo.networkId);
             valuesBucket.PutInt(DEVICE_DB_SYNC_STATUS, 0);
+            valuesBucket.PutInt(DEVICE_DB_PHOTO_SYNC_STATUS, 0);
             valuesBucket.PutLong(DEVICE_DB_DATE_MODIFIED, 0);
             return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == E_SUCCESS;
         } else {
@@ -110,13 +120,13 @@ bool MediaLibraryDeviceOperations::UpdateDeviceInfo(const std::shared_ptr<Native
 }
 
 bool MediaLibraryDeviceOperations::DeleteDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                                                    const std::string &udid)
+    const std::string &udid)
 {
     return MediaLibraryDeviceDb::DeleteDeviceInfo(udid, rdbStore);
 }
 
 bool MediaLibraryDeviceOperations::UpdateSyncStatus(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const std::string &udid, int32_t syncStatus)
+    const std::string &tableName, const std::string &udid, int32_t syncStatus)
 {
     std::vector<std::string> columns;
     AbsRdbPredicates absPredDevice(DEVICE_TABLE);
@@ -131,7 +141,9 @@ bool MediaLibraryDeviceOperations::UpdateSyncStatus(const std::shared_ptr<Native
             // 更新数据库
             ValuesBucket valuesBucket;
             valuesBucket.PutString(DEVICE_DB_UDID, udid);
-            valuesBucket.PutInt(DEVICE_DB_SYNC_STATUS, syncStatus);
+            if (TABLE_SYNC_STATUS_MAP.find(tableName) != TABLE_SYNC_STATUS_MAP.end()) {
+                valuesBucket.PutInt(TABLE_SYNC_STATUS_MAP.at(tableName), syncStatus);
+            }
             MEDIA_INFO_LOG("MediaLibraryDeviceOperations::UpdateSyncStatus");
             return MediaLibraryDeviceDb::UpdateDeviceInfo(valuesBucket, rdbStore) == E_SUCCESS;
         }
@@ -140,29 +152,39 @@ bool MediaLibraryDeviceOperations::UpdateSyncStatus(const std::shared_ptr<Native
 }
 
 bool MediaLibraryDeviceOperations::GetSyncStatusById(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                                                     const std::string &udid,
-                                                     int32_t &syncStatus)
+    const std::string &udid, const std::string &table, int32_t &syncStatus)
 {
     std::vector<std::string> columns;
     AbsRdbPredicates absPredDevice(DEVICE_TABLE);
 
     absPredDevice.EqualTo(DEVICE_DB_UDID, udid);
     auto queryResultSet = rdbStore->QueryByStep(absPredDevice, columns);
-    if (queryResultSet == nullptr) {
+    if (queryResultSet == nullptr || queryResultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query device by udid failed");
         return false;
     }
 
-    if (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t columnIndexId;
-        queryResultSet->GetColumnIndex(DEVICE_DB_SYNC_STATUS, columnIndexId);
+    if (TABLE_SYNC_STATUS_MAP.find(table) != TABLE_SYNC_STATUS_MAP.end()) {
+        int32_t columnIndexId = 0;
+        queryResultSet->GetColumnIndex(TABLE_SYNC_STATUS_MAP.at(table), columnIndexId);
         queryResultSet->GetInt(columnIndexId, syncStatus);
+    } else {
+        for (const auto &iter : TABLE_SYNC_STATUS_MAP) {
+            int32_t columnIndexId = 0;
+            queryResultSet->GetColumnIndex(iter.second, columnIndexId);
+            queryResultSet->GetInt(columnIndexId, syncStatus);
+            if (syncStatus == DEVICE_SYNCSTATUSING) {
+                break;
+            }
+        }
     }
+
     MEDIA_INFO_LOG("MediaLibraryDeviceOperations::GetSyncStatusById syncStatus = %{public}d", syncStatus);
     return true;
 }
 
 bool MediaLibraryDeviceOperations::QueryDeviceTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-                                                    std::map<std::string, std::set<int>> &excludeMap)
+    std::map<std::string, std::set<int>> &excludeMap)
 {
     const int SHORT_UDID_LEN = 8;
     std::vector<std::string> columns;
@@ -190,8 +212,7 @@ bool MediaLibraryDeviceOperations::QueryDeviceTable(const std::shared_ptr<Native
     return true;
 }
 
-bool MediaLibraryDeviceOperations::GetAllDeviceData(
-    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+bool MediaLibraryDeviceOperations::GetAllDeviceData(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
     vector<MediaLibraryDeviceInfo> &outDeviceList)
 {
     std::vector<std::string> columns;
@@ -217,8 +238,8 @@ bool MediaLibraryDeviceOperations::GetAllDeviceData(
     return true;
 }
 
-bool MediaLibraryDeviceOperations::GetAgingDeviceData(
-    const shared_ptr<RdbStore> &rdbStore, vector<MediaLibraryDeviceInfo> &outDeviceList)
+bool MediaLibraryDeviceOperations::GetAgingDeviceData(const shared_ptr<RdbStore> &rdbStore,
+    vector<MediaLibraryDeviceInfo> &outDeviceList)
 {
     vector<string> columns;
     int64_t agingTime = MediaFileUtils::UTCTimeSeconds() - AGING_DEVICE_INTERVAL;

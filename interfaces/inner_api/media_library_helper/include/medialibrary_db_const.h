@@ -369,6 +369,7 @@ const std::string DEVICE_DB_NETWORK_ID = "network_id";
 const std::string DEVICE_DB_NAME = "device_name";
 const std::string DEVICE_DB_IP = "device_ip";
 const std::string DEVICE_DB_SYNC_STATUS = "sync_status";
+const std::string DEVICE_DB_PHOTO_SYNC_STATUS = "photo_table_sync_status";
 const std::string DEVICE_DB_SELF_ID = "self_id";
 const std::string DEVICE_DB_TYPE = "device_type";
 const std::string DEVICE_DB_PREPATH = "pre_path";
@@ -381,6 +382,7 @@ const std::string CREATE_DEVICE_TABLE = "CREATE TABLE IF NOT EXISTS " + DEVICE_T
                                             DEVICE_DB_NAME + " TEXT, " +
                                             DEVICE_DB_IP + " TEXT DEFAULT '', " +
                                             DEVICE_DB_SYNC_STATUS + " INT DEFAULT 0, " +
+                                            DEVICE_DB_PHOTO_SYNC_STATUS + " INT DEFAULT 0, " +
                                             DEVICE_DB_SELF_ID + " TEXT, " +
                                             DEVICE_DB_TYPE + " INT, " +
                                             DEVICE_DB_PREPATH + " TEXT, " +
