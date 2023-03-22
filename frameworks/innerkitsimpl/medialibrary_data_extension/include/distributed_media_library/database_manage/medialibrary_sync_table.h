@@ -39,11 +39,11 @@ public:
     ~MediaLibrarySyncTable() = delete;
 
     static bool SyncPullAllTableByNetworkId(const shared_ptr<RdbStore> &rdbStore,
-                                    const std::string &bundleName, std::vector<std::string> &devices);
+        const std::string &bundleName, std::vector<std::string> &devices);
     static bool SyncPullTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
-                       const std::string &tableName, std::vector<std::string> &devices, bool isLast = false);
+        const std::string &tableName, std::vector<std::string> &devices);
     static bool SyncPushTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
-                       const std::string &tableName, std::vector<std::string> &devices, bool isBlock = false);
+        const std::string &tableName, std::vector<std::string> &devices, bool isBlock = false);
 
 private:
     static constexpr int RETRY_COUNT = 3;

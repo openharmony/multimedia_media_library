@@ -36,7 +36,7 @@ int64_t MediaLibraryDeviceDb::InsertDeviceInfo(const ValuesBucket &values, const
 }
 
 int32_t MediaLibraryDeviceDb::DeleteDeviceInfo(const std::string &udid,
-                                               const shared_ptr<RdbStore> &rdbStore)
+    const shared_ptr<RdbStore> &rdbStore)
 {
     CHECK_AND_RETURN_RET_LOG((rdbStore != nullptr) && (!udid.empty()), E_DEVICE_OPER_ERR, "Invalid input");
 

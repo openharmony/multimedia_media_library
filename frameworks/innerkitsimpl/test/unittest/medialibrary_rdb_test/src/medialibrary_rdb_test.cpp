@@ -36,6 +36,8 @@ void MediaLibraryExtUnitTest::SetUpTestCase(void)
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl->SetStageContext(stageContext);
     rdbStorePtr = std::make_shared<MediaLibraryRdbStore>(abilityContextImpl);
+    int32_t ret = rdbStorePtr->Init();
+    MEDIA_INFO_LOG("rdbstore start ret = %{public}d", ret);
 }
 
 void MediaLibraryExtUnitTest::TearDownTestCase(void) {}
@@ -237,7 +239,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPullTable_test_001, TestSize.Leve
     devices.push_back("SyncPullTable");
     string bundleName = "medialib_SyncPullTable_test_001";
     string tableName = "tableTest";
-    bool ret = rdbStorePtr->SyncPullTable(bundleName, tableName, devices, false);
+    bool ret = rdbStorePtr->SyncPullTable(bundleName, tableName, devices);
     EXPECT_EQ(ret, false);
 }
 
