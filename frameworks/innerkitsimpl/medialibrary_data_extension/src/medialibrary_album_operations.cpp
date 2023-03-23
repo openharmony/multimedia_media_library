@@ -116,7 +116,7 @@ inline int32_t GetStringObject(const ValuesBucket &values, const string &key, st
 {
     value = "";
     ValueObject valueObject;
-    if (values.GetObject(PhotoAlbum::ALBUM_NAME, valueObject)) {
+    if (values.GetObject(key, valueObject)) {
         valueObject.GetString(value);
     } else {
         return -EINVAL;
@@ -126,22 +126,22 @@ inline int32_t GetStringObject(const ValuesBucket &values, const string &key, st
 
 inline void PrepareUserAlbum(const string &albumName, const string &relativePath, ValuesBucket &values)
 {
-    values.PutString(PhotoAlbum::ALBUM_NAME, albumName);
-    values.PutInt(PhotoAlbum::ALBUM_TYPE, PhotoAlbumType::USER);
-    values.PutInt(PhotoAlbum::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
+    values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
+    values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
 
     if (!relativePath.empty()) {
-        values.PutString(PhotoAlbum::ALBUM_RELATIVE_PATH, relativePath);
+        values.PutString(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, relativePath);
     }
 }
 
 inline void PrepareWhere(const string &albumName, const string &relativePath, RdbPredicates &predicates)
 {
-    predicates.EqualTo(PhotoAlbum::ALBUM_NAME, albumName);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
     if (relativePath.empty()) {
-        predicates.IsNull(PhotoAlbum::ALBUM_RELATIVE_PATH);
+        predicates.IsNull(PhotoAlbumColumns::ALBUM_RELATIVE_PATH);
     } else {
-        predicates.EqualTo(PhotoAlbum::ALBUM_RELATIVE_PATH, relativePath);
+        predicates.EqualTo(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, relativePath);
     }
 }
 
@@ -151,10 +151,10 @@ int DoCreatePhotoAlbum(const string &albumName, const string &relativePath)
     ValuesBucket albumValues;
     PrepareUserAlbum(albumName, relativePath, albumValues);
 
-    RdbPredicates wherePredicates(PhotoAlbum::TABLE);
+    RdbPredicates wherePredicates(PhotoAlbumColumns::TABLE);
     PrepareWhere(albumName, relativePath, wherePredicates);
 
-    return MediaLibraryRdbStore::InsertWithWhereExists(PhotoAlbum::TABLE,
+    return MediaLibraryRdbStore::InsertWithWhereExists(PhotoAlbumColumns::TABLE,
         albumValues, false, wherePredicates);
 }
 
@@ -171,7 +171,7 @@ inline int CreatePhotoAlbum(const string &albumName)
 int CreatePhotoAlbum(MediaLibraryCommand &cmd)
 {
     string albumName;
-    int err = GetStringObject(cmd.GetValueBucket(), PhotoAlbum::ALBUM_NAME, albumName);
+    int err = GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_NAME, albumName);
     if (err < 0) {
         return err;
     }
@@ -180,11 +180,11 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(const DataShare::DataSharePredicates &predicates)
 {
-    RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoAlbum::TABLE);
+    RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
 
     // Only user generic albums can be deleted
-    rdbPredicate.And()->BeginWrap()->EqualTo(PhotoAlbum::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
-    rdbPredicate.EqualTo(PhotoAlbum::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
+    rdbPredicate.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
+    rdbPredicate.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
     rdbPredicate.EndWrap();
 
     return MediaLibraryRdbStore::Delete(rdbPredicate);

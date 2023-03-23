@@ -34,6 +34,7 @@ class FetchResultProperty {
 public:
     std::shared_ptr<FetchResult<FileAsset>> fetchFileResult_ = nullptr;
     std::shared_ptr<FetchResult<AlbumAsset>> fetchAlbumResult_ = nullptr;
+    std::shared_ptr<FetchResult<PhotoAlbum>> fetchPhotoAlbumResult_ = nullptr;
     std::shared_ptr<FetchResult<SmartAlbumAsset>> fetchSmartAlbumResult_ = nullptr;
     FetchResType fetchResType_;
     std::string typeMask_;
@@ -49,9 +50,11 @@ public:
 
     static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<FileAsset>> fileResult);
     static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<AlbumAsset>> fileResult);
+    static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<PhotoAlbum>> fileResult);
     static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<SmartAlbumAsset>> fileResult);
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResultObject();
     std::shared_ptr<FetchResult<AlbumAsset>> GetFetchAlbumResultObject();
+    std::shared_ptr<FetchResult<PhotoAlbum>> GetFetchPhotoAlbumResultObject();
     std::shared_ptr<FetchResult<SmartAlbumAsset>> GetFetchSmartAlbumResultObject();
 
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResult() const;
@@ -78,6 +81,7 @@ private:
     static thread_local napi_ref userFileMgrConstructor_;
     static inline thread_local std::unique_ptr<FetchResult<FileAsset>> sFetchFileResult_ = nullptr;
     static inline thread_local std::unique_ptr<FetchResult<AlbumAsset>> sFetchAlbumResult_ = nullptr;
+    static inline thread_local std::unique_ptr<FetchResult<PhotoAlbum>> sFetchPhotoAlbumResult_ = nullptr;
     static inline thread_local std::unique_ptr<FetchResult<SmartAlbumAsset>> sFetchSmartAlbumResult_ = nullptr;
     static inline thread_local FetchResType sFetchResType_ = FetchResType::TYPE_FILE;
 };
@@ -93,9 +97,11 @@ public:
     int32_t position;
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<AlbumAsset> albumAsset;
+    std::unique_ptr<PhotoAlbum> photoAlbum;
     std::unique_ptr<SmartAlbumAsset> smartAlbumAsset;
     std::vector<std::unique_ptr<FileAsset>> fileAssetArray;
     std::vector<std::unique_ptr<AlbumAsset>> fileAlbumArray;
+    std::vector<std::unique_ptr<PhotoAlbum>> filePhotoAlbumArray;
     std::vector<std::unique_ptr<SmartAlbumAsset>> fileSmartAlbumArray;
     void GetFirstAsset();
     void GetObjectAtPosition();

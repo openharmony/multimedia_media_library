@@ -14,7 +14,7 @@
  */
 #define MLOG_TAG "PhotoAlbum"
 
-#include "photo_album_asset.h"
+#include "photo_album.h"
 
 #include "medialibrary_type_const.h"
 
@@ -22,7 +22,7 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-PhotoAlbumAsset::PhotoAlbumAsset()
+PhotoAlbum::PhotoAlbum()
 {
     albumId_ = DEFAULT_ALBUM_ID;
     type_ = USER;
@@ -31,104 +31,104 @@ PhotoAlbumAsset::PhotoAlbumAsset()
     resultNapiType_ = ResultNapiType::TYPE_USERFILE_MGR;
 }
 
-PhotoAlbumAsset::~PhotoAlbumAsset() = default;
+PhotoAlbum::~PhotoAlbum() = default;
 
-void PhotoAlbumAsset::SetAlbumId(const int32_t albumId)
+void PhotoAlbum::SetAlbumId(const int32_t albumId)
 {
     albumId_ = albumId;
 }
 
-int32_t PhotoAlbumAsset::GetAlbumId() const
+int32_t PhotoAlbum::GetAlbumId() const
 {
     return albumId_;
 }
 
-void PhotoAlbumAsset::SetPhotoAlbumType(const PhotoAlbumType type)
+void PhotoAlbum::SetPhotoAlbumType(const PhotoAlbumType type)
 {
     type_ = type;
 }
 
-PhotoAlbumType PhotoAlbumAsset::GetPhotoAlbumType() const
+PhotoAlbumType PhotoAlbum::GetPhotoAlbumType() const
 {
     return type_;
 }
 
-void PhotoAlbumAsset::SetPhotoAlbumSubType(const PhotoAlbumSubType subType)
+void PhotoAlbum::SetPhotoAlbumSubType(const PhotoAlbumSubType subType)
 {
     subType_ = subType;
 }
 
-PhotoAlbumSubType PhotoAlbumAsset::GetPhotoAlbumSubType() const
+PhotoAlbumSubType PhotoAlbum::GetPhotoAlbumSubType() const
 {
     return subType_;
 }
 
-void PhotoAlbumAsset::SetAlbumUri(const string &uri)
+void PhotoAlbum::SetAlbumUri(const string &uri)
 {
     uri_ = uri;
 }
 
-const string& PhotoAlbumAsset::GetAlbumUri() const
+const string& PhotoAlbum::GetAlbumUri() const
 {
     return uri_;
 }
 
-void PhotoAlbumAsset::SetAlbumName(const string &albumName)
+void PhotoAlbum::SetAlbumName(const string &albumName)
 {
     albumName_ = albumName;
 }
 
-const string& PhotoAlbumAsset::GetAlbumName() const
+const string& PhotoAlbum::GetAlbumName() const
 {
     return albumName_;
 }
 
-void PhotoAlbumAsset::SetCoverUri(const string &coverUri)
+void PhotoAlbum::SetCoverUri(const string &coverUri)
 {
     coverUri_ = coverUri;
 }
 
-const string& PhotoAlbumAsset::GetCoverUri() const
+const string& PhotoAlbum::GetCoverUri() const
 {
     return coverUri_;
 }
 
-void PhotoAlbumAsset::SetCount(const int32_t count)
+void PhotoAlbum::SetCount(const int32_t count)
 {
     count_ = count;
 }
 
-int32_t PhotoAlbumAsset::GetCount() const
+int32_t PhotoAlbum::GetCount() const
 {
     return count_;
 }
 
-void PhotoAlbumAsset::SetRelativePath(const string &relativePath)
+void PhotoAlbum::SetRelativePath(const string &relativePath)
 {
     relativePath_ = relativePath;
 }
 
-const string& PhotoAlbumAsset::GetRelativePath() const
+const string& PhotoAlbum::GetRelativePath() const
 {
     return relativePath_;
 }
 
-void PhotoAlbumAsset::SetTypeMask(const string &typeMask)
+void PhotoAlbum::SetTypeMask(const string &typeMask)
 {
     typeMask_ = typeMask;
 }
 
-const string& PhotoAlbumAsset::GetTypeMask() const
+const string& PhotoAlbum::GetTypeMask() const
 {
     return typeMask_;
 }
 
-void PhotoAlbumAsset::SetResultNapiType(const ResultNapiType resultNapiType)
+void PhotoAlbum::SetResultNapiType(const ResultNapiType resultNapiType)
 {
     resultNapiType_ = resultNapiType;
 }
 
-ResultNapiType PhotoAlbumAsset::GetResultNapiType() const
+ResultNapiType PhotoAlbum::GetResultNapiType() const
 {
     return resultNapiType_;
 }

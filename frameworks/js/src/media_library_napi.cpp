@@ -27,6 +27,7 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_peer_info.h"
 #include "medialibrary_tracer.h"
+#include "photo_album_napi.h"
 #include "smart_album_napi.h"
 #include "directory_ex.h"
 #include "file_ex.h"
@@ -48,7 +49,7 @@ const int32_t NUM_2 = 2;
 const int32_t NUM_3 = 3;
 const string DATE_FUNCTION = "DATE(";
 
-std::mutex MediaLibraryNapi::sUserFileClientMutex_;
+mutex MediaLibraryNapi::sUserFileClientMutex_;
 
 static map<string, ListenerType> ListenerTypeMaps = {
     {"audioChange", AUDIO_LISTENER},
@@ -153,11 +154,12 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getActivePeers", JSGetActivePeers),
             DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers),
             DECLARE_NAPI_FUNCTION("release", JSRelease),
+            DECLARE_NAPI_FUNCTION("createAlbum", CreatePhotoAlbum),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
 
-    const std::vector<napi_property_descriptor> staticProps = {
+    const vector<napi_property_descriptor> staticProps = {
         DECLARE_NAPI_STATIC_FUNCTION("getUserFileMgr", GetUserFileMgr),
         DECLARE_NAPI_PROPERTY("FileType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("FileKey", UserFileMgrCreateFileKeyEnum(env)),
@@ -197,7 +199,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
         g_listObj = make_unique<ChangeListenerNapi>(env);
     }
 
-    std::unique_lock<std::mutex> helperLock(sUserFileClientMutex_);
+    unique_lock<mutex> helperLock(sUserFileClientMutex_);
     if (!UserFileClient::IsValid()) {
         UserFileClient::Init(env, info);
         if (!UserFileClient::IsValid()) {
@@ -792,7 +794,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_BUCKET_ID + " = ? ");
-    predicates.SetWhereArgs({ std::to_string(album->GetAlbumId()) });
+    predicates.SetWhereArgs({ to_string(album->GetAlbumId()) });
     predicates.SetOrder(MEDIA_DATA_DB_DATE_ADDED + " DESC LIMIT 0,1 ");
     vector<string> columns;
     string queryUri = MEDIALIBRARY_DATA_URI;
@@ -1003,7 +1005,7 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     DataShare::DataSharePredicates predicates;
 
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
-    predicates.SetWhereArgs({ std::to_string(id) });
+    predicates.SetWhereArgs({ to_string(id) });
 
     string queryUri = MEDIALIBRARY_DATA_URI;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
@@ -1025,7 +1027,7 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     }
     unique_ptr<FileAsset> fileAsset = context->fetchFileResult->GetFirstObject();
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "getFileAssetById: fileAsset is nullptr");
-    context->fileAsset = std::move(fileAsset);
+    context->fileAsset = move(fileAsset);
 }
 
 static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void *data)
@@ -1118,7 +1120,7 @@ static bool IsDirectory(const string &dirName)
     return false;
 }
 
-static bool CheckTypeOfType(const std::string &firstDirName, int32_t fileMediaType)
+static bool CheckTypeOfType(const string &firstDirName, int32_t fileMediaType)
 {
     // "CDSA/"
     if (!strcmp(firstDirName.c_str(), directoryEnumValues[0].c_str())) {
@@ -1494,12 +1496,12 @@ void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const nap
         return;
     }
 
-    uv_work_t *work = new (std::nothrow) uv_work_t;
+    uv_work_t *work = new (nothrow) uv_work_t;
     if (work == nullptr) {
         return;
     }
 
-    UvChangeMsg *msg = new (std::nothrow) UvChangeMsg(env_, cbRef);
+    UvChangeMsg *msg = new (nothrow) UvChangeMsg(env_, cbRef);
     if (msg == nullptr) {
         delete work;
         return;
@@ -1545,7 +1547,7 @@ void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const nap
     }
 }
 
-int32_t MediaLibraryNapi::GetListenerType(const std::string &str) const
+int32_t MediaLibraryNapi::GetListenerType(const string &str) const
 {
     auto iter = ListenerTypeMaps.find(str);
     if (iter == ListenerTypeMaps.end()) {
@@ -1556,7 +1558,7 @@ int32_t MediaLibraryNapi::GetListenerType(const std::string &str) const
     return iter->second;
 }
 
-void MediaLibraryNapi::RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj)
+void MediaLibraryNapi::RegisterChange(napi_env env, const string &type, ChangeListenerNapi &listObj)
 {
     NAPI_DEBUG_LOG("Register change type = %{public}s", type.c_str());
 
@@ -1870,12 +1872,12 @@ static void SetSmartAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<
     }
     MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
     context->selectionArgs.emplace_back("0");
-    context->selectionArgs.emplace_back(std::to_string(smartAlbum->GetAlbumId()));
+    context->selectionArgs.emplace_back(to_string(smartAlbum->GetAlbumId()));
     DataShare::DataSharePredicates predicates;
     predicates.SetOrder(SMARTALBUMMAP_DB_ID + " DESC LIMIT 0,1 ");
     predicates.SetWhereClause(context->selection);
     predicates.SetWhereArgs(context->selectionArgs);
-    std::vector<std::string> columns;
+    vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME);
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns);
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
@@ -2140,7 +2142,7 @@ static void GetSmartAlbumsResultDataExecute(napi_env env, void *data)
         predicates.SetWhereClause(SMARTABLUMASSETS_PARENTID + " ISNULL");
     } else {
         predicates.SetWhereClause(SMARTABLUMASSETS_PARENTID + " = ? ");
-        predicates.SetWhereArgs({ std::to_string(context->parentSmartAlbumId)});
+        predicates.SetWhereArgs({ to_string(context->parentSmartAlbumId)});
     }
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + SMARTALBUMASSETS_VIEW_NAME);
@@ -2299,7 +2301,7 @@ static void CreateSmartAlbumExecute(MediaLibraryAsyncContext *context)
         return;
     }
     context->selection = SMARTALBUM_DB_ID + " = ?";
-    context->selectionArgs = { std::to_string(retVal) };
+    context->selectionArgs = { to_string(retVal) };
     GetSmartAlbumResultDataExecute(context);
     // If parentSmartAlbumId == 0 do not need to add to smart map
     if (context->parentSmartAlbumId != 0) {
@@ -2507,7 +2509,7 @@ static napi_status SetValueBool(const napi_env& env, const char* fieldStr, const
     return status;
 }
 
-static void PeerInfoToJsArray(const napi_env &env, const std::vector<unique_ptr<PeerInfo>> &vecPeerInfo,
+static void PeerInfoToJsArray(const napi_env &env, const vector<unique_ptr<PeerInfo>> &vecPeerInfo,
     const int32_t idx, napi_value &arrayResult)
 {
     if (idx >= (int32_t) vecPeerInfo.size()) {
@@ -2541,9 +2543,9 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
     jsContext->status = false;
     napi_get_undefined(env, &jsContext->data);
 
-    vector<std::string> columns;
+    vector<string> columns;
     DataShare::DataSharePredicates predicates;
-    std::string strQueryCondition = DEVICE_DB_DATE_MODIFIED + " = 0";
+    string strQueryCondition = DEVICE_DB_DATE_MODIFIED + " = 0";
     predicates.SetWhereClause(strQueryCondition);
     predicates.SetWhereArgs(context->selectionArgs);
 
@@ -3312,6 +3314,129 @@ napi_value MediaLibraryNapi::CreateImageVideoKeyEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateAlbumKeyEnum(napi_env env)
 {
     return CreateStringEnumProperty(env, ALBUMKEY_ENUM_PROPERTIES, sAlbumKeyEnumRef_);
+}
+
+static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+
+    /* Parse the first argument into albumName */
+    string albumName;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], albumName) ==
+        napi_ok, "Failed to get albumName");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, false, &result));
+    if (MediaFileUtils::CheckAlbumName(albumName) < 0) {
+        context->ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return result;
+    }
+    context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
+
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
+
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    return result;
+}
+
+static void GetPhotoAlbumById(const int32_t id, const string &albumName, MediaLibraryAsyncContext *context)
+{
+    auto photoAlbum = make_unique<PhotoAlbum>();
+    photoAlbum->SetAlbumId(id);
+    photoAlbum->SetPhotoAlbumType(USER);
+    photoAlbum->SetPhotoAlbumSubType(USER_GENERIC);
+    photoAlbum->SetAlbumUri(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(id));
+    photoAlbum->SetAlbumName(albumName);
+
+    context->photoAlbumData = move(photoAlbum);
+}
+
+static void JSCreatePhotoAlbumExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCreatePhotoAlbumExecute");
+
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    string uri = URI_CREATE_PHOTO_ALBUM;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, PHOTO_ALBUM_TYPE_MASK);
+    Uri createPhotoAlbumUri(uri);
+    int index = UserFileClient::Insert(createPhotoAlbumUri, context->valuesBucket);
+    if (index < 0) {
+        context->SaveError(index);
+        return;
+    }
+
+    bool isValid = false;
+    string albumName = context->valuesBucket.Get(PhotoAlbumColumns::ALBUM_NAME, isValid);
+    if (!isValid) {
+        context->SaveError(-EINVAL);
+        return;
+    }
+    GetPhotoAlbumById(index, albumName, context);
+}
+
+static void GetPhotoAlbumCreateResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    if (context->photoAlbumData == nullptr) {
+        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Obtain photo album asset failed");
+        return;
+    }
+    napi_value jsPhotoAlbum = PhotoAlbumNapi::CreatePhotoAlbumNapi(env, context->photoAlbumData);
+    if (jsPhotoAlbum == nullptr) {
+        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
+            "Failed to create js object for PhotoAlbum");
+        return;
+    }
+    jsContext->data = jsPhotoAlbum;
+    jsContext->status = true;
+    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+}
+
+static void JSCreatePhotoAlbumCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCreatePhotoAlbumCompleteCallback");
+
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+    } else {
+        GetPhotoAlbumCreateResult(env, context, jsContext);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::CreatePhotoAlbum(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    NAPI_ASSERT(env, ParseArgsCreatePhotoAlbum(env, info, asyncContext), "Failed to parse js args");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CreatePhotoAlbum", JSCreatePhotoAlbumExecute,
+        JSCreatePhotoAlbumCompleteCallback);
 }
 } // namespace Media
 } // namespace OHOS

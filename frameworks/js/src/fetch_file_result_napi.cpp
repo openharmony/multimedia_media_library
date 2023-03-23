@@ -20,6 +20,7 @@
 #include "hitrace_meter.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
+#include "photo_album_napi.h"
 #include "smart_album_napi.h"
 
 using OHOS::HiviewDFX::HiLog;
@@ -86,24 +87,34 @@ napi_value FetchFileResultNapi::Init(napi_env env, napi_value exports)
 void FetchFileResultNapi::GetFetchResult(unique_ptr<FetchFileResultNapi> &obj)
 {
     switch (sFetchResType_) {
-        case FetchResType::TYPE_FILE:
-            obj->propertyPtr->fetchFileResult_ =
-                make_shared<FetchResult<FileAsset>>(move(sFetchFileResult_->resultset_));
+        case FetchResType::TYPE_FILE: {
+            auto fileResult = make_shared<FetchResult<FileAsset>>(move(sFetchFileResult_->resultset_));
+            obj->propertyPtr->fetchFileResult_ = fileResult;
             obj->propertyPtr->fetchFileResult_->SetInfo(sFetchFileResult_);
             obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchFileResult_->typeMask_;
             break;
-        case FetchResType::TYPE_ALBUM:
-            obj->propertyPtr->fetchAlbumResult_ =
-                make_shared<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->resultset_));
+        }
+        case FetchResType::TYPE_ALBUM: {
+            auto albumResult = make_shared<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->resultset_));
+            obj->propertyPtr->fetchAlbumResult_ = albumResult;
             obj->propertyPtr->fetchAlbumResult_->SetInfo(sFetchAlbumResult_);
             obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchAlbumResult_->typeMask_;
             break;
-        case FetchResType::TYPE_SMARTALBUM:
-            obj->propertyPtr->fetchSmartAlbumResult_ =
-                make_shared<FetchResult<SmartAlbumAsset>>(move(sFetchSmartAlbumResult_->resultset_));
+        }
+        case FetchResType::TYPE_PHOTOALBUM: {
+            auto photoAlbumResult = make_shared<FetchResult<PhotoAlbum>>(move(sFetchPhotoAlbumResult_->resultset_));
+            obj->propertyPtr->fetchPhotoAlbumResult_ = photoAlbumResult;
+            obj->propertyPtr->fetchPhotoAlbumResult_->SetInfo(sFetchPhotoAlbumResult_);
+            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchPhotoAlbumResult_->typeMask_;
+            break;
+        }
+        case FetchResType::TYPE_SMARTALBUM: {
+            auto smartResult = make_shared<FetchResult<SmartAlbumAsset>>(move(sFetchSmartAlbumResult_->resultset_));
+            obj->propertyPtr->fetchSmartAlbumResult_ = smartResult;
             obj->propertyPtr->fetchSmartAlbumResult_->SetInfo(sFetchSmartAlbumResult_);
             obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchSmartAlbumResult_->typeMask_;
             break;
+        }
         default:
             NAPI_ERR_LOG("unsupported FetchResType");
             break;
@@ -182,6 +193,21 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<F
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
     sFetchAlbumResult_ = nullptr;
+    return result;
+}
+
+napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<FetchResult<PhotoAlbum>> fileResult)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateFetchFileResult");
+    napi_value constructor;
+    napi_ref constructorRef = userFileMgrConstructor_;
+    NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
+    sFetchResType_ = fileResult->fetchResType_;
+    sFetchPhotoAlbumResult_ = move(fileResult);
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
+    sFetchPhotoAlbumResult_ = nullptr;
     return result;
 }
 
@@ -266,6 +292,9 @@ napi_value FetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info
             case FetchResType::TYPE_ALBUM:
                 count = obj->GetFetchAlbumResultObject()->GetCount();
                 break;
+            case FetchResType::TYPE_PHOTOALBUM:
+                count = obj->GetFetchPhotoAlbumResultObject()->GetCount();
+                break;
             case FetchResType::TYPE_SMARTALBUM:
                 count = obj->GetFetchSmartAlbumResultObject()->GetCount();
                 break;
@@ -309,6 +338,9 @@ napi_value FetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info i
             case FetchResType::TYPE_ALBUM:
                 isAfterLast = obj->GetFetchAlbumResultObject()->IsAtLastRow();
                 break;
+            case FetchResType::TYPE_PHOTOALBUM:
+                isAfterLast = obj->GetFetchPhotoAlbumResultObject()->IsAtLastRow();
+                break;
             case FetchResType::TYPE_SMARTALBUM:
                 isAfterLast = obj->GetFetchSmartAlbumResultObject()->IsAtLastRow();
                 break;
@@ -335,6 +367,9 @@ static void GetNapiResFromAsset(napi_env env, FetchFileResultAsyncContext *conte
             break;
         case FetchResType::TYPE_ALBUM:
             jsAsset = AlbumNapi::CreateAlbumNapi(env, context->albumAsset);
+            break;
+        case FetchResType::TYPE_PHOTOALBUM:
+            jsAsset = PhotoAlbumNapi::CreatePhotoAlbumNapi(env, context->photoAlbum);
             break;
         case FetchResType::TYPE_SMARTALBUM:
             jsAsset = SmartAlbumNapi::CreateSmartAlbumNapi(env, context->smartAlbumAsset);
@@ -600,6 +635,11 @@ static napi_value GetAsset(napi_env env, vector<std::unique_ptr<AlbumAsset>> &ar
     return AlbumNapi::CreateAlbumNapi(env, array[index]);
 }
 
+static napi_value GetAsset(napi_env env, vector<std::unique_ptr<PhotoAlbum>> &array, int index)
+{
+    return PhotoAlbumNapi::CreatePhotoAlbumNapi(env, array[index]);
+}
+
 static napi_value GetAsset(napi_env env, vector<std::unique_ptr<SmartAlbumAsset>> &array, int index)
 {
     return SmartAlbumNapi::CreateSmartAlbumNapi(env, array[index]);
@@ -645,6 +685,9 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
         case FetchResType::TYPE_ALBUM:
             GetAssetFromArray(env, context, context->fileAlbumArray, jsContext);
             break;
+        case FetchResType::TYPE_PHOTOALBUM:
+            GetAssetFromArray(env, context, context->filePhotoAlbumArray, jsContext);
+            break;
         case FetchResType::TYPE_SMARTALBUM:
             GetAssetFromArray(env, context, context->fileSmartAlbumArray, jsContext);
             break;
@@ -671,6 +714,11 @@ std::shared_ptr<FetchResult<FileAsset>> FetchFileResultNapi::GetFetchFileResultO
 std::shared_ptr<FetchResult<AlbumAsset>> FetchFileResultNapi::GetFetchAlbumResultObject()
 {
     return propertyPtr->fetchAlbumResult_;
+}
+
+std::shared_ptr<FetchResult<PhotoAlbum>> FetchFileResultNapi::GetFetchPhotoAlbumResultObject()
+{
+    return propertyPtr->fetchPhotoAlbumResult_;
 }
 
 std::shared_ptr<FetchResult<SmartAlbumAsset>> FetchFileResultNapi::GetFetchSmartAlbumResultObject()
@@ -780,6 +828,10 @@ void FetchFileResultAsyncContext::GetFirstAsset()
             albumAsset = objectPtr->fetchAlbumResult_->GetFirstObject();
             break;
         }
+        case FetchResType::TYPE_PHOTOALBUM: {
+            photoAlbum = objectPtr->fetchPhotoAlbumResult_->GetFirstObject();
+            break;
+        }
         case FetchResType::TYPE_SMARTALBUM: {
             smartAlbumAsset = objectPtr->fetchSmartAlbumResult_->GetFirstObject();
             break;
@@ -801,7 +853,10 @@ void FetchFileResultAsyncContext::GetObjectAtPosition()
             albumAsset = objectPtr->fetchAlbumResult_->GetObjectAtPosition(position);
             break;
         }
-
+        case FetchResType::TYPE_PHOTOALBUM: {
+            photoAlbum = objectPtr->fetchPhotoAlbumResult_->GetObjectAtPosition(position);
+            break;
+        }
         case FetchResType::TYPE_SMARTALBUM: {
             smartAlbumAsset = objectPtr->fetchSmartAlbumResult_->GetObjectAtPosition(position);
             break;
@@ -823,6 +878,10 @@ void FetchFileResultAsyncContext::GetLastObject()
             albumAsset = objectPtr->fetchAlbumResult_->GetLastObject();
             break;
         }
+        case FetchResType::TYPE_PHOTOALBUM: {
+            photoAlbum = objectPtr->fetchPhotoAlbumResult_->GetLastObject();
+            break;
+        }
         case FetchResType::TYPE_SMARTALBUM: {
             smartAlbumAsset = objectPtr->fetchSmartAlbumResult_->GetLastObject();
             break;
@@ -842,6 +901,10 @@ void FetchFileResultAsyncContext::GetNextObject()
         }
         case FetchResType::TYPE_ALBUM: {
             albumAsset = objectPtr->fetchAlbumResult_->GetNextObject();
+            break;
+        }
+        case FetchResType::TYPE_PHOTOALBUM: {
+            photoAlbum = objectPtr->fetchPhotoAlbumResult_->GetNextObject();
             break;
         }
         case FetchResType::TYPE_SMARTALBUM: {
@@ -872,6 +935,15 @@ void FetchFileResultAsyncContext::GetAllObjectFromFetchResult()
             while (album != nullptr) {
                 fileAlbumArray.push_back(move(album));
                 album = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_PHOTOALBUM: {
+            auto fetchResult = objectPtr->fetchPhotoAlbumResult_;
+            auto photoAlbum = fetchResult->GetFirstObject();
+            while (photoAlbum != nullptr) {
+                filePhotoAlbumArray.push_back(move(photoAlbum));
+                photoAlbum = fetchResult->GetNextObject();
             }
             break;
         }
