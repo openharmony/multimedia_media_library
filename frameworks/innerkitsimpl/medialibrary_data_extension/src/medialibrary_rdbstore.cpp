@@ -468,10 +468,10 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         CREATE_BUNDLE_PREMISSION_TABLE,
         CREATE_MEDIALIBRARY_ERROR_TABLE,
         CREATE_REMOTE_THUMBNAIL_TABLE,
-        PhotoAlbum::CREATE_TABLE,
+        PhotoAlbumColumns::CREATE_TABLE,
         PhotoMap::CREATE_TABLE,
-        PhotoAlbum::TRIGGER_UPDATE_ALBUM_URI,
-        PhotoAlbum::TRIGGER_CLEAR_MAP,
+        PhotoAlbumColumns::TRIGGER_UPDATE_ALBUM_URI,
+        PhotoAlbumColumns::TRIGGER_CLEAR_MAP,
         PhotoMap::INDEX_PRIMARY_KEY,
     };
 

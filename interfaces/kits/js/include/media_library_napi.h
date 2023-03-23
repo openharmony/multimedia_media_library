@@ -29,6 +29,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "napi_error.h"
+#include "photo_album.h"
 #include "smart_album_asset.h"
 #include "values_bucket.h"
 #include "napi_remote_object.h"
@@ -182,6 +183,8 @@ private:
     static napi_value CreateImageVideoKeyEnum(napi_env env);
     static napi_value CreateAlbumKeyEnum(napi_env env);
 
+    static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
+
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
     void UnregisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
@@ -222,8 +225,10 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::string extendArgs;
     std::unique_ptr<FetchResult<FileAsset>> fetchFileResult;
     std::unique_ptr<FetchResult<AlbumAsset>> fetchAlbumResult;
+    std::unique_ptr<FetchResult<PhotoAlbum>> fetchPhotoAlbumResult;
     std::unique_ptr<FetchResult<SmartAlbumAsset>> fetchSmartAlbumResult;
     std::unique_ptr<FileAsset> fileAsset;
+    std::unique_ptr<PhotoAlbum> photoAlbumData;
     std::unique_ptr<SmartAlbumAsset> smartAlbumData;
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     unsigned int dirType = 0;

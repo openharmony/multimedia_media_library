@@ -116,6 +116,8 @@
             "OHOS::Media::AlbumNapi::GetAlbumId(void)";
             "OHOS::Media::AlbumNapi::GetAlbumName(void)";
 
+            "OHOS::Media::PhotoAlbumNapi::Init(napi_env__*, napi_value__*)";
+
             "OHOS::Media::SmartAlbumNapi::UserFileMgrInit(napi_env__*, napi_value__*)";
             "OHOS::Media::SmartAlbumNapi::JSSmartAlbumDescriptionSetter(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::SmartAlbumNapi::GetCoverUri(void)";

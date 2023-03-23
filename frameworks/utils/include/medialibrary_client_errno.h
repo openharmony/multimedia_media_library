@@ -31,6 +31,7 @@ constexpr int32_t UFM_MODULE_CODE = 140;
 #define UFM_JS_ERR(moduleCode, errCode) ((MODULE_CODE(moduleCode))  + (errCode))
 // file io common error code
 constexpr int32_t JS_ERR_NO_SUCH_FILE      = UFM_JS_ERR(FILEIO_MODULE_CODE, 2);         // no such file
+constexpr int32_t JS_ERR_NO_MEM            = UFM_JS_ERR(FILEIO_MODULE_CODE, 11);        // cannot allocate memory
 constexpr int32_t JS_ERR_PERMISSION_DENIED = UFM_JS_ERR(FILEIO_MODULE_CODE, 12);        // permission deny
 constexpr int32_t JS_ERR_FILE_EXIST        = UFM_JS_ERR(FILEIO_MODULE_CODE, 15);        // file has exist
 constexpr int32_t JS_ERR_PARAMETER_INVALID = UFM_JS_ERR(FILEIO_MODULE_CODE, 20);        // input parameter invalid
@@ -63,6 +64,8 @@ const std::unordered_map<int, int> trans2JsError = {
     { E_FILE_NAME_INVALID,    JS_E_DISPLAYNAME },
     { E_CHECK_EXTENSION_FAIL, JS_E_FILE_TYPE },
     { E_FILE_OPER_FAIL,       JS_INNER_FAIL },
+    { -EINVAL,                JS_ERR_PARAMETER_INVALID },
+    { -ENOMEM,                JS_ERR_NO_MEM },
 };
 
 const std::unordered_map<int, std::string> jsErrMap = {
@@ -74,6 +77,7 @@ const std::unordered_map<int, std::string> jsErrMap = {
     { JS_ERR_FILE_EXIST,        "file has existed" },
     { JS_E_FILE_TYPE,           "file type is not allow in the directory" },
     { JS_E_FILE_KEY,            "member not exist" },
+    { JS_ERR_NO_MEM,            "cannot allocate memory" },
 };
 
 const std::unordered_map<int32_t, int32_t> ClientErrTable {

@@ -17,7 +17,7 @@
 
 #include "media_column.h"
 #include "medialibrary_db_const.h"
-#include "photo_album_asset.h"
+#include "photo_album.h"
 #include "userfile_manager_types.h"
 
 using namespace std;
@@ -33,46 +33,46 @@ namespace Media {
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoAlbumAsset_SetGet_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoAlbum_SetGet_Test_001, TestSize.Level0)
 {
-    PhotoAlbumAsset photoAlbumAsset;
+    PhotoAlbum photoAlbum;
 
     const int32_t TEST_ALBUM_ID = 1;
-    photoAlbumAsset.SetAlbumId(TEST_ALBUM_ID);
-    EXPECT_EQ(photoAlbumAsset.GetAlbumId(), TEST_ALBUM_ID);
+    photoAlbum.SetAlbumId(TEST_ALBUM_ID);
+    EXPECT_EQ(photoAlbum.GetAlbumId(), TEST_ALBUM_ID);
 
-    photoAlbumAsset.SetPhotoAlbumType(USER);
-    EXPECT_EQ(photoAlbumAsset.GetPhotoAlbumType(), USER);
+    photoAlbum.SetPhotoAlbumType(USER);
+    EXPECT_EQ(photoAlbum.GetPhotoAlbumType(), USER);
 
-    photoAlbumAsset.SetPhotoAlbumSubType(USER_GENERIC);
-    EXPECT_EQ(photoAlbumAsset.GetPhotoAlbumSubType(), USER_GENERIC);
+    photoAlbum.SetPhotoAlbumSubType(USER_GENERIC);
+    EXPECT_EQ(photoAlbum.GetPhotoAlbumSubType(), USER_GENERIC);
 
     const string TEST_URI = "file://media/album/1";
-    photoAlbumAsset.SetAlbumUri(TEST_URI);
-    EXPECT_EQ(photoAlbumAsset.GetAlbumUri(), TEST_URI);
+    photoAlbum.SetAlbumUri(TEST_URI);
+    EXPECT_EQ(photoAlbum.GetAlbumUri(), TEST_URI);
 
     const string TEST_ALBUM_NAME = "test";
-    photoAlbumAsset.SetAlbumName(TEST_ALBUM_NAME);
-    EXPECT_EQ(photoAlbumAsset.GetAlbumName(), TEST_ALBUM_NAME);
+    photoAlbum.SetAlbumName(TEST_ALBUM_NAME);
+    EXPECT_EQ(photoAlbum.GetAlbumName(), TEST_ALBUM_NAME);
 
     const string TEST_COVERURI = TEST_URI;
-    photoAlbumAsset.SetCoverUri(TEST_COVERURI);
-    EXPECT_EQ(photoAlbumAsset.GetCoverUri(), TEST_COVERURI);
+    photoAlbum.SetCoverUri(TEST_COVERURI);
+    EXPECT_EQ(photoAlbum.GetCoverUri(), TEST_COVERURI);
 
     const int32_t TEST_COUNT = 1;
-    photoAlbumAsset.SetCount(TEST_COUNT);
-    EXPECT_EQ(photoAlbumAsset.GetCount(), TEST_COUNT);
+    photoAlbum.SetCount(TEST_COUNT);
+    EXPECT_EQ(photoAlbum.GetCount(), TEST_COUNT);
 
     const string TEST_RELATIVE_PATH = "Camera";
-    photoAlbumAsset.SetRelativePath(TEST_RELATIVE_PATH);
-    EXPECT_EQ(photoAlbumAsset.GetRelativePath(), TEST_RELATIVE_PATH);
+    photoAlbum.SetRelativePath(TEST_RELATIVE_PATH);
+    EXPECT_EQ(photoAlbum.GetRelativePath(), TEST_RELATIVE_PATH);
 
     const string TEST_TYPE_MASK = "000";
-    photoAlbumAsset.SetTypeMask(TEST_TYPE_MASK);
-    EXPECT_EQ(photoAlbumAsset.GetTypeMask(), TEST_TYPE_MASK);
+    photoAlbum.SetTypeMask(TEST_TYPE_MASK);
+    EXPECT_EQ(photoAlbum.GetTypeMask(), TEST_TYPE_MASK);
 
-    photoAlbumAsset.SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
-    EXPECT_EQ(photoAlbumAsset.GetResultNapiType(), ResultNapiType::TYPE_USERFILE_MGR);
+    photoAlbum.SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
+    EXPECT_EQ(photoAlbum.GetResultNapiType(), ResultNapiType::TYPE_USERFILE_MGR);
 }
 } // namespace Media
 } // namespace OHOS

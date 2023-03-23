@@ -1,0 +1,86 @@
+/*
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_PHOTO_ALBUM_NAPI_H_
+#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_PHOTO_ALBUM_NAPI_H_
+
+#include "photo_album.h"
+
+#include "datashare_values_bucket.h"
+#include "fetch_result.h"
+#include "file_asset.h"
+#include "napi_error.h"
+
+namespace OHOS {
+namespace Media {
+class PhotoAlbumNapi {
+public:
+    PhotoAlbumNapi();
+    ~PhotoAlbumNapi();
+
+    static napi_value Init(napi_env env, napi_value exports);
+    static napi_value CreatePhotoAlbumNapi(napi_env env, std::unique_ptr<PhotoAlbum> &albumData);
+
+    int32_t GetAlbumId() const;
+    int32_t GetCount() const;
+    const std::string& GetAlbumUri() const;
+    const std::string& GetCoverUri() const;
+    const std::string& GetAlbumName() const;
+    PhotoAlbumType GetPhotoAlbumType() const;
+    PhotoAlbumSubType GetPhotoAlbumSubType() const;
+
+private:
+    void SetPhotoAlbumNapiProperties();
+    static napi_value PhotoAlbumNapiConstructor(napi_env env, napi_callback_info info);
+    static void PhotoAlbumNapiDestructor(napi_env env, void* nativeObject, void* finalizeHint);
+
+    static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
+    static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
+    static napi_value JSGetAlbumCount(napi_env env, napi_callback_info info);
+    static napi_value JSGetPhotoAlbumType(napi_env env, napi_callback_info info);
+    static napi_value JSGetPhotoAlbumSubType(napi_env env, napi_callback_info info);
+    static napi_value JSGetCoverUri(napi_env env, napi_callback_info info);
+
+    static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
+    static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
+
+    napi_env env_;
+    std::shared_ptr<PhotoAlbum> photoAlbumPtr;
+    static thread_local PhotoAlbum *pAlbumData_;
+    static thread_local napi_ref constructor_;
+};
+
+struct PhotoAlbumNapiAsyncContext : public NapiError {
+    int32_t changedRows;
+    std::vector<int32_t> assetArray;
+    std::vector<std::string> fetchColumn;
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+
+    size_t argc;
+    napi_value argv[NAPI_ARGC_MAX];
+    napi_async_work work;
+    napi_deferred deferred;
+    napi_ref callbackRef;
+
+    PhotoAlbumNapi *objectInfo;
+    std::shared_ptr<PhotoAlbum> photoAlbum;
+
+    std::unique_ptr<FetchResult<FileAsset>> fetchResult;
+};
+} // namespace Media
+} // namespace OHOS
+
+#endif  // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_PHOTO_ALBUM_NAPI_H_
