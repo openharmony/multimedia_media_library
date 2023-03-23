@@ -53,6 +53,7 @@
 #include "permission_utils.h"
 #include "trash_async_worker.h"
 #include "media_column.h"
+#include "medialibrary_asset_operations.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -313,6 +314,11 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::FILESYSTEM_ASSET: {
             return MediaLibraryFileOperations::HandleFileOperation(cmd);
         }
+        case OperationObject::FILESYSTEM_PHOTO:
+        case OperationObject::FILESYSTEM_AUDIO:
+        case OperationObject::FILESYSTEM_DOCUMENT: {
+            return MediaLibraryAssetOperations::HandleInsertOperation(cmd);
+        }
         case OperationObject::FILESYSTEM_ALBUM: {
             return MediaLibraryAlbumOperations::CreateAlbumOperation(cmd);
         }
@@ -440,9 +446,6 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
 
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET:
-        case OperationObject::FILESYSTEM_PHOTO:
-        case OperationObject::FILESYSTEM_AUDIO:
-        case OperationObject::FILESYSTEM_DOCUMENT:
         case OperationObject::FILESYSTEM_DIR:
         case OperationObject::FILESYSTEM_ALBUM: {
             string fileId = cmd.GetOprnFileId();
@@ -457,6 +460,11 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
         }
         case OperationObject::PHOTO_ALBUM: {
             return MediaLibraryAlbumOperations::DeletePhotoAlbum(predicates);
+        }
+        case OperationObject::FILESYSTEM_PHOTO:
+        case OperationObject::FILESYSTEM_AUDIO:
+        case OperationObject::FILESYSTEM_DOCUMENT: {
+            return MediaLibraryAssetOperations::DeleteOperation(cmd);
         }
         default:
             break;
@@ -503,6 +511,11 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
             break;
         case OperationObject::FILESYSTEM_ALBUM: {
             return MediaLibraryAlbumOperations::ModifyAlbumOperation(cmd);
+        }
+        case OperationObject::FILESYSTEM_PHOTO:
+        case OperationObject::FILESYSTEM_AUDIO:
+        case OperationObject::FILESYSTEM_DOCUMENT: {
+            return MediaLibraryAssetOperations::UpdateOperation(cmd);
         }
         default:
             break;
@@ -800,6 +813,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
         queryResultSet = MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
     } else if (oprnObject == OperationObject::PHOTO_ALBUM) {
         queryResultSet = MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
+    } else if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
+        oprnObject == OperationObject::FILESYSTEM_DOCUMENT) {
+        queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);
     } else {
         tracer.Start("QueryFile");
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
@@ -838,6 +854,11 @@ bool MediaLibraryDataManager::QuerySync(const std::string &networkId, const std:
 int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const std::string &mode)
 {
     MediaLibraryCommand cmd(uri, OperationType::OPEN);
+    auto oprnObject = cmd.GetOprnObject();
+    if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
+        oprnObject == OperationObject::FILESYSTEM_DOCUMENT) {
+        return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
+    }
     return MediaLibraryObjectUtils::OpenFile(cmd, mode);
 }
 
