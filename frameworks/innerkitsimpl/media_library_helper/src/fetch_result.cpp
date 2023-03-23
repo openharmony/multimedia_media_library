@@ -332,6 +332,10 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
         MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
         fileAsset->SetTypeMask(typeMask);
     }
+    if (fileAsset->GetAlbumId() != DEFAULT_INT32) {
+        fileAsset->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId_) + "/" +
+            to_string(fileAsset->GetAlbumId()));
+    }
     string uri = GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_) + "/" + to_string(fileAsset->GetId());
     fileAsset->SetUri(move(uri));
 }
