@@ -2084,8 +2084,8 @@ HWTEST_F(MtpNativeTest, mtp_event_001, TestSize.Level0)
  */
 HWTEST_F(MtpNativeTest, mtp_service_001, TestSize.Level0)
 {
-    MtpServcie::GetInstance()->StartService();
-    MtpServcie::GetInstance()->StopService();
+    MtpService::GetInstance()->StartService();
+    MtpService::GetInstance()->StopService();
 
     MEDIA_INFO_LOG("mtp_service_001::End");
 }

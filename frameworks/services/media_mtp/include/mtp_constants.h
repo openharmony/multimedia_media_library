@@ -40,7 +40,7 @@ struct EventMtp {
     // size of the event
     size_t length;
     // event data to send
-    void *data;
+    std::vector<uint8_t> data;
 };
 
 constexpr uint16_t MTP_STANDARD_VERSION = 100;

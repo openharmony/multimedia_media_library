@@ -374,11 +374,6 @@ int32_t MtpMedialibraryManager::SendObjectInfo(const std::shared_ptr<MtpOperatio
         valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath() +
             fileAsset->GetDisplayName() + "/" + context->name + "/");
         index = dataShareHelper_->Insert(mkdirUri, valuesBucket);
-        shared_ptr<FileAsset> dirNoFileAsset;
-        errCode = GetAssetById(index, dirNoFileAsset);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS,
-            MtpErrorUtils::SolveSendObjectInfoError(errCode), "fail to Get dir asset");
-        index = dirNoFileAsset->GetParent();
     } else {
         MediaType mediaType;
         errCode = MtpDataUtils::SolveSendObjectFormatData(context->format, mediaType);
@@ -387,7 +382,7 @@ int32_t MtpMedialibraryManager::SendObjectInfo(const std::shared_ptr<MtpOperatio
         valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH,
             fileAsset->GetRelativePath() + fileAsset->GetDisplayName() + "/");
         valuesBucket.Put(MEDIA_DATA_DB_NAME, context->name);
-        valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(mediaType));
+        valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
         index = dataShareHelper_->Insert(createFileUri, valuesBucket);
     }
     CHECK_AND_RETURN_RET_LOG(index > 0,
@@ -415,8 +410,8 @@ int32_t MtpMedialibraryManager::MoveObject(const std::shared_ptr<MtpOperationCon
     CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS,
         MtpErrorUtils::SolveMoveObjectError(errCode), "fail to GetAssetById");
     valuesBucket.Put(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
-    valuesBucket.Put(MEDIA_DATA_DB_ID, std::to_string(context->handle));
-    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(fileAsset->GetMediaType()));
+    valuesBucket.Put(MEDIA_DATA_DB_ID, static_cast<int32_t>(context->handle));
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
     Uri updateAssetUri(Media::MEDIALIBRARY_DATA_URI + "/" +
         Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET);
     int changedRows = dataShareHelper_->Update(updateAssetUri, predicates, valuesBucket);
@@ -436,7 +431,7 @@ int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationCon
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH,
         parentAsset->GetRelativePath() + parentAsset->GetDisplayName() + "/");
-    valuesBucket.Put(MEDIA_DATA_DB_ID, std::to_string(context->handle));
+    valuesBucket.Put(MEDIA_DATA_DB_ID, static_cast<int32_t>(context->handle));
     Uri copyAssetUri(Media::MEDIALIBRARY_DATA_URI +
         "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_COPYASSET);
     int changedRows = dataShareHelper_->Insert(copyAssetUri, valuesBucket);
@@ -448,8 +443,8 @@ int32_t MtpMedialibraryManager::DeleteObject(const std::shared_ptr<MtpOperationC
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, std::to_string(TRASH_ALBUM_ID_VALUES));
-    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, std::to_string(context->handle));
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, static_cast<int32_t>(context->handle));
     Uri addAsseturi(MEDIALIBRARY_DATA_URI + "/" +
         MEDIA_SMARTALBUMMAPOPRN + "/" + MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
     int changedRows = dataShareHelper_->Insert(addAsseturi, valuesBucket);
@@ -490,10 +485,11 @@ int32_t MtpMedialibraryManager::SetObjectPropValue(const std::shared_ptr<MtpOper
     }
     MediaType mediaType;
     MtpDataUtils::GetMediaTypeByName(displayName, mediaType);
-    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, std::to_string(mediaType));
-    valuesBucket.Put(MEDIA_DATA_DB_ID, std::to_string(context->handle));
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.Put(MEDIA_DATA_DB_ID, static_cast<int32_t>(context->handle));
+    string operationCode = (mediaType != MEDIA_TYPE_ALBUM) ? Media::MEDIA_FILEOPRN : Media::MEDIA_ALBUMOPRN;
     Uri updateAssetUri(Media::MEDIALIBRARY_DATA_URI +
-        "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET);
+        "/" + operationCode + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET);
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + std::to_string(context->handle));
     int changedRows = dataShareHelper_->Update(updateAssetUri, predicates, valuesBucket);

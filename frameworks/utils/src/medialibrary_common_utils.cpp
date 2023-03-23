@@ -76,7 +76,8 @@ const std::unordered_set<std::string> fileKeyWhiteListUSet {
     SMARTABLUMASSETS_PARENTID,
     SMARTALBUM_DB_ID,
     MEDIA_DATA_DB_FILE_PATH,
-    MEDIA_DATA_DB_IS_TRASH
+    MEDIA_DATA_DB_IS_TRASH,
+    MEDIA_DATA_DB_RECYCLE_PATH,
 };
 
 void MediaLibraryCommonUtils::Char2Hex(const unsigned char *data, const size_t len, std::string &hexStr)
