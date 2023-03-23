@@ -135,7 +135,7 @@ inline void PrepareUserAlbum(const string &albumName, const string &relativePath
     }
 }
 
-inline void PrepareWhere(const string &albumName, const string &relativePath, NativeRdb::RdbPredicates &predicates)
+inline void PrepareWhere(const string &albumName, const string &relativePath, RdbPredicates &predicates)
 {
     predicates.EqualTo(PhotoAlbum::ALBUM_NAME, albumName);
     if (relativePath.empty()) {
@@ -151,7 +151,7 @@ int DoCreatePhotoAlbum(const string &albumName, const string &relativePath)
     ValuesBucket albumValues;
     PrepareUserAlbum(albumName, relativePath, albumValues);
 
-    NativeRdb::RdbPredicates wherePredicates(PhotoAlbum::TABLE);
+    RdbPredicates wherePredicates(PhotoAlbum::TABLE);
     PrepareWhere(albumName, relativePath, wherePredicates);
 
     return MediaLibraryRdbStore::InsertWithWhereExists(PhotoAlbum::TABLE,
@@ -178,7 +178,19 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     return CreatePhotoAlbum(albumName);
 }
 
-shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
+int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(const DataShare::DataSharePredicates &predicates)
+{
+    RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoAlbum::TABLE);
+
+    // Only user generic albums can be deleted
+    rdbPredicate.And()->BeginWrap()->EqualTo(PhotoAlbum::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
+    rdbPredicate.EqualTo(PhotoAlbum::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
+    rdbPredicate.EndWrap();
+
+    return MediaLibraryRdbStore::Delete(rdbPredicate);
+}
+
+shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
     return MediaLibraryRdbStore::Query(*(cmd.GetAbsRdbPredicates()), columns);
