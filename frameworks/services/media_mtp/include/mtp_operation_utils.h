@@ -55,7 +55,7 @@ public:
     uint16_t GetPropValue(std::shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode);
     uint16_t SetDevicePropValueResp(std::shared_ptr<PayloadData> &data);
     uint16_t ResetDevicePropResp(std::shared_ptr<PayloadData> &data);
-    uint16_t ObjectEvent(std::shared_ptr<PayloadData> &data, const int32_t &payload);
+    uint16_t ObjectEvent(std::shared_ptr<PayloadData> &data, const int32_t payload);
     uint16_t GetPathByHandle(const uint32_t &handle, std::string &path, std::string &realPath);
     int32_t GetHandleByPaths(std::string path, uint32_t &handle);
     static int32_t GetBatteryLevel();

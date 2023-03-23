@@ -157,7 +157,7 @@ uint16_t MtpOperationUtils::GetObjectHandles(shared_ptr<PayloadData> &data, uint
     shared_ptr<UInt32List> objectHandles = make_shared<UInt32List>();
     errorCode = mtpMedialibraryManager_->GetHandles(context_, objectHandles);
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("GetObjectHandles GetHandles faild!");
+        MEDIA_ERR_LOG("GetObjectHandles GetHandles fail!");
         return CheckErrorCode(errorCode);
     }
 
@@ -165,10 +165,10 @@ uint16_t MtpOperationUtils::GetObjectHandles(shared_ptr<PayloadData> &data, uint
     getObjectHandles->SetObjectHandles(objectHandles);
     data = getObjectHandles;
     errorCode = MTP_SUCCESS;
-    if (context_->handle != 0) {
+    if (context_->parent != 0) {
         string path;
         string realPath;
-        if (GetPathByHandle(context_->handle, path, realPath) != MTP_UNDEFINED_CODE) {
+        if (GetPathByHandle(context_->parent, path, realPath) != MTP_UNDEFINED_CODE) {
             MtpFileObserver::GetInstance().AddFileInotify(path, realPath, context_);
         }
     }
@@ -190,7 +190,7 @@ uint16_t MtpOperationUtils::GetObjectInfo(shared_ptr<PayloadData> &data, uint16_
     shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(context_->handle);
     errorCode = mtpMedialibraryManager_->GetObjectInfo(context_, objectInfo);
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("GetObjectHandles GetObjectInfo faild!");
+        MEDIA_ERR_LOG("GetObjectHandles GetObjectInfo fail!");
         return CheckErrorCode(errorCode);
     }
     shared_ptr<GetObjectInfoData> getObjectInfo = make_shared<GetObjectInfoData>();
@@ -268,7 +268,7 @@ void MtpOperationUtils::SendEventPacket(uint32_t objectHandle, uint16_t eventCod
     MtpPacketTool::PutUInt32(outBuffer, context_->transactionID);
     MtpPacketTool::PutUInt32(outBuffer, objectHandle);
 
-    event.data = outBuffer.data();
+    event.data = outBuffer;
     context_->mtpDriver->WriteEvent(event);
 }
 
@@ -340,7 +340,7 @@ uint16_t MtpOperationUtils::GetObjectDataDeal()
     int fd = 0;
     int errorCode = mtpMedialibraryManager_->GetFd(context_, fd);
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("GetObjectDataDeal GetFd faild!");
+        MEDIA_ERR_LOG("GetObjectDataDeal GetFd fail!");
         return errorCode;
     }
     MtpFileRange object;
@@ -379,7 +379,7 @@ uint16_t MtpOperationUtils::DoRecevieSendObject()
     int fd = 0;
     int errorCode = mtpMedialibraryManager_->GetFd(context_, fd);
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("DoRecevieSendObject GetFd faild!");
+        MEDIA_ERR_LOG("DoRecevieSendObject GetFd fail!");
         return errorCode;
     }
 
@@ -407,7 +407,7 @@ uint16_t MtpOperationUtils::DoRecevieSendObject()
     }
     errorCode = mtpMedialibraryManager_->CloseFd(context_, fd);
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("DoRecevieSendObject CloseFd faild!");
+        MEDIA_ERR_LOG("DoRecevieSendObject CloseFd fail!");
         return errorCode;
     }
     SendEventPacket(context_->handle, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
@@ -453,7 +453,7 @@ uint16_t MtpOperationUtils::SendObjectInfo(shared_ptr<PayloadData> &data, int &e
     uint32_t handle = 0;
     errorCode = mtpMedialibraryManager_->SendObjectInfo(context_, storageID, parent, handle);
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpOperationUtils::SendObjectInfo faild!");
+        MEDIA_ERR_LOG("MtpOperationUtils::SendObjectInfo fail!");
         data = make_shared<RespCommonData>();
         return CheckErrorCode(errorCode);
     }
@@ -752,13 +752,13 @@ uint16_t MtpOperationUtils::SetDevicePropValueResp(shared_ptr<PayloadData> &data
 uint16_t MtpOperationUtils::ResetDevicePropResp(shared_ptr<PayloadData> &data)
 {
     if (!SetPropertyInner("persist.device.name", DEFAULT_PRODUCT_NAME)) {
-        MEDIA_ERR_LOG("SetPropertyInner faild");
+        MEDIA_ERR_LOG("SetPropertyInner fail");
     }
     data = make_shared<RespCommonData>();
     return MTP_OK_CODE;
 }
 
-uint16_t MtpOperationUtils::ObjectEvent(shared_ptr<PayloadData> &data, const int32_t &payload)
+uint16_t MtpOperationUtils::ObjectEvent(shared_ptr<PayloadData> &data, const int32_t payload)
 {
     std::shared_ptr<ObjectEventData> eventData = make_shared<ObjectEventData>();
     eventData->SetPayload(payload);

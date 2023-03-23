@@ -19,6 +19,8 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
+uint32_t HeaderData::sTransactionID_ = 0;
+
 HeaderData::HeaderData(std::shared_ptr<MtpOperationContext> &context)
 {
     context_ = context;
@@ -54,6 +56,7 @@ int HeaderData::Parser(vector<uint8_t> &buffer, int32_t readSize)
 
     context_->operationCode = code_;
     context_->transactionID = transactionID_;
+    HeaderData::sTransactionID_ = transactionID_;
     MEDIA_INFO_LOG("operationCode %{public}x, transactionID %{public}d, containerType %{public}d",
         context_->operationCode, context_->transactionID, containerType_);
     if (containerType_ == CONTAINER_TYPE_2) {

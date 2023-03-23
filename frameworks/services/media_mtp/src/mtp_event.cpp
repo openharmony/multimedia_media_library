@@ -94,45 +94,40 @@ void MtpEvent::SendEvent(const int32_t &code)
 {
     shared_ptr<PayloadData> eventPayloadData;
 
-    uint16_t responseCode = EventPayloadData(code, mtpContextPtr_, eventPayloadData);
+    uint16_t responseCode = EventPayloadData(code, eventPayloadData);
     if (responseCode == MTP_UNDEFINED_CODE) {
         MEDIA_DEBUG_LOG("Mtp Event GetPayloadData Error");
     }
     shared_ptr<HeaderData> eventHeaderData =
-        make_shared<HeaderData>(EVENT_CONTAINER_TYPE, code, mtpContextPtr_->transactionID);
+        make_shared<HeaderData>(EVENT_CONTAINER_TYPE, code, HeaderData::sTransactionID_);
     shared_ptr<MtpPacket> eventPacketPtr = std::make_shared<MtpPacket>(mtpContextPtr_, mtpContextPtr_->mtpDriver);
     eventPacketPtr->Init(eventHeaderData, eventPayloadData);
     int errorCode = eventPacketPtr->Maker(true);
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpEvent::SendEvent  responsePacket Maker faild err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("MtpEvent::SendEvent  responsePacket Maker err: %{public}d", errorCode);
         return;
     }
     errorCode = eventPacketPtr->Write();
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpEvent::SendEvent responsePacket Write faild err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("MtpEvent::SendEvent responsePacket Write err: %{public}d", errorCode);
         return;
     }
 }
 
-uint16_t MtpEvent::EventPayloadData(const uint16_t &code, std::shared_ptr<MtpOperationContext> &context,
-    std::shared_ptr<PayloadData> &data)
+uint16_t MtpEvent::EventPayloadData(const uint16_t code, shared_ptr<PayloadData> &data)
 {
     uint16_t responseCode = MTP_UNDEFINED_CODE;
     if (handleptr_ == nullptr) {
-        handleptr_ = std::make_shared<MtpOperationUtils>(context);
+        handleptr_ = make_shared<MtpOperationUtils>(mtpContextPtr_);
     }
-    uint32_t payload;
     switch (code) {
         case MTP_EVENT_OBJECT_ADDED_CODE:
         case MTP_EVENT_OBJECT_REMOVED_CODE:
         case MTP_EVENT_OBJECT_INFO_CHANGED_CODE:
-            MEDIA_INFO_LOG("MtpEvent::EventPayloadData code is %{public}d", context->operationCode);
-            payload = mtpContextPtr_->eventHandle;
-            responseCode = handleptr_->ObjectEvent(data, payload);
+            responseCode = handleptr_->ObjectEvent(data, mtpContextPtr_->eventHandle);
             break;
         case MTP_EVENT_DEVICE_PROP_CHANGED_CODE:
-            payload = mtpContextPtr_->eventProperty;
-            responseCode = handleptr_->ObjectEvent(data, payload);
+            responseCode = handleptr_->ObjectEvent(data, mtpContextPtr_->eventProperty);
             break;
         default:
             break;

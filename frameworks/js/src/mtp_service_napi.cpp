@@ -76,12 +76,12 @@ napi_value MtpServiceNapi::StartMtpService(napi_env env, napi_callback_info info
     NAPI_DEBUG_LOG("StartMtpService IN");
 
     napi_value result = nullptr;
-    std::shared_ptr<OHOS::Media::MtpServcie> mtpService = OHOS::Media::MtpServcie::GetInstance();
+    std::shared_ptr<OHOS::Media::MtpService> mtpService = OHOS::Media::MtpService::GetInstance();
     if (mtpService != nullptr) {
         mtpService->StartService();
         NAPI_DEBUG_LOG("StartMtpService success");
     } else {
-        NAPI_ERR_LOG("StartMtpService faild");
+        NAPI_ERR_LOG("StartMtpService fail");
     }
     napi_get_undefined(env, &result);
     NAPI_DEBUG_LOG("StartMtpService OUT");
@@ -93,12 +93,12 @@ napi_value MtpServiceNapi::StopMtpService(napi_env env, napi_callback_info info)
     NAPI_DEBUG_LOG("StopMtpService IN");
 
     napi_value result = nullptr;
-    std::shared_ptr<OHOS::Media::MtpServcie> mtpService = OHOS::Media::MtpServcie::GetInstance();
+        std::shared_ptr<OHOS::Media::MtpService> mtpService = OHOS::Media::MtpService::GetInstance();
     if (mtpService != nullptr) {
         mtpService->StopService();
         NAPI_DEBUG_LOG("StopMtpService success");
     } else {
-        NAPI_ERR_LOG("StopMtpService faild");
+        NAPI_ERR_LOG("StopMtpService fail");
     }
 
     napi_get_undefined(env, &result);

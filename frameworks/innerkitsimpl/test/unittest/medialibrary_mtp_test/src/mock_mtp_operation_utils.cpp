@@ -630,13 +630,13 @@ uint16_t MtpOperationUtils::SetDevicePropValueResp(std::shared_ptr<PayloadData> 
 uint16_t MtpOperationUtils::ResetDevicePropResp(shared_ptr<PayloadData> &data)
 {
     if (!SetPropertyInner("persist.device.name", DEFAULT_PRODUCT_NAME)) {
-        MEDIA_ERR_LOG("SetPropertyInner faild");
+        MEDIA_ERR_LOG("SetPropertyInner fail");
     }
     data = make_shared<RespCommonData>();
     return MTP_OK_CODE;
 }
 
-uint16_t MtpOperationUtils::ObjectEvent(shared_ptr<PayloadData> &data, const int32_t &payload)
+uint16_t MtpOperationUtils::ObjectEvent(shared_ptr<PayloadData> &data, const int32_t payload)
 {
     std::shared_ptr<ObjectEventData> eventData = make_shared<ObjectEventData>();
     eventData->SetPayload(payload);

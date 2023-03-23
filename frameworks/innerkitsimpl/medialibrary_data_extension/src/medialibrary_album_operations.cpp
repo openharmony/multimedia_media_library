@@ -56,7 +56,7 @@ int32_t MediaLibraryAlbumOperations::ModifyAlbumOperation(MediaLibraryCommand &c
     auto values = cmd.GetValueBucket();
     string dstDirName;
     ValueObject valueObject;
-    if (values.GetObject(MEDIA_DATA_DB_ALBUM_NAME, valueObject)) {
+    if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
         valueObject.GetString(dstDirName);
     }
     string dstDirPath = MediaLibraryDataManagerUtils::GetParentPath(srcDirPath) + "/" + dstDirName;
