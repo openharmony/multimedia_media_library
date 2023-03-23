@@ -53,6 +53,7 @@ public:
         const bool exists, const NativeRdb::AbsRdbPredicates &predicates);
     static std::shared_ptr<NativeRdb::ResultSet> Query(const NativeRdb::AbsRdbPredicates &predicates,
         const std::vector<std::string> &columns);
+    static int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates);
 
 private:
     bool SubscribeRdbStoreObserver();

@@ -165,7 +165,7 @@ const std::string PhotoAlbum::ALBUM_COUNT = "count";
 // For api9 compatibility
 const std::string PhotoAlbum::ALBUM_RELATIVE_PATH = "relative_path";
 
-const std::string PhotoAlbum::ALBUM_URI_PREFIX = "'file://media/album/'";
+const std::string PhotoAlbum::ALBUM_URI_PREFIX = "file://media/album/";
 
 const std::string PhotoAlbum::CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " +
     TABLE + " (" +
@@ -181,14 +181,14 @@ const std::string PhotoAlbum::CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " +
 const std::string PhotoAlbum::TRIGGER_UPDATE_ALBUM_URI =
     "CREATE TRIGGER IF NOT EXISTS photo_album_update_uri AFTER INSERT ON " + TABLE +
     " BEGIN " +
-        "UPDATE " + TABLE + " SET " + ALBUM_URI + "=" + ALBUM_URI_PREFIX + "||" + "LAST_INSERT_ROWID() " +
+        "UPDATE " + TABLE + " SET " + ALBUM_URI + "='" + ALBUM_URI_PREFIX + "'||" + "LAST_INSERT_ROWID() " +
         "WHERE " + ALBUM_ID + "=" + "LAST_INSERT_ROWID();" +
     " END;";
 
 // PhotoMap table
 const std::string PhotoMap::TABLE = "PhotoMap";
-const std::string PhotoMap::ALBUM_ID = "album_id";
-const std::string PhotoMap::ASSET_ID = "asset_id";
+const std::string PhotoMap::ALBUM_ID = "map_album";
+const std::string PhotoMap::ASSET_ID = "map_asset";
 
 const std::string PhotoMap::CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE +
     " (" +
@@ -197,7 +197,15 @@ const std::string PhotoMap::CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE
     "PRIMARY KEY (" + ALBUM_ID + "," + ASSET_ID + ")" +
     ")";
 
-const std::string PhotoMap::INDEX_PRIMARY_KEY = "CREATE UNIQUE INDEX map_primary_key ON " + TABLE +
+const std::string PhotoMap::INDEX_PRIMARY_KEY = "CREATE INDEX map_primary_key ON " + TABLE +
     " (" + ALBUM_ID + "," + ASSET_ID + ");";
+
+const std::string PhotoAlbum::TRIGGER_CLEAR_MAP =
+    "CREATE TRIGGER IF NOT EXISTS photo_album_clear_map AFTER DELETE ON " + PhotoAlbum::TABLE +
+    " BEGIN " +
+        "DELETE FROM " + PhotoMap::TABLE +
+        " WHERE " + PhotoMap::ALBUM_ID + "=" + "OLD." + PhotoAlbum::ALBUM_ID + ";" +
+    " END;";
+
 }  // namespace Media
 }  // namespace OHOS
