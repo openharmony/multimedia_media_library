@@ -16,6 +16,7 @@
 #define FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_MTP_CONSTANTS_H_
 #include <vector>
 #include <stdint.h>
+#include <fcntl.h>
 
 struct MtpFileRange {
     // file descriptor for file to transfer
