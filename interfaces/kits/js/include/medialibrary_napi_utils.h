@@ -110,17 +110,12 @@
         }                                                           \
     } while (0)
 
-#define CHECK_ARGS(env, cond, context, err)                         \
+#define CHECK_ARGS(env, cond, err)                         \
     do {                                                            \
         if ((cond) != napi_ok) {                                    \
-            NAPI_THROW(env, context, err);                          \
+            NapiError::ThrowError(env, err);                        \
             return nullptr;                                         \
         }                                                           \
-    } while (0)
-
-#define NAPI_THROW(env, context, err)                               \
-    do {                                                            \
-        (context)->ThrowError(env, err);                            \
     } while (0)
 
 namespace OHOS {
@@ -133,6 +128,12 @@ static const std::vector<std::string> FILE_ASSET_COLUMNS = {
     MEDIA_DATA_DB_WIDTH, MEDIA_DATA_DB_HEIGHT, MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_DURATION,
     MEDIA_DATA_DB_BUCKET_ID, MEDIA_DATA_DB_BUCKET_NAME, MEDIA_DATA_DB_IS_TRASH, MEDIA_DATA_DB_IS_FAV,
     MEDIA_DATA_DB_DATE_TRASHED
+};
+
+static const std::vector<std::string> PHOTO_ALBUM_COLUMNS = {
+    PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE,
+    PhotoAlbumColumns::ALBUM_URI, PhotoAlbumColumns::ALBUM_COVER_URI, PhotoAlbumColumns::ALBUM_NAME,
+    PhotoAlbumColumns::ALBUM_COUNT
 };
 
 /* Constants for array index */
@@ -208,6 +209,10 @@ const std::vector<std::string> directoryEnumValues {
     "Audios/",
     "Documents/",
     "Download/"
+};
+
+const std::vector<std::string> systemAlbumSubType {
+    "VIDEO", "FAVORITE", "HIDDEN", "TRASH", "SCREENSHOTS", "CAMERA"
 };
 
 const std::vector<std::string> fileKeyEnumValues {
@@ -410,9 +415,12 @@ public:
     static bool CheckJSArgsTypeAsFunc(napi_env env, napi_value arg);
 
     static bool IsArrayForNapiValue(napi_env env, napi_value param, uint32_t &arraySize);
-private:
-    static napi_status hasCallback(napi_env env, const size_t argc, const napi_value argv[],
+
+    static napi_status HasCallback(napi_env env, const size_t argc, const napi_value argv[],
         bool &isCallback);
+
+    static napi_value GetInt32Arg(napi_env env, napi_value arg, int32_t &value);
+private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);
 };
 } // namespace Media

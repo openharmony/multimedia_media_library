@@ -132,5 +132,18 @@ ResultNapiType PhotoAlbum::GetResultNapiType() const
 {
     return resultNapiType_;
 }
+
+bool PhotoAlbum::CheckPhotoAlbumType(const PhotoAlbumType albumType)
+{
+    return (albumType == USER) || (albumType == SYSTEM);
+}
+
+bool PhotoAlbum::CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType)
+{
+    PhotoAlbumSubType systemStart = VIDEO;
+    PhotoAlbumSubType systemEnd = CAMERA;
+    return (albumSubType == USER_GENERIC) || ((albumSubType >= systemStart) && (albumSubType <= systemEnd)) ||
+        (albumSubType == ANY);
+}
 }  // namespace Media
 }  // namespace OHOS

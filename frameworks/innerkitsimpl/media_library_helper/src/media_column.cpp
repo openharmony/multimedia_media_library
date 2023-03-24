@@ -197,7 +197,7 @@ const std::string PhotoMap::CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE
     "PRIMARY KEY (" + ALBUM_ID + "," + ASSET_ID + ")" +
     ")";
 
-const std::string PhotoMap::INDEX_PRIMARY_KEY = "CREATE INDEX map_primary_key ON " + TABLE +
+const std::string PhotoMap::INDEX_PRIMARY_KEY = "CREATE INDEX IF NOT EXISTS map_primary_key ON " + TABLE +
     " (" + ALBUM_ID + "," + ASSET_ID + ");";
 
 const std::string PhotoAlbumColumns::TRIGGER_CLEAR_MAP =

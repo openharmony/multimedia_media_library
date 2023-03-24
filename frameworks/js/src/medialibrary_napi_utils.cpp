@@ -201,7 +201,7 @@ void MediaLibraryNapiUtils::GenTypeMaskFromArray(const vector<uint32_t> types, s
     }
 }
 
-napi_status MediaLibraryNapiUtils::hasCallback(napi_env env, const size_t argc, const napi_value argv[],
+napi_status MediaLibraryNapiUtils::HasCallback(napi_env env, const size_t argc, const napi_value argv[],
     bool &isCallback)
 {
     isCallback = false;
@@ -422,7 +422,7 @@ napi_status MediaLibraryNapiUtils::GetParamCallback(napi_env env, AsyncContext &
 {
     /* Parse the last argument into callbackref if any */
     bool isCallback = false;
-    CHECK_STATUS_RET(hasCallback(env, context->argc, context->argv, isCallback), "Failed to check callback");
+    CHECK_STATUS_RET(HasCallback(env, context->argc, context->argv, isCallback), "Failed to check callback");
     if (isCallback) {
         CHECK_STATUS_RET(GetParamFunction(env, context->argv[context->argc - 1], context->callbackRef),
             "Failed to get callback");
@@ -701,6 +701,23 @@ bool MediaLibraryNapiUtils::IsArrayForNapiValue(napi_env env, napi_value param, 
         return false;
     }
     return true;
+}
+
+napi_value MediaLibraryNapiUtils::GetInt32Arg(napi_env env, napi_value arg, int32_t &value)
+{
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, false, &result));
+
+    napi_valuetype valueType = napi_undefined;
+    NAPI_CALL(env, napi_typeof(env, arg, &valueType));
+    if (valueType != napi_number) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return result;
+    }
+    NAPI_CALL(env, napi_get_value_int32(env, arg, &value));
+
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    return result;
 }
 
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
