@@ -580,7 +580,8 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
         return errCode;
     }
     string dstFileName = MediaLibraryDataManagerUtils::GetFileName(dstFilePath);
-    if (ProcessNoMediaFile(dstFileName, dstAlbumPath) || ProcessHiddenFile(dstFileName, srcFilePath)) {
+    if ((ProcessNoMediaFile(dstFileName, dstAlbumPath) == E_SUCCESS) ||
+        (ProcessHiddenFile(dstFileName, srcFilePath) == E_SUCCESS)) {
         MEDIA_ERR_LOG("New file is a .nomedia file or hidden file.");
         // why: return fail insteal of success
         return E_FAIL;
@@ -737,7 +738,7 @@ void MediaLibraryObjectUtils::ScanFile(string &path)
     }
 }
 
-bool MediaLibraryObjectUtils::ProcessNoMediaFile(const string &dstFileName, const string &dstAlbumPath)
+int32_t MediaLibraryObjectUtils::ProcessNoMediaFile(const string &dstFileName, const string &dstAlbumPath)
 {
     MEDIA_DEBUG_LOG("enter, dstFileName = %{private}s, dstAlbumPath = %{private}s",
         dstFileName.c_str(), dstAlbumPath.c_str());
@@ -749,7 +750,7 @@ bool MediaLibraryObjectUtils::ProcessNoMediaFile(const string &dstFileName, cons
 
     if (dstFileName.empty() || dstAlbumPath.empty() || dstFileName != NO_MEDIA_TAG) {
         MEDIA_INFO_LOG("Not a .nomedia file, no need to do anything.");
-        return false;
+        return E_INVALID_ARGUMENTS;
     }
 
     // the whole folder containing .nomedia file is invisible in database
@@ -762,22 +763,22 @@ bool MediaLibraryObjectUtils::ProcessNoMediaFile(const string &dstFileName, cons
     if (uniStore->Delete(cmd, deletedRows) != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete rows for the hidden album failed");
     }
-    return true;
+    return E_SUCCESS;
 }
 
-bool MediaLibraryObjectUtils::ProcessHiddenFile(const string &dstFileName, const string &srcPath)
+int32_t MediaLibraryObjectUtils::ProcessHiddenFile(const string &dstFileName, const string &srcPath)
 {
     MEDIA_DEBUG_LOG("enter, dstFileName = %{private}s, srcPath = %{private}s",
         dstFileName.c_str(), srcPath.c_str());
     if (dstFileName.empty() || srcPath.empty() || dstFileName.at(0) != '.') {
         MEDIA_INFO_LOG("Not a hidden file (file name begin with \'.\'), no need to do anything.");
-        return false;
+        return E_INVALID_ARGUMENTS;
     }
     MediaLibraryCommand deleteCmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     if (DeleteInfoByPathInDb(deleteCmd, srcPath) != E_SUCCESS) {
         MEDIA_ERR_LOG("Delete rows for the old path failed");
     }
-    return true;
+    return E_SUCCESS;
 }
 
 int32_t MediaLibraryObjectUtils::ProcessHiddenDir(const string &dstDirName, const string &srcDirPath)
