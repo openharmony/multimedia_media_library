@@ -96,7 +96,7 @@ public:
     const static std::string CREATE_DOCUMENT_TABLE;
 };
 
-class PhotoAlbum {
+class PhotoAlbumColumns {
 public:
     // columns only in PhotoAlbumTable
     const static std::string ALBUM_ID;

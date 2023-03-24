@@ -20,10 +20,10 @@
 
 namespace OHOS {
 namespace Media {
-class PhotoAlbumAsset {
+class PhotoAlbum {
 public:
-    PhotoAlbumAsset();
-    virtual ~PhotoAlbumAsset();
+    PhotoAlbum();
+    virtual ~PhotoAlbum();
 
     void SetAlbumId(const int32_t photoAlbumId);
     int32_t GetAlbumId() const;

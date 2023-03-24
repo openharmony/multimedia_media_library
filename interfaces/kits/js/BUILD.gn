@@ -105,18 +105,19 @@ ohos_shared_library("medialibrary") {
   version_script = "libmedialibrary.map"
 
   sources = [
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/src/media_thumbnail_helper.cpp",
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_data_manager_utils.cpp",
-    "//foundation/multimedia/media_library/frameworks/js/src/album_napi.cpp",
-    "//foundation/multimedia/media_library/frameworks/js/src/fetch_file_result_napi.cpp",
-    "//foundation/multimedia/media_library/frameworks/js/src/file_asset_napi.cpp",
-    "//foundation/multimedia/media_library/frameworks/js/src/media_library_napi.cpp",
-    "//foundation/multimedia/media_library/frameworks/js/src/media_scanner_napi.cpp",
-    "//foundation/multimedia/media_library/frameworks/js/src/medialibrary_napi_utils.cpp",
-    "//foundation/multimedia/media_library/frameworks/js/src/napi_error.cpp",
-    "//foundation/multimedia/media_library/frameworks/js/src/native_module_ohos_medialibrary.cpp",
-    "//foundation/multimedia/media_library/frameworks/js/src/smart_album_napi.cpp",
-    "//foundation/multimedia/media_library/frameworks/js/src/userfile_client.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/media_library_helper/src/media_thumbnail_helper.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_data_manager_utils.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/album_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/fetch_file_result_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/file_asset_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/media_library_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/media_scanner_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/medialibrary_napi_utils.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/napi_error.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/native_module_ohos_medialibrary.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/photo_album_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/smart_album_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/userfile_client.cpp",
   ]
 
   deps = [
@@ -161,18 +162,19 @@ ohos_shared_library("userfilemanager") {
   configs = [ ":napi_config" ]
 
   sources = [
-    "../../../frameworks/innerkitsimpl/media_library_helper/src/media_thumbnail_helper.cpp",
-    "../../../frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_data_manager_utils.cpp",
-    "../../../frameworks/js/src/album_napi.cpp",
-    "../../../frameworks/js/src/fetch_file_result_napi.cpp",
-    "../../../frameworks/js/src/file_asset_napi.cpp",
-    "../../../frameworks/js/src/media_library_napi.cpp",
-    "../../../frameworks/js/src/media_scanner_napi.cpp",
-    "../../../frameworks/js/src/medialibrary_napi_utils.cpp",
-    "../../../frameworks/js/src/napi_error.cpp",
-    "../../../frameworks/js/src/native_module_ohos_userfile_manager.cpp",
-    "../../../frameworks/js/src/smart_album_napi.cpp",
-    "../../../frameworks/js/src/userfile_client.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/media_library_helper/src/media_thumbnail_helper.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_data_manager_utils.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/album_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/fetch_file_result_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/file_asset_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/media_library_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/media_scanner_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/medialibrary_napi_utils.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/napi_error.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/native_module_ohos_userfile_manager.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/photo_album_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/smart_album_napi.cpp",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/js/src/userfile_client.cpp",
   ]
 
   deps = [

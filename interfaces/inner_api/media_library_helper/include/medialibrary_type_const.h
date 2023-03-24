@@ -80,7 +80,8 @@ enum class DataType : int32_t {
 enum class FetchResType : int32_t {
     TYPE_FILE = 1,
     TYPE_ALBUM,
-    TYPE_SMARTALBUM
+    TYPE_SMARTALBUM,
+    TYPE_PHOTOALBUM
 };
 
 const int32_t SUCCESS = 0;

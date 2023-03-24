@@ -71,6 +71,8 @@ FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &res
         fetchResType_ = FetchResType::TYPE_FILE;
     } else if (std::is_same<T, AlbumAsset>::value) {
         fetchResType_ = FetchResType::TYPE_ALBUM;
+    } else if (std::is_same<T, PhotoAlbum>::value) {
+        fetchResType_ = FetchResType::TYPE_PHOTOALBUM;
     } else if (std::is_same<T, SmartAlbumAsset>::value) {
         fetchResType_ = FetchResType::TYPE_SMARTALBUM;
     } else {
@@ -288,7 +290,7 @@ static string GetFileMediaTypeUri(MediaType mediaType, const string &networkId)
     }
 }
 
-static void MediaTypeToMask(MediaType mediaType, std::string &typeMask)
+static void MediaTypeToMask(MediaType mediaType, string &typeMask)
 {
     typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
     if ((mediaType >= MEDIA_TYPE_FILE) && (mediaType <= MEDIA_TYPE_AUDIO)) {
@@ -341,19 +343,25 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
 }
 
 template<class T>
-void FetchResult<T>::GetObjectFromAsset(FileAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
+void FetchResult<T>::GetObjectFromResultSet(FileAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     SetFileAsset(asset, resultSet);
 }
 
 template<class T>
-void FetchResult<T>::GetObjectFromAsset(AlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
+void FetchResult<T>::GetObjectFromResultSet(AlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     SetAlbumAsset(asset, resultSet);
 }
 
 template<class T>
-void FetchResult<T>::GetObjectFromAsset(SmartAlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
+void FetchResult<T>::GetObjectFromResultSet(PhotoAlbum *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    SetPhotoAlbum(asset, resultSet);
+}
+
+template<class T>
+void FetchResult<T>::GetObjectFromResultSet(SmartAlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     SetSmartAlbumAsset(asset, resultSet);
 }
@@ -362,7 +370,7 @@ template<class T>
 unique_ptr<T> FetchResult<T>::GetObject(shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     unique_ptr<T> asset = make_unique<T>();
-    GetObjectFromAsset(asset.get(), resultSet);
+    GetObjectFromResultSet(asset.get(), resultSet);
     return asset;
 }
 
@@ -408,8 +416,27 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
 }
 
 template<class T>
-void FetchResult<T>::SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData,
-    std::shared_ptr<NativeRdb::ResultSet> &resultSet)
+void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    photoAlbumData->SetAlbumId(get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_ID, TYPE_INT32, resultSet)));
+    photoAlbumData->SetPhotoAlbumType(static_cast<PhotoAlbumType>(
+        get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32, resultSet))));
+    photoAlbumData->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(
+        get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, resultSet))));
+    photoAlbumData->SetAlbumUri(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_URI, TYPE_STRING, resultSet)));
+    photoAlbumData->SetAlbumName(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_NAME, TYPE_STRING,
+        resultSet)));
+    photoAlbumData->SetRelativePath(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, TYPE_STRING,
+        resultSet)));
+    photoAlbumData->SetCount(get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, TYPE_INT32, resultSet)));
+    photoAlbumData->SetCoverUri(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_COVER_URI, TYPE_STRING,
+        resultSet)));
+    photoAlbumData->SetResultNapiType(resultNapiType_);
+    photoAlbumData->SetTypeMask(typeMask_);
+}
+
+template<class T>
+void FetchResult<T>::SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     smartAlbumData->SetAlbumId(get<int32_t>(GetRowValFromColumn(SMARTALBUM_DB_ID, TYPE_INT32, resultSet)));
     smartAlbumData->SetAlbumName(get<string>(GetRowValFromColumn(SMARTALBUM_DB_NAME, TYPE_STRING, resultSet)));
@@ -420,6 +447,7 @@ void FetchResult<T>::SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData,
 
 template class FetchResult<FileAsset>;
 template class FetchResult<AlbumAsset>;
+template class FetchResult<PhotoAlbum>;
 template class FetchResult<SmartAlbumAsset>;
 }  // namespace Media
 }  // namespace OHOS
