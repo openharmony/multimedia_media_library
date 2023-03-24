@@ -17,6 +17,7 @@
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_NATIVE_MODULE_OHOS_MEDIALIBRARY_H_
 
 #include "album_napi.h"
+#include "photo_album_napi.h"
 #include "smart_album_napi.h"
 #include "fetch_file_result_napi.h"
 #include "file_asset_napi.h"

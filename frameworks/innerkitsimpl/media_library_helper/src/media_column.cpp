@@ -153,21 +153,21 @@ const std::string DocumentColumn::CREATE_DOCUMENT_TABLE = "CREATE TABLE IF NOT E
     DOCUMENT_LCD + " TEXT, " +
     DOCUMENT_LCD_VISIT_TIME + " BIGINT DEFAULT 0)";
 
-// PhotoAlbum table
-const std::string PhotoAlbum::TABLE = "PhotoAlbum";
-const std::string PhotoAlbum::ALBUM_ID = "album_id";
-const std::string PhotoAlbum::ALBUM_TYPE = "album_type";
-const std::string PhotoAlbum::ALBUM_SUBTYPE = "album_subtype";
-const std::string PhotoAlbum::ALBUM_URI = "album_uri";
-const std::string PhotoAlbum::ALBUM_NAME = "album_name";
-const std::string PhotoAlbum::ALBUM_COVER_URI = "cover_uri";
-const std::string PhotoAlbum::ALBUM_COUNT = "count";
+// PhotoAlbumColumns table
+const std::string PhotoAlbumColumns::TABLE = "PhotoAlbum";
+const std::string PhotoAlbumColumns::ALBUM_ID = "album_id";
+const std::string PhotoAlbumColumns::ALBUM_TYPE = "album_type";
+const std::string PhotoAlbumColumns::ALBUM_SUBTYPE = "album_subtype";
+const std::string PhotoAlbumColumns::ALBUM_URI = "album_uri";
+const std::string PhotoAlbumColumns::ALBUM_NAME = "album_name";
+const std::string PhotoAlbumColumns::ALBUM_COVER_URI = "cover_uri";
+const std::string PhotoAlbumColumns::ALBUM_COUNT = "count";
 // For api9 compatibility
-const std::string PhotoAlbum::ALBUM_RELATIVE_PATH = "relative_path";
+const std::string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
 
-const std::string PhotoAlbum::ALBUM_URI_PREFIX = "file://media/album/";
+const std::string PhotoAlbumColumns::ALBUM_URI_PREFIX = "file://media/album/";
 
-const std::string PhotoAlbum::CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " +
+const std::string PhotoAlbumColumns::CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " +
     TABLE + " (" +
     ALBUM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     ALBUM_TYPE + " INT, " +
@@ -178,7 +178,7 @@ const std::string PhotoAlbum::CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " +
     ALBUM_COUNT + " INT DEFAULT 0, " +
     ALBUM_RELATIVE_PATH + " TEXT)";
 
-const std::string PhotoAlbum::TRIGGER_UPDATE_ALBUM_URI =
+const std::string PhotoAlbumColumns::TRIGGER_UPDATE_ALBUM_URI =
     "CREATE TRIGGER IF NOT EXISTS photo_album_update_uri AFTER INSERT ON " + TABLE +
     " BEGIN " +
         "UPDATE " + TABLE + " SET " + ALBUM_URI + "='" + ALBUM_URI_PREFIX + "'||" + "LAST_INSERT_ROWID() " +
@@ -200,11 +200,11 @@ const std::string PhotoMap::CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE
 const std::string PhotoMap::INDEX_PRIMARY_KEY = "CREATE INDEX map_primary_key ON " + TABLE +
     " (" + ALBUM_ID + "," + ASSET_ID + ");";
 
-const std::string PhotoAlbum::TRIGGER_CLEAR_MAP =
-    "CREATE TRIGGER IF NOT EXISTS photo_album_clear_map AFTER DELETE ON " + PhotoAlbum::TABLE +
+const std::string PhotoAlbumColumns::TRIGGER_CLEAR_MAP =
+    "CREATE TRIGGER IF NOT EXISTS photo_album_clear_map AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
     " BEGIN " +
         "DELETE FROM " + PhotoMap::TABLE +
-        " WHERE " + PhotoMap::ALBUM_ID + "=" + "OLD." + PhotoAlbum::ALBUM_ID + ";" +
+        " WHERE " + PhotoMap::ALBUM_ID + "=" + "OLD." + PhotoAlbumColumns::ALBUM_ID + ";" +
     " END;";
 
 }  // namespace Media

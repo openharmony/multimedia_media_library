@@ -24,6 +24,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_db_const.h"
 #include "rdb_errno.h"
+#include "photo_album.h"
 #include "smart_album_asset.h"
 #include "userfile_manager_types.h"
 
@@ -77,14 +78,18 @@ private:
     std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     std::variant<int32_t, int64_t, std::string> GetRowValFromColumn(std::string columnName,
         ResultSetDataType dataType, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
-    std::variant<int32_t, int64_t, string> GetValByIndex(int32_t index, ResultSetDataType dataType,
+    std::variant<int32_t, int64_t, std::string> GetValByIndex(int32_t index, ResultSetDataType dataType,
         std::shared_ptr<NativeRdb::ResultSet> &resultSet);
+
     void SetFileAsset(FileAsset *fileAsset, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     void SetAlbumAsset(AlbumAsset* albumData, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
+    void SetPhotoAlbum(PhotoAlbum* photoAlbumData, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     void SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
-    void GetObjectFromAsset(FileAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
-    void GetObjectFromAsset(AlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
-    void GetObjectFromAsset(SmartAlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
+
+    void GetObjectFromResultSet(FileAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
+    void GetObjectFromResultSet(AlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
+    void GetObjectFromResultSet(PhotoAlbum *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
+    void GetObjectFromResultSet(SmartAlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
 };
 } // namespace Media
 } // namespace OHOS
