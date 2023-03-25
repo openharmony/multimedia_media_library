@@ -187,6 +187,7 @@ private:
     static napi_value CreateAlbumSubTypeEnum(napi_env env);
 
     static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
+    static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
     static napi_value GetPhotoAlbums(napi_env env, napi_callback_info info);
 
     int32_t GetListenerType(const std::string &str) const;
