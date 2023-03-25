@@ -47,9 +47,8 @@ bool MediaLibrarySyncTable::SyncPullAllTableByNetworkId(
     return true;
 }
 
-bool MediaLibrarySyncTable::SyncPullTable(
-    const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName, const std::string &tableName,
-    std::vector<std::string> &devices, bool isLast)
+bool MediaLibrarySyncTable::SyncPullTable(const shared_ptr<RdbStore> &rdbStore, const std::string &bundleName,
+    const std::string &tableName, std::vector<std::string> &devices)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Rdb Store is not initialized");
     // start sync
@@ -57,7 +56,7 @@ bool MediaLibrarySyncTable::SyncPullTable(
     option.mode = DistributedRdb::SyncMode::PULL;
     option.isBlock = true;
 
-    NativeRdb::AbsRdbPredicates predicate(tableName.c_str());
+    NativeRdb::AbsRdbPredicates predicate(tableName);
     (devices.size() > 0) ? predicate.InDevices(devices) : predicate.InAllDevices();
 
     DistributedRdb::SyncCallback callback = [tableName](const DistributedRdb::SyncResult& syncResult) {
@@ -72,8 +71,9 @@ bool MediaLibrarySyncTable::SyncPullTable(
                     tableName.c_str(), iter->first.c_str(), iter->second);
                 continue;
             }
-            if (tableName == MEDIALIBRARY_TABLE) {
-                MediaLibraryDevice::GetInstance()->UpdateDeviceSyncStatus(iter->first, DEVICE_SYNCSTATUS_COMPLETE);
+            if (tableName == MEDIALIBRARY_TABLE || tableName == PhotoColumn::PHOTOS_TABLE) {
+                MediaLibraryDevice::GetInstance()->UpdateDeviceSyncStatus(iter->first, tableName,
+                    DEVICE_SYNCSTATUS_COMPLETE);
             }
             MEDIA_ERR_LOG("SyncPullTable tableName = %{public}s device = %{private}s success",
                 tableName.c_str(), iter->first.c_str());

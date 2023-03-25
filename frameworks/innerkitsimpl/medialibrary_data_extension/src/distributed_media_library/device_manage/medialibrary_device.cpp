@@ -321,7 +321,8 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     return true;
 }
 
-bool MediaLibraryDevice::UpdateDeviceSyncStatus(const std::string &networkId, int32_t syncStatus)
+bool MediaLibraryDevice::UpdateDeviceSyncStatus(const std::string &networkId,
+    const string &tableName, int32_t syncStatus)
 {
     std::string udid;
     {
@@ -333,10 +334,11 @@ bool MediaLibraryDevice::UpdateDeviceSyncStatus(const std::string &networkId, in
         }
         udid = iter->second.deviceUdid;
     }
-    return MediaLibraryDeviceOperations::UpdateSyncStatus(rdbStore_, udid, syncStatus);
+    return MediaLibraryDeviceOperations::UpdateSyncStatus(rdbStore_, udid, tableName, syncStatus);
 }
 
-bool MediaLibraryDevice::GetDeviceSyncStatus(const std::string &networkId, int32_t &syncStatus)
+bool MediaLibraryDevice::GetDeviceSyncStatus(const std::string &networkId, const std::string &tableName,
+    int32_t &syncStatus)
 {
     std::string udid;
     {
@@ -348,7 +350,7 @@ bool MediaLibraryDevice::GetDeviceSyncStatus(const std::string &networkId, int32
         }
         udid = info->second.deviceUdid;
     }
-    return MediaLibraryDeviceOperations::GetSyncStatusById(rdbStore_, udid, syncStatus);
+    return MediaLibraryDeviceOperations::GetSyncStatusById(rdbStore_, udid, tableName, syncStatus);
 }
 
 std::string MediaLibraryDevice::GetUdidByNetworkId(std::string &networkId)
