@@ -48,7 +48,6 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetBundleName(context->GetBundleName());
     config_.SetArea(context->GetArea());
     config_.SetReadConSize(RDB_CONNECT_NUM);
-    Init();
 }
 
 int32_t MediaLibraryRdbStore::Init()
@@ -353,17 +352,17 @@ std::string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
 }
 
 bool MediaLibraryRdbStore::SyncPullTable(const std::string &bundleName, const std::string &tableName,
-                                         const std::vector<std::string> &devices, bool isLast)
+    const std::vector<std::string> &devices)
 {
     std::vector<std::string> devList(devices);
-    return MediaLibrarySyncTable::SyncPullTable(rdbStore_, bundleName, tableName, devList, isLast);
+    return MediaLibrarySyncTable::SyncPullTable(rdbStore_, bundleName, tableName, devList);
 }
 
 bool MediaLibraryRdbStore::SyncPushTable(const std::string &bundleName, const std::string &tableName,
-                                         const std::vector<std::string> &devices, bool isLast)
+    const std::vector<std::string> &devices, bool isBlock)
 {
     std::vector<std::string> devList(devices);
-    return MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName, tableName, devList, isLast);
+    return MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName, tableName, devList, isBlock);
 }
 
 int32_t MediaLibraryDataCallBack::PrepareDir(RdbStore &store)

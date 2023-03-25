@@ -59,8 +59,8 @@ public:
     bool InitDeviceRdbStore(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void NotifyDeviceChange();
     void NotifyRemoteFileChange();
-    bool UpdateDeviceSyncStatus(const std::string &networkId, int32_t syncStatus);
-    bool GetDeviceSyncStatus(const std::string &networkId, int32_t &syncStatus);
+    bool UpdateDeviceSyncStatus(const std::string &networkId, const std::string &tableName, int32_t syncStatus);
+    bool GetDeviceSyncStatus(const std::string &networkId, const std::string &tableName, int32_t &syncStatus);
     bool GetDeviceIdByNetworkId(const std::string &networkId, std::string &deviceId);
     std::string GetNetworkIdBySelfId(const std::string &selfId);
     std::string GetUdidByNetworkId(std::string &networkId);

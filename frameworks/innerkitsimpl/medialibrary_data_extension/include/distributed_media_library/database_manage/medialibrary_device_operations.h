@@ -46,9 +46,9 @@ public:
         const OHOS::Media::MediaLibraryDeviceInfo &deviceInfo, const std::string &bundleName);
     static bool DeleteDeviceInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &udid);
     static bool UpdateSyncStatus(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &udid,
-        int32_t syncStatus);
+        const std::string &tableName, int32_t syncStatus);
     static bool GetSyncStatusById(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &udid,
-        int32_t &syncStatus);
+        const std::string &tableName, int32_t &syncStatus);
     static bool QueryDeviceTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         std::map<std::string, std::set<int>> &excludeMap);
     static bool GetAllDeviceData(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,

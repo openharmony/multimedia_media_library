@@ -127,12 +127,12 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateDeviceSyncStatus_test_001, Test
     string networkIdTest = "UpdateDeviceSyncStatus";
     int32_t syncStatus = 1;
     deviceTest->Start();
-    bool ret = deviceTest->UpdateDeviceSyncStatus(networkIdTest, syncStatus);
+    bool ret = deviceTest->UpdateDeviceSyncStatus(networkIdTest, MEDIALIBRARY_TABLE, syncStatus);
     EXPECT_EQ(ret, false);
     OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
     deviceInfo.networkId[0] = 'a';
     deviceTest->DevOnlineProcess(deviceInfo);
-    ret = deviceTest->UpdateDeviceSyncStatus(networkIdTest, syncStatus);
+    ret = deviceTest->UpdateDeviceSyncStatus(networkIdTest, MEDIALIBRARY_TABLE, syncStatus);
     EXPECT_EQ(ret, false);
     deviceTest->Stop();
 }
