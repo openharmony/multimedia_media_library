@@ -183,7 +183,11 @@ private:
     static napi_value CreateImageVideoKeyEnum(napi_env env);
     static napi_value CreateAlbumKeyEnum(napi_env env);
 
+    static napi_value CreateAlbumTypeEnum(napi_env env);
+    static napi_value CreateAlbumSubTypeEnum(napi_env env);
+
     static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
+    static napi_value GetPhotoAlbums(napi_env env, napi_callback_info info);
 
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
@@ -203,6 +207,8 @@ private:
     static thread_local napi_ref sAudioKeyEnumRef_;
     static thread_local napi_ref sImageVideoKeyEnumRef_;
     static thread_local napi_ref sAlbumKeyEnumRef_;
+    static thread_local napi_ref sAlbumType_;
+    static thread_local napi_ref sAlbumSubType_;
 
     static std::mutex sUserFileClientMutex_;
 };

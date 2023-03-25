@@ -34,12 +34,6 @@ PhotoAlbumNapi::PhotoAlbumNapi() : env_(nullptr) {}
 
 PhotoAlbumNapi::~PhotoAlbumNapi() = default;
 
-napi_status NapiThrow(napi_env env, int32_t error)
-{
-    string errMsg = jsErrMap.at(error);
-    return napi_throw_error(env, to_string(error).c_str(), errMsg.c_str());
-}
-
 napi_value PhotoAlbumNapi::Init(napi_env env, napi_value exports)
 {
     NapiClassInfo info = {
@@ -63,7 +57,7 @@ napi_value PhotoAlbumNapi::Init(napi_env env, napi_value exports)
 napi_value PhotoAlbumNapi::CreatePhotoAlbumNapi(napi_env env, unique_ptr<PhotoAlbum> &albumData)
 {
     if (albumData == nullptr) {
-        NAPI_CALL(env, NapiThrow(env, JS_ERR_PARAMETER_INVALID));
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
 
@@ -127,14 +121,14 @@ napi_value PhotoAlbumNapi::PhotoAlbumNapiConstructor(napi_env env, napi_callback
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     if (thisVar == nullptr) {
-        NAPI_CALL(env, NapiThrow(env, JS_ERR_PARAMETER_INVALID));
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
     }
 
     std::unique_ptr<PhotoAlbumNapi> obj = std::make_unique<PhotoAlbumNapi>();
     obj->env_ = env;
     if (pAlbumData_ == nullptr) {
-        NAPI_CALL(env, NapiThrow(env, JS_ERR_PARAMETER_INVALID));
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
     }
     obj->SetPhotoAlbumNapiProperties();
@@ -161,13 +155,13 @@ napi_value UnwrapPhotoAlbumObject(napi_env env, napi_callback_info info, PhotoAl
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     if (thisVar == nullptr) {
-        NAPI_CALL(env, NapiThrow(env, JS_ERR_PARAMETER_INVALID));
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
     }
 
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(obj)));
     if (obj == nullptr) {
-        NAPI_CALL(env, NapiThrow(env, JS_ERR_PARAMETER_INVALID));
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
     }
 
@@ -247,7 +241,7 @@ napi_value GetStringArg(napi_env env, napi_callback_info info, PhotoAlbumNapi **
     NAPI_CALL(env, napi_get_undefined(env, &result));
     napi_valuetype valueType = napi_undefined;
     if ((thisVar == nullptr) || (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok) || (valueType != napi_string)) {
-        NAPI_CALL(env, NapiThrow(env, JS_ERR_PARAMETER_INVALID));
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
     }
 
@@ -258,7 +252,7 @@ napi_value GetStringArg(napi_env env, napi_callback_info info, PhotoAlbumNapi **
 
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj)));
     if (obj == nullptr) {
-        NAPI_CALL(env, NapiThrow(env, JS_ERR_PARAMETER_INVALID));
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
     }
 
