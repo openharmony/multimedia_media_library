@@ -1265,7 +1265,7 @@ napi_value SmartAlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info
 
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_IMAGE);
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
-    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext), asyncContext,
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext),
         JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
@@ -1332,7 +1332,7 @@ napi_value SmartAlbumNapi::UserFileMgrRecoverAsset(napi_env env, napi_callback_i
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "AsyncContext context is null");
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
-        asyncContext, JS_ERR_PARAMETER_INVALID);
+        JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
     asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
@@ -1394,7 +1394,7 @@ napi_value SmartAlbumNapi::UserFileMgrDeleteAsset(napi_env env, napi_callback_in
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "AsyncContext context is null");
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
-        asyncContext, JS_ERR_PARAMETER_INVALID);
+        JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
 

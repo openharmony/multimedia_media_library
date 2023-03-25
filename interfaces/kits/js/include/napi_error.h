@@ -31,7 +31,7 @@ struct NapiError {
     void SaveError(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
     void SaveError(int32_t ret);
     void HandleError(napi_env env, napi_value &errorObj);
-    void ThrowError(napi_env env, int32_t err);
+    static void ThrowError(napi_env env, int32_t err);
 };
 } // namespace Media
 } // namespace OHOS

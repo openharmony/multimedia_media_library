@@ -302,7 +302,7 @@ const std::string DISTRIBUTED_ALBUM_WHERE_AND_GROUPBY = " WHERE " +
                                                         FILE_TABLE + "." + MEDIA_DATA_DB_BUCKET_NAME + ", " +
                                                         FILE_TABLE + "." + MEDIA_DATA_DB_MEDIA_TYPE + ", " +
                                                         ALBUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
-const std::string CREATE_ALBUM_VIEW = "CREATE VIEW " + ALBUM_VIEW_NAME +
+const std::string CREATE_ALBUM_VIEW = "CREATE VIEW IF NOT EXISTS " + ALBUM_VIEW_NAME +
                                       " AS " + DISTRIBUTED_ALBUM_COLUMNS +
                                       " FROM Files " + FILE_TABLE + ", " +
                                       " Files " + ALBUM_TABLE +
@@ -392,7 +392,7 @@ const std::string CATEGORY_SMARTALBUMMAP_TABLE_NAME = "categorySmartAlbumMap";
 const std::string SMARTALBUMASSETS_VIEW_NAME = "SmartAsset";
 const std::string SMARTALBUMASSETS_ALBUMCAPACITY = "size";
 const std::string SMARTABLUMASSETS_PARENTID = "parentid";
-const std::string CREATE_SMARTALBUMASSETS_VIEW = "CREATE VIEW " + SMARTALBUMASSETS_VIEW_NAME +
+const std::string CREATE_SMARTALBUMASSETS_VIEW = "CREATE VIEW IF NOT EXISTS " + SMARTALBUMASSETS_VIEW_NAME +
                         " AS SELECT COUNT(" +
                         MEDIALIBRARY_TABLE + "."+ MEDIA_DATA_DB_DATE_TRASHED + " = 0 OR (" +
                         SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID + " = " +
@@ -422,7 +422,7 @@ const std::string CREATE_SMARTALBUMASSETS_VIEW = "CREATE VIEW " + SMARTALBUMASSE
                         SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_ID + " ), " +
                         SMARTALBUM_TABLE_NAME + "." + SMARTALBUM_DB_SELF_ID;
 const std::string ASSETMAP_VIEW_NAME = "AssetMap";
-const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW " + ASSETMAP_VIEW_NAME +
+const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW IF NOT EXISTS " + ASSETMAP_VIEW_NAME +
                         " AS SELECT * FROM " +
                         MEDIALIBRARY_TABLE + " a " + ", " +
                         SMARTALBUM_MAP_TABLE + " b " +

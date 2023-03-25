@@ -864,7 +864,7 @@ napi_value AlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info info
 
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_IMAGE);
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
-    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext), asyncContext,
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext),
         JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
@@ -884,8 +884,7 @@ napi_value AlbumNapi::UserFileMgrCommitModify(napi_env env, napi_callback_info i
     unique_ptr<AlbumNapiAsyncContext> asyncContext = make_unique<AlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext), asyncContext,
-        JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext), JS_ERR_PARAMETER_INVALID);
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
     asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "AlbumAsset is nullptr");

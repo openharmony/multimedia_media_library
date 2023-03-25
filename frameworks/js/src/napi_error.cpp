@@ -52,7 +52,7 @@ void NapiError::ThrowError(napi_env env, int32_t err)
         errMessage = jsErrMap.at(err);
     }
     NAPI_ERR_LOG("ThrowError errCode:%{public}d errMessage:%{public}s", err, errMessage.c_str());
-    napi_throw_error(env, errCode.c_str(), errMessage.c_str());
+    NAPI_CALL_RETURN_VOID(env, napi_throw_error(env, errCode.c_str(), errMessage.c_str()));
 }
 } // namespace Media
 } // namespace OHOS

@@ -2168,14 +2168,14 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
 
     string inputKey;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, inputKey), asyncContext,
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, inputKey),
         JS_ERR_PARAMETER_INVALID);
     napi_value jsResult = nullptr;
     auto obj = asyncContext->objectInfo;
     napi_get_undefined(env, &jsResult);
     if (obj->fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
         // no exist throw error
-        NAPI_THROW(env, asyncContext, JS_E_FILE_KEY);
+        NapiError::ThrowError(env, JS_E_FILE_KEY);
         return jsResult;
     }
     auto m = obj->fileAssetPtr->GetMemberMap().at(inputKey);
@@ -2186,7 +2186,7 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     } else if (m.index() == MEMBER_TYPE_INT64) {
         napi_create_int64(env, get<int64_t>(m), &jsResult);
     } else {
-        NAPI_THROW(env, asyncContext, JS_ERR_PARAMETER_INVALID);
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return jsResult;
     }
     return jsResult;
@@ -2220,16 +2220,16 @@ napi_value FileAssetNapi::UserFileMgrSet(napi_env env, napi_callback_info info)
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
     string inputKey;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, inputKey), asyncContext,
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, inputKey),
         JS_ERR_PARAMETER_INVALID);
     string value;
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[ARGS_ONE], value),
-        asyncContext, JS_ERR_PARAMETER_INVALID);
+        JS_ERR_PARAMETER_INVALID);
     napi_value jsResult = nullptr;
     napi_get_undefined(env, &jsResult);
     auto obj = asyncContext->objectInfo;
     if (!obj->HandleParamSet(inputKey, value)) {
-        NAPI_THROW(env, asyncContext, JS_E_FILE_KEY);
+        NapiError::ThrowError(env, JS_E_FILE_KEY);
         return jsResult;
     }
     return jsResult;
