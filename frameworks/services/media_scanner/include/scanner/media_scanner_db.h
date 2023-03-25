@@ -51,7 +51,6 @@ public:
     std::string GetFileDBUriFromPath(const std::string &path);
     std::vector<std::string> BatchInsert(const std::vector<Metadata> &metadataList);
 
-    int32_t UpdateMetadata(const std::vector<Metadata> &metadataList);
     int32_t InsertAlbum(const Metadata &metadata);
     int32_t UpdateAlbum(const Metadata &metadata);
     int32_t ReadAlbums(const std::string &path, std::unordered_map<std::string, Metadata> &albumMap);
