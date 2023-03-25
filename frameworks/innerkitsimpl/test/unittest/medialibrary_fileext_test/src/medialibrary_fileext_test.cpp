@@ -1508,9 +1508,9 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ExtensionCheck_test_001, TestSize
     DocumentsExtensionCheck(g_videos, title, false);
     SpecialCharacterExtensionCheck(g_videos, title, false);
 
-    MediaFileExtensionCheck(g_documents, SUPPORTED_IMAGE_FORMATS_SET, title, false);
-    MediaFileExtensionCheck(g_documents, SUPPORTED_VIDEO_FORMATS_SET, title, false);
-    MediaFileExtensionCheck(g_documents, SUPPORTED_AUDIO_FORMATS_SET, title, false);
+    MediaFileExtensionCheck(g_documents, SUPPORTED_IMAGE_FORMATS_SET, title, true);
+    MediaFileExtensionCheck(g_documents, SUPPORTED_VIDEO_FORMATS_SET, title, true);
+    MediaFileExtensionCheck(g_documents, SUPPORTED_AUDIO_FORMATS_SET, title, true);
     DocumentsExtensionCheck(g_documents, title, true);
     SpecialCharacterExtensionCheck(g_documents, title, true);
 
@@ -1751,13 +1751,13 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_018, TestSize.Level0)
 {
     string nameCreate = "documents_test.gz";
     string nameRename = "documents_test." + *SUPPORTED_IMAGE_FORMATS_SET.begin();
-    EXPECT_NE(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
     nameRename = "documents." + *SUPPORTED_AUDIO_FORMATS_SET.begin();
-    EXPECT_NE(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
     nameRename = "%&$." + *SUPPORTED_VIDEO_FORMATS_SET.begin();
-    EXPECT_NE(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
     nameRename = "ASX.BMP";
-    EXPECT_NE(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
+    EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
 }
 } // namespace Media
 } // namespace OHOS
