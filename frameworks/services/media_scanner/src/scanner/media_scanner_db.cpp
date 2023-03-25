@@ -155,23 +155,6 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
 }
 
 /**
- * @brief Do a batch update of Metadata list
- *
- * @param metadataList The list of metadata to update in the media db
- * @return int32_t Status of the update operation
- */
-int32_t MediaScannerDb::UpdateMetadata(const vector<Metadata> &metadataList)
-{
-    int32_t status = 0;
-    vector<string> updateUriList;
-    for (auto itr : metadataList) {
-        updateUriList.push_back(UpdateMetadata(itr));
-    }
-
-    return status;
-}
-
-/**
  * @brief Deletes particular entry in database based on row id
  *
  * @param idList The list of IDs to be deleted from the media db
