@@ -97,6 +97,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_SetGet_Test_001, TestSize.Level
 {
     shared_ptr<DataShare::DataShareResultSet> datashareResultSet = nullptr;
     shared_ptr<FetchResult<FileAsset>> fetchResult = make_shared<FetchResult<FileAsset>>(datashareResultSet);
+    EXPECT_NE(fetchResult, nullptr);
 }
 
 /*
