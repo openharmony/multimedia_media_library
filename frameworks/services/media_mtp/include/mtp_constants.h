@@ -480,7 +480,8 @@ constexpr int MTP_CONTAINER_TYPE_OFFSET = 4;
 constexpr int MTP_CONTAINER_CODE_OFFSET = 6;
 constexpr int MTP_CONTAINER_TRANSACTION_ID_OFFSET = 8;
 constexpr int MTP_CONTAINER_PARAMETER_OFFSET = 12;
-constexpr int MTP_CONTAINER_HEADER_SIZE = 12;
+constexpr int32_t MTP_CONTAINER_HEADER_SIZE = 12;
+constexpr int32_t MTP_PARAMETER_SIZE = 4;
 
 // Association Type
 constexpr int MTP_ASSOCIATION_TYPE_UNDEFINED_CODE = 0x0000;

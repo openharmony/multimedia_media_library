@@ -21,7 +21,7 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-static constexpr uint32_t PARSER_PARAM_SUM = 2;
+static constexpr int32_t PARSER_PARAM_SUM = 2;
 
 SetObjectPropValueData::SetObjectPropValueData(std::shared_ptr<MtpOperationContext> &context)
     : PayloadData(context)
@@ -39,15 +39,9 @@ int SetObjectPropValueData::Parser(const std::vector<uint8_t> &buffer, int32_t r
         return MTP_FAIL;
     }
 
-    if (readSize < MTP_CONTAINER_HEADER_SIZE) {
-        MEDIA_ERR_LOG("SetObjectPropValueData::parser read size must greater than mtp container header size,"
-            "readSize=%{public}d, mtpContainerHeadSize=%{public}d", readSize, MTP_CONTAINER_HEADER_SIZE);
-        return MTP_INVALID_PARAMETER_CODE;
-    }
-
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
     if (!context_->indata) {
-        uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
+        int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
         if (parameterCount < PARSER_PARAM_SUM) {
             MEDIA_ERR_LOG("SetObjectPropValueData::parser paramCount=%{public}u, needCount=%{public}d",
                 parameterCount, PARSER_PARAM_SUM);

@@ -19,7 +19,7 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-static constexpr uint32_t PARSER_PARAM_SUM = 1;
+static constexpr int32_t PARSER_PARAM_SUM = 1;
 static const std::vector<uint16_t> FILE_PROPERTIES = {
     MTP_PROPERTY_STORAGE_ID_CODE,
     MTP_PROPERTY_OBJECT_FORMAT_CODE,
@@ -77,13 +77,7 @@ int GetObjectPropsSupportedData::Parser(const std::vector<uint8_t> &buffer, int3
         return MTP_SESSION_NOT_OPEN_CODE;
     }
 
-    if (readSize < MTP_CONTAINER_HEADER_SIZE) {
-        MEDIA_ERR_LOG("GetObjectPropsSupportedData::parser read size must greater than mtp container header size,"
-            "readSize=%{public}d, mtpContainerHeadSize=%{public}d", readSize, MTP_CONTAINER_HEADER_SIZE);
-        return MTP_INVALID_PARAMETER_CODE;
-    }
-
-    uint32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t);
+    int32_t parameterCount = (readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE;
     if (parameterCount < PARSER_PARAM_SUM) {
         MEDIA_ERR_LOG("GetObjectPropsSupportedData::parser paramCount=%{public}u, needCount=%{public}d",
             parameterCount, PARSER_PARAM_SUM);
