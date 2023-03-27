@@ -26,6 +26,7 @@ const std::string MEDIA_QUERYOPRN = "query_operation";
 const std::string OPRN_CREATE = "create";
 const std::string OPRN_DELETE = "delete";
 const std::string OPRN_QUERY = "query";
+const std::string OPRN_UPDATE = "update";
 
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -61,6 +62,7 @@ const std::string PHOTO_ALBUM_OPRN = "photo_album_v10_operation";
 const std::string OPRN_ALBUM_ADD_ASSETS = "add_assets";
 const std::string OPRN_ALBUM_REMOVE_ASSETS = "remove_assets";
 const std::string URI_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_CREATE;
+const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_UPDATE;
 const std::string URI_DELETE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_DELETE;
 const std::string URI_QUERY_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_QUERY;
 const std::string URI_PHOTO_ALBUM_ADD_ASSET = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" +
