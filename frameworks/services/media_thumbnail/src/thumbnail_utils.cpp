@@ -36,6 +36,7 @@
 #include "rdb_predicates.h"
 #include "thumbnail_const.h"
 #include "uri_helper.h"
+#include "cloud_sync_helper.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -720,6 +721,7 @@ bool ThumbnailUtils::UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data,
     vector<string> devices;
     opts.table = MEDIALIBRARY_TABLE;
     SyncPushTable(opts, devices);
+    CloudSyncHelper::GetInstance()->StartSync();
     return true;
 }
 
@@ -964,6 +966,7 @@ bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool 
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
         return false;
     }
+    CloudSyncHelper::GetInstance()->StartSync();
     return true;
 }
 
