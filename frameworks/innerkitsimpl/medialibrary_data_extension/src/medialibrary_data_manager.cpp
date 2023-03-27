@@ -517,6 +517,9 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
         case OperationObject::FILESYSTEM_DOCUMENT: {
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
         }
+        case OperationObject::PHOTO_ALBUM: {
+            return MediaLibraryAlbumOperations::UpdatePhotoAlbum(value, predicates);
+        }
         default:
             break;
     }

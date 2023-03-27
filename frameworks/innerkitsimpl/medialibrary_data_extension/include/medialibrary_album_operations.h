@@ -38,6 +38,8 @@ public:
     static std::shared_ptr<NativeRdb::ResultSet> QueryPhotoAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     static int32_t DeletePhotoAlbum(const DataShare::DataSharePredicates &predicates);
+    static int32_t UpdatePhotoAlbum(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
 
 private:
     static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);

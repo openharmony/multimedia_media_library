@@ -53,6 +53,7 @@ config("media_library_config") {
 ohos_source_set("media_library_source") {
   sources = [
     "src/album_asset.cpp",
+    "src/base_column.cpp",
     "src/dir_asset.cpp",
     "src/fetch_result.cpp",
     "src/file_asset.cpp",
@@ -62,6 +63,8 @@ ohos_source_set("media_library_source") {
     "src/mimetype_utils.cpp",
     "src/native_album_asset.cpp",
     "src/photo_album.cpp",
+    "src/photo_album_column.cpp",
+    "src/photo_map_column.cpp",
     "src/smart_album_asset.cpp",
   ]
 
