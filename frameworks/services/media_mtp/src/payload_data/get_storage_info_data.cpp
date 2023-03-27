@@ -37,7 +37,7 @@ int GetStorageInfoData::Parser(const std::vector<uint8_t>& buffer, int32_t readS
     if (context_ == nullptr) {
         return MTP_ERROR_CONTEXT_IS_NULL;
     }
-    if ((readSize - MTP_CONTAINER_HEADER_SIZE) / sizeof(int32_t) < 1) { // param num < 1
+    if ((readSize - MTP_CONTAINER_HEADER_SIZE) / MTP_PARAMETER_SIZE < 1) { // param num < 1
         return MTP_ERROR_PACKET_INCORRECT;
     }
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
