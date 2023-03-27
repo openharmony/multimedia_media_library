@@ -40,6 +40,7 @@ public:
     const std::string& GetAlbumName() const;
     PhotoAlbumType GetPhotoAlbumType() const;
     PhotoAlbumSubType GetPhotoAlbumSubType() const;
+    std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
 
 private:
     void SetPhotoAlbumNapiProperties();
@@ -55,6 +56,8 @@ private:
 
     static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
     static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
+
+    static napi_value JSCommitModify(napi_env env, napi_callback_info info);
 
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
@@ -76,9 +79,6 @@ struct PhotoAlbumNapiAsyncContext : public NapiError {
     napi_ref callbackRef;
 
     PhotoAlbumNapi *objectInfo;
-    std::shared_ptr<PhotoAlbum> photoAlbum;
-
-    std::unique_ptr<FetchResult<FileAsset>> fetchResult;
 };
 } // namespace Media
 } // namespace OHOS

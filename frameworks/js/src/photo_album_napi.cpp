@@ -16,9 +16,11 @@
 
 #include "photo_album_napi.h"
 
+#include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
+#include "userfile_client.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -47,6 +49,7 @@ napi_value PhotoAlbumNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("albumType", JSGetPhotoAlbumType),
             DECLARE_NAPI_GETTER("albumSubType", JSGetPhotoAlbumSubType),
             DECLARE_NAPI_GETTER_SETTER("coverUri", JSGetCoverUri, JSSetCoverUri),
+            DECLARE_NAPI_FUNCTION("commitModify", JSCommitModify),
         }
     };
 
@@ -105,6 +108,11 @@ PhotoAlbumType PhotoAlbumNapi::GetPhotoAlbumType() const
 PhotoAlbumSubType PhotoAlbumNapi::GetPhotoAlbumSubType() const
 {
     return photoAlbumPtr->GetPhotoAlbumSubType();
+}
+
+shared_ptr<PhotoAlbum> PhotoAlbumNapi::GetPhotoAlbumInstance() const
+{
+    return photoAlbumPtr;
 }
 
 void PhotoAlbumNapi::SetPhotoAlbumNapiProperties()
@@ -248,9 +256,9 @@ napi_value GetStringArg(napi_env env, napi_callback_info info, PhotoAlbumNapi **
     size_t res = 0;
     char buffer[FILENAME_MAX];
     NAPI_CALL(env, napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res));
-    output = string(output);
+    output = string(buffer);
 
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj)));
+    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(obj)));
     if (obj == nullptr) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
@@ -282,5 +290,85 @@ napi_value PhotoAlbumNapi::JSSetCoverUri(napi_env env, napi_callback_info info)
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
     return result;
+}
+
+static napi_value ParseArgsCommitModify(napi_env env, napi_callback_info info,
+    unique_ptr<PhotoAlbumNapiAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ZERO;
+    constexpr size_t maxArgs = ARGS_ONE;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, false, &result));
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (photoAlbum == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return result;
+    }
+
+    if (MediaFileUtils::CheckTitle(photoAlbum->GetAlbumName()) < 0) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return result;
+    }
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
+    context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, photoAlbum->GetAlbumName());
+    context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, photoAlbum->GetCoverUri());
+
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
+
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    return result;
+}
+
+static void JSCommitModifyExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCommitModifyExecute");
+
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    string updateUri = URI_UPDATE_PHOTO_ALBUM;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(updateUri, PHOTO_ALBUM_TYPE_MASK);
+    Uri uri(updateUri);
+    int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
+    context->SaveError(changedRows);
+    context->changedRows = changedRows;
+}
+
+static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCommitModifyCompleteCallback");
+
+    PhotoAlbumNapiAsyncContext *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    std::unique_ptr<JSAsyncContextOutput> jsContext = std::make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+    if (context->error == ERR_DEFAULT) {
+        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value PhotoAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
+{
+    unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    NAPI_ASSERT(env, ParseArgsCommitModify(env, info, asyncContext), "Failed to parse js args");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSCommitModify", JSCommitModifyExecute,
+        JSCommitModifyCompleteCallback);
 }
 } // namespace OHOS::Media
