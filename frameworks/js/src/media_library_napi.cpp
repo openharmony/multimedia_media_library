@@ -157,6 +157,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers),
             DECLARE_NAPI_FUNCTION("release", JSRelease),
             DECLARE_NAPI_FUNCTION("createAlbum", CreatePhotoAlbum),
+            DECLARE_NAPI_FUNCTION("deleteAlbums", DeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", GetPhotoAlbums),
         }
     };
@@ -3469,6 +3470,102 @@ napi_value MediaLibraryNapi::CreatePhotoAlbum(napi_env env, napi_callback_info i
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CreatePhotoAlbum", JSCreatePhotoAlbumExecute,
         JSCreatePhotoAlbumCompleteCallback);
+}
+
+static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+
+    /* Parse the first argument into delete album id array */
+    vector<string> deleteIds;
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, false, &result));
+
+    uint32_t len = 0;
+    NAPI_CALL(env, napi_get_array_length(env, context->argv[PARAM0], &len));
+    for (uint32_t i = 0; i < len; i++) {
+        napi_value album = nullptr;
+        NAPI_CALL(env, napi_get_element(env, context->argv[PARAM0], i, &album));
+        if (album == nullptr) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return result;
+        }
+        PhotoAlbumNapi* obj = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, album, reinterpret_cast<void **>(&obj)));
+        if (obj == nullptr) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return result;
+        }
+        deleteIds.push_back(to_string(obj->GetAlbumId()));
+    }
+    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
+
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
+
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    return result;
+}
+
+static void JSDeletePhotoAlbumsExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDeletePhotoAlbumsExecute");
+
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    string uri = URI_DELETE_PHOTO_ALBUM;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, PHOTO_ALBUM_TYPE_MASK);
+    Uri deletePhotoAlbumsUri(uri);
+    int ret = UserFileClient::Delete(deletePhotoAlbumsUri, context->predicates);
+    if (ret < 0) {
+        context->SaveError(ret);
+    } else {
+        context->retVal = ret;
+    }
+}
+
+static void JSDeletePhotoAlbumsCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDeletePhotoAlbumsCompleteCallback");
+
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+    } else {
+        NAPI_CALL_RETURN_VOID(env, napi_create_int32(env, context->retVal, &jsContext->data));
+        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+        jsContext->status = true;
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::DeletePhotoAlbums(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    NAPI_ASSERT(env, ParseArgsDeletePhotoAlbums(env, info, asyncContext), "Failed to parse js args");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "DeletePhotoAlbums",
+        JSDeletePhotoAlbumsExecute, JSDeletePhotoAlbumsCompleteCallback);
 }
 
 static napi_value GetFetchOption(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context, bool hasCallback)
