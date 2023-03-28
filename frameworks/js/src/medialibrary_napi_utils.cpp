@@ -22,6 +22,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
+#include "photo_album_napi.h"
 #include "smart_album_napi.h"
 
 using namespace std;
@@ -771,6 +772,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<M
 template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<SmartAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &context, string &param);
 
+template napi_status MediaLibraryNapiUtils::GetParamCallback<unique_ptr<PhotoAlbumNapiAsyncContext>>(napi_env env,
+    unique_ptr<PhotoAlbumNapiAsyncContext> &context);
+
 template napi_status MediaLibraryNapiUtils::GetParamCallback<unique_ptr<SmartAlbumNapiAsyncContext>>(napi_env env,
     unique_ptr<SmartAlbumNapiAsyncContext> &context);
 
@@ -779,6 +783,10 @@ template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<Med
 
 template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<FileAssetAsyncContext>>(napi_env env,
     napi_callback_info info, unique_ptr<FileAssetAsyncContext> &context, bool &param);
+
+template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<PhotoAlbumNapiAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,
+    const size_t maxArgs);
 
 template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<SmartAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,
@@ -794,6 +802,10 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<FileAssetAsyncCon
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<AlbumNapiAsyncContext>(napi_env env,
     unique_ptr<AlbumNapiAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<PhotoAlbumNapiAsyncContext>(napi_env env,
+    unique_ptr<PhotoAlbumNapiAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<SmartAlbumNapiAsyncContext>(napi_env env,
