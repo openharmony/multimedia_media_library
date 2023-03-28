@@ -335,6 +335,69 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const std::
     return rdbStore_->QuerySql(sql);
 }
 
+int32_t MediaLibraryRdbStore::BeginTransaction()
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+
+    std::unique_lock<mutex> cvLock(transactionMutex_);
+    if (isInTransaction_.load()) {
+        transactionCV_.wait_for(cvLock, std::chrono::milliseconds(RDB_TRANSACTION_WAIT_MS),
+            [this] () { return !(isInTransaction_.load()); });
+    }
+
+    if (rdbStore_->IsInTransaction()) {
+        MEDIA_ERR_LOG("RdbStore is still in transaction");
+        return E_HAS_DB_ERROR;
+    }
+
+    isInTransaction_.store(true);
+    int32_t errCode = rdbStore_->BeginTransaction();
+    if (errCode != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Start Transaction failed, errCode=%{public}d", errCode);
+        isInTransaction_.store(false);
+        transactionCV_.notify_one();
+        return errCode;
+    }
+    
+    return E_OK;
+}
+
+int32_t MediaLibraryRdbStore::Commit()
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+
+    if (!(isInTransaction_.load()) || !(rdbStore_->IsInTransaction())) {
+        MEDIA_ERR_LOG("no transaction now");
+        return E_HAS_DB_ERROR;
+    }
+    isInTransaction_.store(false);
+    transactionCV_.notify_all();
+
+    return rdbStore_->Commit();
+}
+
+int32_t MediaLibraryRdbStore::RollBack()
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+    if (!(isInTransaction_.load()) || !(rdbStore_->IsInTransaction())) {
+        MEDIA_ERR_LOG("no transaction now");
+        return E_HAS_DB_ERROR;
+    }
+    isInTransaction_.store(false);
+    transactionCV_.notify_all();
+
+    return rdbStore_->RollBack();
+}
+
 std::shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
 {
     return rdbStore_;
