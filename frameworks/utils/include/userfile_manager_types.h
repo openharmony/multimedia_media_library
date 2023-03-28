@@ -73,9 +73,16 @@ constexpr size_t TYPE_MASK_STRING_SIZE = 3;
 const std::string DEFAULT_TYPE_MASK;
 const std::string URI_PARAM_KEY_TYPE = "type";
 const std::string PHOTO_ALBUM_TYPE_MASK = "001";
+const std::string URI_PARAM_API_VERSION = "api_version";
 enum {
     TYPE_MASK_BIT_DEFAULT = '0',
     TYPE_MASK_BIT_SET = '1'
+};
+enum class MediaLibraryApi : uint32_t {
+    API_START = 8,
+    API_OLD = 9,
+    API_10,
+    API_END
 };
 
 /*

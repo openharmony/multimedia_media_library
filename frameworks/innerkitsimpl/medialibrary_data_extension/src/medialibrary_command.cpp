@@ -32,6 +32,8 @@ MediaLibraryCommand::MediaLibraryCommand(const Uri &uri) : uri_(uri)
     ParseOprnObjectFromUri();
     ParseOprnTypeFromUri();
     ParseTableName();
+    ParseQuerySetMapFromUri();
+    SetApiFromQuerySetMap();
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const Uri &uri, const ValuesBucket &value) : uri_(uri), insertValue_(value)
@@ -39,28 +41,34 @@ MediaLibraryCommand::MediaLibraryCommand(const Uri &uri, const ValuesBucket &val
     ParseOprnObjectFromUri();
     ParseOprnTypeFromUri();
     ParseTableName();
+    ParseQuerySetMapFromUri();
+    SetApiFromQuerySetMap();
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const Uri &uri, const OperationType &oprnType) : uri_(uri), oprnType_(oprnType)
 {
     ParseOprnObjectFromUri();
     ParseTableName();
+    ParseQuerySetMapFromUri();
+    SetApiFromQuerySetMap();
 }
 
-MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType)
-    : oprnObject_(oprnObject), oprnType_(oprnType)
+MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
+    MediaLibraryApi api) : oprnObject_(oprnObject), oprnType_(oprnType), api_(api)
 {
     ParseTableName();
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
-    const ValuesBucket &value) : insertValue_(value), oprnObject_(oprnObject), oprnType_(oprnType)
+    const ValuesBucket &value, MediaLibraryApi api) :insertValue_(value), oprnObject_(oprnObject),
+    oprnType_(oprnType), api_(api)
 {
     ParseTableName();
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
-    const string &networkId) : oprnObject_(oprnObject), oprnType_(oprnType), oprnDevice_(networkId)
+    const string &networkId, MediaLibraryApi api) : oprnObject_(oprnObject), oprnType_(oprnType),
+    oprnDevice_(networkId), api_(api)
 {
     ParseTableName();
 }
@@ -93,10 +101,6 @@ void MediaLibraryCommand::SetDeviceName(const std::string &deviceName)
     deviceName_ = deviceName;
 }
 
-void MediaLibraryCommand::SetDirQuerySetMap(const unordered_map<string, DirAsset> &dirQuerySetMap)
-{
-    dirQuerySetMap_ = dirQuerySetMap;
-}
 // get functions
 OperationObject MediaLibraryCommand::GetOprnObject() const
 {
@@ -162,9 +166,17 @@ const string &MediaLibraryCommand::GetDeviceName()
     return deviceName_;
 }
 
-const unordered_map<string, DirAsset> &MediaLibraryCommand::GetDirQuerySetMap()
+MediaLibraryApi MediaLibraryCommand::GetApi()
 {
-    return dirQuerySetMap_;
+    return api_;
+}
+
+string MediaLibraryCommand::GetQuerySetParam(const std::string &key)
+{
+    if (key.empty() || querySetMap_.find(key) == querySetMap_.end()) {
+        return "";
+    }
+    return querySetMap_[key];
 }
 
 void MediaLibraryCommand::ParseOprnObjectFromUri()
@@ -348,5 +360,62 @@ void MediaLibraryCommand::ParseFileId()
     }
     oprnFileId_ = idFromUri;
 }
+
+void MediaLibraryCommand::ParseQuerySetMapFromUri()
+{
+    // uri format: datashare:///media/photo_operation/create_asset?op1=xxx&op2=yyy&api_version=10#abc
+    // QuerySetMap: {"op1": "xxx", "op2": "yyy", "api_version": "10"}
+    string uriString = uri_.ToString();
+    size_t firstPoint = uriString.find('?');
+    size_t secondPoint = uriString.find('#');
+    if (firstPoint == string::npos) {
+        return;
+    }
+    string querySetStr;
+    if (secondPoint == string::npos) {
+        querySetStr = uriString.substr(firstPoint + 1);
+    } else {
+        querySetStr = uriString.substr(firstPoint + 1, secondPoint - firstPoint - 1);
+    }
+    size_t andPoint = 0;
+    while ((andPoint = querySetStr.find('&')) != string::npos) {
+        string subStr = querySetStr.substr(0, andPoint);
+        size_t equalPoint = subStr.find('=');
+        if (equalPoint == string::npos) {
+            MEDIA_ERR_LOG("parse query set map failed");
+            return;
+        }
+        querySetMap_.insert({ subStr.substr(0, equalPoint), subStr.substr(equalPoint + 1) });
+        querySetStr = querySetStr.substr(andPoint + 1);
+    }
+    size_t equalPoint = querySetStr.find('=');
+    if (equalPoint == string::npos) {
+        MEDIA_ERR_LOG("parse query set map failed");
+        return;
+    }
+    querySetMap_.insert({ querySetStr.substr(0, equalPoint), querySetStr.substr(equalPoint + 1) });
+}
+
+void MediaLibraryCommand::SetApiFromQuerySetMap()
+{
+    if (querySetMap_.find(URI_PARAM_API_VERSION) == querySetMap_.end()) {
+        api_ = MediaLibraryApi::API_OLD;
+    } else {
+        string apiString = querySetMap_[URI_PARAM_API_VERSION];
+        if (!MediaLibraryDataManagerUtils::IsNumber(apiString)) {
+            api_ = MediaLibraryApi::API_OLD;
+            return;
+        }
+        int32_t apiNum = stoi(apiString);
+        if (apiNum <= static_cast<int32_t>(MediaLibraryApi::API_START) ||
+            apiNum >= static_cast<int32_t>(MediaLibraryApi::API_END)) {
+            MEDIA_ERR_LOG("this api num is wrong: %{public}d", apiNum);
+            api_ = MediaLibraryApi::API_OLD;
+        } else {
+            api_ = static_cast<MediaLibraryApi>(apiNum);
+        }
+    }
+}
+
 } // namespace Media
 } // namespace OHOS

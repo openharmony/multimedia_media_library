@@ -367,7 +367,6 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
             MEDIA_ERR_LOG("MediaLibraryDataManager SetCmdBundleAndDevice failed.");
         }
     }
-    cmd.SetDirQuerySetMap(GetDirQuerySetMap());
     // boardcast operation
     if (oprnType == OperationType::SCAN) {
         return MediaScannerManager::GetInstance()->ScanDir(ROOT_MEDIA_DIR, nullptr);
@@ -492,7 +491,6 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     }
 
     MediaLibraryCommand cmd(uri, value);
-    cmd.SetDirQuerySetMap(GetDirQuerySetMap());
     cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
 

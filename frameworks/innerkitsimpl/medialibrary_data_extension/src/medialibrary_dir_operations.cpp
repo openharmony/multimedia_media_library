@@ -53,7 +53,6 @@ int32_t MediaLibraryDirOperations::TrashDirOperation(MediaLibraryCommand &cmd)
     valuesBucket.PutInt(SMARTALBUMMAP_DB_CHILD_ASSET_ID, dirId);
     valuesBucket.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
     MediaLibraryCommand smartMapCmd(OperationObject::SMART_ALBUM_MAP, OperationType::CREATE, valuesBucket);
-    smartMapCmd.SetDirQuerySetMap(MediaLibraryDataManager::GetDirQuerySetMap());
     return MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(smartMapCmd);
 }
 
