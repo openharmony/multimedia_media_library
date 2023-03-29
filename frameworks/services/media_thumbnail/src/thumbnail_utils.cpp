@@ -31,6 +31,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "parameter.h"
+#include "post_proc.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
 #include "thumbnail_const.h"
@@ -44,6 +45,7 @@ namespace OHOS {
 namespace Media {
 constexpr int32_t KEY_INDEX = 0;
 constexpr int32_t VALUE_INDEX = 1;
+constexpr float EPSILON = 1e-6;
 bool ThumbnailUtils::UpdateRemotePath(string &path, const string &networkId)
 {
     MEDIA_DEBUG_LOG("ThumbnailUtils::UpdateRemotePath IN path = %{private}s, networkId = %{private}s",
@@ -123,9 +125,10 @@ bool ThumbnailUtils::ClearThumbnailAllRecord(ThumbRdbOpt &opts, ThumbnailData &t
     return true;
 }
 
-bool ThumbnailUtils::LoadAudioFile(const string &path, shared_ptr<PixelMap> &pixelMap, float &degrees)
+bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    string path = data.path;
     int32_t err = SetSource(avMetadataHelper, path);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Av meta data helper set source failed %{public}d", err);
@@ -148,23 +151,28 @@ bool ThumbnailUtils::LoadAudioFile(const string &path, shared_ptr<PixelMap> &pix
         return false;
     }
 
-    errCode = 0;
+    ImageInfo imageInfo;
+    errCode = audioImageSource->GetImageInfo(0, imageInfo);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Failed to get image info, path: %{private}s err: %{public}d", path.c_str(), errCode);
+        return false;
+    }
+
     DecodeOptions decOpts;
-    pixelMap = audioImageSource->CreatePixelMap(decOpts, errCode);
-    if (pixelMap == nullptr) {
+    decOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
+    decOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
+    data.source = audioImageSource->CreatePixelMap(decOpts, errCode);
+    if ((errCode != E_OK) || (data.source == nullptr)) {
         MEDIA_ERR_LOG("Av meta data helper fetch frame at time failed");
         return false;
     }
-    if (pixelMap->GetAlphaType() == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
-        pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    }
-    degrees = 0.0;
     return true;
 }
 
-bool ThumbnailUtils::LoadVideoFile(const string &path, shared_ptr<PixelMap> &pixelMap, float &degrees)
+bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    string path = data.path;
     int32_t err = SetSource(avMetadataHelper, path);
     if (err != 0) {
         MEDIA_ERR_LOG("Av meta data helper set source failed path %{private}s err %{public}d",
@@ -173,57 +181,63 @@ bool ThumbnailUtils::LoadVideoFile(const string &path, shared_ptr<PixelMap> &pix
     }
     PixelMapParams param;
     param.colorFormat = PixelFormat::RGBA_8888;
-    pixelMap = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME,
-        AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC, param);
-    if (pixelMap == nullptr) {
+    data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
+        param);
+    if (data.source == nullptr) {
         MEDIA_ERR_LOG("Av meta data helper fetch frame at time failed");
         return false;
     }
-    if (pixelMap->GetAlphaType() == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
-        pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    }
-    std::string metaData = avMetadataHelper->ResolveMetadata(AV_KEY_VIDEO_ORIENTATION);
-    if (metaData == "") {
-        degrees = 0.0;
-    } else {
-        std::istringstream iss(metaData);
-        iss >> degrees;
+
+    auto resultMap = avMetadataHelper->ResolveMetadata();
+    string videoOrientation = resultMap.at(AV_KEY_VIDEO_ORIENTATION);
+    if (!videoOrientation.empty()) {
+        std::istringstream iss(videoOrientation);
+        iss >> data.degrees;
     }
     return true;
 }
 
-bool ThumbnailUtils::LoadImageFile(const string &path, shared_ptr<PixelMap> &pixelMap, float &degrees)
+bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
 {
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 
-    uint32_t err = 0;
-    SourceOptions opts;
-
     MediaLibraryTracer tracer;
     tracer.Start("ImageSource::CreateImageSource");
+
+    uint32_t err = 0;
+    SourceOptions opts;
+    string path = data.path;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to create image source path %{private}s err %{public}d",
-            path.c_str(), err);
+        MEDIA_ERR_LOG("Failed to create image source, path: %{private}s err: %{public}d", path.c_str(), err);
         return false;
     }
     tracer.Finish();
+
     tracer.Start("imageSource->CreatePixelMap");
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get image info, path: %{private}s err: %{public}d", path.c_str(), err);
+        return false;
+    }
 
     DecodeOptions decodeOpts;
-    pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    if (err != E_OK) {
+    decodeOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
+    decodeOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
+    data.source = imageSource->CreatePixelMap(decodeOpts, err);
+    if ((err != E_OK) || (data.source == nullptr)) {
         MEDIA_ERR_LOG("Failed to create pixelmap path %{private}s err %{public}d",
             path.c_str(), err);
         return false;
     }
+    tracer.Finish();
+
     int intTempMeta;
     err = imageSource->GetImagePropertyInt(0, MEDIA_DATA_IMAGE_ORIENTATION, intTempMeta);
-    if (err != SUCCESS) {
-        degrees = 0.0;
-    } else {
-        degrees = static_cast<float>(intTempMeta);
+    if (err == E_OK) {
+        data.degrees = static_cast<float>(intTempMeta);
     }
     return true;
 }
@@ -284,33 +298,16 @@ bool ThumbnailUtils::GenLcdKey(ThumbnailData &data)
     return GenKey(data, data.lcdKey);
 }
 
-
-bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, const Size &size,
-    vector<uint8_t> &data, float degrees)
+bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("PixelMap::Create");
-    InitializationOptions opts = {
-        .size = size,
-        .pixelFormat = PixelFormat::BGRA_8888,
-        .alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL,
-        .scaleMode = ScaleMode::CENTER_CROP
-    };
-
-    unique_ptr<PixelMap> compressImage = PixelMap::Create(*pixelMap, opts);
-    tracer.Finish();
-    if (compressImage == nullptr) {
-        MEDIA_ERR_LOG("Failed to create compressImage");
-        return false;
-    }
-
     PackOption option = {
         .format = THUMBNAIL_FORMAT,
         .quality = THUMBNAIL_QUALITY,
         .numberHint = NUMBER_HINT_1
     };
-    compressImage->rotate(degrees);
-    data.resize(compressImage->GetByteCount());
+    data.resize(pixelMap->GetByteCount());
+
+    MediaLibraryTracer tracer;
     tracer.Start("imagePacker.StartPacking");
     ImagePacker imagePacker;
     uint32_t err = imagePacker.StartPacking(data.data(), data.size(), option);
@@ -321,7 +318,7 @@ bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, const Size &s
     }
 
     tracer.Start("imagePacker.AddImage");
-    err = imagePacker.AddImage(*compressImage);
+    err = imagePacker.AddImage(*pixelMap);
     tracer.Finish();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to StartPacking %{public}d", err);
@@ -1001,7 +998,33 @@ bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
     return true;
 }
 
-bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
+Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail)
+{
+    float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
+    float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
+    float scale = 1.0f;
+    if (sourceScale - desiredScale > EPSILON) {
+        if (isThumbnail) {
+            scale = (float)desiredSize.width / sourceSize.width;
+        } else {
+            scale = (float)desiredSize.height / sourceSize.height;
+        }
+    } else if (desiredScale - sourceScale > EPSILON) {
+        if (isThumbnail) {
+            scale = (float)desiredSize.height / sourceSize.height;
+        } else {
+            scale = (float)desiredSize.width / sourceSize.width;
+        }
+    }
+    scale = scale < 1.0f ? scale : 1.0f;
+    Size decodeSize = {
+        static_cast<int32_t> (scale * sourceSize.width),
+        static_cast<int32_t> (scale * sourceSize.height),
+    };
+    return decodeSize;
+}
+
+bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
 {
     if (data.source != nullptr) {
         return true;
@@ -1010,46 +1033,30 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
     tracer.Start("LoadSourceImage");
 
     bool ret = false;
+    data.degrees = 0.0;
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
-        ret = LoadVideoFile(data.path, data.source, data.degrees);
+        ret = LoadVideoFile(data, isThumbnail, desiredSize);
     } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
-        ret = LoadAudioFile(data.path, data.source, data.degrees);
+        ret = LoadAudioFile(data, isThumbnail, desiredSize);
     } else {
-        ret = LoadImageFile(data.path, data.source, data.degrees);
+        ret = LoadImageFile(data, isThumbnail, desiredSize);
     }
-
-    return ret;
-}
-
-bool ThumbnailUtils::CreateThumbnailData(ThumbnailData &data)
-{
-    Size size = { DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE };
-    MediaLibraryTracer tracer;
-    tracer.Start("CompressImage");
-    bool ret = CompressImage(data.source, size, data.thumbnail, data.degrees);
-    return ret;
-}
-
-bool ThumbnailUtils::CreateLcdData(ThumbnailData &data, int32_t lcdSize)
-{
-    lcdSize = (lcdSize == 0) ? DEFAULT_LCD_SIZE : lcdSize;
-    auto width = data.source->GetWidth();
-    auto height = data.source->GetHeight();
-    int32_t maxSize = 1;
-    maxSize = max(maxSize, max(width, height));
-    double scale = 1.0f;
-    if (lcdSize < maxSize) {
-        scale = (float) lcdSize / maxSize;
+    if (!ret || (data.source == nullptr)) {
+        return false;
     }
-    Size size = {
-        static_cast<int32_t> (scale * width),
-        static_cast<int32_t> (scale * height),
-    };
+    tracer.Finish();
 
-    MediaLibraryTracer tracer;
-    tracer.Start("CompressImage");
-    bool ret = CompressImage(data.source, size, data.lcd, data.degrees);
-    return ret;
+    if (isThumbnail) {
+        tracer.Start("CenterScale");
+        PostProc postProc;
+        if (!postProc.CenterScale(desiredSize, *data.source)) {
+            MEDIA_ERR_LOG("thumbnail center crop failed");
+            return false;
+        }
+    }
+    data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    data.source->rotate(data.degrees);
+    return true;
 }
 
 Status ThumbnailUtils::SaveThumbnailData(ThumbnailData &data, const string &networkId,
@@ -1113,7 +1120,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
         return E_ERR;
     }
     int64_t length = static_cast<int64_t>(st.st_size);
-    int32_t ret = avMetadataHelper->SetSource(fd, 0, length, 1);
+    int32_t ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
     if (ret != 0) {
         MEDIA_ERR_LOG("SetSource fail");
         (void)close(fd);

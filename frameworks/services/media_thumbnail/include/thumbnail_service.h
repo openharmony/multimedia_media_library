@@ -56,7 +56,7 @@ private:
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
-    int32_t windowSize_ = DEFAULT_LCD_SIZE;
+    Size screenSize_;
 };
 } // namespace Media
 } // namespace OHOS
