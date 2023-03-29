@@ -26,15 +26,17 @@ ohos_prebuilt_etc("userfilemanager_mimetypes.json") {
 
 config("media_data_extension_public_config") {
   include_fileext = [ "${MEDIA_FILEEXT_SOURCE_DIR}/include" ]
+  include_distributed = [
+    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/include/database_manage",
+    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/include/device_manage",
+    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/include/devices_info_interact",
+  ]
   include_scanner = [
     "${MEDIA_SCANNER_SOURCE_DIR}/include/callback",
     "${MEDIA_SCANNER_SOURCE_DIR}/include/scanner",
   ]
 
   include_dirs = [
-    "./include/distributed_media_library/device_manage",
-    "./include/distributed_media_library/database_manage",
-    "./include/distributed_media_library/devices_info_interact",
     "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager/include",
     "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager/include",
@@ -64,6 +66,7 @@ config("media_data_extension_public_config") {
     "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/include",
   ]
   include_dirs += include_fileext
+  include_dirs += include_distributed
   include_dirs += include_scanner
 
   if (target_cpu == "arm") {
@@ -110,6 +113,15 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIA_FILEEXT_SOURCE_DIR}/src/media_file_extention_utils.cpp",
   ]
 
+  media_distributed_source = [
+    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/database_manage/medialibrary_device_db.cpp",
+    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/database_manage/medialibrary_device_operations.cpp",
+    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/database_manage/medialibrary_sync_table.cpp",
+    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/device_manage/device_permission_verification.cpp",
+    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/device_manage/medialibrary_device.cpp",
+    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/devices_info_interact//devices_info_interact.cpp",
+  ]
+
   media_scan_source = [
     "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scan_executor.cpp",
     "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scanner.cpp",
@@ -124,12 +136,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIA_LIB_COMMON_UTILS_DIR}/src/media_privacy_manager.cpp",
     "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/src/sqlite_sql_builder.cpp",
     "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/src/string_utils.cpp",
-    "src/distributed_media_library/database_manage/medialibrary_device_db.cpp",
-    "src/distributed_media_library/database_manage/medialibrary_device_operations.cpp",
-    "src/distributed_media_library/database_manage/medialibrary_sync_table.cpp",
-    "src/distributed_media_library/device_manage/device_permission_verification.cpp",
-    "src/distributed_media_library/device_manage/medialibrary_device.cpp",
-    "src/distributed_media_library/devices_info_interact/devices_info_interact.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
     "src/medialibrary_album_operations.cpp",
@@ -152,6 +158,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/uri_helper.cpp",
   ]
   sources += media_fileext_source
+  sources += media_distributed_source
   sources += media_scan_source
 
   public_configs = [ ":media_data_extension_public_config" ]
