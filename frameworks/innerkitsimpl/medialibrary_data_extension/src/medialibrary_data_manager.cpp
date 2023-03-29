@@ -752,12 +752,8 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
     shared_ptr<ResultSetBridge> queryResultSet;
     if (cmd.GetOprnObject() == OperationObject::THUMBNAIL) {
-        string uriString = uri.ToString();
-        if (!ThumbnailService::ParseThumbnailInfo(uriString)) {
-            return nullptr;
-        }
         tracer.Start("GetThumbnail");
-        queryResultSet = GetThumbnail(uriString);
+        queryResultSet = GetThumbnail(uri.ToString());
     } else {
         auto absResultSet = QueryRdb(uri, columns, predicates);
         if (absResultSet == nullptr) {

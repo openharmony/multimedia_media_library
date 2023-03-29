@@ -22,7 +22,6 @@ namespace OHOS {
 namespace Media {
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
 constexpr int32_t DEFAULT_LCD_SIZE = 1080;
-constexpr int32_t FULL_SCREEN_SIZE = 1920;
 
 constexpr uint32_t DEVICE_UDID_LENGTH = 65;
 

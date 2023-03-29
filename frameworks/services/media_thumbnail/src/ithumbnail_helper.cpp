@@ -185,12 +185,12 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
     }
 
     if (!ThumbnailUtils::IsImageExist(data.lcdKey, opts.networkId, opts.kvStore)) {
-        if (!ThumbnailUtils::LoadSourceImage(data)) {
+        if (!ThumbnailUtils::LoadSourceImage(data, false, opts.screenSize)) {
             MEDIA_ERR_LOG("LoadSourceImage faild");
             return false;
         }
-        if (!ThumbnailUtils::CreateLcdData(data, opts.size)) {
-            MEDIA_ERR_LOG("CreateLcdData faild");
+        if (!ThumbnailUtils::CompressImage(data.source, data.lcd)) {
+            MEDIA_ERR_LOG("CompressImage faild");
             return false;
         }
 
@@ -241,8 +241,8 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
             MEDIA_ERR_LOG("LoadSourceImage faild");
             return false;
         }
-        if (!ThumbnailUtils::CreateThumbnailData(data)) {
-            MEDIA_ERR_LOG("CreateThumbnailData faild");
+        if (!ThumbnailUtils::CompressImage(data.source, data.thumbnail)) {
+            MEDIA_ERR_LOG("CompressImage faild");
             return false;
         }
 

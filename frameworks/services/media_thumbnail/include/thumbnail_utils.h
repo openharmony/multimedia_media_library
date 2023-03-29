@@ -24,6 +24,7 @@
 #include "datashare_result_set.h"
 #include "rdb_helper.h"
 #include "single_kvstore.h"
+#include "thumbnail_const.h"
 #include "thumbnail_datashare_bridge.h"
 
 namespace OHOS {
@@ -37,7 +38,7 @@ struct ThumbRdbOpt {
     std::string udid;
     std::string row;
     std::string uri;
-    int32_t size{0};
+    Size screenSize;
 };
 
 struct ThumbnailData {
@@ -78,8 +79,7 @@ public:
     ~ThumbnailUtils() = delete;
     // utils
     static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
-    static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, const Size &size, std::vector<uint8_t> &data,
-        float degrees);
+    static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data);
     static void ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData);
     static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
     static int GetPixelMapFromResult(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, const Size &size,
@@ -105,14 +105,13 @@ public:
         const std::string &networkId, std::shared_ptr<DataShare::ResultSetBridge> &outResultSet);
     static bool DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
     // Steps
-    static bool LoadSourceImage(ThumbnailData &data);
+    static bool LoadSourceImage(ThumbnailData &data, const bool isThumbnail = true,
+        const Size &desiredSize = { DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE });
     static bool GenThumbnailKey(ThumbnailData &data);
-    static bool CreateThumbnailData(ThumbnailData &data);
     static DistributedKv::Status SaveThumbnailData(ThumbnailData &data, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
 
     static bool GenLcdKey(ThumbnailData &data);
-    static bool CreateLcdData(ThumbnailData &data, int32_t lcdSize);
     static DistributedKv::Status SaveLcdData(ThumbnailData &data, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
     static bool UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
@@ -148,9 +147,10 @@ private:
 
     static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
-    static bool LoadImageFile(const std::string &path, std::shared_ptr<PixelMap> &pixelMap, float &degrees);
-    static bool LoadVideoFile(const std::string &path, std::shared_ptr<PixelMap> &pixelMap, float &degrees);
-    static bool LoadAudioFile(const std::string &path, std::shared_ptr<PixelMap> &pixelMap, float &degrees);
+    static Size ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail);
+    static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
+    static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
+    static bool LoadAudioFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
     static bool GenKey(ThumbnailData &data, std::string &key);
     static std::string GetUdid();
     // KV Store
