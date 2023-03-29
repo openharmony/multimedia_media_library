@@ -21,8 +21,7 @@ ohos_shared_library("cloud_sync") {
 
   sources = [ "${MEDIA_LIB_CLOUD_BASE_DIR}/src/cloud_sync_helper.cpp" ]
 
-  cflags = [ "-fPIC" ]
-  cflags += [ "-Wall" ]
+  cflags = [ "-Wall" ]
 
   if (target_cpu == "arm") {
     cflags += [ "-DBINDER_IPC_32BIT" ]
@@ -43,6 +42,27 @@ ohos_shared_library("cloud_sync") {
     "dfs_service:cloudsync_kit_inner",
     "hiviewdfx_hilog_native:libhilog",
   ]
+
+  sanitize = {
+    cfi = true
+    debug = false
+  }
+
+  part_name = "media_library"
+  subsystem_name = "multimedia"
+}
+
+config("public_config") {
+  include_dirs = [
+    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
+  ]
+}
+
+ohos_shared_library("cloud_sync_header") {
+  install_enable = true
+
+  public_configs = [ ":public_config" ]
 
   sanitize = {
     cfi = true
