@@ -81,6 +81,11 @@ public:
         int32_t albumType;
     };
 
+    struct UniqueMemberValuesBucket {
+        std::string assetMediaType;
+        int32_t startNumber;
+    };
+
     int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
     int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
     bool HasDistributedTables();
@@ -88,8 +93,11 @@ public:
 private:
     int32_t PrepareDir(NativeRdb::RdbStore &store);
     int32_t PrepareSmartAlbum(NativeRdb::RdbStore &store);
+    int32_t PrepareUniqueMemberTable(NativeRdb::RdbStore &store);
     int32_t InsertDirValues(const DirValuesBucket &dirValuesBucket, NativeRdb::RdbStore &store);
     int32_t InsertSmartAlbumValues(const SmartAlbumValuesBucket &smartAlbum, NativeRdb::RdbStore &store);
+    int32_t InsertUniqueMemberTableValues(const UniqueMemberValuesBucket &uniqueMemberValues,
+        NativeRdb::RdbStore &store);
     bool isDistributedTables = false;
 };
 

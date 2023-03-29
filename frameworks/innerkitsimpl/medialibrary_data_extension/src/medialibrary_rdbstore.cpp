@@ -446,6 +446,47 @@ int32_t MediaLibraryDataCallBack::InsertSmartAlbumValues(const SmartAlbumValuesB
     return insertResult;
 }
 
+int32_t MediaLibraryDataCallBack::PrepareUniqueMemberTable(RdbStore &store)
+{
+    string queryRowSql = "SELECT COUNT(*) as count FROM " + ASSET_UNIQUE_NUMBER_TABLE;
+    auto resultSet = store.QuerySql(queryRowSql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get AssetUniqueNumberTable count");
+        return NativeRdb::E_ERROR;
+    }
+    if (GetInt32Val("count", resultSet) != 0) {
+        MEDIA_DEBUG_LOG("AssetUniqueNumberTable is already inited");
+        return E_OK;
+    }
+
+    UniqueMemberValuesBucket imageBucket = { IMAGE_ASSET_TYPE, 0 };
+    UniqueMemberValuesBucket videoBucket = { VIDEO_ASSET_TYPE, 0 };
+    UniqueMemberValuesBucket audioBucket = { AUDIO_ASSET_TYPE, 0 };
+
+    vector<UniqueMemberValuesBucket> uniqueNumberValueBuckets = {
+        imageBucket, videoBucket, audioBucket
+    };
+
+    for (const auto& uniqueNumberValueBucket : uniqueNumberValueBuckets) {
+        if (InsertUniqueMemberTableValues(uniqueNumberValueBucket, store) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Prepare smartAlbum failed");
+            return NativeRdb::E_ERROR;
+        }
+    }
+    return NativeRdb::E_OK;
+}
+
+int32_t MediaLibraryDataCallBack::InsertUniqueMemberTableValues(const UniqueMemberValuesBucket &uniqueMemberValues,
+    RdbStore &store)
+{
+    ValuesBucket valuesBucket;
+    valuesBucket.PutString(ASSET_MEDIA_TYPE, uniqueMemberValues.assetMediaType);
+    valuesBucket.PutInt(UNIQUE_NUMBER, uniqueMemberValues.startNumber);
+    int64_t outRowId = -1;
+    int32_t insertResult = store.Insert(outRowId, ASSET_UNIQUE_NUMBER_TABLE, valuesBucket);
+    return insertResult;
+}
+
 int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 {
     vector<string> executeSqlStrs = {
@@ -457,6 +498,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         CREATE_SMARTALBUMMAP_TABLE,
         CREATE_DEVICE_TABLE,
         CREATE_CATEGORY_SMARTALBUMMAP_TABLE,
+        CREATE_ASSET_UNIQUE_NUMBER_TABLE,
         CREATE_IMAGE_VIEW,
         CREATE_VIDEO_VIEW,
         CREATE_AUDIO_VIEW,
@@ -485,6 +527,10 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     }
 
     if (PrepareSmartAlbum(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
+    }
+
+    if (PrepareUniqueMemberTable(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
 
