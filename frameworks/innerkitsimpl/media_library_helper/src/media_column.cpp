@@ -51,6 +51,7 @@ const std::string PhotoColumn::PHOTO_LCD = "lcd";
 const std::string PhotoColumn::PHOTO_HEIGHT = "height";
 const std::string PhotoColumn::PHOTO_WIDTH = "width";
 const std::string PhotoColumn::PHOTO_LCD_VISIT_TIME = "lcd_visit_time";
+const std::string PhotoColumn::PHOTO_POSITION = "position";
 
 const std::string PhotoColumn::PHOTOS_TABLE = "Photos";
 
@@ -85,7 +86,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_LCD + " TEXT, " +
     PHOTO_HEIGHT + " INT, " +
     PHOTO_WIDTH + " INT, " +
-    PHOTO_LCD_VISIT_TIME + " BIGINT DEFAULT 0)";
+    PHOTO_LCD_VISIT_TIME + " BIGINT DEFAULT 0, " +
+    PHOTO_POSITION + " INT DEFAULT 1)";
 
 const std::string AudioColumn::AUDIO_ALBUM = "audio_album";
 const std::string AudioColumn::AUDIO_ARTIST = "artist";
