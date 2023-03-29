@@ -93,7 +93,7 @@ const std::string MEDIA_DATA_DB_THUMBNAIL = "thumbnail";
 const std::string MEDIA_DATA_DB_CONTENT_CREATE_TIME = "content_create_time";
 const std::string MEDIA_DATA_DB_POSITION = "position";
 const std::string MEDIA_DATA_DB_DIRTY = "dirty";
-const std::string MEDIA_DATA_DB_GID = "gid";
+const std::string MEDIA_DATA_DB_CLOUD_ID = "cloud_id";
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
 const std::string MEDIA_DATA_DB_TIME_VISIT = "time_visit";
@@ -165,7 +165,7 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        MEDIA_DATA_DB_LATITUDE + " DOUBLE DEFAULT 0, " +
                                        MEDIA_DATA_DB_LONGITUDE + " DOUBLE DEFAULT 0, " +
                                        MEDIA_DATA_DB_DATE_TAKEN + " BIGINT DEFAULT 0, " +
-                                       MEDIA_DATA_DB_GID + " BIGINT DEFAULT 0, " +
+                                       MEDIA_DATA_DB_CLOUD_ID + " TEXT, " +
                                        MEDIA_DATA_DB_DIRTY + " INT DEFAULT 0, " +
                                        MEDIA_DATA_DB_THUMBNAIL + " TEXT, " +
                                        MEDIA_DATA_DB_LCD + " TEXT, " +

@@ -94,6 +94,15 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
+                "header_files": [
+                  "medialibrary_db_const.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/frameworks/services/media_cloud_sync:cloud_sync_header"
             }
         ],
         "test": [

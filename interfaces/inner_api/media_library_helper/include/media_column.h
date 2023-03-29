@@ -64,7 +64,7 @@ public:
     const static std::string PHOTO_LCD_VISIT_TIME;
     const static std::string PHOTO_POSITION;
     const static std::string PHOTO_DIRTY;
-    const static std::string PHOTO_GID;
+    const static std::string PHOTO_CLOUD_ID;
 
     // table name
     const static std::string PHOTOS_TABLE;
