@@ -27,7 +27,6 @@
 #include "media_thumbnail_helper.h"
 #include "media_log.h"
 #include "system_ability_definition.h"
-#include "volume/volume_manager_service.h"
 
 using namespace std;
 
