@@ -75,11 +75,12 @@ public:
     explicit MediaLibraryCommand(const Uri &uri);
     MediaLibraryCommand(const Uri &uri, const NativeRdb::ValuesBucket &value);
     MediaLibraryCommand(const Uri &uri, const OperationType &oprnType);
-    MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType);
     MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
-        const NativeRdb::ValuesBucket &value);
+        MediaLibraryApi api = MediaLibraryApi::API_OLD);
     MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
-        const std::string &networkId);
+        const NativeRdb::ValuesBucket &value, MediaLibraryApi api = MediaLibraryApi::API_OLD);
+    MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
+        const std::string &networkId, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     MediaLibraryCommand() = delete;
     ~MediaLibraryCommand();
     MediaLibraryCommand(const MediaLibraryCommand &) = delete;
@@ -97,14 +98,15 @@ public:
     const Uri &GetUri() const;
     const std::string &GetBundleName();
     const std::string &GetDeviceName();
-    const std::unordered_map<std::string, DirAsset> &GetDirQuerySetMap();
+    std::string GetUriStringWithoutSegment();
+    MediaLibraryApi GetApi();
+    std::string GetQuerySetParam(const std::string &key);
 
     void SetOprnAssetId(const std::string &oprnId);
     void SetValueBucket(const NativeRdb::ValuesBucket &value);
     void SetTableName(const std::string &tableName);
     void SetBundleName(const std::string &bundleName);
     void SetDeviceName(const std::string &deviceName);
-    void SetDirQuerySetMap(const std::unordered_map<std::string, DirAsset> &dirQuerySetMap);
 
 private:
     void SetOprnDevice(const std::string &networkId);
@@ -113,6 +115,8 @@ private:
     void ParseTableName();
     void InitAbsRdbPredicates();
     void ParseFileId();
+    void ParseQuerySetMapFromUri();
+    void SetApiFromQuerySetMap();
 
     Uri uri_{""};
     NativeRdb::ValuesBucket insertValue_;
@@ -124,7 +128,8 @@ private:
     std::string tableName_;
     std::string bundleName_;
     std::string deviceName_;
-    std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
+    std::unordered_map<std::string, std::string> querySetMap_;
+    MediaLibraryApi api_;
 };
 } // namespace Media
 } // namespace OHOS
