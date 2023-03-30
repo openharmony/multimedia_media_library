@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <vector>
 #include "mtp_constants.h"
+#include "v1_0/iusbfn_mtp_interface.h"
 namespace OHOS {
 namespace Media {
 class MtpDriver {
@@ -34,8 +35,8 @@ public:
     int SendObj(MtpFileRange &mfr);
     int WriteEvent(EventMtp &em);
 private:
-    int usbDriver {0};
     bool usbOpenFlag {false};
+    sptr<OHOS::HDI::Usb::Gadget::Mtp::V1_0::IUsbfnMtpInterface> usbfnMtpInterface = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

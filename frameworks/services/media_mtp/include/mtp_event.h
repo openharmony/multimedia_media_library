@@ -34,8 +34,7 @@ public:
 private:
     std::shared_ptr<MtpOperationContext> mtpContextPtr_;
     std::shared_ptr<MtpOperationUtils> handleptr_;
-    uint16_t EventPayloadData(const uint16_t &code, std::shared_ptr<MtpOperationContext> &context,
-        std::shared_ptr<PayloadData> &data);
+    uint16_t EventPayloadData(const uint16_t code, std::shared_ptr<PayloadData> &data);
     void SendEvent(const int32_t &code);
 };
 } // namespace Media

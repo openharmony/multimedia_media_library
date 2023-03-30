@@ -23,6 +23,7 @@
 #include <cstdio>
 #include <cstring>
 #include <sys/ioctl.h>
+#include "v1_0/iusb_interface.h"
 
 #define MTP_SEND_FILE              _IOW('M', 0, struct MtpFileRange)
 /*
@@ -37,9 +38,11 @@
  * with a 12 byte MTP data packet header at the beginning.
  */
 #define MTP_SEND_FILE_WITH_HEADER  _IOW('M', 4, struct MtpFileRange)
+
+using namespace std;
+using namespace OHOS::HDI::Usb::Gadget::Mtp::V1_0;
 namespace OHOS {
 namespace Media {
-const int PORT = 02;
 const int READ_SIZE = 10240;
 
 MtpDriver::MtpDriver()
@@ -52,10 +55,16 @@ MtpDriver::~MtpDriver()
 
 int MtpDriver::OpenDriver()
 {
-    usbDriver = open("/dev/mtp_usb", PORT);
-    if (usbDriver < 0) {
-        MEDIA_ERR_LOG("can't open MtpDriver error = %{public}d", errno);
+    usbfnMtpInterface = IUsbfnMtpInterface::Get();
+    if (usbfnMtpInterface == nullptr) {
+        MEDIA_ERR_LOG("IUsbfnMtpInterface::Get() failed.");
         return E_ERR;
+    }
+
+    auto ret = usbfnMtpInterface->Start();
+    if (ret != 0) {
+        MEDIA_ERR_LOG("MtpDriver::OpenDriver Start() failed error = %{public}d", ret);
+        return ret;
     }
     usbOpenFlag = true;
     return MTP_SUCCESS;
@@ -63,8 +72,13 @@ int MtpDriver::OpenDriver()
 
 int MtpDriver::CloseDriver()
 {
+    if (usbfnMtpInterface != nullptr) {
+        auto ret = usbfnMtpInterface->Stop();
+        MEDIA_ERR_LOG("MtpDriver::CloseDriver Error: %{public}d", ret);
+    }
+
     usbOpenFlag = false;
-    return 0;
+    return MTP_SUCCESS;
 }
 
 int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
@@ -80,30 +94,50 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
     }
 
     outBuffer.resize(outReadSize);
-    auto len = read(usbDriver, outBuffer.data(), outReadSize);
-    outBuffer.resize(len);
-    outReadSize = static_cast<uint32_t>(len);
+    auto ret = usbfnMtpInterface->Read(outBuffer);
+    if (ret != 0) {
+        outBuffer.resize(0);
+        outReadSize = 0;
+        MEDIA_ERR_LOG("MtpDriver::Read Out Error: %{public}d", ret);
+        return E_ERR;
+    }
+    outReadSize = outBuffer.size();
     return MTP_SUCCESS;
 }
 
 void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t bufferSize)
 {
-    write(usbDriver, buffer.data(), bufferSize);
+    auto ret = usbfnMtpInterface->Write(buffer);
+    bufferSize = static_cast<uint32_t>(ret);
 }
 
 int MtpDriver::ReceiveObj(MtpFileRange &mfr)
 {
-    return ioctl(usbDriver, MTP_RECEIVE_FILE, reinterpret_cast<unsigned long>(&mfr));
+    struct UsbFnMtpFileSlice mfs = {
+        .fd = mfr.fd,
+        .offset = mfr.offset,
+        .length = mfr.length,
+        .command = mfr.command,
+        .transactionId = mfr.transaction_id,
+    };
+    return usbfnMtpInterface->ReceiveFile(mfs);
 }
 
 int MtpDriver::SendObj(MtpFileRange &mfr)
 {
-    return ioctl(usbDriver, MTP_SEND_FILE_WITH_HEADER, reinterpret_cast<unsigned long>(&mfr));
+    struct UsbFnMtpFileSlice mfs = {
+        .fd = mfr.fd,
+        .offset = 0,
+        .length = mfr.length,
+        .command = mfr.command,
+        .transactionId = mfr.transaction_id,
+    };
+    return usbfnMtpInterface->SendFile(mfs);
 }
 
 int MtpDriver::WriteEvent(EventMtp &em)
 {
-    return ioctl(usbDriver, MTP_SEND_EVENT, reinterpret_cast<unsigned long>(&em));
+    return usbfnMtpInterface->SendEvent(em.data);
 }
 } // namespace Media
 } // namespace OHOS
