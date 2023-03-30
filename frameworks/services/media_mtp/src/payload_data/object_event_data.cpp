@@ -39,8 +39,6 @@ int ObjectEventData::Parser(const vector<uint8_t> &buffer, int32_t readSize)
 
 int ObjectEventData::Maker(vector<uint8_t> &outBuffer)
 {
-    uint32_t length = MTP_CONTAINER_HEADER_SIZE + sizeof(payload_);
-    MtpPacketTool::PutUInt32(outBuffer, length);
     MtpPacketTool::PutUInt32(outBuffer, payload_);
     return MTP_SUCCESS;
 }
@@ -56,7 +54,7 @@ uint32_t ObjectEventData::CalculateSize()
     return tmpVar.size();
 }
 
-void ObjectEventData::SetPayload(const int32_t &payload)
+void ObjectEventData::SetPayload(const int32_t payload)
 {
     payload_ = payload;
 }

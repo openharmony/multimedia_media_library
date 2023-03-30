@@ -25,7 +25,7 @@ public:
 
     int Parser(const std::vector<uint8_t> &buffer, int32_t readSize) override;
     int Maker(std::vector<uint8_t> &outBuffer) override;
-    void SetPayload(const int32_t &payload);
+    void SetPayload(const int32_t payload);
     uint32_t CalculateSize() override;
 private:
     int32_t payload_ {0};

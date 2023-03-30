@@ -35,6 +35,8 @@ public:
     uint32_t GetTransactionId() const;
     void SetTransactionId(uint32_t transactionId);
     void Reset();
+    
+    static uint32_t sTransactionID_;
 private:
     std::shared_ptr<MtpOperationContext> context_;
     uint32_t containerLength_ {0};

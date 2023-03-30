@@ -84,6 +84,7 @@ ohos_unittest("medialibrary_mtp_test") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
+    "drivers_interface_usb:usbfn_mtp_idl_headers",
     "hitrace_native:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_core",

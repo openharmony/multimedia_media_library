@@ -61,14 +61,14 @@ void MtpOperation::Execute()
     ReceiveRequestPacket(errorCode);
     if (errorCode != MTP_SUCCESS) {
         SendMakeResponsePacket(errorCode);
-        MEDIA_ERR_LOG("MtpOperation::Execute OUT SendMakeResponsePacket faild");
+        MEDIA_ERR_LOG("MtpOperation::Execute Out ReceiveRequestPacket fail err: %{public}d", errorCode);
         return;
     }
 
     DealRequest(mtpContextPtr_->operationCode, errorCode);
     if (errorCode != MTP_SUCCESS) {
         SendMakeResponsePacket(errorCode);
-        MEDIA_ERR_LOG("MtpOperation::Execute OUT DealRequest faild");
+        MEDIA_ERR_LOG("MtpOperation::Execute Out DealRequest fail err: %{public}d", errorCode);
         return;
     }
 
@@ -89,12 +89,12 @@ void MtpOperation::ReceiveRequestPacket(int &errorCode)
     requestPacketPtr_->Init(headerData);
     errorCode = requestPacketPtr_->Read();
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("requestPacket Read faild err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("requestPacket Read fail err: %{public}d", errorCode);
         return;
     }
     errorCode = requestPacketPtr_->Parser();
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("requestPacket Parser faild err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("requestPacket Parser fail err: %{public}d", errorCode);
         return;
     }
 }
@@ -109,12 +109,12 @@ void MtpOperation::SendMakeResponsePacket(int &errorCode)
     responsePacketPtr_->Init(responseHeaderData, dataPayloadData_);
     errorCode = responsePacketPtr_->Maker(false);
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("responsePacket Maker faild err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("responsePacket Maker fail err: %{public}d", errorCode);
         return;
     }
     errorCode = responsePacketPtr_->Write();
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("responsePacket Write faild err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("responsePacket Write fail err: %{public}d", errorCode);
         return;
     }
 }
@@ -140,12 +140,12 @@ void MtpOperation::ReceiveI2Rdata(int &errorCode)
 
     errorCode = dataPacketPtr_->Read();
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("dataPacket Read faild err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("dataPacket Read fail err: %{public}d", errorCode);
         return;
     }
     errorCode = dataPacketPtr_->Parser();
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("dataPacket Parser faild err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("dataPacket Parser fail err: %{public}d", errorCode);
         return;
     }
 
@@ -164,7 +164,7 @@ void MtpOperation::SendR2Idata(int &errorCode)
 
     responseCode_ = GetPayloadData(mtpContextPtr_, dataPayloadData_, DATA_CONTAINER_TYPE, errorCode);
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("GetPayloadData faild err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("GetPayloadData fail err: %{public}d", errorCode);
         return;
     }
     shared_ptr<HeaderData> dataHeaderData = make_shared<HeaderData>(
@@ -172,12 +172,12 @@ void MtpOperation::SendR2Idata(int &errorCode)
     dataPacketPtr_->Init(dataHeaderData, dataPayloadData_);
     errorCode = dataPacketPtr_->Maker(true);
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("dataPacket Maker faild err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("dataPacket Maker fail err: %{public}d", errorCode);
         return;
     }
     errorCode = dataPacketPtr_->Write();
     if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("dataPacket Write faild err: %{public}d", errorCode);
+        MEDIA_ERR_LOG("dataPacket Write fail err: %{public}d", errorCode);
         return;
     }
 }
