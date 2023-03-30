@@ -17,13 +17,11 @@
 #include <mutex>
 #include <sys/statvfs.h>
 
-#include "ipc/storage_manager_proxy.h"
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "system_ability_definition.h"
-#include "volume/volume_manager_service.h"
 
 using namespace std;
 
