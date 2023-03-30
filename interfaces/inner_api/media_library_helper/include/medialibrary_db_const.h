@@ -450,6 +450,19 @@ const std::string MEDIALIBRARY_ERROR_TABLE = "Error";
 const std::string MEDIA_DATA_ERROR = "err";
 const std::string CREATE_MEDIALIBRARY_ERROR_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_ERROR_TABLE + " ("
     + MEDIA_DATA_ERROR + " TEXT PRIMARY KEY)";
+
+/*
+ * Media Unique Number Table
+ */
+const std::string ASSET_UNIQUE_NUMBER_TABLE = "UniqueNumber";
+const std::string ASSET_MEDIA_TYPE = "media_type";
+const std::string UNIQUE_NUMBER = "unique_number";
+const std::string CREATE_ASSET_UNIQUE_NUMBER_TABLE = "CREATE TABLE IF NOT EXISTS " + ASSET_UNIQUE_NUMBER_TABLE + " (" +
+    ASSET_MEDIA_TYPE + " TEXT, " + UNIQUE_NUMBER + " INT DEFAULT 0) ";
+
+const std::string IMAGE_ASSET_TYPE = "image";
+const std::string VIDEO_ASSET_TYPE = "video";
+const std::string AUDIO_ASSET_TYPE = "audio";
 } // namespace Media
 } // namespace OHOS
 
