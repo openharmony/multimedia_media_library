@@ -45,6 +45,10 @@ public:
     int32_t ExecuteSql(const std::string &sql) override;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql) override;
 
+    int32_t BeginTransaction();
+    int32_t RollBack();
+    int32_t Commit();
+
     std::shared_ptr<NativeRdb::RdbStore> GetRaw() const;
     std::string ObtainTableName(MediaLibraryCommand &cmd) override;
 
@@ -62,6 +66,10 @@ private:
     bool UnSubscribeRdbStoreObserver();
 
     static constexpr int RDB_CONNECT_NUM = 10;
+    static constexpr int RDB_TRANSACTION_WAIT_MS = 1000;
+    std::mutex transactionMutex_;
+    std::condition_variable transactionCV_;
+    std::atomic<bool> isInTransaction_;
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
     std::string bundleName_{BUNDLE_NAME};
