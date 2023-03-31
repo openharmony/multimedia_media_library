@@ -230,6 +230,50 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QuerySql_test_002, TestSize.Level0)
     EXPECT_EQ(queryResultSet, nullptr);
 }
 
+HWTEST_F(MediaLibraryExtUnitTest, medialib_Transaction_test_001, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    rdbStorePtr->Init();
+    int32_t ret = rdbStorePtr->BeginTransaction();
+    EXPECT_EQ(ret, E_OK);
+    ret = rdbStorePtr->BeginTransaction();
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
+    ValuesBucket valuesBucket;
+    string title = "medialib_Update_test_001";
+    valuesBucket.PutString(MEDIA_DATA_DB_TITLE, title);
+    cmd.SetValueBucket(valuesBucket);
+    int32_t updatedRows = E_HAS_DB_ERROR;
+    ret = rdbStorePtr->Update(cmd, updatedRows);
+    ret = rdbStorePtr->Commit();
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_Transaction_test_002, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    rdbStorePtr->Stop();
+    int32_t ret = rdbStorePtr->BeginTransaction();
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_Transaction_test_003, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    rdbStorePtr->Init();
+    int32_t ret = rdbStorePtr->Commit();
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    ret = rdbStorePtr->RollBack();
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+}
+
+
 HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPullTable_test_001, TestSize.Level0)
 {
     if (rdbStorePtr == nullptr) {
