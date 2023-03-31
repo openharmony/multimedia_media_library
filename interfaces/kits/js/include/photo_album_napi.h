@@ -58,6 +58,7 @@ private:
     static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
 
     static napi_value JSCommitModify(napi_env env, napi_callback_info info);
+    static napi_value JSPhotoAlbumAddAssets(napi_env env, napi_callback_info info);
 
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
@@ -67,10 +68,10 @@ private:
 
 struct PhotoAlbumNapiAsyncContext : public NapiError {
     int32_t changedRows;
-    std::vector<int32_t> assetArray;
     std::vector<std::string> fetchColumn;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
+    std::vector<DataShare::DataShareValuesBucket> valuesBuckets;
 
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
