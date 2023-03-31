@@ -2073,7 +2073,7 @@ HWTEST_F(MtpNativeTest, mtp_event_001, TestSize.Level0)
     mtpEvent->SendObjectAdded(path);
     mtpEvent->SendObjectRemoved(path);
     mtpEvent->SendObjectInfoChanged(path);
-
+    EXPECT_TRUE(path == "");
     MEDIA_INFO_LOG("mtp_event_001::End");
 }
 
