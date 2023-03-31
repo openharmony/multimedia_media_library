@@ -151,5 +151,23 @@ int UserFileClient::Update(Uri &uri, const DataSharePredicates &predicates,
     return sDataShareHelper_->Update(uri, predicates, value);
 }
 
+void UserFileClient::RegisterObserverExt(const Uri &uri,
+    shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants)
+{
+    if (!IsValid()) {
+        NAPI_ERR_LOG("register observer fail, helper null");
+        return;
+    }
+    sDataShareHelper_->RegisterObserverExt(uri, std::move(dataObserver), isDescendants);
+}
+
+void UserFileClient::UnregisterObserverExt(const Uri &uri, std::shared_ptr<DataShare::DataShareObserver> dataObserver)
+{
+    if (!IsValid()) {
+        NAPI_ERR_LOG("unregister observer fail, helper null");
+        return;
+    }
+    sDataShareHelper_->UnregisterObserverExt(uri, std::move(dataObserver));
+}
 }
 }

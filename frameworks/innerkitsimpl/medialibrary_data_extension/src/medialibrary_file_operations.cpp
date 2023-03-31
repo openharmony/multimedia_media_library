@@ -25,6 +25,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_smartalbum_map_operations.h"
@@ -39,6 +40,8 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+using ChangeType = AAFwk::ChangeInfo::ChangeType;
+
 int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd)
 {
     int32_t errCode = E_FAIL;
@@ -167,8 +170,12 @@ int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd
     if (srcPath.compare(dstFilePath) == 0) {
         return E_SAME_PATH;
     }
-
-    return MediaLibraryObjectUtils::RenameFileObj(cmd, srcPath, dstFilePath);
+    int errCode = MediaLibraryObjectUtils::RenameFileObj(cmd, srcPath, dstFilePath);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if ((errCode > 0) && (watch != nullptr)) {
+        watch->Notify(strFileId, ChangeType::UPDATE);
+    }
+    return errCode;
 }
 
 int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cmd)
