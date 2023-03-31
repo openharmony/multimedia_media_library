@@ -44,6 +44,9 @@ public:
     static int OpenFile(Uri &uri, const std::string &mode);
     static int Update(Uri &uri, const DataShare::DataSharePredicates &predicates,
         const DataShare::DataShareValuesBucket &value);
+    static void RegisterObserverExt(const Uri &uri,
+        std::shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants);
+    static void UnregisterObserverExt(const Uri &uri, std::shared_ptr<DataShare::DataShareObserver> dataObserver);
 private:
     static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);

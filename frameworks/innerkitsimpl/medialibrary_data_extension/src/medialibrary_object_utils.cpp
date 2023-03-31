@@ -31,6 +31,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_dir_operations.h"
+#include "medialibrary_notify.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_errno.h"
 #include "media_privacy_manager.h"
@@ -703,7 +704,6 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Get fileAsset from database fail!");
         return E_INVALID_FILEID;
     }
-
     string srcPath = fileAsset->GetPath();
     string fileName = MediaLibraryDataManagerUtils::GetFileName(srcPath);
     if ((fileName.length() != 0) && (fileName.at(0) != '.')) {
@@ -719,6 +719,10 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     }
     InvalidateThumbnail(strFileId);
     ScanFile(srcPath);
+    auto notifyWatch = MediaLibraryNotify::GetInstance();
+    if (notifyWatch != nullptr) {
+        notifyWatch->Notify(fileAsset);
+    }
     return E_SUCCESS;
 }
 
