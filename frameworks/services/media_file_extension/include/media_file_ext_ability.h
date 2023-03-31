@@ -43,6 +43,7 @@ public:
         const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList) override;
     int ScanFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
         const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList) override;
+    int Query(const Uri &uri, std::vector<std::string> &columns, std::vector<std::string> &results) override;
     int GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList) override;
     int Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri) override;
     int Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri) override;
