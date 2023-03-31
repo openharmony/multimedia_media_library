@@ -287,7 +287,7 @@ napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int32_t id;
     napi_value thisVar = nullptr;
 
@@ -311,7 +311,7 @@ napi_value FileAssetNapi::JSGetFileUri(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     string uri = "";
     napi_value thisVar = nullptr;
 
@@ -335,7 +335,7 @@ napi_value FileAssetNapi::JSGetFilePath(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     string path = "";
     napi_value thisVar = nullptr;
 
@@ -359,7 +359,7 @@ napi_value FileAssetNapi::JSGetFileDisplayName(napi_env env, napi_callback_info 
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     string displayName = "";
     napi_value thisVar = nullptr;
 
@@ -383,7 +383,7 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
 {
     napi_status status;
     napi_value undefinedResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     napi_valuetype valueType = napi_undefined;
     size_t res = 0;
     char buffer[FILENAME_MAX];
@@ -415,7 +415,7 @@ napi_value FileAssetNapi::JSGetMimeType(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     string mimeType = "";
     napi_value thisVar = nullptr;
 
@@ -439,7 +439,7 @@ napi_value FileAssetNapi::JSGetMediaType(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int32_t mediaType;
     napi_value thisVar = nullptr;
 
@@ -463,7 +463,7 @@ napi_value FileAssetNapi::JSGetTitle(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     string title = "";
     napi_value thisVar = nullptr;
 
@@ -486,7 +486,7 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value undefinedResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     napi_valuetype valueType = napi_undefined;
     size_t res = 0;
     char buffer[FILENAME_MAX];
@@ -514,7 +514,7 @@ napi_value FileAssetNapi::JSGetSize(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int64_t size;
     napi_value thisVar = nullptr;
 
@@ -538,7 +538,7 @@ napi_value FileAssetNapi::JSGetAlbumId(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int32_t albumId;
     napi_value thisVar = nullptr;
 
@@ -562,7 +562,7 @@ napi_value FileAssetNapi::JSGetAlbumName(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     string albumName = "";
     napi_value thisVar = nullptr;
 
@@ -595,7 +595,7 @@ napi_value FileAssetNapi::JSGetCount(napi_env env, napi_callback_info info)
         return jsResult;
     }
 
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if ((status == napi_ok) && (obj != nullptr)) {
         napi_create_int32(env, obj->fileAssetPtr->GetCount(), &jsResult);
@@ -608,7 +608,7 @@ napi_value FileAssetNapi::JSGetDateAdded(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int64_t dateAdded;
     napi_value thisVar = nullptr;
 
@@ -632,7 +632,7 @@ napi_value FileAssetNapi::JSGetDateTrashed(napi_env env, napi_callback_info info
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int64_t dateTrashed;
     napi_value thisVar = nullptr;
 
@@ -656,7 +656,7 @@ napi_value FileAssetNapi::JSGetDateModified(napi_env env, napi_callback_info inf
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int64_t dateModified;
     napi_value thisVar = nullptr;
 
@@ -680,7 +680,7 @@ napi_value FileAssetNapi::JSGetOrientation(napi_env env, napi_callback_info info
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int32_t orientation;
     napi_value thisVar = nullptr;
 
@@ -703,7 +703,7 @@ napi_value FileAssetNapi::JSSetOrientation(napi_env env, napi_callback_info info
 {
     napi_status status;
     napi_value undefinedResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     napi_valuetype valueType = napi_undefined;
     int32_t orientation;
     size_t argc = ARGS_ONE;
@@ -734,7 +734,7 @@ napi_value FileAssetNapi::JSGetWidth(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int32_t width;
     napi_value thisVar = nullptr;
 
@@ -758,7 +758,7 @@ napi_value FileAssetNapi::JSGetHeight(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int32_t height;
     napi_value thisVar = nullptr;
 
@@ -782,7 +782,7 @@ napi_value FileAssetNapi::JSGetRelativePath(napi_env env, napi_callback_info inf
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     string relativePath = "";
     napi_value thisVar = nullptr;
 
@@ -806,7 +806,7 @@ napi_value FileAssetNapi::JSSetRelativePath(napi_env env, napi_callback_info inf
 {
     napi_status status;
     napi_value undefinedResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     napi_valuetype valueType = napi_undefined;
     size_t res = 0;
     char buffer[ARG_BUF_SIZE];
@@ -833,7 +833,7 @@ napi_value FileAssetNapi::JSGetAlbum(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     string album = "";
     napi_value thisVar = nullptr;
 
@@ -857,7 +857,7 @@ napi_value FileAssetNapi::JSGetArtist(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     string artist = "";
     napi_value thisVar = nullptr;
 
@@ -881,7 +881,7 @@ napi_value FileAssetNapi::JSGetDuration(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int32_t duration;
     napi_value thisVar = nullptr;
 
@@ -905,7 +905,7 @@ napi_value FileAssetNapi::JSParent(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int32_t parent;
     napi_value thisVar = nullptr;
     napi_get_undefined(env, &jsResult);
@@ -925,7 +925,7 @@ napi_value FileAssetNapi::JSGetAlbumUri(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     string albumUri = "";
     napi_value thisVar = nullptr;
     napi_get_undefined(env, &jsResult);
@@ -945,7 +945,7 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
 {
     napi_status status;
     napi_value jsResult = nullptr;
-    FileAssetNapi* obj = nullptr;
+    FileAssetNapi *obj = nullptr;
     int64_t dateTaken;
     napi_value thisVar = nullptr;
     napi_get_undefined(env, &jsResult);

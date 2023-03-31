@@ -47,9 +47,8 @@ namespace OHOS {
 namespace AbilityRuntime {
 using namespace OHOS::AppExecFwk;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
-constexpr int INVALID_VALUE = -1;
 
-MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const std::unique_ptr<Runtime>& runtime)
+MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
 {
     return new MediaDataShareExtAbility(static_cast<Runtime&>(*runtime));
 }
@@ -60,8 +59,8 @@ MediaDataShareExtAbility::~MediaDataShareExtAbility()
 {
 }
 
-void MediaDataShareExtAbility::Init(const std::shared_ptr<AbilityLocalRecord> &record,
-    const std::shared_ptr<OHOSApplication> &application, std::shared_ptr<AbilityHandler> &handler,
+void MediaDataShareExtAbility::Init(const shared_ptr<AbilityLocalRecord> &record,
+    const shared_ptr<OHOSApplication> &application, shared_ptr<AbilityHandler> &handler,
     const sptr<IRemoteObject> &token)
 {
     if ((record == nullptr) || (application == nullptr) || (handler == nullptr) || (token == nullptr)) {
@@ -122,8 +121,8 @@ sptr<IRemoteObject> MediaDataShareExtAbility::OnConnect(const AAFwk::Want &want)
 {
     MEDIA_INFO_LOG("%{public}s begin. ", __func__);
     Extension::OnConnect(want);
-    sptr<MediaDataShareStubImpl> remoteObject = new (std::nothrow) MediaDataShareStubImpl(
-        std::static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()),
+    sptr<MediaDataShareStubImpl> remoteObject = new (nothrow) MediaDataShareStubImpl(
+        static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()),
         nullptr);
     if (remoteObject == nullptr) {
         MEDIA_ERR_LOG("%{public}s No memory allocated for DataShareStubImpl", __func__);
@@ -133,45 +132,45 @@ sptr<IRemoteObject> MediaDataShareExtAbility::OnConnect(const AAFwk::Want &want)
     return remoteObject->AsObject();
 }
 
-static uint32_t TypeMaskStringToInteger(const std::string &typeMask)
+static uint32_t TypeMaskStringToInteger(const string &typeMask)
 {
     uint32_t mask = 0;
     for (auto &item : MEDIA_TYPE_TUPLE_VEC) {
-        if (typeMask[std::get<POS_TYPE_MASK_STRING_INDEX>(item)] == TYPE_MASK_BIT_SET) {
-            mask |= static_cast<uint32_t>(std::get<POS_TYPE_MASK_INTEGER>(item));
+        if (typeMask[get<POS_TYPE_MASK_STRING_INDEX>(item)] == TYPE_MASK_BIT_SET) {
+            mask |= static_cast<uint32_t>(get<POS_TYPE_MASK_INTEGER>(item));
         }
     }
     return mask;
 }
 
 // Parse uri(eg. datashare::///media/image/10#key1:value1#key2:value2#key3:value3) to key-value pairs
-static int32_t GetKeyValueFromUri(const std::string &uri, std::vector<std::pair<std::string, std::string>> &pairs)
+static int32_t GetKeyValueFromUri(const string &uri, vector<pair<string, string>> &pairs)
 {
     constexpr size_t sharpPos = 1;
     size_t nextPairIndex = uri.find('#');
-    if (nextPairIndex == std::string::npos) {
+    if (nextPairIndex == string::npos) {
         return E_SUCCESS;
     }
-    std::string keyValueString;
-    for (std::string remain = uri.substr(nextPairIndex); nextPairIndex != std::string::npos;) {
+    string keyValueString;
+    for (string remain = uri.substr(nextPairIndex); nextPairIndex != string::npos;) {
         nextPairIndex = remain.find('#', sharpPos);
-        if (nextPairIndex == std::string::npos) {
+        if (nextPairIndex == string::npos) {
             keyValueString = remain.substr(sharpPos);
         } else {
             keyValueString = remain.substr(sharpPos, nextPairIndex - 1);
             remain = remain.substr(nextPairIndex);
         }
         size_t splitIndex = keyValueString.find(':');
-        if (splitIndex == std::string::npos) {
+        if (splitIndex == string::npos) {
             MEDIA_ERR_LOG("Key-Value string should have format: #key:value");
             return -EINVAL;
         }
-        pairs.push_back(std::make_pair(keyValueString.substr(0, splitIndex), keyValueString.substr(splitIndex + 1)));
+        pairs.push_back(make_pair(keyValueString.substr(0, splitIndex), keyValueString.substr(splitIndex + 1)));
     }
     return E_SUCCESS;
 }
 
-static int32_t ShouldCheckTypePermission(const std::string &uri, bool &shouldCheckType, std::string &typeMask)
+static int32_t ShouldCheckTypePermission(const string &uri, bool &shouldCheckType, string &typeMask)
 {
     typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
     shouldCheckType = false;
@@ -180,7 +179,7 @@ static int32_t ShouldCheckTypePermission(const std::string &uri, bool &shouldChe
         return E_SUCCESS;
     }
 
-    std::vector<std::pair<std::string, std::string>> pairs;
+    vector<pair<string, string>> pairs;
     int err = GetKeyValueFromUri(uri, pairs);
     if (err < 0) {
         MEDIA_ERR_LOG("Failed to parse key value pair from uri: %{public}s, err: %{public}d", uri.c_str(), err);
@@ -197,7 +196,7 @@ static int32_t ShouldCheckTypePermission(const std::string &uri, bool &shouldChe
     return E_SUCCESS;
 }
 
-static bool CheckPerms(bool shouldCheckType, bool isWrite, const std::string &typeMask)
+static bool CheckPerms(bool shouldCheckType, bool isWrite, const string &typeMask)
 {
     if (!shouldCheckType) {
         string perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
@@ -214,9 +213,9 @@ static bool CheckPerms(bool shouldCheckType, bool isWrite, const std::string &ty
     return false;
 }
 
-std::vector<std::string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter)
+vector<string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, const string &mimeTypeFilter)
 {
-    std::vector<std::string> ret;
+    vector<string> ret;
     return ret;
 }
 
@@ -258,7 +257,7 @@ static int CheckOpenFilePermission(string &uri, string &mode)
     return E_SUCCESS;
 }
 
-static int32_t CheckPermFromUri(std::string &uri, bool isWrite)
+static int32_t CheckPermFromUri(string &uri, bool isWrite)
 {
     bool shouldCheckType = false;
     string typeMask;
@@ -277,7 +276,7 @@ static int32_t CheckPermFromUri(std::string &uri, bool isWrite)
     return CheckPerms(shouldCheckType, isWrite, typeMask) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
-int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
+int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
 {
     string uriStr = uri.ToString();
     string unifyMode = mode;
@@ -297,7 +296,7 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const std::string &mode)
     return MediaLibraryDataManager::GetInstance()->OpenFile(Uri(uriStr), unifyMode);
 }
 
-int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const std::string &mode)
+int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const string &mode)
 {
     return 0;
 }
@@ -344,8 +343,8 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
     return MediaLibraryDataManager::GetInstance()->Delete(Uri(uriStr), predicates);
 }
 
-std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
-    const DataSharePredicates &predicates, std::vector<std::string> &columns, DatashareBusinessError &businessError)
+shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
+    const DataSharePredicates &predicates, vector<string> &columns, DatashareBusinessError &businessError)
 {
     const static set<string> noPermissionCheck = {
         MEDIALIBRARY_DIRECTORY_URI,
@@ -365,11 +364,11 @@ std::shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &u
     if (queryResultSet == nullptr) {
         return nullptr;
     }
-    std::shared_ptr<DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(queryResultSet);
+    shared_ptr<DataShareResultSet> resultSet = make_shared<DataShareResultSet>(queryResultSet);
     return resultSet;
 }
 
-std::string MediaDataShareExtAbility::GetType(const Uri &uri)
+string MediaDataShareExtAbility::GetType(const Uri &uri)
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     auto ret = MediaLibraryDataManager::GetInstance()->GetType(uri);
@@ -377,16 +376,19 @@ std::string MediaDataShareExtAbility::GetType(const Uri &uri)
     return ret;
 }
 
-int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const std::vector<DataShareValuesBucket> &values)
+int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
-    int ret = INVALID_VALUE;
+    string insertUri = uri.ToString();
     if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-        MEDIA_ERR_LOG("%{public}s Check calling permission failed.", __func__);
-        return ret;
+        auto ret = CheckPermFromUri(insertUri, true);
+        if (ret < 0) {
+            MEDIA_ERR_LOG("%{public}s Check calling permission failed.", __func__);
+            return ret;
+        }
     }
     MEDIA_INFO_LOG("%{public}s end.", __func__);
-    return MediaLibraryDataManager::GetInstance()->BatchInsert(uri, values);
+    return MediaLibraryDataManager::GetInstance()->BatchInsert(Uri(insertUri), values);
 }
 
 bool MediaDataShareExtAbility::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)

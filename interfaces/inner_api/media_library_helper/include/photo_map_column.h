@@ -26,9 +26,9 @@ public:
     // Sql to create the table
     static const std::string CREATE_TABLE;
 
-    static const std::string &GetTable();
-    static const std::string &GetAlbumId();
-    static const std::string &GetAssetId();
+    static const std::string TABLE;
+    static const std::string ALBUM_ID;
+    static const std::string ASSET_ID;
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_MAP_COLUMNS_H
