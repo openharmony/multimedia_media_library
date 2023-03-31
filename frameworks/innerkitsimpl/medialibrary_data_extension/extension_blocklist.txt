@@ -14,3 +14,4 @@
 src:*/frameworks/innerkitsimpl/medialibrary_data_extension/src/*
 src:*/frameworks/services/media_file_extension/src/*
 src:*/frameworks/services/media_scanner/src/*
+src:*/frameworks/services/media_distributed/src/*

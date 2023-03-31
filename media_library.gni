@@ -20,6 +20,8 @@ MEDIA_FILEEXT_SOURCE_DIR =
     "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_file_extension"
 MEDIA_SCANNER_SOURCE_DIR =
     "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_scanner"
+MEDIA_DISTRIBUTED_SOURCE_DIR =
+    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_distributed"
 MEDIA_LIB_INTERFACES_DIR = "${MEDIA_LIB_BASE_DIR}/interfaces"
 
 ABILITY_RUNTIME_PATH = "//foundation/ability/ability_runtime"
