@@ -55,6 +55,11 @@ using OHOS::DataShare::DataSharePredicates;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
+using ExceptIntFunction = void (*) (int32_t);
+using ExceptLongFunction = void (*) (int64_t);
+using ExceptBoolFunction = void (*) (bool);
+using ExceptStringFunction = void (*) (const string&);
+
 namespace {
 void CleanTestTables()
 {
@@ -250,6 +255,115 @@ bool QueryAndVerifyPhotoAsset(const string &columnName, const string &value,
     }
     return true;
 }
+
+inline int32_t CreatePhotoApi10(int mediaType, const string &displayName)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_NAME, displayName);
+    values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryPhotoOperations::Create(cmd);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Create Photo failed, errCode=%{public}d", ret);
+        return ret;
+    }
+    return ret;
+}
+
+string GetFilePath(int fileId)
+{
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
+        return "";
+    }
+
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("can not get rdbstore");
+        return "";
+    }
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get file Path");
+        return "";
+    }
+    string path = GetStringVal(PhotoColumn::MEDIA_FILE_PATH, resultSet);
+    return path;
+}
+
+int32_t MakePhotoUnpending(int fileId)
+{
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
+        return E_INVALID_FILEID;
+    }
+
+    string path = GetFilePath(fileId);
+    if (path.empty()) {
+        MEDIA_ERR_LOG("Get path failed");
+        return E_INVALID_VALUES;
+    }
+    int32_t errCode = MediaFileUtils::CreateAsset(path);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Can not create asset");
+        return errCode;
+    }
+
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("can not get rdbstore");
+        return E_HAS_DB_ERROR;
+    }
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    ValuesBucket values;
+    values.PutLong(PhotoColumn::MEDIA_TIME_PENDING, 0);
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    int32_t changedRows = -1;
+    errCode = g_rdbStore->Update(cmd, changedRows);
+    if (errCode != E_OK || changedRows <= 0) {
+        MEDIA_ERR_LOG("Update pending failed, errCode = %{public}d, changeRows = %{public}d",
+            errCode, changedRows);
+        return errCode;
+    }
+
+    return E_OK;
+}
+
+int32_t SetDefaultPhotoApi10(int mediaType, const string &displayName)
+{
+    int fileId = CreatePhotoApi10(mediaType, displayName);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("create photo failed, res=%{public}d", fileId);
+        return fileId;
+    }
+    int32_t errCode = MakePhotoUnpending(fileId);
+    if (errCode != E_OK) {
+        return errCode;
+    }
+    return fileId;
+}
+
+int32_t GetPhotoAssetCountIndb(const string &key, const string &value)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->EqualTo(key, value);
+    vector<string> columns;
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    int count = -1;
+    if (resultSet->GetRowCount(count) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get result set count");
+        return -1;
+    }
+    MEDIA_DEBUG_LOG("Get PhotoAsset count in db, key=%{public}s, value=%{public}s, count=%{public}d",
+        key.c_str(), value.c_str(), count);
+    return count;
+}
+
 } // namespace
 
 void TestPhotoCreateParamsApi10(const string &displayName, int32_t type, int32_t result)
@@ -262,6 +376,16 @@ void TestPhotoCreateParamsApi10(const string &displayName, int32_t type, int32_t
     cmd.SetValueBucket(values);
     int32_t ret = MediaLibraryPhotoOperations::Create(cmd);
     EXPECT_EQ(ret, result);
+}
+
+void TestPhotoDeleteParamsApi10(OperationObject oprnObject, int32_t fileId, ExceptIntFunction func)
+{
+    MediaLibraryCommand cmd(oprnObject, OperationType::DELETE, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryPhotoOperations::Delete(cmd);
+    func(ret);
 }
 
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
@@ -347,6 +471,43 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_002, Test
     TestPhotoCreateParamsApi10("photo.mp3", MediaType::MEDIA_TYPE_IMAGE,
         E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_api10_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_delete_api10_test_001");
+
+    // set photo
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < E_OK) {
+        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId);
+        return;
+    }
+    string filePath = GetFilePath(fileId);
+    if (filePath.empty()) {
+        MEDIA_ERR_LOG("Get filePath failed");
+        return;
+    }
+
+    EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), true);
+    int32_t count = GetPhotoAssetCountIndb(PhotoColumn::MEDIA_NAME, "photo.jpg");
+    EXPECT_EQ(count, 1);
+
+    // test delete
+    static constexpr int LARGE_NUM = 1000;
+    TestPhotoDeleteParamsApi10(OperationObject::ASSETMAP, fileId,
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_FILEID); });
+    TestPhotoDeleteParamsApi10(OperationObject::FILESYSTEM_PHOTO, fileId + LARGE_NUM,
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_FILEID); });
+    TestPhotoDeleteParamsApi10(OperationObject::FILESYSTEM_PHOTO, fileId,
+        [] (int32_t result) { EXPECT_GT(result, 0); });
+
+    // test delete result
+    EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), false);
+    count = GetPhotoAssetCountIndb(PhotoColumn::MEDIA_NAME, "photo.jpg");
+    EXPECT_EQ(count, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_delete_api10_test_001");
 }
 
 } // namespace Media
