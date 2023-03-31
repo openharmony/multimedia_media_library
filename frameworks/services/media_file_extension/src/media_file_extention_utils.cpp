@@ -18,6 +18,7 @@
 
 #include <fcntl.h>
 
+#include "file_access_extension_info.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
@@ -37,6 +38,7 @@ using namespace OHOS::FileAccessFwk;
 
 namespace OHOS {
 namespace Media {
+constexpr int64_t MAX_COUNT = 2000;
 constexpr int32_t ALBUM_MODE_READONLY = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ;
 constexpr int32_t ALBUM_MODE_RW =
     DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
@@ -667,6 +669,66 @@ int32_t MediaFileExtentionUtils::ScanFile(const FileInfo &parentInfo, const int6
     }
     auto result = SetScanFileSelection(parentInfo, uriType, offset, maxCount, filter);
     return GetScanFileFileInfoFromResult(parentInfo, result, fileList);
+}
+
+static int QueryDirSize(FileInfo fileInfo)
+{
+    vector<FileInfo> fileInfoVec;
+    DistributedFS::FileFilter filter;
+    int64_t offset { 0 };
+    int32_t ret = E_ERR;
+    int64_t size = 0;
+    do {
+        fileInfoVec.clear();
+        ret = MediaFileExtentionUtils::ScanFile(fileInfo, offset, MAX_COUNT, filter, fileInfoVec);
+        if (ret != E_SUCCESS) {
+            MEDIA_ERR_LOG("ScanFile get result error, code:%{public}d", ret);
+            return ret;
+        }
+        for (auto info : fileInfoVec) {
+            size += info.size;
+        }
+        offset += MAX_COUNT;
+    } while (fileInfoVec.size() == MAX_COUNT);
+    return size;
+}
+
+int32_t MediaFileExtentionUtils::Query(const Uri &uri, std::vector<std::string> &columns,
+    std::vector<std::string> &results)
+{
+    string queryUri = uri.ToString();
+    if (!CheckUriValid(queryUri)) {
+        return E_URI_INVALID;
+    }
+    auto resultSet = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, queryUri, columns);
+    for (auto column : columns) {
+        if (column == MEDIA_DATA_DB_SIZE) {
+            FileInfo fileInfo;
+            fileInfo.uri = queryUri;
+            int32_t ret = QueryDirSize(fileInfo);
+            if (ret > 0) {
+                results.push_back(std::to_string(ret));
+                continue;
+            }
+        }
+        auto memberType = FILE_RESULT_TYPE.at(column);
+        switch (memberType) {
+            case STRING_TYPE:
+                results.push_back(GetStringVal(column, resultSet));
+                break;
+            case INT32_TYPE:
+                results.push_back(std::to_string(GetInt32Val(column, resultSet)));
+                break;
+            case INT64_TYPE:
+                results.push_back(std::to_string(GetInt64Val(column, resultSet)));
+                break;
+            default:
+                MEDIA_ERR_LOG("not match  memberType %{public}d", memberType);
+                break;
+        }
+    }
+    resultSet->Close();
+    return E_SUCCESS;
 }
 
 bool GetRootInfo(shared_ptr<NativeRdb::ResultSet> &result, RootInfo &rootInfo)
