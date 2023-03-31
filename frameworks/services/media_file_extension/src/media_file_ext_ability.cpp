@@ -145,6 +145,11 @@ int MediaFileExtAbility::ScanFile(const FileInfo &parentInfo, const int64_t offs
     return ConvertErrno(MediaFileExtentionUtils::ScanFile(parentInfo, offset, maxCount, filter, fileList));
 }
 
+int MediaFileExtAbility::Query(const Uri &uri, std::vector<std::string> &columns, std::vector<std::string> &results)
+{
+    return ConvertErrno(MediaFileExtentionUtils::Query(uri, columns, results));
+}
+
 int MediaFileExtAbility::GetRoots(vector<FileAccessFwk::RootInfo> &rootList)
 {
     return ConvertErrno(MediaFileExtentionUtils::GetRoots(rootList));

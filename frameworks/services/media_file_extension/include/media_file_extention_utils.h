@@ -51,6 +51,7 @@ enum MediaFileUriType {
     URI_ALBUM,
     URI_FILE,
 };
+
 class MediaFileExtentionUtils {
 public:
     static bool CheckUriValid(const std::string &uri);
@@ -75,6 +76,7 @@ public:
         const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
     static int32_t ScanFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
         const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
+    static int32_t Query(const Uri &uri, std::vector<std::string> &columns, std::vector<std::string> &results);
     static int32_t GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList);
     static int Access(const Uri &uri, bool &isExist);
     static int GetThumbnail(const Uri &uri, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
