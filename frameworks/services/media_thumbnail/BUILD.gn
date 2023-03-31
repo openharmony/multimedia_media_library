@@ -75,6 +75,7 @@ ohos_shared_library("medialibrary_thumbnail") {
     "ability_base:zuri",
     "ability_runtime:ability_manager",
     "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
