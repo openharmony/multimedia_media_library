@@ -18,6 +18,7 @@
 #include "abs_shared_result_set.h"
 #include "file_asset.h"
 #include "media_column.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
@@ -30,6 +31,16 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+
+namespace {
+int32_t SolvePhotoAssetAlbumInDelete(const shared_ptr<FileAsset> &fileAsset)
+{
+    // todo: wait a function to get asset in which album
+
+    return E_OK;
+}
+} // namespace
+
 int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetApi()) {
@@ -46,10 +57,19 @@ int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
 {
-    return 0;
+    string fileId = cmd.GetOprnFileId();
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID,
+        fileId, cmd.GetOprnObject());
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
+        fileId.c_str());
+    
+    int32_t deleteRow = DeletePhoto(fileAsset);
+    CHECK_AND_RETURN_RET_LOG(deleteRow >= 0, deleteRow, "delete photo failed, deleteRow=%{public}d", deleteRow);
+
+    return deleteRow;
 }
 
-std::shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
+shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
     return nullptr;
@@ -88,18 +108,20 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
 
     // Check rootdir and extension
     int32_t errCode = CheckDisplayNameWithType(displayName, mediaType);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extension");
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to Check Dir and Extension, displayName=%{private}s, mediaType=%{public}d",
+        displayName.c_str(), mediaType);
 
     errCode = BeginTransaction();
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to start transaction");
+        MEDIA_ERR_LOG("Failed to start transaction, errCode=%{public}d", errCode);
         TransactionRollback();
         return errCode;
     }
 
     errCode = SetAssetPathInCreate(fileAsset);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name");
+        MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
         TransactionRollback();
         return errCode;
     }
@@ -113,11 +135,55 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
 
     errCode = TransactionCommit();
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to commit transaction");
+        MEDIA_ERR_LOG("Failed to commit transaction, errCode=%{public}d", errCode);
         TransactionRollback();
         return errCode;
     }
     return outRow;
+}
+
+int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fileAsset)
+{
+    string filePath = fileAsset->GetPath();
+    CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
+    bool res = MediaFileUtils::DeleteFile(filePath);
+    CHECK_AND_RETURN_RET_LOG(res, E_HAS_FS_ERROR, "Delete photo file failed, errno: %{public}d", errno);
+
+    // delete thumbnail
+    int32_t fileId = fileAsset->GetId();
+    InvalidateThumbnail(to_string(fileId));
+
+    int32_t errCode = BeginTransaction();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Failed to start transaction, errCode=%{public}d", errCode);
+        TransactionRollback();
+        return errCode;
+    }
+
+    // delete file in album
+    errCode = SolvePhotoAssetAlbumInDelete(fileAsset);
+    if (errCode != E_OK) {
+        TransactionRollback();
+        return errCode;
+    }
+
+    // delete file in db
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::DELETE);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    int32_t deleteRows = DeleteAssetInDb(cmd);
+    if (deleteRows <= 0) {
+        MEDIA_ERR_LOG("Delete photo in database failed, errCode=%{public}d", deleteRows);
+        TransactionRollback();
+        return E_HAS_DB_ERROR;
+    }
+
+    errCode = TransactionCommit();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Failed to commit transaction, errCode=%{public}d", errCode);
+        TransactionRollback();
+        return errCode;
+    }
+    return deleteRows;
 }
 
 } // namespace Media
