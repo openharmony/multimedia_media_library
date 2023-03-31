@@ -56,6 +56,7 @@ ohos_unittest("mtp_native_test") {
     "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/common/include",
     "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/provider/include",
     "//utils/native/base/include",
+    "//base/powermgr/battery_manager/interfaces/innerkits/native/include",
 
     # Security stuff
     "//base/security/access_token/interfaces/innerkits/accesstoken/include",
@@ -76,6 +77,7 @@ ohos_unittest("mtp_native_test") {
     "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
+    "//base/powermgr/battery_manager/interfaces/innerkits:batterysrv_client",
     "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
     "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp",
     "//third_party/openssl:libcrypto_shared",
@@ -89,7 +91,6 @@ ohos_unittest("mtp_native_test") {
     "access_token:libaccesstoken_sdk",
     "access_token:libnativetoken",
     "access_token:libtoken_setproc",
-    "battery_manager:batterysrv_client",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
