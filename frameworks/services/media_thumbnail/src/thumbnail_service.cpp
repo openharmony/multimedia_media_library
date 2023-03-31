@@ -54,20 +54,17 @@ shared_ptr<ThumbnailService> ThumbnailService::GetInstance()
     return thumbnailServiceInstance_;
 }
 
-static int32_t GetDefaultWindowSize(int32_t &size)
+static int32_t GetDefaultWindowSize(Size &size)
 {
     auto &displayMgr = OHOS::Rosen::DisplayManager::GetInstance();
     auto display = displayMgr.GetDefaultDisplay();
     if (display == nullptr) {
         return E_ERR;
     }
-    auto width = display->GetWidth();
-    auto height = display->GetHeight();
-    MEDIA_INFO_LOG("display window size::w %{public}d, h %{public}d", width, height);
-    auto maxSize = max(width, height);
-    if (maxSize > FULL_SCREEN_SIZE) {
-        size = FULL_SCREEN_SIZE;
-    }
+    size.width = display->GetWidth();
+    size.height = display->GetHeight();
+    MEDIA_INFO_LOG("display window size::w %{public}d, h %{public}d", size.width, size.height);
+
     return E_OK;
 }
 
@@ -79,7 +76,7 @@ int32_t ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
     kvStorePtr_ = kvStore;
     context_ = context;
 
-    return GetDefaultWindowSize(windowSize_);
+    return GetDefaultWindowSize(screenSize_);
 }
 
 void ThumbnailService::ReleaseService()
@@ -108,16 +105,14 @@ shared_ptr<DataShare::ResultSetBridge> ThumbnailService::GetThumbnail(const stri
         .context = context_,
         .networkId = networkId,
         .row = fileId,
-        .uri = uri
+        .uri = uri,
+        .screenSize= screenSize_
     };
     shared_ptr<DataShare::ResultSetBridge> resultSet;
     shared_ptr<IThumbnailHelper> thumbnailHelper = ThumbnailHelperFactory::GetThumbnailHelper(size);
     if (thumbnailHelper == nullptr) {
         MEDIA_ERR_LOG("thumbnailHelper nullptr");
         return nullptr;
-    }
-    if (ThumbnailHelperFactory::IsThumbnailFromLcd(size)) {
-        opts.size = windowSize_;
     }
     int32_t err = thumbnailHelper->GetThumbnailPixelMap(opts, resultSet);
     if (err != E_OK) {
@@ -139,7 +134,8 @@ int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri)
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .kvStore = kvStorePtr_,
-        .row = fileId
+        .row = fileId,
+        .screenSize = screenSize_
     };
     Size size = { DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE };
     shared_ptr<IThumbnailHelper> thumbnailHelper = ThumbnailHelperFactory::GetThumbnailHelper(size);
@@ -159,7 +155,6 @@ int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri)
         MEDIA_ERR_LOG("lcdHelper nullptr");
         return E_ERR;
     }
-    opts.size = windowSize_;
     err = lcdHelper->CreateThumbnail(opts);
     if (err != E_OK) {
         MEDIA_ERR_LOG("CreateLcd failed : %{public}d", err);
@@ -183,15 +178,13 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri)
         .store = rdbStorePtr_,
         .kvStore = kvStorePtr_,
         .context = context_,
-        .row = fileId
+        .row = fileId,
+        .screenSize= screenSize_
     };
     shared_ptr<IThumbnailHelper> thumbnailHelper = ThumbnailHelperFactory::GetThumbnailHelper(size);
     if (thumbnailHelper == nullptr) {
         MEDIA_ERR_LOG("thumbnailHelper nullptr");
         return E_ERR;
-    }
-    if (ThumbnailHelperFactory::IsThumbnailFromLcd(size)) {
-        opts.size = windowSize_;
     }
     int32_t err = thumbnailHelper->CreateThumbnail(opts, true);
     if (err != E_OK) {
