@@ -708,13 +708,23 @@ int32_t MediaFileExtentionUtils::Query(const Uri &uri, std::vector<std::string> 
     if (!CheckUriValid(queryUri)) {
         return E_URI_INVALID;
     }
+
+    bool isExist = false;
+    int ret = Access(uri, isExist);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Access uri error, code:%{public}d", ret);
+    CHECK_AND_RETURN_RET(isExist, E_NO_SUCH_FILE);
+
     auto resultSet = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, queryUri, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_URI_INVALID, "Get resultSet failed, uri: %{public}s",
+        queryUri.c_str());
     for (auto column : columns) {
         if (column == MEDIA_DATA_DB_SIZE) {
             FileInfo fileInfo;
-            fileInfo.uri = queryUri;
-            int32_t ret = QueryDirSize(fileInfo);
-            if (ret > 0) {
+            int ret = GetFileInfoFromUri(uri, fileInfo);
+            CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Get fileInfo from uri error, code:%{public}d", ret);
+            if (fileInfo.mode & DOCUMENT_FLAG_REPRESENTS_DIR) {
+                ret = QueryDirSize(fileInfo);
+                CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "Query directory size error, code:%{public}d", ret);
                 results.push_back(std::to_string(ret));
                 continue;
             }
