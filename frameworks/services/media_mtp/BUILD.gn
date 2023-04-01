@@ -108,8 +108,6 @@ ohos_shared_library("media_mtp") {
     "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:app_context",
     "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
-    "${USB_DRIVER_PATH}/ddk:libusb_core",
-    "${USB_DRIVER_PATH}/hdi_service:libusb_interface_service_1.0",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
     "//base/powermgr/battery_manager/interfaces/innerkits:batterysrv_client",
     "//third_party/openssl:libcrypto_shared",
