@@ -164,7 +164,7 @@ bool MediaLibraryUnitTestUtils::CreateFile(string displayName, shared_ptr<FileAs
     Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     DataShare::DataShareValuesBucket valuesBucket;
     string relativePath = parentAlbumAsset->GetRelativePath() + parentAlbumAsset->GetDisplayName() + "/";
-    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtensionFromFileUri(displayName));
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtension(displayName));
     MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);

@@ -81,13 +81,13 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileNameFromUri_test_001, TestSize
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileExtensionFromFileUri_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileExtension_test_001, TestSize.Level0)
 {
     string path = "";
-    string ret = ScannerUtils::GetFileExtensionFromFileUri(path);
+    string ret = ScannerUtils::GetFileExtension(path);
     EXPECT_EQ(ret, "");
-    path = "medialib_GetFileExtensionFromFileUri_001.test";
-    ret = ScannerUtils::GetFileExtensionFromFileUri(path);
+    path = "medialib_GetFileExtension_001.test";
+    ret = ScannerUtils::GetFileExtension(path);
     EXPECT_EQ(ret, "test");
 }
 
