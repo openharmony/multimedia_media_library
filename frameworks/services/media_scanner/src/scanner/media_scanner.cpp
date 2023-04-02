@@ -244,7 +244,7 @@ int32_t MediaScannerObj::GetFileMetadata()
     data_->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
 
     // extension and type
-    string extension = ScannerUtils::GetFileExtensionFromFileUri(path_);
+    string extension = ScannerUtils::GetFileExtension(path_);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     data_->SetFileExtension(extension);
     data_->SetFileMimeType(mimeType);

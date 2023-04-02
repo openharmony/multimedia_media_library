@@ -140,7 +140,7 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     ValuesBucket assetInfo;
     assetInfo.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset.GetMediaType());
     assetInfo.PutString(MEDIA_DATA_DB_URI, MediaLibraryDataManagerUtils::GetMediaTypeUri(fileAsset.GetMediaType()));
-    string extension = ScannerUtils::GetFileExtensionFromFileUri(displayName);
+    string extension = ScannerUtils::GetFileExtension(displayName);
     assetInfo.PutString(MEDIA_DATA_DB_MIME_TYPE, MimeTypeUtils::GetMimeTypeFromExtension(extension));
     assetInfo.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset.GetRelativePath());
     assetInfo.PutString(MEDIA_DATA_DB_NAME, displayName);
@@ -905,7 +905,7 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
         return E_HAS_FS_ERROR;
     }
     string fileId = cmd.GetOprnFileId();
-    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtensionFromFileUri(dstPath));
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtension(dstPath));
     MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
     string displayName = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(dstPath);
     ValuesBucket values;

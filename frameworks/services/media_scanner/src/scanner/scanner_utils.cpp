@@ -59,7 +59,7 @@ string ScannerUtils::GetFileNameFromUri(const string &path)
 }
 
 // Get file extension from the given filepath uri
-string ScannerUtils::GetFileExtensionFromFileUri(const string &path)
+string ScannerUtils::GetFileExtension(const string &path)
 {
     if (!path.empty()) {
         size_t dotIndex = path.rfind(".");

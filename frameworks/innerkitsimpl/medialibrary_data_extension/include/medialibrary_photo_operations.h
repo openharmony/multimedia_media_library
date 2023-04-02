@@ -35,6 +35,9 @@ public:
     static int32_t Delete(MediaLibraryCommand &cmd);
     static int32_t Open(MediaLibraryCommand &cmd, const std::string &mode);
     static int32_t Close(MediaLibraryCommand &cmd);
+
+private:
+    static int32_t CreateV10(MediaLibraryCommand &cmd);
 };
 } // namespace Media
 } // namespace OHOS

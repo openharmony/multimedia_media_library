@@ -16,16 +16,32 @@
 #include "medialibrary_photo_operations.h"
 
 #include "abs_shared_result_set.h"
+#include "file_asset.h"
+#include "media_column.h"
+#include "media_log.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
-
+#include "medialibrary_errno.h"
+#include "medialibrary_rdbstore.h"
+#include "userfile_manager_types.h"
+#include "value_object.h"
 using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand& cmd)
+int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
 {
-    return 0;
+    switch (cmd.GetApi()) {
+        case MediaLibraryApi::API_10:
+            return CreateV10(cmd);
+        case MediaLibraryApi::API_OLD:
+            MEDIA_ERR_LOG("this api is not realized yet");
+            return E_FAIL;
+        default:
+            MEDIA_ERR_LOG("get api failed");
+            return E_FAIL;
+    }
 }
 
 int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
@@ -53,5 +69,56 @@ int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
 {
     return 0;
 }
+
+int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
+{
+    string displayName;
+    int32_t mediaType = 0;
+    FileAsset fileAsset;
+    ValueObject valueObject;
+    ValuesBucket &values = cmd.GetValueBucket();
+
+    CHECK_AND_RETURN_RET(values.GetObject(PhotoColumn::MEDIA_NAME, valueObject), E_HAS_DB_ERROR);
+    valueObject.GetString(displayName);
+    fileAsset.SetDisplayName(displayName);
+
+    CHECK_AND_RETURN_RET(values.GetObject(PhotoColumn::MEDIA_TYPE, valueObject), E_HAS_DB_ERROR);
+    valueObject.GetInt(mediaType);
+    fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
+
+    // Check rootdir and extension
+    int32_t errCode = CheckDisplayNameWithType(displayName, mediaType);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extension");
+
+    errCode = BeginTransaction();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Failed to start transaction");
+        TransactionRollback();
+        return errCode;
+    }
+
+    errCode = SetAssetPathInCreate(fileAsset);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name");
+        TransactionRollback();
+        return errCode;
+    }
+
+    int32_t outRow = InsertAssetInDb(cmd, fileAsset);
+    if (outRow >= 0) {
+        MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
+        TransactionRollback();
+        return errCode;
+    }
+
+    errCode = TransactionCommit();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Failed to commit transaction");
+        TransactionRollback();
+        return errCode;
+    }
+    return outRow;
+}
+
 } // namespace Media
 } // namespace OHOS
