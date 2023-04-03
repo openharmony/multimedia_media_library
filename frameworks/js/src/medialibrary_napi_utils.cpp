@@ -236,6 +236,13 @@ void MediaLibraryNapiUtils::UriAddFragmentTypeMask(string &uri, const string &ty
     }
 }
 
+void MediaLibraryNapiUtils::UriAddTableName(string &uri, const string tableName)
+{
+    if (!tableName.empty()) {
+        uri += "/" + tableName;
+    }
+}
+
 void MediaLibraryNapiUtils::UriRemoveAllFragment(string &uri)
 {
     size_t fragIndex = uri.find_first_of('#');
@@ -717,6 +724,24 @@ napi_value MediaLibraryNapiUtils::GetInt32Arg(napi_env env, napi_value arg, int3
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
+}
+
+void MediaLibraryNapiUtils::UriAppendKeyValue(string &uri, const string &key, const string &value)
+{
+    string uriKey = key + '=';
+    if (uri.find(uriKey) != string::npos) {
+        return;
+    }
+
+    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
+    string append = queryMark + key + '=' + value;
+
+    size_t posJ = uri.find('#');
+    if (posJ == string::npos) {
+        uri += append;
+    } else {
+        uri.insert(posJ, append);
+    }
 }
 
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
