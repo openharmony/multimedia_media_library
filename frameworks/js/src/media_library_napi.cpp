@@ -649,8 +649,13 @@ static void GetFileAssetsExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     GetFileAssetUpdateSelections(context);
-    if (context->fetchColumn.empty()) {
+
+    if (context->resultNapiType == ResultNapiType::TYPE_MEDIALIBRARY) {
         context->fetchColumn = FILE_ASSET_COLUMNS;
+    } else {
+        context->fetchColumn.push_back(MEDIA_DATA_DB_ID);
+        context->fetchColumn.push_back(MEDIA_DATA_DB_NAME);
+        context->fetchColumn.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
     }
 
     if (context->extendArgs.find(DATE_FUNCTION) != string::npos) {
@@ -3161,16 +3166,6 @@ static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
     return result;
 }
 
-void AddDefaultFetchColumn(unique_ptr<MediaLibraryAsyncContext> &asyncContext)
-{
-    if (asyncContext->fetchColumn.size() == 0) {
-        return;
-    }
-    asyncContext->fetchColumn.push_back(MEDIA_DATA_DB_ID);
-    asyncContext->fetchColumn.push_back(MEDIA_DATA_DB_NAME);
-    asyncContext->fetchColumn.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
-}
-
 napi_value UserFileMgrGetFileAssets(napi_env env, napi_callback_info info, vector<uint32_t> &mediaTypes)
 {
     napi_value ret = nullptr;
@@ -3183,7 +3178,6 @@ napi_value UserFileMgrGetFileAssets(napi_env env, napi_callback_info info, vecto
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext),
         JS_ERR_PARAMETER_INVALID);
-    AddDefaultFetchColumn(asyncContext);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UFMJSGetTypeAssets", GetFileAssetsExecute,
