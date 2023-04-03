@@ -44,7 +44,9 @@ ohos_unittest("medialibrary_utils_test") {
     "c_utils:utils",
     "data_share:datashare_provider",
     "hilog_native:libhilog",
+    "multimedia_player_framework:media_client",
     "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
   ]
 
   resource_config_file =
