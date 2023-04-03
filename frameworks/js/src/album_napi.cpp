@@ -665,9 +665,15 @@ static void GetFileAssetsNative(napi_env env, void *data)
     context->predicates.SetWhereClause(context->selection);
     context->predicates.SetWhereArgs(context->selectionArgs);
     context->predicates.SetOrder(context->order);
-    if (context->fetchColumn.empty()) {
+
+    if (context->resultNapiType == ResultNapiType::TYPE_MEDIALIBRARY) {
         context->fetchColumn = FILE_ASSET_COLUMNS;
+    } else {
+        context->fetchColumn.push_back(MEDIA_DATA_DB_ID);
+        context->fetchColumn.push_back(MEDIA_DATA_DB_NAME);
+        context->fetchColumn.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
     }
+
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         (MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri())) + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
@@ -764,7 +770,7 @@ static void CommitModifyNative(napi_env env, void *data)
     context->SaveError(changedRows);
     context->changedRows = changedRows;
 }
- 
+
 static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
