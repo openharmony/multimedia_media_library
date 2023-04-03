@@ -1759,5 +1759,131 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_018, TestSize.Level0)
     nameRename = "ASX.BMP";
     EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
 }
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkUriValid_test_001, TestSize.Level0)
+{
+    bool ret = MediaFileExtentionUtils::CheckUriValid("");
+    EXPECT_EQ(ret, false);
+    ret = MediaFileExtentionUtils::CheckUriValid("datashare://test");
+    EXPECT_EQ(ret, false);
+    ret = MediaFileExtentionUtils::CheckUriValid("datashare://test/");
+    EXPECT_EQ(ret, false);
+    ret = MediaFileExtentionUtils::CheckUriValid("datashare://test/CheckUriValid");
+    EXPECT_EQ(ret, false);
+    ret = MediaFileExtentionUtils::CheckUriValid("datashare://test/CheckUriValid1");
+    EXPECT_EQ(ret, false);
+    ret = MediaFileExtentionUtils::CheckUriValid("datashare://1");
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkDistributedUri_test_001, TestSize.Level0)
+{
+    bool ret = MediaFileExtentionUtils::CheckDistributedUri("");
+    EXPECT_EQ(ret, true);
+    ret = MediaFileExtentionUtils::CheckDistributedUri("datashare://test/CheckDistributedUri");
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkUriSupport_test_001, TestSize.Level0)
+{
+    int32_t ret = MediaFileExtentionUtils::CheckUriSupport("");
+    EXPECT_EQ(ret, E_URI_INVALID);
+    ret = MediaFileExtentionUtils::CheckUriSupport("datashare://test/1");
+    EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
+    ret = MediaFileExtentionUtils::CheckUriSupport("datashare://1");
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_getResultSetFromDb_test_001, TestSize.Level0)
+{
+    string value = "getResultSetFromDb";
+    vector<string> columns;
+    auto queryResultSet = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, value, columns);
+    EXPECT_EQ(queryResultSet, nullptr);
+    string field = "/storage/media/local/files";
+    queryResultSet = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, value, columns);
+    EXPECT_EQ(queryResultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_isFileExistInDb_test_001, TestSize.Level0)
+{
+    string path = "datashare://1";
+    bool ret = MediaFileExtentionUtils::IsFileExistInDb(path);
+    EXPECT_EQ(ret, false);
+    string pathTest = "";
+    ret = MediaFileExtentionUtils::IsFileExistInDb(pathTest);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_resolveUri_test_001, TestSize.Level0)
+{
+    FileInfo fileInfo;
+    MediaFileUriType uriType;
+    fileInfo.uri = "resolveUri";
+    int32_t ret = MediaFileExtentionUtils::ResolveUri(fileInfo, uriType);
+    EXPECT_EQ(ret, E_INVALID_URI);
+    fileInfo.uri = "datashare://";
+    ret = MediaFileExtentionUtils::ResolveUri(fileInfo, uriType);
+    EXPECT_EQ(ret, E_INVALID_URI);
+    fileInfo.uri = "datashare:///media";
+    ret = MediaFileExtentionUtils::ResolveUri(fileInfo, uriType);
+    EXPECT_EQ(ret, E_INVALID_URI);
+    fileInfo.uri = "datashare:///media/root";
+    ret = MediaFileExtentionUtils::ResolveUri(fileInfo, uriType);
+    EXPECT_EQ(ret, E_SUCCESS);
+    fileInfo.uri = "datashare:///media/roottest";
+    ret = MediaFileExtentionUtils::ResolveUri(fileInfo, uriType);
+    EXPECT_EQ(ret, E_INVALID_URI);
+    fileInfo.uri = "datashare:///media/file";
+    ret = MediaFileExtentionUtils::ResolveUri(fileInfo, uriType);
+    EXPECT_EQ(ret, E_SUCCESS);
+    fileInfo.uri = "datashare:///media/1";
+    ret = MediaFileExtentionUtils::ResolveUri(fileInfo, uriType);
+    EXPECT_EQ(ret, E_SUCCESS);
+    fileInfo.uri = "datashare://media/test";
+    ret = MediaFileExtentionUtils::ResolveUri(fileInfo, uriType);
+    EXPECT_EQ(ret, E_INVALID_URI);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkValidDirName_test_001, TestSize.Level0)
+{
+    string displayName = "";
+    bool ret = MediaFileExtentionUtils::CheckValidDirName(displayName);
+    EXPECT_EQ(ret, false);
+    string displayNameTest = "Camera/";
+    ret = MediaFileExtentionUtils::CheckValidDirName(displayNameTest);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkMkdirValid_test_001, TestSize.Level0)
+{
+    MediaFileUriType uriType = URI_FILE_ROOT;
+    string parentUriStr = "datashare://1";
+    string displayName = "Camera/";
+    int32_t ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
+    EXPECT_EQ(ret, E_INVAVLID_DISPLAY_NAME);
+    string parentUriStrTest = "datashare://test/";
+    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStrTest, displayName);
+    EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
+    string displayNameTest = "Camera";
+    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayNameTest);
+    EXPECT_EQ(ret, E_SUCCESS);
+    uriType = URI_MEDIA_ROOT;
+    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStrTest, displayName);
+    EXPECT_EQ(ret, E_URI_INVALID);
+    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
+    EXPECT_EQ(ret, E_INVAVLID_DISPLAY_NAME);
+    string name = "test";
+    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, name);
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryFileExtUnitTest, medialib_getAlbumRelativePathFromDB_test_001, TestSize.Level0)
+{
+    string selectUri = "datashare:///media/file";
+    string relativePath = "/storage/media/local/files";
+    bool ret = MediaFileExtentionUtils::GetAlbumRelativePathFromDB(selectUri, relativePath);
+    EXPECT_EQ(ret, false);
+}
 } // namespace Media
 } // namespace OHOS
