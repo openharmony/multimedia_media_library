@@ -300,17 +300,15 @@ static napi_value ParseArgsCommitModify(napi_env env, napi_callback_info info,
     NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
         napi_ok, "Failed to get object info");
 
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, false, &result));
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     if (photoAlbum == nullptr) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return result;
+        return nullptr;
     }
 
     if (MediaFileUtils::CheckTitle(photoAlbum->GetAlbumName()) < 0) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return result;
+        return nullptr;
     }
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, photoAlbum->GetAlbumName());
@@ -318,6 +316,7 @@ static napi_value ParseArgsCommitModify(napi_env env, napi_callback_info info,
 
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
 
+    napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
     return result;
 }
