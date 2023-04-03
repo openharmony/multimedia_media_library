@@ -62,7 +62,7 @@ void CloudSyncHelper::StartSync()
         isPending_ = true;
     }
     timerId_ = timer_.Register(bind(&CloudSyncHelper::OnTimerCallback, this),
-            SYNC_INTERVAL, true);
+        SYNC_INTERVAL, true);
 }
 
 void CloudSyncHelper::OnTimerCallback()

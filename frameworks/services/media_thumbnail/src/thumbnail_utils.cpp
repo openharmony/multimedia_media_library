@@ -1513,13 +1513,6 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_ID.c_str(), err);
     }
 
-    err = resultSet->GetColumnIndex(REMOTE_THUMBNAIL_DB_FILE_ID, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.id, err);
-    } else {
-        MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_ID.c_str(), err);
-    }
-
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, index);
     if (err == NativeRdb::E_OK) {
         ParseStringResult(resultSet, index, data.path, err);

@@ -267,7 +267,7 @@ const std::string CREATE_AUDIO_VIEW = "CREATE VIEW IF NOT EXISTS Audio AS SELECT
 
 const std::string REMOTE_THUMBNAIL_TABLE = "RemoteThumbnailMap";
 const std::string REMOTE_THUMBNAIL_DB_ID = "id";
-const std::string REMOTE_THUMBNAIL_DB_FILE_ID = "file_id";
+const std::string REMOTE_THUMBNAIL_DB_FILE_ID = MEDIA_DATA_DB_ID;
 const std::string REMOTE_THUMBNAIL_DB_UDID = "udid";
 const std::string CREATE_REMOTE_THUMBNAIL_TABLE = "CREATE TABLE IF NOT EXISTS " + REMOTE_THUMBNAIL_TABLE + " (" +
                                             REMOTE_THUMBNAIL_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
