@@ -706,17 +706,15 @@ bool MediaLibraryNapiUtils::IsArrayForNapiValue(napi_env env, napi_value param, 
 
 napi_value MediaLibraryNapiUtils::GetInt32Arg(napi_env env, napi_value arg, int32_t &value)
 {
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, false, &result));
-
     napi_valuetype valueType = napi_undefined;
     NAPI_CALL(env, napi_typeof(env, arg, &valueType));
     if (valueType != napi_number) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return result;
+        return nullptr;
     }
     NAPI_CALL(env, napi_get_value_int32(env, arg, &value));
 
+    napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
     return result;
 }
