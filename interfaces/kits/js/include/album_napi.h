@@ -58,7 +58,7 @@ public:
     ~AlbumNapi();
 
 private:
-    static void AlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
+    static void AlbumNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
     static napi_value AlbumNapiConstructor(napi_env env, napi_callback_info info);
     void SetAlbumNapiProperties();
 

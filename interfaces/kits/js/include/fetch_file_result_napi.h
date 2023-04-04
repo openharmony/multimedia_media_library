@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,7 +63,7 @@ public:
     bool CheckIfPropertyPtrNull();
 
 private:
-    static void FetchFileResultNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
+    static void FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
     static void GetFetchResult(unique_ptr<FetchFileResultNapi> &obj);
     static napi_value FetchFileResultNapiConstructor(napi_env env, napi_callback_info info);
 

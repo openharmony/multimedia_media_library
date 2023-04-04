@@ -395,7 +395,7 @@ napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo(napi_env env, napi_
     if (minArgs > 0) {
         CHECK_COND_RET(asyncContext->argv[ARGS_ZERO] != nullptr, napi_invalid_arg, "Argument list is empty");
     }
-    CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)),
+    CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo)),
         "Failed to unwrap thisVar");
     CHECK_COND_RET(asyncContext->objectInfo != nullptr, napi_invalid_arg, "Failed to get object info");
     return napi_ok;
@@ -633,7 +633,7 @@ napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork(napi_env env, unique_ptr<A
     NAPI_CREATE_RESOURCE_NAME(env, resource, resourceName.c_str(), asyncContext);
 
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, execute, complete,
-        static_cast<void*>(asyncContext.get()), &asyncContext->work));
+        static_cast<void *>(asyncContext.get()), &asyncContext->work));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContext.release();
 
@@ -707,15 +707,15 @@ bool MediaLibraryNapiUtils::IsArrayForNapiValue(napi_env env, napi_value param, 
 napi_value MediaLibraryNapiUtils::GetInt32Arg(napi_env env, napi_value arg, int32_t &value)
 {
     napi_valuetype valueType = napi_undefined;
-    NAPI_CALL(env, napi_typeof(env, arg, &valueType));
+    CHECK_ARGS(env, napi_typeof(env, arg, &valueType), JS_INNER_FAIL);
     if (valueType != napi_number) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
-    NAPI_CALL(env, napi_get_value_int32(env, arg, &value));
+    CHECK_ARGS(env, napi_get_value_int32(env, arg, &value), JS_INNER_FAIL);
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
 

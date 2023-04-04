@@ -65,7 +65,7 @@ public:
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
         const std::shared_ptr<AbilityRuntime::Context> &context);
 private:
-    static void FileAssetNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
+    static void FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
     static napi_value FileAssetNapiConstructor(napi_env env, napi_callback_info info);
 
     static napi_value JSGetFileId(napi_env env, napi_callback_info info);
