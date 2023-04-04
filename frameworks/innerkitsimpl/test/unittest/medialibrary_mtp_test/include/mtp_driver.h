@@ -30,10 +30,12 @@ public:
     int Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize);
     void Write(std::vector<uint8_t> &buffer, uint32_t bufferSize);
 
-    int ReceiveObj(MtpFileRange mfr);
+    int ReceiveObj(MtpFileRange &mfr);
 
-    int SendObj(MtpFileRange mfr);
-    int WriteEvent(EventMtp me);
+    int SendObj(MtpFileRange &mfr);
+    int WriteEvent(EventMtp &me);
+private:
+    bool usbOpenFlag {false};
 };
 } // namespace Media
 } // namespace OHOS

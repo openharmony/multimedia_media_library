@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "mtp_native_test.h"
 #include "get_self_permissions.h"
 #include "header_data.h"
@@ -22,6 +21,7 @@
 #include "mtp_constants.h"
 #include "mtp_error_utils.h"
 #include "mtp_event.h"
+#include "mtp_driver.h"
 #include "mtp_operation_context.h"
 #include "mtp_service.h"
 #include "object_info.h"
@@ -2026,10 +2026,12 @@ HWTEST_F(MtpNativeTest, mtp_header_data_001, TestSize.Level0)
 HWTEST_F(MtpNativeTest, mtp_driver_001, TestSize.Level0)
 {
     shared_ptr<MtpDriver> mtpDriver = make_shared<MtpDriver>();
-    mtpDriver->OpenDriver();
+    int ret = mtpDriver->OpenDriver();
+    EXPECT_EQ(ret, MTP_SUCCESS);
     vector<uint8_t> buffer;
     uint32_t size = 0;
-    mtpDriver->Read(buffer, size);
+    ret = mtpDriver->Read(buffer, size);
+    EXPECT_EQ(ret, MTP_SUCCESS);
     mtpDriver->Write(buffer, size);
     MtpFileRange mfr;
     mtpDriver->SendObj(mfr);
