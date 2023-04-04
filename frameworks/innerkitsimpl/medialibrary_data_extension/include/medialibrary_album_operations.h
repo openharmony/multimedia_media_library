@@ -21,6 +21,7 @@
 
 #include "abs_shared_result_set.h"
 #include "datashare_predicates.h"
+#include "datashare_values_bucket.h"
 #include "medialibrary_command.h"
 #include "native_album_asset.h"
 #include "rdb_result_set_bridge.h"
@@ -38,6 +39,7 @@ public:
     static std::shared_ptr<NativeRdb::ResultSet> QueryPhotoAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     static int32_t DeletePhotoAlbum(const DataShare::DataSharePredicates &predicates);
+    static int32_t AddPhotoAssets(const vector<DataShare::DataShareValuesBucket> &values);
     static int32_t UpdatePhotoAlbum(const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
 

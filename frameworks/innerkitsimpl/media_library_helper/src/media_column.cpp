@@ -19,7 +19,6 @@
 
 namespace OHOS {
 namespace Media {
-
 const std::string MediaColumn::MEDIA_ID = "file_id";
 const std::string MediaColumn::MEDIA_URI = "uri";
 const std::string MediaColumn::MEDIA_FILE_PATH = "data";
@@ -38,8 +37,8 @@ const std::string MediaColumn::MEDIA_TIME_VISIT = "time_visit";
 const std::string MediaColumn::MEDIA_DURATION = "duration";
 const std::string MediaColumn::MEDIA_TIME_PENDING = "time_pending";
 const std::string MediaColumn::MEDIA_IS_FAV = "is_favorite";
-const std::string MediaColumn::MEDIA_DATE_TRASHED = "data_trashed";
-const std::string MediaColumn::MEDIA_DATE_DELETED = "data_deleted";
+const std::string MediaColumn::MEDIA_DATE_TRASHED = "date_trashed";
+const std::string MediaColumn::MEDIA_DATE_DELETED = "date_deleted";
 const std::string MediaColumn::MEDIA_HIDDEN = "hidden";
 const std::string MediaColumn::MEDIA_PARENT_ID = "parent";
 const std::string MediaColumn::MEDIA_RELATIVE_PATH = "relative_path";

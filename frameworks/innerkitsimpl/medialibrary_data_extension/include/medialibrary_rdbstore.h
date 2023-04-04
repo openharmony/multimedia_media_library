@@ -18,6 +18,7 @@
 
 #include "medialibrary_unistore.h"
 #include "timer.h"
+#include "value_object.h"
 
 namespace OHOS {
 namespace Media {
@@ -52,9 +53,12 @@ public:
     std::shared_ptr<NativeRdb::RdbStore> GetRaw() const;
     std::string ObtainTableName(MediaLibraryCommand &cmd) override;
 
-    static int32_t InsertWithWhereExists(const std::string &table,
-        const NativeRdb::ValuesBucket &values,
-        const bool exists, const NativeRdb::AbsRdbPredicates &predicates);
+    static void BuildValuesSql(const NativeRdb::ValuesBucket &values, std::vector<NativeRdb::ValueObject> &bindArgs,
+        std::string &sql);
+    static void BuildQuerySql(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,
+        std::vector<NativeRdb::ValueObject> &bindArgs, std::string &sql);
+    static int32_t ExecuteForLastInsertedRowId(const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &bindArgs);
     static std::shared_ptr<NativeRdb::ResultSet> Query(const NativeRdb::AbsRdbPredicates &predicates,
         const std::vector<std::string> &columns);
     static int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates);

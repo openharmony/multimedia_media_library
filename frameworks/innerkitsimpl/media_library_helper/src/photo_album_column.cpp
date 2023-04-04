@@ -45,12 +45,4 @@ const std::string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
 // Create indexes
 const std::string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
     " (" + ALBUM_TYPE + "," + ALBUM_SUBTYPE + ");";
-
-// Create triggers
-const std::string PhotoAlbumColumns::TRIGGER_CLEAR_MAP = CreateTrigger() + "photo_album_clear_map" +
-    " AFTER DELETE ON " + TABLE +
-    " BEGIN " +
-        "DELETE FROM " + PhotoMap::GetTable() +
-        " WHERE " + PhotoMap::GetAlbumId() + "=" + "OLD." + PhotoAlbumColumns::ALBUM_ID + ";" +
-    " END;";
 } // namespace OHOS::Media

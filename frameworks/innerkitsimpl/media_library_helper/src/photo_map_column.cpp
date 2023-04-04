@@ -15,31 +15,20 @@
 
 #include "photo_map_column.h"
 
+#include "photo_album_column.h"
+
 using namespace std;
 
 namespace OHOS::Media {
-const string &PhotoMap::GetTable()
-{
-    static const string TABLE = "PhotoMap";
-    return TABLE;
-}
+// PhotoMap table
+const string PhotoMap::TABLE = "PhotoMap";
+const string PhotoMap::ALBUM_ID = "map_album";
+const string PhotoMap::ASSET_ID = "map_asset";
 
-const string &PhotoMap::GetAlbumId()
-{
-    static const string ALBUM_ID = "map_album";
-    return ALBUM_ID;
-}
-
-const string &PhotoMap::GetAssetId()
-{
-    static const string ASSET_ID = "map_asset";
-    return ASSET_ID;
-}
-
-const string PhotoMap::CREATE_TABLE = CreateTable() + GetTable() +
+const string PhotoMap::CREATE_TABLE = CreateTable() + TABLE +
     " (" +
-    GetAlbumId() + " INT, " +
-    GetAssetId() + " INT, " +
-    "PRIMARY KEY (" + GetAlbumId() + "," + GetAssetId() + ")" +
+    ALBUM_ID + " INT, " +
+    ASSET_ID + " INT, " +
+    "PRIMARY KEY (" + ALBUM_ID + "," + ASSET_ID + ")" +
     ")";
 } // namespace OHOS::Media
