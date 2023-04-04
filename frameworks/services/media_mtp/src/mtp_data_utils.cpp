@@ -477,7 +477,7 @@ int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
                 outPropValue.outStrVal = get<std::string>(columnValue);
                 break;
             case TYPE_INT32:
-                outPropValue.outIntVal = get<int32_t>(columnValue);
+                outPropValue.outIntVal = static_cast<uint64_t>(get<int32_t>(columnValue));
                 break;
             case TYPE_INT64:
                 if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
