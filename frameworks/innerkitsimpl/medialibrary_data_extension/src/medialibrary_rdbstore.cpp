@@ -49,6 +49,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetBundleName(context->GetBundleName());
     config_.SetArea(context->GetArea());
     config_.SetReadConSize(RDB_CONNECT_NUM);
+    isInTransaction_.store(false);
 }
 
 int32_t MediaLibraryRdbStore::Init()
@@ -369,7 +370,7 @@ int32_t MediaLibraryRdbStore::BeginTransaction()
         MEDIA_ERR_LOG("Start Transaction failed, errCode=%{public}d", errCode);
         isInTransaction_.store(false);
         transactionCV_.notify_one();
-        return errCode;
+        return E_HAS_DB_ERROR;
     }
     
     return E_OK;
@@ -389,7 +390,13 @@ int32_t MediaLibraryRdbStore::Commit()
     isInTransaction_.store(false);
     transactionCV_.notify_all();
 
-    return rdbStore_->Commit();
+    int32_t errCode = rdbStore_->Commit();
+    if (errCode != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("commit failed, errCode=%{public}d", errCode);
+        return E_HAS_DB_ERROR;
+    }
+
+    return E_OK;
 }
 
 int32_t MediaLibraryRdbStore::RollBack()
@@ -405,7 +412,13 @@ int32_t MediaLibraryRdbStore::RollBack()
     isInTransaction_.store(false);
     transactionCV_.notify_all();
 
-    return rdbStore_->RollBack();
+    int32_t errCode = rdbStore_->RollBack();
+    if (errCode != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rollback failed, errCode=%{public}d", errCode);
+        return E_HAS_DB_ERROR;
+    }
+
+    return E_OK;
 }
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const

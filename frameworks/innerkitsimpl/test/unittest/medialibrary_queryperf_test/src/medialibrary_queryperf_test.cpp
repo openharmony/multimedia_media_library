@@ -49,7 +49,7 @@ void MakeTestData()
     datashareValues.Put(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_IMAGE);
     datashareValues.Put(MEDIA_DATA_DB_URI, MediaLibraryDataManagerUtils::GetMediaTypeUri(MEDIA_TYPE_IMAGE));
     string displayName = "test.jpg";
-    string extension = ScannerUtils::GetFileExtensionFromFileUri(displayName);
+    string extension = ScannerUtils::GetFileExtension(displayName);
     datashareValues.Put(MEDIA_DATA_DB_MIME_TYPE, MimeTypeUtils::GetMimeTypeFromExtension(extension));
     datashareValues.Put(MEDIA_DATA_DB_RELATIVE_PATH, PIC_DIR_VALUES);
     datashareValues.Put(MEDIA_DATA_DB_NAME, displayName);
