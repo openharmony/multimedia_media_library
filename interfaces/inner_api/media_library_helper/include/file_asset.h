@@ -143,17 +143,17 @@ public:
     void RemoveOpenStatus(int32_t fd);
     int32_t GetOpenStatus(int32_t fd);
 
-    int32_t CreateAsset(const std::string &filePath);
-    int32_t ModifyAsset(const std::string &oldPath, const std::string &newPath);
-    static int32_t DeleteAsset(const std::string &filePath);
-    static int32_t OpenAsset(const std::string &filePath, const std::string &mode);
-    bool IsFileExists(const std::string &filePath);
+    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> &GetMemberMap();
+    std::variant<int32_t, int64_t, std::string> &GetMemberValue(const std::string &name);
+
+    void CommitModify();
+    bool IsDirectory();
+
+private:
     const std::string &GetStrMember(const std::string &name) const;
     int32_t GetInt32Member(const std::string &name) const;
     int64_t GetInt64Member(const std::string &name) const;
-    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> &GetMemberMap();
-    std::variant<int32_t, int64_t, std::string> &GetMemberValue(const std::string &name);
-private:
+
     std::string albumUri_;
     std::string typeMask_;
     ResultNapiType resultNapiType_;

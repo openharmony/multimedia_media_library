@@ -58,6 +58,7 @@ public:
     static std::string GetFirstDentry(const std::string &path);
     static std::string GetLastDentry(const std::string &path);
     static bool IsDirectory(const std::string &dirName);
+    static std::string GetFirstDirName(const std::string &filePath);
     static bool MoveFile(const std::string &oldPath, const std::string &newPath);
     static bool CopyFile(const std::string &filePath, const std::string &newPath);
     static bool RenameDir(const std::string &oldPath, const std::string &newPath);
@@ -68,6 +69,7 @@ public:
     static int32_t CheckTitle(const std::string &title);
     static int64_t GetAlbumDateModified(const std::string &albumPath);
     static int64_t UTCTimeSeconds();
+    static std::string GetIdFromUri(const std::string &uri);
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string UpdatePath(const std::string &path, const std::string &uri);
     static std::string GetFileMediaTypeUri(int32_t mediaType, const std::string &networkId);
@@ -76,6 +78,15 @@ public:
     static std::string SplitByChar(const std::string &str, const char split);
     static std::string GetExtensionFromPath(const std::string &path);
     static int32_t OpenFile(const std::string &path, const std::string &mode);
+    static int32_t CreateAsset(const std::string &filePath);
+    static int32_t ModifyAsset(const std::string &oldPath, const std::string &newPath);
+    static int32_t DeleteAsset(const std::string &filePath);
+    static int32_t OpenAsset(const std::string &filePath, const std::string &mode);
+    static int32_t CloseAsset(int32_t fd);
+    static std::string GetMediaTypeUri(MediaType mediaType);
+    static void GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask);
+    static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask);
+    static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition);
 };
 } // namespace OHOS::Media
 

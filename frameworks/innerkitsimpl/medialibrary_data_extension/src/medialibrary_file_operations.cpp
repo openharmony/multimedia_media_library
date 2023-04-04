@@ -229,6 +229,9 @@ int32_t MediaLibraryFileOperations::CopyFileOperation(MediaLibraryCommand &cmd)
     Uri srcUri(MEDIALIBRARY_DATA_URI + "/" + assetId);
     string srcUriString = srcUri.ToString();
     shared_ptr<FileAsset> srcFileAsset = MediaLibraryObjectUtils::GetFileAssetFromUri(srcUriString);
+    if (srcFileAsset == nullptr) {
+        return E_INVALID_URI;
+    }
     if (srcFileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
         return MediaLibraryObjectUtils::CopyDir(srcFileAsset, relativePath);
     } else {
