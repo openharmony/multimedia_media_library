@@ -111,8 +111,7 @@ int32_t MediaLibraryObjectUtils::DeleteInvalidRowInDb(const string &path)
         return E_SUCCESS;
     }
 
-    FileAsset fileAsset;
-    if (fileAsset.IsFileExists(path)) {
+    if (MediaFileUtils::IsFileExists(path)) {
         // File aready exist, not need to create again
         return E_SUCCESS;
     }
@@ -225,7 +224,7 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
         return errCode;
     }
 
-    errCode = fileAsset.CreateAsset(path);
+    errCode = MediaFileUtils::CreateAsset(path);
     if (errCode != E_SUCCESS) {
         MEDIA_ERR_LOG("CreateFileAsset: create file asset failed");
         return errCode;
@@ -571,8 +570,7 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
         return dirAsset.GetAlbumId();
     }
 
-    FileAsset fileAsset;
-    errCode = fileAsset.ModifyAsset(srcFilePath, dstFilePath);
+    errCode = MediaFileUtils::ModifyAsset(srcFilePath, dstFilePath);
     if (errCode != E_SUCCESS) {
         if (errCode != E_FILE_EXIST) {
             MEDIA_ERR_LOG("Failed to modify the file in the device, errCode = %{public}d", errCode);

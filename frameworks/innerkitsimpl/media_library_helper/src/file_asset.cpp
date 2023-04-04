@@ -20,12 +20,16 @@
 #include <fstream>
 #include <unistd.h>
 
+#include "datashare_predicates.h"
 #include "directory_ex.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
+#include "medialibrary_helper_container.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
+#include "uri.h"
+#include "values_bucket.h"
 
 using namespace std;
 
@@ -83,7 +87,7 @@ const string &FileAsset::GetRelativePath() const
     return GetStrMember(MEDIA_DATA_DB_RELATIVE_PATH);
 }
 
-void FileAsset::SetRelativePath(const std::string &relativePath)
+void FileAsset::SetRelativePath(const string &relativePath)
 {
     member_[MEDIA_DATA_DB_RELATIVE_PATH] = relativePath;
 }
@@ -382,7 +386,7 @@ void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
     if (openStatusMap_ == nullptr) {
-        openStatusMap_ = make_shared<std::unordered_map<int32_t, int32_t>>();
+        openStatusMap_ = make_shared<unordered_map<int32_t, int32_t>>();
     }
     openStatusMap_->insert({fd, openStatus});
 }
@@ -410,117 +414,89 @@ int32_t FileAsset::GetOpenStatus(int32_t fd)
     }
 }
 
-int32_t FileAsset::CreateAsset(const string &filePath)
-{
-    MEDIA_ERR_LOG("CreateAsset in");
-    int32_t errCode = E_ERR;
-
-    if (filePath.empty()) {
-        MEDIA_ERR_LOG("Filepath is empty");
-        return E_VIOLATION_PARAMETERS;
-    }
-
-    if (MediaFileUtils::IsFileExists(filePath)) {
-        MEDIA_ERR_LOG("the file exists path: %{private}s", filePath.c_str());
-        return E_FILE_EXIST;
-    }
-
-    size_t slashIndex = filePath.rfind('/');
-    if (slashIndex != string::npos) {
-        string fileName = filePath.substr(slashIndex + 1);
-        if (!fileName.empty() && fileName.at(0) != '.') {
-            size_t dotIndex = filePath.rfind('.');
-            if ((dotIndex == string::npos) && (GetMediaType() != MEDIA_TYPE_FILE)) {
-                return errCode;
-            }
-        }
-    }
-
-    ofstream file(filePath);
-    if (!file) {
-        MEDIA_ERR_LOG("Output file path could not be created errno %{public}d", errno);
-        return errCode;
-    }
-
-    file.close();
-
-    return E_SUCCESS;
-}
-
-int32_t FileAsset::ModifyAsset(const string &oldPath, const string &newPath)
-{
-    int32_t err = E_MODIFY_DATA_FAIL;
-
-    if (oldPath.empty() || newPath.empty()) {
-        MEDIA_ERR_LOG("Failed to modify asset, oldPath: %{private}s or newPath: %{private}s is empty!",
-            oldPath.c_str(), newPath.c_str());
-        return err;
-    }
-    if (!MediaFileUtils::IsFileExists(oldPath)) {
-        MEDIA_ERR_LOG("Failed to modify asset, oldPath: %{private}s does not exist!", oldPath.c_str());
-        return E_NO_SUCH_FILE;
-    }
-    if (MediaFileUtils::IsFileExists(newPath)) {
-        MEDIA_ERR_LOG("Failed to modify asset, newPath: %{private}s is already exist!", newPath.c_str());
-        return E_FILE_EXIST;
-    }
-    err = rename(oldPath.c_str(), newPath.c_str());
-    if (err < 0) {
-        MEDIA_ERR_LOG("Failed ModifyAsset errno %{public}d", errno);
-        return E_FILE_OPER_FAIL;
-    }
-
-    return E_SUCCESS;
-}
-
-bool FileAsset::IsFileExists(const string &filePath)
-{
-    return MediaFileUtils::IsFileExists(filePath);
-}
-
-int32_t FileAsset::DeleteAsset(const string &filePath)
-{
-    int32_t errCode = E_ERR;
-    if (!MediaFileUtils::IsDirectory(filePath)) {
-        errCode = remove(filePath.c_str());
-    } else {
-        errCode = MediaFileUtils::RemoveDirectory(filePath);
-    }
-    if (errCode != E_SUCCESS) {
-        MEDIA_ERR_LOG("DeleteAsset failed, filePath: %{private}s, errno: %{public}d, errmsg: %{public}s",
-            filePath.c_str(), errno, strerror(errno));
-    }
-    return errCode;
-}
-
-int32_t FileAsset::OpenAsset(const string &filePath, const string &mode)
-{
-    return MediaFileUtils::OpenFile(filePath, mode);
-}
-
-std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> &FileAsset::GetMemberMap()
+unordered_map<string, variant<int32_t, int64_t, string>> &FileAsset::GetMemberMap()
 {
     return member_;
 }
 
-std::variant<int32_t, int64_t, std::string> &FileAsset::GetMemberValue(const std::string &name)
+variant<int32_t, int64_t, string> &FileAsset::GetMemberValue(const string &name)
 {
     return member_[name];
 }
 
-const string &FileAsset::GetStrMember(const std::string &name) const
+const string &FileAsset::GetStrMember(const string &name) const
 {
     return (member_.count(name) > 0) ? get<string>(member_.at(name)) : DEFAULT_STR;
 }
 
-int32_t FileAsset::GetInt32Member(const std::string &name) const
+int32_t FileAsset::GetInt32Member(const string &name) const
 {
     return (member_.count(name) > 0) ? get<int32_t>(member_.at(name)) : DEFAULT_INT32;
 }
 
-int64_t FileAsset::GetInt64Member(const std::string &name) const
+int64_t FileAsset::GetInt64Member(const string &name) const
 {
     return (member_.count(name) > 0) ? get<int64_t>(member_.at(name)) : DEFAULT_INT64;
+}
+
+void FileAsset::CommitModify()
+{
+    if (!MediaFileUtils::CheckTitle(GetStrMember(MEDIA_DATA_DB_TITLE)) ||
+        !MediaFileUtils::CheckDisplayName(GetStrMember(MEDIA_DATA_DB_NAME))) {
+        MEDIA_ERR_LOG("CommitModify CheckDisplayName fail, fileUri=%{private}s", GetUri().c_str());
+        return;
+    }
+
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
+    if (dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("Get DataShareHelper fail, fileUri=%{private}s", GetUri().c_str());
+        return;
+    }
+
+    string uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    MediaFileUtils::UriAddFragmentTypeMask(uri, typeMask_);
+    Uri updateAssetUri(uri);
+    string notifyUri =
+        MediaFileUtils::GetMediaTypeUri(static_cast<Media::MediaType>(GetInt32Member(MEDIA_DATA_DB_MEDIA_TYPE)));
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_ADDED, GetInt64Member(MEDIA_DATA_DB_DATE_ADDED));
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_MODIFIED, GetInt64Member(MEDIA_DATA_DB_DATE_MODIFIED));
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
+    predicates.SetWhereArgs({to_string(GetInt32Member(MEDIA_DATA_DB_ID))});
+    int32_t changedRows = dataShareHelper->Update(updateAssetUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        MEDIA_ERR_LOG("File asset modification failed, err: %{public}d", changedRows);
+    } else {
+        Uri modifyNotify(notifyUri);
+        dataShareHelper->NotifyChange(modifyNotify);
+    }
+}
+
+bool FileAsset::IsDirectory()
+{
+    string filePath = GetStrMember(MEDIA_DATA_DB_FILE_PATH);
+    if (filePath.empty()) {
+        shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+            MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
+        if (dataShareHelper == nullptr) {
+            MEDIA_ERR_LOG("Get DataShareHelper fail");
+            return false;
+        }
+        Uri isDirectoryAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_ISDIRECTORY);
+        DataShare::DataShareValuesBucket valuesBucket;
+        valuesBucket.Put(MEDIA_DATA_DB_ID, GetInt32Member(MEDIA_DATA_DB_ID));
+        int retVal = dataShareHelper->Insert(isDirectoryAssetUri, valuesBucket);
+        if (retVal == SUCCESS) {
+            return true;
+        } else {
+            MEDIA_ERR_LOG("Insert value fail");
+            return false;
+        }
+    } else {
+        return MediaFileUtils::IsDirectory(filePath);
+    }
 }
 }  // namespace Media
 }  // namespace OHOS

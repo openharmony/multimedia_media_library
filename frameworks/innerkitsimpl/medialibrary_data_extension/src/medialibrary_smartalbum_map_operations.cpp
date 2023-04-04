@@ -540,8 +540,7 @@ static int32_t TrashFileAssetsInfoUtil(const int32_t assetId)
     string recyclePath;
     auto errorCode = MakeRecycleDisplayName(assetId, trashDirPath, recyclePath);
     CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to make recycle display name");
-    FileAsset fileAsset;
-    errorCode = fileAsset.ModifyAsset(oldPath, recyclePath);
+    errorCode = MediaFileUtils::ModifyAsset(oldPath, recyclePath);
     CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to modifyAsset");
     int64_t trashDate = MediaFileUtils::UTCTimeSeconds();
     return UpdateTrashInfoInDb(assetId, trashDate, recyclePath, oldPath, TRASHED_ASSET);
