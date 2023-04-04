@@ -190,7 +190,7 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
     outObjectInfo->handle = fileAsset->GetId();
     outObjectInfo->name = fileAsset->GetDisplayName();
     outObjectInfo->size = fileAsset->GetSize();
-    outObjectInfo->parent = fileAsset->GetParent();
+    outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetParent());
     outObjectInfo->dateCreated = fileAsset->GetDateAdded();
     outObjectInfo->dateModified = fileAsset->GetDateModified();
     outObjectInfo->storageID = DEFAULT_STORAGE_ID;
