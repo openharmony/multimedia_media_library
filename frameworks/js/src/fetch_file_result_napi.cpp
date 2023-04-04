@@ -88,31 +88,33 @@ void FetchFileResultNapi::GetFetchResult(unique_ptr<FetchFileResultNapi> &obj)
 {
     switch (sFetchResType_) {
         case FetchResType::TYPE_FILE: {
-            auto fileResult = make_shared<FetchResult<FileAsset>>(move(sFetchFileResult_->resultset_));
+            auto fileResult = make_shared<FetchResult<FileAsset>>(move(sFetchFileResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchFileResult_ = fileResult;
             obj->propertyPtr->fetchFileResult_->SetInfo(sFetchFileResult_);
-            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchFileResult_->typeMask_;
+            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchFileResult_->GetTypeMask();
             break;
         }
         case FetchResType::TYPE_ALBUM: {
-            auto albumResult = make_shared<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->resultset_));
+            auto albumResult = make_shared<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchAlbumResult_ = albumResult;
             obj->propertyPtr->fetchAlbumResult_->SetInfo(sFetchAlbumResult_);
-            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchAlbumResult_->typeMask_;
+            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchAlbumResult_->GetTypeMask();
             break;
         }
         case FetchResType::TYPE_PHOTOALBUM: {
-            auto photoAlbumResult = make_shared<FetchResult<PhotoAlbum>>(move(sFetchPhotoAlbumResult_->resultset_));
+            auto photoAlbumResult =
+                make_shared<FetchResult<PhotoAlbum>>(move(sFetchPhotoAlbumResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchPhotoAlbumResult_ = photoAlbumResult;
             obj->propertyPtr->fetchPhotoAlbumResult_->SetInfo(sFetchPhotoAlbumResult_);
-            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchPhotoAlbumResult_->typeMask_;
+            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchPhotoAlbumResult_->GetTypeMask();
             break;
         }
         case FetchResType::TYPE_SMARTALBUM: {
-            auto smartResult = make_shared<FetchResult<SmartAlbumAsset>>(move(sFetchSmartAlbumResult_->resultset_));
+            auto smartResult =
+                make_shared<FetchResult<SmartAlbumAsset>>(move(sFetchSmartAlbumResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchSmartAlbumResult_ = smartResult;
             obj->propertyPtr->fetchSmartAlbumResult_->SetInfo(sFetchSmartAlbumResult_);
-            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchSmartAlbumResult_->typeMask_;
+            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchSmartAlbumResult_->GetTypeMask();
             break;
         }
         default:
@@ -169,10 +171,10 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<F
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;
-    napi_ref constructorRef = (fileResult->resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) ?
+    napi_ref constructorRef = (fileResult->GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) ?
         (userFileMgrConstructor_) : (sConstructor_);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
-    sFetchResType_ = fileResult->fetchResType_;
+    sFetchResType_ = fileResult->GetFetchResType();
     sFetchFileResult_ = move(fileResult);
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
@@ -185,10 +187,10 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<F
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;
-    napi_ref constructorRef = (fileResult->resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) ?
+    napi_ref constructorRef = (fileResult->GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) ?
         (userFileMgrConstructor_) : (sConstructor_);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
-    sFetchResType_ = fileResult->fetchResType_;
+    sFetchResType_ = fileResult->GetFetchResType();
     sFetchAlbumResult_ = move(fileResult);
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
@@ -203,7 +205,7 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<F
     napi_value constructor;
     napi_ref constructorRef = userFileMgrConstructor_;
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
-    sFetchResType_ = fileResult->fetchResType_;
+    sFetchResType_ = fileResult->GetFetchResType();
     sFetchPhotoAlbumResult_ = move(fileResult);
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
@@ -216,10 +218,10 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<F
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;
-    napi_ref constructorRef = (fileResult->resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) ?
+    napi_ref constructorRef = (fileResult->GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) ?
         (userFileMgrConstructor_) : (sConstructor_);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
-    sFetchResType_ = fileResult->fetchResType_;
+    sFetchResType_ = fileResult->GetFetchResType();
     sFetchSmartAlbumResult_ = move(fileResult);
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));

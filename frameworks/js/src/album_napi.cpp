@@ -682,9 +682,9 @@ static void GetFileAssetsNative(napi_env env, void *data)
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
         UserFileClient::Query(uri, context->predicates, context->fetchColumn);
     context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
-    context->fetchResult->networkId_ = MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri());
+    context->fetchResult->SetNetworkId(MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri()));
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
-        context->fetchResult->resultNapiType_ = context->resultNapiType;
+        context->fetchResult->SetResultNapiType(context->resultNapiType);
     }
 }
 
