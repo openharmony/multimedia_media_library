@@ -173,7 +173,7 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
                 obj->UpdateFileAssetInfo();
             }
 
-            status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
+            status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
                                FileAssetNapi::FileAssetNapiDestructor, nullptr, nullptr);
             if (status == napi_ok) {
                 obj.release();
@@ -1075,7 +1075,7 @@ napi_value FileAssetNapi::JSCommitModify(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &result);
 
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForCommitModify(env, argc, argv, *asyncContext);
@@ -1201,7 +1201,7 @@ napi_value FileAssetNapi::JSOpen(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &result);
 
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if ((status == napi_ok) && (asyncContext->objectInfo != nullptr)) {
         asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
@@ -1356,7 +1356,7 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForClose(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
@@ -1368,9 +1368,9 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
 
         JSCloseExecute(asyncContext.get());
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void *data) {},
             reinterpret_cast<CompleteCallback>(JSCloseCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1531,7 +1531,7 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
         "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForGetThumbnail(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
@@ -1541,12 +1541,12 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
                 JSGetThumbnailExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSGetThumbnailCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1558,7 +1558,7 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
     return result;
 }
 
-extern "C" __attribute__((visibility("default"))) void* OHOS_MEDIA_NativeGetThumbnail(const char* uri, void* context)
+extern "C" __attribute__((visibility("default"))) void *OHOS_MEDIA_NativeGetThumbnail(const char* uri, void *context)
 {
     if (uri == nullptr || context == nullptr) {
         NAPI_INFO_LOG("uri or context is null while trying call NativeGetThumbnail");
@@ -1733,7 +1733,7 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
-    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForIsDirectory(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
@@ -1741,13 +1741,13 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSIsDirectory", asyncContext);
         asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
-        status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
+        status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void *data) {
                 FileAssetAsyncContext* context = static_cast<FileAssetAsyncContext*>(data);
                 context->isDirectory = GetIsDirectoryiteNative(env, *context);
                 context->status = true;
             },
             reinterpret_cast<CompleteCallback>(JSIsDirectoryCallbackComplete),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1854,7 +1854,7 @@ napi_value FileAssetNapi::JSFavorite(napi_env env, napi_callback_info info)
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
     asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
-    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if ((status != napi_ok) || (asyncContext->objectInfo == nullptr)) {
         NAPI_DEBUG_LOG("get this Var fail");
         return result;
@@ -1911,7 +1911,7 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForIsFavorite(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
@@ -1921,12 +1921,12 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
                 JSIsFavoriteExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSIsFavoriteCallbackComplete),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2036,7 +2036,7 @@ napi_value FileAssetNapi::JSTrash(napi_env env, napi_callback_info info)
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
     asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForTrash(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
@@ -2126,7 +2126,7 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &result);
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForIsTrash(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
@@ -2136,12 +2136,12 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<FileAssetAsyncContext*>(data);
                 JSIsTrashExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSIsTrashCallbackComplete),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2268,7 +2268,7 @@ napi_value FileAssetNapi::UserFileMgrClose(napi_env env, napi_callback_info info
         napi_ok, "Failed to parse js args");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrClose",
-        [](napi_env env, void* data) {
+        [](napi_env env, void *data) {
             FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
             if (close(context->fd) < 0) {
                NAPI_ERR_LOG("Failed to close, errno: %{public}d", errno);
@@ -2345,7 +2345,7 @@ napi_value FileAssetNapi::UserFileMgrIsDirectory(napi_env env, napi_callback_inf
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrIsDirectory",
-        [](napi_env env, void* data) {
+        [](napi_env env, void *data) {
             FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
             context->isDirectory = MediaFileUtils::IsDirectory(context->objectPtr->GetPath());
             context->status = true;
@@ -2371,7 +2371,7 @@ napi_value FileAssetNapi::UserFileMgrGetThumbnail(napi_env env, napi_callback_in
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
 
     result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetThumbnail",
-        [](napi_env env, void* data) {
+        [](napi_env env, void *data) {
             auto context = static_cast<FileAssetAsyncContext*>(data);
             JSGetThumbnailExecute(context);
         },

@@ -64,7 +64,7 @@ public:
     ~SmartAlbumNapi();
 
 private:
-    static void SmartAlbumNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
+    static void SmartAlbumNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
     static napi_value SmartAlbumNapiConstructor(napi_env env, napi_callback_info info);
     void SetSmartAlbumNapiProperties();
 
