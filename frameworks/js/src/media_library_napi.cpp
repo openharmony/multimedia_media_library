@@ -3358,18 +3358,30 @@ static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info inf
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], albumName) ==
         napi_ok, "Failed to get albumName");
 
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, false, &result));
     if (MediaFileUtils::CheckAlbumName(albumName) < 0) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return result;
+        return nullptr;
     }
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
 
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
 
+    napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
     return result;
+}
+
+static void GetExistsPhotoAlbum(const string &albumName, MediaLibraryAsyncContext *context)
+{
+    string queryUri = URI_QUERY_PHOTO_ALBUM;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_ALBUM_TYPE_MASK);
+    Uri uri(queryUri);
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    vector<string> columns;
+    auto resultSet = UserFileClient::Query(uri, predicates, columns);
+    auto fetchResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
+    context->photoAlbumData = fetchResult->GetFirstObject();
 }
 
 static void GetPhotoAlbumById(const int32_t id, const string &albumName, MediaLibraryAsyncContext *context)
@@ -3395,11 +3407,7 @@ static void JSCreatePhotoAlbumExecute(napi_env env, void *data)
     string uri = URI_CREATE_PHOTO_ALBUM;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, PHOTO_ALBUM_TYPE_MASK);
     Uri createPhotoAlbumUri(uri);
-    int index = UserFileClient::Insert(createPhotoAlbumUri, context->valuesBucket);
-    if (index < 0) {
-        context->SaveError(index);
-        return;
-    }
+    auto ret = UserFileClient::Insert(createPhotoAlbumUri, context->valuesBucket);
 
     bool isValid = false;
     string albumName = context->valuesBucket.Get(PhotoAlbumColumns::ALBUM_NAME, isValid);
@@ -3407,7 +3415,17 @@ static void JSCreatePhotoAlbumExecute(napi_env env, void *data)
         context->SaveError(-EINVAL);
         return;
     }
-    GetPhotoAlbumById(index, albumName, context);
+    if (ret == -1) {
+        // The album is already existed
+        context->SaveError(-EEXIST);
+        GetExistsPhotoAlbum(albumName, context);
+        return;
+    }
+    if (ret < 0) {
+        context->SaveError(ret);
+        return;
+    }
+    GetPhotoAlbumById(ret, albumName, context);
 }
 
 static void GetPhotoAlbumCreateResult(napi_env env, MediaLibraryAsyncContext *context,
@@ -3431,6 +3449,25 @@ static void GetPhotoAlbumCreateResult(napi_env env, MediaLibraryAsyncContext *co
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
 }
 
+static void HandleExistsError(napi_env env, MediaLibraryAsyncContext *context, napi_value &error)
+{
+    if (context->photoAlbumData == nullptr) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, error, ERR_INVALID_OUTPUT,
+            "Obtain photo album asset failed");
+        return;
+    }
+    napi_value jsPhotoAlbum = PhotoAlbumNapi::CreatePhotoAlbumNapi(env, context->photoAlbumData);
+    if (jsPhotoAlbum == nullptr) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, error, ERR_MEM_ALLOCATION,
+            "Failed to create js object for PhotoAlbum");
+        return;
+    }
+    MediaLibraryNapiUtils::CreateNapiErrorObject(env, error, JS_ERR_FILE_EXIST, "Album has existed");
+    napi_value propertyName;
+    NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, "data", NAPI_AUTO_LENGTH, &propertyName));
+    NAPI_CALL_RETURN_VOID(env, napi_set_property(env, error, propertyName, jsPhotoAlbum));
+}
+
 static void JSCreatePhotoAlbumCompleteCallback(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
@@ -3441,13 +3478,14 @@ static void JSCreatePhotoAlbumCompleteCallback(napi_env env, napi_status status,
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-
+    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
-    if (context->error != ERR_DEFAULT) {
-        context->HandleError(env, jsContext->error);
-        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
-    } else {
+    if (context->error == ERR_DEFAULT) {
         GetPhotoAlbumCreateResult(env, context, jsContext);
+    } else if (context->error == JS_ERR_FILE_EXIST) {
+        HandleExistsError(env, context, jsContext->error);
+    } else {
+        context->HandleError(env, jsContext->error);
     }
 
     tracer.Finish();
@@ -3478,8 +3516,6 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
 
     /* Parse the first argument into delete album id array */
     vector<string> deleteIds;
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, false, &result));
 
     uint32_t len = 0;
     NAPI_CALL(env, napi_get_array_length(env, context->argv[PARAM0], &len));
@@ -3488,13 +3524,13 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
         NAPI_CALL(env, napi_get_element(env, context->argv[PARAM0], i, &album));
         if (album == nullptr) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-            return result;
+            return nullptr;
         }
         PhotoAlbumNapi* obj = nullptr;
         NAPI_CALL(env, napi_unwrap(env, album, reinterpret_cast<void **>(&obj)));
         if (obj == nullptr) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-            return result;
+            return nullptr;
         }
         deleteIds.push_back(to_string(obj->GetAlbumId()));
     }
@@ -3502,6 +3538,7 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
 
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
 
+    napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
     return result;
 }
@@ -3566,28 +3603,25 @@ napi_value MediaLibraryNapi::DeletePhotoAlbums(napi_env env, napi_callback_info 
 
 static napi_value GetFetchOption(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context, bool hasCallback)
 {
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, false, &result));
     if (context->argc < (ARGS_ONE + hasCallback)) {
         NAPI_ERR_LOG("No arguments to parse");
-        return result;
+        return nullptr;
     }
 
     // The index of fetchOption should always be the last arg besides callback
     napi_value fetchOption = context->argv[context->argc - 1 - hasCallback];
     NAPI_CALL(env, MediaLibraryNapiUtils::GetAssetFetchOption(env, fetchOption, context));
 
+    napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
     return result;
 }
 
 static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, false, &result));
     if (context->argc < ARGS_TWO) {
         NAPI_ERR_LOG("No arguments to parse");
-        return result;
+        return nullptr;
     }
 
     /* Parse the first argument to photo album type */
@@ -3596,7 +3630,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
         "get album type failed");
     if (!PhotoAlbum::CheckPhotoAlbumType(static_cast<PhotoAlbumType>(albumType))) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return result;
+        return nullptr;
     }
     context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(albumType));
 
@@ -3606,12 +3640,13 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
         "get album subtype failed");
     if (!PhotoAlbum::CheckPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(albumSubType))) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return result;
+        return nullptr;
     }
     if (albumSubType != ANY) {
         context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
     }
 
+    napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
     return result;
 }
@@ -3628,8 +3663,6 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     NAPI_ASSERT(env, MediaLibraryNapiUtils::HasCallback(env, context->argc, context->argv, hasCallback) == napi_ok,
         "Failed to check callback");
 
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, false, &result));
     switch (context->argc - hasCallback) {
         case ARGS_ZERO:
             break;
@@ -3644,7 +3677,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
             NAPI_ASSERT(env, ParseAlbumTypes(env, context), "Failed to get album types");
             break;
         default:
-            return result;
+            return nullptr;
     }
     if (context->fetchColumn.empty()) {
         context->fetchColumn = PHOTO_ALBUM_COLUMNS;
@@ -3652,6 +3685,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
 
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
 
+    napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
     return result;
 }
