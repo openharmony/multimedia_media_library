@@ -24,29 +24,26 @@ namespace OHOS::Media {
 class PhotoAlbumColumns : BaseColumn {
 public:
     // columns only in PhotoAlbumTable
-    const static std::string ALBUM_ID;
+    static const std::string ALBUM_ID;
     const static std::string ALBUM_TYPE;
     const static std::string ALBUM_SUBTYPE;
     const static std::string ALBUM_NAME;
     const static std::string ALBUM_COVER_URI;
-    const static std::string ALBUM_COUNT;
+    static const std::string ALBUM_COUNT;
     // For api9 compatibility
     const static std::string ALBUM_RELATIVE_PATH;
 
     // table name
-    const static std::string TABLE;
-
+    static const std::string TABLE;
     // create PhotoAlbumTable sql
     const static std::string CREATE_TABLE;
-
-    // create triggers for PhotoMap
-    const static std::string TRIGGER_CLEAR_MAP;
 
     // create indexes for PhotoAlbum
     const static std::string INDEX_ALBUM_TYPES;
 
     // util constants
     const static std::string ALBUM_URI_PREFIX;
+
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_ALBUM_COLUMN_H

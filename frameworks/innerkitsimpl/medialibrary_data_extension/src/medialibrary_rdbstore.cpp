@@ -32,7 +32,7 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS::Media {
-std::shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
+shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 
 MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
@@ -43,9 +43,9 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     string databaseDir = context->GetDatabaseDir();
     string name = MEDIA_DATA_ABILITY_DB_NAME;
     int32_t errCode = 0;
-    std::string realPath = SqliteDatabaseUtils::GetDefaultDatabasePath(databaseDir, name, errCode);
-    config_.SetName(std::move(name));
-    config_.SetPath(std::move(realPath));
+    string realPath = SqliteDatabaseUtils::GetDefaultDatabasePath(databaseDir, name, errCode);
+    config_.SetName(move(name));
+    config_.SetPath(move(realPath));
     config_.SetBundleName(context->GetBundleName());
     config_.SetArea(context->GetArea());
     config_.SetReadConSize(RDB_CONNECT_NUM);
@@ -149,7 +149,7 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     }
     
     if (MediaLibraryDevice::GetInstance()->IsHasActiveDevice()) {
-        std::vector<std::string> devices = std::vector<std::string>();
+        vector<string> devices = vector<string>();
         if (!SyncPushTable(bundleName_, cmd.GetTableName(), devices)) {
             MEDIA_ERR_LOG("SyncPushTable Error");
         }
@@ -173,7 +173,7 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
         return E_HAS_DB_ERROR;
     }
 
-    std::vector<std::string> devices = std::vector<std::string>();
+    vector<string> devices = vector<string>();
     if (!SyncPushTable(bundleName_, cmd.GetTableName(), devices)) {
         MEDIA_ERR_LOG("SyncPushTable Error");
     }
@@ -195,7 +195,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
         return E_HAS_DB_ERROR;
     }
 
-    std::vector<std::string> devices = std::vector<std::string>();
+    vector<string> devices = vector<string>();
     if (!SyncPushTable(bundleName_, cmd.GetTableName(), devices)) {
         MEDIA_ERR_LOG("SyncPushTable Error");
     }
@@ -203,7 +203,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     return ret;
 }
 
-std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
     if (rdbStore_ == nullptr) {
@@ -227,7 +227,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCo
     return rdbStore_->Query(*predicates, columns);
 }
 
-std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredicates &predicates,
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredicates &predicates,
     const vector<string> &columns)
 {
     if (rdbStore_ == nullptr) {
@@ -237,7 +237,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPr
     return rdbStore_->Query(predicates, columns);
 }
 
-int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
+int32_t MediaLibraryRdbStore::ExecuteSql(const string &sql)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
@@ -252,25 +252,26 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const std::string &sql)
     return ret;
 }
 
-void BuildValuesSql(const NativeRdb::ValuesBucket &values, vector<ValueObject> &bindArgs, string &sql)
+void MediaLibraryRdbStore::BuildValuesSql(const NativeRdb::ValuesBucket &values, vector<ValueObject> &bindArgs,
+    string &sql)
 {
     map<string, ValueObject> valuesMap;
     values.GetAll(valuesMap);
     sql.append("(");
     for (auto iter = valuesMap.begin(); iter != valuesMap.end(); iter++) {
-        sql.append(((iter == valuesMap.begin()) ? "" : ","));
+        sql.append(((iter == valuesMap.begin()) ? "" : ", "));
         sql.append(iter->first);               // columnName
         bindArgs.push_back(iter->second); // columnValue
     }
 
     sql.append(") select ");
     for (size_t i = 0; i < valuesMap.size(); i++) {
-        sql.append(((i == 0) ? "?" : ",?"));
+        sql.append(((i == 0) ? "?" : ", ?"));
     }
     sql.append(" ");
 }
 
-void BuildQuerySql(const AbsRdbPredicates &predicates, const vector<string> &columns,
+void MediaLibraryRdbStore::BuildQuerySql(const AbsRdbPredicates &predicates, const vector<string> &columns,
     vector<ValueObject> &bindArgs, string &sql)
 {
     sql.append(SqliteSqlBuilder::BuildQueryString(predicates, columns));
@@ -283,23 +284,12 @@ void BuildQuerySql(const AbsRdbPredicates &predicates, const vector<string> &col
  * Returns last insert row id. If insert succeed but no new rows inserted, then return -1.
  * Return E_HAS_DB_ERROR on error cases.
  */
-int32_t MediaLibraryRdbStore::InsertWithWhereExists(const string &table, const NativeRdb::ValuesBucket &values,
-    const bool exists, const AbsRdbPredicates &predicates)
+int32_t MediaLibraryRdbStore::ExecuteForLastInsertedRowId(const string &sql, const vector<ValueObject> &bindArgs)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
-
-    // Build insert sql
-    string sql;
-    vector<ValueObject> bindArgs;
-    sql.append("INSERT").append(" OR ROLLBACK ").append(" INTO ").append(table).append(" ");
-    BuildValuesSql(values, bindArgs, sql);
-    sql.append((exists ? (" WHERE EXISTS (") : (" WHERE NOT EXISTS (")));
-    BuildQuerySql(predicates, { }, bindArgs, sql);
-    sql.append(");");
-    MEDIA_DEBUG_LOG("InsertSql: %{private}s", sql.c_str());
 
     int64_t lastInsertRowId = 0;
     int32_t err = rdbStore_->ExecuteForLastInsertedRowId(lastInsertRowId, sql, bindArgs);
@@ -345,7 +335,7 @@ int32_t MediaLibraryRdbStore::Update(int32_t &changedRows, const ValuesBucket &v
     return changedRows;
 }
 
-std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql)
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const string &sql)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
@@ -362,9 +352,9 @@ int32_t MediaLibraryRdbStore::BeginTransaction()
         return E_HAS_DB_ERROR;
     }
 
-    std::unique_lock<mutex> cvLock(transactionMutex_);
+    unique_lock<mutex> cvLock(transactionMutex_);
     if (isInTransaction_.load()) {
-        transactionCV_.wait_for(cvLock, std::chrono::milliseconds(RDB_TRANSACTION_WAIT_MS),
+        transactionCV_.wait_for(cvLock, chrono::milliseconds(RDB_TRANSACTION_WAIT_MS),
             [this] () { return !(isInTransaction_.load()); });
     }
 
@@ -418,14 +408,14 @@ int32_t MediaLibraryRdbStore::RollBack()
     return rdbStore_->RollBack();
 }
 
-std::shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
+shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
 {
     return rdbStore_;
 }
 
-std::string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
+string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
 {
-    const std::string &networkId = cmd.GetOprnDevice();
+    const string &networkId = cmd.GetOprnDevice();
     int errCode = E_ERR;
     if (!networkId.empty()) {
         return rdbStore_->ObtainDistributedTableName(networkId, cmd.GetTableName(), errCode);
@@ -434,17 +424,17 @@ std::string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
     return cmd.GetTableName();
 }
 
-bool MediaLibraryRdbStore::SyncPullTable(const std::string &bundleName, const std::string &tableName,
-    const std::vector<std::string> &devices)
+bool MediaLibraryRdbStore::SyncPullTable(const string &bundleName, const string &tableName,
+    const vector<string> &devices)
 {
-    std::vector<std::string> devList(devices);
+    vector<string> devList(devices);
     return MediaLibrarySyncTable::SyncPullTable(rdbStore_, bundleName, tableName, devList);
 }
 
-bool MediaLibraryRdbStore::SyncPushTable(const std::string &bundleName, const std::string &tableName,
-    const std::vector<std::string> &devices, bool isBlock)
+bool MediaLibraryRdbStore::SyncPushTable(const string &bundleName, const string &tableName,
+    const vector<string> &devices, bool isBlock)
 {
-    std::vector<std::string> devList(devices);
+    vector<string> devList(devices);
     return MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName, tableName, devList, isBlock);
 }
 
@@ -453,9 +443,9 @@ inline void BuildInsertSystemAlbumSql(const ValuesBucket &values, const AbsRdbPr
 {
     // Build insert sql
     sql.append("INSERT").append(" OR ROLLBACK ").append(" INTO ").append(PhotoAlbumColumns::TABLE).append(" ");
-    BuildValuesSql(values, bindArgs, sql);
+    MediaLibraryRdbStore::BuildValuesSql(values, bindArgs, sql);
     sql.append(" WHERE NOT EXISTS (");
-    BuildQuerySql(predicates, { PhotoAlbumColumns::ALBUM_ID }, bindArgs, sql);
+    MediaLibraryRdbStore::BuildQuerySql(predicates, { PhotoAlbumColumns::ALBUM_ID }, bindArgs, sql);
     sql.append(");");
 }
 
@@ -608,6 +598,41 @@ int32_t MediaLibraryDataCallBack::InsertUniqueMemberTableValues(const UniqueMemb
     return insertResult;
 }
 
+const string &TriggerClearMap()
+{
+    const static string TRIGGER_CLEAR_MAP = BaseColumn::CreateTrigger() + "photo_album_clear_map" +
+    " AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
+    " BEGIN " +
+        "DELETE FROM " + PhotoMap::TABLE +
+        " WHERE " + PhotoMap::ALBUM_ID + "=" + "OLD." + PhotoAlbumColumns::ALBUM_ID + ";" +
+    " END;";
+    return TRIGGER_CLEAR_MAP;
+}
+
+const string &TriggerAddAssets()
+{
+    const static string TRIGGER_ADD_ASSETS = BaseColumn::CreateTrigger() + "photo_album_insert_asset" +
+    " AFTER INSERT ON " + PhotoMap::TABLE +
+    " BEGIN " +
+        "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
+            PhotoAlbumColumns::ALBUM_COUNT + " = " + PhotoAlbumColumns::ALBUM_COUNT + " + 1 " +
+        "WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + "NEW." + PhotoMap::ALBUM_ID + ";" +
+    " END;";
+    return TRIGGER_ADD_ASSETS;
+}
+
+const string &TriggerRemoveAssets()
+{
+    const static string TRIGGER_REMOVE_ASSETS = BaseColumn::CreateTrigger() + "photo_album_delete_asset" +
+    " AFTER DELETE ON " + PhotoMap::TABLE +
+    " BEGIN " +
+        "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
+            PhotoAlbumColumns::ALBUM_COUNT + " = " + PhotoAlbumColumns::ALBUM_COUNT + " - 1 " +
+        "WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + "OLD." + PhotoMap::ALBUM_ID + ";" +
+    " END;";
+    return TRIGGER_REMOVE_ASSETS;
+}
+
 int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 {
     vector<string> executeSqlStrs = {
@@ -633,7 +658,9 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         PhotoAlbumColumns::CREATE_TABLE,
         PhotoAlbumColumns::INDEX_ALBUM_TYPES,
         PhotoMap::CREATE_TABLE,
-        PhotoAlbumColumns::TRIGGER_CLEAR_MAP,
+        TriggerClearMap(),
+        TriggerAddAssets(),
+        TriggerRemoveAssets(),
     };
 
     for (const string& sqlStr : executeSqlStrs) {
@@ -664,7 +691,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
 #ifdef RDB_UPGRADE_MOCK
-    const std::string ALTER_MOCK_COLUMN = "ALTER TABLE " + MEDIALIBRARY_TABLE +
+    const string ALTER_MOCK_COLUMN = "ALTER TABLE " + MEDIALIBRARY_TABLE +
         " ADD COLUMN upgrade_test_column INT DEFAULT 0";
     MEDIA_DEBUG_LOG("OnUpgrade |Rdb Verison %{private}d => %{private}d", oldVersion, newVersion);
     int32_t result = NativeRdb::E_ERROR;

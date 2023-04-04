@@ -71,9 +71,9 @@ const OHOS::DistributedKv::StoreId KVSTORE_STOREID = {"medialibrary_thumbnail"};
 namespace OHOS {
 namespace Media {
 
-std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
-std::unordered_map<std::string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
-std::mutex MediaLibraryDataManager::mutex_;
+shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
+unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
+mutex MediaLibraryDataManager::mutex_;
 
 MediaLibraryDataManager::MediaLibraryDataManager(void)
 {
@@ -87,18 +87,18 @@ MediaLibraryDataManager::~MediaLibraryDataManager(void)
     }
 }
 
-std::shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::GetInstance()
+shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::GetInstance()
 {
     if (instance_ == nullptr) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        lock_guard<mutex> lock(mutex_);
         if (instance_ == nullptr) {
-            instance_ = std::make_shared<MediaLibraryDataManager>();
+            instance_ = make_shared<MediaLibraryDataManager>();
         }
     }
     return instance_;
 }
 
-static DataShare::DataShareExtAbility *MediaDataShareCreator(const std::unique_ptr<Runtime> &runtime)
+static DataShare::DataShareExtAbility *MediaDataShareCreator(const unique_ptr<Runtime> &runtime)
 {
     MEDIA_DEBUG_LOG("MediaLibraryCreator::%{public}s", __func__);
     return  MediaDataShareExtAbility::Create(runtime);
@@ -127,10 +127,10 @@ static void MakeRootDirs()
     }
 }
 
-int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
-    const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext)
+int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::AbilityRuntime::Context> &context,
+    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext)
 {
-    std::lock_guard<std::shared_mutex> lock(mgrSharedMutex_);
+    lock_guard<shared_mutex> lock(mgrSharedMutex_);
 
     if (refCnt_.load() > 0) {
         MEDIA_DEBUG_LOG("already initialized");
@@ -180,7 +180,7 @@ int32_t MediaLibraryDataManager::InitDeviceData()
 
 void MediaLibraryDataManager::ClearMediaLibraryMgr()
 {
-    std::lock_guard<std::shared_mutex> lock(mgrSharedMutex_);
+    lock_guard<shared_mutex> lock(mgrSharedMutex_);
 
     refCnt_--;
     if (refCnt_.load() > 0) {
@@ -253,17 +253,17 @@ int32_t MediaLibraryDataManager::InitialiseKvStore()
     return E_OK;
 }
 
-std::shared_ptr<MediaDataShareExtAbility> MediaLibraryDataManager::GetOwner()
+shared_ptr<MediaDataShareExtAbility> MediaLibraryDataManager::GetOwner()
 {
     return extension_;
 }
 
-void MediaLibraryDataManager::SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExternsion)
+void MediaLibraryDataManager::SetOwner(const shared_ptr<MediaDataShareExtAbility> &datashareExternsion)
 {
     extension_ = datashareExternsion;
 }
 
-std::string MediaLibraryDataManager::GetType(const Uri &uri)
+string MediaLibraryDataManager::GetType(const Uri &uri)
 {
     MEDIA_INFO_LOG("GetType uri: %{public}s", uri.ToString().c_str());
     return "";
@@ -303,7 +303,7 @@ int32_t MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAss
     return E_OK;
 }
 
-std::unordered_map<std::string, DirAsset> MediaLibraryDataManager::GetDirQuerySetMap()
+unordered_map<string, DirAsset> MediaLibraryDataManager::GetDirQuerySetMap()
 {
     return dirQuerySetMap_;
 }
@@ -348,7 +348,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBucket &dataShareValue)
 {
-    std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
@@ -404,13 +404,16 @@ int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &
 int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::BatchInsert");
-    std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
     }
 
     string uriString = uri.ToString();
+    if (uriString == URI_PHOTO_ALBUM_ADD_ASSET) {
+        return MediaLibraryAlbumOperations::AddPhotoAssets(values);
+    }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
         return E_INVALID_URI;
@@ -428,7 +431,7 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
 int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::Delete");
-    std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
@@ -478,7 +481,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     const DataSharePredicates &predicates)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::Update");
-    std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
@@ -529,7 +532,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
 
 void MediaLibraryDataManager::InterruptBgworker()
 {
-    std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return;
@@ -550,7 +553,7 @@ void MediaLibraryDataManager::InterruptBgworker()
 
 int32_t MediaLibraryDataManager::GenerateThumbnails()
 {
-    std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
@@ -565,7 +568,7 @@ int32_t MediaLibraryDataManager::GenerateThumbnails()
 
 int32_t MediaLibraryDataManager::DoAging()
 {
-    std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::DoAging IN");
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
@@ -654,7 +657,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::GetThumbnail(const string &
 
 void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri)
 {
-    std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return;
@@ -702,7 +705,7 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationOb
         return;
     }
     // tabletype mapping into tablename
-    std::string tableName = MEDIALIBRARY_TABLE;
+    string tableName = MEDIALIBRARY_TABLE;
     switch (oprnObject) {
         case OperationObject::SMART_ALBUM:
             tableName = SMARTALBUM_TABLE;
@@ -734,7 +737,7 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationOb
 shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
-    std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return nullptr;
@@ -766,7 +769,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
     const DataSharePredicates &predicates)
 {
-    std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return nullptr;
@@ -820,7 +823,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
     return queryResultSet;
 }
 
-bool MediaLibraryDataManager::QuerySync(const std::string &networkId, const std::string &tableName)
+bool MediaLibraryDataManager::QuerySync(const string &networkId, const string &tableName)
 {
     if (networkId.empty() || tableName.empty()) {
         return false;
@@ -834,7 +837,7 @@ bool MediaLibraryDataManager::QuerySync(const std::string &networkId, const std:
         return false;
     }
 
-    if (networkId == std::string(deviceInfo.networkId)) {
+    if (networkId == string(deviceInfo.networkId)) {
         return true;
     }
 
@@ -844,11 +847,11 @@ bool MediaLibraryDataManager::QuerySync(const std::string &networkId, const std:
         return true;
     }
 
-    std::vector<std::string> devices = { networkId };
+    vector<string> devices = { networkId };
     return MediaLibrarySyncTable::SyncPullTable(rdbStore_, bundleName_, tableName, devices);
 }
 
-int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const std::string &mode)
+int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const string &mode)
 {
     MediaLibraryCommand cmd(uri, OperationType::OPEN);
     auto oprnObject = cmd.GetOprnObject();
@@ -862,7 +865,7 @@ int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const std::string &mod
 bool MediaLibraryDataManager::CheckFileNameValid(const DataShareValuesBucket &value)
 {
     bool isValid = false;
-    std::string displayName = value.Get(MEDIA_DATA_DB_NAME, isValid);
+    string displayName = value.Get(MEDIA_DATA_DB_NAME, isValid);
     if (!isValid) {
         return false;
     }
@@ -876,7 +879,7 @@ bool MediaLibraryDataManager::CheckFileNameValid(const DataShareValuesBucket &va
 
 void MediaLibraryDataManager::NotifyChange(const Uri &uri)
 {
-    std::shared_lock<std::shared_mutex> sharedLock(mgrSharedMutex_);
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return;
@@ -891,7 +894,7 @@ void MediaLibraryDataManager::NotifyChange(const Uri &uri)
 }
 
 int32_t MediaLibraryDataManager::InitialiseThumbnailService(
-    const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext)
+    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext)
 {
     if (thumbnailService_ != nullptr) {
         return E_OK;
@@ -909,7 +912,7 @@ int32_t MediaLibraryDataManager::InitialiseThumbnailService(
     return E_OK;
 }
 
-int32_t ScanFileCallback::OnScanFinished(const int32_t status, const std::string &uri, const std::string &path)
+int32_t ScanFileCallback::OnScanFinished(const int32_t status, const string &uri, const string &path)
 {
     auto instance = MediaLibraryDataManager::GetInstance();
     if (instance != nullptr) {
