@@ -59,12 +59,6 @@ static const unordered_map<string, ResultSetDataType> RESULT_TYPE_MAP = {
 template <class T>
 FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &resultset)
 {
-    count_ = 0;
-    if (resultset != nullptr) {
-        resultset->GetRowCount(count_);
-    }
-    isContain_ = count_ > 0;
-    isClosed_ = false;
     resultset_ = resultset;
     networkId_ = "";
     resultNapiType_ = ResultNapiType::TYPE_NAPI_MAX;
@@ -84,9 +78,9 @@ FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &res
 
 template <class T>
 // empty constructor napi
-FetchResult<T>::FetchResult()
-    : isContain_(false), isClosed_(false), count_(0), resultNapiType_(ResultNapiType::TYPE_NAPI_MAX),
-      resultset_(nullptr) {}
+FetchResult<T>::FetchResult() : resultNapiType_(ResultNapiType::TYPE_NAPI_MAX), resultset_(nullptr)
+{
+}
 
 template <class T>
 FetchResult<T>::~FetchResult()
@@ -97,33 +91,25 @@ FetchResult<T>::~FetchResult()
 template <class T>
 void FetchResult<T>::Close()
 {
-    isClosed_ = true;
-}
-
-template <class T>
-bool FetchResult<T>::IsContain()
-{
-    return isContain_;
+    if (resultset_ != nullptr) {
+        resultset_->Close();
+        resultset_ = nullptr;
+    }
 }
 
 template <class T>
 int32_t FetchResult<T>::GetCount()
 {
-    return count_;
-}
-
-template <class T>
-bool FetchResult<T>::IsClosed()
-{
-    return isClosed_;
+    int32_t count = 0;
+    if (resultset_ == nullptr || resultset_->GetRowCount(count) != NativeRdb::E_OK) {
+        return 0;
+    }
+    return count;
 }
 
 template <class T>
 void FetchResult<T>::SetInfo(unique_ptr<FetchResult<T>> &fetch)
 {
-    isContain_ = fetch->isContain_;
-    isClosed_ = fetch->isClosed_;
-    count_ = fetch->count_;
     networkId_ = fetch->networkId_;
     resultNapiType_ = fetch->resultNapiType_;
     typeMask_ = fetch->typeMask_;
@@ -135,11 +121,65 @@ void FetchResult<T>::SetNetworkId(const string &networkId)
     networkId_ = networkId;
 }
 
+template<class T>
+void FetchResult<T>::SetResultNapiType(const ResultNapiType napiType)
+{
+    resultNapiType_ = napiType;
+}
+
+template<class T>
+void FetchResult<T>::SetFetchResType(const FetchResType resType)
+{
+    fetchResType_ = resType;
+}
+
+template<class T>
+void FetchResult<T>::SetTypeMask(const string &mask)
+{
+    typeMask_ = mask;
+}
+
+template<class T>
+string FetchResult<T>::GetNetworkId()
+{
+    return networkId_;
+}
+
+template<class T>
+ResultNapiType FetchResult<T>::GetResultNapiType()
+{
+    return resultNapiType_;
+}
+
+template<class T>
+shared_ptr<DataShare::DataShareResultSet> &FetchResult<T>::GetDataShareResultSet()
+{
+    return resultset_;
+}
+
+template<class T>
+FetchResType FetchResult<T>::GetFetchResType()
+{
+    return fetchResType_;
+}
+
+template<class T>
+string FetchResult<T>::GetTypeMask()
+{
+    return typeMask_;
+}
+
 template <class T>
 unique_ptr<T> FetchResult<T>::GetObjectAtPosition(int32_t index)
 {
-    if ((index < 0) || (index > (count_ - 1)) || (resultset_ == nullptr)) {
-        MEDIA_ERR_LOG("index not proper or rs is null");
+    if (resultset_ == nullptr) {
+        MEDIA_ERR_LOG("rs is null");
+        return nullptr;
+    }
+
+    int32_t count = GetCount();
+    if ((index < 0) || (index > (count - 1))) {
+        MEDIA_ERR_LOG("index not proper");
         return nullptr;
     }
 

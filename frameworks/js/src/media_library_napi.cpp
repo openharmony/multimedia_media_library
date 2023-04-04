@@ -683,7 +683,7 @@ static void GetFileAssetsExecute(napi_env env, void *data)
         context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
         context->fetchFileResult->SetNetworkId(context->networkId);
         if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
-            context->fetchFileResult->resultNapiType_ = context->resultNapiType;
+            context->fetchFileResult->SetResultNapiType(context->resultNapiType);
         }
         return;
     } else {
@@ -854,8 +854,8 @@ static void GetAlbumResult(MediaLibraryAsyncContext *context, shared_ptr<DataSha
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         context->fetchAlbumResult = make_unique<FetchResult<AlbumAsset>>(move(resultSet));
         context->fetchAlbumResult->SetNetworkId(context->networkId);
-        context->fetchAlbumResult->resultNapiType_ = context->resultNapiType;
-        context->fetchAlbumResult->typeMask_ = context->typeMask;
+        context->fetchAlbumResult->SetResultNapiType(context->resultNapiType);
+        context->fetchAlbumResult->SetTypeMask(context->typeMask);
         return;
     }
 
@@ -1032,7 +1032,7 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     CHECK_NULL_PTR_RETURN_VOID(context->fetchFileResult, "Failed to get file asset by id, fetchFileResult is nullptr");
     context->fetchFileResult->SetNetworkId(networkId);
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
-        context->fetchFileResult->resultNapiType_ = context->resultNapiType;
+        context->fetchFileResult->SetResultNapiType(context->resultNapiType);
     }
     if (context->fetchFileResult->GetCount() < 1) {
         NAPI_ERR_LOG("Failed to query file by id: %{public}d, query count is 0", id);
@@ -1089,7 +1089,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
     delete context;
 }
 
-static bool CheckTitlePrams(MediaLibraryAsyncContext *context)
+static bool CheckTitleParams(MediaLibraryAsyncContext *context)
 {
     if (context == nullptr) {
         NAPI_ERR_LOG("Async context is null");
@@ -1168,7 +1168,7 @@ static bool CheckTypeOfType(const string &firstDirName, int32_t fileMediaType)
     }
     return true;
 }
-static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
+static bool CheckRelativePathParams(MediaLibraryAsyncContext *context)
 {
     if (context == nullptr) {
         NAPI_ERR_LOG("Async context is null");
@@ -1187,18 +1187,15 @@ static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
         return false;
     }
     if (relativePath.empty()) {
-        NAPI_DEBUG_LOG("CheckRelativePathPrams relativePath is empty");
         return false;
     }
 
     if (IsDirectory(relativePath)) {
-        NAPI_DEBUG_LOG("CheckRelativePathPrams relativePath exist return true");
         return true;
     }
 
     string firstDirName = GetFirstDirName(relativePath);
     if (!firstDirName.empty() && IsDirectory(firstDirName)) {
-        NAPI_DEBUG_LOG("CheckRelativePathPrams firstDirName exist return true");
         return true;
     }
 
@@ -1212,7 +1209,6 @@ static bool CheckRelativePathPrams(MediaLibraryAsyncContext *context)
         }
         NAPI_DEBUG_LOG("firstDirName = %{private}s", firstDirName.c_str());
     }
-    NAPI_DEBUG_LOG("CheckRelativePathPrams return false");
     return false;
 }
 
@@ -1265,11 +1261,11 @@ static void JSCreateAssetExecute(napi_env env, void *data)
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    if (!CheckTitlePrams(context)) {
+    if (!CheckTitleParams(context)) {
         context->error = JS_E_DISPLAYNAME;
         return;
     }
-    if ((context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) && (!CheckRelativePathPrams(context))) {
+    if ((context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) && (!CheckRelativePathParams(context))) {
         context->error = JS_E_RELATIVEPATH;
         return;
     }
@@ -1956,8 +1952,8 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         context->fetchSmartAlbumResult = make_unique<FetchResult<SmartAlbumAsset>>(move(resultSet));
         context->fetchSmartAlbumResult->SetNetworkId(context->networkId);
-        context->fetchSmartAlbumResult->resultNapiType_ = context->resultNapiType;
-        context->fetchSmartAlbumResult->typeMask_ = context->typeMask;
+        context->fetchSmartAlbumResult->SetResultNapiType(context->resultNapiType);
+        context->fetchSmartAlbumResult->SetTypeMask(context->typeMask);
         return;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -3708,8 +3704,8 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     }
 
     context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
-    context->fetchPhotoAlbumResult->resultNapiType_ = context->resultNapiType;
-    context->fetchPhotoAlbumResult->typeMask_ = PHOTO_ALBUM_TYPE_MASK;
+    context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
+    context->fetchPhotoAlbumResult->SetTypeMask(PHOTO_ALBUM_TYPE_MASK);
 }
 
 static void GetPhotoAlbumQueryResult(napi_env env, MediaLibraryAsyncContext *context,
