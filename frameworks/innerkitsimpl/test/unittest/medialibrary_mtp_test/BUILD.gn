@@ -52,7 +52,6 @@ ohos_unittest("medialibrary_mtp_test") {
     "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/common/include",
     "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/provider/include",
     "//utils/native/base/include",
-    "//base/powermgr/battery_manager/interfaces/innerkits/native/include",
     "//foundation/multimedia/media_library/frameworks/services/media_mtp/include/",
   ]
 
@@ -71,7 +70,6 @@ ohos_unittest("medialibrary_mtp_test") {
     "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
-    "//base/powermgr/battery_manager/interfaces/innerkits:batterysrv_client",
     "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp",
     "//third_party/openssl:libcrypto_shared",
   ]
@@ -94,4 +92,8 @@ ohos_unittest("medialibrary_mtp_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
   ]
+
+  if (defined(global_parts_info.powermgr_battery_manager)) {
+    external_deps += [ "battery_manager:batterysrv_client" ]
+  }
 }
