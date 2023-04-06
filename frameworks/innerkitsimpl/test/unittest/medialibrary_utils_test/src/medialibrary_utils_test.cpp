@@ -12,13 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include "avmetadatahelper.h"
 #include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
-#include "thumbnail_utils.h"
 #include "thumbnail_service.h"
 #include "medialibrary_db_const.h"
+#include "medialibrary_errno.h"
+#include "medialibrary_object_utils.h"
 #include "medialibrary_utils_test.h"
+#define private public
+#include "thumbnail_utils.h"
+#undef private
 
 using namespace std;
 using namespace OHOS;
@@ -527,5 +531,246 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsImageExist_test_001, TestSize.Level
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(MediaLibraryExtUnitTest, medialib_compressImage_test_001, TestSize.Level0)
+{
+    ThumbnailData data;
+    data.thumbnail.push_back(0);
+    data.source = make_shared<PixelMap>();
+    bool ret = ThumbnailUtils::CompressImage(data.source, data.thumbnail);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_LoadSourceImage_test_001, TestSize.Level0)
+{
+    Size desiredSize;
+    desiredSize.width = 20;
+    desiredSize.height = 20;
+    ThumbnailData data;
+    data.mediaType = MEDIA_TYPE_VIDEO;
+    bool isThumbnail = true;
+    bool ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, desiredSize);
+    EXPECT_EQ(ret, false);
+    data.mediaType = MEDIA_TYPE_AUDIO;
+    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, desiredSize);
+    EXPECT_EQ(ret, false);
+    data.mediaType = MEDIA_TYPE_MEDIA;
+    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, desiredSize);
+    EXPECT_EQ(ret, false);
+    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    data.source = make_shared<PixelMap>();
+    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, desiredSize);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_setSource_test_001, TestSize.Level0)
+{
+    int32_t ret = ThumbnailUtils::SetSource(nullptr, "");
+    EXPECT_EQ(ret, E_ERR);
+    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    ret = ThumbnailUtils::SetSource(avMetadataHelper, "");
+    EXPECT_EQ(ret, E_ERR);
+    string path = "//storage/media/local/files";
+    ret = ThumbnailUtils::SetSource(avMetadataHelper, path);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_uTCTimeSeconds_test_001, TestSize.Level0)
+{
+    int64_t ret = ThumbnailUtils::UTCTimeSeconds();
+    EXPECT_GT(ret, 0);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_parseQueryResult_test_001, TestSize.Level0)
+{
+    vector<string> column = {
+        REMOTE_THUMBNAIL_DB_FILE_ID,
+        MEDIA_DATA_DB_LCD
+    };
+    ThumbnailRdbData data;
+    data.id = "0";
+    data.path = "/storage/media/local/files";
+    data.thumbnailKey = "ParseQueryResult";
+    data.lcdKey = "ParseQueryResult";
+    data.mediaType = 0;
+    data.dateModified = 0;
+    int err = 0;
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = REMOTE_THUMBNAIL_TABLE,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
+    rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
+    rdbPredicates.Limit(0);
+    rdbPredicates.OrderByAsc(MEDIA_DATA_DB_TIME_VISIT);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    ThumbnailUtils::ParseQueryResult(resultSet, data, err);
+    EXPECT_NE(err, 0);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_deleteDistributeThumbnailInfo_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    opts.networkId = "GetUdidByNetworkId";
+    opts.udid = "GetUdidByNetworkId";
+    string key = "RemoveDataFromKv";
+    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    opts.kvStore = kvStorePtr;
+    ThumbnailUtils::RemoveDataFromKv(opts.kvStore, key);
+    bool ret = ThumbnailUtils::DeleteDistributeThumbnailInfo(opts);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_parseStringResult_test_001, TestSize.Level0)
+{
+    vector<string> column = {
+        REMOTE_THUMBNAIL_DB_FILE_ID,
+        MEDIA_DATA_DB_LCD
+    };
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+    };
+    int index = 0;
+    string data = "ParseStringResult";
+    int err = 0;
+    RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
+    rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
+    rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
+    rdbPredicates.Limit(0);
+    rdbPredicates.OrderByAsc(MEDIA_DATA_DB_TIME_VISIT);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    string dataTest = "";
+    ThumbnailUtils::ParseStringResult(resultSet, -1, dataTest, err);
+    EXPECT_GT(err, E_OK);
+    ThumbnailUtils::ParseStringResult(resultSet, index, data, err);
+    EXPECT_GT(err, E_OK);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_checkResultSetCount_test_001, TestSize.Level0)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_THUMBNAIL,
+        MEDIA_DATA_DB_LCD,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_MODIFIED
+    };
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = MEDIALIBRARY_TABLE,
+        .row = "CheckResultSetCount",
+    };
+    int err = 0;
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
+    rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
+    rdbPredicates.Limit(0);
+    rdbPredicates.OrderByAsc(MEDIA_DATA_DB_TIME_VISIT);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    bool ret = ThumbnailUtils::CheckResultSetCount(nullptr, err);
+    EXPECT_EQ(ret, false);
+    ret = ThumbnailUtils::CheckResultSetCount(resultSet, err);
+    EXPECT_EQ(ret, false);
+    auto resultSetTest = ThumbnailUtils::QueryThumbnailSet(opts);
+    ret = ThumbnailUtils::CheckResultSetCount(resultSetTest, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_loadImageFile_test_001, TestSize.Level0)
+{
+    ThumbnailData data;
+    bool isThumbnail = false;
+    Size desiredSize;
+    desiredSize.width = 20;
+    desiredSize.height = 20;
+    data.path = "/storage/media/local/files";
+    data.source = make_shared<PixelMap>();
+    bool ret = ThumbnailUtils::LoadImageFile(data, isThumbnail, desiredSize);
+    EXPECT_EQ(ret, false);
+    ret = ThumbnailUtils::LoadVideoFile(data, isThumbnail, desiredSize);
+    EXPECT_EQ(ret, false);
+    ret = ThumbnailUtils::LoadAudioFile(data, isThumbnail, desiredSize);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_genKey_test_001, TestSize.Level0)
+{
+    ThumbnailData data;
+    string key = "";
+    bool ret = true;
+    ret = ThumbnailUtils::GenKey(data, key);
+    EXPECT_EQ(ret, true);
+    data.hashKey = "GenKey";
+    data.path = "/storage/media/local/files/";
+    data.dateModified = 0;
+    key = ThumbnailUtils::GetUdid();
+    EXPECT_EQ(key, "");
+    ret = ThumbnailUtils::GenKey(data, key);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_saveImage_test_001, TestSize.Level0)
+{
+    vector<uint8_t> image;
+    DistributedKv::Status ret = ThumbnailUtils::SaveImage(nullptr, "", image);
+    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
+    string key = "SaveImage";
+    image.push_back(0);
+    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    ret = ThumbnailUtils::SaveImage(kvStorePtr, key, image);
+    EXPECT_EQ(ret, DistributedKv::Status::SUCCESS);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_getUdidByNetworkId_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .networkId = "GetUdidByNetworkId",
+        .table = MEDIALIBRARY_TABLE,
+        .row = "GetUdidByNetworkId",
+    };
+    opts.store = storePtr;
+    string networkIdTest = "";
+    string outUdidTest = "";
+    int err = 0;
+    bool ret = ThumbnailUtils::GetUdidByNetworkId(opts, networkIdTest, outUdidTest, err);
+    EXPECT_EQ(ret, false);
+    string outUdid = "GetUdidByNetworkId";
+    ret = ThumbnailUtils::GetUdidByNetworkId(opts, opts.networkId, outUdid, err);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_updateRemoteThumbnailInfo_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    int err = 0;
+    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
+    opts.kvStore = kvStorePtr;
+    opts.store = storePtr;
+    opts.networkId = "InsertRemoteThumbnailInfo";
+    opts.row = "InsertRemoteThumbnailInfo";
+    bool ret = ThumbnailUtils::UpdateRemoteThumbnailInfo(opts, data, err);
+    EXPECT_EQ(ret, false);
+    data.id = "0";
+    data.udid = "InsertRemoteThumbnailInfo";
+    opts.store = storePtr;
+    ThumbnailUtils::InsertRemoteThumbnailInfo(opts, data, err);
+    ret = ThumbnailUtils::UpdateRemoteThumbnailInfo(opts, data, err);
+    EXPECT_EQ(ret, false);
+    ret = ThumbnailUtils::CleanDistributeLcdInfo(opts);
+    EXPECT_EQ(ret, false);
+}
 } // namespace Media
 } // namespace OHOS
