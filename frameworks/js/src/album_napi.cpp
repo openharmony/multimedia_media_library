@@ -129,7 +129,7 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
                 obj->SetAlbumNapiProperties();
             }
 
-            status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
+            status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
                                AlbumNapi::AlbumNapiDestructor, nullptr, nullptr);
             if (status == napi_ok) {
                 obj.release();
@@ -688,7 +688,7 @@ static void GetFileAssetsNative(napi_env env, void *data)
     }
 }
 
-static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status, void*data)
+static void JSGetFileAssetsCompleteCallback(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSGetFileAssetsCompleteCallback");
@@ -817,7 +817,7 @@ napi_value AlbumNapi::JSGetAlbumFileAssets(napi_env env, napi_callback_info info
 
     std::unique_ptr<AlbumNapiAsyncContext> asyncContext = std::make_unique<AlbumNapiAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
@@ -848,7 +848,7 @@ napi_value AlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
     std::unique_ptr<AlbumNapiAsyncContext> asyncContext = std::make_unique<AlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
     asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = ConvertCommitJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSCommitModify fail ");

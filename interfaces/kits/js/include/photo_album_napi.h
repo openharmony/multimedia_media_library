@@ -45,7 +45,7 @@ public:
 private:
     void SetPhotoAlbumNapiProperties();
     static napi_value PhotoAlbumNapiConstructor(napi_env env, napi_callback_info info);
-    static void PhotoAlbumNapiDestructor(napi_env env, void* nativeObject, void* finalizeHint);
+    static void PhotoAlbumNapiDestructor(napi_env env, void *nativeObject, void *finalizeHint);
 
     static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
     static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
