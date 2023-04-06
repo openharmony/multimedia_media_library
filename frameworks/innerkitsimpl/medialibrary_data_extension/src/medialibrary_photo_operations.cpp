@@ -105,7 +105,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     }
 
     int32_t outRow = InsertAssetInDb(cmd, fileAsset);
-    if (outRow >= 0) {
+    if (outRow <= 0) {
         MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
         TransactionRollback();
         return errCode;
