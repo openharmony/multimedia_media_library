@@ -1,0 +1,74 @@
+# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
+
+MEDIA_LIB_CLOUD_BASE_DIR = "${MEDIA_LIB_SERVICES_DIR}/media_cloud_sync"
+
+ohos_shared_library("cloud_sync") {
+  install_enable = true
+
+  sources = [ "${MEDIA_LIB_CLOUD_BASE_DIR}/src/cloud_sync_helper.cpp" ]
+
+  cflags = [ "-Wall" ]
+
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+
+  cflags_cc = cflags
+
+  include_dirs = [
+    "${MEDIA_LIB_CLOUD_BASE_DIR}/include",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
+    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
+  ]
+
+  deps = [ "${MEDIA_LIB_COMMON_UTILS_DIR}:medialibrary_common_utils" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "dfs_service:cloudsync_kit_inner",
+    "hiviewdfx_hilog_native:libhilog",
+  ]
+
+  sanitize = {
+    cfi = true
+    debug = false
+  }
+
+  part_name = "media_library"
+  subsystem_name = "multimedia"
+}
+
+config("public_config") {
+  include_dirs = [
+    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
+  ]
+}
+
+ohos_shared_library("cloud_sync_header") {
+  install_enable = true
+
+  public_configs = [ ":public_config" ]
+
+  sanitize = {
+    cfi = true
+    debug = false
+  }
+
+  part_name = "media_library"
+  subsystem_name = "multimedia"
+}

@@ -36,6 +36,7 @@
 #include "rdb_predicates.h"
 #include "thumbnail_const.h"
 #include "uri_helper.h"
+#include "cloud_sync_helper.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -362,7 +363,8 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
         MEDIA_DATA_DB_THUMBNAIL,
         MEDIA_DATA_DB_LCD,
         MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_DATE_MODIFIED
+        MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_CLOUD_ID
     };
 
     vector<string> selectionArgs;
@@ -701,6 +703,9 @@ bool ThumbnailUtils::UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data,
         values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
         int64_t timeNow = UTCTimeSeconds();
         values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
+        if (data.cloudId == "") {
+            values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        }
     }
 
     MediaLibraryTracer tracer;
@@ -714,6 +719,7 @@ bool ThumbnailUtils::UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data,
     vector<string> devices;
     opts.table = MEDIALIBRARY_TABLE;
     SyncPushTable(opts, devices);
+    CloudSyncHelper::GetInstance()->StartSync();
     return true;
 }
 
@@ -949,6 +955,7 @@ bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool 
     if (withLcd) {
         values.PutNull(MEDIA_DATA_DB_LCD);
         values.PutLong(MEDIA_DATA_DB_TIME_VISIT, 0);
+        values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     }
     int changedRows;
     auto err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
@@ -1449,6 +1456,7 @@ void ThumbnailUtils::ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rd
     data.lcdKey = rdbData.lcdKey;
     data.mediaType = rdbData.mediaType;
     data.dateModified = rdbData.dateModified;
+    data.cloudId = rdbData.cloudId;
 }
 
 int64_t ThumbnailUtils::UTCTimeSeconds()
@@ -1505,13 +1513,6 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_ID.c_str(), err);
     }
 
-    err = resultSet->GetColumnIndex(REMOTE_THUMBNAIL_DB_FILE_ID, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.id, err);
-    } else {
-        MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_ID.c_str(), err);
-    }
-
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, index);
     if (err == NativeRdb::E_OK) {
         ParseStringResult(resultSet, index, data.path, err);
@@ -1546,6 +1547,13 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         err = resultSet->GetLong(index, data.dateModified);
     } else {
         MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_DATE_MODIFIED.c_str(), err);
+    }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_CLOUD_ID, index);
+    if (err == NativeRdb::E_OK) {
+        ParseStringResult(resultSet, index, data.cloudId, err);
+    } else {
+        MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_CLOUD_ID.c_str(), err);
     }
 }
 
