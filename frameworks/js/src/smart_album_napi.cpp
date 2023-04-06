@@ -1184,7 +1184,7 @@ static void GetFileAssetsNative(napi_env env, void *data)
     context->fetchResult->SetNetworkId(
         MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri()));
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
-        context->fetchResult->resultNapiType_ = context->resultNapiType;
+        context->fetchResult->SetResultNapiType(context->resultNapiType);
     }
 }
 
