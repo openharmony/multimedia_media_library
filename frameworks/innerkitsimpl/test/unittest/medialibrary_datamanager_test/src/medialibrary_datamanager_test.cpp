@@ -295,7 +295,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_001,
     valuesBucketUpdate.Put(MEDIA_DATA_DB_MEDIA_TYPE, albumAsset->GetMediaType());
     valuesBucketUpdate.Put(MEDIA_DATA_DB_URI, albumAsset->GetUri());
     valuesBucketUpdate.Put(MEDIA_DATA_DB_RELATIVE_PATH, albumAsset->GetRelativePath());
-    valuesBucketUpdate.Put(MEDIA_DATA_DB_ALBUM_NAME, "U" + albumAsset->GetDisplayName());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_NAME, "U" + albumAsset->GetDisplayName());
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_001::GetUri = %{public}s", albumAsset->GetUri().c_str());
     Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_MODIFYALBUM);
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucketUpdate, predicates);

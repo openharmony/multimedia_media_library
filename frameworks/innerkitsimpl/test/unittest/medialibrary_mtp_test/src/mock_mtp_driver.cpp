@@ -45,6 +45,7 @@ int MtpDriver::CloseDriver()
 
 int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
 {
+    usbOpenFlag = false;
     std::vector<uint8_t>().swap(outBuffer);
     outBuffer.insert(outBuffer.end(), MtpTest::GetInstance()->testData_.begin(),
         MtpTest::GetInstance()->testData_.end());
@@ -61,17 +62,17 @@ void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t bufferSize)
     MtpPacketTool::Dump(buffer);
 }
 
-int MtpDriver::ReceiveObj(MtpFileRange mfr)
+int MtpDriver::ReceiveObj(MtpFileRange &mfr)
 {
     return 0;
 }
 
-int MtpDriver::SendObj(MtpFileRange mfr)
+int MtpDriver::SendObj(MtpFileRange &mfr)
 {
     return 0;
 }
 
-int MtpDriver::WriteEvent(EventMtp me)
+int MtpDriver::WriteEvent(EventMtp &me)
 {
     return 0;
 }

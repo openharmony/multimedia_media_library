@@ -57,6 +57,7 @@ ohos_unittest("mtp_native_test") {
     "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/provider/include",
     "//utils/native/base/include",
     "//base/powermgr/battery_manager/interfaces/innerkits/native/include",
+    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/test/unittest/medialibrary_mtp_test/include",
 
     # Security stuff
     "//base/security/access_token/interfaces/innerkits/accesstoken/include",
@@ -67,6 +68,8 @@ ohos_unittest("mtp_native_test") {
 
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
+    "../medialibrary_mtp_test/src/mock_mtp_driver.cpp",
+    "../medialibrary_mtp_test/src/mtp_test.cpp",
     "./src/mtp_native_test.cpp",
   ]
 
