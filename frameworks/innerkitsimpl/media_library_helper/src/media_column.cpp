@@ -43,6 +43,8 @@ const std::string MediaColumn::MEDIA_HIDDEN = "hidden";
 const std::string MediaColumn::MEDIA_PARENT_ID = "parent";
 const std::string MediaColumn::MEDIA_RELATIVE_PATH = "relative_path";
 
+const std::string PhotoColumn::PHOTO_DIRTY = "dirty";
+const std::string PhotoColumn::PHOTO_CLOUD_ID = "cloud_id";
 const std::string PhotoColumn::PHOTO_ORIENTATION = "orientation";
 const std::string PhotoColumn::PHOTO_LATITUDE = "latitude";
 const std::string PhotoColumn::PHOTO_LONGITUDE = "longitude";
@@ -79,6 +81,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_HIDDEN + "INT DEFAULT 0, " +
     MEDIA_PARENT_ID + " INT DEFAULT 0, " +
     MEDIA_RELATIVE_PATH + " TEXT, " +
+    PHOTO_DIRTY + " TEXT, " +
+    PHOTO_CLOUD_ID + " TEXT, " +
     PHOTO_ORIENTATION + " INT DEFAULT 0, " +
     PHOTO_LATITUDE + " DOUBLE DEFAULT 0, " +
     PHOTO_LONGITUDE + " DOUBLE DEFAULT 0, " +

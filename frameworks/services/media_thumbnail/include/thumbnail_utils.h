@@ -56,6 +56,7 @@ struct ThumbnailData {
     std::vector<uint8_t> thumbnail;
     std::vector<uint8_t> lcd;
     std::string id;
+    std::string cloudId;
     std::string udid;
     std::string path;
     std::string hashKey;
@@ -68,6 +69,7 @@ struct ThumbnailRdbData {
     int mediaType;
     int64_t dateModified{0};
     std::string id;
+    std::string cloudId;
     std::string path;
     std::string thumbnailKey;
     std::string lcdKey;
