@@ -613,7 +613,7 @@ int32_t MediaLibraryDataCallBack::InsertUniqueMemberTableValues(const UniqueMemb
 
 const string &TriggerClearMap()
 {
-    const static string TRIGGER_CLEAR_MAP = BaseColumn::CreateTrigger() + "photo_album_clear_map" +
+    static const string TRIGGER_CLEAR_MAP = BaseColumn::CreateTrigger() + "photo_album_clear_map" +
     " AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
     " BEGIN " +
         "DELETE FROM " + PhotoMap::TABLE +
@@ -624,7 +624,7 @@ const string &TriggerClearMap()
 
 const string &TriggerAddAssets()
 {
-    const static string TRIGGER_ADD_ASSETS = BaseColumn::CreateTrigger() + "photo_album_insert_asset" +
+    static const string TRIGGER_ADD_ASSETS = BaseColumn::CreateTrigger() + "photo_album_insert_asset" +
     " AFTER INSERT ON " + PhotoMap::TABLE +
     " BEGIN " +
         "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
@@ -636,7 +636,7 @@ const string &TriggerAddAssets()
 
 const string &TriggerRemoveAssets()
 {
-    const static string TRIGGER_REMOVE_ASSETS = BaseColumn::CreateTrigger() + "photo_album_delete_asset" +
+    static const string TRIGGER_REMOVE_ASSETS = BaseColumn::CreateTrigger() + "photo_album_delete_asset" +
     " AFTER DELETE ON " + PhotoMap::TABLE +
     " BEGIN " +
         "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
