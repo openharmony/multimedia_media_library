@@ -206,7 +206,7 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
     // All values inserted in this function are the base property for files
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr!");
+        MEDIA_ERR_LOG("rdbStore is nullptr!");
         return E_HAS_DB_ERROR;
     }
 

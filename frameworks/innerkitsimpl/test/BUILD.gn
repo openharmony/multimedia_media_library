@@ -25,6 +25,7 @@ group("test") {
     "unittest/medialibrary_mimetype_test:unittest",
     "unittest/medialibrary_mtp_test:unittest",
     "unittest/medialibrary_object_test:unittest",
+    "unittest/medialibrary_photo_operations_test:unittest",
     "unittest/medialibrary_rdb_test:unittest",
     "unittest/medialibrary_scanner_db_test:unittest",
     "unittest/medialibrary_scanner_test:unittest",
