@@ -30,7 +30,7 @@ namespace OHOS {
 namespace Media {
 static const int64_t AGING_DEVICE_INTERVAL = 14 * 24 * 60 * 60LL;
 
-const static map<string, string> TABLE_SYNC_STATUS_MAP = {
+static const map<string, string> TABLE_SYNC_STATUS_MAP = {
     { MEDIALIBRARY_TABLE, DEVICE_DB_SYNC_STATUS },
     { PhotoColumn::PHOTOS_TABLE, DEVICE_DB_PHOTO_SYNC_STATUS }
     // AudiosTable and DocumentsTable is not synchronized yet

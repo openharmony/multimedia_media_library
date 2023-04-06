@@ -23,80 +23,80 @@ namespace OHOS::Media {
 class MediaColumn {
 public:
     // Asset Base Parameter
-    const static std::string MEDIA_ID;
-    const static std::string MEDIA_URI;
-    const static std::string MEDIA_FILE_PATH;
-    const static std::string MEDIA_SIZE;
-    const static std::string MEDIA_TITLE;
-    const static std::string MEDIA_NAME;
-    const static std::string MEDIA_TYPE;
-    const static std::string MEDIA_MIME_TYPE;
-    const static std::string MEDIA_OWNER_PACKAGE;
-    const static std::string MEDIA_DEVICE_NAME;
-    const static std::string MEDIA_THUMBNAIL;
+    static const std::string MEDIA_ID;
+    static const std::string MEDIA_URI;
+    static const std::string MEDIA_FILE_PATH;
+    static const std::string MEDIA_SIZE;
+    static const std::string MEDIA_TITLE;
+    static const std::string MEDIA_NAME;
+    static const std::string MEDIA_TYPE;
+    static const std::string MEDIA_MIME_TYPE;
+    static const std::string MEDIA_OWNER_PACKAGE;
+    static const std::string MEDIA_DEVICE_NAME;
+    static const std::string MEDIA_THUMBNAIL;
 
     // As set Parameter about time
-    const static std::string MEDIA_DATE_MODIFIED;
-    const static std::string MEDIA_DATE_ADDED;
-    const static std::string MEDIA_DATE_TAKEN;
-    const static std::string MEDIA_TIME_VISIT;
-    const static std::string MEDIA_DURATION;
-    const static std::string MEDIA_TIME_PENDING;
-    const static std::string MEDIA_IS_FAV;
-    const static std::string MEDIA_DATE_TRASHED;
-    const static std::string MEDIA_DATE_DELETED;
-    const static std::string MEDIA_HIDDEN;
+    static const std::string MEDIA_DATE_MODIFIED;
+    static const std::string MEDIA_DATE_ADDED;
+    static const std::string MEDIA_DATE_TAKEN;
+    static const std::string MEDIA_TIME_VISIT;
+    static const std::string MEDIA_DURATION;
+    static const std::string MEDIA_TIME_PENDING;
+    static const std::string MEDIA_IS_FAV;
+    static const std::string MEDIA_DATE_TRASHED;
+    static const std::string MEDIA_DATE_DELETED;
+    static const std::string MEDIA_HIDDEN;
 
     // Asset Parameter deperated
-    const static std::string MEDIA_PARENT_ID;
-    const static std::string MEDIA_RELATIVE_PATH;
+    static const std::string MEDIA_PARENT_ID;
+    static const std::string MEDIA_RELATIVE_PATH;
 };
 
 class PhotoColumn : public MediaColumn {
 public:
     // column only in PhotoTable
-    const static std::string PHOTO_ORIENTATION;
-    const static std::string PHOTO_LATITUDE;
-    const static std::string PHOTO_LONGITUDE;
-    const static std::string PHOTO_LCD;
-    const static std::string PHOTO_HEIGHT;
-    const static std::string PHOTO_WIDTH;
-    const static std::string PHOTO_LCD_VISIT_TIME;
-    const static std::string PHOTO_POSITION;
-    const static std::string PHOTO_DIRTY;
-    const static std::string PHOTO_CLOUD_ID;
+    static const std::string PHOTO_ORIENTATION;
+    static const std::string PHOTO_LATITUDE;
+    static const std::string PHOTO_LONGITUDE;
+    static const std::string PHOTO_LCD;
+    static const std::string PHOTO_HEIGHT;
+    static const std::string PHOTO_WIDTH;
+    static const std::string PHOTO_LCD_VISIT_TIME;
+    static const std::string PHOTO_POSITION;
+    static const std::string PHOTO_DIRTY;
+    static const std::string PHOTO_CLOUD_ID;
 
     // table name
-    const static std::string PHOTOS_TABLE;
+    static const std::string PHOTOS_TABLE;
 
     // create PhotoTable sql
-    const static std::string CREATE_PHOTO_TABLE;
+    static const std::string CREATE_PHOTO_TABLE;
 };
 
 class AudioColumn : public MediaColumn {
 public:
     // column only in AudioTable
-    const static std::string AUDIO_ALBUM;
-    const static std::string AUDIO_ARTIST;
+    static const std::string AUDIO_ALBUM;
+    static const std::string AUDIO_ARTIST;
 
     // table name
-    const static std::string AUDIOS_TABLE;
+    static const std::string AUDIOS_TABLE;
 
     // create AudioTable sql
-    const static std::string CREATE_AUDIO_TABLE;
+    static const std::string CREATE_AUDIO_TABLE;
 };
 
 class DocumentColumn : public MediaColumn {
 public:
     // column only in DocumentColumn
-    const static std::string DOCUMENT_LCD;
-    const static std::string DOCUMENT_LCD_VISIT_TIME;
+    static const std::string DOCUMENT_LCD;
+    static const std::string DOCUMENT_LCD_VISIT_TIME;
 
     // table name
-    const static std::string DOCUMENTS_TABLE;
+    static const std::string DOCUMENTS_TABLE;
 
     // create DocumentTable sql
-    const static std::string CREATE_DOCUMENT_TABLE;
+    static const std::string CREATE_DOCUMENT_TABLE;
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_COLUMN_H_

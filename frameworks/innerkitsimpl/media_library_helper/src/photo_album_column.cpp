@@ -28,6 +28,10 @@ const std::string PhotoAlbumColumns::ALBUM_COVER_URI = "cover_uri";
 const std::string PhotoAlbumColumns::ALBUM_COUNT = "count";
 // For api9 compatibility
 const std::string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
+// default fetch columns
+const std::set<std::string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMN = {
+    ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT
+};
 
 const std::string PhotoAlbumColumns::ALBUM_URI_PREFIX = "file://media/album/";
 
@@ -45,4 +49,14 @@ const std::string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
 // Create indexes
 const std::string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
     " (" + ALBUM_TYPE + "," + ALBUM_SUBTYPE + ");";
+
+bool PhotoAlbumColumns::IsPhotoAlbumColumn(const std::string &columnName)
+{
+    static const std::set<std::string> PHOTO_ALBUM_COLUMNS = {
+        PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE,
+        PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_COVER_URI, PhotoAlbumColumns::ALBUM_COUNT,
+        PhotoAlbumColumns::ALBUM_RELATIVE_PATH
+    };
+    return PHOTO_ALBUM_COLUMNS.find(columnName) != PHOTO_ALBUM_COLUMNS.end();
+}
 } // namespace OHOS::Media

@@ -133,17 +133,22 @@ ResultNapiType PhotoAlbum::GetResultNapiType() const
     return resultNapiType_;
 }
 
+bool PhotoAlbum::IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
+{
+    return (albumType == PhotoAlbumType::USER) && (albumSubType == PhotoAlbumSubType::USER_GENERIC);
+}
+
 bool PhotoAlbum::CheckPhotoAlbumType(const PhotoAlbumType albumType)
 {
-    return (albumType == USER) || (albumType == SYSTEM);
+    return (albumType == PhotoAlbumType::USER) || (albumType == PhotoAlbumType::SYSTEM);
 }
 
 bool PhotoAlbum::CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType)
 {
-    PhotoAlbumSubType systemStart = VIDEO;
+    PhotoAlbumSubType systemStart = PhotoAlbumSubType::VIDEO;
     PhotoAlbumSubType systemEnd = CAMERA;
-    return (albumSubType == USER_GENERIC) || ((albumSubType >= systemStart) && (albumSubType <= systemEnd)) ||
-        (albumSubType == ANY);
+    return (albumSubType == PhotoAlbumSubType::USER_GENERIC) || (albumSubType == PhotoAlbumSubType::ANY) ||
+        ((albumSubType >= systemStart) && (albumSubType <= systemEnd));
 }
 }  // namespace Media
 }  // namespace OHOS

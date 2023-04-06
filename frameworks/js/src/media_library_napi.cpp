@@ -3530,7 +3530,15 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
         }
+        if (!PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType())) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return nullptr;
+        }
         deleteIds.push_back(to_string(obj->GetAlbumId()));
+    }
+    if (deleteIds.empty()) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
     }
     context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
 
@@ -3647,6 +3655,24 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     return result;
 }
 
+static napi_value AddDefaulePhotoAlbumColumns(napi_env env, vector<string> &fetchColumn)
+{
+    auto validFetchColumns = PhotoAlbumColumns::DEFAULT_FETCH_COLUMN;
+    for (const auto &column : fetchColumn) {
+        if (PhotoAlbumColumns::IsPhotoAlbumColumn(column)) {
+            validFetchColumns.insert(column);
+        } else {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return nullptr;
+        }
+    }
+    fetchColumn.assign(validFetchColumns.begin(), validFetchColumns.end());
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -3675,9 +3701,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
         default:
             return nullptr;
     }
-    if (context->fetchColumn.empty()) {
-        context->fetchColumn = PHOTO_ALBUM_COLUMNS;
-    }
+    CHECK_NULLPTR_RET(AddDefaulePhotoAlbumColumns(env, context->fetchColumn));
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 

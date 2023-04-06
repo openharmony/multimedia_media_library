@@ -311,6 +311,10 @@ static napi_value ParseArgsCommitModify(napi_env env, napi_callback_info info,
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
+    if (!PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
 
     if (MediaFileUtils::CheckTitle(photoAlbum->GetAlbumName()) < 0) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
@@ -320,7 +324,7 @@ static napi_value ParseArgsCommitModify(napi_env env, napi_callback_info info,
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, photoAlbum->GetAlbumName());
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, photoAlbum->GetCoverUri());
 
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -422,10 +426,16 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
         napi_ok, JS_ERR_PARAMETER_INVALID);
 
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (!PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+
     /* Parse the first argument */
     vector<int32_t> assetsArray;
     CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], assetsArray));
-    int32_t albumId = context->objectInfo->GetAlbumId();
+    int32_t albumId = photoAlbum->GetAlbumId();
     for (const auto assetId : assetsArray) {
         DataShareValuesBucket valuesBucket;
         valuesBucket.Put(PhotoMap::ALBUM_ID, albumId);
@@ -433,7 +443,7 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
         context->valuesBuckets.push_back(valuesBucket);
     }
 
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
