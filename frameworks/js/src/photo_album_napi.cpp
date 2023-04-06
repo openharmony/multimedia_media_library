@@ -69,11 +69,11 @@ napi_value PhotoAlbumNapi::CreatePhotoAlbumNapi(napi_env env, unique_ptr<PhotoAl
 
     napi_value constructor;
     napi_ref constructorRef = constructor_;
-    NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
+    CHECK_ARGS(env, napi_get_reference_value(env, constructorRef, &constructor), JS_INNER_FAIL);
 
     napi_value result = nullptr;
     pAlbumData_ = albumData.release();
-    NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
+    CHECK_ARGS(env, napi_new_instance(env, constructor, 0, nullptr, &result), JS_INNER_FAIL);
     pAlbumData_ = nullptr;
     return result;
 }
@@ -127,10 +127,10 @@ void PhotoAlbumNapi::SetPhotoAlbumNapiProperties()
 napi_value PhotoAlbumNapi::PhotoAlbumNapiConstructor(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_undefined(env, &result));
+    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
 
     napi_value thisVar = nullptr;
-    NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
+    CHECK_ARGS(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr), JS_INNER_FAIL);
     if (thisVar == nullptr) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
@@ -143,8 +143,8 @@ napi_value PhotoAlbumNapi::PhotoAlbumNapiConstructor(napi_env env, napi_callback
         return result;
     }
     obj->SetPhotoAlbumNapiProperties();
-    NAPI_CALL(env, napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()), PhotoAlbumNapi::PhotoAlbumNapiDestructor,
-        nullptr, nullptr));
+    CHECK_ARGS(env, napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
+        PhotoAlbumNapi::PhotoAlbumNapiDestructor, nullptr, nullptr), JS_INNER_FAIL);
     obj.release();
     return thisVar;
 }
@@ -161,82 +161,85 @@ void PhotoAlbumNapi::PhotoAlbumNapiDestructor(napi_env env, void *nativeObject, 
 napi_value UnwrapPhotoAlbumObject(napi_env env, napi_callback_info info, PhotoAlbumNapi** obj)
 {
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_undefined(env, &result));
+    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
 
     napi_value thisVar = nullptr;
-    NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
+    CHECK_ARGS(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr), JS_INNER_FAIL);
     if (thisVar == nullptr) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
     }
 
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(obj)));
+    CHECK_ARGS(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(obj)), JS_INNER_FAIL);
     if (obj == nullptr) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
     }
 
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
 
 napi_value PhotoAlbumNapi::JSGetAlbumName(napi_env env, napi_callback_info info)
 {
-    PhotoAlbumNapi* obj = nullptr;
-    NAPI_ASSERT(env, UnwrapPhotoAlbumObject(env, info, &obj), "Failed to get native photo album object");
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    NAPI_CALL(env, napi_create_string_utf8(env, obj->GetAlbumName().c_str(), NAPI_AUTO_LENGTH, &jsResult));
+    CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetAlbumName().c_str(), NAPI_AUTO_LENGTH, &jsResult),
+        JS_INNER_FAIL);
     return jsResult;
 }
 
 napi_value PhotoAlbumNapi::JSGetAlbumUri(napi_env env, napi_callback_info info)
 {
-    PhotoAlbumNapi* obj = nullptr;
-    NAPI_ASSERT(env, UnwrapPhotoAlbumObject(env, info, &obj), "Failed to get native photo album object");
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    NAPI_CALL(env, napi_create_string_utf8(env, obj->GetAlbumUri().c_str(), NAPI_AUTO_LENGTH, &jsResult));
+    CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetAlbumUri().c_str(), NAPI_AUTO_LENGTH, &jsResult),
+        JS_INNER_FAIL);
     return jsResult;
 }
 
 napi_value PhotoAlbumNapi::JSGetAlbumCount(napi_env env, napi_callback_info info)
 {
-    PhotoAlbumNapi* obj = nullptr;
-    NAPI_ASSERT(env, UnwrapPhotoAlbumObject(env, info, &obj), "Failed to get native photo album object");
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    NAPI_CALL(env, napi_create_int32(env, obj->GetCount(), &jsResult));
+    CHECK_ARGS(env, napi_create_int32(env, obj->GetCount(), &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 
 napi_value PhotoAlbumNapi::JSGetPhotoAlbumType(napi_env env, napi_callback_info info)
 {
-    PhotoAlbumNapi* obj = nullptr;
-    NAPI_ASSERT(env, UnwrapPhotoAlbumObject(env, info, &obj), "Failed to get native photo album object");
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    NAPI_CALL(env, napi_create_int32(env, obj->GetPhotoAlbumType(), &jsResult));
+    CHECK_ARGS(env, napi_create_int32(env, obj->GetPhotoAlbumType(), &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 
 napi_value PhotoAlbumNapi::JSGetPhotoAlbumSubType(napi_env env, napi_callback_info info)
 {
-    PhotoAlbumNapi* obj = nullptr;
-    NAPI_ASSERT(env, UnwrapPhotoAlbumObject(env, info, &obj), "Failed to get native photo album object");
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    NAPI_CALL(env, napi_create_int32(env, obj->GetPhotoAlbumSubType(), &jsResult));
+    CHECK_ARGS(env, napi_create_int32(env, obj->GetPhotoAlbumSubType(), &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 
 napi_value PhotoAlbumNapi::JSGetCoverUri(napi_env env, napi_callback_info info)
 {
-    PhotoAlbumNapi* obj = nullptr;
-    NAPI_ASSERT(env, UnwrapPhotoAlbumObject(env, info, &obj), "Failed to get native photo album object");
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
 
     napi_value jsResult = nullptr;
-    NAPI_CALL(env, napi_create_string_utf8(env, obj->GetCoverUri().c_str(), NAPI_AUTO_LENGTH, &jsResult));
+    CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetCoverUri().c_str(), NAPI_AUTO_LENGTH, &jsResult),
+        JS_INNER_FAIL);
     return jsResult;
 }
 
@@ -245,11 +248,11 @@ napi_value GetStringArg(napi_env env, napi_callback_info info, PhotoAlbumNapi **
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE];
     napi_value thisVar = nullptr;
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameter");
+    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_INNER_FAIL);
+    CHECK_COND(env, argc == ARGS_ONE, JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_undefined(env, &result));
+    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
     napi_valuetype valueType = napi_undefined;
     if ((thisVar == nullptr) || (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok) || (valueType != napi_string)) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
@@ -258,40 +261,40 @@ napi_value GetStringArg(napi_env env, napi_callback_info info, PhotoAlbumNapi **
 
     size_t res = 0;
     char buffer[FILENAME_MAX];
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res));
+    CHECK_ARGS(env, napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res), JS_INNER_FAIL);
     output = string(buffer);
 
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(obj)));
+    CHECK_ARGS(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(obj)), JS_INNER_FAIL);
     if (obj == nullptr) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
     }
 
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
 
 napi_value PhotoAlbumNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
 {
-    PhotoAlbumNapi* obj = nullptr;
+    PhotoAlbumNapi *obj = nullptr;
     string albumName;
-    NAPI_ASSERT(env, GetStringArg(env, info, &obj, albumName), "Failed to get input value");
+    CHECK_NULLPTR_RET(GetStringArg(env, info, &obj, albumName));
     obj->photoAlbumPtr->SetAlbumName(albumName);
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_undefined(env, &result));
+    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
     return result;
 }
 
 napi_value PhotoAlbumNapi::JSSetCoverUri(napi_env env, napi_callback_info info)
 {
-    PhotoAlbumNapi* obj = nullptr;
+    PhotoAlbumNapi *obj = nullptr;
     string coverUri;
-    NAPI_ASSERT(env, GetStringArg(env, info, &obj, coverUri), "Failed to get input value");
+    CHECK_NULLPTR_RET(GetStringArg(env, info, &obj, coverUri));
     obj->photoAlbumPtr->SetCoverUri(coverUri);
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_undefined(env, &result));
+    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
     return result;
 }
 
@@ -300,8 +303,8 @@ static napi_value ParseArgsCommitModify(napi_env env, napi_callback_info info,
 {
     constexpr size_t minArgs = ARGS_ZERO;
     constexpr size_t maxArgs = ARGS_ONE;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
-        napi_ok, "Failed to get object info");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
 
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     if (photoAlbum == nullptr) {
@@ -317,10 +320,10 @@ static napi_value ParseArgsCommitModify(napi_env env, napi_callback_info info,
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, photoAlbum->GetAlbumName());
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, photoAlbum->GetCoverUri());
 
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
 
@@ -349,9 +352,9 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, voi
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     if (context->error == ERR_DEFAULT) {
-        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
         jsContext->status = true;
     } else {
         context->HandleError(env, jsContext->error);
@@ -368,7 +371,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, voi
 napi_value PhotoAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
 {
     unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
-    NAPI_ASSERT(env, ParseArgsCommitModify(env, info, asyncContext), "Failed to parse js args");
+    CHECK_NULLPTR_RET(ParseArgsCommitModify(env, info, asyncContext));
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSCommitModify", JSCommitModifyExecute,
         JSCommitModifyCompleteCallback);
@@ -377,14 +380,14 @@ napi_value PhotoAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
 static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<int32_t> &assetsArray)
 {
     bool isArray = false;
-    NAPI_CALL(env, napi_is_array(env, arg, &isArray));
+    CHECK_ARGS(env, napi_is_array(env, arg, &isArray), JS_INNER_FAIL);
     if (!isArray) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
 
     uint32_t len = 0;
-    NAPI_CALL(env, napi_get_array_length(env, arg, &len));
+    CHECK_ARGS(env, napi_get_array_length(env, arg, &len), JS_INNER_FAIL);
     if (len <= 0) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
@@ -392,13 +395,13 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<int32_t>
 
     for (uint32_t i = 0; i < len; i++) {
         napi_value asset = nullptr;
-        NAPI_CALL(env, napi_get_element(env, arg, i, &asset));
+        CHECK_ARGS(env, napi_get_element(env, arg, i, &asset), JS_INNER_FAIL);
         if (asset == nullptr) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
         }
         FileAssetNapi *obj = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, asset, reinterpret_cast<void **>(&obj)));
+        CHECK_ARGS(env, napi_unwrap(env, asset, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
         if (obj == nullptr) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
@@ -407,7 +410,7 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<int32_t>
     }
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
 
@@ -416,12 +419,12 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
 {
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
-        napi_ok, "Failed to get object info");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, JS_ERR_PARAMETER_INVALID);
 
     /* Parse the first argument */
     vector<int32_t> assetsArray;
-    NAPI_ASSERT(env, GetAssetsIdArray(env, context->argv[PARAM0], assetsArray), "Failed to parse first argument");
+    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], assetsArray));
     int32_t albumId = context->objectInfo->GetAlbumId();
     for (const auto assetId : assetsArray) {
         DataShareValuesBucket valuesBucket;
@@ -430,10 +433,10 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
         context->valuesBuckets.push_back(valuesBucket);
     }
 
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
 
@@ -461,9 +464,9 @@ static void JSPhotoAlbumAddAssetsCompleteCallback(napi_env env, napi_status stat
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     if (context->error == ERR_DEFAULT) {
-        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
         jsContext->status = true;
     } else {
         context->HandleError(env, jsContext->error);
@@ -480,7 +483,7 @@ static void JSPhotoAlbumAddAssetsCompleteCallback(napi_env env, napi_status stat
 napi_value PhotoAlbumNapi::JSPhotoAlbumAddAssets(napi_env env, napi_callback_info info)
 {
     unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
-    NAPI_ASSERT(env, ParseArgsAddAssets(env, info, asyncContext), "Failed to parse js args");
+    CHECK_NULLPTR_RET(ParseArgsAddAssets(env, info, asyncContext));
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSPhotoAlbumAddAssets",
         JSPhotoAlbumAddAssetsExecute, JSPhotoAlbumAddAssetsCompleteCallback);

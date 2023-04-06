@@ -28,13 +28,13 @@
 
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \
     do {                                                                    \
-        void* data;                                                         \
+        void *data;                                                         \
         napi_get_cb_info(env, info, &(argc), argv, &(thisVar), &(data));    \
     } while (0)
 
 #define GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar)                           \
     do {                                                                                \
-        void* data;                                                                     \
+        void *data;                                                                     \
         status = napi_get_cb_info(env, info, nullptr, nullptr, &(thisVar), &(data));    \
     } while (0)
 
@@ -111,9 +111,28 @@
         }                                                           \
     } while (0)
 
-#define CHECK_ARGS(env, cond, err)                         \
+#define CHECK_NULLPTR_RET(ret)                                      \
+    do {                                                            \
+        if ((ret) == nullptr) {                                     \
+            return nullptr;                                         \
+        }                                                           \
+    } while (0)
+
+#define CHECK_ARGS_BASE(env, cond, err, retVal)                     \
     do {                                                            \
         if ((cond) != napi_ok) {                                    \
+            NapiError::ThrowError(env, err);                        \
+            return retVal;                                          \
+        }                                                           \
+    } while (0)
+
+#define CHECK_ARGS(env, cond, err) CHECK_ARGS_BASE(env, cond, err, nullptr)
+
+#define CHECK_ARGS_RET_VOID(env, cond, err) CHECK_ARGS_BASE(env, cond, err, NAPI_RETVAL_NOTHING)
+
+#define CHECK_COND(env, cond, err)                                  \
+    do {                                                            \
+        if (!(cond)) {                                              \
             NapiError::ThrowError(env, err);                        \
             return nullptr;                                         \
         }                                                           \

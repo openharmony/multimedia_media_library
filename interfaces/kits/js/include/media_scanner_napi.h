@@ -48,7 +48,7 @@ public:
     ~MediaScannerNapi();
 
 private:
-    static void MediaScannerNapiDestructor(napi_env env, void* nativeObject, void* finalize_hint);
+    static void MediaScannerNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
     static napi_value MediaScannerNapiConstructor(napi_env env, napi_callback_info info);
     static napi_value ScanFile(napi_env env, napi_callback_info info);
     static napi_value ScanDir(napi_env env, napi_callback_info info);

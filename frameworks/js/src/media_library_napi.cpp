@@ -217,7 +217,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     }
     helperLock.unlock();
 
-    status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
+    status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
                        MediaLibraryNapi::MediaLibraryNapiDestructor, nullptr, nullptr);
     if (status == napi_ok) {
         obj.release();
@@ -576,7 +576,7 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     napi_get_undefined(env, &result);
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         for (size_t i = PARAM0; i < argc; i++) {
             napi_valuetype valueType = napi_undefined;
@@ -762,7 +762,7 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->mediaTypes.clear();
     asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
@@ -999,7 +999,7 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &result);
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
@@ -1301,7 +1301,7 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForCreateAsset(env, argc, argv, *asyncContext);
         ASSERT_NULLPTR_CHECK(env, result);
@@ -1489,7 +1489,7 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
     napi_get_undefined(env, &result);
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForDeleteAsset(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
@@ -1639,7 +1639,7 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
         return undefinedResult;
     }
 
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string ||
@@ -1756,7 +1756,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
         return undefinedResult;
     }
 
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
@@ -1837,7 +1837,7 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &result);
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         if (argc == PARAM1) {
             napi_valuetype valueType = napi_undefined;
@@ -1852,9 +1852,9 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRelease", asyncContext);
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void *data) {},
             reinterpret_cast<CompleteCallback>(JSReleaseCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2188,7 +2188,7 @@ napi_value MediaLibraryNapi::JSGetSmartAlbums(napi_env env, napi_callback_info i
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "Async context is null");
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForGetSmartAlbum(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
@@ -2213,7 +2213,7 @@ napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info 
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         for (size_t i = PARAM0; i < argc; i++) {
             napi_valuetype valueType = napi_undefined;
@@ -2228,7 +2228,7 @@ napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info 
             }
         }
         result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPrivateAlbum",
-            [](napi_env env, void* data) {
+            [](napi_env env, void *data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
                 GetAllSmartAlbumResultDataExecute(context);
             }, GetPrivateAlbumCallbackComplete);
@@ -2343,7 +2343,7 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
     NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForCreateSmartAlbum(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
@@ -2355,7 +2355,7 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
                 CreateSmartAlbumExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSCreateSmartAlbumCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2454,19 +2454,19 @@ napi_value MediaLibraryNapi::JSDeleteSmartAlbum(napi_env env, napi_callback_info
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForDeleteSmartAlbum(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSDeleteSmartAlbum", asyncContext);
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
                 JSDeleteSmartAlbumExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSDeleteSmartAlbumCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2692,7 +2692,7 @@ napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info i
     napi_get_undefined(env, &result);
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         if (argc == ARGS_ONE) {
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
@@ -2701,9 +2701,9 @@ napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info i
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetActivePeers", asyncContext);
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void *data) {},
             reinterpret_cast<CompleteCallback>(JSGetActivePeersCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2733,7 +2733,7 @@ napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info
     napi_get_undefined(env, &result);
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         if (argc == ARGS_ONE) {
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
@@ -2742,9 +2742,9 @@ napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAllPeers", asyncContext);
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {},
+            env, nullptr, resource, [](napi_env env, void *data) {},
             reinterpret_cast<CompleteCallback>(JSGetAllPeersCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -2944,7 +2944,7 @@ napi_value MediaLibraryNapi::JSStoreMediaAsset(napi_env env, napi_callback_info 
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "Failed to get asyncContext");
-    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if ((status == napi_ok) && (asyncContext->objectInfo != nullptr)) {
         napi_value res = GetStoreMediaAssetArgs(env, argv[PARAM0], *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, res, res, "Failed to obtain arguments");
@@ -2955,12 +2955,12 @@ napi_value MediaLibraryNapi::JSStoreMediaAsset(napi_env env, napi_callback_info 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         napi_value resource = nullptr;
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSStoreMediaAsset", asyncContext);
-        status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
+        status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
                 JSGetStoreMediaAssetExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSGetStoreMediaAssetCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -3093,7 +3093,7 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "Failed to get asyncContext");
-    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         napi_value res = GetImagePreviewArgsUri(env, argv[PARAM0], *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, res, result, "Failed to obtain arguments uri");
@@ -3109,12 +3109,12 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
         napi_value resource = nullptr;
         NAPI_CREATE_RESOURCE_NAME(env, resource, "JSStartImagePreview", asyncContext);
-        status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void* data) {
+        status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<MediaLibraryAsyncContext *>(data);
                 JSStartImagePreviewExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSGetJSStartImagePreviewCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -3261,7 +3261,7 @@ napi_value MediaLibraryNapi::UserFileMgrGetPrivateAlbum(napi_env env, napi_callb
     MediaLibraryNapiUtils::GenTypeMaskFromArray(asyncContext->mediaTypes, asyncContext->typeMask);
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetPrivateAlbum",
-        [](napi_env env, void* data) {
+        [](napi_env env, void *data) {
             auto context = static_cast<MediaLibraryAsyncContext *>(data);
             GetAllSmartAlbumResultDataExecute(context);
         }, GetPrivateAlbumCallbackComplete);
@@ -3321,27 +3321,29 @@ napi_value MediaLibraryNapi::CreateAlbumKeyEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateAlbumTypeEnum(napi_env env)
 {
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_create_object(env, &result));
+    CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
 
-    NAPI_CALL(env, AddIntegerNamedProperty(env, result, "USER", PhotoAlbumType::USER));
-    NAPI_CALL(env, AddIntegerNamedProperty(env, result, "SYSTEM", PhotoAlbumType::SYSTEM));
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "USER", PhotoAlbumType::USER), JS_INNER_FAIL);
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "SYSTEM", PhotoAlbumType::SYSTEM), JS_INNER_FAIL);
 
-    NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sAlbumType_));
+    CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sAlbumType_), JS_INNER_FAIL);
     return result;
 }
 
 napi_value MediaLibraryNapi::CreateAlbumSubTypeEnum(napi_env env)
 {
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_create_object(env, &result));
+    CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
 
-    NAPI_CALL(env, AddIntegerNamedProperty(env, result, "USER_GENERIC", PhotoAlbumSubType::USER_GENERIC));
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "USER_GENERIC", PhotoAlbumSubType::USER_GENERIC),
+        JS_INNER_FAIL);
     for (size_t i = 0; i < systemAlbumSubType.size(); i++) {
-        NAPI_CALL(env, AddIntegerNamedProperty(env, result, systemAlbumSubType[i], PhotoAlbumSubType::VIDEO + i));
+        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, systemAlbumSubType[i], PhotoAlbumSubType::VIDEO + i),
+            JS_INNER_FAIL);
     }
-    NAPI_CALL(env, AddIntegerNamedProperty(env, result, "ANY", PhotoAlbumSubType::ANY));
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "ANY", PhotoAlbumSubType::ANY), JS_INNER_FAIL);
 
-    NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sAlbumSubType_));
+    CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sAlbumSubType_), JS_INNER_FAIL);
     return result;
 }
 
@@ -3350,13 +3352,13 @@ static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info inf
 {
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
-        napi_ok, "Failed to get object info");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
 
     /* Parse the first argument into albumName */
     string albumName;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], albumName) ==
-        napi_ok, "Failed to get albumName");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], albumName),
+        JS_ERR_PARAMETER_INVALID);
 
     if (MediaFileUtils::CheckAlbumName(albumName) < 0) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
@@ -3364,10 +3366,10 @@ static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info inf
     }
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
 
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
 
@@ -3432,21 +3434,21 @@ static void GetPhotoAlbumCreateResult(napi_env env, MediaLibraryAsyncContext *co
     unique_ptr<JSAsyncContextOutput> &jsContext)
 {
     if (context->photoAlbumData == nullptr) {
-        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Obtain photo album asset failed");
         return;
     }
     napi_value jsPhotoAlbum = PhotoAlbumNapi::CreatePhotoAlbumNapi(env, context->photoAlbumData);
     if (jsPhotoAlbum == nullptr) {
-        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
             "Failed to create js object for PhotoAlbum");
         return;
     }
     jsContext->data = jsPhotoAlbum;
     jsContext->status = true;
-    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
 }
 
 static void HandleExistsError(napi_env env, MediaLibraryAsyncContext *context, napi_value &error)
@@ -3464,8 +3466,8 @@ static void HandleExistsError(napi_env env, MediaLibraryAsyncContext *context, n
     }
     MediaLibraryNapiUtils::CreateNapiErrorObject(env, error, JS_ERR_FILE_EXIST, "Album has existed");
     napi_value propertyName;
-    NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, "data", NAPI_AUTO_LENGTH, &propertyName));
-    NAPI_CALL_RETURN_VOID(env, napi_set_property(env, error, propertyName, jsPhotoAlbum));
+    CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, "data", NAPI_AUTO_LENGTH, &propertyName), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_set_property(env, error, propertyName, jsPhotoAlbum), JS_INNER_FAIL);
 }
 
 static void JSCreatePhotoAlbumCompleteCallback(napi_env env, napi_status status, void *data)
@@ -3478,8 +3480,8 @@ static void JSCreatePhotoAlbumCompleteCallback(napi_env env, napi_status status,
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
-    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
     if (context->error == ERR_DEFAULT) {
         GetPhotoAlbumCreateResult(env, context, jsContext);
     } else if (context->error == JS_ERR_FILE_EXIST) {
@@ -3500,7 +3502,7 @@ napi_value MediaLibraryNapi::CreatePhotoAlbum(napi_env env, napi_callback_info i
 {
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    NAPI_ASSERT(env, ParseArgsCreatePhotoAlbum(env, info, asyncContext), "Failed to parse js args");
+    CHECK_NULLPTR_RET(ParseArgsCreatePhotoAlbum(env, info, asyncContext));
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CreatePhotoAlbum", JSCreatePhotoAlbumExecute,
         JSCreatePhotoAlbumCompleteCallback);
@@ -3511,23 +3513,23 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
 {
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
-        napi_ok, "Failed to get object info");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
 
     /* Parse the first argument into delete album id array */
     vector<string> deleteIds;
 
     uint32_t len = 0;
-    NAPI_CALL(env, napi_get_array_length(env, context->argv[PARAM0], &len));
+    CHECK_ARGS(env, napi_get_array_length(env, context->argv[PARAM0], &len), JS_INNER_FAIL);
     for (uint32_t i = 0; i < len; i++) {
         napi_value album = nullptr;
-        NAPI_CALL(env, napi_get_element(env, context->argv[PARAM0], i, &album));
+        CHECK_ARGS(env, napi_get_element(env, context->argv[PARAM0], i, &album), JS_INNER_FAIL);
         if (album == nullptr) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
         }
-        PhotoAlbumNapi* obj = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, album, reinterpret_cast<void **>(&obj)));
+        PhotoAlbumNapi *obj = nullptr;
+        CHECK_ARGS(env, napi_unwrap(env, album, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
         if (obj == nullptr) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
@@ -3536,10 +3538,10 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
     }
     context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
 
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
 
@@ -3573,13 +3575,13 @@ static void JSDeletePhotoAlbumsCompleteCallback(napi_env env, napi_status status
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
-        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     } else {
-        NAPI_CALL_RETURN_VOID(env, napi_create_int32(env, context->retVal, &jsContext->data));
-        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+        CHECK_ARGS_RET_VOID(env, napi_create_int32(env, context->retVal, &jsContext->data), JS_INNER_FAIL);
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
         jsContext->status = true;
     }
 
@@ -3595,7 +3597,7 @@ napi_value MediaLibraryNapi::DeletePhotoAlbums(napi_env env, napi_callback_info 
 {
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    NAPI_ASSERT(env, ParseArgsDeletePhotoAlbums(env, info, asyncContext), "Failed to parse js args");
+    CHECK_NULLPTR_RET(ParseArgsDeletePhotoAlbums(env, info, asyncContext));
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "DeletePhotoAlbums",
         JSDeletePhotoAlbumsExecute, JSDeletePhotoAlbumsCompleteCallback);
@@ -3610,10 +3612,10 @@ static napi_value GetFetchOption(napi_env env, unique_ptr<MediaLibraryAsyncConte
 
     // The index of fetchOption should always be the last arg besides callback
     napi_value fetchOption = context->argv[context->argc - 1 - hasCallback];
-    NAPI_CALL(env, MediaLibraryNapiUtils::GetAssetFetchOption(env, fetchOption, context));
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetAssetFetchOption(env, fetchOption, context), JS_INNER_FAIL);
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
 
@@ -3626,8 +3628,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
 
     /* Parse the first argument to photo album type */
     int32_t albumType;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[PARAM0], albumType),
-        "get album type failed");
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[PARAM0], albumType));
     if (!PhotoAlbum::CheckPhotoAlbumType(static_cast<PhotoAlbumType>(albumType))) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
@@ -3636,8 +3637,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
 
     /* Parse the second argument to photo album subType */
     int32_t albumSubType;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[PARAM1], albumSubType),
-        "get album subtype failed");
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[PARAM1], albumSubType));
     if (!PhotoAlbum::CheckPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(albumSubType))) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
@@ -3647,7 +3647,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     }
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
 
@@ -3656,25 +3656,25 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
 {
     constexpr size_t minArgs = ARGS_ZERO;
     constexpr size_t maxArgs = ARGS_FOUR;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
-        napi_ok, "Failed to get object info");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
 
     bool hasCallback = false;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::HasCallback(env, context->argc, context->argv, hasCallback) == napi_ok,
-        "Failed to check callback");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::HasCallback(env, context->argc, context->argv, hasCallback),
+        JS_ERR_PARAMETER_INVALID);
 
     switch (context->argc - hasCallback) {
         case ARGS_ZERO:
             break;
         case ARGS_ONE:
-            NAPI_ASSERT(env, GetFetchOption(env, context, hasCallback), "Failed to get fetch option");
+            CHECK_NULLPTR_RET(GetFetchOption(env, context, hasCallback));
             break;
         case ARGS_TWO:
-            NAPI_ASSERT(env, ParseAlbumTypes(env, context), "Failed to get album types");
+            CHECK_NULLPTR_RET(ParseAlbumTypes(env, context));
             break;
         case ARGS_THREE:
-            NAPI_ASSERT(env, GetFetchOption(env, context, hasCallback), "Failed to get fetch option");
-            NAPI_ASSERT(env, ParseAlbumTypes(env, context), "Failed to get album types");
+            CHECK_NULLPTR_RET(GetFetchOption(env, context, hasCallback));
+            CHECK_NULLPTR_RET(ParseAlbumTypes(env, context));
             break;
         default:
             return nullptr;
@@ -3683,10 +3683,10 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
         context->fetchColumn = PHOTO_ALBUM_COLUMNS;
     }
 
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
 
@@ -3716,21 +3716,21 @@ static void GetPhotoAlbumQueryResult(napi_env env, MediaLibraryAsyncContext *con
     unique_ptr<JSAsyncContextOutput> &jsContext)
 {
     if (context->fetchPhotoAlbumResult->GetCount() < 0) {
-        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
             "Get query result count failed");
         return;
     }
     napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchPhotoAlbumResult));
     if (fileResult == nullptr) {
-        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to create js object for Fetch Album Result");
         return;
     }
     jsContext->data = fileResult;
     jsContext->status = true;
-    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
 }
 
 static void JSGetPhotoAlbumsCompleteCallback(napi_env env, napi_status status, void *data)
@@ -3744,9 +3744,9 @@ static void JSGetPhotoAlbumsCompleteCallback(napi_env env, napi_status status, v
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->error));
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
     if (context->error != ERR_DEFAULT) {
-        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &jsContext->data));
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
         context->HandleError(env, jsContext->error);
     } else {
         GetPhotoAlbumQueryResult(env, context, jsContext);
@@ -3764,7 +3764,7 @@ napi_value MediaLibraryNapi::GetPhotoAlbums(napi_env env, napi_callback_info inf
 {
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    NAPI_ASSERT(env, ParseArgsGetPhotoAlbum(env, info, asyncContext), "Failed to parse js args");
+    CHECK_NULLPTR_RET(ParseArgsGetPhotoAlbum(env, info, asyncContext));
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetPhotoAlbums", JSGetPhotoAlbumsExecute,
         JSGetPhotoAlbumsCompleteCallback);

@@ -131,7 +131,7 @@ napi_value SmartAlbumNapi::SmartAlbumNapiConstructor(napi_env env, napi_callback
             if (sAlbumData_ != nullptr) {
                 obj->SetSmartAlbumNapiProperties();
             }
-            status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
+            status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
                                SmartAlbumNapi::SmartAlbumNapiDestructor, nullptr, nullptr);
             if (status == napi_ok) {
                 obj.release();
@@ -924,7 +924,7 @@ napi_value SmartAlbumNapi::JSAddFileAssets(napi_env env, napi_callback_info info
     napi_get_undefined(env, &result);
     std::unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = std::make_unique<SmartAlbumNapiAsyncContext>();
 
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForAsset(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSAddFileAssets fail");
@@ -935,12 +935,12 @@ napi_value SmartAlbumNapi::JSAddFileAssets(napi_env env, napi_callback_info info
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "SmartAlbumAsset is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<SmartAlbumNapiAsyncContext*>(data);
                 JSAddAssetExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSAddAssetCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -965,7 +965,7 @@ napi_value SmartAlbumNapi::JSRemoveFileAssets(napi_env env, napi_callback_info i
     napi_get_undefined(env, &result);
     std::unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = std::make_unique<SmartAlbumNapiAsyncContext>();
 
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForAsset(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSRemoveFileAssets fail ");
@@ -977,12 +977,12 @@ napi_value SmartAlbumNapi::JSRemoveFileAssets(napi_env env, napi_callback_info i
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "SmartAlbumAsset is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<SmartAlbumNapiAsyncContext*>(data);
                 JSRemoveAssetExecute(context);
             },
             reinterpret_cast<CompleteCallback>(JSRemoveAssetCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1007,7 +1007,7 @@ napi_value SmartAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &result);
     std::unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = std::make_unique<SmartAlbumNapiAsyncContext>();
 
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = ConvertCommitJSArgsToNative(env, argc, argv, *asyncContext);
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "JSCommitModify fail ");
@@ -1019,12 +1019,12 @@ napi_value SmartAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "SmartAlbumAsset is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<SmartAlbumNapiAsyncContext*>(data);
                 CommitModifyNative(*context);
             },
             reinterpret_cast<CompleteCallback>(JSCommitModifyCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -1247,7 +1247,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumFileAssets(napi_env env, napi_callback
 
     napi_get_undefined(env, &result);
     std::unique_ptr<SmartAlbumNapiAsyncContext> asyncContext = std::make_unique<SmartAlbumNapiAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = ConvertJSArgsToNative(env, argc, argv, *asyncContext);

@@ -85,7 +85,7 @@ napi_value MediaScannerNapi::MediaScannerNapiConstructor(napi_env env, napi_call
                 return result;
             }
 
-            status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
+            status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
                                MediaScannerNapi::MediaScannerNapiDestructor, nullptr, nullptr);
             if (status == napi_ok) {
                 obj.release();
@@ -174,7 +174,7 @@ napi_value MediaScannerNapi::NapiScanUtils(napi_env env, napi_callback_info info
 
     NAPI_INFO_LOG("[MediaScannerNapi::NapiScanUtils] start");
     napi_get_undefined(env, &result);
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         if (argc == ARGS_TWO) {
             napi_valuetype valueType = napi_undefined;

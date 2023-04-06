@@ -148,7 +148,7 @@ napi_value FetchFileResultNapi::FetchFileResultNapiConstructor(napi_env env, nap
     obj->propertyPtr = make_shared<FetchResultProperty>();
     GetFetchResult(obj);
     obj->propertyPtr->fetchResType_ = sFetchResType_;
-    status = napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
+    status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
                        FetchFileResultNapi::FetchFileResultNapiDestructor, nullptr, nullptr);
     if (status == napi_ok) {
         obj.release();
@@ -429,7 +429,7 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
     napi_get_undefined(env, &result);
 
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
         if (argc == ARGS_ONE) {
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
@@ -442,12 +442,12 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "propertyPtr is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 context->GetFirstAsset();
             },
             reinterpret_cast<napi_async_complete_callback>(GetPositionObjectCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -480,7 +480,7 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
         if (argc == ARGS_ONE) {
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
@@ -493,12 +493,12 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "propertyPtr is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 context->GetNextObject();
             },
             reinterpret_cast<napi_async_complete_callback>(GetPositionObjectCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -531,7 +531,7 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
         if (argc == ARGS_ONE) {
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
@@ -544,12 +544,12 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "propertyPtr is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 context->GetLastObject();
             },
             reinterpret_cast<napi_async_complete_callback>(GetPositionObjectCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -583,7 +583,7 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
         // Check the arguments and their types
         napi_typeof(env, argv[PARAM0], &type);
@@ -605,12 +605,12 @@ napi_value FetchFileResultNapi::JSGetPositionObject(napi_env env, napi_callback_
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "propertyPtr is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 context->GetObjectAtPosition();
             },
             reinterpret_cast<napi_async_complete_callback>(GetPositionObjectCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -753,7 +753,7 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
 
     napi_get_undefined(env, &result);
     unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo));
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
         if (argc == ARGS_ONE) {
             GET_JS_ASYNC_CB_REF(env, argv[PARAM0], refCount, asyncContext->callbackRef);
@@ -766,12 +766,12 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "propertyPtr is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void* data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 GetAllObjectFromFetchResult(*context);
             },
             reinterpret_cast<napi_async_complete_callback>(GetAllObjectCompleteCallback),
-            static_cast<void*>(asyncContext.get()), &asyncContext->work);
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
