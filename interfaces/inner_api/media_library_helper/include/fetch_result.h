@@ -53,26 +53,23 @@ public:
 
     void Close();
     int32_t GetCount();
-    bool IsContain();
-    bool IsClosed();
     bool IsAtLastRow();
     void SetInfo(unique_ptr<FetchResult<T>> &fetch);
     void SetNetworkId(const string &networkId);
+    void SetResultNapiType(const ResultNapiType napiType);
+    void SetFetchResType(const FetchResType resType);
+    void SetTypeMask(const string &mask);
+    std::string GetNetworkId();
+    ResultNapiType GetResultNapiType();
+    std::shared_ptr<DataShare::DataShareResultSet> &GetDataShareResultSet();
+    FetchResType GetFetchResType();
+    std::string GetTypeMask();
     std::unique_ptr<T> GetObjectAtPosition(int32_t index);
     std::unique_ptr<T> GetFirstObject();
     std::unique_ptr<T> GetObjectFromRdb(std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx);
     std::unique_ptr<T> GetNextObject();
     std::unique_ptr<T> GetLastObject();
     std::unique_ptr<T> GetObject();
-
-    bool isContain_;
-    bool isClosed_;
-    int32_t count_;
-    std::string networkId_;
-    ResultNapiType resultNapiType_;
-    std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
-    FetchResType fetchResType_;
-    std::string typeMask_;
 
 private:
     std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::ResultSet> &resultSet);
@@ -90,6 +87,13 @@ private:
     void GetObjectFromResultSet(AlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
     void GetObjectFromResultSet(PhotoAlbum *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
     void GetObjectFromResultSet(SmartAlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
+
+private:
+    std::string networkId_;
+    ResultNapiType resultNapiType_;
+    std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
+    FetchResType fetchResType_;
+    std::string typeMask_;
 };
 } // namespace Media
 } // namespace OHOS

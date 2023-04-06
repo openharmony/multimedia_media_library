@@ -112,10 +112,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_SetGet_Test_002, TestSize.Level
 {
     shared_ptr<FetchResult<FileAsset>> fetchResult = make_shared<FetchResult<FileAsset>>();
     fetchResult->Close();
-    EXPECT_EQ(fetchResult->IsClosed(), true);
-
-    EXPECT_EQ(fetchResult->IsContain(), false);
-
     EXPECT_EQ(fetchResult->GetCount(), 0);
 
     auto result = make_unique<FetchResult<FileAsset>>(GetFetchResult());
@@ -154,13 +150,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObjectAtPosition_Test_002, T
 
     const int32_t TEST_INVALID_INDEX = -1;
     EXPECT_EQ(fetchResult->GetObjectAtPosition(TEST_INVALID_INDEX), nullptr);
-
-    fetchResult->count_ = 0;
-    const int32_t TEST_INDEX_LARGE_THAN_ROWS = 100;
-    EXPECT_EQ(fetchResult->GetObjectAtPosition(TEST_INDEX_LARGE_THAN_ROWS), nullptr);
-
-    fetchResult->count_ = TEST_INDEX_LARGE_THAN_ROWS + 1;
-    EXPECT_EQ(fetchResult->GetObjectAtPosition(TEST_INDEX_LARGE_THAN_ROWS), nullptr);
 }
 
 /*
@@ -174,17 +163,17 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObjectAtPosition_Test_002, T
 HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetFirstObject_Test_001, TestSize.Level0)
 {
     auto fileFetchResult = make_shared<FetchResult<FileAsset>>(GetFetchResult());
-    fileFetchResult->resultNapiType_ = ResultNapiType::TYPE_USERFILE_MGR;
+    fileFetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     auto fileAsset = fileFetchResult->GetFirstObject();
     EXPECT_EQ(fileAsset->GetPath(), TEST_PATH);
 
     auto albumFetchResult = make_shared<FetchResult<AlbumAsset>>(GetFetchResult());
-    albumFetchResult->resultNapiType_ = ResultNapiType::TYPE_USERFILE_MGR;
+    albumFetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     auto albumAsset = albumFetchResult->GetFirstObject();
     EXPECT_EQ(albumAsset->GetResultNapiType(), ResultNapiType::TYPE_USERFILE_MGR);
 
     auto smartAlbumFetchResult = make_shared<FetchResult<SmartAlbumAsset>>(GetFetchResult());
-    smartAlbumFetchResult->resultNapiType_ = ResultNapiType::TYPE_USERFILE_MGR;
+    smartAlbumFetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     auto smartAlbumAsset = smartAlbumFetchResult->GetFirstObject();
     EXPECT_EQ(smartAlbumAsset->GetResultNapiType(), ResultNapiType::TYPE_USERFILE_MGR);
 
@@ -292,6 +281,39 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetLastObject_Test_002, TestSiz
 {
     auto fetchResult = make_shared<FetchResult<FileAsset>>(GetEmptyFetchResult());
     EXPECT_EQ(fetchResult->GetLastObject(), nullptr);
+}
+
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check getobject
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObject_Test_001, TestSize.Level0)
+{
+    auto fetchResult = make_shared<FetchResult<FileAsset>>(GetFetchResult());
+    EXPECT_NE(fetchResult->GetObject(), nullptr);
+
+    auto result = make_shared<FetchResult<FileAsset>>();
+    EXPECT_NE(result->GetObject(), nullptr);
+    EXPECT_EQ(result->GetObject()->GetPath(), DEFAULT_MEDIA_PATH);
+}
+
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check getobject
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObject_Test_002, TestSize.Level0)
+{
+    auto fetchResult = make_shared<FetchResult<FileAsset>>(GetEmptyFetchResult());
+    EXPECT_NE(fetchResult->GetObject(), nullptr);
+    EXPECT_EQ(fetchResult->GetObject()->GetPath(), DEFAULT_MEDIA_PATH);
 }
 
 /*
