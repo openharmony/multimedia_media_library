@@ -62,6 +62,7 @@ public:
     const static std::string PHOTO_HEIGHT;
     const static std::string PHOTO_WIDTH;
     const static std::string PHOTO_LCD_VISIT_TIME;
+    const static std::string PHOTO_POSITION;
 
     // table name
     const static std::string PHOTOS_TABLE;

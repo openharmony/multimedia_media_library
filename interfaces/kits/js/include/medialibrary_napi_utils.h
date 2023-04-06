@@ -293,7 +293,8 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DATE_TAKEN",                MEDIA_DATA_DB_DATE_TAKEN),
     std::make_pair("ORIENTATION",               MEDIA_DATA_DB_ORIENTATION),
     std::make_pair("FAVORITE",                  MEDIA_DATA_DB_IS_FAV),
-    std::make_pair("MEDIA_TYPE",                MEDIA_DATA_DB_MEDIA_TYPE)
+    std::make_pair("MEDIA_TYPE",                MEDIA_DATA_DB_MEDIA_TYPE),
+    std::make_pair("POSITION",                  MEDIA_DATA_DB_POSITION)
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

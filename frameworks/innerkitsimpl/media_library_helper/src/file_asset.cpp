@@ -178,6 +178,16 @@ void FileAsset::SetAlbum(const string &album)
     member_[MEDIA_DATA_DB_ALBUM] = album;
 }
 
+int32_t FileAsset::GetPosition() const
+{
+    return GetInt32Member(MEDIA_DATA_DB_POSITION);
+}
+
+void FileAsset::SetPosition(int32_t position)
+{
+    member_[MEDIA_DATA_DB_POSITION] = position;
+}
+
 int32_t FileAsset::GetWidth() const
 {
     return GetInt32Member(MEDIA_DATA_DB_WIDTH);

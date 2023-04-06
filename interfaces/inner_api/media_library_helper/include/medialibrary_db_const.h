@@ -91,6 +91,7 @@ const std::string MEDIA_DATA_DB_LONGITUDE = "longitude";
 const std::string MEDIA_DATA_DB_DATE_TAKEN = "date_taken";
 const std::string MEDIA_DATA_DB_THUMBNAIL = "thumbnail";
 const std::string MEDIA_DATA_DB_CONTENT_CREATE_TIME = "content_create_time";
+const std::string MEDIA_DATA_DB_POSITION = "position";
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
 const std::string MEDIA_DATA_DB_TIME_VISIT = "time_visit";
@@ -186,7 +187,8 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        MEDIA_DATA_DB_SELF_ID + " TEXT DEFAULT '1', " +
                                        MEDIA_DATA_DB_ALBUM_NAME + " TEXT, " +
                                        MEDIA_DATA_DB_URI + " TEXT, " +
-                                       MEDIA_DATA_DB_ALBUM + " TEXT)";
+                                       MEDIA_DATA_DB_ALBUM + " TEXT, " +
+                                       MEDIA_DATA_DB_POSITION + " INT DEFAULT 1)";
 
 const std::string CREATE_BUNDLE_PREMISSION_TABLE = "CREATE TABLE IF NOT EXISTS " +
                                       BUNDLE_PERMISSION_TABLE + " (" +

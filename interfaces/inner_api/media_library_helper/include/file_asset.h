@@ -86,6 +86,9 @@ public:
     const std::string &GetAlbum() const;
     void SetAlbum(const std::string &album);
 
+    int32_t GetPosition() const;
+    void SetPosition(int32_t position);
+
     int32_t GetWidth() const;
     void SetWidth(int32_t width);
 
