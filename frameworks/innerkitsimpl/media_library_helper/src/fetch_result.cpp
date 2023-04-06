@@ -54,6 +54,7 @@ static const unordered_map<string, ResultSetDataType> RESULT_TYPE_MAP = {
     { MEDIA_DATA_DB_IS_TRASH, TYPE_INT32 },
     { MEDIA_DATA_DB_AUDIO_ALBUM, TYPE_STRING },
     { MEDIA_DATA_DB_OWNER_PACKAGE, TYPE_STRING },
+    { MEDIA_DATA_DB_POSITION, TYPE_INT32 },
 };
 
 template <class T>
