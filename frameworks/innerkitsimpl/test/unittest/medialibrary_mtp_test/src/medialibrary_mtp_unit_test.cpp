@@ -442,7 +442,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_010, TestS
 
     // MTP_OPERATION_SET_OBJECT_PROP_VALUE_CODE
     static std::vector<uint8_t> testData = { 0x14, 0x00, 0x00, 0x00, 0x01, 0x00, 0x04, 0x98, 0xc3, 0x00, 0x00,
-        0x00, 0x0c, 0x00, 0x00, 0x00, 0x07, 0xdc, 0x00, 0x00 };
+        0x00, 0x0c, 0x00, 0x00, 0x00, 0x07, 0xdc, 0x00 };
     mtpTest->setOutBuffer(testData);
     operationPtr_->Execute();
 
@@ -938,8 +938,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_020, TestS
     // execute
     operationPtr_->Execute();
 
-    static std::vector<uint8_t> testData = { 0x18, 0x00, 0x00, 0x00, 0x01, 0x00, 0x1a, 0x10, 0xb7, 0x00, 0x00,
-        0x00, 0x0c, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    static std::vector<uint8_t> testData = { 0x18, 0x00, 0x00, 0x00, 0x01, 0x00, 0x1a, 0x10, 0xb7, 0x00, 0x00};
 	mtpTest->setOutBuffer(testData);
     // execute
     operationPtr_->Execute();
@@ -950,7 +949,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_020, TestS
     for(auto&& i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 16, 0, 0, 0, 3, 0, 1, 32, 183, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 29, 32, 0, 0, 0, 0};
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output == targetData, true);
