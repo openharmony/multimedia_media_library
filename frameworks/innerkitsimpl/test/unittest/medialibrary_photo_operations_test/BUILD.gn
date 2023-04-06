@@ -1,0 +1,61 @@
+# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
+
+group("unittest") {
+  testonly = true
+  deps = [ ":medialibrary_photo_operations_test" ]
+}
+
+ohos_unittest("medialibrary_photo_operations_test") {
+  module_out_path = "media_library/medialibrary_photo_operations_test"
+  include_dirs = [
+    "./include",
+    "../medialibrary_unittest_utils/include",
+    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native",
+    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
+    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension/include",
+    "${MEDIA_LIB_INTERFACES_INNER_DIR}/media_library_helper/include",
+    "${MEDIA_LIB_SERVICES_DIR}/media_thumbnail/include",
+  ]
+
+  sources = [
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "./src/medialibrary_photo_operations_test.cpp",
+  ]
+
+  deps = [
+    "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager:ability_manager",
+    "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
+    "${ABILITY_RUNTIME_INNER_API_PATH}/runtime:runtime",
+    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
+    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "ability_runtime:runtime",
+    "c_utils:utils",
+    "data_share:datashare_common",
+    "data_share:datashare_provider",
+    "hiviewdfx_hilog_native:libhilog",
+    "multimedia_image_framework:image_native",
+    "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
+  ]
+}
