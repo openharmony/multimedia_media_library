@@ -71,7 +71,7 @@ static constexpr int MAX_BATTERY = 100;
 static constexpr int EMPTY_BATTERY = 0;
 static constexpr int STORAGE_MANAGER_UID = 5003;
 static constexpr int ERROR_BATTERY = -1;
-static constexpr size_t HEADER_LEN = 12;
+static constexpr uint32_t HEADER_LEN = 12;
 static constexpr uint32_t READ_LEN = 1024;
 MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &context) : context_(context)
 {
@@ -386,7 +386,7 @@ uint16_t MtpOperationUtils::DoRecevieSendObject()
     vector<uint8_t> dataBuffer;
     uint32_t temp = READ_LEN;
     context_->mtpDriver->Read(dataBuffer, temp);
-    size_t initialData = dataBuffer.size() < HEADER_LEN  ? 0 : dataBuffer.size() - HEADER_LEN;
+    uint32_t initialData = dataBuffer.size() < HEADER_LEN  ? 0 : dataBuffer.size() - HEADER_LEN;
     int ret = write(fd, &dataBuffer[HEADER_LEN], initialData);
     if (ret < 0) {
         MEDIA_ERR_LOG("DoRecevieSendObject write error = %{public}d", errno);
