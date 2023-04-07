@@ -99,7 +99,7 @@ ohos_shared_library("medialibrary_data_extension") {
   media_distributed_source = [
     "${MEDIALIB_SERVICES_PATH}/media_distributed/src/database_manage/medialibrary_device_db.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_distributed/src/database_manage/medialibrary_device_operations.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_distributed/src/database_manage/medialibrary_sync_table.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_distributed/src/database_manage/medialibrary_sync_operation.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_distributed/src/device_manage/device_permission_verification.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_distributed/src/device_manage/medialibrary_device.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_distributed/src/devices_info_interact//devices_info_interact.cpp",

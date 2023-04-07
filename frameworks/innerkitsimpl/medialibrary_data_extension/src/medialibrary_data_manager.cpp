@@ -42,7 +42,7 @@
 #include "photo_map_operations.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
-#include "medialibrary_sync_table.h"
+#include "medialibrary_sync_operation.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_tracer.h"
 #include "mimetype_utils.h"
@@ -841,7 +841,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
-    NeedQuerySync(cmd.GetOprnDevice(), cmd.GetOprnObject());
 
     shared_ptr<NativeRdb::ResultSet> queryResultSet;
     OperationObject oprnObject = cmd.GetOprnObject();
@@ -889,7 +888,11 @@ bool MediaLibraryDataManager::QuerySync(const string &networkId, const string &t
     }
 
     vector<string> devices = { networkId };
-    return MediaLibrarySyncTable::SyncPullTable(rdbStore_, bundleName_, tableName, devices);
+    MediaLibrarySyncOpts syncOpts;
+    syncOpts.rdbStore = rdbStore_;
+    syncOpts.table = tableName;
+    syncOpts.bundleName = bundleName_;
+    return MediaLibrarySyncOperation::SyncPullTable(syncOpts, devices);
 }
 
 int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const string &mode)
