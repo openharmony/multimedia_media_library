@@ -189,7 +189,7 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
         MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR), "outObjectInfo is nullptr");
     outObjectInfo->handle = fileAsset->GetId();
     outObjectInfo->name = fileAsset->GetDisplayName();
-    outObjectInfo->size = fileAsset->GetSize();
+    outObjectInfo->size = static_cast<uint32_t>(fileAsset->GetSize()); // need support larger than 4GB file
     outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetParent());
     outObjectInfo->dateCreated = fileAsset->GetDateAdded();
     outObjectInfo->dateModified = fileAsset->GetDateModified();
