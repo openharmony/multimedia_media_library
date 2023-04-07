@@ -20,12 +20,14 @@
 #include "media_file_extention_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_uripermission_operations.h"
 #include "uri.h"
+#define private public
+#include "medialibrary_data_manager.h"
+#undef private
 
 using namespace std;
 using namespace testing::ext;
@@ -873,6 +875,311 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
     EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
         mode.c_str(), inputMode.c_str(), ret);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_LcdDistributeAging_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    int32_t ret = mediaLibraryDataManager->LcdDistributeAging();
+    EXPECT_EQ(ret, E_OK);
+    shared_ptr<OHOS::AbilityRuntime::Context> extensionContext;
+    mediaLibraryDataManager->InitialiseThumbnailService(extensionContext);
+    ret = mediaLibraryDataManager->LcdDistributeAging();
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateThumbnail_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    NativeRdb::ValuesBucket values;
+    values.PutString(MEDIA_DATA_DB_URI, "CreateThumbnail");
+    int32_t ret = mediaLibraryDataManager->CreateThumbnail(values);
+    EXPECT_EQ(ret, E_ERR);
+    NativeRdb::ValuesBucket valuesTest;
+    valuesTest.PutString(MEDIA_DATA_DB_URI, "");
+    ret = mediaLibraryDataManager->CreateThumbnail(valuesTest);
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetDirQuerySetMap_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    mediaLibraryDataManager->GetDirQuerySetMap();
+    shared_ptr<MediaDataShareExtAbility> datashareExternsion =  nullptr;
+    mediaLibraryDataManager->SetOwner(datashareExternsion);
+    auto ret = mediaLibraryDataManager->GetOwner();
+    EXPECT_EQ(ret, nullptr);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateThumbnailAsync_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    string uri = "";
+    mediaLibraryDataManager->CreateThumbnailAsync(uri);
+    EXPECT_NE(mediaLibraryDataManager->thumbnailService_, nullptr);
+    string uriTest = "CreateThumbnailAsync";
+    mediaLibraryDataManager->CreateThumbnailAsync(uriTest);
+    EXPECT_NE(mediaLibraryDataManager->thumbnailService_, nullptr);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_MakeDirQuerySetMap_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    int32_t ret = mediaLibraryDataManager->MakeDirQuerySetMap(MediaLibraryDataManager::dirQuerySetMap_);
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DoTrashAging_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    int32_t ret = mediaLibraryDataManager->DoTrashAging();
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DoAging_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    int32_t ret = mediaLibraryDataManager->DoAging();
+    EXPECT_EQ(ret, E_OK);
+    shared_ptr<OHOS::AbilityRuntime::Context> extensionContext;
+    mediaLibraryDataManager->InitialiseThumbnailService(extensionContext);
+    mediaLibraryDataManager->GenerateThumbnails();
+    ret = mediaLibraryDataManager->DoAging();
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DistributeDeviceAging_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    int32_t ret = mediaLibraryDataManager->DistributeDeviceAging();
+    EXPECT_EQ(ret, E_FAIL);
+    shared_ptr<OHOS::AbilityRuntime::Context> extensionContext;
+    mediaLibraryDataManager->InitialiseThumbnailService(extensionContext);
+    ret = mediaLibraryDataManager->DistributeDeviceAging();
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_HandleThumbnailOperations_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    Uri uri("HandleThumbnailOperations");
+    OperationType oprnType = OperationType::DISTRIBUTE_CREATE;
+    MediaLibraryCommand cmd(uri, oprnType);
+    NativeRdb::ValuesBucket values;
+    values.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
+    cmd.SetValueBucket(values);
+    int32_t ret = mediaLibraryDataManager->HandleThumbnailOperations(cmd);
+    EXPECT_EQ(ret, E_OK);
+    OperationType typeTest = OperationType::AGING;
+    MediaLibraryCommand test(uri, typeTest);
+    ret = mediaLibraryDataManager->HandleThumbnailOperations(test);
+    EXPECT_EQ(ret, E_OK);
+    OperationType operationType = OperationType::DISTRIBUTE_AGING;
+    MediaLibraryCommand testCmd(uri, operationType);
+    ret = mediaLibraryDataManager->HandleThumbnailOperations(testCmd);
+    EXPECT_EQ(ret, E_FAIL);
+    OperationType operation = OperationType::ALBUM_REMOVE_ASSETS;
+    MediaLibraryCommand command(uri, operation);
+    ret = mediaLibraryDataManager->HandleThumbnailOperations(command);
+    EXPECT_EQ(ret, E_FAIL);
+    OperationType type = OperationType::GENERATE;
+    MediaLibraryCommand cmdTest(uri, type);
+    ret = mediaLibraryDataManager->HandleThumbnailOperations(cmdTest);
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_ShouldCheckFileName_Test_001, TestSize.Level0)
+{
+    OperationObject oprnObject = OperationObject::SMART_ALBUM_MAP;
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    bool ret = mediaLibraryDataManager->ShouldCheckFileName(oprnObject);
+    EXPECT_EQ(ret, false);
+    OperationObject oprnObjectTest = OperationObject::FILESYSTEM_ASSET;
+    ret = mediaLibraryDataManager->ShouldCheckFileName(oprnObjectTest);
+    EXPECT_EQ(ret, true);
+}
+
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckFileNameValid_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    DataShare::DataShareValuesBucket values;
+    string displayName = "";
+    values.Put(MEDIA_DATA_DB_NAME, displayName);
+    bool ret = mediaLibraryDataManager->CheckFileNameValid(values);
+    EXPECT_EQ(ret, false);
+    DataShare::DataShareValuesBucket valuesBucket;
+    ret = mediaLibraryDataManager->CheckFileNameValid(valuesBucket);
+    EXPECT_EQ(ret, false);
+    string displayNameTest = "DataManager_CheckFileNameValid_Test_001";
+    DataShare::DataShareValuesBucket valuesTest;
+    valuesTest.Put(MEDIA_DATA_DB_NAME, displayNameTest);
+    ret = mediaLibraryDataManager->CheckFileNameValid(valuesTest);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_NeedQuerySync_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    string networkId = "";
+    OperationObject oprnObject = OperationObject::SMART_ALBUM;
+    mediaLibraryDataManager->NeedQuerySync(networkId, oprnObject);
+    string networkIdTest = "NeedQuerySync";
+    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
+    oprnObject = OperationObject::SMART_ALBUM_MAP;
+    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
+    oprnObject = OperationObject::FILESYSTEM_PHOTO;
+    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
+    oprnObject = OperationObject::FILESYSTEM_AUDIO;
+    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
+    oprnObject = OperationObject::FILESYSTEM_DOCUMENT;
+    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
+    oprnObject = OperationObject::PHOTO_ALBUM;
+    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
+    EXPECT_NE(networkIdTest, "");
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    MediaLibraryCommand cmdOne(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
+    int32_t ret = mediaLibraryDataManager->SolveInsertCmd(cmdOne);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    MediaLibraryCommand cmdTwo(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdTwo);
+    EXPECT_EQ(ret, E_FAIL);
+    MediaLibraryCommand cmdThree(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdThree);
+    EXPECT_EQ(ret, E_OK);
+    MediaLibraryCommand cmdFour(OperationObject::FILESYSTEM_DOCUMENT, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdFour);
+    EXPECT_EQ(ret, E_INVALID_VALUES);
+    MediaLibraryCommand cmdFive(OperationObject::FILESYSTEM_ALBUM, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdFive);
+    EXPECT_EQ(ret, E_INVALID_PATH);
+    MediaLibraryCommand cmdSix(OperationObject::PHOTO_ALBUM, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdSix);
+    EXPECT_NE(ret, E_OK);
+    MediaLibraryCommand cmdSeven(OperationObject::FILESYSTEM_DIR, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdSeven);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_002, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    MediaLibraryCommand cmdOne(OperationObject::SMART_ALBUM, OperationType::CREATE);
+    int32_t ret = mediaLibraryDataManager->SolveInsertCmd(cmdOne);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    MediaLibraryCommand cmdTwo(OperationObject::SMART_ALBUM_MAP, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdTwo);
+    EXPECT_EQ(ret, E_SMARTALBUM_IS_NOT_EXISTED);
+    MediaLibraryCommand cmdThree(OperationObject::THUMBNAIL, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdThree);
+    EXPECT_EQ(ret, E_FAIL);
+    MediaLibraryCommand cmdFour(OperationObject::BUNDLE_PERMISSION, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdFour);
+    EXPECT_EQ(ret, E_FAIL);
+    MediaLibraryCommand cmdFive(OperationObject::UNKNOWN_OBJECT, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdFive);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SetCmdBundleAndDevice_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    MediaLibraryCommand cmd(Uri(MEDIALIBRARY_BUNDLEPERM_URI), OperationType::QUERY);
+    int32_t ret = mediaLibraryDataManager->SetCmdBundleAndDevice(cmd);
+    EXPECT_EQ(ret, E_GET_CLIENTBUNDLE_FAIL);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetThumbnail_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    string uri = "GetThumbnail";
+    auto ret = mediaLibraryDataManager->GetThumbnail(uri);
+    EXPECT_EQ(ret, nullptr);
+    shared_ptr<OHOS::AbilityRuntime::Context> extensionContext;
+    mediaLibraryDataManager->InitialiseThumbnailService(extensionContext);
+    ret = mediaLibraryDataManager->GetThumbnail(uri);
+    EXPECT_EQ(ret, nullptr);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_001, TestSize.Level0)
+{
+    Uri uri("");
+    vector<DataShare::DataShareValuesBucket> values;
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    int32_t ret = mediaLibraryDataManager->BatchInsert(uri, values);
+    EXPECT_EQ(ret, E_INVALID_URI);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_002, TestSize.Level0)
+{
+    Uri uri(URI_PHOTO_ALBUM_ADD_ASSET);
+    vector<DataShare::DataShareValuesBucket> values;
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    int32_t ret = mediaLibraryDataManager->BatchInsert(uri, values);
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_003, TestSize.Level0)
+{
+    Uri uri(MEDIALIBRARY_DATA_URI);
+    vector<DataShare::DataShareValuesBucket> values;
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    int32_t ret = mediaLibraryDataManager->BatchInsert(uri, values);
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryRdb_Test_001, TestSize.Level0)
+{
+    Uri uri("");
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    auto ret = mediaLibraryDataManager->QueryRdb(uri, columns, predicates);
+    EXPECT_NE(ret, nullptr);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetType_Test_001, TestSize.Level0)
+{
+    Uri uri(MEDIALIBRARY_DATA_URI);
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    auto ret = mediaLibraryDataManager->GetType(uri);
+    EXPECT_EQ(ret, "");
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_NotifyChange_Test_001, TestSize.Level0)
+{
+    Uri uri(MEDIALIBRARY_DATA_URI);
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    mediaLibraryDataManager->NotifyChange(uri);
+    EXPECT_EQ(mediaLibraryDataManager->extension_, nullptr);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnails_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    int32_t ret = mediaLibraryDataManager->GenerateThumbnails();
+    EXPECT_EQ(ret, E_OK);
+    mediaLibraryDataManager->ClearMediaLibraryMgr();
+    ret = mediaLibraryDataManager->GenerateThumbnails();
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QuerySync_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    string networkId = "";
+    string tableName = "";
+    bool ret = mediaLibraryDataManager->QuerySync(networkId, tableName);
+    EXPECT_EQ(ret, false);
+    string networkIdTest = "QuerySync";
+    string tableNameTest = "QuerySync";
+    ret = mediaLibraryDataManager->QuerySync(networkIdTest, tableNameTest);
+    EXPECT_EQ(ret, false);
 }
 } // namespace Media
 } // namespace OHOS
