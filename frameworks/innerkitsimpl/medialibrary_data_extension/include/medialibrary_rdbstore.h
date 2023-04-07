@@ -17,6 +17,7 @@
 #define OHOS_MEDIALIBRARY_RDBSTORE_H
 
 #include "medialibrary_unistore.h"
+#include "medialibrary_sync_operation.h"
 #include "timer.h"
 #include "value_object.h"
 
@@ -40,9 +41,9 @@ public:
         const std::vector<std::string> &columns) override;
 
     bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
-        const std::vector<std::string> &devices) override;
+        int32_t rowId, const std::vector<std::string> &devices) override;
     bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
-        const std::vector<std::string> &devices, bool isBlock = false) override;
+        int32_t rowId, const std::vector<std::string> &devices, bool isBlock = false) override;
     int32_t ExecuteSql(const std::string &sql) override;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql) override;
 
@@ -68,6 +69,8 @@ public:
 private:
     bool SubscribeRdbStoreObserver();
     bool UnSubscribeRdbStoreObserver();
+    void SetSyncOpts(MediaLibrarySyncOpts &syncOpts, const std::string &bundleName,
+        const std::string &tableName, int32_t rowId);
 
     static constexpr int RDB_CONNECT_NUM = 10;
     static constexpr int RDB_TRANSACTION_WAIT_MS = 1000;

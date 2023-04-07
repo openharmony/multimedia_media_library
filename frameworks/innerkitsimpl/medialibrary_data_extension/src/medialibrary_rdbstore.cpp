@@ -19,7 +19,6 @@
 #include "media_log.h"
 #include "medialibrary_device.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_sync_table.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -134,6 +133,15 @@ bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
     return false;
 }
 
+void GetAllNetworkId(vector<string> &networkIds)
+{
+    vector<OHOS::DistributedHardware::DmDeviceInfo> deviceList;
+    MediaLibraryDevice::GetInstance()->GetAllNetworkId(deviceList);
+    for (auto& deviceInfo : deviceList) {
+        networkIds.push_back(deviceInfo.networkId);
+    }
+}
+
 int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 {
     MediaLibraryTracer tracer;
@@ -151,7 +159,8 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 
     if (MediaLibraryDevice::GetInstance()->IsHasActiveDevice()) {
         vector<string> devices = vector<string>();
-        if (!SyncPushTable(bundleName_, cmd.GetTableName(), devices)) {
+        GetAllNetworkId(devices);
+        if (!SyncPushTable(bundleName_, cmd.GetTableName(), rowId, devices)) {
             MEDIA_ERR_LOG("SyncPushTable Error");
         }
     }
@@ -175,7 +184,8 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
     }
 
     vector<string> devices = vector<string>();
-    if (!SyncPushTable(bundleName_, cmd.GetTableName(), devices)) {
+    GetAllNetworkId(devices);
+    if (!SyncPushTable(bundleName_, cmd.GetTableName(), deletedRows, devices)) {
         MEDIA_ERR_LOG("SyncPushTable Error");
     }
 
@@ -197,7 +207,8 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     }
 
     vector<string> devices = vector<string>();
-    if (!SyncPushTable(bundleName_, cmd.GetTableName(), devices)) {
+    GetAllNetworkId(devices);
+    if (!SyncPushTable(bundleName_, cmd.GetTableName(), changedRows, devices)) {
         MEDIA_ERR_LOG("SyncPushTable Error");
     }
 
@@ -438,17 +449,32 @@ string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
 }
 
 bool MediaLibraryRdbStore::SyncPullTable(const string &bundleName, const string &tableName,
-    const vector<string> &devices)
+    int32_t rowId, const vector<string> &devices)
 {
+    MediaLibrarySyncOpts syncOpts;
+    SetSyncOpts(syncOpts, bundleName, tableName, rowId);
     vector<string> devList(devices);
-    return MediaLibrarySyncTable::SyncPullTable(rdbStore_, bundleName, tableName, devList);
+    return MediaLibrarySyncOperation::SyncPullTable(syncOpts, devList);
 }
 
 bool MediaLibraryRdbStore::SyncPushTable(const string &bundleName, const string &tableName,
-    const vector<string> &devices, bool isBlock)
+    int32_t rowId, const vector<string> &devices, bool isBlock)
 {
+    MediaLibrarySyncOpts syncOpts;
+    SetSyncOpts(syncOpts, bundleName, tableName, rowId);
     vector<string> devList(devices);
-    return MediaLibrarySyncTable::SyncPushTable(rdbStore_, bundleName, tableName, devList, isBlock);
+    return MediaLibrarySyncOperation::SyncPushTable(syncOpts, devList, isBlock);
+}
+
+void MediaLibraryRdbStore::SetSyncOpts(MediaLibrarySyncOpts &syncOpts, const string &bundleName,
+    const string &tableName, int32_t rowId)
+{
+    syncOpts.table = tableName;
+    syncOpts.bundleName = bundleName;
+    if (rowId >= 0) {
+        syncOpts.row = to_string(rowId);
+    }
+    syncOpts.rdbStore = rdbStore_;
 }
 
 inline void BuildInsertSystemAlbumSql(const ValuesBucket &values, const AbsRdbPredicates &predicates,

@@ -19,7 +19,7 @@
 #include "device_auth.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
-#include "medialibrary_sync_table.h"
+#include "medialibrary_sync_operation.h"
 #include "medialibrary_tracer.h"
 
 namespace OHOS {
@@ -201,8 +201,11 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
         return;
     }
 
+    MediaLibrarySyncOpts syncOpts;
+    syncOpts.rdbStore = rdbStore_;
+    syncOpts.bundleName = bundleName_;
     std::vector<std::string> devices = { mldevInfo.networkId };
-    MediaLibrarySyncTable::SyncPullAllTableByNetworkId(rdbStore_, bundleName_, devices);
+    MediaLibrarySyncOperation::SyncPullAllTableByNetworkId(syncOpts, devices);
 
     auto getTargetMLInfoTask = std::make_unique<std::thread>(&MediaLibraryDevice::TryToGetTargetDevMLInfos,
         this, mldevInfo.deviceUdid, mldevInfo.networkId);
