@@ -47,13 +47,13 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 static const std::string ASSET_RECYCLE_SUFFIX = "-copy";
-const static string NO_MEDIA_TAG = ".nomedia";
-const static unordered_map<int, string> mediaTypeMap = {
+static const string NO_MEDIA_TAG = ".nomedia";
+static const unordered_map<int, string> mediaTypeMap = {
     { MEDIA_TYPE_IMAGE, DIR_ALL_IMAGE_CONTAINER_TYPE },
     { MEDIA_TYPE_VIDEO, DIR_ALL_VIDEO_CONTAINER_TYPE },
     { MEDIA_TYPE_AUDIO, DIR_ALL_AUDIO_CONTAINER_TYPE }
 };
-const static string QUESTION_MARK = "?";
+static const string QUESTION_MARK = "?";
 int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
 {
     if (dirPath.empty()) {

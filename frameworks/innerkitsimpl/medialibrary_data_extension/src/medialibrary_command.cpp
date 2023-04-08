@@ -183,7 +183,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
 {
     string uri = uri_.ToString();
 
-    const static map<string, OperationObject> oprnMap = {
+    static const map<string, OperationObject> oprnMap = {
         // use in Insert...
         { MEDIA_FILEOPRN, OperationObject::FILESYSTEM_ASSET },
         { MEDIA_PHOTOOPRN, OperationObject::FILESYSTEM_PHOTO },
@@ -230,7 +230,7 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         return;
     }
     string oprnName = insertUri.substr(found + 1);
-    const static map<string, OperationType> oprnTypeMap = {
+    static const map<string, OperationType> oprnTypeMap = {
         { MEDIA_FILEOPRN_CLOSEASSET, OperationType::CLOSE },
         { MEDIA_FILEOPRN_CREATEASSET, OperationType::CREATE },
         { MEDIA_ALBUMOPRN_CREATEALBUM, OperationType::CREATE },

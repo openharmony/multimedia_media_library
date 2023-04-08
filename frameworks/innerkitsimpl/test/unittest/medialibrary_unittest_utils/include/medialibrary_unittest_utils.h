@@ -23,13 +23,13 @@
 
 namespace OHOS {
 namespace Media {
-const static inline std::string TEST_CAMERA = "Camera";
-const static inline std::string TEST_VIDEOS = "Videos";
-const static inline std::string TEST_PICTURES = "Pictures";
-const static inline std::string TEST_AUDIOS = "Audios";
-const static inline std::string TEST_DOCUMENTS = "Documents";
-const static inline std::string TEST_DOWNLOAD = "Download";
-const static inline std::vector<std::string> TEST_ROOT_DIRS = { TEST_CAMERA, TEST_VIDEOS, TEST_PICTURES, TEST_AUDIOS,
+static const inline std::string TEST_CAMERA = "Camera";
+static const inline std::string TEST_VIDEOS = "Videos";
+static const inline std::string TEST_PICTURES = "Pictures";
+static const inline std::string TEST_AUDIOS = "Audios";
+static const inline std::string TEST_DOCUMENTS = "Documents";
+static const inline std::string TEST_DOWNLOAD = "Download";
+static const inline std::vector<std::string> TEST_ROOT_DIRS = { TEST_CAMERA, TEST_VIDEOS, TEST_PICTURES, TEST_AUDIOS,
     TEST_DOCUMENTS, TEST_DOWNLOAD };
 
 class TestScannerCallback : public IMediaScannerCallback {

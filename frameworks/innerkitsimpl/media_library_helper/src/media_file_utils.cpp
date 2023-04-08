@@ -318,7 +318,7 @@ int32_t MediaFileUtils::CheckDisplayName(const string &displayName)
         return -EINVAL;
     }
 
-    const static string DISPLAYNAME_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
+    static const string DISPLAYNAME_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
     if (RegexCheck(displayName, DISPLAYNAME_REGEX_CHECK)) {
         return -EINVAL;
     }
@@ -332,7 +332,7 @@ int32_t MediaFileUtils::CheckTitle(const string &title)
         return err;
     }
 
-    const static string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
+    static const string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
     if (RegexCheck(title, TITLE_REGEX_CHECK)) {
         MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
         return -EINVAL;
