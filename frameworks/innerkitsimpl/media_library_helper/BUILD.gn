@@ -34,7 +34,6 @@ config("media_library_config") {
     "${relational_store_innerapi_path}/rdb/include",
     "${relational_store_innerapi_path}/appdatafwk/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
     "${datashare_common_native_path}/include",
     "${datashare_innerapi_path}/common/include",
     "${datashare_innerapi_path}/consumer/include",
@@ -60,6 +59,7 @@ ohos_source_set("media_library_source") {
     "src/media_column.cpp",
     "src/media_file_utils.cpp",
     "src/media_volume.cpp",
+    "src/medialibrary_helper_container.cpp",
     "src/mimetype_utils.cpp",
     "src/native_album_asset.cpp",
     "src/photo_album.cpp",
@@ -70,7 +70,13 @@ ohos_source_set("media_library_source") {
 
   configs = [ ":media_library_config" ]
 
-  external_deps = [ "hitrace_native:hitrace_meter" ]
+  external_deps = [
+    "ability_base:zuri",
+    "ability_runtime:abilitykit_native",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "hitrace_native:hitrace_meter",
+  ]
 
   part_name = "media_library"
   subsystem_name = "multimedia"

@@ -144,6 +144,19 @@ bool MediaFileUtils::IsDirectory(const string &dirName)
     return false;
 }
 
+string MediaFileUtils::GetFirstDirName(const string &filePath)
+{
+    string firstDirName = "";
+    if (!filePath.empty()) {
+        string::size_type pos = filePath.find_first_of('/');
+        if (pos == filePath.length()) {
+            return filePath;
+        }
+        firstDirName = filePath.substr(0, pos + 1);
+    }
+    return firstDirName;
+}
+
 bool MediaFileUtils::CreateFile(const string &filePath)
 {
     bool errCode = false;
@@ -384,6 +397,18 @@ int64_t MediaFileUtils::UTCTimeSeconds()
     return (int64_t)(t.tv_sec);
 }
 
+string MediaFileUtils::GetIdFromUri(const string &uri)
+{
+    string rowNum = "-1";
+
+    size_t pos = uri.rfind('/');
+    if (pos != std::string::npos) {
+        rowNum = uri.substr(pos + 1);
+    }
+
+    return rowNum;
+}
+
 string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
 {
     string networkId;
@@ -541,5 +566,177 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
     }
     MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath.c_str());
     return open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
+}
+
+int32_t MediaFileUtils::CreateAsset(const string &filePath)
+{
+    MEDIA_ERR_LOG("CreateAsset in");
+    int32_t errCode = E_ERR;
+
+    if (filePath.empty()) {
+        MEDIA_ERR_LOG("Filepath is empty");
+        return E_VIOLATION_PARAMETERS;
+    }
+
+    if (IsFileExists(filePath)) {
+        MEDIA_ERR_LOG("the file exists path: %{private}s", filePath.c_str());
+        return E_FILE_EXIST;
+    }
+
+    size_t slashIndex = filePath.rfind('/');
+    if (slashIndex != string::npos) {
+        string fileName = filePath.substr(slashIndex + 1);
+        if (!fileName.empty() && fileName.at(0) != '.') {
+            size_t dotIndex = filePath.rfind('.');
+            if ((dotIndex == string::npos) && (GetMediaType(filePath) != MEDIA_TYPE_FILE)) {
+                return errCode;
+            }
+        }
+    }
+
+    ofstream file(filePath);
+    if (!file) {
+        MEDIA_ERR_LOG("Output file path could not be created errno %{public}d", errno);
+        return errCode;
+    }
+
+    file.close();
+
+    return E_SUCCESS;
+}
+
+int32_t MediaFileUtils::ModifyAsset(const string &oldPath, const string &newPath)
+{
+    int32_t err = E_MODIFY_DATA_FAIL;
+
+    if (oldPath.empty() || newPath.empty()) {
+        MEDIA_ERR_LOG("Failed to modify asset, oldPath: %{private}s or newPath: %{private}s is empty!",
+            oldPath.c_str(), newPath.c_str());
+        return err;
+    }
+    if (!IsFileExists(oldPath)) {
+        MEDIA_ERR_LOG("Failed to modify asset, oldPath: %{private}s does not exist!", oldPath.c_str());
+        return E_NO_SUCH_FILE;
+    }
+    if (IsFileExists(newPath)) {
+        MEDIA_ERR_LOG("Failed to modify asset, newPath: %{private}s is already exist!", newPath.c_str());
+        return E_FILE_EXIST;
+    }
+    err = rename(oldPath.c_str(), newPath.c_str());
+    if (err < 0) {
+        MEDIA_ERR_LOG("Failed ModifyAsset errno %{public}d", errno);
+        return E_FILE_OPER_FAIL;
+    }
+
+    return E_SUCCESS;
+}
+
+int32_t MediaFileUtils::DeleteAsset(const string &filePath)
+{
+    int32_t errCode = E_ERR;
+    if (!IsDirectory(filePath)) {
+        errCode = remove(filePath.c_str());
+    } else {
+        errCode = RemoveDirectory(filePath);
+    }
+    if (errCode != E_SUCCESS) {
+        MEDIA_ERR_LOG("DeleteAsset failed, filePath: %{private}s, errno: %{public}d, errmsg: %{public}s",
+            filePath.c_str(), errno, strerror(errno));
+    }
+    return errCode;
+}
+
+int32_t MediaFileUtils::OpenAsset(const string &filePath, const string &mode)
+{
+    if (filePath.empty()) {
+        return E_INVALID_PATH;
+    }
+    if (mode.empty()) {
+        return E_INVALID_MODE;
+    }
+
+    int32_t flags = O_RDWR;
+    if (mode == MEDIA_FILEMODE_READONLY) {
+        flags = O_RDONLY;
+    } else if (mode == MEDIA_FILEMODE_WRITEONLY) {
+        flags = O_WRONLY;
+    } else if (mode == MEDIA_FILEMODE_WRITETRUNCATE) {
+        flags = O_WRONLY | O_TRUNC;
+    } else if (mode == MEDIA_FILEMODE_WRITEAPPEND) {
+        flags = O_WRONLY | O_APPEND;
+    } else if (mode == MEDIA_FILEMODE_READWRITETRUNCATE) {
+        flags = O_RDWR | O_TRUNC;
+    }
+
+    if (filePath.size() >= PATH_MAX) {
+        MEDIA_ERR_LOG("File path too long %{public}d", (int)filePath.size());
+        return E_INVALID_PATH;
+    }
+    MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
+    std::string absFilePath;
+    if (!PathToRealPath(filePath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
+        return E_INVALID_PATH;
+    }
+    if (absFilePath.empty()) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{private}s %{public}d",
+                      filePath.c_str(), errno);
+        return E_INVALID_PATH;
+    }
+
+    MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath.c_str());
+    return open(absFilePath.c_str(), flags);
+}
+
+int32_t MediaFileUtils::CloseAsset(int32_t fd)
+{
+    return close(fd);
+}
+
+std::string MediaFileUtils::GetMediaTypeUri(MediaType mediaType)
+{
+    switch (mediaType) {
+        case MEDIA_TYPE_AUDIO:
+            return MEDIALIBRARY_AUDIO_URI;
+        case MEDIA_TYPE_VIDEO:
+            return MEDIALIBRARY_VIDEO_URI;
+        case MEDIA_TYPE_IMAGE:
+            return MEDIALIBRARY_IMAGE_URI;
+        case MEDIA_TYPE_SMARTALBUM:
+            return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
+        case MEDIA_TYPE_DEVICE:
+            return MEDIALIBRARY_DEVICE_URI;
+        case MEDIA_TYPE_FILE:
+        default:
+            return MEDIALIBRARY_FILE_URI;
+    }
+}
+
+void MediaFileUtils::GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask)
+{
+    typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
+    for (auto &type : types) {
+        if ((type >= MEDIA_TYPE_FILE) && (type <= MEDIA_TYPE_AUDIO)) {
+            typeMask[get<POS_TYPE_MASK_STRING_INDEX>(MEDIA_TYPE_TUPLE_VEC[type])] = TYPE_MASK_BIT_SET;
+        }
+    }
+}
+
+void MediaFileUtils::UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask)
+{
+    if (!typeMask.empty()) {
+        uri += "#" + URI_PARAM_KEY_TYPE + ":" + typeMask;
+    }
+}
+
+void MediaFileUtils::AppendFetchOptionSelection(std::string &selection, const std::string &newCondition)
+{
+    if (!newCondition.empty()) {
+        if (!selection.empty()) {
+            selection = "(" + selection + ") AND " + newCondition;
+        } else {
+            selection = newCondition;
+        }
+    }
 }
 } // namespace OHOS::Media
