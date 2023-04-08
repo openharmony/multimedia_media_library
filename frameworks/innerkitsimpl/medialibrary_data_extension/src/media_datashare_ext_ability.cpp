@@ -305,6 +305,10 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
 {
     string closeUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
     string insertUri = uri.ToString();
+    if (!PermissionUtils::SystemApiCheck(insertUri)) {
+        MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
+        return E_CHECK_SYSTEMAPP_FAIL;
+    }
     bool isWrite = (insertUri == closeUri) ? false : true;
     if (insertUri.find(DISTRIBUTE_THU_OPRN_CREATE) == string::npos) {
         int32_t err = CheckPermFromUri(insertUri, isWrite);
@@ -320,6 +324,10 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     const DataShareValuesBucket &value)
 {
     string updateUri = uri.ToString();
+    if (!PermissionUtils::SystemApiCheck(updateUri)) {
+        MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
+        return E_CHECK_SYSTEMAPP_FAIL;
+    }
     int32_t err = CheckPermFromUri(updateUri, true);
     if (err < 0) {
         return err;
@@ -335,6 +343,10 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
         MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
         return E_CHECK_SYSTEMAPP_FAIL;
     }
+    if (!PermissionUtils::SystemApiCheck(uriStr)) {
+        MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
+        return E_CHECK_SYSTEMAPP_FAIL;
+    }
     int err = CheckPermFromUri(uriStr, true);
     if (err < 0) {
         return err;
@@ -346,14 +358,14 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, vector<string> &columns, DatashareBusinessError &businessError)
 {
-    const static set<string> noPermissionCheck = {
+    static const set<string> noPermissionCheck = {
         MEDIALIBRARY_DIRECTORY_URI,
         MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE,
         MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE
     };
 
     string uriStr = uri.ToString();
-    if (!PermissionUtils::CheckMediaLibraryQueryUriIsSystemApi(uriStr)) {
+    if (!PermissionUtils::SystemApiCheck(uriStr)) {
         MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
         return nullptr;
     }
@@ -380,6 +392,10 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShare
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     string insertUri = uri.ToString();
+    if (!PermissionUtils::SystemApiCheck(insertUri)) {
+        MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
+        return E_CHECK_SYSTEMAPP_FAIL;
+    }
     if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA)) {
         auto ret = CheckPermFromUri(insertUri, true);
         if (ret < 0) {

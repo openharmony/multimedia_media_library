@@ -16,6 +16,7 @@
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_ALBUM_COLUMN_H
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_ALBUM_COLUMN_H
 
+#include <set>
 #include <string>
 
 #include "base_column.h"
@@ -25,25 +26,28 @@ class PhotoAlbumColumns : BaseColumn {
 public:
     // columns only in PhotoAlbumTable
     static const std::string ALBUM_ID;
-    const static std::string ALBUM_TYPE;
-    const static std::string ALBUM_SUBTYPE;
-    const static std::string ALBUM_NAME;
-    const static std::string ALBUM_COVER_URI;
+    static const std::string ALBUM_TYPE;
+    static const std::string ALBUM_SUBTYPE;
+    static const std::string ALBUM_NAME;
+    static const std::string ALBUM_COVER_URI;
     static const std::string ALBUM_COUNT;
     // For api9 compatibility
-    const static std::string ALBUM_RELATIVE_PATH;
+    static const std::string ALBUM_RELATIVE_PATH;
+    // default fetch columns
+    static const std::set<std::string> DEFAULT_FETCH_COLUMN;
 
     // table name
     static const std::string TABLE;
     // create PhotoAlbumTable sql
-    const static std::string CREATE_TABLE;
+    static const std::string CREATE_TABLE;
 
     // create indexes for PhotoAlbum
-    const static std::string INDEX_ALBUM_TYPES;
+    static const std::string INDEX_ALBUM_TYPES;
 
     // util constants
-    const static std::string ALBUM_URI_PREFIX;
+    static const std::string ALBUM_URI_PREFIX;
 
+    static bool IsPhotoAlbumColumn(const std::string &columnName);
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_ALBUM_COLUMN_H

@@ -160,33 +160,31 @@ bool PermissionUtils::CheckCallerPermission(const std::array<std::string, PERM_G
 
 bool PermissionUtils::CheckMediaLibraryDeleteUriIsSystemApi(const std::string &uri)
 {
-    bool isSystemUri = false;
     auto deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
-    if (uri.substr(0, deleteUri.length()) == deleteUri) {
-        isSystemUri = true;
+    if (uri.substr(0, deleteUri.length()) != deleteUri) {
+        return true;
     }
-
-    if (isSystemUri) {
-        return IsSystemApp();
-    }
-
-    // non-system api don't check IsSystemApp
-    return true;
+    return IsSystemApp();
 }
 
-bool PermissionUtils::CheckMediaLibraryQueryUriIsSystemApi(const std::string &uri)
+// system api check for api10
+bool PermissionUtils::SystemApiCheck(const std::string &uri)
 {
     bool isSystemUri = false;
-    const static set<string> systemApiUri = {
+    static const set<string> systemApiUri = {
         MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE,
         MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE,
-        MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTALBUM_TABLE
+        MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTALBUM_TABLE,
+        URI_CREATE_PHOTO_ALBUM,
+        URI_UPDATE_PHOTO_ALBUM,
+        URI_DELETE_PHOTO_ALBUM,
+        URI_QUERY_PHOTO_ALBUM,
+        URI_PHOTO_ALBUM_ADD_ASSET,
+        URI_PHOTO_ALBUM_REMOVE_ASSET
     };
-
     if ((systemApiUri.find(uri) != systemApiUri.end())) {
         isSystemUri = true;
     }
-
     // Check distributed smartalbum
     string networkId = MediaFileUtils::GetNetworkIdFromUri(uri);
     if (!networkId.empty()) {
@@ -196,11 +194,8 @@ bool PermissionUtils::CheckMediaLibraryQueryUriIsSystemApi(const std::string &ur
     if (isSystemUri) {
         return IsSystemApp();
     }
-
-    // non-system api don't check IsSystemApp
     return true;
 }
-
 bool PermissionUtils::IsSystemApp()
 {
     uint64_t tokenId = IPCSkeleton::GetCallingFullTokenID();

@@ -55,6 +55,7 @@ public:
     void SetResultNapiType(const ResultNapiType resultNapiType);
     ResultNapiType GetResultNapiType() const;
 
+    static bool IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     static bool CheckPhotoAlbumType(const PhotoAlbumType albumType);
     static bool CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType);
 
