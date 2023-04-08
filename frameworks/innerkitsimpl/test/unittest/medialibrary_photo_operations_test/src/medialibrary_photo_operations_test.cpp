@@ -175,23 +175,24 @@ string GetFileAssetValueToStr(FileAsset &fileAsset, const string &column)
         return "";
     }
 
+    auto res = fileAsset.GetMemberValue(column);
     switch (type) {
         case MEMBER_TYPE_INT32: {
-            int32_t resInt = fileAsset.GetInt32Member(column);
+            int32_t resInt = std::get<int32_t>(res);
             if (resInt != DEFAULT_INT32) {
                 return to_string(resInt);
             }
             break;
         }
         case MEMBER_TYPE_INT64: {
-            int64_t resLong = fileAsset.GetInt64Member(column);
+            int64_t resLong = std::get<int64_t>(res);
             if (resLong != DEFAULT_INT64) {
                 return to_string(resLong);
             }
             break;
         }
         case MEMBER_TYPE_STRING: {
-            string resStr = fileAsset.GetStrMember(column);
+            string resStr = std::get<std::string>(res);
             if (!resStr.empty()) {
                 return resStr;
             }
