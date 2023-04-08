@@ -69,6 +69,7 @@ thread_local napi_ref MediaLibraryNapi::sDirectoryEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sVirtualAlbumTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPrivateAlbumEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sPositionTypeEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 using Context = MediaLibraryAsyncContext* ;
 
@@ -174,7 +175,8 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("AlbumKey", CreateAlbumKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("PrivateAlbumType", CreatePrivateAlbumTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
-        DECLARE_NAPI_PROPERTY("AlbumSubType", CreateAlbumSubTypeEnum(env))
+        DECLARE_NAPI_PROPERTY("AlbumSubType", CreateAlbumSubTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env))
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -3788,6 +3790,12 @@ napi_value MediaLibraryNapi::GetPhotoAlbums(napi_env env, napi_callback_info inf
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetPhotoAlbums", JSGetPhotoAlbumsExecute,
         JSGetPhotoAlbumsCompleteCallback);
+}
+
+napi_value MediaLibraryNapi::CreatePositionTypeEnum(napi_env env)
+{
+    const int32_t startIdx = 1;
+    return CreateNumberEnumProperty(env, positionTypeEnum, sPositionTypeEnumRef_, startIdx);
 }
 } // namespace Media
 } // namespace OHOS

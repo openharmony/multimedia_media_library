@@ -34,6 +34,7 @@
             "OHOS::Media::MediaLibraryNapi::JSGetAlbums(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::MediaLibraryNapi::UserFileMgrGetAlbums(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::MediaLibraryNapi::CreateAlbumKeyEnum(napi_env__ *)";
+            "OHOS::Media::MediaLibraryNapi::CreatePositionTypeEnum(napi_env__ *)";
 
             "OHOS::Media::FileAssetNapi::UserFileMgrInit(napi_env__*, napi_value__*)";
             "OHOS::Media::FileAssetNapi::JSGetDateTrashed(napi_env__ *,napi_callback_info__ *)";
