@@ -229,6 +229,10 @@ const std::vector<std::string> systemAlbumSubType {
     "VIDEO", "FAVORITE", "HIDDEN", "TRASH", "SCREENSHOTS", "CAMERA"
 };
 
+const std::vector<std::string> positionTypeEnum {
+    "LOCAL", "CLOUD", "BOTH"
+};
+
 const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_ID,
     MEDIA_DATA_DB_RELATIVE_PATH,
