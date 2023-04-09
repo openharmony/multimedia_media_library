@@ -73,7 +73,7 @@ void CloudSyncHelper::OnTimerCallback()
 
     MEDIA_INFO_LOG("cloud sync manager start sync");
     auto callback = make_shared<MediaCloudSyncCallback>();
-    int32_t ret = CloudSyncManager::GetInstance().StartSync(true, callback);
+    int32_t ret = CloudSyncManager::GetInstance().StartSync(false, callback);
     if (ret != 0) {
         MEDIA_ERR_LOG("cloud sync manager start sync err %{public}d", ret);
     }
