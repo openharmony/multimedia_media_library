@@ -29,6 +29,7 @@ namespace Media {
 constexpr int MEMBER_TYPE_INT32 = 0;
 constexpr int MEMBER_TYPE_INT64 = 1;
 constexpr int MEMBER_TYPE_STRING = 2;
+constexpr int MEMBER_TYPE_DOUBLE = 3;
 
 constexpr int OPEN_TYPE_READONLY = 0;
 constexpr int OPEN_TYPE_WRITE = 1;
