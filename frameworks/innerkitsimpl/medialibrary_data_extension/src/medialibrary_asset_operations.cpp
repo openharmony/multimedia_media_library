@@ -55,10 +55,11 @@ const string DEFAULT_AUDIO_NAME = "AUD_";
 namespace {
 inline int32_t PrepareAssetDir(const string &dirPath)
 {
-    CHECK_AND_RETURN_RET_LOG(!dirPath.empty(), E_HAS_DB_ERROR, "can not get relativepath");
+    CHECK_AND_RETURN_RET(!dirPath.empty(), E_INVALID_PATH);
     if (!MediaFileUtils::IsFileExists(dirPath)) {
         bool ret = MediaFileUtils::CreateDirectory(dirPath);
-        CHECK_AND_RETURN_RET_LOG(ret, E_CHECK_DIR_FAIL, "Create Dir Failed!");
+        CHECK_AND_RETURN_RET_LOG(ret, E_CHECK_DIR_FAIL, "Create Dir Failed! dirPath=%{private}s",
+            dirPath.c_str());
     }
     return E_OK;
 }
@@ -144,6 +145,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryOperation(
 int32_t MediaLibraryAssetOperations::UpdateOperation(MediaLibraryCommand &cmd)
 {
     // Update asset specify type
+    // todo: check input params
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_PHOTO:
             return MediaLibraryPhotoOperations::Update(cmd);
@@ -298,11 +300,11 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
 int32_t MediaLibraryAssetOperations::CheckDisplayNameWithType(const string &displayName, int32_t mediaType)
 {
     int32_t ret = MediaFileUtils::CheckDisplayName(displayName);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INVAVLID_DISPLAY_NAME, "Check DisplayName failed, "
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INVALID_DISPLAY_NAME, "Check DisplayName failed, "
         "displayName=%{private}s", displayName.c_str());
 
     string ext = MediaFileUtils::GetExtensionFromPath(displayName);
-    CHECK_AND_RETURN_RET_LOG(!ext.empty(), E_INVALID_VALUES, "invalid extension, displayName=%{private}s",
+    CHECK_AND_RETURN_RET_LOG(!ext.empty(), E_INVALID_DISPLAY_NAME, "invalid extension, displayName=%{private}s",
         displayName.c_str());
 
     auto typeFromExt = MediaFileUtils::GetMediaType(displayName);
@@ -358,8 +360,8 @@ int32_t MediaLibraryAssetOperations::SetAssetPathInCreate(FileAsset &fileAsset)
 
 int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
 {
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
 
@@ -375,12 +377,35 @@ int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
     }
 
     int32_t deletedRows = E_HAS_DB_ERROR;
-    int32_t result = uniStore->Delete(cmd, deletedRows);
+    int32_t result = rdbStore->Delete(cmd, deletedRows);
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete operation failed. Result %{public}d.", result);
     }
 
     return deletedRows;
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryFiles(
+    MediaLibraryCommand &cmd, const vector<string> &columns)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return nullptr;
+    }
+
+    string fileId = cmd.GetOprnFileId();
+    if (cmd.GetAbsRdbPredicates()->GetWhereClause().empty() && !fileId.empty()) {
+        cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, fileId);
+    }
+    string networkId = cmd.GetOprnDevice();
+    if (!networkId.empty()) {
+        std::vector<string> devices;
+        devices.push_back(networkId);
+        cmd.GetAbsRdbPredicates()->InDevices(devices);
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("QueryFile RdbStore->Query");
+    return rdbStore->Query(cmd, columns);
 }
 
 void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId)
