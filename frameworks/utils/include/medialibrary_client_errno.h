@@ -81,7 +81,7 @@ const std::unordered_map<int, std::string> jsErrMap = {
 };
 
 const std::unordered_map<int32_t, int32_t> ClientErrTable {
-    { E_INVAVLID_DISPLAY_NAME, JS_E_DISPLAYNAME },
+    { E_INVALID_DISPLAY_NAME, JS_E_DISPLAYNAME },
     { E_FILE_NAME_INVALID, JS_E_DISPLAYNAME },
     { E_URI_INVALID, JS_E_URI },
     { E_INVALID_URI, JS_E_URI },

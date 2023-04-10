@@ -72,7 +72,16 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
-    return nullptr;
+    switch (cmd.GetApi()) {
+        case MediaLibraryApi::API_10:
+            return QueryV10(cmd, columns);
+        case MediaLibraryApi::API_OLD:
+            MEDIA_ERR_LOG("this api is not realized yet");
+            return nullptr;
+        default:
+            MEDIA_ERR_LOG("get api failed");
+            return nullptr;
+    }
 }
 
 int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
@@ -186,5 +195,10 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     return deleteRows;
 }
 
+shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::QueryV10(
+    MediaLibraryCommand &cmd, const vector<string> &columns)
+{
+    return QueryFiles(cmd, columns);
+}
 } // namespace Media
 } // namespace OHOS

@@ -278,7 +278,7 @@ int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t par
     string title = MediaLibraryDataManagerUtils::GetFileName(path);
     if (MediaFileUtils::CheckDisplayName(title) < 0) {
         MEDIA_ERR_LOG("Check display name failed!");
-        return E_INVAVLID_DISPLAY_NAME;
+        return E_INVALID_DISPLAY_NAME;
     }
 
     string relativePath;
@@ -324,7 +324,7 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dir
         string currentPath = path.substr(0, index);
         ValuesBucket values;
         auto ret = SetDirValuesByPath(values, currentPath, parentId);
-        if (ret == E_INVAVLID_DISPLAY_NAME) {
+        if (ret == E_INVALID_DISPLAY_NAME) {
             DeleteRows(outIds);
         }
         if (ret != E_SUCCESS) {
