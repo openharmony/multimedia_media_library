@@ -48,9 +48,9 @@ namespace Media {
 
 mutex g_uniqueNumberLock;
 
-const std::string DEFAULT_IMAGE_NAME = "IMG_";
-const std::string DEFAULT_VIDEO_NAME = "VID_";
-const std::string DEFAULT_AUDIO_NAME = "AUD_";
+const string DEFAULT_IMAGE_NAME = "IMG_";
+const string DEFAULT_VIDEO_NAME = "VID_";
+const string DEFAULT_AUDIO_NAME = "AUD_";
 
 namespace {
 inline int32_t PrepareAssetDir(const string &dirPath)
@@ -201,12 +201,60 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
     }
 }
 
+static bool CheckFileAssetValue(const string &column, const string &value, OperationObject object)
+{
+    if (column.empty() || value.empty()) {
+        return false;
+    }
+    const set<OperationObject> validOprnObjectet = {
+        OperationObject::FILESYSTEM_PHOTO,
+        OperationObject::FILESYSTEM_AUDIO,
+        OperationObject::FILESYSTEM_DOCUMENT
+    };
+    if (validOprnObjectet.find(object) == validOprnObjectet.end()) {
+        MEDIA_ERR_LOG("input OperationObject %{public}d error!", object);
+        return false;
+    }
+    return true;
+}
+
+shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const string &column,
+    const string &value, OperationObject oprnObject, const string &networkId)
+{
+    if (!CheckFileAssetValue(column, value, oprnObject)) {
+        return nullptr;
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return nullptr;
+    }
+
+    MediaLibraryCommand cmd(oprnObject, OperationType::QUERY, networkId);
+    cmd.GetAbsRdbPredicates()->EqualTo(column, value);
+    vector<string> queryColumn = {
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_FILE_PATH,
+        MediaColumn::MEDIA_RELATIVE_PATH
+    };
+    auto resultSet = rdbStore->Query(cmd, queryColumn);
+    if (resultSet == nullptr) {
+        return nullptr;
+    }
+
+    shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();
+    if (fetchFileResult == nullptr) {
+        return nullptr;
+    }
+    fetchFileResult->SetNetworkId(networkId);
+    return fetchFileResult->GetObjectFromRdb(resultSet, 0);
+}
+
 int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // All values inserted in this function are the base property for files
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr!");
         return E_HAS_DB_ERROR;
     }
 
@@ -250,10 +298,12 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
 int32_t MediaLibraryAssetOperations::CheckDisplayNameWithType(const string &displayName, int32_t mediaType)
 {
     int32_t ret = MediaFileUtils::CheckDisplayName(displayName);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INVAVLID_DISPLAY_NAME, "Check DisplayName failed");
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INVAVLID_DISPLAY_NAME, "Check DisplayName failed, "
+        "displayName=%{private}s", displayName.c_str());
 
     string ext = MediaFileUtils::GetExtensionFromPath(displayName);
-    CHECK_AND_RETURN_RET_LOG(!ext.empty(), E_INVALID_VALUES, "invalid extension");
+    CHECK_AND_RETURN_RET_LOG(!ext.empty(), E_INVALID_VALUES, "invalid extension, displayName=%{private}s",
+        displayName.c_str());
 
     auto typeFromExt = MediaFileUtils::GetMediaType(displayName);
     CHECK_AND_RETURN_RET_LOG(typeFromExt == mediaType, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL,
@@ -269,7 +319,6 @@ void MediaLibraryAssetOperations::GetAssetRootDir(int32_t mediaType, string &roo
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr!");
         return;
     }
     auto resultSet = rdbStore->Query(cmd, { DIRECTORY_DB_DIRECTORY });
@@ -296,7 +345,7 @@ int32_t MediaLibraryAssetOperations::SetAssetPathInCreate(FileAsset &fileAsset)
     int32_t uniqueId = CreateAssetUniqueId(fileAsset.GetMediaType());
     int32_t errCode = CreateAssetPathById(uniqueId, fileAsset.GetMediaType(), extension, filePath);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Create Assset Path failed, errCode=%{public}d", errCode);
+        MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d", errCode);
         return errCode;
     }
 
@@ -305,6 +354,41 @@ int32_t MediaLibraryAssetOperations::SetAssetPathInCreate(FileAsset &fileAsset)
     // filePath can not be empty
     fileAsset.SetPath(filePath);
     return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    string strDeleteCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    if (strDeleteCondition.empty()) {
+        string strRow = cmd.GetOprnFileId();
+        if (strRow.empty() || !MediaLibraryDataManagerUtils::IsNumber(strRow)) {
+            MEDIA_ERR_LOG("MediaLibraryAssetOperations DeleteFile: Index not digit, fileIdStr=%{public}s",
+                strRow.c_str());
+            return E_INVALID_FILEID;
+        }
+        cmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, strRow);
+    }
+
+    int32_t deletedRows = E_HAS_DB_ERROR;
+    int32_t result = uniStore->Delete(cmd, deletedRows);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Delete operation failed. Result %{public}d.", result);
+    }
+
+    return deletedRows;
+}
+
+void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId)
+{
+    auto thumbnailService = ThumbnailService::GetInstance();
+    if (thumbnailService != nullptr) {
+        thumbnailService->InvalidateThumbnail(fileId);
+    }
 }
 
 int32_t MediaLibraryAssetOperations::BeginTransaction()
@@ -359,7 +443,6 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type)
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("get rdbstore failed");
         return E_HAS_DB_ERROR;
     }
     lock_guard<mutex> lock(g_uniqueNumberLock);
@@ -371,7 +454,6 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type)
 
     auto resultSet = rdbStore->QuerySql(querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Get ResultSet failed");
         return E_HAS_DB_ERROR;
     }
     return GetInt32Val(UNIQUE_NUMBER, resultSet);

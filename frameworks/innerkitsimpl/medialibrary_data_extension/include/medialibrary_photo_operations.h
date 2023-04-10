@@ -38,6 +38,9 @@ public:
 
 private:
     static int32_t CreateV10(MediaLibraryCommand &cmd);
+    static int32_t DeletePhoto(const std::shared_ptr<FileAsset> &fileAsset);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryV10(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns);
 };
 } // namespace Media
 } // namespace OHOS

@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "abs_shared_result_set.h"
 #include "datashare_predicates.h"
@@ -43,10 +44,15 @@ public:
     static int32_t CloseOperation(MediaLibraryCommand &cmd);
 
 protected:
+    static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &byKey,
+        const std::string &byValue, OperationObject oprnObject, const std::string &networkId = "");
+
     static int32_t InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset);
     static int32_t CheckDisplayNameWithType(const std::string &displayName, int32_t mediaType);
     static void GetAssetRootDir(int32_t mediaType, std::string &rootDirPath);
     static int32_t SetAssetPathInCreate(FileAsset &fileAsset);
+    static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);
+    static void InvalidateThumbnail(const std::string &fileId);
 
     static int32_t BeginTransaction();
     static int32_t TransactionCommit();
