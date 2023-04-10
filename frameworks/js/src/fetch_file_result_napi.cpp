@@ -247,6 +247,7 @@ napi_value FetchFileResultNapi::UserFileMgrInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("getNextObject", JSGetNextObject),
             DECLARE_NAPI_FUNCTION("getLastObject", JSGetLastObject),
             DECLARE_NAPI_FUNCTION("getPositionObject", JSGetPositionObject),
+            DECLARE_NAPI_FUNCTION("getAllObject", JSGetAllObject),
             DECLARE_NAPI_FUNCTION("close", JSClose)
         }
     };
