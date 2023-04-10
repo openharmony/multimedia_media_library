@@ -32,15 +32,21 @@
 #include "scanner_utils.h"
 #include "thumbnail_utils.h"
 #include "uri_helper.h"
+#include "n_error.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 using namespace OHOS::FileAccessFwk;
+using namespace OHOS::FileManagement::LibN;
 
 namespace OHOS {
 namespace Media {
-constexpr int64_t MAX_COUNT = 2000;
+namespace {
+    constexpr int64_t MAX_COUNT = 2000;
+    constexpr int COPY_EXCEPTION = -1;
+    constexpr int COPY_NOEXCEPTION = -2;
+}
 constexpr int32_t ALBUM_MODE_READONLY = DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ;
 constexpr int32_t ALBUM_MODE_RW =
     DOCUMENT_FLAG_REPRESENTS_DIR | DOCUMENT_FLAG_SUPPORTS_READ | DOCUMENT_FLAG_SUPPORTS_WRITE;
@@ -50,6 +56,15 @@ constexpr int32_t FILE_MODE_RW =
 static const std::vector<std::string> FILEINFO_COLUMNS = {
     MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED, MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME,
     MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_TRASH, MEDIA_DATA_DB_RELATIVE_PATH
+};
+
+static const std::unordered_map<int32_t, std::pair<int32_t, string>> mediaErrCodeMap {
+    { E_PERMISSION_DENIED, { FILEIO_SYS_CAP_TAG + E_PERM,        "Operation not permitted"                    } },
+    { E_NO_SUCH_FILE,      { FILEIO_SYS_CAP_TAG + E_NOENT,       "No such file or directory in media library" } },
+    { E_FILE_EXIST,        { FILEIO_SYS_CAP_TAG + E_EXIST,       "The file is exist in media library"         } },
+    { E_NO_MEMORY,         { FILEIO_SYS_CAP_TAG + E_NOMEM,       "Out of memory"                              } },
+    { E_URI_INVALID,       { OHOS::FileManagement::LibN::E_URIS, "Invalid URI"                                } },
+    { E_INVALID_URI,       { OHOS::FileManagement::LibN::E_URIS, "Invalid URI"                                } },
 };
 
 int MediaFileExtentionUtils::OpenFile(const Uri &uri, const int flags, int &fd)
@@ -1227,6 +1242,240 @@ int32_t MediaFileExtentionUtils::Move(const Uri &sourceFileUri, const Uri &targe
     }
     if (ret == E_SUCCESS) {
         newFileUri = Uri(sourceUri);
+    }
+    return ret;
+}
+
+void TranslateCopyResult(CopyResult &copyResult)
+{
+    auto iter = mediaErrCodeMap.find(copyResult.errCode);
+    if (iter != mediaErrCodeMap.end()) {
+        copyResult.errCode = iter->second.first;
+        if (copyResult.errMsg.empty()) {
+            copyResult.errMsg = iter->second.second;
+        }
+    }
+}
+
+void GetUriByRelativePath(const string &relativePath, string &fileUriStr)
+{
+    string path = ROOT_MEDIA_DIR + relativePath;
+    if (path.back() == '/') {
+        path.pop_back();
+    }
+
+    vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE };
+    auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_FILE_PATH, path, columns);
+    CHECK_AND_RETURN_LOG(result != nullptr,
+        "Get Uri failed, relativePath: %{private}s", relativePath.c_str());
+    int fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
+    int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
+    fileUriStr =
+        MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), "") + SLASH_CHAR + to_string(fileId);
+}
+
+int GetRelativePathByUri(const string &uriStr, string &relativePath)
+{
+    vector<string> columns = { MEDIA_DATA_DB_RELATIVE_PATH, MEDIA_DATA_DB_NAME };
+    auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, uriStr, columns);
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_NO_SUCH_FILE,
+        "Get uri failed, relativePath: %{private}s", relativePath.c_str());
+    relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+    relativePath += GetStringVal(MEDIA_DATA_DB_NAME, result) + SLASH_CHAR;
+    return E_SUCCESS;
+}
+
+int GetDuplicateDirectory(const string &srcUriStr, const string &destUriStr, Uri &uri)
+{
+    vector<string> srcColumns = { MEDIA_DATA_DB_NAME };
+    auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, srcUriStr, srcColumns);
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_NO_SUCH_FILE,
+        "Get source uri failed, relativePath: %{private}s", srcUriStr.c_str());
+    string srcDirName = GetStringVal(MEDIA_DATA_DB_NAME, result);
+
+    string destRelativePath;
+    vector<string> destColumns = { MEDIA_DATA_DB_RELATIVE_PATH, MEDIA_DATA_DB_NAME };
+    result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, destUriStr, destColumns);
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_NO_SUCH_FILE,
+        "Get destination uri failed, relativePath: %{private}s", destUriStr.c_str());
+    destRelativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+    destRelativePath += GetStringVal(MEDIA_DATA_DB_NAME, result) + SLASH_CHAR;
+    string existUriStr;
+    GetUriByRelativePath(destRelativePath + srcDirName, existUriStr);
+    uri = Uri { existUriStr };
+    return E_SUCCESS;
+}
+
+int32_t InsertFileOperation(string &destRelativePath, string &srcUriStr)
+{
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
+    valuesBucket.Put(MEDIA_DATA_DB_URI, srcUriStr);
+    Uri copyUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR +
+                    MEDIA_FILEOPRN_COPYASSET);
+    return MediaLibraryDataManager::GetInstance()->Insert(copyUri, valuesBucket);
+}
+
+int CopyFileOperation(string &srcUriStr, string &destRelativePath, CopyResult &copyResult, bool force)
+{
+    vector<string> columns = { MEDIA_DATA_DB_RELATIVE_PATH, MEDIA_DATA_DB_NAME };
+    auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, srcUriStr, columns);
+    if (result == nullptr) {
+        MEDIA_ERR_LOG("Get Uri failed, relativePath: %{private}s", srcUriStr.c_str());
+        copyResult.errCode = E_NO_SUCH_FILE;
+        copyResult.errMsg = "";
+        TranslateCopyResult(copyResult);
+        return COPY_EXCEPTION;
+    }
+    string srcRelativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+    string srcFileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
+    string existFile;
+    GetUriByRelativePath(destRelativePath + srcFileName, existFile);
+    if (!existFile.empty()) {
+        if (force) {
+            Uri existFileUri { existFile };
+            MediaFileExtentionUtils::Delete(existFileUri);
+        } else {
+            copyResult.sourceUri = srcUriStr;
+            copyResult.destUri = existFile;
+            copyResult.errCode = E_FILE_EXIST;
+            copyResult.errMsg = "";
+            TranslateCopyResult(copyResult);
+            return COPY_NOEXCEPTION;
+        }
+    }
+
+    int fileId = InsertFileOperation(destRelativePath, srcUriStr);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Insert media library error, fileId: %{public}d", fileId);
+        copyResult.sourceUri = srcUriStr;
+        copyResult.errCode = fileId;
+        copyResult.errMsg = "Insert media library fail";
+        TranslateCopyResult(copyResult);
+        return COPY_NOEXCEPTION;
+    }
+    return E_SUCCESS;
+}
+
+int CopyDirectoryOperation(FileInfo &fileInfo, Uri &destUri, vector<CopyResult> &copyResult, bool force)
+{
+    vector<FileInfo> fileInfoVec;
+    DistributedFS::FileFilter filter { {}, {}, {}, 0, 0, false, false };
+    int64_t offset = 0;
+    int copyRet = E_SUCCESS;
+    int ret = E_SUCCESS;
+    string prevDestUriStr;
+    string destRelativePath;
+    do {
+        fileInfoVec.clear();
+        ret = MediaFileExtentionUtils::ListFile(fileInfo, offset, MAX_COUNT, filter, fileInfoVec);
+        if (ret != E_SUCCESS) {
+            MEDIA_ERR_LOG("ListFile get result error, code:%{public}d", ret);
+            CopyResult result { "", "", ret, "" };
+            copyResult.clear();
+            copyResult.push_back(result);
+            return COPY_EXCEPTION;
+        }
+
+        for (auto info : fileInfoVec) {
+            if (info.mode & DOCUMENT_FLAG_REPRESENTS_DIR) {
+                Uri dUri { "" };
+                ret = MediaFileExtentionUtils::Mkdir(destUri, info.fileName, dUri);
+                if (ret == E_FILE_EXIST) {
+                    GetDuplicateDirectory(info.uri, destUri.ToString(), dUri);
+                } else if (ret < 0) {
+                    MEDIA_ERR_LOG("Mkdir get result error, code:%{public}d", ret);
+                    CopyResult result { "", "", ret, "" };
+                    copyResult.clear();
+                    copyResult.push_back(result);
+                    return COPY_EXCEPTION;
+                }
+                ret = CopyDirectoryOperation(info, dUri, copyResult, force);
+                if (ret == COPY_EXCEPTION) {
+                    MEDIA_ERR_LOG("Recursive directory copy error");
+                    return ret;
+                }
+                if (ret == COPY_NOEXCEPTION) {
+                    copyRet = ret;
+                }
+            } else if (info.mode & DOCUMENT_FLAG_REPRESENTS_FILE) {
+                CopyResult result;
+                string destUriStr = destUri.ToString();
+                if (destUriStr != prevDestUriStr) {
+                    ret = GetRelativePathByUri(destUriStr, destRelativePath);
+                    if (ret != E_SUCCESS) {
+                        MEDIA_ERR_LOG("Get relative Path error");
+                        result.errCode = ret;
+                        TranslateCopyResult(result);
+                        copyResult.clear();
+                        copyResult.push_back(result);
+                        return ret;
+                    }
+                    prevDestUriStr = destUriStr;
+                }
+                ret = CopyFileOperation(info.uri, destRelativePath, result, force);
+                if (ret == COPY_EXCEPTION) {
+                    MEDIA_ERR_LOG("Copy file exception");
+                    copyResult.clear();
+                    copyResult.push_back(result);
+                    return ret;
+                }
+                if (ret == COPY_NOEXCEPTION) {
+                    copyResult.push_back(result);
+                    copyRet = ret;
+                }
+            }
+        }
+        offset += MAX_COUNT;
+    } while (fileInfoVec.size() == MAX_COUNT);
+    return copyRet;
+}
+
+int32_t MediaFileExtentionUtils::Copy(const Uri &sourceUri, const Uri &destUri, vector<CopyResult> &copyResult,
+    bool force)
+{
+    FileAccessFwk::FileInfo fileInfo;
+    int ret = GetFileInfoFromUri(sourceUri, fileInfo);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("get FileInfo from uri error, code:%{public}d", ret);
+        CopyResult result { "", "", ret, "" };
+        TranslateCopyResult(result);
+        copyResult.clear();
+        copyResult.push_back(result);
+        return COPY_EXCEPTION;
+    }
+
+    string srcUriStr = sourceUri.ToString();
+    string destUriStr = destUri.ToString();
+    Uri newDestUri { "" };
+    if (fileInfo.mode & DOCUMENT_FLAG_REPRESENTS_DIR) {
+        ret = Mkdir(destUri, fileInfo.fileName, newDestUri);
+        if (ret == E_FILE_EXIST) {
+            GetDuplicateDirectory(srcUriStr, destUriStr, newDestUri);
+        } else if (ret < 0) {
+            CopyResult result { "", "", ret, "" };
+            TranslateCopyResult(result);
+            copyResult.clear();
+            copyResult.push_back(result);
+            return COPY_EXCEPTION;
+        }
+        ret = CopyDirectoryOperation(fileInfo, newDestUri, copyResult, force);
+    } else if (fileInfo.mode & DOCUMENT_FLAG_REPRESENTS_FILE) {
+        CopyResult result;
+        string destRelativePath;
+        ret = GetRelativePathByUri(destUriStr, destRelativePath);
+        if (ret != E_SUCCESS) {
+            MEDIA_ERR_LOG("Get relative Path error");
+            result.errCode = ret;
+            TranslateCopyResult(result);
+            copyResult.clear();
+            copyResult.push_back(result);
+            return ret;
+        }
+        ret = CopyFileOperation(srcUriStr, destRelativePath, result, force);
+        if (ret != E_SUCCESS) {
+            copyResult.push_back(result);
+        }
     }
     return ret;
 }
