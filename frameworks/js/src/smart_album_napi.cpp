@@ -1356,10 +1356,11 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
     auto context = static_cast<SmartAlbumNapiAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    string deleteId = MediaLibraryNapiUtils::GetFileIdFromUri(context->uri);
-    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + "/" + deleteId;
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, context->typeMask);
     Uri deleteAssetUri(deleteUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_ID, MediaLibraryNapiUtils::GetFileIdFromUri(context->uri));
     int retVal = UserFileClient::Delete(deleteAssetUri, {});
     context->SaveError(retVal);
 }

@@ -236,8 +236,10 @@ void DeleteFile(std::string fileUri)
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + '/' + fileUri);
-    int retVal = sDataShareHelper_->Delete(deleteAssetUri, {});
+    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_ID, MediaFileUtils::GetIdFromUri(fileUri));
+    int retVal = sDataShareHelper_->Delete(deleteAssetUri, predicates);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test DeleteFile::uri :%{private}s", deleteAssetUri.ToString().c_str());
     EXPECT_NE((retVal < 0), true);
 }

@@ -191,16 +191,14 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     return CreatePhotoAlbum(albumName);
 }
 
-int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
 {
-    RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
-
     // Only user generic albums can be deleted
-    rdbPredicate.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
-    rdbPredicate.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
-    rdbPredicate.EndWrap();
+    predicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
+    predicates.EndWrap();
 
-    return MediaLibraryRdbStore::Delete(rdbPredicate);
+    return MediaLibraryRdbStore::Delete(predicates);
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
