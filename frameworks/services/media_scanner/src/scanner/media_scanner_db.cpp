@@ -162,26 +162,15 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
  */
 bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 {
-    int32_t deletedCount(0);
-    DataShare::DataSharePredicates predicates;
-
     if (idList.size() == 0) {
         MEDIA_ERR_LOG("to-deleted idList size equals to 0");
         return false;
     }
 
-    std::string builder = " IN (?";
-    for (std::size_t i = 0; i < idList.size() - 1; i++) {
-        builder += ",?";
-    }
-    builder += ")";
-
-    predicates.SetWhereClause(MEDIA_DATA_DB_ID + builder);
-    predicates.SetWhereArgs(idList);
-
     Uri deleteUri(MEDIALIBRARY_DATA_URI);
-
-    deletedCount = MediaLibraryDataManager::GetInstance()->Delete(deleteUri, predicates);
+    DataShare::DataSharePredicates predicates;
+    predicates.In(MEDIA_DATA_DB_ID, idList);
+    auto deletedCount = MediaLibraryDataManager::GetInstance()->Delete(deleteUri, predicates);
     if (deletedCount > 0) {
         return true;
     }
