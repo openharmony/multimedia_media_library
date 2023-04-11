@@ -376,7 +376,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     }
     int errCode = businessError.GetCode();
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(Uri(uriStr), columns, predicates, errCode);
-    int errCode = businessError.SetCode(to_string(errCode));
+    errCode = businessError.SetCode(to_string(errCode));
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("queryResultSet is nullptr! errCode: %{public}d", errCode);
         return nullptr;

@@ -61,7 +61,8 @@ public:
     EXPORT std::shared_ptr<DataShare::ResultSetBridge> Query(const Uri &uri, const std::vector<std::string> &columns,
         const DataShare::DataSharePredicates &predicates, int &errCode);
     EXPORT std::shared_ptr<NativeRdb::ResultSet>
-    QueryRdb(const Uri &uri, const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates, int &errCode);
+    QueryRdb(const Uri &uri, const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates,
+        int &errCode);
     EXPORT int32_t OpenFile(const Uri &uri, const std::string &mode);
     EXPORT std::string GetType(const Uri &uri);
     EXPORT void NotifyChange(const Uri &uri);

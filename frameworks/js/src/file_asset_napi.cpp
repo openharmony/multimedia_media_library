@@ -1396,6 +1396,7 @@ static unique_ptr<PixelMap> QueryThumbnail(std::string &uri, Size &size, const s
     vector<string> columns;
     int errCode = 0;
     auto resultSet = UserFileClient::Query(queryUri, predicates, columns, errCode);
+    
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("Query thumbnail error,errCode is %{public}d",errCode);
         return nullptr;
