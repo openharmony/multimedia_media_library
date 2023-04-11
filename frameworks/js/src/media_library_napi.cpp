@@ -908,7 +908,7 @@ static void GetResultDataExecute(napi_env env, void *data)
     shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, context->predicates, columns, errCode);
 
     if (resultSet == nullptr) {
-        API_ERR_LOG("GetMediaResultData resultSet is nullptr, errCode is %{public}d", errCode);
+        NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr, errCode is %{public}d", errCode);
         context->SaveError(errCode);
         return;
     }
