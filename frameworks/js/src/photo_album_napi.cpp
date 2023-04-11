@@ -53,6 +53,7 @@ napi_value PhotoAlbumNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER_SETTER("coverUri", JSGetCoverUri, JSSetCoverUri),
             DECLARE_NAPI_FUNCTION("commitModify", JSCommitModify),
             DECLARE_NAPI_FUNCTION("addAssets", JSPhotoAlbumAddAssets),
+            DECLARE_NAPI_FUNCTION("removeAssets", JSPhotoAlbumRemoveAssets),
         }
     };
 
@@ -381,7 +382,7 @@ napi_value PhotoAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
         JSCommitModifyCompleteCallback);
 }
 
-static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<int32_t> &assetsArray)
+static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> &assetsArray)
 {
     bool isArray = false;
     CHECK_ARGS(env, napi_is_array(env, arg, &isArray), JS_INNER_FAIL);
@@ -410,7 +411,10 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<int32_t>
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
         }
-        assetsArray.push_back(obj->GetFileId());
+        if ((obj->GetMediaType() != MEDIA_TYPE_IMAGE && obj->GetMediaType() != MEDIA_TYPE_VIDEO) || obj->IsTrash()) {
+            continue;
+        }
+        assetsArray.push_back(to_string(obj->GetFileId()));
     }
 
     napi_value result = nullptr;
@@ -423,8 +427,8 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
 {
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
-        napi_ok, JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
 
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     if (!PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
@@ -433,8 +437,12 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
     }
 
     /* Parse the first argument */
-    vector<int32_t> assetsArray;
+    vector<string> assetsArray;
     CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], assetsArray));
+    if (assetsArray.empty()) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
     int32_t albumId = photoAlbum->GetAlbumId();
     for (const auto assetId : assetsArray) {
         DataShareValuesBucket valuesBucket;
@@ -497,5 +505,87 @@ napi_value PhotoAlbumNapi::JSPhotoAlbumAddAssets(napi_env env, napi_callback_inf
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSPhotoAlbumAddAssets",
         JSPhotoAlbumAddAssetsExecute, JSPhotoAlbumAddAssetsCompleteCallback);
+}
+
+static napi_value ParseArgsRemoveAssets(napi_env env, napi_callback_info info,
+    unique_ptr<PhotoAlbumNapiAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (!PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+
+    /* Parse the first argument */
+    vector<string> assetsArray;
+    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], assetsArray));
+    if (assetsArray.empty()) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+    context->predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
+    context->predicates.And()->In(PhotoMap::ASSET_ID, assetsArray);
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSPhotoAlbumRemoveAssetsExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSPhotoAlbumRemoveAssetsExecute");
+
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    string removeAssetUri = URI_PHOTO_ALBUM_REMOVE_ASSET;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(removeAssetUri, PHOTO_ALBUM_TYPE_MASK);
+    Uri uri(removeAssetUri);
+    auto deletedRows = UserFileClient::Delete(uri, context->predicates);
+    if (deletedRows < 0) {
+        context->SaveError(deletedRows);
+    }
+}
+
+static void JSPhotoAlbumRemoveAssetsCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSPhotoAlbumRemoveAssetsCompleteCallback");
+
+    PhotoAlbumNapiAsyncContext *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value PhotoAlbumNapi::JSPhotoAlbumRemoveAssets(napi_env env, napi_callback_info info)
+{
+    unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsRemoveAssets(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSPhotoAlbumRemoveAssets",
+        JSPhotoAlbumRemoveAssetsExecute, JSPhotoAlbumRemoveAssetsCompleteCallback);
 }
 } // namespace OHOS::Media
