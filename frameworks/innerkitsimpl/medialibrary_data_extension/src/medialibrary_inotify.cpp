@@ -59,11 +59,12 @@ void MediaLibraryInotify::WatchCallBack()
         while (index < len) {
             struct inotify_event * event = (struct inotify_event *)(data + index);
             index += sizeof(struct inotify_event) + event->len;
-            lock_guard<mutex> lock(mutex_);
+            unique_lock<mutex> lock(mutex_);
             if (watchList_.count(event->wd) == 0) {
                 continue;
             }
             auto &item = watchList_.at(event->wd);
+            lock.unlock();
             auto eventMask = event->mask;
             auto &meetEvent = item.meetEvent_;
             meetEvent = (eventMask & IN_MODIFY) ? (meetEvent | IN_MODIFY) : meetEvent;
