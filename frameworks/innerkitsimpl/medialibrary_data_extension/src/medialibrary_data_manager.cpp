@@ -430,7 +430,6 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
 
 int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::Delete");
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
@@ -442,26 +441,39 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
         return E_INVALID_URI;
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckWhereClause");
+    auto whereClause = predicates.GetWhereClause();
+    if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
+        MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
+        return E_SQL_CHECK_FAIL;
+    }
+    tracer.Finish();
+
     MediaLibraryCommand cmd(uri, OperationType::DELETE);
-    cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
+    // MEDIALIBRARY_TABLE just for RdbPredicates
+    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
+        cmd.GetTableName());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
 
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET:
         case OperationObject::FILESYSTEM_DIR:
         case OperationObject::FILESYSTEM_ALBUM: {
-            string fileId = cmd.GetOprnFileId();
-            auto fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(fileId);
-            CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
-                fileId.c_str());
+            vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_PARENT_ID,
+                MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_TRASH, MEDIA_DATA_DB_RELATIVE_PATH };
+            auto fileAsset = MediaLibraryObjectUtils::GetFileAssetByPredicates(*cmd.GetAbsRdbPredicates(), columns);
+            CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_ARGUMENTS, "Get fileAsset failed.");
             if (fileAsset->GetRelativePath() == "") {
                 return E_DELETE_DENIED;
             }
             return (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) ?
-                MediaLibraryObjectUtils::DeleteFileObj(fileAsset) : MediaLibraryObjectUtils::DeleteDirObj(fileAsset);
+                MediaLibraryObjectUtils::DeleteFileObj(move(fileAsset)) :
+                MediaLibraryObjectUtils::DeleteDirObj(move(fileAsset));
         }
         case OperationObject::PHOTO_ALBUM: {
-            return MediaLibraryAlbumOperations::DeletePhotoAlbum(predicates);
+            return MediaLibraryAlbumOperations::DeletePhotoAlbum(rdbPredicate);
         }
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
