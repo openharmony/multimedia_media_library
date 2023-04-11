@@ -104,7 +104,8 @@ bool MediaLibraryUnitTestUtils::GetFileAsset(const int fileId, shared_ptr<FileAs
     string selections = MEDIA_DATA_DB_ID + " = " + to_string(fileId);
     predicates.SetWhereClause(selections);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("GetFileAsset::resultSet == nullptr");
         return false;

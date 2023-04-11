@@ -679,8 +679,13 @@ static void GetFileAssetsNative(napi_env env, void *data)
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
+    int errCode = 0;
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
-        UserFileClient::Query(uri, context->predicates, context->fetchColumn);
+        UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("GetFileAssetsNative called, UserFileClient::Query errorCode is = %{public}d", errCode);
+        return;
+    }
     context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->SetNetworkId(MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri()));
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {

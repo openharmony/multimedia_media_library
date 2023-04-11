@@ -1179,7 +1179,12 @@ static void GetFileAssetsNative(napi_env env, void *data)
         MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     Uri uri(queryUri);
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
+        return;
+    }
     context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->SetNetworkId(
         MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri()));
