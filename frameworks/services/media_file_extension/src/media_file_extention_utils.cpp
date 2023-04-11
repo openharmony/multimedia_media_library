@@ -233,7 +233,8 @@ shared_ptr<NativeRdb::ResultSet> MediaFileExtentionUtils::GetResultSetFromDb(str
     Uri queryUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER);
     DataSharePredicates predicates;
     predicates.EqualTo(field, input)->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, NOT_TRASHED);
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates);
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates, errCode);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr,
         "Failed to obtain value from database, field: %{public}s, value: %{public}s", field.c_str(), input.c_str());
     auto ret = queryResultSet->GoToFirstRow();
@@ -435,9 +436,10 @@ shared_ptr<NativeRdb::ResultSet> GetResult(const Uri &uri, MediaFileUriType uriT
     DataSharePredicates predicates;
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
+    int errCode = 0;
     vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_RELATIVE_PATH };
-    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
 }
 
 static string MimeType2MediaType(const string &mimeType)
@@ -460,9 +462,10 @@ shared_ptr<NativeRdb::ResultSet> GetMediaRootResult(const FileInfo &parentInfo, 
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, MimeType2MediaType(parentInfo.mimeType));
     predicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
     predicates.Limit(maxCount, offset);
+    int errCode = 0;
     vector<string> columns = { MEDIA_DATA_DB_BUCKET_ID, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_RELATIVE_PATH };
-    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
 }
 
 shared_ptr<NativeRdb::ResultSet> GetListRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
@@ -612,6 +615,7 @@ shared_ptr<NativeRdb::ResultSet> GetScanFileResult(const Uri &uri, MediaFileUriT
     DataSharePredicates predicates;
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
+    int errCode  = 0;
     vector<string> columns {
         MEDIA_DATA_DB_BUCKET_ID,
         MEDIA_DATA_DB_TITLE,
@@ -623,7 +627,7 @@ shared_ptr<NativeRdb::ResultSet> GetScanFileResult(const Uri &uri, MediaFileUriT
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_RELATIVE_PATH
     };
-    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
 }
 
 shared_ptr<NativeRdb::ResultSet> SetScanFileSelection(const FileInfo &parentInfo, MediaFileUriType uriType,
@@ -773,7 +777,8 @@ void GetActivePeer(shared_ptr<NativeRdb::ResultSet> &result)
     predicates.SetWhereClause(strQueryCondition);
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DEVICE_QUERYACTIVEDEVICE);
-    result = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+    int errCode = 0;
+    result = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
 }
 
 int32_t MediaFileExtentionUtils::GetRoots(vector<RootInfo> &rootList)
@@ -842,9 +847,10 @@ int MediaFileExtentionUtils::GetThumbnail(const Uri &uri, const Size &size, std:
     Uri queryUri(pixelMapUri);
     DataShare::DataSharePredicates predicates;
     std::vector<std::string> columns;
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates, errCode);
     if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("queryResultSet is nullptr");
+        MEDIA_ERR_LOG("queryResultSet is nullptr, errCode is %{public}d", errCode);
         return E_FAIL;
     }
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(queryResultSet);
@@ -1135,7 +1141,8 @@ void GetMoveSubFile(const string &srcPath, shared_ptr<NativeRdb::ResultSet> &res
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
     Uri uri(queryUri);
-    result = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+    int errCode = 0;
+    result = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
 }
 
 bool CheckSubFileExtension(const string &srcPath, const string &destRelPath)
