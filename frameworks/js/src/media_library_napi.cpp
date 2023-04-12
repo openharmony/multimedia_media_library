@@ -3746,8 +3746,8 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     if (resultSet == nullptr) {
-        errCode = E_NO_SUCH_FILE;
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
+        context->SaveError(errCode);
         return;
     }
 
