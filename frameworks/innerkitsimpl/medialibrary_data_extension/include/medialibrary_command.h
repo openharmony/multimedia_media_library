@@ -46,6 +46,7 @@ enum class OperationObject : uint32_t {
     MEDIA_VOLUME,
     BUNDLE_PERMISSION,
     PHOTO_ALBUM,
+    PHOTO_MAP,
 };
 
 enum class OperationType : uint32_t {

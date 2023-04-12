@@ -39,6 +39,7 @@
 #include "medialibrary_file_operations.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_object_utils.h"
+#include "photo_map_operations.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_sync_table.h"
@@ -412,7 +413,7 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
 
     string uriString = uri.ToString();
     if (uriString == URI_PHOTO_ALBUM_ADD_ASSET) {
-        return MediaLibraryAlbumOperations::AddPhotoAssets(values);
+        return PhotoMapOperations::AddPhotoAssets(values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
@@ -474,6 +475,9 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
         }
         case OperationObject::PHOTO_ALBUM: {
             return MediaLibraryAlbumOperations::DeletePhotoAlbum(rdbPredicate);
+        }
+        case OperationObject::PHOTO_MAP: {
+            return PhotoMapOperations::RemovePhotoAssets(rdbPredicate);
         }
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
