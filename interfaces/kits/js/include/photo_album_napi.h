@@ -59,6 +59,7 @@ private:
 
     static napi_value JSCommitModify(napi_env env, napi_callback_info info);
     static napi_value JSPhotoAlbumAddAssets(napi_env env, napi_callback_info info);
+    static napi_value JSPhotoAlbumRemoveAssets(napi_env env, napi_callback_info info);
 
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;

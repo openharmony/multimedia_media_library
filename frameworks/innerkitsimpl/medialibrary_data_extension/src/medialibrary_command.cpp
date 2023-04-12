@@ -20,6 +20,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
+#include "photo_map_column.h"
 #include "medialibrary_errno.h"
 
 using namespace std;
@@ -199,6 +200,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { DISTRIBUTE_THU_OPRN_CREATE, OperationObject::THUMBNAIL },
         { BUNDLE_PERMISSION_INSERT, OperationObject::BUNDLE_PERMISSION },
         { PHOTO_ALBUM_OPRN, OperationObject::PHOTO_ALBUM },
+        { PHOTO_MAP_OPRN, OperationObject::PHOTO_MAP },
 
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -289,6 +291,7 @@ void MediaLibraryCommand::ParseTableName()
         { OperationObject::FILESYSTEM_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
         { OperationObject::FILESYSTEM_DOCUMENT, { { OperationType::UNKNOWN_TYPE, DocumentColumn::DOCUMENTS_TABLE } } },
         { OperationObject::PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
+        { OperationObject::PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
     };
 
     if (tableNameMap.find(oprnObject_) != tableNameMap.end()) {
