@@ -751,10 +751,11 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationOb
 }
 
 shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
-    const vector<string> &columns, const DataSharePredicates &predicates)
+    const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
+        errCode = E_FAIL;
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return nullptr;
     }
@@ -762,6 +763,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataManager::Query");
     if (rdbStore_ == nullptr) {
+        errCode = E_FAIL;
         MEDIA_ERR_LOG("Rdb Store is not initialized");
         return nullptr;
     }
@@ -772,7 +774,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         tracer.Start("GetThumbnail");
         queryResultSet = GetThumbnail(uri.ToString());
     } else {
-        auto absResultSet = QueryRdb(uri, columns, predicates);
+        auto absResultSet = QueryRdb(uri, columns, predicates, errCode);
         if (absResultSet == nullptr) {
             return nullptr;
         }
@@ -783,10 +785,11 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
-    const DataSharePredicates &predicates)
+    const DataSharePredicates &predicates, int &errCode)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
+        errCode = E_FAIL;
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return nullptr;
     }
@@ -806,6 +809,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
     tracer.Start("CheckWhereClause");
     auto whereClause = predicates.GetWhereClause();
     if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
+        errCode = E_INVALID_VALUES;
         MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
         return nullptr;
     }

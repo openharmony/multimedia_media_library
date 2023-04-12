@@ -507,8 +507,8 @@ static void GetPublicDirectoryExecute(napi_env env, void *data)
     predicates.SetWhereArgs(selectionArgs);
     string queryUri = MEDIALIBRARY_DIRECTORY_URI;
     Uri uri(queryUri);
-
-    shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns);
+    int errCode = 0;
+    shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
     if (resultSet != nullptr) {
         auto count = 0;
         auto ret = resultSet->GetRowCount(count);
@@ -529,8 +529,8 @@ static void GetPublicDirectoryExecute(napi_env env, void *data)
         }
         return;
     } else {
-        context->SaveError(resultSet);
-        NAPI_ERR_LOG("Query for get publicDirectory failed");
+        context->SaveError(errCode);
+        NAPI_ERR_LOG("Query for get publicDirectory failed! errorCode is = %{public}d", errCode);
     }
 }
 
@@ -678,8 +678,9 @@ static void GetFileAssetsExecute(napi_env env, void *data)
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
+    int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
-        context->predicates, context->fetchColumn);
+        context->predicates, context->fetchColumn, errCode);
     if (resultSet != nullptr) {
         // Create FetchResult object using the contents of resultSet
         context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
@@ -689,8 +690,8 @@ static void GetFileAssetsExecute(napi_env env, void *data)
         }
         return;
     } else {
-        context->SaveError(resultSet);
-        NAPI_ERR_LOG("Query for get fileAssets failed");
+        context->SaveError(errCode);
+        NAPI_ERR_LOG("Query for get publicDirectory failed! errorCode is = %{public}d", errCode);
     }
 }
 
@@ -818,8 +819,13 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
         NAPI_DEBUG_LOG("querycoverUri is = %{public}s", queryUri.c_str());
     }
     Uri uri(queryUri);
+    int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(
-        uri, predicates, columns);
+        uri, predicates, columns, errCode);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("Query for Album uri failed! errorCode is = %{public}d", errCode);
+        return;
+    }
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     fetchFileResult->SetNetworkId(context->networkId);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
@@ -898,11 +904,12 @@ static void GetResultDataExecute(napi_env env, void *data)
     }
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     Uri uri(queryUri);
-    shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, context->predicates, columns);
+    int errCode = 0;
+    shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, context->predicates, columns, errCode);
 
     if (resultSet == nullptr) {
-        NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr");
-        context->SaveError(resultSet);
+        NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr, errCode is %{public}d", errCode);
+        context->SaveError(errCode);
         return;
     }
 
@@ -1025,9 +1032,11 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     string queryUri = MEDIALIBRARY_DATA_URI;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     Uri uri(queryUri);
+    int errCode = 0;
 
-    auto resultSet = UserFileClient::Query(uri, predicates, columns);
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
     CHECK_NULL_PTR_RETURN_VOID(resultSet, "Failed to get file asset by id, query resultSet is nullptr");
+    NAPI_ERR_LOG("errCode is %{public}d", errCode);
 
     // Create FetchResult object using the contents of resultSet
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
@@ -1890,7 +1899,12 @@ static void SetSmartAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<
     predicates.SetWhereArgs(context->selectionArgs);
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns);
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet is nullptr, errCode is %{public}d", errCode);
+        return;
+    }
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetSmartAlbumCoverUri fileAsset is nullptr");
@@ -1944,9 +1958,10 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
     }
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriStr, context->typeMask);
     Uri uri(uriStr);
-    auto resultSet = UserFileClient::Query(uri, context->predicates, columns);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, columns, errCode);
     if (resultSet == nullptr) {
-        NAPI_ERR_LOG("resultSet == nullptr");
+        NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         context->error = E_PERMISSION_DENIED;
         return;
     }
@@ -2033,9 +2048,10 @@ static void GetSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
     predicates.SetWhereArgs(context->selectionArgs);
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + SMARTALBUMASSETS_VIEW_NAME);
-    auto resultSet = UserFileClient::Query(uri, predicates, columns);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
     if (resultSet == nullptr) {
-        NAPI_ERR_LOG("ResultSet is nullptr");
+        NAPI_ERR_LOG("ResultSet is nullptr, errCode is %{public}d", errCode);
         context->error = ERR_INVALID_OUTPUT;
         return;
     }
@@ -2157,9 +2173,10 @@ static void GetSmartAlbumsResultDataExecute(napi_env env, void *data)
     }
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + SMARTALBUMASSETS_VIEW_NAME);
-    auto resultSet = UserFileClient::Query(uri, predicates, columns);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
     if (resultSet == nullptr) {
-        NAPI_ERR_LOG("ResultSet is nullptr");
+        NAPI_ERR_LOG("ResultSet is nullptr, errCode is %{public}d", errCode);
         context->error = ERR_INVALID_OUTPUT;
         return;
     }
@@ -2561,11 +2578,12 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
     predicates.SetWhereArgs(context->selectionArgs);
 
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE);
+    int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(
-        uri, predicates, columns);
+        uri, predicates, columns, errCode);
 
     if (resultSet == nullptr) {
-        NAPI_ERR_LOG("JSGetActivePeers resultSet is null");
+        NAPI_ERR_LOG("JSGetActivePeers resultSet is null, errCode is %{public}d", errCode);
         delete context;
         return;
     }
@@ -2625,11 +2643,12 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
     predicates.SetWhereArgs(context->selectionArgs);
 
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE);
+    int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(
-        uri, predicates, columns);
+        uri, predicates, columns, errCode);
 
     if (resultSet == nullptr) {
-        NAPI_ERR_LOG("JSGetAllPeers resultSet is null");
+        NAPI_ERR_LOG("JSGetAllPeers resultSet is null, errCode is %{public}d", errCode);
         delete context;
         return;
     }
@@ -3379,7 +3398,8 @@ static void GetExistsPhotoAlbum(const string &albumName, MediaLibraryAsyncContex
     DataSharePredicates predicates;
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
     vector<string> columns;
-    auto resultSet = UserFileClient::Query(uri, predicates, columns);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
     auto fetchResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
     context->photoAlbumData = fetchResult->GetFirstObject();
 }
@@ -3723,9 +3743,11 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     string queryUri = URI_QUERY_PHOTO_ALBUM;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_ALBUM_TYPE_MASK);
     Uri uri(queryUri);
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     if (resultSet == nullptr) {
-        context->SaveError(-ENOENT);
+        NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
+        context->SaveError(errCode);
         return;
     }
 
