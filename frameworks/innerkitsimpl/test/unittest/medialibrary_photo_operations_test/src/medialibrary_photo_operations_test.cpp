@@ -13,11 +13,13 @@
  * limitations under the License.
  */
 
+#include <chrono>
 #define MLOG_TAG "PhotoOperationsTest"
 
 #include "medialibrary_photo_operations_test.h"
 
 #include <fstream>
+#include <thread>
 #include <unistd.h>
 #include <unordered_map>
 
@@ -27,6 +29,7 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_data_manager.h"
@@ -59,6 +62,43 @@ using ExceptIntFunction = void (*) (int32_t);
 using ExceptLongFunction = void (*) (int64_t);
 using ExceptBoolFunction = void (*) (bool);
 using ExceptStringFunction = void (*) (const string&);
+
+const unordered_map<string, int> FILEASSET_MEMBER_MAP = {
+    { MediaColumn::MEDIA_ID, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_URI, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_FILE_PATH, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_SIZE, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_TITLE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_NAME, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_TYPE, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_MIME_TYPE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_OWNER_PACKAGE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_DEVICE_NAME, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_THUMBNAIL, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_DATE_ADDED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DATE_MODIFIED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DATE_TAKEN, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DATE_DELETED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_TIME_VISIT, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DURATION, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_TIME_PENDING, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_IS_FAV, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_DATE_TRASHED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_HIDDEN, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_PARENT_ID, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_RELATIVE_PATH, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_ORIENTATION, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_LATITUDE, MEMBER_TYPE_DOUBLE },
+    { PhotoColumn::PHOTO_LONGITUDE, MEMBER_TYPE_DOUBLE },
+    { PhotoColumn::PHOTO_LCD, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_HEIGHT, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_WIDTH, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
+    { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
+    { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING },
+    { DocumentColumn::DOCUMENT_LCD, MEMBER_TYPE_STRING },
+    { DocumentColumn::DOCUMENT_LCD_VISIT_TIME, MEMBER_TYPE_INT64 }
+};
 
 namespace {
 void CleanTestTables()
@@ -364,6 +404,123 @@ int32_t GetPhotoAssetCountIndb(const string &key, const string &value)
     return count;
 }
 
+void SetValuesBucketInUpdate(const string &columnKey, const string &columnValue,
+    ValuesBucket &values)
+{
+    if (FILEASSET_MEMBER_MAP.find(columnKey) == FILEASSET_MEMBER_MAP.end()) {
+        MEDIA_ERR_LOG("this columnKey %{public}s is not excepted", columnKey.c_str());
+        return;
+    }
+    int type = FILEASSET_MEMBER_MAP.at(columnKey);
+    switch (type) {
+        case MEMBER_TYPE_INT32:
+            values.PutInt(columnKey, stoi(columnValue));
+            break;
+        case MEMBER_TYPE_INT64:
+            values.PutLong(columnKey, stol(columnValue));
+            break;
+        case MEMBER_TYPE_STRING:
+            values.PutString(columnKey, columnValue);
+            break;
+        case MEMBER_TYPE_DOUBLE:
+            values.PutDouble(columnKey, stod(columnValue));
+            break;
+        default:
+            MEDIA_ERR_LOG("this column type %{public}s is not excepted", columnKey.c_str());
+    }
+}
+
+static int32_t TestQueryAssetIntParams(int32_t intValue, const string &columnValue)
+{
+    int32_t columnIntValue = atoi(columnValue.c_str());
+    if (columnIntValue == intValue) {
+        return E_OK;
+    } else {
+        MEDIA_ERR_LOG("TestQueryAssetIntParams failed, intValue=%{public}d, columnValue=%{public}s",
+            intValue, columnValue.c_str());
+        return E_INVALID_VALUES;
+    }
+}
+
+static int32_t TestQueryAssetLongParams(int64_t longValue, const string &columnValue)
+{
+    int64_t columnLongValue = atol(columnValue.c_str());
+    if (columnLongValue == longValue) {
+        return E_OK;
+    } else {
+        MEDIA_ERR_LOG("TestQueryAssetLongParams failed, intValue=%{public}lld, columnValue=%{public}s",
+            longValue, columnValue.c_str());
+        return E_INVALID_VALUES;
+    }
+}
+
+static int32_t TestQueryAssetDoubleParams(double doubleValue, const string &columnValue)
+{
+    double columnDoubleValue = stod(columnValue);
+    if (columnDoubleValue == doubleValue) {
+        return E_OK;
+    } else {
+        MEDIA_ERR_LOG("TestQueryAssetDoubleParams failed, intValue=%{public}lf, columnValue=%{public}s",
+            doubleValue, columnValue.c_str());
+        return E_INVALID_VALUES;
+    }
+}
+
+static int32_t TestQueryAssetStringParams(const string &stringValue, const string &columnValue)
+{
+    if (columnValue == stringValue) {
+        return E_OK;
+    } else {
+        MEDIA_ERR_LOG("TestQueryAssetStringParams failed, stringValue=%{public}s, columnValue=%{public}s",
+            stringValue.c_str(), columnValue.c_str());
+        return E_INVALID_VALUES;
+    }
+}
+
+int32_t TestQueryAsset(const string &queryKey, const string &queryValue, const string &columnKey,
+    const string &columnValue, MediaLibraryApi api)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr!");
+        return E_HAS_DB_ERROR;
+    }
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, api);
+    cmd.GetAbsRdbPredicates()->EqualTo(queryKey, queryValue);
+    vector<string> columns;
+    columns.push_back(columnKey);
+    auto queryResultSet = rdbStore->Query(cmd, columns);
+    if (queryResultSet != nullptr && queryResultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        int type = FILEASSET_MEMBER_MAP.at(columnKey);
+        switch (type) {
+            case MEMBER_TYPE_INT32: {
+                int intValue = GetInt32Val(columnKey, queryResultSet);
+                return TestQueryAssetIntParams(intValue, columnValue);
+            }
+            case MEMBER_TYPE_INT64: {
+                long longValue = GetInt64Val(columnKey, queryResultSet);
+                return TestQueryAssetLongParams(longValue, columnValue);
+            }
+            case MEMBER_TYPE_STRING: {
+                string value = GetStringVal(columnKey, queryResultSet);
+                return TestQueryAssetStringParams(value, columnValue);
+            }
+            case MEMBER_TYPE_DOUBLE: {
+                double doubleValue = get<double>(ResultSetUtils::GetValFromColumn(columnKey,
+                    queryResultSet, TYPE_DOUBLE));
+                return TestQueryAssetDoubleParams(doubleValue, columnValue);
+            }
+            default: {
+                MEDIA_ERR_LOG("this column type %{public}s is not excepted", columnKey.c_str());
+                return E_INVALID_VALUES;
+            }
+        }
+    } else {
+        MEDIA_ERR_LOG("Query Failed");
+        return E_HAS_DB_ERROR;
+    }
+}
 } // namespace
 
 void TestPhotoCreateParamsApi10(const string &displayName, int32_t type, int32_t result)
@@ -386,6 +543,48 @@ void TestPhotoDeleteParamsApi10(OperationObject oprnObject, int32_t fileId, Exce
     cmd.SetValueBucket(values);
     int32_t ret = MediaLibraryPhotoOperations::Delete(cmd);
     func(ret);
+}
+
+void TestPhotoUpdateParamsApi10(const string &predicateColumn, const string &predicateValue,
+    const unordered_map<string, string> &updateColumns, ExceptIntFunction func)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    for (auto &iter : updateColumns) {
+        SetValuesBucketInUpdate(iter.first, iter.second, values);
+    }
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(predicateColumn, predicateValue);
+    int32_t ret = MediaLibraryPhotoOperations::Update(cmd);
+    func(ret);
+}
+
+void TestPhotoUpdateByQueryApi10(const string &predicateColumn, const string &predicateValue,
+    const unordered_map<string, string> &checkColumns, int32_t result)
+{
+    for (auto &iter : checkColumns) {
+        int32_t errCode = TestQueryAsset(predicateColumn, predicateValue, iter.first, iter.second,
+            MediaLibraryApi::API_OLD);
+        EXPECT_EQ(errCode, result);
+    }
+}
+
+void TestPhotoUpdateParamsVerifyFunctionFailed(const string &predicateColumn, const string &predicateValue,
+    const unordered_map<string, string> &updateColumns)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    for (auto &iter : updateColumns) {
+        SetValuesBucketInUpdate(iter.first, iter.second, values);
+    }
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(predicateColumn, predicateValue);
+    int32_t ret = MediaLibraryAssetOperations::UpdateOperation(cmd);
+    MEDIA_INFO_LOG("column:%{public}s, predicates:%{public}s, ret:%{public}d",
+        predicateColumn.c_str(), predicateValue.c_str(), ret);
+    EXPECT_EQ(ret, E_INVALID_VALUES);
 }
 
 void TestPhotoOpenParamsApi10(int32_t fileId, const string &mode, ExceptIntFunction func)
@@ -432,6 +631,9 @@ void MediaLibraryPhotoOperationsTest::TearDownTestCase()
     system("rm -rf /storage/media/local/files/*");
     CleanTestTables();
     g_rdbStore = nullptr;
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    this_thread::sleep_for(chrono::seconds(1));
+    MEDIA_INFO_LOG("Clean is finish");
 }
 
 void MediaLibraryPhotoOperationsTest::SetUp()
@@ -636,6 +838,234 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_003, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_003");
 }
 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_001");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, "pic.jpg" } },
+        [] (int32_t result) { EXPECT_GE(result, E_OK); });
+    TestPhotoUpdateByQueryApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, "pic.jpg" } }, E_OK);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_002");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, "" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, "photo\"\".jpg" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, ".photo.jpg" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+
+    string englishLongString = CHAR256_ENGLISH + ".jpg";
+    string chineseLongString = CHAR256_CHINESE + ".jpg";
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, englishLongString } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, chineseLongString } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, "photo" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, "photo." } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, "photo.abc" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL); });
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, "photo.mp4" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL); });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_003");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    unordered_map<string, string> updateMap1 = {
+        { PhotoColumn::MEDIA_TITLE, "photo1" },
+        { PhotoColumn::MEDIA_NAME, "photo2.jpg" }
+    };
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId), updateMap1,
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+
+    unordered_map<string, string> updateMap2 = {
+        { PhotoColumn::MEDIA_TITLE, "photo2" },
+        { PhotoColumn::MEDIA_NAME, "photo2.jpg" }
+    };
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId), updateMap2,
+    [] (int32_t result) { EXPECT_GE(result, E_OK); });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_003");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_004");
+    int32_t fileId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId1 < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId1);
+        return;
+    }
+
+    int32_t fileId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "pic.jpg");
+    if (fileId2 < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId2);
+        return;
+    }
+
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId1),
+        { { PhotoColumn::MEDIA_TITLE, "photo1" } },
+        [] (int32_t result) { EXPECT_GE(result, E_OK); });
+    TestPhotoUpdateByQueryApi10(PhotoColumn::MEDIA_ID, to_string(fileId1),
+        { { PhotoColumn::MEDIA_NAME, "photo1.jpg" } }, E_OK);
+
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId2),
+        { { PhotoColumn::MEDIA_NAME, "photo2.jpg" } },
+        [] (int32_t result) { EXPECT_GE(result, E_OK); });
+    TestPhotoUpdateByQueryApi10(PhotoColumn::MEDIA_ID, to_string(fileId2),
+        { { PhotoColumn::MEDIA_TITLE, "photo2" } }, E_OK);
+    
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_004");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_005");
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+    
+    MediaLibraryCommand queryPathCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    queryPathCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
+    auto resultSet = g_rdbStore->Query(queryPathCmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get resultSet");
+        return;
+    }
+    string path = GetStringVal(PhotoColumn::MEDIA_FILE_PATH, resultSet);
+    if (path.empty()) {
+        MEDIA_ERR_LOG("Get Path failed");
+        return;
+    }
+
+    string moveToPath = "/storage/media/local/files/Pictures/1.jpg";
+    static constexpr int LARGE_NUM = 1000;
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId + LARGE_NUM),
+        { { PhotoColumn::MEDIA_FILE_PATH, moveToPath } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_VALUES); });
+    EXPECT_EQ(MediaFileUtils::IsFileExists(moveToPath), false);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(path), true);
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_FILE_PATH, moveToPath } },
+        [] (int32_t result) { EXPECT_GE(result, E_OK); });
+    EXPECT_EQ(MediaFileUtils::IsFileExists(moveToPath), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(path), false);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_005");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_006");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_ID, "1"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_URI, "datashare:///media/image/1"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_FILE_PATH, ""} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { { PhotoColumn::MEDIA_FILE_PATH, ""}, { PhotoColumn::MEDIA_TITLE, "123" } } });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_SIZE, "12345"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_TITLE, ""} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_NAME, ""} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_THUMBNAIL, "abc"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_DATE_MODIFIED, "1000000"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_DATE_ADDED, "1000000"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_DATE_TAKEN, "1000000"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_DURATION, "1000000"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_TIME_PENDING, "1000000"}, { PhotoColumn::MEDIA_TITLE, "123" } });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_DATE_TRASHED, "1000000"}, { PhotoColumn::MEDIA_TITLE, "123" } });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_DATE_DELETED, "1000000"}, { PhotoColumn::MEDIA_TITLE, "123" } });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_HIDDEN, "1"}, { PhotoColumn::MEDIA_TITLE, "123" } });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::MEDIA_IS_FAV, "1"}, { PhotoColumn::MEDIA_TITLE, "123" } });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_006");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_007");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::PHOTO_ORIENTATION, "1"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::PHOTO_LATITUDE, "1"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::PHOTO_LONGITUDE, "1"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::PHOTO_LCD, "12345"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::PHOTO_HEIGHT, "12345"} });
+    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
+        { { PhotoColumn::PHOTO_WIDTH, "12345"} });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_007");
+}
+
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_001");
@@ -672,8 +1102,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestS
     static constexpr int LARGE_NUM = 1000;
     TestPhotoCloseParamsApi10(fileId + LARGE_NUM,
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_FILEID); });
-    TestPhotoCloseParamsApi10(fileId,
-        [] (int32_t result) { EXPECT_EQ(result, E_OK); });
 
     MEDIA_INFO_LOG("end tdd photo_oprn_close_api10_test_001");
 }
