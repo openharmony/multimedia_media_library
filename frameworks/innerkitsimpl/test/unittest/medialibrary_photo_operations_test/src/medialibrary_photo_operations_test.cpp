@@ -82,7 +82,7 @@ void CleanTestTables()
 }
 
 struct UniqueMemberValuesBucket {
-    std::string assetMediaType;
+    string assetMediaType;
     int32_t startNumber;
 };
 
@@ -108,9 +108,9 @@ void PrepareUniqueNumberTable()
         return;
     }
 
-    UniqueMemberValuesBucket imageBucket = { IMAGE_ASSET_TYPE, 0 };
-    UniqueMemberValuesBucket videoBucket = { VIDEO_ASSET_TYPE, 0 };
-    UniqueMemberValuesBucket audioBucket = { AUDIO_ASSET_TYPE, 0 };
+    UniqueMemberValuesBucket imageBucket = { IMAGE_ASSET_TYPE, 1 };
+    UniqueMemberValuesBucket videoBucket = { VIDEO_ASSET_TYPE, 1 };
+    UniqueMemberValuesBucket audioBucket = { AUDIO_ASSET_TYPE, 1 };
 
     vector<UniqueMemberValuesBucket> uniqueNumberValueBuckets = {
         imageBucket, videoBucket, audioBucket
@@ -169,11 +169,11 @@ string GetFileAssetValueToStr(FileAsset &fileAsset, const string &column)
     // judge type
     auto member = fileAsset.GetMemberValue(column);
     int type = -1;
-    if (std::get_if<int32_t>(&member)) {
+    if (get_if<int32_t>(&member)) {
         type = MEMBER_TYPE_INT32;
-    } else if (std::get_if<int64_t>(&member)) {
+    } else if (get_if<int64_t>(&member)) {
         type = MEMBER_TYPE_INT64;
-    } else if (std::get_if<string>(&member)) {
+    } else if (get_if<string>(&member)) {
         type = MEMBER_TYPE_STRING;
     } else {
         MEDIA_ERR_LOG("Can not find this type");
@@ -183,21 +183,21 @@ string GetFileAssetValueToStr(FileAsset &fileAsset, const string &column)
     auto res = fileAsset.GetMemberValue(column);
     switch (type) {
         case MEMBER_TYPE_INT32: {
-            int32_t resInt = std::get<int32_t>(res);
+            int32_t resInt = get<int32_t>(res);
             if (resInt != DEFAULT_INT32) {
                 return to_string(resInt);
             }
             break;
         }
         case MEMBER_TYPE_INT64: {
-            int64_t resLong = std::get<int64_t>(res);
+            int64_t resLong = get<int64_t>(res);
             if (resLong != DEFAULT_INT64) {
                 return to_string(resLong);
             }
             break;
         }
         case MEMBER_TYPE_STRING: {
-            string resStr = std::get<std::string>(res);
+            string resStr = get<string>(res);
             if (!resStr.empty()) {
                 return resStr;
             }
@@ -454,18 +454,18 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_002, Test
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_002");
     string defaultRelativePath = "Pictures/1/";
-    TestPhotoCreateParamsApi10("", MediaType::MEDIA_TYPE_IMAGE, E_INVAVLID_DISPLAY_NAME);
-    TestPhotoCreateParamsApi10("photo\"\".jpg", MediaType::MEDIA_TYPE_IMAGE, E_INVAVLID_DISPLAY_NAME);
-    TestPhotoCreateParamsApi10(".photo.jpg", MediaType::MEDIA_TYPE_IMAGE, E_INVAVLID_DISPLAY_NAME);
+    TestPhotoCreateParamsApi10("", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
+    TestPhotoCreateParamsApi10("photo\"\".jpg", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
+    TestPhotoCreateParamsApi10(".photo.jpg", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
     string englishLongString = CHAR256_ENGLISH + ".jpg";
     TestPhotoCreateParamsApi10(englishLongString, MediaType::MEDIA_TYPE_IMAGE,
-        E_INVAVLID_DISPLAY_NAME);
+        E_INVALID_DISPLAY_NAME);
     string chineseLongString = CHAR256_CHINESE + ".jpg";
     TestPhotoCreateParamsApi10(chineseLongString, MediaType::MEDIA_TYPE_IMAGE,
-        E_INVAVLID_DISPLAY_NAME);
+        E_INVALID_DISPLAY_NAME);
     
-    TestPhotoCreateParamsApi10("photo", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_VALUES);
-    TestPhotoCreateParamsApi10("photo.", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_VALUES);
+    TestPhotoCreateParamsApi10("photo", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
+    TestPhotoCreateParamsApi10("photo.", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
     TestPhotoCreateParamsApi10("photo.abc", MediaType::MEDIA_TYPE_IMAGE,
         E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
     TestPhotoCreateParamsApi10("photo.mp3", MediaType::MEDIA_TYPE_IMAGE,

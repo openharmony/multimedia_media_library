@@ -1202,7 +1202,7 @@ bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, vector<string> &devices, b
     tracer.Start("SyncPullTable rdbStore->Sync");
     int ret = opts.store->Sync(option, predicate, callback);
     if (ret != E_OK || !isBlock) {
-        return false;
+        return ret == E_OK;
     }
 
     unique_lock<mutex> lock(status->mtx_);

@@ -1861,7 +1861,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkMkdirValid_test_001, TestSiz
     string parentUriStr = "datashare://1";
     string displayName = "Camera/";
     int32_t ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
-    EXPECT_EQ(ret, E_INVAVLID_DISPLAY_NAME);
+    EXPECT_EQ(ret, E_INVALID_DISPLAY_NAME);
     string parentUriStrTest = "datashare://test/";
     ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStrTest, displayName);
     EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
@@ -1872,7 +1872,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkMkdirValid_test_001, TestSiz
     ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStrTest, displayName);
     EXPECT_EQ(ret, E_URI_INVALID);
     ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
-    EXPECT_EQ(ret, E_INVAVLID_DISPLAY_NAME);
+    EXPECT_EQ(ret, E_INVALID_DISPLAY_NAME);
     string name = "test";
     ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, name);
     EXPECT_EQ(ret, E_SUCCESS);
