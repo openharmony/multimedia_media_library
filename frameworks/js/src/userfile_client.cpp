@@ -69,13 +69,16 @@ void UserFileClient::Init(napi_env env, napi_callback_info info)
 }
 
 shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePredicates &predicates,
-    std::vector<std::string> &columns)
+    std::vector<std::string> &columns, int &errCode)
 {
     if (!IsValid()) {
         NAPI_ERR_LOG("Query fail, helper null");
         return nullptr;
     }
-    return sDataShareHelper_->Query(uri, predicates, columns);
+    DatashareBusinessError businessError;
+    auto resultSet = sDataShareHelper_->Query(uri, predicates, columns, &businessError);
+    errCode = businessError.GetCode();
+    return resultSet;
 }
 
 int UserFileClient::Insert(Uri &uri, const DataShareValuesBucket &value)

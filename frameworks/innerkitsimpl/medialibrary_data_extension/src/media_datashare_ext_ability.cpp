@@ -363,13 +363,18 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     string uriStr = uri.ToString();
     if (!PermissionUtils::SystemApiCheck(uriStr)) {
         MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
+        businessError.SetCode(E_PERMISSION_DENIED);
         return nullptr;
     }
     if ((noPermissionCheck.find(uriStr) == noPermissionCheck.end()) && (CheckPermFromUri(uriStr, false) < 0)) {
+        businessError.SetCode(E_PERMISSION_DENIED);
         return nullptr;
     }
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(Uri(uriStr), columns, predicates);
+    int errCode = businessError.GetCode();
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(Uri(uriStr), columns, predicates, errCode);
+    businessError.SetCode(to_string(errCode));
     if (queryResultSet == nullptr) {
+        MEDIA_ERR_LOG("queryResultSet is nullptr! errCode: %{public}d", errCode);
         return nullptr;
     }
     shared_ptr<DataShareResultSet> resultSet = make_shared<DataShareResultSet>(queryResultSet);

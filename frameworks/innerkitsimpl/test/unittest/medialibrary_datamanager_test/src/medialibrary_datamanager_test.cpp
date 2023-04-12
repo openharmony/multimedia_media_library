@@ -224,7 +224,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryDirTable_Test_001, Te
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIATYPE_DIRECTORY_TABLE);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
     EXPECT_NE((resultSet == nullptr), true);
 }
 
@@ -236,7 +237,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryAlbum_Test_001, TestS
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
     EXPECT_NE((resultSet == nullptr), true);
 }
 
@@ -248,7 +250,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryVolume_Test_001, Test
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
     EXPECT_NE((resultSet == nullptr), true);
 }
 
@@ -260,7 +263,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryFiles_Test_001, TestS
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
     EXPECT_NE((resultSet == nullptr), true);
 }
 
@@ -724,7 +728,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_001, Te
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PERMISSION_FILE_ID, to_string(fileId))->And()->EqualTo(PERMISSION_BUNDLE_NAME, bundleName);
     Uri queryUri(MEDIALIBRARY_BUNDLEPERM_URI);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates, errCode);
     ASSERT_NE(resultSet, nullptr);
     int count = -1;
     ASSERT_EQ(resultSet->GetRowCount(count), E_OK);
@@ -1140,7 +1145,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryRdb_Test_001, TestSiz
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    auto ret = mediaLibraryDataManager->QueryRdb(uri, columns, predicates);
+    int errCode = 0;
+    auto ret = mediaLibraryDataManager->QueryRdb(uri, columns, predicates, errCode);
     EXPECT_NE(ret, nullptr);
 }
 

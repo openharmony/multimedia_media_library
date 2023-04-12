@@ -34,7 +34,7 @@ public:
     static bool IsValid();
     static void Init(napi_env env, napi_callback_info info);
     static std::shared_ptr<DataShare::DataShareResultSet> Query(Uri &uri,
-        const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns);
+        const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode);
     static int Insert(Uri &uri, const DataShare::DataShareValuesBucket &value);
     static int BatchInsert(Uri &uri, const std::vector<DataShare::DataShareValuesBucket> &values);
     static int Delete(Uri &uri, const DataShare::DataSharePredicates &predicates);
