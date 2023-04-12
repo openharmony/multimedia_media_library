@@ -728,7 +728,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_001, Te
     predicates.EqualTo(PERMISSION_FILE_ID, to_string(fileId))->And()->EqualTo(PERMISSION_BUNDLE_NAME, bundleName);
     Uri queryUri(MEDIALIBRARY_BUNDLEPERM_URI);
     int errCode = 0;
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates, errCode);
     ASSERT_NE(resultSet, nullptr);
     int count = -1;
     ASSERT_EQ(resultSet->GetRowCount(count), E_OK);
