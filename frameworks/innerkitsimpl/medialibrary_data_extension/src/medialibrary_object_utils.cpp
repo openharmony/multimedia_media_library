@@ -46,14 +46,8 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-static const std::string ASSET_RECYCLE_SUFFIX = "-copy";
+static const string ASSET_RECYCLE_SUFFIX = "-copy";
 static const string NO_MEDIA_TAG = ".nomedia";
-static const unordered_map<int, string> mediaTypeMap = {
-    { MEDIA_TYPE_IMAGE, DIR_ALL_IMAGE_CONTAINER_TYPE },
-    { MEDIA_TYPE_VIDEO, DIR_ALL_VIDEO_CONTAINER_TYPE },
-    { MEDIA_TYPE_AUDIO, DIR_ALL_AUDIO_CONTAINER_TYPE }
-};
-static const string QUESTION_MARK = "?";
 int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
 {
     if (dirPath.empty()) {
@@ -236,7 +230,7 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
     return InsertFileInDb(cmd, fileAsset, dirAsset);
 }
 
-NativeAlbumAsset MediaLibraryObjectUtils::GetLastDirExistInDb(const std::string &dirPath)
+NativeAlbumAsset MediaLibraryObjectUtils::GetLastDirExistInDb(const string &dirPath)
 {
     NativeAlbumAsset dirAsset;
     string lastPath = dirPath;
@@ -262,7 +256,7 @@ NativeAlbumAsset MediaLibraryObjectUtils::GetLastDirExistInDb(const std::string 
     return dirAsset;
 }
 
-int32_t MediaLibraryObjectUtils::DeleteRows(const std::vector<int64_t> &rowIds)
+int32_t MediaLibraryObjectUtils::DeleteRows(const vector<int64_t> &rowIds)
 {
     int32_t errCode = 0;
 
@@ -303,7 +297,7 @@ int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t par
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const std::string &dirPath, int64_t &rowId)
+int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const string &dirPath, int64_t &rowId)
 {
     CHECK_AND_RETURN_RET_LOG(!dirPath.empty(), E_VIOLATION_PARAMETERS, "Input parameter dirPath is empty!");
 
@@ -464,7 +458,7 @@ int32_t MediaLibraryObjectUtils::DeleteMisc(const int32_t fileId, const string &
 }
 
 // Restriction: input param cmd MUST have file id in either uri or valuebucket
-int32_t MediaLibraryObjectUtils::DeleteFileObj(const std::shared_ptr<FileAsset> &fileAsset)
+int32_t MediaLibraryObjectUtils::DeleteFileObj(const shared_ptr<FileAsset> &fileAsset)
 {
     // delete file in filesystem
     string filePath = fileAsset->GetPath();
@@ -528,7 +522,7 @@ int32_t DeleteInfoRecursively(const shared_ptr<FileAsset> &fileAsset)
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryObjectUtils::DeleteDirObj(const std::shared_ptr<FileAsset> &dirAsset)
+int32_t MediaLibraryObjectUtils::DeleteDirObj(const shared_ptr<FileAsset> &dirAsset)
 {
     // delete dir in filesystem
     string dirPath = dirAsset->GetPath();
@@ -630,7 +624,7 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
     }
 
     // Update the path, relative path and album Name for internal files
-    const std::string modifyAlbumInternalsStmt =
+    const string modifyAlbumInternalsStmt =
         "UPDATE " + MEDIALIBRARY_TABLE + " SET " + MEDIA_DATA_DB_FILE_PATH + " = replace(" +
         MEDIA_DATA_DB_FILE_PATH + ", '" + srcDirPath + "/' , '" + dstDirPath + "/'), " +
         MEDIA_DATA_DB_RELATIVE_PATH + " = replace(" + MEDIA_DATA_DB_RELATIVE_PATH + ", '" + srcDirPath + "', '" +
@@ -646,7 +640,7 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
 
 static int32_t OpenAsset(const string &filePath, const string &mode)
 {
-    std::string absFilePath;
+    string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("Failed to get real path: %{private}s", filePath.c_str());
         return E_ERR;
@@ -725,7 +719,7 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
 void MediaLibraryObjectUtils::ScanFile(string &path)
 {
     MEDIA_DEBUG_LOG("enter, path = %{private}s", path.c_str());
-    std::shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
+    shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
     if (scanFileCb == nullptr) {
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
@@ -817,6 +811,19 @@ int32_t MediaLibraryObjectUtils::UpdateDateModified(const string &dirPath)
     cmd.SetValueBucket(valuesBucket);
 
     return ModifyInfoByPathInDb(cmd, dirPath);
+}
+
+unique_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetByPredicates(const NativeRdb::AbsRdbPredicates &predicates,
+    const vector<string> &columns)
+{
+    auto absResultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (absResultSet == nullptr) {
+        return nullptr;
+    }
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(absResultSet);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    return fetchResult->GetFirstObject();
 }
 
 shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromId(const string &id, const string &networkId)
@@ -1314,7 +1321,7 @@ void MediaLibraryObjectUtils::CloseFileById(int32_t fileId)
     CloseFile(closeCmd);
 }
 
-int32_t MediaLibraryObjectUtils::GetFileResult(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+int32_t MediaLibraryObjectUtils::GetFileResult(shared_ptr<NativeRdb::ResultSet> &resultSet,
     int count, const string &relativePath, const string &displayName)
 {
     shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();

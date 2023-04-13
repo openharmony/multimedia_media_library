@@ -160,6 +160,11 @@ int MediaFileExtAbility::Move(const Uri &sourceFileUri, const Uri &targetParentU
     return ConvertErrno(MediaFileExtentionUtils::Move(sourceFileUri, targetParentUri, newFileUri));
 }
 
+int MediaFileExtAbility::Copy(const Uri &sourceUri, const Uri &destUri, std::vector<CopyResult> &copyResult, bool force)
+{
+    return MediaFileExtentionUtils::Copy(sourceUri, destUri, copyResult, force);
+}
+
 int MediaFileExtAbility::Rename(const Uri &sourceFileUri, const string &displayName, Uri &newFileUri)
 {
     return ConvertErrno(MediaFileExtentionUtils::Rename(sourceFileUri, displayName, newFileUri));

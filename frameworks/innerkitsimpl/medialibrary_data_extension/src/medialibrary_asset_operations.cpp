@@ -52,18 +52,6 @@ const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
 
-namespace {
-inline int32_t PrepareAssetDir(const string &dirPath)
-{
-    CHECK_AND_RETURN_RET(!dirPath.empty(), E_INVALID_PATH);
-    if (!MediaFileUtils::IsFileExists(dirPath)) {
-        bool ret = MediaFileUtils::CreateDirectory(dirPath);
-        CHECK_AND_RETURN_RET_LOG(ret, E_CHECK_DIR_FAIL, "Create Dir Failed! dirPath=%{private}s",
-            dirPath.c_str());
-    }
-    return E_OK;
-}
-} // namespace
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
     int errCode = E_ERR;
@@ -532,6 +520,17 @@ int32_t MediaLibraryAssetOperations::CreateAssetRealName(int32_t fileId, int32_t
     }
 
     name = mediaTypeStr + to_string(MediaFileUtils::UTCTimeSeconds()) + "_" + fileNumStr + "." + extension;
+    return E_OK;
+}
+
+static inline int32_t PrepareAssetDir(const string &dirPath)
+{
+    CHECK_AND_RETURN_RET(!dirPath.empty(), E_INVALID_PATH);
+    if (!MediaFileUtils::IsFileExists(dirPath)) {
+        bool ret = MediaFileUtils::CreateDirectory(dirPath);
+        CHECK_AND_RETURN_RET_LOG(ret, E_CHECK_DIR_FAIL, "Create Dir Failed! dirPath=%{private}s",
+            dirPath.c_str());
+    }
     return E_OK;
 }
 

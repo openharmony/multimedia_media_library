@@ -108,9 +108,9 @@ void PrepareUniqueNumberTable()
         return;
     }
 
-    UniqueMemberValuesBucket imageBucket = { IMAGE_ASSET_TYPE, 0 };
-    UniqueMemberValuesBucket videoBucket = { VIDEO_ASSET_TYPE, 0 };
-    UniqueMemberValuesBucket audioBucket = { AUDIO_ASSET_TYPE, 0 };
+    UniqueMemberValuesBucket imageBucket = { IMAGE_ASSET_TYPE, 1 };
+    UniqueMemberValuesBucket videoBucket = { VIDEO_ASSET_TYPE, 1 };
+    UniqueMemberValuesBucket audioBucket = { AUDIO_ASSET_TYPE, 1 };
 
     vector<UniqueMemberValuesBucket> uniqueNumberValueBuckets = {
         imageBucket, videoBucket, audioBucket

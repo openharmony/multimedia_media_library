@@ -191,16 +191,14 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     return CreatePhotoAlbum(albumName);
 }
 
-int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
 {
-    RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
-
     // Only user generic albums can be deleted
-    rdbPredicate.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
-    rdbPredicate.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
-    rdbPredicate.EndWrap();
+    predicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
+    predicates.EndWrap();
 
-    return MediaLibraryRdbStore::Delete(rdbPredicate);
+    return MediaLibraryRdbStore::Delete(predicates);
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
@@ -261,72 +259,5 @@ int MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(MediaLibraryCommand 
             MEDIA_ERR_LOG("Unknown operation type: %{public}d", cmd.GetOprnType());
             return E_ERR;
     }
-}
-
-int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<ValueObject> &bindArgs)
-{
-    /**
-     * Build insert sql:
-     * INSERT INTO PhotoMap (map_album, map_asset) SELECT
-     * ?, ?
-     * WHERE
-     *     (NOT EXISTS (SELECT * FROM PhotoMap WHERE map_album = ? AND map_asset = ?))
-     *     AND (EXISTS (SELECT file_id FROM Files WHERE file_id = ? AND data_trashed = 0))
-     *     AND (EXISTS (SELECT album_id FROM PhotoAlbum WHERE album_id = ? AND album_type = ? AND album_subtype = ?));
-     */
-    static const string insertSql = "INSERT INTO " + PhotoMap::TABLE +
-        " (" + PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + ") " +
-        "SELECT ?, ? WHERE " +
-        "(NOT EXISTS (SELECT * FROM " + PhotoMap::TABLE + " WHERE " +
-            PhotoMap::ALBUM_ID + " = ? AND " + PhotoMap::ASSET_ID + " = ?)) " +
-        "AND (EXISTS (SELECT " + MediaColumn::MEDIA_ID + " FROM " + MEDIALIBRARY_TABLE + " WHERE " +
-            MediaColumn::MEDIA_ID + " = ? AND " + MediaColumn::MEDIA_DATE_TRASHED + " = 0)) " +
-        "AND (EXISTS (SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
-            " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = ? AND " + PhotoAlbumColumns::ALBUM_TYPE + " = ? AND " +
-            PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?));";
-
-    bool isValid = false;
-    int32_t albumId = value.Get(PhotoMap::ALBUM_ID, isValid);
-    if (!isValid) {
-        return -EINVAL;
-    }
-    int32_t assetId = value.Get(PhotoMap::ASSET_ID, isValid);
-    if (!isValid) {
-        return -EINVAL;
-    }
-    bindArgs.emplace_back(albumId);
-    bindArgs.emplace_back(assetId);
-    bindArgs.emplace_back(albumId);
-    bindArgs.emplace_back(assetId);
-    bindArgs.emplace_back(assetId);
-    bindArgs.emplace_back(albumId);
-    bindArgs.emplace_back(PhotoAlbumType::USER);
-    bindArgs.emplace_back(PhotoAlbumSubType::USER_GENERIC);
-    return MediaLibraryRdbStore::ExecuteForLastInsertedRowId(insertSql, bindArgs);
-}
-
-int32_t MediaLibraryAlbumOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &values)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-
-    int32_t changedRows = 0;
-    vector<ValueObject> bindArgs;
-    rdbStore->BeginTransaction();
-    for (const auto &value : values) {
-        bindArgs.clear();
-        auto ret = AddSingleAsset(value, bindArgs);
-        if (ret == E_HAS_DB_ERROR) {
-            rdbStore->RollBack();
-            return ret;
-        }
-        if (ret > 0) {
-            changedRows++;
-        }
-    }
-    rdbStore->Commit();
-    return changedRows;
 }
 } // namespace OHOS::Media

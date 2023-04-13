@@ -39,6 +39,7 @@
 #include "medialibrary_file_operations.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_object_utils.h"
+#include "photo_map_operations.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_sync_table.h"
@@ -412,7 +413,7 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
 
     string uriString = uri.ToString();
     if (uriString == URI_PHOTO_ALBUM_ADD_ASSET) {
-        return MediaLibraryAlbumOperations::AddPhotoAssets(values);
+        return PhotoMapOperations::AddPhotoAssets(values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
@@ -430,7 +431,6 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
 
 int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::Delete");
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
@@ -442,26 +442,42 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
         return E_INVALID_URI;
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckWhereClause");
+    auto whereClause = predicates.GetWhereClause();
+    if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
+        MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
+        return E_SQL_CHECK_FAIL;
+    }
+    tracer.Finish();
+
     MediaLibraryCommand cmd(uri, OperationType::DELETE);
-    cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
+    // MEDIALIBRARY_TABLE just for RdbPredicates
+    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
+        cmd.GetTableName());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
 
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET:
         case OperationObject::FILESYSTEM_DIR:
         case OperationObject::FILESYSTEM_ALBUM: {
-            string fileId = cmd.GetOprnFileId();
-            auto fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(fileId);
-            CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
-                fileId.c_str());
+            vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_PARENT_ID,
+                MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_TRASH, MEDIA_DATA_DB_RELATIVE_PATH };
+            auto fileAsset = MediaLibraryObjectUtils::GetFileAssetByPredicates(*cmd.GetAbsRdbPredicates(), columns);
+            CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_ARGUMENTS, "Get fileAsset failed.");
             if (fileAsset->GetRelativePath() == "") {
                 return E_DELETE_DENIED;
             }
             return (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) ?
-                MediaLibraryObjectUtils::DeleteFileObj(fileAsset) : MediaLibraryObjectUtils::DeleteDirObj(fileAsset);
+                MediaLibraryObjectUtils::DeleteFileObj(move(fileAsset)) :
+                MediaLibraryObjectUtils::DeleteDirObj(move(fileAsset));
         }
         case OperationObject::PHOTO_ALBUM: {
-            return MediaLibraryAlbumOperations::DeletePhotoAlbum(predicates);
+            return MediaLibraryAlbumOperations::DeletePhotoAlbum(rdbPredicate);
+        }
+        case OperationObject::PHOTO_MAP: {
+            return PhotoMapOperations::RemovePhotoAssets(rdbPredicate);
         }
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
@@ -735,10 +751,11 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationOb
 }
 
 shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
-    const vector<string> &columns, const DataSharePredicates &predicates)
+    const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
+        errCode = E_FAIL;
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return nullptr;
     }
@@ -746,6 +763,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataManager::Query");
     if (rdbStore_ == nullptr) {
+        errCode = E_FAIL;
         MEDIA_ERR_LOG("Rdb Store is not initialized");
         return nullptr;
     }
@@ -756,7 +774,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         tracer.Start("GetThumbnail");
         queryResultSet = GetThumbnail(uri.ToString());
     } else {
-        auto absResultSet = QueryRdb(uri, columns, predicates);
+        auto absResultSet = QueryRdb(uri, columns, predicates, errCode);
         if (absResultSet == nullptr) {
             return nullptr;
         }
@@ -767,10 +785,11 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
-    const DataSharePredicates &predicates)
+    const DataSharePredicates &predicates, int &errCode)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
+        errCode = E_FAIL;
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return nullptr;
     }
@@ -790,6 +809,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
     tracer.Start("CheckWhereClause");
     auto whereClause = predicates.GetWhereClause();
     if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
+        errCode = E_INVALID_VALUES;
         MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
         return nullptr;
     }
@@ -813,6 +833,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
         queryResultSet = MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
     } else if (oprnObject == OperationObject::PHOTO_ALBUM) {
         queryResultSet = MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
+    } else if (oprnObject == OperationObject::PHOTO_MAP) {
+        queryResultSet = PhotoMapOperations::QueryPhotoAssets(rdbPredicate, columns);
     } else if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
         oprnObject == OperationObject::FILESYSTEM_DOCUMENT) {
         queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);

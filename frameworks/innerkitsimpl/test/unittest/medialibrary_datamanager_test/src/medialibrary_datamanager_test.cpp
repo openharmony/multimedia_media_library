@@ -208,8 +208,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DeleteAsset_Test_001, Test
     MEDIA_INFO_LOG("DataManager_DeleteAsset_Test_001::Start");
     shared_ptr<FileAsset> fileAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("DeleteAsset_Test_001.jpg", g_pictures, fileAsset), true);
-    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET +
-        '/' + to_string(fileAsset->GetId()));
+    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(fileAsset->GetId()));
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, predicates);
@@ -225,7 +224,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryDirTable_Test_001, Te
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIATYPE_DIRECTORY_TABLE);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
     EXPECT_NE((resultSet == nullptr), true);
 }
 
@@ -237,7 +237,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryAlbum_Test_001, TestS
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
     EXPECT_NE((resultSet == nullptr), true);
 }
 
@@ -249,7 +250,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryVolume_Test_001, Test
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
     EXPECT_NE((resultSet == nullptr), true);
 }
 
@@ -261,7 +263,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryFiles_Test_001, TestS
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
     EXPECT_NE((resultSet == nullptr), true);
 }
 
@@ -657,11 +660,12 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_001, TestS
     shared_ptr<FileAsset> file3 = nullptr;
     ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("delete_Dir_001.txt", dir2, file3));
 
-    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + "/" +
-        to_string(delete_Dir_001->GetId());
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_001::deleteUri: %s", deleteUri.c_str());
     Uri deleteAssetUri(deleteUri);
-    int retVal = MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, {});
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(delete_Dir_001->GetId()));
+    int retVal = MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, predicates);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(delete_Dir_001->GetPath()), false);
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_001::delete end, retVal: %d", retVal);
 }
@@ -698,10 +702,11 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_002, TestS
     MediaLibraryUnitTestUtils::TrashFile(dir1);
     MediaLibraryUnitTestUtils::TrashFile(delete_Dir_002);
 
-    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + "/" +
-        to_string(delete_Dir_002->GetId());
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::deleteUri: %s", deleteUri.c_str());
     Uri deleteAssetUri(deleteUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(delete_Dir_002->GetId()));
     int retVal = MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, {});
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(delete_Dir_002->GetPath()), false);
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::delete end, retVal: %d", retVal);
@@ -723,7 +728,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_001, Te
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PERMISSION_FILE_ID, to_string(fileId))->And()->EqualTo(PERMISSION_BUNDLE_NAME, bundleName);
     Uri queryUri(MEDIALIBRARY_BUNDLEPERM_URI);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates, errCode);
     ASSERT_NE(resultSet, nullptr);
     int count = -1;
     ASSERT_EQ(resultSet->GetRowCount(count), E_OK);
@@ -1139,7 +1145,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryRdb_Test_001, TestSiz
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    auto ret = mediaLibraryDataManager->QueryRdb(uri, columns, predicates);
+    int errCode = 0;
+    auto ret = mediaLibraryDataManager->QueryRdb(uri, columns, predicates, errCode);
     EXPECT_NE(ret, nullptr);
 }
 

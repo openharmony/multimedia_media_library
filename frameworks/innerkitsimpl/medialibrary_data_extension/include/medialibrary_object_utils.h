@@ -56,6 +56,8 @@ public:
     static std::string GetPathByIdFromDb(const std::string &id, const bool isDelete = false);
     static std::string GetRecyclePathByIdFromDb(const std::string &id);
     static int32_t GetParentIdByIdFromDb(const std::string &fileId);
+    static std::unique_ptr<FileAsset> GetFileAssetByPredicates(const NativeRdb::AbsRdbPredicates &predicates,
+        const std::vector<std::string> &columns);
     static std::shared_ptr<FileAsset> GetFileAssetFromId(const std::string &id, const std::string &networkId = "");
     static std::shared_ptr<FileAsset> GetFileAssetFromUri(const std::string &uriStr);
     static void GetDefaultRelativePath(const int32_t mediaType, string &relativePath);
