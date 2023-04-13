@@ -3677,7 +3677,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     return result;
 }
 
-static napi_value AddDefaulePhotoAlbumColumns(napi_env env, vector<string> &fetchColumn)
+static napi_value AddDefaultPhotoAlbumColumns(napi_env env, vector<string> &fetchColumn)
 {
     auto validFetchColumns = PhotoAlbumColumns::DEFAULT_FETCH_COLUMN;
     for (const auto &column : fetchColumn) {
@@ -3723,7 +3723,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
         default:
             return nullptr;
     }
-    CHECK_NULLPTR_RET(AddDefaulePhotoAlbumColumns(env, context->fetchColumn));
+    CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
@@ -3759,12 +3759,6 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
 static void GetPhotoAlbumQueryResult(napi_env env, MediaLibraryAsyncContext *context,
     unique_ptr<JSAsyncContextOutput> &jsContext)
 {
-    if (context->fetchPhotoAlbumResult->GetCount() < 0) {
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
-            "Get query result count failed");
-        return;
-    }
     napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchPhotoAlbumResult));
     if (fileResult == nullptr) {
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);

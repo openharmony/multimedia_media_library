@@ -833,6 +833,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
         queryResultSet = MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
     } else if (oprnObject == OperationObject::PHOTO_ALBUM) {
         queryResultSet = MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
+    } else if (oprnObject == OperationObject::PHOTO_MAP) {
+        queryResultSet = PhotoMapOperations::QueryPhotoAssets(rdbPredicate, columns);
     } else if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
         oprnObject == OperationObject::FILESYSTEM_DOCUMENT) {
         queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);

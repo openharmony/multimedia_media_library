@@ -18,12 +18,15 @@
 
 #include "datashare_values_bucket.h"
 #include "rdb_predicates.h"
+#include "result_set.h"
 
 namespace OHOS::Media {
 class PhotoMapOperations {
 public:
     static int32_t AddPhotoAssets(const std::vector<DataShare::DataShareValuesBucket> &values);
     static int32_t RemovePhotoAssets(NativeRdb::RdbPredicates &predicates);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryPhotoAssets(const NativeRdb::RdbPredicates &rdbPredicate,
+        const std::vector<std::string> &columns);
 };
 } // namespace OHOS::Media
 #endif // OHOS_PHOTO_MAP_OPERATIONS_H
