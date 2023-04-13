@@ -61,6 +61,7 @@ constexpr int32_t E_DELETE_DENIED =         MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 2
 constexpr int32_t E_HAS_DB_ERROR =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 22);
 constexpr int32_t E_INVALID_ARGUMENTS =     MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 23);
 constexpr int32_t E_SQL_CHECK_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 24);
+constexpr int32_t E_IS_PENDING_ERROR =      MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 25);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }
@@ -109,6 +110,7 @@ constexpr int32_t E_AVMETADATA = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 6);
 constexpr int32_t E_IMAGE = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 7);
 constexpr int32_t E_NO_RESULT = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 8);
 constexpr int32_t E_STOP = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 9);
+constexpr int32_t E_IS_PENDING = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 10);
 
 // media file extension module error code { 3000, 3099 }
 constexpr int32_t E_MEDIA_FILE_OFFSET = 3000;

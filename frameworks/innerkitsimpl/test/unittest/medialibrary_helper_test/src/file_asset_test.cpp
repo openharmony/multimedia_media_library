@@ -139,9 +139,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_003, TestSize.Level0)
     fileAsset.SetDateTaken(TEST_DATE_TOKEN);
     EXPECT_EQ(fileAsset.GetDateTaken(), TEST_DATE_TOKEN);
 
-    fileAsset.SetPending(true);
-    EXPECT_EQ(fileAsset.IsPending(), true);
-
     fileAsset.SetFavorite(true);
     EXPECT_EQ(fileAsset.IsFavorite(), true);
 

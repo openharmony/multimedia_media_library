@@ -105,6 +105,9 @@ public:
     void SetLatitude(const VariantData &latitude);
     double GetLatitude() const;
 
+    void SetTimePending(const VariantData &timePending);
+    int64_t GetTimePending() const;
+
     void Init();
 
     using MetadataFnPtr = void (Metadata::*)(const VariantData &);
@@ -151,6 +154,9 @@ private:
 
     // recycle
     std::string recyclePath_;
+
+    // pending
+    int64_t timePending_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -292,16 +292,6 @@ void FileAsset::SetDateTaken(int64_t dateTaken)
     member_[MEDIA_DATA_DB_DATE_TAKEN] = dateTaken;
 }
 
-bool FileAsset::IsPending() const
-{
-    return GetInt32Member(MEDIA_DATA_DB_IS_PENDING);
-}
-
-void FileAsset::SetPending(bool dateTaken)
-{
-    member_[MEDIA_DATA_DB_IS_PENDING] = dateTaken;
-}
-
 int64_t FileAsset::GetTimePending() const
 {
     return GetInt64Member(MEDIA_DATA_DB_TIME_PENDING);
@@ -362,14 +352,14 @@ void FileAsset::SetRecyclePath(const string &recyclePath)
     member_[MEDIA_DATA_DB_RECYCLE_PATH] = recyclePath;
 }
 
-const string FileAsset::GetBundleName() const
+const string FileAsset::GetOwnerPackage() const
 {
-    return GetStrMember(MEDIA_DATA_BUNDLENAME);
+    return GetStrMember(MEDIA_DATA_DB_OWNER_PACKAGE);
 }
 
-void FileAsset::SetBundleName(const string &bundleName)
+void FileAsset::SetOwnerPackage(const string &packageName)
 {
-    member_[MEDIA_DATA_BUNDLENAME] = bundleName;
+    member_[MEDIA_DATA_DB_OWNER_PACKAGE] = packageName;
 }
 
 ResultNapiType FileAsset::GetResultNapiType() const

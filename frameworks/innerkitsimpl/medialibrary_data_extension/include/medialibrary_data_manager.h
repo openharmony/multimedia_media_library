@@ -70,7 +70,18 @@ public:
     EXPORT void InterruptBgworker();
     EXPORT int32_t DoAging();
     EXPORT int32_t DoTrashAging();
+    /**
+     * @brief Revert the pending state through the package name
+     * @param bundleName packageName
+     * @return revert result
+     */
+    EXPORT int32_t RevertPendingByPackage(const std::string &bundleName);
 
+    /**
+     * @brief Revert the pending state
+     * @return revert result
+     */
+    EXPORT int32_t HandleRevertPending();
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 
     int32_t InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
@@ -98,6 +109,7 @@ private:
     int32_t DistributeDeviceAging();
     bool ShouldCheckFileName(const OperationObject &oprnObject);
     std::shared_ptr<ThumbnailService> thumbnailService_;
+    int32_t RevertPendingByFileId(const std::string &fileId);
 
     std::shared_mutex mgrSharedMutex_;
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
