@@ -58,7 +58,9 @@ bool MediaLibrarySyncTable::SyncPullTable(const shared_ptr<RdbStore> &rdbStore, 
 
     NativeRdb::AbsRdbPredicates predicate(tableName);
     (devices.size() > 0) ? predicate.InDevices(devices) : predicate.InAllDevices();
-
+    if (tableName == MEDIALIBRARY_TABLE) {
+        predicate.EqualTo(MEDIA_DATA_DB_TIME_PENDING, to_string(0));
+    }
     DistributedRdb::SyncCallback callback = [tableName](const DistributedRdb::SyncResult& syncResult) {
         // update device db
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
@@ -103,7 +105,9 @@ bool MediaLibrarySyncTable::SyncPushTable(const shared_ptr<RdbStore> &rdbStore, 
 
     NativeRdb::AbsRdbPredicates predicate(tableName.c_str());
     (devices.size() > 0) ? predicate.InDevices(devices) : predicate.InAllDevices();
-
+    if (tableName == MEDIALIBRARY_TABLE) {
+        predicate.EqualTo(MEDIA_DATA_DB_TIME_PENDING, to_string(0));
+    }
     DistributedRdb::SyncCallback callback = [tableName](const DistributedRdb::SyncResult& syncResult) {
         // update device db
         for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {

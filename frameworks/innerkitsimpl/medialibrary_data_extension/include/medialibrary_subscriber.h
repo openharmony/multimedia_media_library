@@ -41,6 +41,7 @@ private:
     void StopBackgroundOperation();
 
     void DoStartMtpService();
+    void RevertPendingByPackage(const std::string &bundleName);
 };
 }  // namespace Media
 }  // namespace OHOS

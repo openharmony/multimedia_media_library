@@ -51,7 +51,7 @@ public:
         const std::string &dstDirPath);
     static int32_t OpenFile(MediaLibraryCommand &cmd, const std::string &mode);
     static int32_t CloseFile(MediaLibraryCommand &cmd);
-    static int32_t CloseFile(string &srcPath, string &id);
+    static int32_t ScanFileAfterClose(const string &srcPath, const string &id);
     static int32_t GetIdByPathFromDb(const std::string &path);
     static std::string GetPathByIdFromDb(const std::string &id, const bool isDelete = false);
     static std::string GetRecyclePathByIdFromDb(const std::string &id);
@@ -71,6 +71,7 @@ public:
     static bool IsColumnValueExist(const std::string &value, const std::string &column);
     static bool IsAssetExistInDb(const int32_t id, const bool isIncludeTrash = false);
     static bool IsFileExistInDb(const std::string &path);
+    static bool CheckUriPending(const std::string &uri);
     static int32_t CopyAsset(const std::shared_ptr<FileAsset> &srcFileAsset, const std::string &relativePath);
     static int32_t CopyDir(const std::shared_ptr<FileAsset> &srcDirAsset, const std::string &relativePath);
     static NativeAlbumAsset GetDirAsset(const std::string &relativePath);
@@ -80,7 +81,7 @@ public:
     static int32_t CheckDirExtension(const std::string &relativePath, const std::string &displayName);
     static int32_t UpdateDateModified(const std::string &dirPath);
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
-    static void ScanFile(std::string &srcPath);
+    static void ScanFile(const std::string &srcPath);
 
 private:
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);
@@ -103,6 +104,7 @@ private:
     static int32_t GetFileResult(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int count, const string &relativePath, const string &displayName);
     static std::shared_ptr<NativeRdb::ResultSet> QuerySmartAlbum(MediaLibraryCommand &cmd);
+    static int32_t DeleteInfoRecursively(const shared_ptr<FileAsset> &fileAsset);
 };
 } // namespace Media
 } // namespace OHOS

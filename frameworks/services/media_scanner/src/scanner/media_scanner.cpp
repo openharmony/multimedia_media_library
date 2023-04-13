@@ -312,6 +312,11 @@ int32_t MediaScannerObj::ScanFileInTraversal(const string &path, const string &p
         return err;
     }
 
+    if (data_->GetTimePending() != 0) {
+        MEDIA_INFO_LOG("File %{private}s is pending", path.c_str());
+        return E_IS_PENDING;
+    }
+
     err = GetParentDirInfo(parent, parentId);
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get dir info");
