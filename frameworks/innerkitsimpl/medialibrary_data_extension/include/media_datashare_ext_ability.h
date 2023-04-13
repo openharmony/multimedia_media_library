@@ -152,7 +152,8 @@ public:
      * @param uri Indicates the path of data to query.
      * @param columns Indicates the columns to query. If this parameter is null, all columns are queried.
      * @param predicates Indicates filter criteria. You should define the processing logic when this parameter is null.
-     *
+     * @param businessError Indicates errorcode and message.
+     
      * @return Returns the query result.
      */
     std::shared_ptr<DataShareResultSet> Query(const Uri &uri, const DataSharePredicates &predicates,

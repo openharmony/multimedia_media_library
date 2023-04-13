@@ -20,6 +20,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
+#include "photo_map_column.h"
 #include "medialibrary_errno.h"
 
 using namespace std;
@@ -166,6 +167,20 @@ const string &MediaLibraryCommand::GetDeviceName()
     return deviceName_;
 }
 
+string MediaLibraryCommand::GetUriStringWithoutSegment()
+{
+    string uriString = uri_.ToString();
+    size_t questionMaskPoint = uriString.rfind('?');
+    size_t hashKeyPoint = uriString.rfind('#');
+    if (questionMaskPoint != string::npos) {
+        return uriString.substr(0, questionMaskPoint);
+    }
+    if (hashKeyPoint != string::npos) {
+        return uriString.substr(0, hashKeyPoint);
+    }
+    return uriString;
+}
+
 MediaLibraryApi MediaLibraryCommand::GetApi()
 {
     return api_;
@@ -199,6 +214,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { DISTRIBUTE_THU_OPRN_CREATE, OperationObject::THUMBNAIL },
         { BUNDLE_PERMISSION_INSERT, OperationObject::BUNDLE_PERMISSION },
         { PHOTO_ALBUM_OPRN, OperationObject::PHOTO_ALBUM },
+        { PHOTO_MAP_OPRN, OperationObject::PHOTO_MAP },
 
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -224,7 +240,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
 
 void MediaLibraryCommand::ParseOprnTypeFromUri()
 {
-    string insertUri = uri_.ToString();
+    string insertUri = GetUriStringWithoutSegment();
     auto found = insertUri.rfind('/');
     if (found == string::npos) {
         return;
@@ -289,6 +305,7 @@ void MediaLibraryCommand::ParseTableName()
         { OperationObject::FILESYSTEM_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
         { OperationObject::FILESYSTEM_DOCUMENT, { { OperationType::UNKNOWN_TYPE, DocumentColumn::DOCUMENTS_TABLE } } },
         { OperationObject::PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
+        { OperationObject::PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
     };
 
     if (tableNameMap.find(oprnObject_) != tableNameMap.end()) {

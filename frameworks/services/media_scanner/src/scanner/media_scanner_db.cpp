@@ -162,26 +162,15 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
  */
 bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 {
-    int32_t deletedCount(0);
-    DataShare::DataSharePredicates predicates;
-
     if (idList.size() == 0) {
         MEDIA_ERR_LOG("to-deleted idList size equals to 0");
         return false;
     }
 
-    std::string builder = " IN (?";
-    for (std::size_t i = 0; i < idList.size() - 1; i++) {
-        builder += ",?";
-    }
-    builder += ")";
-
-    predicates.SetWhereClause(MEDIA_DATA_DB_ID + builder);
-    predicates.SetWhereArgs(idList);
-
     Uri deleteUri(MEDIALIBRARY_DATA_URI);
-
-    deletedCount = MediaLibraryDataManager::GetInstance()->Delete(deleteUri, predicates);
+    DataShare::DataSharePredicates predicates;
+    predicates.In(MEDIA_DATA_DB_ID, idList);
+    auto deletedCount = MediaLibraryDataManager::GetInstance()->Delete(deleteUri, predicates);
     if (deletedCount > 0) {
         return true;
     }
@@ -209,8 +198,9 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
     predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = ? And " + MEDIA_DATA_DB_IS_TRASH + " = ? ");
     vector<string> args = { path, to_string(NOT_TRASHED) };
     predicates.SetWhereArgs(args);
+    int errCode = 0;
 
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(abilityUri, columns, predicates);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(abilityUri, columns, predicates, errCode);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("return nullptr when query rdb");
         return E_RDB;
@@ -258,7 +248,8 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
     predicates.SetWhereArgs(args);
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates, errCode);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, idMap, "No entries found for this path");
 
     int32_t id(0);
@@ -300,7 +291,8 @@ string MediaScannerDb::GetFileDBUriFromPath(const string &path)
     predicates.SetWhereArgs(args);
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates, errCode);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, uri, "No entries found for this path");
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
         MEDIA_ERR_LOG("No result found for this path");
@@ -327,7 +319,8 @@ int32_t MediaScannerDb::GetIdFromPath(const string &path)
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {MEDIA_DATA_DB_ID};
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
         MEDIA_ERR_LOG("No data found for the given path %{private}s", path.c_str());
         return id;
@@ -351,7 +344,8 @@ int32_t MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Met
 
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<string> columns = {MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_DATE_MODIFIED};
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("query %{private}s get nullptr result", path.c_str());
         return E_RDB;

@@ -62,8 +62,8 @@ void MediaLibraryUnitTestUtils::CleanTestFiles()
     system("rm -rf /storage/media/local/files/*");
     Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
     DataShare::DataSharePredicates predicates;
-    string selections = MEDIA_DATA_DB_ID + " <> 0 ";
-    predicates.SetWhereClause(selections);
+    // delete all data in table Files
+    predicates.GreaterThan(MEDIA_DATA_DB_ID, to_string(0));
     int retVal =  MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, predicates);
     MEDIA_INFO_LOG("CleanTestFiles Delete retVal: %{public}d", retVal);
 }
@@ -72,8 +72,8 @@ void MediaLibraryUnitTestUtils::CleanBundlePermission()
 {
     Uri deleteAssetUri(MEDIALIBRARY_BUNDLEPERM_URI);
     DataShare::DataSharePredicates predicates;
-    string selections = MEDIA_DATA_DB_ID + " <> 0 ";
-    predicates.SetWhereClause(selections);
+    // delete all data in table BundlePermission
+    predicates.GreaterThan(MEDIA_DATA_DB_ID, to_string(0));
     int retVal =  MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, predicates);
     MEDIA_INFO_LOG("CleanBundlePermission Delete retVal: %{public}d", retVal);
 }
@@ -104,7 +104,8 @@ bool MediaLibraryUnitTestUtils::GetFileAsset(const int fileId, shared_ptr<FileAs
     string selections = MEDIA_DATA_DB_ID + " = " + to_string(fileId);
     predicates.SetWhereClause(selections);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates);
+    int errCode = 0;
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("GetFileAsset::resultSet == nullptr");
         return false;
@@ -213,10 +214,7 @@ bool MediaLibraryUnitTestUtils::DeleteDir(const string &path, const string &dirI
 
     Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
     DataShare::DataSharePredicates predicates;
-    string selections = MEDIA_DATA_DB_ID + " = ? OR " + MEDIA_DATA_DB_PARENT_ID + " = ?";
-    vector<string> selectionArgs = { dirId, dirId };
-    predicates.SetWhereClause(selections);
-    predicates.SetWhereArgs(selectionArgs);
+    predicates.EqualTo(MEDIA_DATA_DB_ID, dirId)->Or()->EqualTo(MEDIA_DATA_DB_PARENT_ID, dirId);
     int retVal =  MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, predicates);
     return retVal > 0;
 }

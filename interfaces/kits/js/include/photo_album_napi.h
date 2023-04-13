@@ -59,6 +59,8 @@ private:
 
     static napi_value JSCommitModify(napi_env env, napi_callback_info info);
     static napi_value JSPhotoAlbumAddAssets(napi_env env, napi_callback_info info);
+    static napi_value JSPhotoAlbumRemoveAssets(napi_env env, napi_callback_info info);
+    static napi_value JSGetPhotoAssets(napi_env env, napi_callback_info info);
 
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
@@ -72,6 +74,8 @@ struct PhotoAlbumNapiAsyncContext : public NapiError {
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     std::vector<DataShare::DataShareValuesBucket> valuesBuckets;
+    std::string networkId;
+    std::unique_ptr<FetchResult<FileAsset>> fetchResult;
 
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];

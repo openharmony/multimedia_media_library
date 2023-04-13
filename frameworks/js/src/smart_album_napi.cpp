@@ -1179,7 +1179,12 @@ static void GetFileAssetsNative(napi_env env, void *data)
         MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     Uri uri(queryUri);
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
+        return;
+    }
     context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->SetNetworkId(
         MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri()));
@@ -1356,10 +1361,11 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
     auto context = static_cast<SmartAlbumNapiAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    string deleteId = MediaLibraryNapiUtils::GetFileIdFromUri(context->uri);
-    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET + "/" + deleteId;
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, context->typeMask);
     Uri deleteAssetUri(deleteUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_ID, MediaLibraryNapiUtils::GetFileIdFromUri(context->uri));
     int retVal = UserFileClient::Delete(deleteAssetUri, {});
     context->SaveError(retVal);
 }
