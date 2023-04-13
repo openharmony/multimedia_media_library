@@ -99,7 +99,7 @@ int MediaFileExtentionUtils::CreateFile(const Uri &parentUri, const string &disp
 {
     if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
         MEDIA_ERR_LOG("invalid file displayName %{private}s", displayName.c_str());
-        return E_INVAVLID_DISPLAY_NAME;
+        return E_INVALID_DISPLAY_NAME;
     }
     string parentUriStr = parentUri.ToString();
     auto ret = MediaFileExtentionUtils::CheckUriSupport(parentUriStr);
@@ -349,12 +349,12 @@ int32_t MediaFileExtentionUtils::CheckMkdirValid(MediaFileUriType uriType, const
         CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckDistributedUri(parentUriStr),
             E_DISTIBUTED_URI_NO_SUPPORT, "Mkdir not support distributed operation");
         CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckValidDirName(displayName + SLASH_CHAR),
-            E_INVAVLID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
+            E_INVALID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
     } else {
         auto ret = MediaFileExtentionUtils::CheckUriSupport(parentUriStr);
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDisplayName(displayName) == E_OK,
-            E_INVAVLID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
+            E_INVALID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
     }
     return E_SUCCESS;
 }
@@ -1049,7 +1049,7 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const string &
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
     if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
         MEDIA_ERR_LOG("invalid displayName %{private}s", displayName.c_str());
-        return E_INVAVLID_DISPLAY_NAME;
+        return E_INVALID_DISPLAY_NAME;
     }
     vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_URI, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_RELATIVE_PATH };
