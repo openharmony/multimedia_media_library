@@ -167,6 +167,20 @@ const string &MediaLibraryCommand::GetDeviceName()
     return deviceName_;
 }
 
+string MediaLibraryCommand::GetUriStringWithoutSegment()
+{
+    string uriString = uri_.ToString();
+    size_t questionMaskPoint = uriString.rfind('?');
+    size_t hashKeyPoint = uriString.rfind('#');
+    if (questionMaskPoint != string::npos) {
+        return uriString.substr(0, questionMaskPoint);
+    }
+    if (hashKeyPoint != string::npos) {
+        return uriString.substr(0, hashKeyPoint);
+    }
+    return uriString;
+}
+
 MediaLibraryApi MediaLibraryCommand::GetApi()
 {
     return api_;
@@ -226,7 +240,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
 
 void MediaLibraryCommand::ParseOprnTypeFromUri()
 {
-    string insertUri = uri_.ToString();
+    string insertUri = GetUriStringWithoutSegment();
     auto found = insertUri.rfind('/');
     if (found == string::npos) {
         return;
