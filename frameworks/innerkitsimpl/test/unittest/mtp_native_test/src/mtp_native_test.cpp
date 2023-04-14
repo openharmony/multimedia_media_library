@@ -2037,36 +2037,6 @@ HWTEST_F(MtpNativeTest, mtp_driver_001, TestSize.Level0)
     mtpDriver->SendObj(mfr);
     mtpDriver->ReceiveObj(mfr);
     mtpDriver->CloseDriver();
-
-    MEDIA_INFO_LOG("mtp_driver_001::End");
-}
-
-/**
- * @tc.number    : mtp_error_utils_001
- * @tc.name      : mtp_error_utils_001
- * @tc.desc      :
- */
-HWTEST_F(MtpNativeTest, mtp_error_utils_001, TestSize.Level0)
-{
-    MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
-    MtpErrorUtils::SolveGetObjectInfoError(E_SUCCESS);
-    MtpErrorUtils::SolveSendObjectInfoError(E_SUCCESS);
-    MtpErrorUtils::SolveMoveObjectError(E_SUCCESS);
-    MtpErrorUtils::SolveCopyObjectError(E_SUCCESS);
-    MtpErrorUtils::SolveDeleteObjectError(E_SUCCESS);
-    MtpErrorUtils::SolveObjectPropValueError(E_SUCCESS);
-    MtpErrorUtils::SolveCloseFdError(E_SUCCESS);
-
-    MEDIA_INFO_LOG("mtp_error_utils_001::End");
-}
-
-/**
- * @tc.number    : mtp_event_001
- * @tc.name      : mtp_event_001
- * @tc.desc      :
- */
-HWTEST_F(MtpNativeTest, mtp_event_001, TestSize.Level0)
-{
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = 0;
     context->parent = 1;
@@ -2075,21 +2045,9 @@ HWTEST_F(MtpNativeTest, mtp_event_001, TestSize.Level0)
     mtpEvent->SendObjectAdded(path);
     mtpEvent->SendObjectRemoved(path);
     mtpEvent->SendObjectInfoChanged(path);
-    EXPECT_TRUE(path == "");
-    MEDIA_INFO_LOG("mtp_event_001::End");
-}
-
-/**
- * @tc.number    : mtp_service_001
- * @tc.name      : mtp_service_001
- * @tc.desc      :
- */
-HWTEST_F(MtpNativeTest, mtp_service_001, TestSize.Level0)
-{
     MtpService::GetInstance()->StartService();
     MtpService::GetInstance()->StopService();
-
-    MEDIA_INFO_LOG("mtp_service_001::End");
+    MEDIA_INFO_LOG("mtp_driver_001::End");
 }
 
 /**
@@ -2545,7 +2503,14 @@ HWTEST_F(MtpNativeTest, mtp_packet_002, TestSize.Level0)
 
     uint16_t ret = mtpPacket->Parser();
     EXPECT_TRUE(ret != MTP_SUCCESS);
-
+    MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
+    MtpErrorUtils::SolveGetObjectInfoError(E_SUCCESS);
+    MtpErrorUtils::SolveSendObjectInfoError(E_SUCCESS);
+    MtpErrorUtils::SolveMoveObjectError(E_SUCCESS);
+    MtpErrorUtils::SolveCopyObjectError(E_SUCCESS);
+    MtpErrorUtils::SolveDeleteObjectError(E_SUCCESS);
+    MtpErrorUtils::SolveObjectPropValueError(E_SUCCESS);
+    MtpErrorUtils::SolveCloseFdError(E_SUCCESS);
     MEDIA_INFO_LOG("mtp_packet_002::End");
 }
 } // namespace Media

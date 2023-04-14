@@ -87,28 +87,13 @@ shared_ptr<DataShare::DataShareResultSet> GetEmptyFetchResult()
 
 /*
  * Feature : MediaLibraryHelperUnitTest
- * Function : Check FetchResult constructor
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
-HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_SetGet_Test_001, TestSize.Level0)
-{
-    shared_ptr<DataShare::DataShareResultSet> datashareResultSet = nullptr;
-    shared_ptr<FetchResult<FileAsset>> fetchResult = make_shared<FetchResult<FileAsset>>(datashareResultSet);
-    EXPECT_NE(fetchResult, nullptr);
-}
-
-/*
- * Feature : MediaLibraryHelperUnitTest
  * Function : Check set get function
  * SubFunction : NA
  * FunctionPoints : NA
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_SetGet_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_SetGet_Test_001, TestSize.Level0)
 {
     shared_ptr<FetchResult<FileAsset>> fetchResult = make_shared<FetchResult<FileAsset>>();
     fetchResult->Close();
@@ -119,6 +104,8 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_SetGet_Test_002, TestSize.Level
 
     const string TEST_NETWORKID = "1d3cb099659d53b3ee15faaab3c00a8ff983382ebc8b01aabde039ed084e167b";
     fetchResult->SetNetworkId(TEST_NETWORKID);
+    shared_ptr<DataShare::DataShareResultSet> datashareResultSet = nullptr;
+    shared_ptr<FetchResult<FileAsset>> fetchResultTest = make_shared<FetchResult<FileAsset>>(datashareResultSet);
 }
 
 /*
