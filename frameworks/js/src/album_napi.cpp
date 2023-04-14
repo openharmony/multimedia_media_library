@@ -20,6 +20,7 @@
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
 #include "userfile_client.h"
+#include "userfile_manager_types.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -756,7 +757,8 @@ static void CommitModifyNative(napi_env env, void *data)
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
     predicates.SetWhereArgs({ std::to_string(objectPtr->GetAlbumId()) });
 
-    string updateUri = MEDIALIBRARY_DATA_URI;
+    string updateUri = MEDIALIBRARY_DATA_URI + "/" +
+        MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_MODIFYALBUM + "/" + std::to_string(objectPtr->GetAlbumId());
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(updateUri, context->typeMask);
     Uri uri(updateUri);
     int changedRows = UserFileClient::Update(uri, predicates, valuesBucket);

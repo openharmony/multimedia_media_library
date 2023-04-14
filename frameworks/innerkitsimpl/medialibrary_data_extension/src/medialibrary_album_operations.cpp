@@ -21,6 +21,7 @@
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
@@ -35,6 +36,8 @@ using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 
 namespace OHOS::Media {
+using ChangeType = AAFwk::ChangeInfo::ChangeType;
+
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
     int64_t outRow = -1;
@@ -61,9 +64,18 @@ int32_t MediaLibraryAlbumOperations::ModifyAlbumOperation(MediaLibraryCommand &c
     if (values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
         valueObject.GetString(dstDirName);
     }
-    string dstDirPath = MediaLibraryDataManagerUtils::GetParentPath(srcDirPath) + "/" + dstDirName;
-
-    return MediaLibraryObjectUtils::RenameDirObj(cmd, srcDirPath, dstDirPath);
+    int ret;
+    if (dstDirName.empty() && !values.IsEmpty()) {
+        ret = MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
+    } else {
+        string dstDirPath = MediaLibraryDataManagerUtils::GetParentPath(srcDirPath) + "/" + dstDirName;
+        ret = MediaLibraryObjectUtils::RenameDirObj(cmd, srcDirPath, dstDirPath);
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    if ((ret > 0) && (watch != nullptr)) {
+        watch->Notify(strId, ChangeType::UPDATE);
+    }
+    return ret;
 }
 
 string MediaLibraryAlbumOperations::GetDistributedAlbumSql(const string &strQueryCondition, const string &tableName)
