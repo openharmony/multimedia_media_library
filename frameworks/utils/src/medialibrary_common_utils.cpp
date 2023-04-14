@@ -78,6 +78,7 @@ const std::unordered_set<std::string> fileKeyWhiteListUSet {
     MEDIA_DATA_DB_FILE_PATH,
     MEDIA_DATA_DB_IS_TRASH,
     MEDIA_DATA_DB_RECYCLE_PATH,
+    MEDIA_DATA_DB_OWNER_PACKAGE,
 };
 
 void MediaLibraryCommonUtils::Char2Hex(const unsigned char *data, const size_t len, std::string &hexStr)

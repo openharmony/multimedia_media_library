@@ -78,7 +78,7 @@ void MediaLibraryInotify::WatchCallBack()
                 string uri = item.uri_;
                 string id = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
                 Remove(event->wd);
-                MediaLibraryObjectUtils::CloseFile(path, id);
+                MediaLibraryObjectUtils::ScanFileAfterClose(path, id);
             }
         }
     }

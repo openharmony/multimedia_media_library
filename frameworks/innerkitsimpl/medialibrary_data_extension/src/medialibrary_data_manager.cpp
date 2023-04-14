@@ -75,6 +75,10 @@ namespace Media {
 shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
+static constexpr int REVERT_DAYS = 7;
+static constexpr int DAY_HOURS = 24;
+static constexpr int PER_HOUR_MINUTES = 60;
+static constexpr int PER_MINUTE_SECONDS = 60;
 
 MediaLibraryDataManager::MediaLibraryDataManager(void)
 {
@@ -604,7 +608,10 @@ int32_t MediaLibraryDataManager::DoAging()
     if (errorCode != 0) {
         MEDIA_ERR_LOG("DistributeDeviceAging exist error %{public}d", errorCode);
     }
-
+    errorCode = HandleRevertPending();
+    if (errorCode != 0) {
+        MEDIA_ERR_LOG("HandleRevertPending exist error: %{public}d", errorCode);
+    }
     errorCode = LcdDistributeAging();
     if (errorCode != 0) {
         MEDIA_ERR_LOG("LcdDistributeAging exist error %{public}d", errorCode);
@@ -668,6 +675,10 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::GetThumbnail(const string &
         MEDIA_ERR_LOG("thumbnailService_ is null");
         return nullptr;
     }
+    if (!uri.empty() && MediaLibraryObjectUtils::CheckUriPending(uri)) {
+        MEDIA_ERR_LOG("failed to get thumbnail, the file:%{public}s is pending", uri.c_str());
+        return nullptr;
+    }
     return thumbnailService_->GetThumbnail(uri);
 }
 
@@ -684,6 +695,10 @@ void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri)
         return;
     }
     if (!uri.empty()) {
+        if (MediaLibraryObjectUtils::CheckUriPending(uri)) {
+            MEDIA_ERR_LOG("failed to get thumbnail, the file:%{public}s is pending", uri.c_str());
+            return;
+        }
         int32_t err = thumbnailService_->CreateThumbnailAsync(uri);
         if (err != E_SUCCESS) {
             MEDIA_ERR_LOG("ThumbnailService CreateThumbnailAsync failed : %{public}d", err);
@@ -705,6 +720,10 @@ int32_t MediaLibraryDataManager::CreateThumbnail(const ValuesBucket &values)
     }
 
     if (!actualUri.empty()) {
+        if (MediaLibraryObjectUtils::CheckUriPending(actualUri)) {
+            MEDIA_ERR_LOG("failed to create thumbnail, the file %{private}s is pending", actualUri.c_str());
+            return E_IS_PENDING_ERROR;
+        }
         int32_t errorCode = thumbnailService_->CreateThumbnail(actualUri);
         if (errorCode != E_OK) {
             MEDIA_ERR_LOG("CreateThumbnail failed : %{public}d", errorCode);
@@ -980,6 +999,77 @@ bool MediaLibraryDataManager::ShouldCheckFileName(const OperationObject &oprnObj
 int32_t MediaLibraryDataManager::DoTrashAging()
 {
     return MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
+}
+
+int32_t MediaLibraryDataManager::RevertPendingByFileId(const std::string &fileId)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
+    ValuesBucket values;
+    values.PutLong(Media::MEDIA_DATA_DB_TIME_PENDING, 0);
+    cmd.SetValueBucket(values);
+    int32_t retVal = MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, fileId);
+    if (retVal <= 0) {
+        MEDIA_ERR_LOG("failed to revert pending error, fileId:%{public}s", fileId.c_str());
+        return retVal;
+    }
+    string srcPath = MediaLibraryObjectUtils::GetPathByIdFromDb(fileId);
+    MediaLibraryObjectUtils::ScanFileAfterClose(srcPath, fileId);
+    return E_SUCCESS;
+}
+
+int32_t MediaLibraryDataManager::RevertPendingByPackage(const std::string &bundleName)
+{
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+    queryCmd.GetAbsRdbPredicates()
+        ->EqualTo(MEDIA_DATA_DB_OWNER_PACKAGE, bundleName)
+        ->And()
+        ->NotEqualTo(MEDIA_DATA_DB_TIME_PENDING, to_string(0));
+    vector<string> columns = { MEDIA_DATA_DB_ID };
+    auto result = MediaLibraryObjectUtils::QueryWithCondition(queryCmd, columns);
+    if (result == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t ret = E_SUCCESS;
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t id = GetInt32Val(MEDIA_DATA_DB_ID, result);
+        int32_t retVal = RevertPendingByFileId(to_string(id));
+        if (retVal != E_SUCCESS) {
+            ret = retVal;
+            MEDIA_ERR_LOG("Revert file %{public}d failed, ret=%{public}d", id, retVal);
+            continue;
+        }
+    }
+    return ret;
+}
+
+int32_t MediaLibraryDataManager::HandleRevertPending()
+{
+    int64_t time = MediaFileUtils::UTCTimeSeconds();
+    time -= REVERT_DAYS * DAY_HOURS * PER_MINUTE_SECONDS * PER_HOUR_MINUTES;
+    if (time < 0) {
+        MEDIA_ERR_LOG("the time of revert is error, time=%{public}lld", time);
+        return E_INVALID_VALUES;
+    }
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+    queryCmd.GetAbsRdbPredicates()->LessThan(MEDIA_DATA_DB_TIME_PENDING, to_string(time));
+    vector<string> columns = { MEDIA_DATA_DB_ID };
+    auto result = MediaLibraryObjectUtils::QueryWithCondition(queryCmd, columns);
+    if (result == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t ret = E_SUCCESS;
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t id = GetInt32Val(MEDIA_DATA_DB_ID, result);
+        int32_t retVal = RevertPendingByFileId(to_string(id));
+        if (retVal != E_SUCCESS) {
+            ret = retVal;
+            MEDIA_ERR_LOG("Revert file %{public}d failed, ret=%{public}d", id, retVal);
+            continue;
+        }
+    }
+    return ret;
 }
 }  // namespace Media
 }  // namespace OHOS
