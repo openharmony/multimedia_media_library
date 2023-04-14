@@ -99,7 +99,6 @@ ohos_shared_library("media_mtp") {
     "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/consumer/include",
     "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/common/include",
     "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/provider/include",
-    "//base/powermgr/battery_manager/interfaces/innerkits/native/include",
   ]
 
   deps = [
@@ -109,7 +108,6 @@ ohos_shared_library("media_mtp") {
     "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
     "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
-    "//base/powermgr/battery_manager/interfaces/innerkits:batterysrv_client",
     "//third_party/openssl:libcrypto_shared",
   ]
 
@@ -136,6 +134,10 @@ ohos_shared_library("media_mtp") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
   ]
+
+  if (defined(global_parts_info.powermgr_battery_manager)) {
+    external_deps += [ "battery_manager:batterysrv_client" ]
+  }
 
   part_name = "media_library"
   subsystem_name = "multimedia"
