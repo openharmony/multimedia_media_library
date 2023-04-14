@@ -133,6 +133,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryOperation(
 int32_t MediaLibraryAssetOperations::UpdateOperation(MediaLibraryCommand &cmd)
 {
     // Update asset specify type
+    // todo: check input params
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_PHOTO:
             return MediaLibraryPhotoOperations::Update(cmd);
@@ -370,6 +371,29 @@ int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
     }
 
     return deletedRows;
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryFiles(
+    MediaLibraryCommand &cmd, const vector<string> &columns)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return nullptr;
+    }
+
+    string fileId = cmd.GetOprnFileId();
+    if (cmd.GetAbsRdbPredicates()->GetWhereClause().empty() && !fileId.empty()) {
+        cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, fileId);
+    }
+    string networkId = cmd.GetOprnDevice();
+    if (!networkId.empty()) {
+        std::vector<string> devices;
+        devices.push_back(networkId);
+        cmd.GetAbsRdbPredicates()->InDevices(devices);
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("QueryFile RdbStore->Query");
+    return rdbStore->Query(cmd, columns);
 }
 
 void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId)
