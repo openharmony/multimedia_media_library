@@ -388,6 +388,30 @@ void TestPhotoDeleteParamsApi10(OperationObject oprnObject, int32_t fileId, Exce
     func(ret);
 }
 
+void TestPhotoOpenParamsApi10(int32_t fileId, const string &mode, ExceptIntFunction func)
+{
+    string uriString = MediaLibraryDataManagerUtils::GetMediaTypeUri(MediaType::MEDIA_TYPE_IMAGE);
+    uriString += "/" + to_string(fileId);
+    Uri uri(uriString);
+    MediaLibraryCommand cmd(uri);
+    int32_t fd = MediaLibraryPhotoOperations::Open(cmd, mode);
+    func(fd);
+    if (fd > 0) {
+        close(fd);
+        MediaLibraryInotify::GetInstance()->RemoveByFileUri(cmd.GetUriStringWithoutSegment());
+    }
+}
+
+void TestPhotoCloseParamsApi10(int32_t fileId, ExceptIntFunction func)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryPhotoOperations::Close(cmd);
+    func(ret);
+}
+
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
@@ -610,5 +634,48 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_003, TestS
     }
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_003");
 }
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_001");
+
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
+        return;
+    }
+    
+    static constexpr int LARGE_NUM = 1000;
+    TestPhotoOpenParamsApi10(fileId, "",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
+    TestPhotoOpenParamsApi10(fileId, "m",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
+    TestPhotoOpenParamsApi10(fileId + LARGE_NUM, "rw",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+    TestPhotoOpenParamsApi10(fileId, "rw",
+        [] (int32_t result) { EXPECT_GE(result, E_OK); });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_close_api10_test_001");
+
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
+        return;
+    }
+
+    static constexpr int LARGE_NUM = 1000;
+    TestPhotoCloseParamsApi10(fileId + LARGE_NUM,
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_FILEID); });
+    TestPhotoCloseParamsApi10(fileId,
+        [] (int32_t result) { EXPECT_EQ(result, E_OK); });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_close_api10_test_001");
+}
+
 } // namespace Media
 } // namespace OHOS
