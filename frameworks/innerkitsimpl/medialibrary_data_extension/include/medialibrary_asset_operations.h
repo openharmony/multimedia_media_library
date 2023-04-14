@@ -52,6 +52,9 @@ protected:
     static void GetAssetRootDir(int32_t mediaType, std::string &rootDirPath);
     static int32_t SetAssetPathInCreate(FileAsset &fileAsset);
     static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);
+
+    static std::shared_ptr<NativeRdb::ResultSet> QueryFiles(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns);
     static void InvalidateThumbnail(const std::string &fileId);
 
     static int32_t BeginTransaction();

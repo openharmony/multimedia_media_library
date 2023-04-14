@@ -158,7 +158,7 @@ void ClearAndRestart()
     for (const auto &dir : TEST_ROOT_DIRS) {
         string ROOT_PATH = "/storage/media/100/local/files/";
         bool ret = MediaFileUtils::CreateDirectory(ROOT_PATH + dir + "/");
-        CHECK_AND_PRINT_LOG(ret == E_OK, "make %{public}s dir failed, ret=%{public}d", dir.c_str(), ret);
+        CHECK_AND_PRINT_LOG(ret, "make %{public}s dir failed, ret=%{public}d", dir.c_str(), ret);
     }
     CleanTestTables();
     SetTables();
@@ -510,5 +510,105 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_api10_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_delete_api10_test_001");
 }
 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_001");
+
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
+    if (fileId1 < E_OK) {
+        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId1);
+        return;
+    }
+
+    // Query
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    vector<string> columns;
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        EXPECT_EQ(name, "photo1.jpg");
+    } else {
+        MEDIA_ERR_LOG("Test first tdd Query failed");
+        return;
+    }
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_002");
+
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
+    if (fileId1 < E_OK) {
+        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId1);
+        return;
+    }
+    int32_t fileId2 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
+    if (fileId2 < E_OK) {
+        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId2);
+        return;
+    }
+
+    // Query
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->BeginWrap()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId1))->
+        Or()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId2))->EndWrap()->
+        OrderByAsc(MediaColumn::MEDIA_ID);
+    vector<string> columns;
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        EXPECT_EQ(name, "photo1.jpg");
+    } else {
+        MEDIA_ERR_LOG("Test first tdd Query failed");
+        return;
+    }
+
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        EXPECT_EQ(name, "photo2.jpg");
+    } else {
+        MEDIA_ERR_LOG("Test second tdd Query failed");
+        return;
+    }
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_003");
+
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
+    if (fileId1 < E_OK) {
+        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId1);
+        return;
+    }
+
+    // Query
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_NAME);
+    columns.push_back(MediaColumn::MEDIA_DATE_ADDED);
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        EXPECT_EQ(name, "photo1.jpg");
+        int64_t dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
+        EXPECT_GE(dateAdded, 0L);
+        int64_t dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
+        EXPECT_EQ(dateModified, 0L);
+    } else {
+        MEDIA_ERR_LOG("Test first tdd Query failed");
+        return;
+    }
+    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_003");
+}
 } // namespace Media
 } // namespace OHOS
