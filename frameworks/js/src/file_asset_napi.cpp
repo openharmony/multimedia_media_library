@@ -1964,7 +1964,7 @@ static void JSTrashExecute(napi_env env, void *data)
 static void JSTrashCallbackComplete(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("JSGetThumbnail");
+    tracer.Start("JSTrashCallbackComplete");
 
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -2215,7 +2215,7 @@ bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value)
 napi_value FileAssetNapi::UserFileMgrSet(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("UserFileMgrGet");
+    tracer.Start("UserFileMgrSet");
 
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
