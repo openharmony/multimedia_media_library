@@ -37,7 +37,10 @@ ohos_unittest("medialibrary_rdb_test") {
     "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include",
   ]
 
-  sources = [ "./src/medialibrary_rdb_test.cpp" ]
+  sources = [
+    "./src/medialibrary_rdb_test.cpp",
+    "./src/medialibrary_subscriber_test.cpp",
+  ]
   deps = [
     "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager:ability_manager",
     "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
@@ -49,6 +52,7 @@ ohos_unittest("medialibrary_rdb_test") {
   ]
 
   external_deps = [
+    "ability_base:want",
     "ability_runtime:ability_context_native",
     "ability_runtime:app_context",
     "c_utils:utils",
