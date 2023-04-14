@@ -44,8 +44,8 @@ public:
     static int32_t CloseOperation(MediaLibraryCommand &cmd);
 
 protected:
-    static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &byKey,
-        const std::string &byValue, OperationObject oprnObject, const std::string &networkId = "");
+    static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
+        OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
 
     static int32_t InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset);
     static int32_t CheckDisplayNameWithType(const std::string &displayName, int32_t mediaType);
@@ -55,6 +55,8 @@ protected:
 
     static std::shared_ptr<NativeRdb::ResultSet> QueryFiles(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
+    static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode);
+    static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset);
     static void InvalidateThumbnail(const std::string &fileId);
 
     static int32_t BeginTransaction();
@@ -67,6 +69,7 @@ private:
         std::string &name);
     static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &filePath);
+    static void ScanFile(const std::string &path);
     
     static constexpr int ASSET_IN_BUCKET_NUM_MAX = 1000;
     static constexpr int ASSET_DIR_START_NUM = 16;

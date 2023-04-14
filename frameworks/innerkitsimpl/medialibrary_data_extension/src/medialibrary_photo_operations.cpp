@@ -22,6 +22,8 @@
 #include "media_log.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
+#include "medialibrary_data_manager_utils.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdbstore.h"
 #include "userfile_manager_types.h"
@@ -58,6 +60,11 @@ int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
 int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
 {
     string fileId = cmd.GetOprnFileId();
+    vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_RELATIVE_PATH
+    };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID,
         fileId, cmd.GetOprnObject());
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
@@ -91,12 +98,49 @@ int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
-    return 0;
+    string uriString = cmd.GetUriStringWithoutSegment();
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+    if (uriString.empty()) {
+        return E_INVALID_URI;
+    }
+
+    vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_URI
+    };
+    auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
+        OperationObject::FILESYSTEM_PHOTO, columns);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
+        return E_INVALID_URI;
+    }
+
+    return OpenAsset(fileAsset, mode);
 }
 
 int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
 {
-    return 0;
+    string strFileId = cmd.GetOprnFileId();
+    if (strFileId.empty()) {
+        return E_INVALID_FILEID;
+    }
+
+    vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_URI,
+        PhotoColumn::MEDIA_TIME_PENDING
+    };
+    auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, strFileId, cmd.GetOprnObject(), columns);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get FileAsset id %{public}s from database failed!", strFileId.c_str());
+        return E_INVALID_FILEID;
+    }
+
+    int32_t errCode = CloseAsset(fileAsset);
+    // todo: pending
+    return errCode;
 }
 
 int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)

@@ -19,6 +19,7 @@
 #include <dirent.h>
 #include <mutex>
 
+#include "directory_ex.h"
 #include "file_asset.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -30,9 +31,12 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_inotify.h"
+#include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
+#include "media_privacy_manager.h"
 #include "mimetype_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
@@ -191,11 +195,8 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
     }
 }
 
-static bool CheckFileAssetValue(const string &column, const string &value, OperationObject object)
+static bool CheckOprnObject(OperationObject object)
 {
-    if (column.empty() || value.empty()) {
-        return false;
-    }
     const set<OperationObject> validOprnObjectet = {
         OperationObject::FILESYSTEM_PHOTO,
         OperationObject::FILESYSTEM_AUDIO,
@@ -209,9 +210,9 @@ static bool CheckFileAssetValue(const string &column, const string &value, Opera
 }
 
 shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const string &column,
-    const string &value, OperationObject oprnObject, const string &networkId)
+    const string &value, OperationObject oprnObject, const vector<string> &columns, const string &networkId)
 {
-    if (!CheckFileAssetValue(column, value, oprnObject)) {
+    if (!CheckOprnObject(oprnObject) || column.empty() || value.empty()) {
         return nullptr;
     }
 
@@ -222,12 +223,8 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const stri
 
     MediaLibraryCommand cmd(oprnObject, OperationType::QUERY, networkId);
     cmd.GetAbsRdbPredicates()->EqualTo(column, value);
-    vector<string> queryColumn = {
-        MediaColumn::MEDIA_ID,
-        MediaColumn::MEDIA_FILE_PATH,
-        MediaColumn::MEDIA_RELATIVE_PATH
-    };
-    auto resultSet = rdbStore->Query(cmd, queryColumn);
+
+    auto resultSet = rdbStore->Query(cmd, columns);
     if (resultSet == nullptr) {
         return nullptr;
     }
@@ -396,11 +393,102 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryFiles(
     return rdbStore->Query(cmd, columns);
 }
 
+static int32_t OpenFile(const string &filePath, const string &mode)
+{
+    std::string absFilePath;
+    if (!PathToRealPath(filePath, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to get real path: %{private}s", filePath.c_str());
+        return E_ERR;
+    }
+
+    return MediaPrivacyManager(absFilePath, mode).Open();
+}
+
+static bool CheckMode(const string &mode)
+{
+    if (mode.empty()) {
+        return false;
+    }
+    if (MEDIA_OPEN_MODES.find(mode) != MEDIA_OPEN_MODES.end()) {
+        return true;
+    } else {
+        MEDIA_ERR_LOG("Input Mode %{public}s is invalid", mode.c_str());
+        return false;
+    }
+}
+
+int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode)
+{
+    if (fileAsset == nullptr) {
+        return E_INVALID_VALUES;
+    }
+    
+    string lowerMode = mode;
+    transform(lowerMode.begin(), lowerMode.end(), lowerMode.begin(), ::tolower);
+    if (!CheckMode(lowerMode)) {
+        return E_INVALID_MODE;
+    }
+
+    // todo: when Pending == -1, create asset
+    string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
+    int32_t fd = OpenFile(path, lowerMode);
+    if (fd < 0) {
+        MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos) {
+        auto watch = MediaLibraryInotify::GetInstance();
+        if (watch != nullptr) {
+            MEDIA_DEBUG_LOG("enter inotify, path = %{private}s", path.c_str());
+            watch->AddWatchList(path, fileAsset->GetUri());
+        }
+    }
+    return fd;
+}
+
+int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fileAsset)
+{
+    if (fileAsset == nullptr) {
+        return E_INVALID_VALUES;
+    }
+
+    // remove inotify event since there is close cmd
+    auto watch = MediaLibraryInotify::GetInstance();
+    if (watch != nullptr) {
+        string uri = fileAsset->GetUri();
+        watch->RemoveByFileUri(uri);
+        MEDIA_DEBUG_LOG("watch RemoveByFileUri, uri:%{private}s", uri.c_str());
+    }
+
+    string fileId = to_string(fileAsset->GetId());
+    string path = fileAsset->GetPath();
+    InvalidateThumbnail(fileId);
+    ScanFile(path);
+    auto notifyWatch = MediaLibraryNotify::GetInstance();
+    if (notifyWatch != nullptr) {
+        notifyWatch->Notify(fileAsset);
+    }
+    return E_OK;
+}
 void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId)
 {
     auto thumbnailService = ThumbnailService::GetInstance();
     if (thumbnailService != nullptr) {
         thumbnailService->InvalidateThumbnail(fileId);
+    }
+}
+
+void MediaLibraryAssetOperations::ScanFile(const string &path)
+{
+    shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
+    if (scanFileCb == nullptr) {
+        MEDIA_ERR_LOG("Failed to create scan file callback object");
+        return ;
+    }
+    int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanFileCb);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Scan file failed!");
     }
 }
 
