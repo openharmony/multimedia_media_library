@@ -56,7 +56,7 @@ static bool SolveUris(const list<Uri> &uris, Parcel &parcel)
 {
     if (uris.size() > numeric_limits<uint32_t>::max() ||
         !parcel.WriteUint32(static_cast<uint32_t>(uris.size()))) {
-        MEDIA_ERR_LOG("Failed to write uri list length, list size = %{private}d", uris.size());
+        MEDIA_ERR_LOG("Failed to write uri list length, list size = %{private}lu", uris.size());
         return false;
     }
     for (auto const &uri : uris) {
