@@ -148,14 +148,14 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
         MEDIA_ERR_LOG("rdbStore_->Insert failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-    
+
     if (MediaLibraryDevice::GetInstance()->IsHasActiveDevice()) {
         vector<string> devices = vector<string>();
         if (!SyncPushTable(bundleName_, cmd.GetTableName(), devices)) {
             MEDIA_ERR_LOG("SyncPushTable Error");
         }
     }
-    
+
     MEDIA_DEBUG_LOG("rdbStore_->Insert end, rowId = %d, ret = %{public}d", (int)rowId, ret);
     return ret;
 }
@@ -372,7 +372,7 @@ int32_t MediaLibraryRdbStore::BeginTransaction()
         transactionCV_.notify_one();
         return E_HAS_DB_ERROR;
     }
-    
+
     return E_OK;
 }
 
@@ -701,18 +701,35 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     return NativeRdb::E_OK;
 }
 
+int32_t VersionAddCloud(RdbStore &store, int32_t oldVersion, int32_t newVersion)
+{
+    const std::string alterCloudId = "ALTER TABLE " + MEDIALIBRARY_TABLE +
+        " ADD COLUMN " + MEDIA_DATA_DB_CLOUD_ID +" TEXT";
+    int32_t result = store.ExecuteSql(alterCloudId);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb cloud_id error %{private}d", result);
+    }
+    const std::string alterDirty = "ALTER TABLE " + MEDIALIBRARY_TABLE +
+        " ADD COLUMN " + MEDIA_DATA_DB_DIRTY +" INT DEFAULT 0";
+    result = store.ExecuteSql(alterDirty);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb dirty error %{private}d", result);
+    }
+    const std::string alterPosition = "ALTER TABLE " + MEDIALIBRARY_TABLE +
+        " ADD COLUMN " + MEDIA_DATA_DB_POSITION +" INT DEFAULT 1";
+    result = store.ExecuteSql(alterPosition);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb position error %{private}d", result);
+    }
+    return NativeRdb::E_OK;
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
-#ifdef RDB_UPGRADE_MOCK
-    const string ALTER_MOCK_COLUMN = "ALTER TABLE " + MEDIALIBRARY_TABLE +
-        " ADD COLUMN upgrade_test_column INT DEFAULT 0";
-    MEDIA_DEBUG_LOG("OnUpgrade |Rdb Verison %{private}d => %{private}d", oldVersion, newVersion);
-    int32_t result = NativeRdb::E_ERROR;
-    result = store.ExecuteSql(ALTER_MOCK_COLUMN);
-    if (result != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Upgrade rdb error %{private}d", result);
+    MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
+    if (oldVersion < MEDIA_RDB_VERSION_ADD_CLOUD) {
+        VersionAddCloud(store, oldVersion, newVersion);
     }
-#endif
     return NativeRdb::E_OK;
 }
 
