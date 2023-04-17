@@ -12,10 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #define MLOG_TAG "MediaLibraryNapi"
 
 #include "media_library_napi.h"
+
 #include <fcntl.h>
 #include <sys/sendfile.h>
 
@@ -1508,26 +1508,7 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
     return result;
 }
 
-napi_value* ChangeListenerNapi::SolveOnChangeResult(napi_env env, UvChangeMsg *msg)
-{
-    static napi_value result[ARGS_THREE] = { nullptr };
-    napi_value uriArray = nullptr;
-    napi_create_array_with_length(env, msg->changeInfo_.uris_.size(), &uriArray);
-    int elementIndex = 0;
-    for (auto uri : msg->changeInfo_.uris_) {
-        napi_value uriRet = nullptr;
-        napi_create_string_utf8(env, uri.ToString().c_str(), NAPI_AUTO_LENGTH, &uriRet);
-        napi_set_element(env, uriArray, elementIndex++, uriRet);
-    }
-    result[PARAM0] = uriArray;
-    napi_get_undefined(env, &result[PARAM1]);
-    napi_value type = nullptr;
-    napi_create_int32(env, msg->changeInfo_.changeType_, &type);
-    result[PARAM2] = type;
-    return result;
-}
-
-void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref cbRef)
+void ChangeListenerNapi::OnChange(const MediaChangeListener &listener, const napi_ref cbRef)
 {
     uv_loop_s *loop = nullptr;
     napi_get_uv_event_loop(env_, &loop);
@@ -1540,21 +1521,10 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
         return;
     }
 
-    UvChangeMsg *msg = new (std::nothrow) UvChangeMsg(env_, cbRef, listener.changeInfo, listener.strUri);
+    UvChangeMsg *msg = new (nothrow) UvChangeMsg(env_, cbRef);
     if (msg == nullptr) {
         delete work;
         return;
-    }
-    if (listener.changeInfo.changeType_ == DataShare::DataShareObserver::ChangeType::OTHER) {
-        NAPI_ERR_LOG("changeInfo.changeType_ is other");
-        return;
-    }
-    if (msg->changeInfo_.size_ > 0) {
-        msg->data_ = new (nothrow) uint8_t[msg->changeInfo_.size_];
-        int copyRet = memcpy_s(msg->data_, msg->changeInfo_.size_, msg->changeInfo_.data_, msg->changeInfo_.size_);
-        if (copyRet != 0) {
-            NAPI_ERR_LOG("Parcel data copy failed, err = %{public}d", copyRet);
-        }
     }
     work->data = reinterpret_cast<void *>(msg);
 
@@ -1571,16 +1541,17 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
                     break;
                 }
                 napi_env env = msg->env_;
-
+                napi_value result[ARGS_TWO] = { nullptr };
+                napi_get_undefined(env, &result[PARAM0]);
+                napi_get_undefined(env, &result[PARAM1]);
                 napi_value jsCallback = nullptr;
                 napi_status status = napi_get_reference_value(env, msg->ref_, &jsCallback);
                 if (status != napi_ok) {
                     NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
                     break;
                 }
-                napi_value* result = ChangeListenerNapi::SolveOnChangeResult(env, msg);
                 napi_value retVal = nullptr;
-                napi_call_function(env, nullptr, jsCallback, ARGS_THREE, result, &retVal);
+                napi_call_function(env, nullptr, jsCallback, ARGS_TWO, result, &retVal);
                 if (status != napi_ok) {
                     NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
                     break;
@@ -1651,55 +1622,48 @@ void MediaLibraryNapi::RegisterChange(napi_env env, const string &type, ChangeLi
     }
 }
 
-void MediaLibraryNapi::RegisterNotifyChange(napi_env env,
-    const std::string &uri, bool isDerived, ChangeListenerNapi &listObj)
-{
-    Uri notifyUri(uri);
-    shared_ptr<DataShare::DataShareObserver> observer= make_shared<MediaOnNotifyObserver>(listObj, uri);
-    UserFileClient::RegisterObserverExt(notifyUri, observer, isDerived);
-    listObj.observers_.insert(make_pair(uri, observer));
-}
-
 napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
 {
+    napi_value undefinedResult = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {nullptr};
+    napi_value thisVar = nullptr;
+    size_t res = 0;
+    char buffer[ARG_BUF_SIZE];
+    string type;
+    const int32_t refCount = 1;
+    MediaLibraryNapi *obj = nullptr;
+    napi_status status;
+
     MediaLibraryTracer tracer;
     tracer.Start("JSOnCallback");
-    napi_value undefinedResult = nullptr;
+
     napi_get_undefined(env, &undefinedResult);
-    size_t argc = ARGS_THREE;
-    napi_value argv[ARGS_THREE] = {nullptr};
-    napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_THREE, "requires 3 parameters");
-    if (thisVar == nullptr || argv[PARAM0] == nullptr || argv[PARAM1] == nullptr || argv[PARAM2] == nullptr) {
+    NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameters");
+    if (thisVar == nullptr || argv[PARAM0] == nullptr || argv[PARAM1] == nullptr) {
         NAPI_ERR_LOG("Failed to retrieve details about the callback");
         return undefinedResult;
     }
-    MediaLibraryNapi *obj = nullptr;
-    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string ||
-            napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_boolean ||
-            napi_typeof(env, argv[PARAM2], &valueType) != napi_ok || valueType != napi_function) {
+            napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
             return undefinedResult;
         }
-        char buffer[ARG_BUF_SIZE];
-        size_t res = 0;
+
         if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
             NAPI_ERR_LOG("Failed to get value string utf8 for type");
             return undefinedResult;
         }
-        string uri = string(buffer);
-        bool isDerived = false;
-        if (napi_get_value_bool(env, argv[PARAM1], &isDerived) != napi_ok) {
-            NAPI_ERR_LOG("Failed to get value string utf8 for type");
-            return undefinedResult;
-        }
-        const int32_t refCount = 1;
-        napi_create_reference(env, argv[PARAM2], refCount, &g_listObj->cbOnRef_);
+        type = string(buffer);
+
+        napi_create_reference(env, argv[PARAM1], refCount, &g_listObj->cbOnRef_);
+
         tracer.Start("RegisterChange");
-        obj->RegisterNotifyChange(env, uri, isDerived, *g_listObj);
+        obj->RegisterChange(env, type, *g_listObj);
         tracer.Finish();
     }
 
@@ -1775,58 +1739,54 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
     }
 }
 
-void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env, const std::string &uri, ChangeListenerNapi &listObj)
-{
-    if (listObj.observers_.find(uri) ==  listObj.observers_.end()) {
-        NAPI_ERR_LOG("Failed to find UnRegisterNotifyChange uri");
-        return;
-    }
-    shared_ptr<DataShare::DataShareObserver> observer = listObj.observers_.find(uri)->second;
-    UserFileClient::UnregisterObserverExt(Uri(uri), observer);
-    listObj.observers_.find(uri)->second = nullptr;
-}
-
 napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("JSOffCallback");
     napi_value undefinedResult = nullptr;
-    napi_get_undefined(env, &undefinedResult);
     size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = {nullptr};
     napi_value thisVar = nullptr;
+    size_t res = 0;
+    char buffer[ARG_BUF_SIZE];
+    const int32_t refCount = 1;
+    string type;
+    MediaLibraryNapi *obj = nullptr;
+    napi_status status;
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSOffCallback");
+
+    napi_get_undefined(env, &undefinedResult);
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, ARGS_ONE <= argc && argc<= ARGS_TWO, "requires one or two parameters");
     if (thisVar == nullptr || argv[PARAM0] == nullptr) {
         NAPI_ERR_LOG("Failed to retrieve details about the callback");
         return undefinedResult;
     }
-    MediaLibraryNapi *obj = nullptr;
-    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
             return undefinedResult;
         }
-        size_t res = 0;
-        char buffer[ARG_BUF_SIZE];
+
         if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
             NAPI_ERR_LOG("Failed to get value string utf8 for type");
             return undefinedResult;
         }
-        string uri = string(buffer);
+        type = string(buffer);
 
         if (argc == ARGS_TWO) {
             if (napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function ||
                 g_listObj == nullptr) {
                 return undefinedResult;
             }
-            const int32_t refCount = 1;
+
             napi_create_reference(env, argv[PARAM1], refCount, &g_listObj->cbOffRef_);
         }
 
         tracer.Start("UnregisterChange");
-        obj->UnRegisterNotifyChange(env, uri, *g_listObj);
+        obj->UnregisterChange(env, type, *g_listObj);
         tracer.Finish();
     }
 

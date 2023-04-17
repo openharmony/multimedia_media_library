@@ -24,7 +24,6 @@
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
-#include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_operations.h"
 #include "media_file_utils.h"
@@ -39,7 +38,6 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
-using ChangeType = AAFwk::ChangeInfo::ChangeType;
 static const std::string HASH_COLLISION_SUFFIX = "(1)";
 static const std::string ASSET_RECYCLE_SUFFIX = "-copy";
 static const std::string DIR_RECYCLE_SUFFIX = "_recycle";
@@ -571,17 +569,10 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(const int32
     MEDIA_DEBUG_LOG("HandleAddAssetOperations albumId = %{public}d, childFileAssetId = %{public}d",
         albumId, childFileAssetId);
     int32_t errorCode = E_SUCCESS;
-    auto watch = MediaLibraryNotify::GetInstance();
     if (albumId == TRASH_ALBUM_ID_VALUES) {
         errorCode = InsertTrashAssetsInfoUtil(childFileAssetId);
-        if ((errorCode > 0) && (watch != nullptr)) {
-            watch->Notify(to_string(childFileAssetId), ChangeType::DELETE);
-        }
     } else if (albumId == FAVOURITE_ALBUM_ID_VALUES) {
         errorCode = UpdateFavoriteAssetsInfoUtil(childFileAssetId, true);
-        if ((errorCode > 0) && (watch != nullptr)) {
-            watch->Notify(to_string(childFileAssetId), ChangeType::UPDATE);
-        }
     }
     CHECK_AND_RETURN_RET_LOG(errorCode >= 0, errorCode, "Failed to handleAddAssetOperations");
     if (childAlbumId != DEFAULT_ALBUMID) {

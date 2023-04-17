@@ -17,6 +17,7 @@
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_LIBRARY_NAPI_H_
 
 #include <mutex>
+
 #include "abs_shared_result_set.h"
 #include "album_napi.h"
 #include "data_ability_helper.h"
@@ -55,25 +56,16 @@ enum ListenerType {
 
 struct MediaChangeListener {
     MediaType mediaType;
-    OHOS::DataShare::DataShareObserver::ChangeInfo changeInfo;
-    std::string strUri;
 };
 
 class ChangeListenerNapi {
 public:
     class UvChangeMsg {
     public:
-        UvChangeMsg(napi_env env, napi_ref ref,
-                    OHOS::DataShare::DataShareObserver::ChangeInfo &changeInfo,
-                    std::string strUri)
-            : env_(env), ref_(ref), changeInfo_(changeInfo),
-            strUri_(std::move(strUri)) {}
+        UvChangeMsg(napi_env env, napi_ref ref) : env_(env), ref_(ref) {}
         ~UvChangeMsg() {}
         napi_env env_;
         napi_ref ref_;
-        OHOS::DataShare::DataShareObserver::ChangeInfo changeInfo_;
-        uint8_t *data_;
-        std::string strUri_;
     };
 
     explicit ChangeListenerNapi(napi_env env) : env_(env) {}
@@ -93,10 +85,10 @@ public:
         return *this;
     }
 
-    ~ChangeListenerNapi(){};
+    ~ChangeListenerNapi() = default;
 
-    void OnChange(MediaChangeListener &listener, const napi_ref cbRef);
-    static napi_value* SolveOnChangeResult(napi_env env, UvChangeMsg *msg);
+    void OnChange(const MediaChangeListener &listener, const napi_ref cbRef);
+
     napi_ref cbOnRef_ = nullptr;
     napi_ref cbOffRef_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> audioDataObserver_ = nullptr;
@@ -107,7 +99,7 @@ public:
     sptr<AAFwk::IDataAbilityObserver> deviceDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> remoteFileDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> albumDataObserver_ = nullptr;
-    std::unordered_map<std::string, shared_ptr<DataShare::DataShareObserver>> observers_;
+
 private:
     napi_env env_ = nullptr;
 };
@@ -132,25 +124,6 @@ public:
     MediaType mediaType_;
 };
 
-class MediaOnNotifyObserver : public DataShare::DataShareObserver  {
-public:
-    MediaOnNotifyObserver(const ChangeListenerNapi &listObj, std::string uri) : listObj_(listObj)
-    {
-        uri_ = uri;
-    }
-
-    ~MediaOnNotifyObserver() = default;
-
-    void OnChange(const ChangeInfo &changeInfo) override
-    {
-        MediaChangeListener listener;
-        listener.changeInfo = changeInfo;
-        listener.strUri = uri_;
-        listObj_.OnChange(listener, listObj_.cbOnRef_);
-    }
-    ChangeListenerNapi listObj_;
-    std::string uri_;
-};
 class MediaLibraryNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
@@ -221,8 +194,7 @@ private:
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
     void UnregisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
-    void RegisterNotifyChange(napi_env env, const std::string &uri, bool isDerived, ChangeListenerNapi &listObj);
-    void UnRegisterNotifyChange(napi_env env, const std::string &uri, ChangeListenerNapi &listObj);
+
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
