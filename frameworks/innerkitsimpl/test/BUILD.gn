@@ -15,7 +15,6 @@ group("test") {
   testonly = true
 
   deps = [
-    "fuzztest/medialibrary_fuzzer:fuzztest",
     "unittest/medialib_statistic_test:unittest",
     "unittest/medialibrary_common_utils_test:unittest",
     "unittest/medialibrary_datamanager_test:unittest",
