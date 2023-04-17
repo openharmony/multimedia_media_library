@@ -1048,7 +1048,7 @@ int32_t MediaLibraryDataManager::HandleRevertPending()
     int64_t time = MediaFileUtils::UTCTimeSeconds();
     time -= REVERT_DAYS * DAY_HOURS * PER_MINUTE_SECONDS * PER_HOUR_MINUTES;
     if (time < 0) {
-        MEDIA_ERR_LOG("the time of revert is error, time=%{public}lld", time);
+        MEDIA_ERR_LOG("the time of revert is error, time=%{public}ld", (long)time);
         return E_INVALID_VALUES;
     }
     MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
