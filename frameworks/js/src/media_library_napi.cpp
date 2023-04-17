@@ -1662,44 +1662,46 @@ void MediaLibraryNapi::RegisterNotifyChange(napi_env env,
 
 napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
 {
+    napi_value undefinedResult = nullptr;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {nullptr};
+    napi_value thisVar = nullptr;
+    size_t res = 0;
+    char buffer[ARG_BUF_SIZE];
+    string type;
+    const int32_t refCount = 1;
+    MediaLibraryNapi *obj = nullptr;
+    napi_status status;
+
     MediaLibraryTracer tracer;
     tracer.Start("JSOnCallback");
-    napi_value undefinedResult = nullptr;
+
     napi_get_undefined(env, &undefinedResult);
-    size_t argc = ARGS_THREE;
-    napi_value argv[ARGS_THREE] = {nullptr};
-    napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_THREE, "requires 3 parameters");
-    if (thisVar == nullptr || argv[PARAM0] == nullptr || argv[PARAM1] == nullptr || argv[PARAM2] == nullptr) {
+    NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameters");
+    if (thisVar == nullptr || argv[PARAM0] == nullptr || argv[PARAM1] == nullptr) {
         NAPI_ERR_LOG("Failed to retrieve details about the callback");
         return undefinedResult;
     }
-    MediaLibraryNapi *obj = nullptr;
-    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string ||
-            napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_boolean ||
-            napi_typeof(env, argv[PARAM2], &valueType) != napi_ok || valueType != napi_function) {
+            napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
             return undefinedResult;
         }
-        char buffer[ARG_BUF_SIZE];
-        size_t res = 0;
+
         if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
             NAPI_ERR_LOG("Failed to get value string utf8 for type");
             return undefinedResult;
         }
-        string uri = string(buffer);
-        bool isDerived = false;
-        if (napi_get_value_bool(env, argv[PARAM1], &isDerived) != napi_ok) {
-            NAPI_ERR_LOG("Failed to get value string utf8 for type");
-            return undefinedResult;
-        }
-        const int32_t refCount = 1;
-        napi_create_reference(env, argv[PARAM2], refCount, &g_listObj->cbOnRef_);
+        type = string(buffer);
+
+        napi_create_reference(env, argv[PARAM1], refCount, &g_listObj->cbOnRef_);
+
         tracer.Start("RegisterChange");
-        obj->RegisterNotifyChange(env, uri, isDerived, *g_listObj);
+        obj->RegisterChange(env, type, *g_listObj);
         tracer.Finish();
     }
 
