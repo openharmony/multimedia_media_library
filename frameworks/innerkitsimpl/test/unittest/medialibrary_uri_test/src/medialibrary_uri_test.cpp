@@ -40,33 +40,40 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ParseFileUri_test_001, TestSize.Level
 {
     string uriString = "";
     string outFileId = "";
-    string ourNetworkId = "";
-    bool ret = ThumbnailUriUtils::ParseFileUri(uriString, outFileId, ourNetworkId);
+    string outNetworkId = "";
+    string outTableName = "";
+    bool ret = ThumbnailUriUtils::ParseFileUri(uriString, outFileId, outNetworkId, outTableName);
     EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_ParseThumbnailInfo_test_001, TestSize.Level0)
 {
-    string uriString = "";
-    string outFileId = "";
+    string uriString;
+    string outFileId;
     Size outSize;
-    string ourNetworkId = "";
-    bool ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize, ourNetworkId);
+    string outNetworkId;
+    string outTableName;
+    bool ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize,
+        outNetworkId, outTableName);
     EXPECT_EQ(ret, false);
     uriString = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL;
-    ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize, ourNetworkId);
+    ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize,
+        outNetworkId, outTableName);
     EXPECT_EQ(ret, false);
     uriString = "ParseThumbnailInfo?=" + MEDIA_DATA_DB_THUMBNAIL + "&" + THUMBNAIL_WIDTH + "=&" +
         THUMBNAIL_HEIGHT + "=";
-    ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize, ourNetworkId);
+    ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize,
+        outNetworkId, outTableName);
     EXPECT_EQ(ret, false);
     uriString = "ParseThumbnailInfo?test=" + MEDIA_DATA_DB_THUMBNAIL + "&" + THUMBNAIL_WIDTH + "=&" +
         THUMBNAIL_HEIGHT + "=";
-    ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize, ourNetworkId);
+    ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize,
+        outNetworkId, outTableName);
     EXPECT_EQ(ret, false);
     uriString = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
         THUMBNAIL_WIDTH + "=1&" + THUMBNAIL_HEIGHT + "=1";
-    ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize, ourNetworkId);
+    ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize,
+        outNetworkId, outTableName);
     EXPECT_EQ(ret, true);
 }
 

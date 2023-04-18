@@ -457,13 +457,13 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
         string uri = fileAsset->GetUri();
-        watch->RemoveByFileUri(uri);
+        watch->RemoveByFileUri(uri, MediaLibraryApi::API_10);
         MEDIA_DEBUG_LOG("watch RemoveByFileUri, uri:%{private}s", uri.c_str());
     }
 
     string fileId = to_string(fileAsset->GetId());
     string path = fileAsset->GetPath();
-    InvalidateThumbnail(fileId);
+    InvalidateThumbnail(fileId, fileAsset->GetMediaType());
     ScanFile(path);
     auto notifyWatch = MediaLibraryNotify::GetInstance();
     if (notifyWatch != nullptr) {
@@ -471,11 +471,28 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     }
     return E_OK;
 }
-void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId)
+
+void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int32_t type)
 {
     auto thumbnailService = ThumbnailService::GetInstance();
     if (thumbnailService != nullptr) {
-        thumbnailService->InvalidateThumbnail(fileId);
+        string tableName;
+        switch (type) {
+            case MediaType::MEDIA_TYPE_IMAGE:
+            case MediaType::MEDIA_TYPE_VIDEO: {
+                tableName = PhotoColumn::PHOTOS_TABLE;
+                break;
+            }
+            case MediaType::MEDIA_TYPE_AUDIO: {
+                tableName = AudioColumn::AUDIOS_TABLE;
+                break;
+            }
+            default: {
+                MEDIA_ERR_LOG("Can not match this type %{public}d", type);
+                return;
+            }
+        }
+        thumbnailService->InvalidateThumbnail(fileId, tableName);
     }
 }
 

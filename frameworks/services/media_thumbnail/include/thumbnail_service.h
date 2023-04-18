@@ -23,6 +23,7 @@
 #include "rdb_helper.h"
 #include "result_set_bridge.h"
 #include "single_kvstore.h"
+#include "userfile_manager_types.h"
 #include "thumbnail_const.h"
 
 #define THUMBNAIL_API_EXPORT __attribute__ ((visibility ("default")))
@@ -44,7 +45,7 @@ public:
     THUMBNAIL_API_EXPORT int32_t CreateThumbnailAsync(const std::string &uri);
     THUMBNAIL_API_EXPORT int32_t CreateThumbnail(const std::string &uri);
     THUMBNAIL_API_EXPORT static bool ParseThumbnailInfo(const std::string &uriString);
-    THUMBNAIL_API_EXPORT void InvalidateThumbnail(const std::string &id);
+    THUMBNAIL_API_EXPORT void InvalidateThumbnail(const std::string &id, const std::string &tableName);
     THUMBNAIL_API_EXPORT int32_t Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
