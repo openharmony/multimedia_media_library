@@ -22,11 +22,11 @@
 
 namespace OHOS {
 namespace Media {
-#ifdef RDB_UPGRADE_MOCK
 const int32_t MEDIA_RDB_VERSION = 2;
-#else
-const int32_t MEDIA_RDB_VERSION = 1;
-#endif
+enum {
+    MEDIA_RDB_VERSION_ADD_CLOUD = 2,
+    MEDIA_RDB_VERSION_ADD_PHOTO_TABLE,
+};
 const std::string MEDIA_LIBRARY_VERSION = "1.0";
 
 const int32_t DEVICE_SYNCSTATUSING = 0;
@@ -165,8 +165,6 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        MEDIA_DATA_DB_LATITUDE + " DOUBLE DEFAULT 0, " +
                                        MEDIA_DATA_DB_LONGITUDE + " DOUBLE DEFAULT 0, " +
                                        MEDIA_DATA_DB_DATE_TAKEN + " BIGINT DEFAULT 0, " +
-                                       MEDIA_DATA_DB_CLOUD_ID + " TEXT, " +
-                                       MEDIA_DATA_DB_DIRTY + " INT DEFAULT 0, " +
                                        MEDIA_DATA_DB_THUMBNAIL + " TEXT, " +
                                        MEDIA_DATA_DB_LCD + " TEXT, " +
                                        MEDIA_DATA_DB_TIME_VISIT + " BIGINT DEFAULT 0, " +
@@ -192,6 +190,8 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        MEDIA_DATA_DB_ALBUM_NAME + " TEXT, " +
                                        MEDIA_DATA_DB_URI + " TEXT, " +
                                        MEDIA_DATA_DB_ALBUM + " TEXT, " +
+                                       MEDIA_DATA_DB_CLOUD_ID + " TEXT, " +
+                                       MEDIA_DATA_DB_DIRTY + " INT DEFAULT 0, " +
                                        MEDIA_DATA_DB_POSITION + " INT DEFAULT 1)";
 
 const std::string CREATE_BUNDLE_PREMISSION_TABLE = "CREATE TABLE IF NOT EXISTS " +
