@@ -398,7 +398,8 @@ void TestPhotoOpenParamsApi10(int32_t fileId, const string &mode, ExceptIntFunct
     func(fd);
     if (fd > 0) {
         close(fd);
-        MediaLibraryInotify::GetInstance()->RemoveByFileUri(cmd.GetUriStringWithoutSegment());
+        MediaLibraryInotify::GetInstance()->RemoveByFileUri(cmd.GetUriStringWithoutSegment(),
+            MediaLibraryApi::API_10);
     }
 }
 
@@ -676,6 +677,5 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestS
 
     MEDIA_INFO_LOG("end tdd photo_oprn_close_api10_test_001");
 }
-
 } // namespace Media
 } // namespace OHOS
