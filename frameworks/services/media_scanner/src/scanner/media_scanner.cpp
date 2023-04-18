@@ -32,7 +32,7 @@ using namespace OHOS::AppExecFwk;
 using namespace OHOS::DataShare;
 
 MediaScannerObj::MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
-    MediaScannerObj::ScanType type) : type_(type), callback_(callback)
+    MediaScannerObj::ScanType type, MediaLibraryApi api) : type_(type), callback_(callback), api_(api)
 {
     if (type_ == DIRECTORY) {
         dir_ = path;
@@ -151,9 +151,9 @@ int32_t MediaScannerObj::AddToTransaction()
 int32_t MediaScannerObj::Commit()
 {
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
-        uri_ = mediaScannerDb_->UpdateMetadata(*data_);
+        uri_ = mediaScannerDb_->UpdateMetadata(*data_, api_);
     } else {
-        uri_ = mediaScannerDb_->InsertMetadata(*data_);
+        uri_ = mediaScannerDb_->InsertMetadata(*data_, api_);
     }
 
     // notify change
@@ -177,6 +177,9 @@ int32_t MediaScannerObj::GetMediaInfo()
 
 int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId)
 {
+    if (api_ == MediaLibraryApi::API_10) {
+        return E_OK;
+    }
     size_t len = ROOT_MEDIA_DIR.length();
     string parentPath = parent + SLASH_CHAR;
 
@@ -222,7 +225,7 @@ int32_t MediaScannerObj::GetFileMetadata()
         return E_DATA;
     }
 
-    int32_t err = mediaScannerDb_->GetFileBasicInfo(path_, data_);
+    int32_t err = mediaScannerDb_->GetFileBasicInfo(path_, data_, api_);
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get file basic info");
         return err;

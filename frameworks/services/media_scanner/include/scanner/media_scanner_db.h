@@ -21,13 +21,15 @@
 #include <unordered_map>
 #include <vector>
 
+#include "medialibrary_command.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_type_const.h"
 #include "metadata.h"
-#include "abs_shared_result_set.h"
+#include "datashare_values_bucket.h"
 #include "rdb_errno.h"
 #include "result_set.h"
 #include "uri.h"
+#include "userfile_manager_types.h"
 #include "values_bucket.h"
 #include "want.h"
 #include "datashare_result_set.h"
@@ -46,8 +48,8 @@ public:
     void NotifyDatabaseChange(const MediaType mediaType);
     void SetRdbHelper(void);
 
-    std::string InsertMetadata(const Metadata &metadata);
-    std::string UpdateMetadata(const Metadata &metadata);
+    std::string InsertMetadata(const Metadata &metadata, MediaLibraryApi api = MediaLibraryApi::API_OLD);
+    std::string UpdateMetadata(const Metadata &metadata, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     std::string GetFileDBUriFromPath(const std::string &path);
     std::vector<std::string> BatchInsert(const std::vector<Metadata> &metadataList);
 
@@ -57,7 +59,8 @@ public:
     std::unordered_map<int32_t, MediaType> GetIdsFromFilePath(const std::string &path);
 
     int32_t GetIdFromPath(const std::string &path);
-    int32_t GetFileBasicInfo(const std::string &path, std::unique_ptr<Metadata> &ptr);
+    int32_t GetFileBasicInfo(const std::string &path, std::unique_ptr<Metadata> &ptr,
+        MediaLibraryApi api = MediaLibraryApi::API_OLD);
 
     int32_t RecordError(const std::string &err);
     std::vector<std::string> ReadError();

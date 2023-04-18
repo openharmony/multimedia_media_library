@@ -44,6 +44,7 @@
 #include "scanner_utils.h"
 #include "imedia_scanner_callback.h"
 #include "iremote_object.h"
+#include "userfile_manager_types.h"
 
 #define FREE_MEMORY_AND_SET_NULL(fName)      \
     do {                                     \
@@ -70,7 +71,7 @@ public:
     };
 
     MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
-        MediaScannerObj::ScanType type);
+        MediaScannerObj::ScanType type, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     MediaScannerObj(MediaScannerObj::ScanType type);
     virtual ~MediaScannerObj() = default;
 
@@ -119,6 +120,7 @@ private:
     std::unordered_map<std::string, Metadata> albumMap_;
     std::unordered_set<int32_t> scannedIds_;
     std::vector<std::unique_ptr<Metadata>> dataBuffer_;
+    MediaLibraryApi api_;
 };
 
 class ScanErrCallback : public IMediaScannerCallback {

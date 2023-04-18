@@ -21,6 +21,7 @@
 #include "media_scanner.h"
 #include "media_scan_executor.h"
 #include "medialibrary_errno.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -35,7 +36,8 @@ public:
     void ScanError();
 
     int32_t ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
-    int32_t ScanFileSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
+    int32_t ScanFileSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
+        MediaLibraryApi api = MediaLibraryApi::API_OLD);
     int32_t ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
 
 private:
