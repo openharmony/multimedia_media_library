@@ -57,7 +57,7 @@ protected:
         const std::vector<std::string> &columns);
     static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode);
     static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset);
-    static void InvalidateThumbnail(const std::string &fileId);
+    static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
 
     static int32_t BeginTransaction();
     static int32_t TransactionCommit();

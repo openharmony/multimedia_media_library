@@ -53,7 +53,7 @@ void MediaLibraryInotify::WatchCallBack()
 {
     const int32_t READ_LEN = 255;
     char data[READ_LEN] = {0};
-    while(isWatching_) {
+    while (isWatching_) {
         int32_t len = read(inotifyFd_, data, READ_LEN);
         int32_t index = 0;
         while (index < len) {
@@ -77,8 +77,9 @@ void MediaLibraryInotify::WatchCallBack()
                 string path = item.path_;
                 string uri = item.uri_;
                 string id = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
+                MediaLibraryApi api = item.api_;
                 Remove(event->wd);
-                MediaLibraryObjectUtils::ScanFileAfterClose(path, id);
+                MediaLibraryObjectUtils::ScanFileAfterClose(path, id, uri, api);
             }
         }
     }
@@ -107,12 +108,12 @@ void MediaLibraryInotify::DoStop()
     inotifyFd_ = 0;
 }
 
-int32_t MediaLibraryInotify::RemoveByFileUri(const string &uri)
+int32_t MediaLibraryInotify::RemoveByFileUri(const string &uri, MediaLibraryApi api)
 {
     lock_guard<mutex> lock(mutex_);
     int32_t wd = -1;
     for (auto iter = watchList_.begin(); iter != watchList_.end(); iter++) {
-        if (iter->second.uri_ == uri) {
+        if (iter->second.uri_ == uri && iter->second.api_ == api) {
             wd = iter->first;
             MEDIA_DEBUG_LOG("remove uri:%s wd:%d path:%s",
                 iter->second.uri_.c_str(), wd, iter->second.path_.c_str());
@@ -148,7 +149,7 @@ int32_t MediaLibraryInotify::Init()
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryInotify::AddWatchList(const string &path, const string &uri)
+int32_t MediaLibraryInotify::AddWatchList(const string &path, const string &uri, MediaLibraryApi api)
 {
     lock_guard<mutex> lock(mutex_);
     if (watchList_.size() > MAX_WATCH_LIST) {
@@ -157,7 +158,7 @@ int32_t MediaLibraryInotify::AddWatchList(const string &path, const string &uri)
     }
     int32_t wd = inotify_add_watch(inotifyFd_, path.c_str(), IN_CLOSE | IN_MODIFY);
     if (wd > 0) {
-        struct WatchInfo item(path, uri);
+        struct WatchInfo item(path, uri, api);
         watchList_.emplace(wd, item);
     }
     if (!isWatching_.load()) {

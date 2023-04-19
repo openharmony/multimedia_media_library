@@ -51,7 +51,8 @@ public:
         const std::string &dstDirPath);
     static int32_t OpenFile(MediaLibraryCommand &cmd, const std::string &mode);
     static int32_t CloseFile(MediaLibraryCommand &cmd);
-    static int32_t ScanFileAfterClose(const string &srcPath, const string &id);
+    static int32_t ScanFileAfterClose(const string &srcPath, const std::string &id, const std::string &uri,
+        MediaLibraryApi api);
     static int32_t GetIdByPathFromDb(const std::string &path);
     static std::string GetPathByIdFromDb(const std::string &id, const bool isDelete = false);
     static std::string GetRecyclePathByIdFromDb(const std::string &id);

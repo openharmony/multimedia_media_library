@@ -18,6 +18,7 @@
 
 #include "ability_manager_client.h"
 #include "hitrace_meter.h"
+#include "media_column.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "rdb_helper.h"
@@ -37,12 +38,14 @@ shared_ptr<ResultSet> IThumbnailHelper::QueryThumbnailInfo(ThumbRdbOpt &opts,
         MEDIA_ERR_LOG("rdbStore is not init");
         return nullptr;
     }
-    string filesTableName = MEDIALIBRARY_TABLE;
+    string filesTableName = opts.table;
     int errCode = E_ERR;
     if (!opts.networkId.empty()) {
-        filesTableName = opts.store->ObtainDistributedTableName(opts.networkId, MEDIALIBRARY_TABLE, errCode);
+        filesTableName = opts.store->ObtainDistributedTableName(opts.networkId, opts.table, errCode);
     }
-
+    if (filesTableName.empty()) {
+        return nullptr;
+    }
     MEDIA_DEBUG_LOG("Get filesTableName [ %{public}s ] id [ %{public}s ]", filesTableName.c_str(), opts.row.c_str());
     opts.table = filesTableName;
     return ThumbnailUtils::QueryThumbnailInfo(opts, outData, err);
@@ -175,6 +178,11 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
         return false;
     }
 
+    if (opts.table == AudioColumn::AUDIOS_TABLE) {
+        MEDIA_ERR_LOG("Can not create lcd for audio");
+        return false;
+    }
+
     if (data.dateModified == 0) {
         ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
     }
@@ -276,7 +284,6 @@ bool IThumbnailHelper::DoThumbnailSync(ThumbRdbOpt &opts, ThumbnailData &outData
     }
 
     vector<string> devices = { opts.networkId };
-    opts.table = MEDIALIBRARY_TABLE;
     if (ThumbnailUtils::SyncPullTable(opts, devices, true)) {
         MEDIA_INFO_LOG("GetThumbnailPixelMap SyncPullTable FALSE");
         return false;
