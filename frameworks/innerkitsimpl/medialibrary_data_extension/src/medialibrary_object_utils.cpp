@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "file_asset.h"
 #define MLOG_TAG "ObjectUtils"
 
 #include "medialibrary_object_utils.h"
@@ -25,8 +24,10 @@
 #include "device_manager.h"
 #include "directory_ex.h"
 #include "fetch_result.h"
+#include "file_asset.h"
 #include "ipc_skeleton.h"
 #include "media_file_utils.h"
+#include "media_column.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_data_manager.h"
@@ -437,11 +438,11 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
     return err;
 }
 
-static inline void InvalidateThumbnail(const string &id)
+static inline void InvalidateThumbnail(const string &id, const string &tableName = MEDIALIBRARY_TABLE)
 {
     auto thumbnailService = ThumbnailService::GetInstance();
     if (thumbnailService != nullptr) {
-        thumbnailService->InvalidateThumbnail(id);
+        thumbnailService->InvalidateThumbnail(id, tableName);
     }
 }
 
@@ -702,9 +703,24 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     return fd;
 }
 
-int32_t MediaLibraryObjectUtils::ScanFileAfterClose(const string &srcPath, const string &id)
+int32_t MediaLibraryObjectUtils::ScanFileAfterClose(const string &srcPath, const string &id,
+    const string &uri, MediaLibraryApi api)
 {
-    InvalidateThumbnail(id);
+    /*
+     * todo: when api9 has not divided tables yet, here use medialibraryapi to separate api 9&10
+     * after divide table, this function will discard
+     */
+    string tableName = MEDIALIBRARY_TABLE;
+    if (api != MediaLibraryApi::API_OLD) {
+        if ((uri.find(MEDIALIBRARY_IMAGE_URI) != string::npos) ||
+            (uri.find(MEDIALIBRARY_VIDEO_URI) != string::npos)) {
+            tableName = PhotoColumn::PHOTOS_TABLE;
+        } else if (uri.find(MEDIALIBRARY_AUDIO_URI) != string::npos) {
+            tableName = AudioColumn::AUDIOS_TABLE;
+        }
+    }
+
+    InvalidateThumbnail(id, tableName);
     ScanFile(srcPath);
     return E_SUCCESS;
 }

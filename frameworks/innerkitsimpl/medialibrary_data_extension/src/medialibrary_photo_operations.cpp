@@ -63,7 +63,8 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
     vector<string> columns = {
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
-        PhotoColumn::MEDIA_RELATIVE_PATH
+        PhotoColumn::MEDIA_RELATIVE_PATH,
+        PhotoColumn::MEDIA_TYPE
     };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID,
         fileId, cmd.GetOprnObject());
@@ -107,7 +108,8 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     vector<string> columns = {
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
-        PhotoColumn::MEDIA_URI
+        PhotoColumn::MEDIA_URI,
+        PhotoColumn::MEDIA_TYPE
     };
     auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
         OperationObject::FILESYSTEM_PHOTO, columns);
@@ -130,7 +132,8 @@ int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_URI,
-        PhotoColumn::MEDIA_TIME_PENDING
+        PhotoColumn::MEDIA_TIME_PENDING,
+        PhotoColumn::MEDIA_TYPE
     };
     auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, strFileId, cmd.GetOprnObject(), columns);
     if (fileAsset == nullptr) {
@@ -204,7 +207,7 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
 
     // delete thumbnail
     int32_t fileId = fileAsset->GetId();
-    InvalidateThumbnail(to_string(fileId));
+    InvalidateThumbnail(to_string(fileId), fileAsset->GetMediaType());
 
     int32_t errCode = BeginTransaction();
     if (errCode != E_OK) {

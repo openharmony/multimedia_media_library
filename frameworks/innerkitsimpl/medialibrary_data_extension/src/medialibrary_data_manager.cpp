@@ -1012,8 +1012,10 @@ int32_t MediaLibraryDataManager::RevertPendingByFileId(const std::string &fileId
         MEDIA_ERR_LOG("failed to revert pending error, fileId:%{public}s", fileId.c_str());
         return retVal;
     }
-    string srcPath = MediaLibraryObjectUtils::GetPathByIdFromDb(fileId);
-    MediaLibraryObjectUtils::ScanFileAfterClose(srcPath, fileId);
+    auto fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(fileId);
+    string srcPath = fileAsset->GetPath();
+    string srcUri = fileAsset->GetUri();
+    MediaLibraryObjectUtils::ScanFileAfterClose(srcPath, fileId, srcUri, MediaLibraryApi::API_10);
     return E_SUCCESS;
 }
 

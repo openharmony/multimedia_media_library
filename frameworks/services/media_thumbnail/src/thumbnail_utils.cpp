@@ -719,7 +719,6 @@ bool ThumbnailUtils::UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data,
         return false;
     }
     vector<string> devices;
-    opts.table = MEDIALIBRARY_TABLE;
     SyncPushTable(opts, devices);
     CloudSyncHelper::GetInstance()->StartSync();
     return true;
