@@ -14,12 +14,10 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-MEDIA_LIB_CLOUD_BASE_DIR = "${MEDIA_LIB_SERVICES_DIR}/media_cloud_sync"
-
 ohos_shared_library("cloud_sync") {
   install_enable = true
 
-  sources = [ "${MEDIA_LIB_CLOUD_BASE_DIR}/src/cloud_sync_helper.cpp" ]
+  sources = [ "${MEDIALIB_CLOUD_SYNC_PATH}/src/cloud_sync_helper.cpp" ]
 
   cflags = [ "-Wall" ]
 
@@ -30,12 +28,12 @@ ohos_shared_library("cloud_sync") {
   cflags_cc = cflags
 
   include_dirs = [
-    "${MEDIA_LIB_CLOUD_BASE_DIR}/include",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
+    "${MEDIALIB_CLOUD_SYNC_PATH}/include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
   ]
 
-  deps = [ "${MEDIA_LIB_COMMON_UTILS_DIR}:medialibrary_common_utils" ]
+  deps = [ "${MEDIALIB_UTILS_PATH}:medialibrary_common_utils" ]
 
   external_deps = [
     "c_utils:utils",
@@ -54,8 +52,8 @@ ohos_shared_library("cloud_sync") {
 
 config("public_config") {
   include_dirs = [
-    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_UTILS_PATH}/include",
   ]
 }
 

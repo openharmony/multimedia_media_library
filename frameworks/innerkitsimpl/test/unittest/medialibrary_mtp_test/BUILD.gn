@@ -15,7 +15,6 @@ import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
 module_output_path = "media_library/medialibrary_mtp"
-MEDIA_LIB_MTP_BASE_DIR = "${MEDIA_LIB_SERVICES_DIR}/media_mtp"
 group("unittest") {
   testonly = true
 
@@ -26,33 +25,14 @@ ohos_unittest("medialibrary_mtp_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include/hilog",
-    "${MEDIA_LIB_MTP_BASE_DIR}/include",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
-    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include",
-    "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/utils/include",
-    "//foundation/filemanagement/storage_service/services/storage_manager/include",
-    "//foundation/filemanagement/storage_service/services/storage_manager/include",
-    "//foundation/filemanagement/storage_service/interfaces/kits/js/storage_manager/include",
-    "//foundation/filemanagement/storage_service/interfaces/innerkits/storage_manager/native",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "//drivers/peripheral/base",
-    "//drivers/peripheral/display/interfaces/include",
-    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
-    "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager/include",
-    "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/appdatafwk/include",
-    "//foundation/distributeddatamgr/appdatamgr/relational_store/interfaces/inner_api/rdb/include",
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper/include",
-    "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/provider/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/interfaces/inner_api/consumer/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/common/include",
-    "//foundation/distributeddatamgr/appdatamgr/data_share/frameworks/native/provider/include",
-    "//utils/native/base/include",
-    "//foundation/multimedia/media_library/frameworks/services/media_mtp/include/",
+    "${MEDIALIB_MTP_PATH}/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_SERVICES_PATH}/media_library/include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_MTP_PATH}/include/",
   ]
 
   sources = [
@@ -65,26 +45,24 @@ ohos_unittest("medialibrary_mtp_test") {
   ]
 
   deps = [
-    "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
-    "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-    "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:app_context",
-    "${ABILITY_RUNTIME_PATH}/frameworks/native/appkit:appkit_native",
-    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
-    "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp",
-    "//third_party/openssl:libcrypto_shared",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_MTP_PATH}:media_mtp",
   ]
 
   external_deps = [
     "ability_base:base",
     "ability_base:want",
     "ability_base:zuri",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "ability_runtime:dataobs_manager",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "drivers_interface_usb:usbfn_mtp_idl_headers",
     "hitrace_native:hitrace_meter",
+    "hiviewdfx_hilog_native:libhilog",
     "init:libbegetutil",
     "ipc:ipc_core",
     "multimedia_player_framework:media_client",

@@ -26,13 +26,13 @@ ohos_unittest("medialibrary_mimetype_test") {
   include_dirs = [
     "./include",
     "//third_party/json/include",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/media_library_helper/include",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/utils/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_UTILS_PATH}/include",
   ]
 
   sources = [
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/media_library_helper/src/mimetype_utils.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/mimetype_utils.cpp",
     "./src/medialibrary_mimetype_test.cpp",
   ]
 

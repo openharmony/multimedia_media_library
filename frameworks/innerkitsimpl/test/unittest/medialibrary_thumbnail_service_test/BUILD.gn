@@ -26,22 +26,23 @@ ohos_unittest("medialibrary_thumbnail_service_test") {
 
   sources = [ "./src/medialibrary_thumbnail_service_test.cpp" ]
   deps = [
-    "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager:ability_manager",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_thumbnail:medialibrary_thumbnail",
-    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail:medialibrary_thumbnail",
   ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:ability_context_native",
+    "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
     "c_utils:utils",
     "data_share:datashare_provider",
     "hilog_native:libhilog",
+    "kv_store:distributeddata_inner",
     "relational_store:native_rdb",
   ]
 
   resource_config_file =
-      "${MEDIA_LIB_INNERKITS_DIR}/test/unittest/resources/ohos_test.xml"
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }

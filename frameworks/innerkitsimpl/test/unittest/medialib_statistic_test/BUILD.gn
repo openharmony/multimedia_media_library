@@ -26,20 +26,13 @@ ohos_unittest("medialibrary_statistic_unittest") {
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
-    "//base/security/access_token/frameworks/common/include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "//foundation/aafwk/standard/interfaces/innerkits/uri/include",
-    "${ABILITY_RUNTIME_INNER_API_PATH}/app_manager/include/appmgr",
-    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
-    "//commonlibrary/c_utils/base/include",
-    "//utils/system/safwk/native/include",
-    "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "${MEDIA_LIB_SERVICES_DIR}/media_library/include",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/innerkits/native/include",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
-    "${MEDIA_SCANNER_SOURCE_DIR}/include/scanner",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_SERVICES_PATH}/media_library/include",
+    "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
     "//third_party/json/include",
   ]
 
@@ -49,10 +42,10 @@ ohos_unittest("medialibrary_statistic_unittest") {
   ]
 
   deps = [
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
-    "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
-    "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary",
-    "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_js",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library_packages",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_manager:media_library_manager",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary_js",
   ]
 
   external_deps = [
