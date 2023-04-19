@@ -165,7 +165,7 @@ const std::map<string, string> g_testExt2MimeType = {
     { "txt", "text/plain" },
     { "srw", "image/x-samsung-srw" },
     { "pem", "application/x-pem-file" },
-    { "cer", "application/pkix-cert" }, 
+    { "cer", "application/pkix-cert" },
     { "json", "application/json" },
     { "js", "application/javascript" },
     { "rar", "application/rar" },
