@@ -12,8 +12,6 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/distributeddatamgr/data_share/datashare.gni")
-import("//foundation/distributeddatamgr/relational_store/relational_store.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
 group("media_library_packages") {
@@ -22,34 +20,19 @@ group("media_library_packages") {
 
 config("media_library_config") {
   visibility = [ ":*" ]
+}
+
+ohos_shared_library("media_library") {
+  install_enable = true
 
   include_dirs = [
-    "./",
-    "./include",
-    "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
-    "//foundation/multimedia/media_library/frameworks/utils/include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "//commonlibrary/c_utils/base/include",
-    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
-    "${relational_store_innerapi_path}/rdb/include",
-    "${relational_store_innerapi_path}/appdatafwk/include",
-    "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "${datashare_common_native_path}/include",
-    "${datashare_innerapi_path}/common/include",
-    "${datashare_innerapi_path}/consumer/include",
-    "${datashare_innerapi_path}/provider/include",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_UTILS_PATH}/include",
     "//third_party/json/include",
   ]
 
-  cflags = [
-    "-Wall",
-    "-Werror",
-    "-Wno-unused-but-set-variable",
-  ]
-}
-
-ohos_source_set("media_library_source") {
   sources = [
     "src/album_asset.cpp",
     "src/base_column.cpp",
@@ -69,28 +52,21 @@ ohos_source_set("media_library_source") {
   ]
 
   configs = [ ":media_library_config" ]
+  cflags = [
+    "-Wall",
+    "-Werror",
+    "-Wno-unused-but-set-variable",
+  ]
 
   external_deps = [
     "ability_base:zuri",
     "ability_runtime:abilitykit_native",
+    "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
-  ]
-
-  part_name = "media_library"
-  subsystem_name = "multimedia"
-}
-
-ohos_shared_library("media_library") {
-  install_enable = true
-
-  deps = [ ":media_library_source" ]
-
-  external_deps = [
-    "c_utils:utils",
-    "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
+    "relational_store:native_rdb",
   ]
 
   sanitize = {

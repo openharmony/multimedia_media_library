@@ -25,19 +25,18 @@ ohos_unittest("medialibrary_scanner_test") {
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
-    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include/distributed_media_library/device_manage",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include/distributed_media_library/database_manage",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include/distributed_media_library/devices_info_interact",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
-    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
-    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension/include",
-    "${MEDIA_LIB_SERVICES_DIR}/media_thumbnail/include",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/device_manage",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/devices_info_interact",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "../medialibrary_unittest_utils/include",
-    "${MEDIA_LIB_INTERFACES_INNER_DIR}/media_library_helper/include",
-    "${MEDIA_LIB_SERVICES_DIR}/media_file_extension/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_SERVICES_PATH}/media_file_extension/include",
   ]
 
   sources = [
@@ -45,24 +44,24 @@ ohos_unittest("medialibrary_scanner_test") {
     "./src/medialibrary_scanner_test.cpp",
   ]
   deps = [
-    "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager:ability_manager",
-    "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
-    "${ABILITY_RUNTIME_INNER_API_PATH}/runtime:runtime",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_thumbnail:medialibrary_thumbnail",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}:permission_utils",
-    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
-    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail:medialibrary_thumbnail",
+    "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:ability_context_native",
+    "ability_runtime:ability_manager",
     "ability_runtime:app_context",
+    "ability_runtime:dataobs_manager",
     "ability_runtime:runtime",
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_provider",
+    "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
   ]
@@ -74,5 +73,5 @@ ohos_unittest("medialibrary_scanner_test") {
   }
 
   resource_config_file =
-      "${MEDIA_LIB_INNERKITS_DIR}/test/unittest/resources/ohos_test.xml"
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }

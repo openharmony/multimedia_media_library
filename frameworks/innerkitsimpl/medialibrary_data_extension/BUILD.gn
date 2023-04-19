@@ -17,55 +17,36 @@ import("//foundation/multimedia/media_library/media_library.gni")
 ohos_prebuilt_etc("userfilemanager_mimetypes.json") {
   module_install_dir = "etc/userfilemanager"
 
-  source =
-      "${MEDIA_LIB_COMMON_UTILS_DIR}/configs/userfilemanager_mimetypes.json"
+  source = "${MEDIALIB_UTILS_PATH}/configs/userfilemanager_mimetypes.json"
 
   subsystem_name = "multimedia"
   part_name = "media_library"
 }
 
 config("media_data_extension_public_config") {
-  include_fileext = [ "${MEDIA_FILEEXT_SOURCE_DIR}/include" ]
+  include_fileext = [ "${MEDIALIB_SERVICES_PATH}/media_file_extension/include" ]
   include_distributed = [
-    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/include/database_manage",
-    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/include/device_manage",
-    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/include/devices_info_interact",
+    "${MEDIALIB_SERVICES_PATH}/media_distributed/include/database_manage",
+    "${MEDIALIB_SERVICES_PATH}/media_distributed/include/device_manage",
+    "${MEDIALIB_SERVICES_PATH}/media_distributed/include/devices_info_interact",
   ]
   include_scanner = [
-    "${MEDIA_SCANNER_SOURCE_DIR}/include/callback",
-    "${MEDIA_SCANNER_SOURCE_DIR}/include/scanner",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
   ]
 
   include_dirs = [
-    "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager/include",
-    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
-    "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager/include",
-    "${ABILITY_RUNTIME_INNER_API_PATH}/app_manager/include/appmgr",
-    "${ABILITY_RUNTIME_SERVICES_PATH}/common/include",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/innerkits/native/include",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
-    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
-    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension/include",
-    "${MEDIA_LIB_SERVICES_DIR}/media_async_worker/include",
-    "${MEDIA_LIB_SERVICES_DIR}/media_thumbnail/include",
-    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_core/include/appmgr",
-    "//foundation/appexecfwk/standard/interfaces/innerkits/appexecfwk_base/include",
-    "//foundation/bundlemanager/bundle_framework/interfaces/kits/js/common",
-    "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/distributeddatamgr/kv_store/interfaces/innerkits/distributeddata/include/",
-    "//foundation/appexecfwk/standard/interfaces/innerkits/libeventhandler/include",
-    "//foundation/communication/dsoftbus/interfaces/kits/bus_center",
-    "//foundation/communication/dsoftbus/interfaces/kits/common",
+    "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
     "${FILE_API_PATH}/utils/filemgmt_libn/include",
-    "//foundation/systemabilitymgr/safwk/services/safwk/include",
-    "//foundation/multimedia/player_framework/interfaces/inner_api/native",
-    "//commonlibrary/c_utils/base/include",
-    "//utils/system/safwk/native/include",
-    "//third_party/json/include",
-    "//base/notification/common_event_service/interfaces/innerkits/native/include",
-    "//foundation/distributeddatamgr/distributedfile/interfaces/kits/js/src/common",
-    "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/include",
+
+    "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
+    "../../../../../distributeddatamgr/distributedfile/interfaces/kits/js/src/common",
   ]
   include_dirs += include_fileext
   include_dirs += include_distributed
@@ -82,8 +63,8 @@ ohos_hap("medialibrary_ext_hap") {
     ":MediaLibStage_js_assets",
     ":MediaLibStage_resources",
   ]
-  shared_libraries = [ "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension" ]
-  certificate_profile = "$MEDIA_LIB_INNERKITS_DIR/signature/medialib.p7b"
+  shared_libraries = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
+  certificate_profile = "${MEDIALIB_INNERKITS_PATH}/signature/medialib.p7b"
   hap_name = "Media_Library_Ext"
   part_name = "prebuilt_hap"
   subsystem_name = "applications"
@@ -111,31 +92,31 @@ ohos_shared_library("medialibrary_data_extension") {
   install_enable = true
 
   media_fileext_source = [
-    "${MEDIA_FILEEXT_SOURCE_DIR}/src/media_file_ext_ability.cpp",
-    "${MEDIA_FILEEXT_SOURCE_DIR}/src/media_file_extention_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_file_extension/src/media_file_ext_ability.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_file_extension/src/media_file_extention_utils.cpp",
   ]
 
   media_distributed_source = [
-    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/database_manage/medialibrary_device_db.cpp",
-    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/database_manage/medialibrary_device_operations.cpp",
-    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/database_manage/medialibrary_sync_table.cpp",
-    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/device_manage/device_permission_verification.cpp",
-    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/device_manage/medialibrary_device.cpp",
-    "${MEDIA_DISTRIBUTED_SOURCE_DIR}/src/devices_info_interact//devices_info_interact.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_distributed/src/database_manage/medialibrary_device_db.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_distributed/src/database_manage/medialibrary_device_operations.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_distributed/src/database_manage/medialibrary_sync_table.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_distributed/src/device_manage/device_permission_verification.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_distributed/src/device_manage/medialibrary_device.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_distributed/src/devices_info_interact//devices_info_interact.cpp",
   ]
 
   media_scan_source = [
-    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scan_executor.cpp",
-    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scanner.cpp",
-    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scanner_manager.cpp",
-    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/media_scanner_db.cpp",
-    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/metadata.cpp",
-    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/metadata_extractor.cpp",
-    "${MEDIA_SCANNER_SOURCE_DIR}/src/scanner/scanner_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/media_scan_executor.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/media_scanner.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/media_scanner_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/media_scanner_db.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/metadata.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/metadata_extractor.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/scanner_utils.cpp",
   ]
 
   sources = [
-    "${MEDIA_LIB_COMMON_UTILS_DIR}/src/media_privacy_manager.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/src/sqlite_sql_builder.cpp",
     "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/src/string_utils.cpp",
     "src/media_datashare_ext_ability.cpp",
@@ -168,21 +149,19 @@ ohos_shared_library("medialibrary_data_extension") {
   public_configs = [ ":media_data_extension_public_config" ]
 
   deps = [
-    "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager:ability_manager",
-    "${ABILITY_RUNTIME_INNER_API_PATH}/dataobs_manager:dataobs_manager",
-    "${ABILITY_RUNTIME_INNER_API_PATH}/runtime:runtime",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_thumbnail:medialibrary_thumbnail",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}:medialibrary_common_utils",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}:permission_utils",
-    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
-    "${MEDIA_LIB_SERVICES_DIR}/media_async_worker:medialibrary_async_worker",
-    "//foundation/distributedhardware/device_manager/interfaces/inner_kits/native_cpp:devicemanagersdk",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_SERVICES_PATH}/media_async_worker:medialibrary_async_worker",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail:medialibrary_thumbnail",
+    "${MEDIALIB_UTILS_PATH}:medialibrary_common_utils",
+    "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
+    "ability_runtime:ability_manager",
     "ability_runtime:app_context",
+    "ability_runtime:dataobs_manager",
     "ability_runtime:extensionkit_native",
     "ability_runtime:runtime",
     "c_utils:utils",

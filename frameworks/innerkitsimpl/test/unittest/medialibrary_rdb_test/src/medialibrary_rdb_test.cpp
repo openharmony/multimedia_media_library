@@ -15,7 +15,7 @@
 #define MLOG_TAG "FileExtUnitTest"
 #include "medialibrary_device.h"
 #include "medialibrary_rdb_test.h"
-#include "appkit/ability_runtime/context/context.h"
+#include "context.h"
 #include "ability_context_impl.h"
 #include "js_runtime.h"
 #define private public

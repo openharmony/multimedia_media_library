@@ -16,15 +16,16 @@ import("//foundation/multimedia/media_library/media_library.gni")
 
 ohos_fuzztest("MediaLibraryHelperFuzzTest") {
   module_out_path = "multimedia/media_library/medialibrary_helper_test"
-  fuzz_config_file = "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/fuzztest/medialibrary_helper_fuzzer"
+  fuzz_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/fuzztest/medialibrary_helper_fuzzer"
   include_dirs = [
     "./include",
-    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper/include",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/innerkits/native/include",
-    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_UTILS_PATH}/include",
   ]
   cflags = [
     "-g",
@@ -32,11 +33,11 @@ ohos_fuzztest("MediaLibraryHelperFuzzTest") {
     "-Wno-unused-variable",
     "-fno-omit-frame-pointer",
   ]
-  sources = [ "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/fuzztest/medialibrary_helper_fuzzer/medialibrary_helper_fuzzer.cpp" ]
+  sources = [ "${MEDIALIB_INNERKITS_PATH}/test/fuzztest/medialibrary_helper_fuzzer/medialibrary_helper_fuzzer.cpp" ]
 
   defines = []
   deps = [
-    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library_packages",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library_packages",
   ]
 
   external_deps = [
