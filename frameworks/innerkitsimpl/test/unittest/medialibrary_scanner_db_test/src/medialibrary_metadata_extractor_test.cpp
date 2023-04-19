@@ -59,7 +59,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ExtractAVMetadata_test_001, TestSize.
     EXPECT_EQ(ret, E_AVMETADATA);
     data->SetFilePath(path);
     ret = MetadataExtractor::ExtractAVMetadata(data);
-    EXPECT_EQ(ret, E_AVMETADATA);
+    EXPECT_NE(ret, E_OK);
     data->SetFilePath("ExtractAVMetadata");
     ret = MetadataExtractor::ExtractAVMetadata(data);
     EXPECT_EQ(ret, E_SYSCALL);

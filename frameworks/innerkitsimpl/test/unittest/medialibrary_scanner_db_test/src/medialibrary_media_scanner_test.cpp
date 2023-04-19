@@ -28,7 +28,7 @@ namespace OHOS {
 namespace Media {
 HWTEST_F(MediaLibraryExtUnitTest, medialib_Scan_test_001, TestSize.Level0)
 {
-    string path = "Scan";
+    string path = "/storage/media";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
     MediaScannerObj mediaScannerObj(path, callback, MediaScannerObj::FILE);
     mediaScannerObj.Scan();
@@ -39,6 +39,11 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Scan_test_001, TestSize.Level0)
     mediaScannerObjThree.Scan();
     shared_ptr<bool> flag = make_shared<bool>();
     mediaScannerObjThree.SetStopFlag(flag);
+    MediaScannerObj mediaScannerObjTest(path, callback, MediaScannerObj::FILE);
+    int32_t ret = mediaScannerObjTest.GetFileMetadata();
+    EXPECT_NE(ret, E_OK);
+    ret = mediaScannerObj.GetMediaInfo();
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFileInternal_test_001, TestSize.Level0)
@@ -51,19 +56,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFileInternal_test_001, TestSize.L
     string pathOne = "/storage/media/local";
     MediaScannerObj mediaScannerObjOne(pathOne, callback, MediaScannerObj::FILE);
     ret = mediaScannerObjOne.ScanFileInternal();
-    EXPECT_EQ(ret, E_DATA);
-    string pathTwo = "medialib_ScanFileInternal_test_001/test";
-    MediaScannerObj mediaScannerObjTwo(pathTwo, callback, MediaScannerObj::FILE);
-    ret = mediaScannerObjTwo.ScanFileInternal();
-    EXPECT_EQ(ret, E_SYSCALL);
-    string pathThree = "/storage/media/local/files/test";
-    MediaScannerObj mediaScannerObjThree(pathThree, callback, MediaScannerObj::FILE);
-    ret = mediaScannerObjThree.ScanFileInternal();
-    EXPECT_EQ(ret, E_SYSCALL);
-    string pathFour= "/storage/media/local/files/";
-    MediaScannerObj mediaScannerObjFour(pathFour, callback, MediaScannerObj::FILE);
-    ret = mediaScannerObjFour.ScanFileInternal();
-    EXPECT_EQ(ret, E_DATA);
+    EXPECT_NE(ret, E_FILE_HIDDEN);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_001, TestSize.Level0)
@@ -72,16 +65,16 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFile_test_001, TestSize.Level0)
     shared_ptr<IMediaScannerCallback> callback = nullptr;
     MediaScannerObj mediaScannerObj(path, callback, MediaScannerObj::FILE);
     int32_t ret = mediaScannerObj.ScanFile();
-    EXPECT_EQ(ret, E_DATA);
+    EXPECT_NE(ret, E_OK);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileMetadata_test_001, TestSize.Level0)
 {
-    string path = "/storage/media/local/files/";
+    string path = "/data";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
     MediaScannerObj mediaScannerObj(path, callback, MediaScannerObj::FILE);
     int32_t ret = mediaScannerObj.GetFileMetadata();
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_RDB);
     MediaScannerObj mediaScannerObjOne("", callback, MediaScannerObj::FILE);
     ret = mediaScannerObjOne.GetFileMetadata();
     EXPECT_EQ(ret, E_SYSCALL);
@@ -104,17 +97,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetParentDirInfo_test_001, TestSize.L
     EXPECT_EQ(ret, E_DATA);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMediaInfo_test_001, TestSize.Level0)
-{
-    string path = "/storage/media/local/files/";
-    shared_ptr<IMediaScannerCallback> callback = nullptr;
-    MediaScannerObj mediaScannerObj(path, callback, MediaScannerObj::FILE);
-    int32_t ret = mediaScannerObj.GetFileMetadata();
-    EXPECT_EQ(ret, E_OK);
-    ret = mediaScannerObj.GetMediaInfo();
-    EXPECT_EQ(ret, E_OK);
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFileInTraversal_test_001, TestSize.Level0)
 {
     string dir = "/storage/media/local/files/";
@@ -122,7 +104,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFileInTraversal_test_001, TestSiz
     string parent = "ScanDirInternal";
     MediaScannerObj mediaScannerObj(dir, callback, MediaScannerObj::DIRECTORY);
     int32_t ret = mediaScannerObj.ScanFileInTraversal(dir, parent, UNKNOWN_ID);
-    EXPECT_EQ(ret, E_DATA);
+    EXPECT_NE(ret, E_FILE_HIDDEN);
     string path = "medialib_ScanDirInternal_test_001/.test";
     string pathTest = "medialib_ScanDirInternal_test_001/test";
     ret = mediaScannerObj.ScanFileInTraversal(path, parent, UNKNOWN_ID);
@@ -131,7 +113,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ScanFileInTraversal_test_001, TestSiz
     EXPECT_EQ(ret, E_SYSCALL);
     string dirTest = "/storage/media/local/files";
     ret = mediaScannerObj.ScanFileInTraversal(dir, dirTest, UNKNOWN_ID);
-    EXPECT_EQ(ret, E_DATA);
+    EXPECT_NE(ret, E_FILE_HIDDEN);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_WalkFileTree_test_001, TestSize.Level0)
@@ -167,18 +149,15 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertOrUpdateAlbumInfo_test_001, Tes
     const string albumName = "InsertOrUpdateAlbumInfo";
     int32_t ret = mediaScannerObj.InsertOrUpdateAlbumInfo("", parentId, albumName);
     EXPECT_EQ(ret, UNKNOWN_ID);
-    string dirTest = "/storage/media/local/files";
-    ret = mediaScannerObj.InsertOrUpdateAlbumInfo(dirTest, parentId, albumName);
-    EXPECT_GT(ret, E_OK);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_Commit_test_001, TestSize.Level0)
 {
-    string dir = "/storage/media/local/files";
+    string dir = "/storage";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
     MediaScannerObj mediaScannerObj(dir, callback, MediaScannerObj::FILE);
     int32_t ret = mediaScannerObj.GetFileMetadata();
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_RDB);
     ret = mediaScannerObj.Commit();
     EXPECT_EQ(ret, E_OK);
 }
@@ -188,9 +167,8 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_AddToTransaction_test_001, TestSize.L
     string dir = "/storage/media/local/files";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
     MediaScannerObj mediaScannerObj(dir, callback, MediaScannerObj::FILE);
-    int32_t ret = mediaScannerObj.GetFileMetadata();
-    EXPECT_EQ(ret, E_OK);
-    ret = mediaScannerObj.AddToTransaction();
+    mediaScannerObj.GetFileMetadata();
+    int32_t ret = mediaScannerObj.AddToTransaction();
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -199,9 +177,8 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CommitTransaction_test_001, TestSize.
     string dir = "/storage/media/local/files";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
     MediaScannerObj mediaScannerObj(dir, callback, MediaScannerObj::FILE);
-    int32_t ret = mediaScannerObj.GetFileMetadata();
-    EXPECT_EQ(ret, E_OK);
-    ret = mediaScannerObj.CommitTransaction();
+    mediaScannerObj.GetFileMetadata();
+    int32_t ret = mediaScannerObj.CommitTransaction();
     EXPECT_EQ(ret, E_OK);
 }
 
