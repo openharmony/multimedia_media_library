@@ -1816,8 +1816,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
             NAPI_ERR_LOG("Failed to get value string utf8 for type");
             return undefinedResult;
         }
-        string uri = string(buffer);
-
+        string type = string(buffer);
         if (argc == ARGS_TWO) {
             if (napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function ||
                 g_listObj == nullptr) {
@@ -1828,7 +1827,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
         }
 
         tracer.Start("UnregisterChange");
-        obj->UnRegisterNotifyChange(env, uri, *g_listObj);
+        obj->UnregisterChange(env, type, *g_listObj);
         tracer.Finish();
     }
 
