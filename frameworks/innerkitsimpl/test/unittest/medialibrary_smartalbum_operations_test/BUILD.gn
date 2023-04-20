@@ -33,6 +33,7 @@ ohos_unittest("medialibrary_smartalbum_operations_test") {
     "ability_runtime:ability_context_native",
     "ability_runtime:abilitykit_native",
     "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_provider",
     "relational_store:native_rdb",
   ]

@@ -46,6 +46,7 @@ ohos_unittest("medialibrary_scanner_db_test") {
     "ability_runtime:ability_context_native",
     "ability_runtime:app_context",
     "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
     "device_manager:devicemanagersdk",
