@@ -38,6 +38,8 @@
 #include "medialibrary_unistore_manager.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
+#include "rdb_errno.h"
+#include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
 #include "userfile_manager_types.h"
@@ -136,7 +138,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryOperation(
 
 int32_t MediaLibraryAssetOperations::UpdateOperation(MediaLibraryCommand &cmd)
 {
-    // Update asset specify type
+    if (!AssetInputParamVerification::CheckParamForUpdate(cmd)) {
+        return E_INVALID_VALUES;
+    }
     // todo: check input params
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_PHOTO:
@@ -224,17 +228,43 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const stri
     MediaLibraryCommand cmd(oprnObject, OperationType::QUERY, networkId);
     cmd.GetAbsRdbPredicates()->EqualTo(column, value);
 
-    auto resultSet = rdbStore->Query(cmd, columns);
-    if (resultSet == nullptr) {
+    auto absResultSet = rdbStore->Query(cmd, columns);
+    if (absResultSet == nullptr) {
         return nullptr;
     }
 
-    shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();
-    if (fetchFileResult == nullptr) {
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(absResultSet);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    return shared_ptr<FileAsset>(fetchResult->GetFirstObject().release());
+}
+
+shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(AbsPredicates &predicates,
+    OperationObject oprnObject, const vector<string> &columns, const string &networkId)
+{
+    if (!CheckOprnObject(oprnObject)) {
         return nullptr;
     }
-    fetchFileResult->SetNetworkId(networkId);
-    return fetchFileResult->GetObjectFromRdb(resultSet, 0);
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return nullptr;
+    }
+
+    MediaLibraryCommand cmd(oprnObject, OperationType::QUERY, networkId);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
+    cmd.GetAbsRdbPredicates()->SetOrder(predicates.GetOrder());
+
+    auto absResultSet = rdbStore->Query(cmd, columns);
+    if (absResultSet == nullptr) {
+        return nullptr;
+    }
+
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(absResultSet);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    return shared_ptr<FileAsset>(fetchResult->GetFirstObject().release());
 }
 
 int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
@@ -391,6 +421,139 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryFiles(
     MediaLibraryTracer tracer;
     tracer.Start("QueryFile RdbStore->Query");
     return rdbStore->Query(cmd, columns);
+}
+
+bool MediaLibraryAssetOperations::IsContainsValue(ValuesBucket &values, const string &key)
+{
+    ValueObject value;
+    if (values.GetObject(key, value)) {
+        return true;
+    }
+    return false;
+}
+
+int32_t MediaLibraryAssetOperations::ModifyAssetInDb(MediaLibraryCommand &cmd)
+{
+    int32_t errCode = BeginTransaction();
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t rowId = 0;
+    int32_t ret = rdbStore->Update(cmd, rowId);
+    if (ret < 0 || rowId < 0) {
+        MEDIA_ERR_LOG("update path failed, ret=%{public}d", ret);
+        return ret;
+    }
+    errCode = TransactionCommit();
+    if (errCode != E_OK) {
+        TransactionRollback();
+        return errCode;
+    }
+    return rowId;
+}
+
+int32_t MediaLibraryAssetOperations::UpdateAssetPath(MediaLibraryCommand &cmd,
+    const shared_ptr<FileAsset> &fileAsset)
+{
+    ValuesBucket &values = cmd.GetValueBucket();
+    ValueObject valueObject;
+    string oldPath = fileAsset->GetPath();
+    string newPath;
+    if (values.GetObject(MediaColumn::MEDIA_FILE_PATH, valueObject)) {
+        valueObject.GetString(newPath);
+        // todo: check path with type and extensions
+    } else {
+        // no new path to update
+        return E_OK;
+    }
+
+    int32_t errCode = MediaFileUtils::ModifyAsset(oldPath, newPath);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Update Photo Path failed, errCode=%{public}d", errCode);
+        return errCode;
+    }
+
+    int32_t rowId = ModifyAssetInDb(cmd);
+    if (rowId < 0) {
+        int32_t ret = MediaFileUtils::ModifyAsset(newPath, oldPath);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("Resume Photo Path failed, errCode=%{public}d", ret);
+            return ret;
+        }
+        return E_HAS_DB_ERROR;
+    }
+
+    return rowId;
+}
+
+int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
+    const shared_ptr<FileAsset> &fileAsset)
+{
+    ValuesBucket &values = cmd.GetValueBucket();
+    ValueObject valueObject;
+    string newTitle;
+    string newDisplayName;
+    bool containsTitle = false;
+    bool containsDisplayName = false;
+
+    if (values.GetObject(MediaColumn::MEDIA_TITLE, valueObject)) {
+        valueObject.GetString(newTitle);
+        int32_t errCode = MediaFileUtils::CheckTitle(newTitle);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_INVALID_DISPLAY_NAME,
+            "Input title invalid %{private}s, errCode=%{public}d", newTitle.c_str(), errCode);
+        containsTitle = true;
+    }
+    if (values.GetObject(MediaColumn::MEDIA_NAME, valueObject)) {
+        valueObject.GetString(newDisplayName);
+        int32_t ret = CheckDisplayNameWithType(newDisplayName, fileAsset->GetMediaType());
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Input displayName invalid %{private}s",
+            newDisplayName.c_str());
+        containsDisplayName = true;
+    }
+
+    if ((!containsTitle) && (!containsDisplayName)) {
+        // do not need to update
+        return E_OK;
+    }
+    if (containsTitle && containsDisplayName &&
+        (MediaLibraryDataManagerUtils::GetFileTitle(newDisplayName) != newTitle)) {
+        MEDIA_ERR_LOG("new displayName [%{private}s] and new title [%{private}s] is not same",
+            newDisplayName.c_str(), newTitle.c_str());
+        return E_INVALID_DISPLAY_NAME;
+    }
+
+    if (!containsTitle) {
+        values.PutString(MediaColumn::MEDIA_TITLE,
+            MediaLibraryDataManagerUtils::GetFileTitle(newDisplayName));
+    }
+    if (!containsDisplayName) {
+        string ext = MediaFileUtils::SplitByChar(fileAsset->GetDisplayName(), '.');
+        values.PutString(MediaColumn::MEDIA_NAME, newTitle + "." + ext);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::UpdateFileInDb(MediaLibraryCommand &cmd)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t updateRows = 0;
+    int32_t result = rdbStore->Update(cmd, updateRows);
+    if (result != NativeRdb::E_OK || updateRows <= 0) {
+        MEDIA_ERR_LOG("Update File failed. Result %{public}d.", result);
+        return E_HAS_DB_ERROR;
+    }
+
+    return updateRows;
 }
 
 static int32_t OpenFile(const string &filePath, const string &mode)
@@ -668,6 +831,148 @@ int32_t MediaLibraryAssetOperations::CreateAssetPathById(int32_t fileId, int32_t
 
     filePath = dirPath + "/" + realName;
     return E_OK;
+}
+
+const std::unordered_map<std::string, std::vector<VerifyFunction>>
+    AssetInputParamVerification::UPDATE_VERIFY_PARAM_MAP = {
+    { MediaColumn::MEDIA_ID, { Forbidden } },
+    { MediaColumn::MEDIA_URI, { Forbidden } },
+    { MediaColumn::MEDIA_FILE_PATH, { IsStringNotNull, IsUniqueValue } },
+    { MediaColumn::MEDIA_SIZE, { Forbidden } },
+    { MediaColumn::MEDIA_TITLE, { IsStringNotNull } },
+    { MediaColumn::MEDIA_NAME, { IsStringNotNull } },
+    { MediaColumn::MEDIA_TYPE, { Forbidden } },
+    { MediaColumn::MEDIA_MIME_TYPE, { Forbidden } },
+    { MediaColumn::MEDIA_OWNER_PACKAGE, { Forbidden } },
+    { MediaColumn::MEDIA_DEVICE_NAME, { Forbidden } },
+    { MediaColumn::MEDIA_THUMBNAIL, { Forbidden } },
+    { MediaColumn::MEDIA_DATE_MODIFIED, { Forbidden } },
+    { MediaColumn::MEDIA_DATE_ADDED, { Forbidden } },
+    { MediaColumn::MEDIA_DATE_TAKEN, { Forbidden } },
+    { MediaColumn::MEDIA_TIME_VISIT, { IsInt64 } },
+    { MediaColumn::MEDIA_DURATION, { Forbidden } },
+    { MediaColumn::MEDIA_TIME_PENDING, { IsInt64, IsUniqueValue } },
+    { MediaColumn::MEDIA_IS_FAV, { IsBool, IsUniqueValue } },
+    { MediaColumn::MEDIA_DATE_TRASHED, { IsInt64, IsUniqueValue } },
+    { MediaColumn::MEDIA_DATE_DELETED, { IsInt64, IsUniqueValue } },
+    { MediaColumn::MEDIA_HIDDEN, { IsBool, IsUniqueValue } },
+    { MediaColumn::MEDIA_PARENT_ID, { IsInt64, IsBelowApi9 } },
+    { MediaColumn::MEDIA_RELATIVE_PATH, { IsString, IsBelowApi9 } },
+    { PhotoColumn::PHOTO_ORIENTATION, { Forbidden } },
+    { PhotoColumn::PHOTO_LATITUDE, { Forbidden } },
+    { PhotoColumn::PHOTO_LONGITUDE, { Forbidden } },
+    { PhotoColumn::PHOTO_LCD, { Forbidden } },
+    { PhotoColumn::PHOTO_HEIGHT, { Forbidden } },
+    { PhotoColumn::PHOTO_WIDTH, { Forbidden } },
+    { PhotoColumn::PHOTO_LCD_VISIT_TIME, { IsInt64 } },
+    { AudioColumn::AUDIO_ALBUM, { Forbidden } },
+    { AudioColumn::AUDIO_ARTIST, { Forbidden } },
+    { DocumentColumn::DOCUMENT_LCD, { Forbidden } },
+    { DocumentColumn::DOCUMENT_LCD_VISIT_TIME, { IsInt64 } }
+};
+
+bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
+{
+    ValuesBucket &values = cmd.GetValueBucket();
+    map<string, ValueObject> valuesMap;
+    values.GetAll(valuesMap);
+    for (auto &iter : valuesMap) {
+        if (UPDATE_VERIFY_PARAM_MAP.find(iter.first) == UPDATE_VERIFY_PARAM_MAP.end()) {
+            MEDIA_ERR_LOG("param [%{public}s] is not allowed", iter.first.c_str());
+            return false;
+        }
+        for (auto &verifyFunc : UPDATE_VERIFY_PARAM_MAP.at(iter.first)) {
+            if (!verifyFunc(iter.second, cmd)) {
+                MEDIA_ERR_LOG("verify param [%{public}s] failed", iter.first.c_str());
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool AssetInputParamVerification::Forbidden(ValueObject &value, MediaLibraryCommand &cmd)
+{
+    return false;
+}
+
+bool AssetInputParamVerification::IsInt32(ValueObject &value, MediaLibraryCommand &cmd)
+{
+    if (value.GetType() == ValueObjectType::TYPE_INT) {
+        return true;
+    }
+    return false;
+}
+
+bool AssetInputParamVerification::IsInt64(ValueObject &value, MediaLibraryCommand &cmd)
+{
+    if (value.GetType() == ValueObjectType::TYPE_INT) {
+        return true;
+    }
+    return false;
+}
+
+bool AssetInputParamVerification::IsBool(ValueObject &value, MediaLibraryCommand &cmd)
+{
+    if (value.GetType() == ValueObjectType::TYPE_BOOL) {
+        return true;
+    }
+    if (value.GetType() == ValueObjectType::TYPE_INT) {
+        int32_t ret;
+        value.GetInt(ret);
+        if (ret == 0 || ret == 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AssetInputParamVerification::IsString(ValueObject &value, MediaLibraryCommand &cmd)
+{
+    if (value.GetType() == ValueObjectType::TYPE_STRING) {
+        return true;
+    }
+    return false;
+}
+
+bool AssetInputParamVerification::IsDouble(ValueObject &value, MediaLibraryCommand &cmd)
+{
+    if (value.GetType() == ValueObjectType::TYPE_DOUBLE) {
+        return true;
+    }
+    return false;
+}
+
+bool AssetInputParamVerification::IsBelowApi9(ValueObject &value, MediaLibraryCommand &cmd)
+{
+    if (cmd.GetApi() == MediaLibraryApi::API_OLD) {
+        return true;
+    }
+    return false;
+}
+
+bool AssetInputParamVerification::IsStringNotNull(ValueObject &value, MediaLibraryCommand &cmd)
+{
+    if (value.GetType() != ValueObjectType::TYPE_STRING) {
+        return false;
+    }
+    string str;
+    value.GetString(str);
+    if (str.empty()) {
+        return false;
+    }
+    return true;
+}
+
+bool AssetInputParamVerification::IsUniqueValue(ValueObject &value, MediaLibraryCommand &cmd)
+{
+    // whether this is the unique value in ValuesBucket
+    map<string, ValueObject> valuesMap;
+    cmd.GetValueBucket().GetAll(valuesMap);
+    if (valuesMap.size() != 1) {
+        return false;
+    }
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

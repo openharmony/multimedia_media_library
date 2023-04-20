@@ -94,7 +94,18 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
 
 int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
 {
-    return 0;
+    switch (cmd.GetApi()) {
+        case MediaLibraryApi::API_10:
+            return UpdateV10(cmd);
+        case MediaLibraryApi::API_OLD:
+            MEDIA_ERR_LOG("this api is not realized yet");
+            return E_FAIL;
+        default:
+            MEDIA_ERR_LOG("get api failed");
+            return E_FAIL;
+    }
+
+    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
@@ -246,6 +257,53 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::QueryV10(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
     return QueryFiles(cmd, columns);
+}
+
+int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
+{
+    vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_TYPE,
+        PhotoColumn::MEDIA_NAME
+    };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
+        OperationObject::FILESYSTEM_PHOTO, columns);
+    if (fileAsset == nullptr) {
+        return E_INVALID_VALUES;
+    }
+
+    // Update if FileAsset.path is modified
+    if (IsContainsValue(cmd.GetValueBucket(), PhotoColumn::MEDIA_FILE_PATH)) {
+        return UpdateAssetPath(cmd, fileAsset);
+    }
+
+    // todo: update pending later
+    // Update if FileAsset.title or FileAsset.displayName is modified
+    int32_t errCode = UpdateFileName(cmd, fileAsset);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Photo Name failed, fileName=%{private}s",
+        fileAsset->GetDisplayName().c_str());
+
+    errCode = BeginTransaction();
+    if (errCode != E_OK) {
+        TransactionRollback();
+        return errCode;
+    }
+
+    int32_t rowId = UpdateFileInDb(cmd);
+    if (rowId < 0) {
+        MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
+        TransactionRollback();
+        return rowId;
+    }
+
+    errCode = TransactionCommit();
+    if (errCode != E_OK) {
+        TransactionRollback();
+        return errCode;
+    }
+
+    return rowId;
 }
 } // namespace Media
 } // namespace OHOS
