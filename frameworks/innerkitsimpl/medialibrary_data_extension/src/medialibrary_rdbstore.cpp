@@ -166,9 +166,16 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
-
-    int32_t ret = rdbStore_->Delete(deletedRows, cmd.GetTableName(), cmd.GetAbsRdbPredicates()->GetWhereClause(),
-        cmd.GetAbsRdbPredicates()->GetWhereArgs());
+    int32_t ret = NativeRdb::E_ERROR;
+    if (MEDIALIBRARY_TABLE == cmd.GetTableName() || PhotoColumn::PHOTOS_TABLE == cmd.GetTableName()) {
+        ValuesBucket valuesBucket;
+        valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
+        ret = rdbStore_->Update(deletedRows, cmd.GetTableName(), valuesBucket,
+            cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
+    } else {
+        ret = rdbStore_->Delete(deletedRows, cmd.GetTableName(), cmd.GetAbsRdbPredicates()->GetWhereClause(),
+            cmd.GetAbsRdbPredicates()->GetWhereArgs());
+    }
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Delete failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
@@ -211,7 +218,11 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
         return nullptr;
     }
-
+    if (MEDIALIBRARY_TABLE == cmd.GetTableName() || PhotoColumn::PHOTOS_TABLE == cmd.GetTableName()) {
+        string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
+        strQueryCondition += " AND dirty <> " + std::to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED));
+        cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
+    }
     auto *predicates = cmd.GetAbsRdbPredicates();
 #ifdef ML_DEBUG
     MEDIA_DEBUG_LOG("tablename = %s", cmd.GetTableName().c_str());
@@ -307,9 +318,16 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
-
+    int err = E_ERR;
     int32_t deletedRows = 0;
-    int err = rdbStore_->Delete(deletedRows, predicates);
+    if (MEDIALIBRARY_TABLE == predicates.GetTableName() || PhotoColumn::PHOTOS_TABLE == predicates.GetTableName()) {
+        ValuesBucket valuesBucket;
+        valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
+        err = rdbStore_->Update(deletedRows, valuesBucket, predicates);
+    } else {
+        err = rdbStore_->Delete(deletedRows, predicates);
+    }
+
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to execute delete, err: %{public}d", err);
         return E_HAS_DB_ERROR;
@@ -668,6 +686,9 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         CREATE_BUNDLE_PREMISSION_TABLE,
         CREATE_MEDIALIBRARY_ERROR_TABLE,
         CREATE_REMOTE_THUMBNAIL_TABLE,
+        CREATE_DELETE_FILE_TRIGGER,
+        CREATE_FDIRTY_TRIGGER,
+        CREATE_MDIRTY_TRIGGER,
         PhotoAlbumColumns::CREATE_TABLE,
         PhotoAlbumColumns::INDEX_ALBUM_TYPES,
         PhotoMap::CREATE_TABLE,
