@@ -82,7 +82,7 @@ public:
     static int32_t CheckDirExtension(const std::string &relativePath, const std::string &displayName);
     static int32_t UpdateDateModified(const std::string &dirPath);
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
-    static void ScanFile(const std::string &srcPath);
+    static void ScanFile(const std::string &srcPath, MediaLibraryApi api = MediaLibraryApi::API_OLD);
 
 private:
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);
