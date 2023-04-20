@@ -22,7 +22,9 @@
 #include <unistd.h>
 #include "application_context.h"
 #include "ability_manager_client.h"
+#ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
+#endif
 #include "directory_ex.h"
 #include "iservice_registry.h"
 #include "media_log.h"
@@ -67,10 +69,13 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
+#ifdef HAS_BATTERY_MANAGER_PART
 static constexpr int MAX_BATTERY = 100;
+static constexpr int ERROR_BATTERY = -1;
+#endif
 static constexpr int EMPTY_BATTERY = 0;
 static constexpr int STORAGE_MANAGER_UID = 5003;
-static constexpr int ERROR_BATTERY = -1;
+
 static constexpr uint32_t HEADER_LEN = 12;
 static constexpr uint32_t READ_LEN = 1024;
 MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &context) : context_(context)
@@ -797,12 +802,16 @@ int32_t MtpOperationUtils::GetHandleByPaths(string path, uint32_t &handle)
 
 int32_t MtpOperationUtils::GetBatteryLevel()
 {
+#ifdef HAS_BATTERY_MANAGER_PART
     auto &batterySrvClient = PowerMgr::BatterySrvClient::GetInstance();
     int32_t capacity = batterySrvClient.GetCapacity();
     if (capacity > MAX_BATTERY || capacity < EMPTY_BATTERY) {
         return ERROR_BATTERY;
     }
     return capacity;
+#else
+    return EMPTY_BATTERY;
+#endif
 }
 
 std::string MtpOperationUtils::GetPropertyInner(const std::string &property, const std::string &defValue)
