@@ -68,7 +68,7 @@ int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared
 int32_t MediaScannerManager::ScanFileSync(const std::string &path,
     const std::shared_ptr<IMediaScannerCallback> &callback, MediaLibraryApi api)
 {
-    MEDIA_DEBUG_LOG("scan file %{private}s", path.c_str());
+    MEDIA_DEBUG_LOG("scan file %{private}s, api%{public}d", path.c_str(), static_cast<int>(api));
 
     string realPath;
     if (!PathToRealPath(path, realPath)) {
