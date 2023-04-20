@@ -28,7 +28,9 @@ int MtpFileObserver::inotifyFd_ = 0;
 std::map<int, std::string> MtpFileObserver::watchMap_;
 std::mutex MtpFileObserver::eventLock_;
 const int BUF_SIZE = 1024;
+#ifdef HAS_BATTERY_MANAGER_PART
 const int LOW_BATTERY = 50;
+#endif
 void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &path, const ContextSptr &context)
 {
     string fileName;
@@ -78,11 +80,13 @@ bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &
 
 void MtpFileObserver::SendBattery(const ContextSptr &context)
 {
+#ifdef HAS_BATTERY_MANAGER_PART
     std::shared_ptr<MtpEvent> eventPtr = std::make_shared<OHOS::Media::MtpEvent>(context);
     auto battery = make_shared<MtpOperationUtils>(context);
     if (LOW_BATTERY >= battery->GetBatteryLevel()) {
         eventPtr->SendDevicePropertyChanged();
     }
+#endif
 }
 
 bool MtpFileObserver::StopFileInotify()
