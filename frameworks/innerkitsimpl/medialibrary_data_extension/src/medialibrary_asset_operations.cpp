@@ -441,7 +441,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
         auto watch = MediaLibraryInotify::GetInstance();
         if (watch != nullptr) {
             MEDIA_DEBUG_LOG("enter inotify, path = %{private}s", path.c_str());
-            watch->AddWatchList(path, fileAsset->GetUri());
+            watch->AddWatchList(path, fileAsset->GetUri(), MediaLibraryApi::API_10);
         }
     }
     return fd;

@@ -721,7 +721,7 @@ int32_t MediaLibraryObjectUtils::ScanFileAfterClose(const string &srcPath, const
     }
 
     InvalidateThumbnail(id, tableName);
-    ScanFile(srcPath);
+    ScanFile(srcPath, api);
     return E_SUCCESS;
 }
 
@@ -760,15 +760,15 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     return E_SUCCESS;
 }
 
-void MediaLibraryObjectUtils::ScanFile(const string &path)
+void MediaLibraryObjectUtils::ScanFile(const string &path, MediaLibraryApi api)
 {
-    MEDIA_DEBUG_LOG("enter, path = %{private}s", path.c_str());
+    MEDIA_DEBUG_LOG("enter, path = %{private}s, api = %{public}d", path.c_str(), static_cast<int>(api));
     shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
     if (scanFileCb == nullptr) {
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
     }
-    int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanFileCb);
+    int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanFileCb, api);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }
