@@ -69,6 +69,7 @@ ohos_unittest("mtp_native_test") {
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_mtp_test/src/mock_mtp_driver.cpp",
     "../medialibrary_mtp_test/src/mtp_test.cpp",
+    "./src/mtp_data_utils_test.cpp",
     "./src/mtp_native_test.cpp",
   ]
 
