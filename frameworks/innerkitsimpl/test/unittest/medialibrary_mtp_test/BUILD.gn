@@ -96,5 +96,6 @@ ohos_unittest("medialibrary_mtp_test") {
 
   if (defined(global_parts_info.powermgr_battery_manager)) {
     external_deps += [ "battery_manager:batterysrv_client" ]
+    cflags_cc = [ "-DHAS_BATTERY_MANAGER_PART" ]
   }
 }
