@@ -26,6 +26,7 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
+#include "media_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -88,7 +89,7 @@ void MediaFileExtAbility::OnStop()
 }
 
 sptr<IRemoteObject> MediaFileExtAbility::OnConnect(const AAFwk::Want &want)
-{    
+{
     Extension::OnConnect(want);
     sptr<FileAccessExtStubImpl> remoteObject = new (nothrow) FileAccessExtStubImpl(
         static_pointer_cast<MediaFileExtAbility>(shared_from_this()),
@@ -113,41 +114,66 @@ int32_t ConvertErrno(int32_t innerErr)
     return err;
 }
 
+static Uri DealWithUriWithName(const Uri &uri)
+{
+    return Uri(MediaFileUtils::DealWithUriWithName(uri.ToString()));
+}
+
+static void DealWithUriWithName(const FileInfo &fileInfo, FileInfo &newFileInfo)
+{
+    newFileInfo.uri = MediaFileUtils::DealWithUriWithName(fileInfo.uri);
+    newFileInfo.relativePath = fileInfo.relativePath;
+    newFileInfo.fileName = fileInfo.fileName;
+    newFileInfo.mode = fileInfo.mode;
+    newFileInfo.size = fileInfo.size;
+    newFileInfo.mtime = fileInfo.mtime;
+    newFileInfo.mimeType = fileInfo.mimeType;
+}
+
 int MediaFileExtAbility::OpenFile(const Uri &uri, const int flags, int &fd)
 {
-    return ConvertErrno(MediaFileExtentionUtils::OpenFile(uri, flags, fd));
+    Uri newUri = DealWithUriWithName(uri);
+    return ConvertErrno(MediaFileExtentionUtils::OpenFile(newUri, flags, fd));
 }
 
 int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayName,  Uri &newFileUri)
 {
-    return ConvertErrno(MediaFileExtentionUtils::CreateFile(parentUri, displayName, newFileUri));
+    Uri newParentUri = DealWithUriWithName(parentUri);
+    return ConvertErrno(MediaFileExtentionUtils::CreateFile(newParentUri, displayName, newFileUri));
 }
 
 int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, Uri &newFileUri)
 {
-    return ConvertErrno(MediaFileExtentionUtils::Mkdir(parentUri, displayName, newFileUri));
+    Uri newParentUri = DealWithUriWithName(parentUri);
+    return ConvertErrno(MediaFileExtentionUtils::Mkdir(newParentUri, displayName, newFileUri));
 }
 
 int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
 {
-    return ConvertErrno(MediaFileExtentionUtils::Delete(sourceFileUri));
+    Uri newSourceFileUri = DealWithUriWithName(sourceFileUri);
+    return ConvertErrno(MediaFileExtentionUtils::Delete(newSourceFileUri));
 }
 
 int MediaFileExtAbility::ListFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
     const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
 {
-    return ConvertErrno(MediaFileExtentionUtils::ListFile(parentInfo, offset, maxCount, filter, fileList));
+    FileInfo newParentInfo;
+    DealWithUriWithName(parentInfo, newParentInfo);
+    return ConvertErrno(MediaFileExtentionUtils::ListFile(newParentInfo, offset, maxCount, filter, fileList));
 }
 
 int MediaFileExtAbility::ScanFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
     const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
 {
-    return ConvertErrno(MediaFileExtentionUtils::ScanFile(parentInfo, offset, maxCount, filter, fileList));
+    FileInfo newParentInfo;
+    DealWithUriWithName(parentInfo, newParentInfo);
+    return ConvertErrno(MediaFileExtentionUtils::ScanFile(newParentInfo, offset, maxCount, filter, fileList));
 }
 
 int MediaFileExtAbility::Query(const Uri &uri, std::vector<std::string> &columns, std::vector<std::string> &results)
 {
-    return ConvertErrno(MediaFileExtentionUtils::Query(uri, columns, results));
+    Uri newUri = DealWithUriWithName(uri);
+    return ConvertErrno(MediaFileExtentionUtils::Query(newUri, columns, results));
 }
 
 int MediaFileExtAbility::GetRoots(vector<FileAccessFwk::RootInfo> &rootList)
@@ -157,32 +183,40 @@ int MediaFileExtAbility::GetRoots(vector<FileAccessFwk::RootInfo> &rootList)
 
 int MediaFileExtAbility::Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri)
 {
-    return ConvertErrno(MediaFileExtentionUtils::Move(sourceFileUri, targetParentUri, newFileUri));
+    Uri newSourceFileUri = DealWithUriWithName(sourceFileUri);
+    Uri newTargetParentUri = DealWithUriWithName(targetParentUri);
+    return ConvertErrno(MediaFileExtentionUtils::Move(newSourceFileUri, newTargetParentUri, newFileUri));
 }
 
 int MediaFileExtAbility::Copy(const Uri &sourceUri, const Uri &destUri, std::vector<CopyResult> &copyResult, bool force)
 {
-    return MediaFileExtentionUtils::Copy(sourceUri, destUri, copyResult, force);
+    Uri newSourceFileUri = DealWithUriWithName(sourceUri);
+    Uri newDestUri = DealWithUriWithName(destUri);
+    return MediaFileExtentionUtils::Copy(newSourceFileUri, newDestUri, copyResult, force);
 }
 
 int MediaFileExtAbility::Rename(const Uri &sourceFileUri, const string &displayName, Uri &newFileUri)
 {
-    return ConvertErrno(MediaFileExtentionUtils::Rename(sourceFileUri, displayName, newFileUri));
+    Uri newSourceFileUri = DealWithUriWithName(sourceFileUri);
+    return ConvertErrno(MediaFileExtentionUtils::Rename(newSourceFileUri, displayName, newFileUri));
 }
 
 int MediaFileExtAbility::Access(const Uri &uri, bool &isExist)
 {
-    return ConvertErrno(MediaFileExtentionUtils::Access(uri, isExist));
+    Uri newUri = DealWithUriWithName(uri);
+    return ConvertErrno(MediaFileExtentionUtils::Access(newUri, isExist));
 }
 
 int MediaFileExtAbility::GetThumbnail(const Uri &uri, const Size &size, std::unique_ptr<PixelMap> &pixelMap)
 {
-    return ConvertErrno(MediaFileExtentionUtils::GetThumbnail(uri, size, pixelMap));
+    Uri newUri = DealWithUriWithName(uri);
+    return ConvertErrno(MediaFileExtentionUtils::GetThumbnail(newUri, size, pixelMap));
 }
 
 int MediaFileExtAbility::GetFileInfoFromUri(const Uri &selectFile, FileInfo &fileInfo)
 {
-    return ConvertErrno(MediaFileExtentionUtils::GetFileInfoFromUri(selectFile, fileInfo));
+    Uri newUri = DealWithUriWithName(selectFile);
+    return ConvertErrno(MediaFileExtentionUtils::GetFileInfoFromUri(newUri, fileInfo));
 }
 
 int MediaFileExtAbility::GetFileInfoFromRelativePath(const string &relativePath, FileAccessFwk::FileInfo &fileInfo)

@@ -532,11 +532,11 @@ int GetFileInfo(FileInfo &fileInfo, const shared_ptr<NativeRdb::ResultSet> &resu
 {
     int fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
     int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
-    fileInfo.uri =
-        MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
     fileInfo.relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
     fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
     fileInfo.mimeType = GetStringVal(MEDIA_DATA_DB_MIME_TYPE, result);
+    fileInfo.uri = MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR +
+        to_string(fileId) + SLASH_CHAR + fileInfo.fileName;
     if (mediaType == MEDIA_TYPE_ALBUM) {
         fileInfo.mode = ALBUM_MODE_RW;
     } else {
@@ -557,8 +557,8 @@ int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb:
         int fileId = GetInt32Val(MEDIA_DATA_DB_BUCKET_ID, result);
         fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_TITLE, result);
         fileInfo.mimeType = parentInfo.mimeType;
-        fileInfo.uri =
-            MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) + SLASH_CHAR + to_string(fileId);
+        fileInfo.uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) + SLASH_CHAR +
+            to_string(fileId) + SLASH_CHAR + fileInfo.fileName;
         fileInfo.relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
         fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
         fileInfo.mode = ALBUM_MODE_RW;
