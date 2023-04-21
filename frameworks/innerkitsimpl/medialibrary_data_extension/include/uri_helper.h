@@ -50,7 +50,6 @@ public:
     std::string FormattedUri() const;
     bool AccessCheck(uint8_t flag) const;
     bool ParseFdUri(int32_t &fd, int64_t &offset, int64_t size);
-
 private:
     void FormatMeForUri(const std::string_view &uri) noexcept;
     void FormatMeForFd() noexcept;

@@ -1579,6 +1579,7 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     const std::shared_ptr<AbilityRuntime::Context> &context)
 {
     // uri is dataability:///media/image/<id>/thumbnail/<width>/<height>
+    // uri is dataability:///media/image/<id>/name/thumbnail/<width>/<height>
     auto index = uri.find("//");
     if (index == string::npos) {
         return nullptr;
@@ -1591,7 +1592,8 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     if (index == string::npos) {
         return nullptr;
     }
-    auto fileUri = uri.substr(0, index - 1);
+    auto fileUri = MediaFileUtils::DealWithUriWithName(uri);
+
     tmpIdx = fileUri.rfind("/");
     index += strlen("thumbnail");
     index = uri.find("/", index);
@@ -1900,7 +1902,7 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSIsFavorite");
-    
+
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_ONE;
