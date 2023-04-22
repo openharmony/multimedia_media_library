@@ -119,17 +119,6 @@ static Uri DealWithUriWithName(const Uri &uri)
     return Uri(MediaFileUtils::DealWithUriWithName(uri.ToString()));
 }
 
-static void DealWithUriWithName(const FileInfo &fileInfo, FileInfo &newFileInfo)
-{
-    newFileInfo.uri = MediaFileUtils::DealWithUriWithName(fileInfo.uri);
-    newFileInfo.relativePath = fileInfo.relativePath;
-    newFileInfo.fileName = fileInfo.fileName;
-    newFileInfo.mode = fileInfo.mode;
-    newFileInfo.size = fileInfo.size;
-    newFileInfo.mtime = fileInfo.mtime;
-    newFileInfo.mimeType = fileInfo.mimeType;
-}
-
 int MediaFileExtAbility::OpenFile(const Uri &uri, const int flags, int &fd)
 {
     Uri newUri = DealWithUriWithName(uri);
@@ -138,36 +127,29 @@ int MediaFileExtAbility::OpenFile(const Uri &uri, const int flags, int &fd)
 
 int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayName,  Uri &newFileUri)
 {
-    Uri newParentUri = DealWithUriWithName(parentUri);
-    return ConvertErrno(MediaFileExtentionUtils::CreateFile(newParentUri, displayName, newFileUri));
+    return ConvertErrno(MediaFileExtentionUtils::CreateFile(parentUri, displayName, newFileUri));
 }
 
 int MediaFileExtAbility::Mkdir(const Uri &parentUri, const string &displayName, Uri &newFileUri)
 {
-    Uri newParentUri = DealWithUriWithName(parentUri);
-    return ConvertErrno(MediaFileExtentionUtils::Mkdir(newParentUri, displayName, newFileUri));
+    return ConvertErrno(MediaFileExtentionUtils::Mkdir(parentUri, displayName, newFileUri));
 }
 
 int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
 {
-    Uri newSourceFileUri = DealWithUriWithName(sourceFileUri);
-    return ConvertErrno(MediaFileExtentionUtils::Delete(newSourceFileUri));
+    return ConvertErrno(MediaFileExtentionUtils::Delete(sourceFileUri));
 }
 
 int MediaFileExtAbility::ListFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
     const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
 {
-    FileInfo newParentInfo;
-    DealWithUriWithName(parentInfo, newParentInfo);
-    return ConvertErrno(MediaFileExtentionUtils::ListFile(newParentInfo, offset, maxCount, filter, fileList));
+    return ConvertErrno(MediaFileExtentionUtils::ListFile(parentInfo, offset, maxCount, filter, fileList));
 }
 
 int MediaFileExtAbility::ScanFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
     const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
 {
-    FileInfo newParentInfo;
-    DealWithUriWithName(parentInfo, newParentInfo);
-    return ConvertErrno(MediaFileExtentionUtils::ScanFile(newParentInfo, offset, maxCount, filter, fileList));
+    return ConvertErrno(MediaFileExtentionUtils::ScanFile(parentInfo, offset, maxCount, filter, fileList));
 }
 
 int MediaFileExtAbility::Query(const Uri &uri, std::vector<std::string> &columns, std::vector<std::string> &results)
@@ -203,8 +185,7 @@ int MediaFileExtAbility::Rename(const Uri &sourceFileUri, const string &displayN
 
 int MediaFileExtAbility::Access(const Uri &uri, bool &isExist)
 {
-    Uri newUri = DealWithUriWithName(uri);
-    return ConvertErrno(MediaFileExtentionUtils::Access(newUri, isExist));
+    return ConvertErrno(MediaFileExtentionUtils::Access(uri, isExist));
 }
 
 int MediaFileExtAbility::GetThumbnail(const Uri &uri, const Size &size, std::unique_ptr<PixelMap> &pixelMap)
@@ -215,8 +196,7 @@ int MediaFileExtAbility::GetThumbnail(const Uri &uri, const Size &size, std::uni
 
 int MediaFileExtAbility::GetFileInfoFromUri(const Uri &selectFile, FileInfo &fileInfo)
 {
-    Uri newUri = DealWithUriWithName(selectFile);
-    return ConvertErrno(MediaFileExtentionUtils::GetFileInfoFromUri(newUri, fileInfo));
+    return ConvertErrno(MediaFileExtentionUtils::GetFileInfoFromUri(selectFile, fileInfo));
 }
 
 int MediaFileExtAbility::GetFileInfoFromRelativePath(const string &relativePath, FileAccessFwk::FileInfo &fileInfo)

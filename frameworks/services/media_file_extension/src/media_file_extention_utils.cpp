@@ -67,6 +67,17 @@ static const std::unordered_map<int32_t, std::pair<int32_t, string>> mediaErrCod
     { E_INVALID_URI,       { OHOS::FileManagement::LibN::E_URIS, "Invalid URI"                                } },
 };
 
+static void DealWithUriWithName(const FileInfo &fileInfo, FileInfo &newFileInfo)
+{
+    newFileInfo.uri = MediaFileUtils::DealWithUriWithName(fileInfo.uri);
+    newFileInfo.relativePath = fileInfo.relativePath;
+    newFileInfo.fileName = fileInfo.fileName;
+    newFileInfo.mode = fileInfo.mode;
+    newFileInfo.size = fileInfo.size;
+    newFileInfo.mtime = fileInfo.mtime;
+    newFileInfo.mimeType = fileInfo.mimeType;
+}
+
 int MediaFileExtentionUtils::OpenFile(const Uri &uri, const int flags, int &fd)
 {
     fd = -1;
@@ -101,7 +112,7 @@ int MediaFileExtentionUtils::CreateFile(const Uri &parentUri, const string &disp
         MEDIA_ERR_LOG("invalid file displayName %{private}s", displayName.c_str());
         return E_INVALID_DISPLAY_NAME;
     }
-    string parentUriStr = parentUri.ToString();
+    string parentUriStr = MediaFileUtils::DealWithUriWithName(parentUri.ToString());
     auto ret = MediaFileExtentionUtils::CheckUriSupport(parentUriStr);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
     vector<string> columns = { MEDIA_DATA_DB_FILE_PATH };
@@ -126,7 +137,7 @@ int MediaFileExtentionUtils::CreateFile(const Uri &parentUri, const string &disp
 
 int MediaFileExtentionUtils::Mkdir(const Uri &parentUri, const string &displayName, Uri &newFileUri)
 {
-    string parentUriStr = parentUri.ToString();
+    string parentUriStr = MediaFileUtils::DealWithUriWithName(parentUri.ToString());
     MediaFileUriType uriType;
     FileAccessFwk::FileInfo parentInfo;
     parentInfo.uri = parentUriStr;
@@ -160,7 +171,7 @@ int MediaFileExtentionUtils::Mkdir(const Uri &parentUri, const string &displayNa
 
 int MediaFileExtentionUtils::Delete(const Uri &sourceFileUri)
 {
-    string sourceUri = sourceFileUri.ToString();
+    string sourceUri = MediaFileUtils::DealWithUriWithName(sourceFileUri.ToString());
     auto ret = MediaFileExtentionUtils::CheckUriSupport(sourceUri);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
     vector<string> columns = { MEDIA_DATA_DB_MEDIA_TYPE };
@@ -584,7 +595,9 @@ int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int6
     const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
 {
     MediaFileUriType uriType;
-    auto ret = MediaFileExtentionUtils::ResolveUri(parentInfo, uriType);
+    FileInfo newParentInfo;
+    DealWithUriWithName(parentInfo, newParentInfo);
+    auto ret = MediaFileExtentionUtils::ResolveUri(newParentInfo, uriType);
     MEDIA_DEBUG_LOG("ListFile:: uriType: %d", uriType);
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("ResolveUri::invalid input fileInfo");
@@ -593,19 +606,19 @@ int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int6
     shared_ptr<NativeRdb::ResultSet> result = nullptr;
     switch (uriType) {
         case URI_ROOT:
-            return RootListFile(parentInfo, fileList);
+            return RootListFile(newParentInfo, fileList);
         case URI_MEDIA_ROOT:
-            result = GetMediaRootResult(parentInfo, uriType, offset, maxCount);
-            return GetAlbumInfoFromResult(parentInfo, result, fileList);
+            result = GetMediaRootResult(newParentInfo, uriType, offset, maxCount);
+            return GetAlbumInfoFromResult(newParentInfo, result, fileList);
         case URI_FILE_ROOT:
-            result = GetListRootResult(parentInfo, uriType, offset, maxCount);
-            return GetFileInfoFromResult(parentInfo, result, fileList);
+            result = GetListRootResult(newParentInfo, uriType, offset, maxCount);
+            return GetFileInfoFromResult(newParentInfo, result, fileList);
         case URI_DIR:
-            result = GetListDirResult(parentInfo, uriType, offset, maxCount, filter);
-            return GetFileInfoFromResult(parentInfo, result, fileList);
+            result = GetListDirResult(newParentInfo, uriType, offset, maxCount, filter);
+            return GetFileInfoFromResult(newParentInfo, result, fileList);
         case URI_ALBUM:
-            result = GetListAlbumResult(parentInfo, uriType, offset, maxCount, filter);
-            return GetFileInfoFromResult(parentInfo, result, fileList);
+            result = GetListAlbumResult(newParentInfo, uriType, offset, maxCount, filter);
+            return GetFileInfoFromResult(newParentInfo, result, fileList);
         default:
             return E_FAIL;
     }
@@ -688,14 +701,16 @@ int32_t MediaFileExtentionUtils::ScanFile(const FileInfo &parentInfo, const int6
     const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
 {
     MediaFileUriType uriType;
-    auto ret = MediaFileExtentionUtils::ResolveUri(parentInfo, uriType);
+    FileInfo newParentInfo;
+    DealWithUriWithName(parentInfo, newParentInfo);
+    auto ret = MediaFileExtentionUtils::ResolveUri(newParentInfo, uriType);
     MEDIA_DEBUG_LOG("ScanFile:: uriType: %d", uriType);
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("ResolveUri::invalid input fileInfo");
         return ret;
     }
-    auto result = SetScanFileSelection(parentInfo, uriType, offset, maxCount, filter);
-    return GetScanFileFileInfoFromResult(parentInfo, result, fileList);
+    auto result = SetScanFileSelection(newParentInfo, uriType, offset, maxCount, filter);
+    return GetScanFileFileInfoFromResult(newParentInfo, result, fileList);
 }
 
 static int QueryDirSize(FileInfo fileInfo)
@@ -824,7 +839,7 @@ int32_t MediaFileExtentionUtils::GetRoots(vector<RootInfo> &rootList)
 int MediaFileExtentionUtils::Access(const Uri &uri, bool &isExist)
 {
     isExist = false;
-    string sourceUri = uri.ToString();
+    string sourceUri = MediaFileUtils::DealWithUriWithName(uri.ToString());
     CHECK_AND_RETURN_RET_LOG(MediaFileExtentionUtils::CheckUriValid(sourceUri), E_URI_INVALID,
         "Access::invalid uri: %{public}s", sourceUri.c_str());
     vector<string> columns = { MEDIA_DATA_DB_ID };
@@ -890,7 +905,7 @@ int MediaFileExtentionUtils::GetThumbnail(const Uri &uri, const Size &size, std:
 
 int MediaFileExtentionUtils::GetFileInfoFromUri(const Uri &selectFile, FileInfo &fileInfo)
 {
-    string uri = selectFile.ToString();
+    string uri = MediaFileUtils::DealWithUriWithName(selectFile.ToString());
     MediaFileUriType uriType = URI_FILE;
 
     FileInfo tempInfo;
