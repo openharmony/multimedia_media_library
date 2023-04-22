@@ -26,7 +26,6 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
-#include "media_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -114,15 +113,9 @@ int32_t ConvertErrno(int32_t innerErr)
     return err;
 }
 
-static Uri DealWithUriWithName(const Uri &uri)
-{
-    return Uri(MediaFileUtils::DealWithUriWithName(uri.ToString()));
-}
-
 int MediaFileExtAbility::OpenFile(const Uri &uri, const int flags, int &fd)
 {
-    Uri newUri = DealWithUriWithName(uri);
-    return ConvertErrno(MediaFileExtentionUtils::OpenFile(newUri, flags, fd));
+    return ConvertErrno(MediaFileExtentionUtils::OpenFile(uri, flags, fd));
 }
 
 int MediaFileExtAbility::CreateFile(const Uri &parentUri, const string &displayName,  Uri &newFileUri)
@@ -154,8 +147,7 @@ int MediaFileExtAbility::ScanFile(const FileInfo &parentInfo, const int64_t offs
 
 int MediaFileExtAbility::Query(const Uri &uri, std::vector<std::string> &columns, std::vector<std::string> &results)
 {
-    Uri newUri = DealWithUriWithName(uri);
-    return ConvertErrno(MediaFileExtentionUtils::Query(newUri, columns, results));
+    return ConvertErrno(MediaFileExtentionUtils::Query(uri, columns, results));
 }
 
 int MediaFileExtAbility::GetRoots(vector<FileAccessFwk::RootInfo> &rootList)
@@ -165,22 +157,17 @@ int MediaFileExtAbility::GetRoots(vector<FileAccessFwk::RootInfo> &rootList)
 
 int MediaFileExtAbility::Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri)
 {
-    Uri newSourceFileUri = DealWithUriWithName(sourceFileUri);
-    Uri newTargetParentUri = DealWithUriWithName(targetParentUri);
-    return ConvertErrno(MediaFileExtentionUtils::Move(newSourceFileUri, newTargetParentUri, newFileUri));
+    return ConvertErrno(MediaFileExtentionUtils::Move(sourceFileUri, targetParentUri, newFileUri));
 }
 
 int MediaFileExtAbility::Copy(const Uri &sourceUri, const Uri &destUri, std::vector<CopyResult> &copyResult, bool force)
 {
-    Uri newSourceFileUri = DealWithUriWithName(sourceUri);
-    Uri newDestUri = DealWithUriWithName(destUri);
-    return MediaFileExtentionUtils::Copy(newSourceFileUri, newDestUri, copyResult, force);
+    return MediaFileExtentionUtils::Copy(sourceUri, destUri, copyResult, force);
 }
 
 int MediaFileExtAbility::Rename(const Uri &sourceFileUri, const string &displayName, Uri &newFileUri)
 {
-    Uri newSourceFileUri = DealWithUriWithName(sourceFileUri);
-    return ConvertErrno(MediaFileExtentionUtils::Rename(newSourceFileUri, displayName, newFileUri));
+    return ConvertErrno(MediaFileExtentionUtils::Rename(sourceFileUri, displayName, newFileUri));
 }
 
 int MediaFileExtAbility::Access(const Uri &uri, bool &isExist)
@@ -190,8 +177,7 @@ int MediaFileExtAbility::Access(const Uri &uri, bool &isExist)
 
 int MediaFileExtAbility::GetThumbnail(const Uri &uri, const Size &size, std::unique_ptr<PixelMap> &pixelMap)
 {
-    Uri newUri = DealWithUriWithName(uri);
-    return ConvertErrno(MediaFileExtentionUtils::GetThumbnail(newUri, size, pixelMap));
+    return ConvertErrno(MediaFileExtentionUtils::GetThumbnail(uri, size, pixelMap));
 }
 
 int MediaFileExtAbility::GetFileInfoFromUri(const Uri &selectFile, FileInfo &fileInfo)
