@@ -34,6 +34,7 @@ ohos_unittest("medialibrary_object_test") {
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_provider",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",

@@ -55,6 +55,7 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "access_token:libnativetoken",
     "access_token:libtoken_setproc",
     "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
     "kv_store:distributeddata_inner",

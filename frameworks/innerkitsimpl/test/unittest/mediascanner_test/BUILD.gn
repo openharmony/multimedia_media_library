@@ -47,6 +47,7 @@ ohos_unittest("mediascanner_unittest") {
     "ability_runtime:app_context",
     "ability_runtime:runtime",
     "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
     "kv_store:distributeddata_inner",
