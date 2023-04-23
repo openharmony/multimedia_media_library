@@ -32,7 +32,6 @@
 #include "medialibrary_subscriber.h"
 #include "medialibrary_uripermission_operations.h"
 #include "media_scanner_manager.h"
-#include "media_file_utils.h"
 #include "media_log.h"
 #include "system_ability_definition.h"
 #include "permission_utils.h"
@@ -279,7 +278,7 @@ static int32_t CheckPermFromUri(string &uri, bool isWrite)
 
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
 {
-    string uriStr = MediaFileUtils::DealWithUriWithName(uri.ToString());
+    string uriStr = uri.ToString();
     string unifyMode = mode;
     transform(unifyMode.begin(), unifyMode.end(), unifyMode.begin(), ::tolower);
 
@@ -293,7 +292,7 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     } else if (err < 0) {
         return err;
     }
-
+    
     return MediaLibraryDataManager::GetInstance()->OpenFile(Uri(uriStr), unifyMode);
 }
 
