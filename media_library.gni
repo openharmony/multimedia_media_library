@@ -11,22 +11,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MEDIA_LIB_BASE_DIR = "//foundation/multimedia/media_library"
-MEDIA_LIB_INNERKITS_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl"
-MEDIA_LIB_INTERFACES_INNER_DIR = "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api"
-MEDIA_LIB_SERVICES_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/services"
-MEDIA_LIB_COMMON_UTILS_DIR = "${MEDIA_LIB_BASE_DIR}/frameworks/utils"
-MEDIA_FILEEXT_SOURCE_DIR =
-    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_file_extension"
-MEDIA_SCANNER_SOURCE_DIR =
-    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_scanner"
-MEDIA_DISTRIBUTED_SOURCE_DIR =
-    "${MEDIA_LIB_BASE_DIR}/frameworks/services/media_distributed"
-MEDIA_LIB_INTERFACES_DIR = "${MEDIA_LIB_BASE_DIR}/interfaces"
+MEDIALIB_ROOT_PATH = "//foundation/multimedia/media_library"
 
-ABILITY_RUNTIME_PATH = "//foundation/ability/ability_runtime"
-ABILITY_RUNTIME_KITS_PATH = "${ABILITY_RUNTIME_PATH}/frameworks/kits"
-ABILITY_RUNTIME_INNER_API_PATH = "${ABILITY_RUNTIME_PATH}/interfaces/inner_api"
-ABILITY_RUNTIME_SERVICES_PATH = "${ABILITY_RUNTIME_PATH}/services"
-USB_DRIVER_PATH = "//drivers/peripheral/usb"
+MEDIALIB_INNERKITS_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/innerkitsimpl"
+MEDIALIB_INTERFACES_PATH = "${MEDIALIB_ROOT_PATH}/interfaces"
+MEDIALIB_JS_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/js"
+MEDIALIB_UTILS_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/utils"
+
+MEDIALIB_SERVICES_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/services"
+MEDIALIB_CLOUD_SYNC_PATH = "${MEDIALIB_SERVICES_PATH}/media_cloud_sync"
+MEDIALIB_MTP_PATH = "${MEDIALIB_SERVICES_PATH}/media_mtp"
+
 FILE_API_PATH = "//foundation/filemanagement/file_api"
