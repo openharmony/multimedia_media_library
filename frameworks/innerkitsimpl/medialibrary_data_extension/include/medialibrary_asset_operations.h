@@ -33,6 +33,8 @@
 
 namespace OHOS {
 namespace Media {
+static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
+
 class MediaLibraryAssetOperations {
 public:
     static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
