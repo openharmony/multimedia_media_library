@@ -53,6 +53,26 @@ int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, str
     return errRet;
 }
 
+string MediaFileUtils::DealWithUriWithName(string str)
+{
+    // datashare:///media/image/5/name
+    static uint32_t MEET_COUNT = 6;
+    uint32_t count = 0;
+    uint32_t index;
+    for (index = 0; index < str.length(); index++) {
+        if (str[index] == '/') {
+            count++;
+        }
+        if (count == MEET_COUNT) {
+            break;
+        }
+    }
+    if (count == MEET_COUNT) {
+        str = str.substr(0, index);
+    }
+    return str;
+}
+
 int32_t MediaFileUtils::RemoveDirectory(const string &path)
 {
     return nftw(path.c_str(), UnlinkCb, OPEN_FDS, FTW_DEPTH | FTW_PHYS);
@@ -484,7 +504,8 @@ string MediaFileUtils::GetFileMediaTypeUri(int32_t mediaType, const string &netw
 string MediaFileUtils::GetUriByNameAndId(const string &displayName, const string &networkId, int32_t id)
 {
     MediaType mediaType = GetMediaType(displayName);
-    return MediaFileUtils::GetFileMediaTypeUri(mediaType, networkId) + SLASH_CHAR + to_string(id);
+    return MediaFileUtils::GetFileMediaTypeUri(mediaType, networkId) + SLASH_CHAR + to_string(id) + SLASH_CHAR +
+        displayName;
 }
 
 MediaType MediaFileUtils::GetMediaType(const string &filePath)
