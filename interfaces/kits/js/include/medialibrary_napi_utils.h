@@ -406,8 +406,6 @@ public:
 
     static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition);
 
-    static std::string GetMediaTypeUri(MediaType mediaType);
-
     static int TransErrorCode(const std::string &Name, std::shared_ptr<DataShare::DataShareResultSet> resultSet);
 
     static int TransErrorCode(const std::string &Name, int error);

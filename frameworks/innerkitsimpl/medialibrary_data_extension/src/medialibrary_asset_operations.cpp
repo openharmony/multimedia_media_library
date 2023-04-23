@@ -280,7 +280,7 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
     ValuesBucket assetInfo;
     assetInfo.PutInt(MediaColumn::MEDIA_TYPE, fileAsset.GetMediaType());
     assetInfo.PutString(MediaColumn::MEDIA_URI,
-        MediaLibraryDataManagerUtils::GetMediaTypeUri(fileAsset.GetMediaType()));
+        MediaFileUtils::GetMediaTypeUriV10(fileAsset.GetMediaType()));
     string extension = ScannerUtils::GetFileExtension(displayName);
     assetInfo.PutString(MediaColumn::MEDIA_MIME_TYPE,
         MimeTypeUtils::GetMimeTypeFromExtension(extension));

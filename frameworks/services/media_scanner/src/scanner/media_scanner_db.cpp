@@ -139,7 +139,12 @@ static void GetTableNameByPathApi10(int32_t mediaType, string &tableName)
 string MediaScannerDb::InsertMetadata(const Metadata &metadata, MediaLibraryApi api)
 {
     MediaType mediaType = metadata.GetFileMediaType();
-    string mediaTypeUri = GetMediaTypeUri(mediaType);
+    string mediaTypeUri;
+    if (api == MediaLibraryApi::API_10) {
+        mediaTypeUri = MediaFileUtils::GetMediaTypeUriV10(mediaType);
+    } else {
+        mediaTypeUri = MediaFileUtils::GetMediaTypeUri(mediaType);
+    }
 
     ValuesBucket values;
     values.PutString(MEDIA_DATA_DB_URI, mediaTypeUri);
@@ -202,7 +207,12 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, MediaLibraryApi 
     string tableName = MEDIALIBRARY_TABLE;
 
     MediaType mediaType = metadata.GetFileMediaType();
-    string mediaTypeUri = GetMediaTypeUri(mediaType);
+    string mediaTypeUri;
+    if (api == MediaLibraryApi::API_10) {
+        mediaTypeUri = MediaFileUtils::GetMediaTypeUriV10(mediaType);
+    } else {
+        mediaTypeUri = MediaFileUtils::GetMediaTypeUri(mediaType);
+    }
     values.PutString(MEDIA_DATA_DB_URI, mediaTypeUri);
 
     if (api == MediaLibraryApi::API_10) {
@@ -509,24 +519,9 @@ int32_t MediaScannerDb::UpdateAlbum(const Metadata &metadata)
     return id;
 }
 
-string MediaScannerDb::GetMediaTypeUri(MediaType mediaType)
-{
-    switch (mediaType) {
-        case MEDIA_TYPE_AUDIO:
-            return MEDIALIBRARY_AUDIO_URI;
-        case MEDIA_TYPE_VIDEO:
-            return MEDIALIBRARY_VIDEO_URI;
-        case MEDIA_TYPE_IMAGE:
-            return MEDIALIBRARY_IMAGE_URI;
-        case MEDIA_TYPE_FILE:
-        default:
-            return MEDIALIBRARY_FILE_URI;
-    }
-}
-
 void MediaScannerDb::NotifyDatabaseChange(const MediaType mediaType)
 {
-    string notifyUri = GetMediaTypeUri(mediaType);
+    string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
     Uri uri(notifyUri);
 
     MediaLibraryDataManager::GetInstance()->NotifyChange(uri);
