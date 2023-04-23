@@ -200,6 +200,7 @@ private:
 
     static napi_value GetUserFileMgr(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCreateAsset(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrTrashAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetAlbums(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetPhotoAssets(napi_env env, napi_callback_info info);
@@ -284,6 +285,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     napi_value argv[NAPI_ARGC_MAX];
     ResultNapiType resultNapiType;
     std::string typeMask;
+    std::string tableName;
     std::vector<uint32_t> mediaTypes;
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;

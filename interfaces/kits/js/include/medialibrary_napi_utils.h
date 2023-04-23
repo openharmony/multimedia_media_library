@@ -20,6 +20,7 @@
 
 #include "datashare_predicates.h"
 #include "datashare_result_set.h"
+#include "media_column.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_napi_log.h"
 #include "napi/native_api.h"
@@ -177,6 +178,9 @@ const std::string TRASH_SMART_ALBUM_NAME = "TrashAlbum";
 const int32_t FAVORIT_SMART_ALBUM_ID = 2;
 const std::string FAVORIT_SMART_ALBUM_NAME = "FavoritAlbum";
 
+const std::string API_VERSION = "api_version";
+const int32_t API_VERSION_10 = 10;
+
 enum NapiAssetType {
     TYPE_AUDIO = 0,
     TYPE_VIDEO = 1,
@@ -299,20 +303,21 @@ const std::vector<std::pair<std::string, std::string>> AUDIOKEY_ENUM_PROPERTIES 
 };
 
 const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPERTIES = {
-    std::make_pair("URI",                       MEDIA_DATA_DB_URI),
-    std::make_pair("DISPLAY_NAME",              MEDIA_DATA_DB_NAME),
-    std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
-    std::make_pair("FILE_TYPE",                 MEDIA_DATA_DB_MEDIA_TYPE),
-    std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED),
-    std::make_pair("TITLE",                     MEDIA_DATA_DB_TITLE),
-    std::make_pair("DURATION",                  MEDIA_DATA_DB_DURATION),
-    std::make_pair("WIDTH",                     MEDIA_DATA_DB_WIDTH),
-    std::make_pair("HEIGHT",                    MEDIA_DATA_DB_HEIGHT),
-    std::make_pair("DATE_TAKEN",                MEDIA_DATA_DB_DATE_TAKEN),
-    std::make_pair("ORIENTATION",               MEDIA_DATA_DB_ORIENTATION),
-    std::make_pair("FAVORITE",                  MEDIA_DATA_DB_IS_FAV),
-    std::make_pair("MEDIA_TYPE",                MEDIA_DATA_DB_MEDIA_TYPE),
-    std::make_pair("POSITION",                  MEDIA_DATA_DB_POSITION)
+    std::make_pair("URI",                       MediaColumn::MEDIA_URI),
+    std::make_pair("DISPLAY_NAME",              MediaColumn::MEDIA_NAME),
+    std::make_pair("DATE_ADDED",                MediaColumn::MEDIA_DATE_ADDED),
+    std::make_pair("FILE_TYPE",                 MediaColumn::MEDIA_TYPE),
+    std::make_pair("DATE_MODIFIED",             MediaColumn::MEDIA_DATE_MODIFIED),
+    std::make_pair("TITLE",                     MediaColumn::MEDIA_TITLE),
+    std::make_pair("DURATION",                  MediaColumn::MEDIA_DURATION),
+    std::make_pair("WIDTH",                     PhotoColumn::PHOTO_WIDTH),
+    std::make_pair("HEIGHT",                    PhotoColumn::PHOTO_HEIGHT),
+    std::make_pair("DATE_TAKEN",                MediaColumn::MEDIA_DATE_TAKEN),
+    std::make_pair("ORIENTATION",               PhotoColumn::PHOTO_ORIENTATION),
+    std::make_pair("FAVORITE",                  MediaColumn::MEDIA_IS_FAV),
+    std::make_pair("MEDIA_TYPE",                MediaColumn::MEDIA_TYPE),
+    std::make_pair("DATE_TRASHED",              MediaColumn::MEDIA_DATE_TRASHED),
+    std::make_pair("POSITION",                  PhotoColumn::PHOTO_POSITION),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
@@ -356,6 +361,7 @@ public:
         std::vector<std::string> &array);
     static void GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask);
     static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask);
+    static void UriAddTableName(std::string &uri, const std::string tableName);
     static void UriRemoveAllFragment(std::string &uri);
     static std::string GetFileIdFromUri(const std::string &uri);
     static MediaType GetMediaTypeFromUri(const std::string &uri);
@@ -438,6 +444,9 @@ public:
         bool &isCallback);
 
     static napi_value GetInt32Arg(napi_env env, napi_value arg, int32_t &value);
+
+    static void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value);
+
 private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);
 };

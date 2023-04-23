@@ -62,6 +62,7 @@ public:
     void SetFavorite(bool isFavorite);
     bool IsTrash() const;
     void SetTrash(bool isTrash);
+
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
         const std::shared_ptr<AbilityRuntime::Context> &context);
 private:
@@ -113,9 +114,8 @@ private:
     static napi_value UserFileMgrClose(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrFavorite(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrTrash(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrIsDirectory(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetThumbnail(napi_env env, napi_callback_info info);
+
     bool HandleParamSet(const std::string &inputKey, const std::string &value);
     napi_env env_;
 
