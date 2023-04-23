@@ -447,8 +447,9 @@ void FileAsset::CommitModify()
     string uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
     MediaFileUtils::UriAddFragmentTypeMask(uri, typeMask_);
     Uri updateAssetUri(uri);
-    string notifyUri =
-        MediaFileUtils::GetMediaTypeUri(static_cast<Media::MediaType>(GetInt32Member(MEDIA_DATA_DB_MEDIA_TYPE)));
+    // use it in api10
+    string notifyUri = MediaFileUtils::GetMediaTypeUriV10(
+        static_cast<Media::MediaType>(GetInt32Member(MEDIA_DATA_DB_MEDIA_TYPE)));
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_DATE_ADDED, GetInt64Member(MEDIA_DATA_DB_DATE_ADDED));

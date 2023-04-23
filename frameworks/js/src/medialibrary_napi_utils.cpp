@@ -522,25 +522,6 @@ void MediaLibraryNapiUtils::AppendFetchOptionSelection(string &selection, const 
     }
 }
 
-string MediaLibraryNapiUtils::GetMediaTypeUri(MediaType mediaType)
-{
-    switch (mediaType) {
-        case MEDIA_TYPE_AUDIO:
-            return MEDIALIBRARY_AUDIO_URI;
-        case MEDIA_TYPE_VIDEO:
-            return MEDIALIBRARY_VIDEO_URI;
-        case MEDIA_TYPE_IMAGE:
-            return MEDIALIBRARY_IMAGE_URI;
-        case MEDIA_TYPE_SMARTALBUM:
-            return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
-        case MEDIA_TYPE_DEVICE:
-            return MEDIALIBRARY_DEVICE_URI;
-        case MEDIA_TYPE_FILE:
-        default:
-            return MEDIALIBRARY_FILE_URI;
-    }
-}
-
 int MediaLibraryNapiUtils::TransErrorCode(const string &Name, shared_ptr<DataShare::DataShareResultSet> resultSet)
 {
     NAPI_ERR_LOG("interface: %{public}s, server return nullptr", Name.c_str());

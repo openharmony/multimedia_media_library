@@ -130,28 +130,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetDisPlayNameFromPath_test_001, Test
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMediaTypeUri_test_001, TestSize.Level0)
-{
-    MediaType mediaType = MEDIA_TYPE_AUDIO;
-    string ret = MediaLibraryDataManagerUtils::GetMediaTypeUri(mediaType);
-    EXPECT_EQ(ret, MEDIALIBRARY_AUDIO_URI);
-    mediaType = MEDIA_TYPE_VIDEO;
-    ret = MediaLibraryDataManagerUtils::GetMediaTypeUri(mediaType);
-    EXPECT_EQ(ret, MEDIALIBRARY_VIDEO_URI);
-    mediaType = MEDIA_TYPE_IMAGE;
-    ret = MediaLibraryDataManagerUtils::GetMediaTypeUri(mediaType);
-    EXPECT_EQ(ret, MEDIALIBRARY_IMAGE_URI);
-    mediaType = MEDIA_TYPE_SMARTALBUM;
-    ret = MediaLibraryDataManagerUtils::GetMediaTypeUri(mediaType);
-    EXPECT_EQ(ret, MEDIALIBRARY_SMARTALBUM_CHANGE_URI);
-    mediaType = MEDIA_TYPE_DEVICE;
-    ret = MediaLibraryDataManagerUtils::GetMediaTypeUri(mediaType);
-    EXPECT_EQ(ret, MEDIALIBRARY_DEVICE_URI);
-    mediaType = MEDIA_TYPE_FILE;
-    ret = MediaLibraryDataManagerUtils::GetMediaTypeUri(mediaType);
-    EXPECT_EQ(ret, MEDIALIBRARY_FILE_URI);
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_SplitKeyValue_test_001, TestSize.Level0)
 {
     string key = "";

@@ -1321,7 +1321,7 @@ static void JSRecoverAssetCompleteCallback(napi_env env, napi_status status, voi
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
         Media::MediaType mediaType = MediaLibraryNapiUtils::GetMediaTypeFromUri(context->uri);
-        string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+        string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         UserFileClient::NotifyChange(modifyNotify);
     } else {
@@ -1384,7 +1384,7 @@ static void JSDeleteAssetCompleteCallback(napi_env env, napi_status status, void
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
         Media::MediaType mediaType = MediaLibraryNapiUtils::GetMediaTypeFromUri(context->uri);
-        string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+        string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         UserFileClient::NotifyChange(modifyNotify);
     } else {

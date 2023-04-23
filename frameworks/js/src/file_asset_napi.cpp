@@ -980,7 +980,7 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
     Uri updateAssetUri(uri);
     MediaType mediaType = context->objectPtr->GetMediaType();
-    string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+    string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
     int32_t changedRows;
@@ -1626,7 +1626,7 @@ static void JSFavoriteCallbackComplete(napi_env env, napi_status status, void *d
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
         Media::MediaType mediaType = context->objectPtr->GetMediaType();
-        string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+        string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         UserFileClient::NotifyChange(modifyNotify);
     } else {
@@ -1975,7 +1975,7 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status, void *data
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
         Media::MediaType mediaType = context->objectPtr->GetMediaType();
-        string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+        string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         UserFileClient::NotifyChange(modifyNotify);
         NAPI_DEBUG_LOG("JSTrashCallbackComplete success");

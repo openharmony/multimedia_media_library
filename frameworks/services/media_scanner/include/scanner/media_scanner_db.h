@@ -67,7 +67,6 @@ public:
     int32_t DeleteError(const std::string &err);
 
 private:
-    std::string GetMediaTypeUri(MediaType mediaType);
     int32_t FillMetadata(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         std::unique_ptr<Metadata> &ptr);
     void ExtractMetaFromColumn(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,

@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "medialibrary_db_const.h"
 #define MLOG_TAG "ObjectUtils"
 
 #include "medialibrary_object_utils.h"
@@ -137,7 +138,7 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     string displayName = fileAsset.GetDisplayName();
     ValuesBucket assetInfo;
     assetInfo.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset.GetMediaType());
-    assetInfo.PutString(MEDIA_DATA_DB_URI, MediaLibraryDataManagerUtils::GetMediaTypeUri(fileAsset.GetMediaType()));
+    assetInfo.PutString(MEDIA_DATA_DB_URI, MediaFileUtils::GetMediaTypeUri(fileAsset.GetMediaType()));
     string extension = ScannerUtils::GetFileExtension(displayName);
     assetInfo.PutString(MEDIA_DATA_DB_MIME_TYPE, MimeTypeUtils::GetMimeTypeFromExtension(extension));
     assetInfo.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset.GetRelativePath());
@@ -712,8 +713,7 @@ int32_t MediaLibraryObjectUtils::ScanFileAfterClose(const string &srcPath, const
      */
     string tableName = MEDIALIBRARY_TABLE;
     if (api != MediaLibraryApi::API_OLD) {
-        if ((uri.find(MEDIALIBRARY_IMAGE_URI) != string::npos) ||
-            (uri.find(MEDIALIBRARY_VIDEO_URI) != string::npos)) {
+        if ((uri.find(MEDIALIBRARY_PHOTO_URI) != string::npos)) {
             tableName = PhotoColumn::PHOTOS_TABLE;
         } else if (uri.find(MEDIALIBRARY_AUDIO_URI) != string::npos) {
             tableName = AudioColumn::AUDIOS_TABLE;
@@ -964,7 +964,7 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
     values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, GetRelativePathFromFilePath(dstPath));
     values.PutString(MEDIA_DATA_DB_BUCKET_NAME, bucketName);
     values.PutString(MEDIA_DATA_DB_MIME_TYPE, mimeType);
-    values.PutString(MEDIA_DATA_DB_URI, MediaLibraryDataManagerUtils::GetMediaTypeUri(mediaType));
+    values.PutString(MEDIA_DATA_DB_URI, MediaFileUtils::GetMediaTypeUri(mediaType));
     values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     values.PutInt(MEDIA_DATA_DB_BUCKET_ID, bucketId);
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, bucketId);
