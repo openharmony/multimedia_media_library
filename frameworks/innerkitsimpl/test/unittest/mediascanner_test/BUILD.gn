@@ -34,8 +34,8 @@ ohos_unittest("mediascanner_unittest") {
   ]
 
   deps = [
-    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
-    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
 
   external_deps = [
@@ -50,7 +50,9 @@ ohos_unittest("mediascanner_unittest") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
+    "kv_store:distributeddata_inner",
     "multimedia_image_framework:image_native",
+    "multimedia_player_framework:media_client",
     "napi:ace_napi",
     "relational_store:native_rdb",
   ]

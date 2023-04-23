@@ -68,6 +68,7 @@ const std::string URI_QUERY_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_AL
 const std::string PHOTO_MAP_OPRN = "photo_map_v10_operation";
 const std::string OPRN_ALBUM_ADD_ASSETS = "add_assets";
 const std::string OPRN_ALBUM_REMOVE_ASSETS = "remove_assets";
+const std::string URI_QUERY_PHOTO_MAP = MEDIALIBRARY_DATA_URI + "/" + PHOTO_MAP_OPRN + "/" + OPRN_QUERY;
 const std::string URI_PHOTO_ALBUM_ADD_ASSET = MEDIALIBRARY_DATA_URI + "/" + PHOTO_MAP_OPRN + "/" +
         OPRN_ALBUM_ADD_ASSETS;
 const std::string URI_PHOTO_ALBUM_REMOVE_ASSET = MEDIALIBRARY_DATA_URI + "/" + PHOTO_MAP_OPRN + "/" +

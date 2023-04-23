@@ -22,6 +22,8 @@
 #include "media_log.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
+#include "medialibrary_data_manager_utils.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdbstore.h"
 #include "userfile_manager_types.h"
@@ -58,6 +60,12 @@ int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
 int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
 {
     string fileId = cmd.GetOprnFileId();
+    vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_RELATIVE_PATH,
+        PhotoColumn::MEDIA_TYPE
+    };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID,
         fileId, cmd.GetOprnObject());
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
@@ -72,22 +80,81 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
-    return nullptr;
+    switch (cmd.GetApi()) {
+        case MediaLibraryApi::API_10:
+            return QueryV10(cmd, columns);
+        case MediaLibraryApi::API_OLD:
+            MEDIA_ERR_LOG("this api is not realized yet");
+            return nullptr;
+        default:
+            MEDIA_ERR_LOG("get api failed");
+            return nullptr;
+    }
 }
 
 int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
 {
-    return 0;
+    switch (cmd.GetApi()) {
+        case MediaLibraryApi::API_10:
+            return UpdateV10(cmd);
+        case MediaLibraryApi::API_OLD:
+            MEDIA_ERR_LOG("this api is not realized yet");
+            return E_FAIL;
+        default:
+            MEDIA_ERR_LOG("get api failed");
+            return E_FAIL;
+    }
+
+    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
-    return 0;
+    string uriString = cmd.GetUriStringWithoutSegment();
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+    if (uriString.empty()) {
+        return E_INVALID_URI;
+    }
+
+    vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_URI,
+        PhotoColumn::MEDIA_TYPE
+    };
+    auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
+        OperationObject::FILESYSTEM_PHOTO, columns);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
+        return E_INVALID_URI;
+    }
+
+    return OpenAsset(fileAsset, mode);
 }
 
 int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
 {
-    return 0;
+    string strFileId = cmd.GetOprnFileId();
+    if (strFileId.empty()) {
+        return E_INVALID_FILEID;
+    }
+
+    vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_URI,
+        PhotoColumn::MEDIA_TIME_PENDING,
+        PhotoColumn::MEDIA_TYPE
+    };
+    auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, strFileId, cmd.GetOprnObject(), columns);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get FileAsset id %{public}s from database failed!", strFileId.c_str());
+        return E_INVALID_FILEID;
+    }
+
+    int32_t errCode = CloseAsset(fileAsset);
+    // todo: pending
+    return errCode;
 }
 
 int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
@@ -151,7 +218,7 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
 
     // delete thumbnail
     int32_t fileId = fileAsset->GetId();
-    InvalidateThumbnail(to_string(fileId));
+    InvalidateThumbnail(to_string(fileId), fileAsset->GetMediaType());
 
     int32_t errCode = BeginTransaction();
     if (errCode != E_OK) {
@@ -186,5 +253,57 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     return deleteRows;
 }
 
+shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::QueryV10(
+    MediaLibraryCommand &cmd, const vector<string> &columns)
+{
+    return QueryFiles(cmd, columns);
+}
+
+int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
+{
+    vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_TYPE,
+        PhotoColumn::MEDIA_NAME
+    };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
+        OperationObject::FILESYSTEM_PHOTO, columns);
+    if (fileAsset == nullptr) {
+        return E_INVALID_VALUES;
+    }
+
+    // Update if FileAsset.path is modified
+    if (IsContainsValue(cmd.GetValueBucket(), PhotoColumn::MEDIA_FILE_PATH)) {
+        return UpdateAssetPath(cmd, fileAsset);
+    }
+
+    // todo: update pending later
+    // Update if FileAsset.title or FileAsset.displayName is modified
+    int32_t errCode = UpdateFileName(cmd, fileAsset);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Photo Name failed, fileName=%{private}s",
+        fileAsset->GetDisplayName().c_str());
+
+    errCode = BeginTransaction();
+    if (errCode != E_OK) {
+        TransactionRollback();
+        return errCode;
+    }
+
+    int32_t rowId = UpdateFileInDb(cmd);
+    if (rowId < 0) {
+        MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
+        TransactionRollback();
+        return rowId;
+    }
+
+    errCode = TransactionCommit();
+    if (errCode != E_OK) {
+        TransactionRollback();
+        return errCode;
+    }
+
+    return rowId;
+}
 } // namespace Media
 } // namespace OHOS

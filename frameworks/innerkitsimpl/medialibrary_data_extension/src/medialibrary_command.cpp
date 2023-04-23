@@ -32,26 +32,29 @@ MediaLibraryCommand::MediaLibraryCommand(const Uri &uri) : uri_(uri)
 {
     ParseOprnObjectFromUri();
     ParseOprnTypeFromUri();
-    ParseTableName();
     ParseQuerySetMapFromUri();
     SetApiFromQuerySetMap();
+    ParseOprnObjectFromFileUri();
+    ParseTableName();
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const Uri &uri, const ValuesBucket &value) : uri_(uri), insertValue_(value)
 {
     ParseOprnObjectFromUri();
     ParseOprnTypeFromUri();
-    ParseTableName();
     ParseQuerySetMapFromUri();
     SetApiFromQuerySetMap();
+    ParseOprnObjectFromFileUri();
+    ParseTableName();
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const Uri &uri, const OperationType &oprnType) : uri_(uri), oprnType_(oprnType)
 {
     ParseOprnObjectFromUri();
-    ParseTableName();
     ParseQuerySetMapFromUri();
     SetApiFromQuerySetMap();
+    ParseOprnObjectFromFileUri();
+    ParseTableName();
 }
 
 MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
@@ -167,6 +170,20 @@ const string &MediaLibraryCommand::GetDeviceName()
     return deviceName_;
 }
 
+string MediaLibraryCommand::GetUriStringWithoutSegment()
+{
+    string uriString = uri_.ToString();
+    size_t questionMaskPoint = uriString.rfind('?');
+    size_t hashKeyPoint = uriString.rfind('#');
+    if (questionMaskPoint != string::npos) {
+        return uriString.substr(0, questionMaskPoint);
+    }
+    if (hashKeyPoint != string::npos) {
+        return uriString.substr(0, hashKeyPoint);
+    }
+    return uriString;
+}
+
 MediaLibraryApi MediaLibraryCommand::GetApi()
 {
     return api_;
@@ -226,7 +243,7 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
 
 void MediaLibraryCommand::ParseOprnTypeFromUri()
 {
-    string insertUri = uri_.ToString();
+    string insertUri = GetUriStringWithoutSegment();
     auto found = insertUri.rfind('/');
     if (found == string::npos) {
         return;
@@ -417,6 +434,27 @@ void MediaLibraryCommand::SetApiFromQuerySetMap()
             api_ = MediaLibraryApi::API_OLD;
         } else {
             api_ = static_cast<MediaLibraryApi>(apiNum);
+        }
+    }
+}
+
+void MediaLibraryCommand::ParseOprnObjectFromFileUri()
+{
+    if (api_ != MediaLibraryApi::API_10 || oprnObject_ != OperationObject::UNKNOWN_OBJECT) {
+        return;
+    }
+
+    string uri = uri_.ToString();
+    static const map<string, OperationObject> oprnMap = {
+        { MEDIALIBRARY_TYPE_IMAGE_URI, OperationObject::FILESYSTEM_PHOTO },
+        { MEDIALIBRARY_TYPE_VIDEO_URI, OperationObject::FILESYSTEM_PHOTO },
+        { MEDIALIBRARY_TYPE_AUDIO_URI, OperationObject::FILESYSTEM_AUDIO }
+    };
+
+    for (const auto &item : oprnMap) {
+        if (uri.find(item.first) != string::npos) {
+            oprnObject_ = item.second;
+            break;
         }
     }
 }

@@ -17,7 +17,9 @@
 #include "thumbnail_service.h"
 
 #include "display_manager.h"
+#include "media_column.h"
 #include "medialibrary_async_worker.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "thumbnail_aging_helper.h"
@@ -93,9 +95,10 @@ shared_ptr<DataShare::ResultSetBridge> ThumbnailService::GetThumbnail(const stri
     string fileId;
     string networkId;
     string uriString = uri;
+    string tableName;
 
     Size size;
-    bool success = ThumbnailUriUtils::ParseThumbnailInfo(uriString, fileId, size, networkId);
+    bool success = ThumbnailUriUtils::ParseThumbnailInfo(uriString, fileId, size, networkId, tableName);
     if (!success) {
         return nullptr;
     }
@@ -104,6 +107,7 @@ shared_ptr<DataShare::ResultSetBridge> ThumbnailService::GetThumbnail(const stri
         .kvStore = kvStorePtr_,
         .context = context_,
         .networkId = networkId,
+        .table = tableName,
         .row = fileId,
         .uri = uri,
         .screenSize= screenSize_
@@ -126,7 +130,8 @@ int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri)
 {
     string fileId;
     string networkId;
-    if (!ThumbnailUriUtils::ParseFileUri(uri, fileId, networkId)) {
+    string tableName;
+    if (!ThumbnailUriUtils::ParseFileUri(uri, fileId, networkId, tableName)) {
         MEDIA_ERR_LOG("ParseThumbnailInfo faild");
         return E_ERR;
     }
@@ -134,6 +139,7 @@ int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri)
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .kvStore = kvStorePtr_,
+        .table = tableName,
         .row = fileId,
         .screenSize = screenSize_
     };
@@ -168,7 +174,8 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri)
     string fileId;
     string networkId;
     Size size;
-    bool success = ThumbnailUriUtils::ParseThumbnailInfo(uri, fileId, size, networkId);
+    string tableName;
+    bool success = ThumbnailUriUtils::ParseThumbnailInfo(uri, fileId, size, networkId, tableName);
     if (!success) {
         MEDIA_ERR_LOG("ParseThumbnailInfo faild");
         return E_ERR;
@@ -178,8 +185,9 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri)
         .store = rdbStorePtr_,
         .kvStore = kvStorePtr_,
         .context = context_,
+        .table = tableName,
         .row = fileId,
-        .screenSize= screenSize_
+        .screenSize = screenSize_
     };
     shared_ptr<IThumbnailHelper> thumbnailHelper = ThumbnailHelperFactory::GetThumbnailHelper(size);
     if (thumbnailHelper == nullptr) {
@@ -212,19 +220,30 @@ void ThumbnailService::StopAllWorker()
 
 int32_t ThumbnailService::GenerateThumbnails()
 {
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .kvStore = kvStorePtr_,
-        .table = MEDIALIBRARY_TABLE
-    };
-    int32_t err = ThumbnailGenerateHelper::CreateLcdBatch(opts);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("CreateLcdBatch failed : %{public}d", err);
-    }
+    int32_t err = 0;
+    vector<string> tableList;
+    tableList.emplace_back(PhotoColumn::PHOTOS_TABLE);
+    tableList.emplace_back(AudioColumn::AUDIOS_TABLE);
+    tableList.emplace_back(DocumentColumn::DOCUMENTS_TABLE);
+    tableList.emplace_back(MEDIALIBRARY_TABLE);
 
-    err = ThumbnailGenerateHelper::CreateThumbnailBatch(opts);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("CreateThumbnailBatch failed : %{public}d", err);
+    for (const auto &tableName : tableList) {
+        ThumbRdbOpt opts = {
+            .store = rdbStorePtr_,
+            .kvStore = kvStorePtr_,
+            .table = tableName
+        };
+        if (tableName != AudioColumn::AUDIOS_TABLE) {
+            err = ThumbnailGenerateHelper::CreateLcdBatch(opts);
+            if (err != E_OK) {
+                MEDIA_ERR_LOG("CreateLcdBatch failed : %{public}d", err);
+            }
+        }
+
+        err = ThumbnailGenerateHelper::CreateThumbnailBatch(opts);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("CreateThumbnailBatch failed : %{public}d", err);
+        }
     }
 
     return err;
@@ -232,14 +251,22 @@ int32_t ThumbnailService::GenerateThumbnails()
 
 int32_t ThumbnailService::LcdAging()
 {
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .kvStore = kvStorePtr_,
-        .table = MEDIALIBRARY_TABLE,
-    };
-    int32_t err = ThumbnailAgingHelper::AgingLcdBatch(opts);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("AgingLcdBatch failed : %{public}d", err);
+    int32_t err = 0;
+    vector<string> tableList;
+    tableList.emplace_back(PhotoColumn::PHOTOS_TABLE);
+    tableList.emplace_back(DocumentColumn::DOCUMENTS_TABLE);
+    tableList.emplace_back(MEDIALIBRARY_TABLE);
+
+    for (const auto &tableName : tableList) {
+        ThumbRdbOpt opts = {
+            .store = rdbStorePtr_,
+            .kvStore = kvStorePtr_,
+            .table = tableName,
+        };
+        err = ThumbnailAgingHelper::AgingLcdBatch(opts);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("AgingLcdBatch failed : %{public}d", err);
+        }
     }
 
     return E_OK;
@@ -279,12 +306,12 @@ bool ThumbnailService::ParseThumbnailInfo(const string &uriString)
     return ThumbnailUriUtils::ParseThumbnailInfo(uriString);
 }
 
-void ThumbnailService::InvalidateThumbnail(const std::string &id)
+void ThumbnailService::InvalidateThumbnail(const std::string &id, const std::string &tableName)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .kvStore = kvStorePtr_,
-        .table = MEDIALIBRARY_TABLE,
+        .table = tableName,
         .row = id,
     };
     ThumbnailData thumbnailData;

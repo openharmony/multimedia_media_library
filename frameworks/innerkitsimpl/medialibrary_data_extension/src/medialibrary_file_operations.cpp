@@ -25,9 +25,10 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_tracer.h"
 #include "medialibrary_smartalbum_map_operations.h"
+#include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "native_album_asset.h"
 #include "rdb_utils.h"
@@ -39,6 +40,8 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+using ChangeType = AAFwk::ChangeInfo::ChangeType;
+
 int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd)
 {
     int32_t errCode = E_FAIL;
@@ -167,8 +170,12 @@ int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd
     if (srcPath.compare(dstFilePath) == 0) {
         return E_SAME_PATH;
     }
-
-    return MediaLibraryObjectUtils::RenameFileObj(cmd, srcPath, dstFilePath);
+    int errCode = MediaLibraryObjectUtils::RenameFileObj(cmd, srcPath, dstFilePath);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if ((errCode > 0) && (watch != nullptr)) {
+        watch->Notify(strFileId, ChangeType::UPDATE);
+    }
+    return errCode;
 }
 
 int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cmd)
@@ -193,6 +200,24 @@ int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cm
     return E_CHECK_DIR_FAIL;
 }
 
+constexpr bool START_PENDING = false;
+static void SolvePendingInQuery(AbsRdbPredicates* predicates)
+{
+    string whereClause = predicates->GetWhereClause();
+    size_t groupByPoint = whereClause.rfind("GROUP BY");
+    string groupBy;
+    if (groupByPoint != string::npos) {
+        groupBy = whereClause.substr(groupByPoint);
+        whereClause = whereClause.substr(0, groupByPoint);
+    }
+
+    predicates->SetWhereClause(whereClause);
+    predicates->EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
+    if (!groupBy.empty()) {
+        predicates->SetWhereClause(predicates->GetWhereClause() + groupBy);
+    }
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFileOperation(
     MediaLibraryCommand &cmd, vector<string> columns)
 {
@@ -205,6 +230,10 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFileOperation(
     string fileId = cmd.GetOprnFileId();
     if (cmd.GetAbsRdbPredicates()->GetWhereClause().empty() && !fileId.empty()) {
         cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, fileId);
+    }
+
+    if (START_PENDING) {
+        SolvePendingInQuery(cmd.GetAbsRdbPredicates());
     }
     string networkId = cmd.GetOprnDevice();
     if (!networkId.empty()) {

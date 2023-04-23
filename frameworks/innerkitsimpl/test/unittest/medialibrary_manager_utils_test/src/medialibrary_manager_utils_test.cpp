@@ -15,7 +15,7 @@
 #define MLOG_TAG "FileExtUnitTest"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_manager_utils_test.h"
-#include "appkit/ability_runtime/context/context.h"
+#include "context.h"
 #include "ability_context_impl.h"
 #include "medialibrary_db_const.h"
 

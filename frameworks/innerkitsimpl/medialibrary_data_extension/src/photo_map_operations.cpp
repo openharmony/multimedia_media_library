@@ -97,8 +97,14 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
     return changedRows;
 }
 
-int32_t PhotoMapOperations::RemovePhotoAssets(NativeRdb::RdbPredicates &predicates)
+int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
 {
     return MediaLibraryRdbStore::Delete(predicates);
+}
+
+shared_ptr<ResultSet> PhotoMapOperations::QueryPhotoAssets(const RdbPredicates &rdbPredicate,
+    const vector<string> &columns)
+{
+    return MediaLibraryRdbStore::Query(rdbPredicate, columns);
 }
 } // namespace OHOS::Media

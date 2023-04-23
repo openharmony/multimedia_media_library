@@ -22,6 +22,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
+#include "media_file_utils.h"
 #include "photo_album_napi.h"
 #include "smart_album_napi.h"
 
@@ -299,6 +300,7 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
             }
             string uri = static_cast<string>(item.GetSingle(VALUE_IDX));
             UriRemoveAllFragment(uri);
+            uri = MediaFileUtils::DealWithUriWithName(uri);
             string fileId;
             MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(uri, context->networkId, fileId);
             string field = isAlbum ? MEDIA_DATA_DB_BUCKET_ID : MEDIA_DATA_DB_ID;
@@ -730,6 +732,9 @@ template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<SmartAlbu
 
 template napi_status MediaLibraryNapiUtils::GetAssetFetchOption<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     napi_value arg, unique_ptr<MediaLibraryAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::GetAssetFetchOption<unique_ptr<PhotoAlbumNapiAsyncContext>>(napi_env env,
+    napi_value arg, unique_ptr<PhotoAlbumNapiAsyncContext> &context);
 
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     const napi_value arg, const string &propName, unique_ptr<MediaLibraryAsyncContext> &context, bool isAlbum);

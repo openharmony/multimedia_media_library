@@ -26,10 +26,10 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "./include",
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
-    "${MEDIA_LIB_INTERFACES_INNER_DIR}/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
 
-    #"${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension/include",
-    "${MEDIA_LIB_SERVICES_DIR}/media_file_extension/include",
+    #"${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_SERVICES_PATH}/media_file_extension/include",
   ]
 
   sources = [
@@ -38,8 +38,9 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "./src/medialibrary_datamanager_test.cpp",
   ]
   deps = [
-    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library",
-    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    "../../../../../../../ability/ability_runtime/interfaces/inner_api/dataobs_manager:dataobs_manager",
   ]
 
   external_deps = [
@@ -57,6 +58,7 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
+    "kv_store:distributeddata_inner",
     "multimedia_image_framework:image_native",
     "napi:ace_napi",
     "relational_store:native_rdb",
@@ -70,5 +72,5 @@ ohos_unittest("medialibrary_datamanager_unittest") {
   }
 
   resource_config_file =
-      "${MEDIA_LIB_INNERKITS_DIR}/test/unittest/resources/ohos_test.xml"
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }

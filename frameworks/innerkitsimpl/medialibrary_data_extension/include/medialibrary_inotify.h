@@ -22,22 +22,27 @@
 #include <string>
 #include <unordered_map>
 
+#include "userfile_manager_types.h"
+
 namespace OHOS {
 namespace Media {
 struct WatchInfo {
-    WatchInfo(const std::string &path, const std::string &uri): path_(path), uri_(uri), meetEvent_(0){};
+    WatchInfo(const std::string &path, const std::string &uri, MediaLibraryApi api) : path_(path),
+        uri_(uri), api_(api), meetEvent_(0){};
     std::string path_;
     std::string uri_;
+    MediaLibraryApi api_;
     int32_t meetEvent_;
 };
 
 class MediaLibraryInotify {
 public:
     static std::shared_ptr<MediaLibraryInotify> GetInstance();
-    int32_t AddWatchList(const std::string &path, const std::string &uri);
+    int32_t AddWatchList(const std::string &path, const std::string &uri,
+        MediaLibraryApi api = MediaLibraryApi::API_OLD);
     MediaLibraryInotify() = default;
     ~MediaLibraryInotify() = default;
-    int32_t RemoveByFileUri(const std::string &uri);
+    int32_t RemoveByFileUri(const std::string &uri, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     void DoAging();
     void DoStop();
 private:

@@ -25,14 +25,14 @@ ohos_unittest("medialibrary_uri_helper_test") {
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include/distributed_media_library/database_manage",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
   ]
 
   sources = [ "./src/medialibrary_uri_helper_test.cpp" ]
-  deps = [ "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension" ]
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
 
   external_deps = [ "ability_runtime:ability_context_native" ]
 
   resource_config_file =
-      "${MEDIA_LIB_INNERKITS_DIR}/test/unittest/resources/ohos_test.xml"
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }

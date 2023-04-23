@@ -16,18 +16,26 @@
 
 #include "thumbnail_uri_utils.h"
 
+#include <algorithm>
+#include <map>
+
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "media_column.h"
 #include "media_log.h"
 #include "thumbnail_const.h"
+#include "userfile_manager_types.h"
 
 using namespace std;
 
 namespace OHOS {
 namespace Media {
-bool ThumbnailUriUtils::ParseFileUri(const string &uriString, string &outFileId, string &ourNetworkId)
+bool ThumbnailUriUtils::ParseFileUri(const string &uriString, string &outFileId, string &outNetworkId,
+    string &outTableName)
 {
     outFileId = GetIdFromUri(uriString);
-    ourNetworkId = GetNetworkIdFromUri(uriString);
+    outNetworkId = GetNetworkIdFromUri(uriString);
+    outTableName = GetTableFromUri(uriString);
     return true;
 }
 
@@ -48,24 +56,27 @@ void ThumbnailUriUtils::ParseThumbnailKey(const string &key, const string &value
 }
 
 bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outFileId, Size &outSize,
-    string &ourNetworkId)
+    string &outNetworkId, string &outTableName)
 {
     string::size_type pos = uriString.find_last_of('?');
+    outTableName = GetTableFromUri(uriString);
     if (pos == string::npos) {
         return false;
     }
     vector<string> keyWords = {
         THUMBNAIL_OPERN_KEYWORD,
         THUMBNAIL_WIDTH,
-        THUMBNAIL_HEIGHT
+        THUMBNAIL_HEIGHT,
+        URI_PARAM_API_VERSION
     };
     string queryKeys = uriString.substr(pos + 1);
     string uri = uriString.substr(0, pos);
     outFileId = GetIdFromUri(uri);
-    ourNetworkId = GetNetworkIdFromUri(uri);
+    outNetworkId = GetNetworkIdFromUri(uri);
     vector<string> vectorKeys;
     SplitKeys(queryKeys, vectorKeys);
-    if (vectorKeys.size() != keyWords.size()) {
+    if (vectorKeys.size() != keyWords.size() && vectorKeys.size() != keyWords.size() - 1) {
+        // vectorKeys can contain or not contain api_version message
         MEDIA_ERR_LOG("Parse error keys count %{private}d", (int)vectorKeys.size());
         return false;
     }
@@ -121,10 +132,59 @@ string ThumbnailUriUtils::GetIdFromUri(const string &uri)
 
     size_t pos = uri.rfind('/');
     if (pos != std::string::npos) {
-        rowNum = uri.substr(pos + 1);
+        size_t posQuery = uri.find('?');
+        size_t posSegment = uri.find('#');
+        if (posQuery == string::npos && posSegment == string::npos) {
+            // datashare:///media/image/1
+            rowNum = uri.substr(pos + 1);
+        } else if (posQuery == string::npos) {
+            // datashare:///media/image/1#123
+            rowNum = uri.substr(pos + 1, posSegment - pos - 1);
+        } else {
+            // datashare:///media/image/1?xxx=yyy#123
+            rowNum = uri.substr(pos + 1, posQuery - pos - 1);
+        }
     }
 
     return rowNum;
+}
+
+string ThumbnailUriUtils::GetTableFromUri(const string &uri)
+{
+    size_t point = uri.find(URI_PARAM_API_VERSION);
+    if (point == string::npos) {
+        return MEDIALIBRARY_TABLE;
+    }
+    size_t middlePoint = uri.find('=', point);
+    size_t endPoint = min(uri.find('&', point), uri.find('#', point));
+    if ((middlePoint == string::npos) || (endPoint - middlePoint <= 1)) {
+        return MEDIALIBRARY_TABLE;
+    }
+
+    string version;
+    if (endPoint == string::npos) {
+        version = uri.substr(middlePoint + 1);
+    } else {
+        version = uri.substr(middlePoint + 1, endPoint - middlePoint - 1);
+    }
+    if (version != to_string(static_cast<int32_t>(MediaLibraryApi::API_10))) {
+        return MEDIALIBRARY_TABLE;
+    }
+    
+    static map<string, string> TYPE_TO_TABLE_MAP = {
+        { MEDIALIBRARY_TYPE_IMAGE_URI, PhotoColumn::PHOTOS_TABLE },
+        { MEDIALIBRARY_TYPE_VIDEO_URI, PhotoColumn::PHOTOS_TABLE },
+        { MEDIALIBRARY_TYPE_AUDIO_URI, AudioColumn::AUDIOS_TABLE },
+        { MEDIALIBRARY_TYPE_FILE_URI, DocumentColumn::DOCUMENTS_TABLE }
+    };
+    string table = MEDIALIBRARY_TABLE;
+    for (const auto &iter : TYPE_TO_TABLE_MAP) {
+        if (uri.find(iter.first) != string::npos) {
+            table = iter.second;
+            break;
+        }
+    }
+    return table;
 }
 
 void ThumbnailUriUtils::SplitKeyValue(const string& keyValue, string &key, string &value)
@@ -168,9 +228,10 @@ bool ThumbnailUriUtils::IsNumber(const string &str)
 bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString)
 {
     string outFileId;
-    string ourNetworkId;
+    string outNetworkId;
     Size outSize;
-    return ParseThumbnailInfo(uriString, outFileId, outSize, ourNetworkId);
+    string outTableName;
+    return ParseThumbnailInfo(uriString, outFileId, outSize, outTableName, outNetworkId);
 }
 } // namespace Media
 } // namespace OHOS

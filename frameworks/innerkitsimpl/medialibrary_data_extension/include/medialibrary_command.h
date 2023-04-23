@@ -118,6 +118,7 @@ private:
     void ParseFileId();
     void ParseQuerySetMapFromUri();
     void SetApiFromQuerySetMap();
+    void ParseOprnObjectFromFileUri();
 
     Uri uri_{""};
     NativeRdb::ValuesBucket insertValue_;

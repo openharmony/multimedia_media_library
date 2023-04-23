@@ -617,6 +617,7 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
 
     rdbPredicates.Limit(LcdLimit);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
@@ -657,6 +658,7 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailRd
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
 
     rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
@@ -717,7 +719,6 @@ bool ThumbnailUtils::UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data,
         return false;
     }
     vector<string> devices;
-    opts.table = MEDIALIBRARY_TABLE;
     SyncPushTable(opts, devices);
     CloudSyncHelper::GetInstance()->StartSync();
     return true;
@@ -1202,7 +1203,7 @@ bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, vector<string> &devices, b
     tracer.Start("SyncPullTable rdbStore->Sync");
     int ret = opts.store->Sync(option, predicate, callback);
     if (ret != E_OK || !isBlock) {
-        return false;
+        return ret == E_OK;
     }
 
     unique_lock<mutex> lock(status->mtx_);
