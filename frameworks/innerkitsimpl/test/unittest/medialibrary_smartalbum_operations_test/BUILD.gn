@@ -24,13 +24,11 @@ ohos_unittest("medialibrary_smartalbum_operations_test") {
   include_dirs = [ "./include" ]
 
   sources = [ "./src/medialibrary_smartalbum_operations_test.cpp" ]
-  deps = [
-    "${ABILITY_RUNTIME_INNER_API_PATH}/ability_manager:ability_manager",
-    "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension",
-  ]
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
 
   external_deps = [
     "ability_runtime:ability_context_native",
+    "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
     "c_utils:utils",
     "data_share:datashare_provider",
@@ -38,5 +36,5 @@ ohos_unittest("medialibrary_smartalbum_operations_test") {
   ]
 
   resource_config_file =
-      "${MEDIA_LIB_INNERKITS_DIR}/test/unittest/resources/ohos_test.xml"
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }
