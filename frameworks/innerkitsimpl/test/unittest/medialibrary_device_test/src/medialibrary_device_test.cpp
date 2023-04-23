@@ -60,34 +60,6 @@ void MediaLibraryExtUnitTest::SetUp() {}
 
 void MediaLibraryExtUnitTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_OnDeviceOnline_test_001, TestSize.Level0)
-{
-    shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
-    OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
-    deviceInfo.networkId[0] = 'a';
-    deviceTest->OnDeviceOnline(deviceInfo);
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_OnDeviceReady_test_001, TestSize.Level0)
-{
-    shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
-    OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
-    deviceInfo.networkId[0] = 'a';
-    deviceTest->OnDeviceReady(deviceInfo);
-    deviceTest->Start();
-    deviceTest->OnDeviceReady(deviceInfo);
-    deviceTest->Stop();
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_OnDeviceChanged_test_001, TestSize.Level0)
-{
-    shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
-    OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
-    deviceInfo.networkId[0] = 'a';
-    deviceTest->OnDeviceChanged(deviceInfo);
-    deviceTest->OnRemoteDied();
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_InitDeviceRdbStore_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
@@ -99,21 +71,18 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InitDeviceRdbStore_test_001, TestSize
     EXPECT_EQ(ret, false);
     ret = deviceTest->InitDeviceRdbStore(storePtr);
     EXPECT_EQ(ret, true);
+    OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
     deviceTest->Stop();
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_NotifyDeviceChange_test_001, TestSize.Level0)
-{
-    shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
+    deviceInfo.networkId[0] = 'a';
+    deviceTest->OnDeviceReady(deviceInfo);
+    deviceTest->Start();
+    deviceTest->OnDeviceReady(deviceInfo);
+    deviceTest->Stop();
+    deviceTest->OnDeviceOnline(deviceInfo);
+    deviceTest->OnDeviceChanged(deviceInfo);
+    deviceTest->OnRemoteDied();
     deviceTest->Start();
     deviceTest->NotifyDeviceChange();
-    deviceTest->Stop();
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_NotifyRemoteFileChange_test_001, TestSize.Level0)
-{
-    shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
-    deviceTest->Start();
     deviceTest->NotifyRemoteFileChange();
     deviceTest->Stop();
 }
@@ -301,6 +270,5 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsHasActiveDevice_test_001, TestSize.
     EXPECT_EQ(ret, false);
     deviceTest->Stop();
 }
-
 } // namespace Media
 } // namespace OHOS

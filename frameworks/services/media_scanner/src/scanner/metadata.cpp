@@ -46,7 +46,8 @@ Metadata::Metadata()
     latitude_(FILE_LATITUDE_DEFAULT),
     albumId_(FILE_ALBUM_ID_DEFAULT),
     albumName_(FILE_ALBUM_NAME_DEFAULT),
-    recyclePath_(FILE_RECYCLE_PATH_DEFAULT)
+    recyclePath_(FILE_RECYCLE_PATH_DEFAULT),
+    timePending_(FILE_TIME_PENDING_DEFAULT)
 {
     Init();
 }
@@ -77,6 +78,7 @@ void Metadata::Init()
     memberFuncMap_[MEDIA_DATA_DB_DATE_TAKEN] = make_pair(ResultSetDataType::TYPE_INT64, &Metadata::SetDateTaken);
     memberFuncMap_[MEDIA_DATA_DB_DATE_MODIFIED] = make_pair(ResultSetDataType::TYPE_INT64,
         &Metadata::SetFileDateModified);
+    memberFuncMap_[MEDIA_DATA_DB_TIME_PENDING] = make_pair(ResultSetDataType::TYPE_INT64, &Metadata::SetTimePending);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -327,6 +329,16 @@ void Metadata::SetLatitude(const VariantData &latitude)
 double Metadata::GetLatitude() const
 {
     return latitude_;
+}
+
+void Metadata::SetTimePending(const VariantData &timePending)
+{
+    timePending_ = std::get<int64_t>(timePending);
+}
+
+int64_t Metadata::GetTimePending() const
+{
+    return timePending_;
 }
 } // namespace Media
 } // namespace OHOS

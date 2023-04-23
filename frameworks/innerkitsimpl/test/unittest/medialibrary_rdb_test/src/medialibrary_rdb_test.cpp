@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 #define MLOG_TAG "FileExtUnitTest"
-
+#include "medialibrary_device.h"
 #include "medialibrary_rdb_test.h"
-
-#include "appkit/ability_runtime/context/context.h"
-#include "medialibrary_rdbstore.h"
+#include "context.h"
 #include "ability_context_impl.h"
 #include "js_runtime.h"
+#define private public
 #include "medialibrary_object_utils.h"
-#include "medialibrary_device.h"
+#include "medialibrary_rdbstore.h"
+#undef private
 
 using namespace std;
 using namespace OHOS;
@@ -39,7 +39,6 @@ void MediaLibraryExtUnitTest::SetUpTestCase(void)
     int32_t ret = rdbStorePtr->Init();
     MEDIA_INFO_LOG("rdbstore start ret = %{public}d", ret);
 }
-
 void MediaLibraryExtUnitTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
@@ -354,5 +353,36 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Stop_test_001, TestSize.Level0)
     EXPECT_NE(rdbStorePtr, nullptr);
 }
 
+HWTEST_F(MediaLibraryExtUnitTest, medialib_SubscribeRdbStoreObserver_test_001, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    rdbStorePtr->Stop();
+    rdbStorePtr->UnSubscribeRdbStoreObserver();
+    bool ret = rdbStorePtr->SubscribeRdbStoreObserver();
+    EXPECT_EQ(ret, false);
+    rdbStorePtr->Init();
+    ret = rdbStorePtr->SubscribeRdbStoreObserver();
+    EXPECT_EQ(ret, false);
+    string bundleName = "SubscribeRdbStoreObserver";
+    MediaLibraryRdbStoreObserver mediaLibraryRdbStoreObserver(bundleName);
+    ret = rdbStorePtr->SubscribeRdbStoreObserver();
+    EXPECT_EQ(ret, false);
+    mediaLibraryRdbStoreObserver.NotifyDeviceChange();
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_UnSubscribeRdbStoreObserver_test_001, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    rdbStorePtr->Stop();
+    bool ret = rdbStorePtr->UnSubscribeRdbStoreObserver();
+    EXPECT_EQ(ret, false);
+    rdbStorePtr->Init();
+    ret = rdbStorePtr->UnSubscribeRdbStoreObserver();
+    EXPECT_EQ(ret, false);
+}
 } // namespace Media
 } // namespace OHOS

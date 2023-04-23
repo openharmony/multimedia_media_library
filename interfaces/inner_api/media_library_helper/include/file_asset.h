@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -117,8 +117,6 @@ public:
     int64_t GetDateTaken() const;
     void SetDateTaken(int64_t dataTaken);
 
-    bool IsPending() const;
-    void SetPending(bool isPending);
     int64_t GetTimePending() const;
     void SetTimePending(int64_t timePending);
 
@@ -131,8 +129,8 @@ public:
     void SetSelfId(const std::string &selfId);
     int32_t GetIsTrash() const;
     void SetIsTrash(int32_t isTrash);
-    const std::string GetBundleName() const;
-    void SetBundleName(const std::string &bundleName);
+    const std::string GetOwnerPackage() const;
+    void SetOwnerPackage(const std::string &packageName);
 
     const std::string &GetRecyclePath() const;
     void SetRecyclePath(const std::string &recyclePath);

@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "file_asset.h"
 #define MLOG_TAG "ObjectUtils"
 
 #include "medialibrary_object_utils.h"
@@ -25,21 +24,27 @@
 #include "device_manager.h"
 #include "directory_ex.h"
 #include "fetch_result.h"
+#include "file_asset.h"
+#include "ipc_skeleton.h"
 #include "media_file_utils.h"
+#include "media_column.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_dir_operations.h"
+#include "medialibrary_notify.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_inotify.h"
+#include "medialibrary_smartalbum_map_operations.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
+#include "permission_utils.h"
 #include "result_set_utils.h"
 #include "string_ex.h"
 #include "thumbnail_service.h"
 #include "value_object.h"
-#include "medialibrary_inotify.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -150,6 +155,7 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     assetInfo.PutString(MEDIA_DATA_DB_BUCKET_NAME, dirAsset.GetAlbumName());
     assetInfo.PutString(MEDIA_DATA_DB_OWNER_PACKAGE, cmd.GetBundleName());
     assetInfo.PutString(MEDIA_DATA_DB_DEVICE_NAME, cmd.GetDeviceName());
+    assetInfo.PutLong(MEDIA_DATA_DB_TIME_PENDING, fileAsset.GetTimePending());
     cmd.SetValueBucket(assetInfo);
     int64_t outRowId = -1;
     int32_t errCode = uniStore->Insert(cmd, outRowId);
@@ -210,6 +216,7 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
     if (dirAsset.GetAlbumId() < 0) {
         return dirAsset.GetAlbumId();
     }
+    fileAsset.SetTimePending(0);
 
     // delete rows in database but not in real filesystem
     errCode = DeleteInvalidRowInDb(path);
@@ -272,7 +279,7 @@ int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t par
     string title = MediaLibraryDataManagerUtils::GetFileName(path);
     if (MediaFileUtils::CheckDisplayName(title) < 0) {
         MEDIA_ERR_LOG("Check display name failed!");
-        return E_INVAVLID_DISPLAY_NAME;
+        return E_INVALID_DISPLAY_NAME;
     }
 
     string relativePath;
@@ -318,7 +325,7 @@ int32_t MediaLibraryObjectUtils::InsertDirToDbRecursively(const string &dirPath,
         string currentPath = path.substr(0, index);
         ValuesBucket values;
         auto ret = SetDirValuesByPath(values, currentPath, parentId);
-        if (ret == E_INVAVLID_DISPLAY_NAME) {
+        if (ret == E_INVALID_DISPLAY_NAME) {
             DeleteRows(outIds);
         }
         if (ret != E_SUCCESS) {
@@ -431,11 +438,11 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
     return err;
 }
 
-static inline void InvalidateThumbnail(const string &id)
+static inline void InvalidateThumbnail(const string &id, const string &tableName = MEDIALIBRARY_TABLE)
 {
     auto thumbnailService = ThumbnailService::GetInstance();
     if (thumbnailService != nullptr) {
-        thumbnailService->InvalidateThumbnail(id);
+        thumbnailService->InvalidateThumbnail(id, tableName);
     }
 }
 
@@ -483,7 +490,7 @@ int32_t MediaLibraryObjectUtils::DeleteFileObj(const shared_ptr<FileAsset> &file
     return DeleteMisc(fileId, filePath, fileAsset->GetParent());
 }
 
-int32_t DeleteInfoRecursively(const shared_ptr<FileAsset> &fileAsset)
+int32_t MediaLibraryObjectUtils::DeleteInfoRecursively(const shared_ptr<FileAsset> &fileAsset)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "UniStore is nullptr");
@@ -650,6 +657,18 @@ static int32_t OpenAsset(const string &filePath, const string &mode)
     return MediaPrivacyManager(absFilePath, mode).Open();
 }
 
+static bool CheckIsOwner(const string &bundleName)
+{
+    int uid = IPCSkeleton::GetCallingUid();
+    string clientBundle;
+    bool isSystemApp = false;
+    PermissionUtils::GetClientBundle(uid, clientBundle, isSystemApp);
+    if (strcmp(bundleName.c_str(), clientBundle.c_str()) == 0) {
+        return true;
+    }
+    return false;
+}
+
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
     string uriString = cmd.GetUri().ToString();
@@ -657,6 +676,13 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain path from Database");
         return E_INVALID_URI;
+    }
+
+    if (fileAsset->GetTimePending() != 0) {
+        if (!CheckIsOwner(fileAsset->GetOwnerPackage().c_str())) {
+            MEDIA_ERR_LOG("Failed to open fileId:%{public}d, it is not owner", fileAsset->GetId());
+            return E_IS_PENDING_ERROR;
+        }
     }
 
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
@@ -677,10 +703,25 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     return fd;
 }
 
-int32_t MediaLibraryObjectUtils::CloseFile(string &srcPath, string &id)
+int32_t MediaLibraryObjectUtils::ScanFileAfterClose(const string &srcPath, const string &id,
+    const string &uri, MediaLibraryApi api)
 {
-    InvalidateThumbnail(id);
-    ScanFile(srcPath);
+    /*
+     * todo: when api9 has not divided tables yet, here use medialibraryapi to separate api 9&10
+     * after divide table, this function will discard
+     */
+    string tableName = MEDIALIBRARY_TABLE;
+    if (api != MediaLibraryApi::API_OLD) {
+        if ((uri.find(MEDIALIBRARY_IMAGE_URI) != string::npos) ||
+            (uri.find(MEDIALIBRARY_VIDEO_URI) != string::npos)) {
+            tableName = PhotoColumn::PHOTOS_TABLE;
+        } else if (uri.find(MEDIALIBRARY_AUDIO_URI) != string::npos) {
+            tableName = AudioColumn::AUDIOS_TABLE;
+        }
+    }
+
+    InvalidateThumbnail(id, tableName);
+    ScanFile(srcPath, api);
     return E_SUCCESS;
 }
 
@@ -697,7 +738,6 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Get fileAsset from database fail!");
         return E_INVALID_FILEID;
     }
-
     string srcPath = fileAsset->GetPath();
     string fileName = MediaLibraryDataManagerUtils::GetFileName(srcPath);
     if ((fileName.length() != 0) && (fileName.at(0) != '.')) {
@@ -713,18 +753,22 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     }
     InvalidateThumbnail(strFileId);
     ScanFile(srcPath);
+    auto notifyWatch = MediaLibraryNotify::GetInstance();
+    if (notifyWatch != nullptr) {
+        notifyWatch->Notify(fileAsset);
+    }
     return E_SUCCESS;
 }
 
-void MediaLibraryObjectUtils::ScanFile(string &path)
+void MediaLibraryObjectUtils::ScanFile(const string &path, MediaLibraryApi api)
 {
-    MEDIA_DEBUG_LOG("enter, path = %{private}s", path.c_str());
+    MEDIA_DEBUG_LOG("enter, path = %{private}s, api = %{public}d", path.c_str(), static_cast<int>(api));
     shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
     if (scanFileCb == nullptr) {
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
     }
-    int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanFileCb);
+    int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanFileCb, api);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }
@@ -1253,6 +1297,19 @@ bool MediaLibraryObjectUtils::IsFileExistInDb(const string &path)
         return true;
     }
 
+    return false;
+}
+
+bool MediaLibraryObjectUtils::CheckUriPending(const std::string &uri)
+{
+    if (!uri.empty()) {
+        int positon = uri.find_first_of('?');
+        string tempUri = uri.substr(0, positon);
+        auto fileAsset = GetFileAssetFromUri(tempUri);
+        if ((fileAsset != nullptr) && (fileAsset->GetTimePending() != 0)) {
+            return true;
+        }
+    }
     return false;
 }
 

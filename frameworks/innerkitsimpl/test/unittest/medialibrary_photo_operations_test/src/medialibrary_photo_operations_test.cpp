@@ -82,7 +82,7 @@ void CleanTestTables()
 }
 
 struct UniqueMemberValuesBucket {
-    std::string assetMediaType;
+    string assetMediaType;
     int32_t startNumber;
 };
 
@@ -108,9 +108,9 @@ void PrepareUniqueNumberTable()
         return;
     }
 
-    UniqueMemberValuesBucket imageBucket = { IMAGE_ASSET_TYPE, 0 };
-    UniqueMemberValuesBucket videoBucket = { VIDEO_ASSET_TYPE, 0 };
-    UniqueMemberValuesBucket audioBucket = { AUDIO_ASSET_TYPE, 0 };
+    UniqueMemberValuesBucket imageBucket = { IMAGE_ASSET_TYPE, 1 };
+    UniqueMemberValuesBucket videoBucket = { VIDEO_ASSET_TYPE, 1 };
+    UniqueMemberValuesBucket audioBucket = { AUDIO_ASSET_TYPE, 1 };
 
     vector<UniqueMemberValuesBucket> uniqueNumberValueBuckets = {
         imageBucket, videoBucket, audioBucket
@@ -158,7 +158,7 @@ void ClearAndRestart()
     for (const auto &dir : TEST_ROOT_DIRS) {
         string ROOT_PATH = "/storage/media/100/local/files/";
         bool ret = MediaFileUtils::CreateDirectory(ROOT_PATH + dir + "/");
-        CHECK_AND_PRINT_LOG(ret == E_OK, "make %{public}s dir failed, ret=%{public}d", dir.c_str(), ret);
+        CHECK_AND_PRINT_LOG(ret, "make %{public}s dir failed, ret=%{public}d", dir.c_str(), ret);
     }
     CleanTestTables();
     SetTables();
@@ -169,11 +169,11 @@ string GetFileAssetValueToStr(FileAsset &fileAsset, const string &column)
     // judge type
     auto member = fileAsset.GetMemberValue(column);
     int type = -1;
-    if (std::get_if<int32_t>(&member)) {
+    if (get_if<int32_t>(&member)) {
         type = MEMBER_TYPE_INT32;
-    } else if (std::get_if<int64_t>(&member)) {
+    } else if (get_if<int64_t>(&member)) {
         type = MEMBER_TYPE_INT64;
-    } else if (std::get_if<string>(&member)) {
+    } else if (get_if<string>(&member)) {
         type = MEMBER_TYPE_STRING;
     } else {
         MEDIA_ERR_LOG("Can not find this type");
@@ -183,21 +183,21 @@ string GetFileAssetValueToStr(FileAsset &fileAsset, const string &column)
     auto res = fileAsset.GetMemberValue(column);
     switch (type) {
         case MEMBER_TYPE_INT32: {
-            int32_t resInt = std::get<int32_t>(res);
+            int32_t resInt = get<int32_t>(res);
             if (resInt != DEFAULT_INT32) {
                 return to_string(resInt);
             }
             break;
         }
         case MEMBER_TYPE_INT64: {
-            int64_t resLong = std::get<int64_t>(res);
+            int64_t resLong = get<int64_t>(res);
             if (resLong != DEFAULT_INT64) {
                 return to_string(resLong);
             }
             break;
         }
         case MEMBER_TYPE_STRING: {
-            string resStr = std::get<std::string>(res);
+            string resStr = get<string>(res);
             if (!resStr.empty()) {
                 return resStr;
             }
@@ -388,6 +388,31 @@ void TestPhotoDeleteParamsApi10(OperationObject oprnObject, int32_t fileId, Exce
     func(ret);
 }
 
+void TestPhotoOpenParamsApi10(int32_t fileId, const string &mode, ExceptIntFunction func)
+{
+    string uriString = MediaLibraryDataManagerUtils::GetMediaTypeUri(MediaType::MEDIA_TYPE_IMAGE);
+    uriString += "/" + to_string(fileId);
+    Uri uri(uriString);
+    MediaLibraryCommand cmd(uri);
+    int32_t fd = MediaLibraryPhotoOperations::Open(cmd, mode);
+    func(fd);
+    if (fd > 0) {
+        close(fd);
+        MediaLibraryInotify::GetInstance()->RemoveByFileUri(cmd.GetUriStringWithoutSegment(),
+            MediaLibraryApi::API_10);
+    }
+}
+
+void TestPhotoCloseParamsApi10(int32_t fileId, ExceptIntFunction func)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryPhotoOperations::Close(cmd);
+    func(ret);
+}
+
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
@@ -454,18 +479,18 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_002, Test
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_002");
     string defaultRelativePath = "Pictures/1/";
-    TestPhotoCreateParamsApi10("", MediaType::MEDIA_TYPE_IMAGE, E_INVAVLID_DISPLAY_NAME);
-    TestPhotoCreateParamsApi10("photo\"\".jpg", MediaType::MEDIA_TYPE_IMAGE, E_INVAVLID_DISPLAY_NAME);
-    TestPhotoCreateParamsApi10(".photo.jpg", MediaType::MEDIA_TYPE_IMAGE, E_INVAVLID_DISPLAY_NAME);
+    TestPhotoCreateParamsApi10("", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
+    TestPhotoCreateParamsApi10("photo\"\".jpg", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
+    TestPhotoCreateParamsApi10(".photo.jpg", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
     string englishLongString = CHAR256_ENGLISH + ".jpg";
     TestPhotoCreateParamsApi10(englishLongString, MediaType::MEDIA_TYPE_IMAGE,
-        E_INVAVLID_DISPLAY_NAME);
+        E_INVALID_DISPLAY_NAME);
     string chineseLongString = CHAR256_CHINESE + ".jpg";
     TestPhotoCreateParamsApi10(chineseLongString, MediaType::MEDIA_TYPE_IMAGE,
-        E_INVAVLID_DISPLAY_NAME);
+        E_INVALID_DISPLAY_NAME);
     
-    TestPhotoCreateParamsApi10("photo", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_VALUES);
-    TestPhotoCreateParamsApi10("photo.", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_VALUES);
+    TestPhotoCreateParamsApi10("photo", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
+    TestPhotoCreateParamsApi10("photo.", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
     TestPhotoCreateParamsApi10("photo.abc", MediaType::MEDIA_TYPE_IMAGE,
         E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
     TestPhotoCreateParamsApi10("photo.mp3", MediaType::MEDIA_TYPE_IMAGE,
@@ -510,5 +535,147 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_api10_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_delete_api10_test_001");
 }
 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_001");
+
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
+    if (fileId1 < E_OK) {
+        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId1);
+        return;
+    }
+
+    // Query
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    vector<string> columns;
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        EXPECT_EQ(name, "photo1.jpg");
+    } else {
+        MEDIA_ERR_LOG("Test first tdd Query failed");
+        return;
+    }
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_002");
+
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
+    if (fileId1 < E_OK) {
+        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId1);
+        return;
+    }
+    int32_t fileId2 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
+    if (fileId2 < E_OK) {
+        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId2);
+        return;
+    }
+
+    // Query
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->BeginWrap()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId1))->
+        Or()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId2))->EndWrap()->
+        OrderByAsc(MediaColumn::MEDIA_ID);
+    vector<string> columns;
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        EXPECT_EQ(name, "photo1.jpg");
+    } else {
+        MEDIA_ERR_LOG("Test first tdd Query failed");
+        return;
+    }
+
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        EXPECT_EQ(name, "photo2.jpg");
+    } else {
+        MEDIA_ERR_LOG("Test second tdd Query failed");
+        return;
+    }
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_003");
+
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
+    if (fileId1 < E_OK) {
+        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId1);
+        return;
+    }
+
+    // Query
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_NAME);
+    columns.push_back(MediaColumn::MEDIA_DATE_ADDED);
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        EXPECT_EQ(name, "photo1.jpg");
+        int64_t dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
+        EXPECT_GE(dateAdded, 0L);
+        int64_t dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
+        EXPECT_EQ(dateModified, 0L);
+    } else {
+        MEDIA_ERR_LOG("Test first tdd Query failed");
+        return;
+    }
+    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_003");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_001");
+
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
+        return;
+    }
+    
+    static constexpr int LARGE_NUM = 1000;
+    TestPhotoOpenParamsApi10(fileId, "",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
+    TestPhotoOpenParamsApi10(fileId, "m",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
+    TestPhotoOpenParamsApi10(fileId + LARGE_NUM, "rw",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+    TestPhotoOpenParamsApi10(fileId, "rw",
+        [] (int32_t result) { EXPECT_GE(result, E_OK); });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_close_api10_test_001");
+
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
+        return;
+    }
+
+    static constexpr int LARGE_NUM = 1000;
+    TestPhotoCloseParamsApi10(fileId + LARGE_NUM,
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_FILEID); });
+    TestPhotoCloseParamsApi10(fileId,
+        [] (int32_t result) { EXPECT_EQ(result, E_OK); });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_close_api10_test_001");
+}
 } // namespace Media
 } // namespace OHOS

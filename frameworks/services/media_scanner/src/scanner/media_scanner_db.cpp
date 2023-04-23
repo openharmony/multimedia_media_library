@@ -16,13 +16,24 @@
 
 #include "media_scanner_db.h"
 
-#include "media_log.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_data_manager.h"
-#include "result_set_utils.h"
+#include "abs_rdb_predicates.h"
+#include "media_column.h"
 #include "media_file_utils.h"
+#include "media_log.h"
+#include "medialibrary_command.h"
+#include "medialibrary_data_manager.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_smartalbum_map_operations.h"
+#include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
+#include "rdb_errno.h"
+#include "rdb_utils.h"
+#include "result_set.h"
+#include "result_set_utils.h"
+#include "userfile_manager_types.h"
+#include "userfilemgr_uri.h"
+#include "values_bucket.h"
 
 namespace OHOS {
 namespace Media {
@@ -42,50 +53,128 @@ void MediaScannerDb::SetRdbHelper(void)
 {
 }
 
-string MediaScannerDb::InsertMetadata(const Metadata &metadata)
+static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &values, bool isInsert)
 {
-    int32_t rowNum(0);
-    DataShareValuesBucket values;
+    values.PutString(MEDIA_DATA_DB_FILE_PATH, metadata.GetFilePath());
+    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, metadata.GetRelativePath());
+    values.PutString(MEDIA_DATA_DB_MIME_TYPE, metadata.GetFileMimeType());
+    values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, metadata.GetFileMediaType());
+    values.PutString(MEDIA_DATA_DB_NAME, metadata.GetFileName());
+    values.PutString(MEDIA_DATA_DB_TITLE, metadata.GetFileTitle());
 
+    values.PutLong(MEDIA_DATA_DB_SIZE, metadata.GetFileSize());
+    values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
+
+    values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
+    values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
+
+    values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
+    values.PutInt(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
+    values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
+    values.PutInt(MEDIA_DATA_DB_DURATION, metadata.GetFileDuration());
+
+    values.PutString(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
+    values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
+    values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
+
+    values.PutLong(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
+    values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
+    values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
+
+    if (isInsert) {
+        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
+    }
+}
+
+static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &values, bool isInsert)
+{
+    MediaType mediaType = metadata.GetFileMediaType();
+    
+    values.PutString(MediaColumn::MEDIA_FILE_PATH, metadata.GetFilePath());
+    values.PutString(MediaColumn::MEDIA_MIME_TYPE, metadata.GetFileMimeType());
+    values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
+    values.PutString(MediaColumn::MEDIA_NAME, metadata.GetFileName());
+    values.PutString(MediaColumn::MEDIA_TITLE, metadata.GetFileTitle());
+
+    values.PutLong(MediaColumn::MEDIA_SIZE, metadata.GetFileSize());
+    values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, metadata.GetFileDateModified());
+    values.PutInt(MediaColumn::MEDIA_DURATION, metadata.GetFileDuration());
+    values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, metadata.GetDateTaken());
+
+    if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO) {
+        values.PutInt(PhotoColumn::PHOTO_HEIGHT, metadata.GetFileHeight());
+        values.PutInt(PhotoColumn::PHOTO_WIDTH, metadata.GetFileWidth());
+        values.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata.GetOrientation());
+        values.PutDouble(PhotoColumn::PHOTO_LATITUDE, metadata.GetLongitude());
+        values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, metadata.GetLatitude());
+    } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
+        values.PutString(AudioColumn::AUDIO_ALBUM, metadata.GetAlbum());
+        values.PutString(AudioColumn::AUDIO_ARTIST, metadata.GetFileArtist());
+    }
+
+    if (isInsert) {
+        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
+    }
+}
+
+static void GetTableNameByPathApi10(int32_t mediaType, string &tableName)
+{
+    switch (mediaType) {
+        case MediaType::MEDIA_TYPE_IMAGE:
+        case MediaType::MEDIA_TYPE_VIDEO: {
+            tableName = PhotoColumn::PHOTOS_TABLE;
+            break;
+        }
+        case MediaType::MEDIA_TYPE_AUDIO: {
+            tableName = AudioColumn::AUDIOS_TABLE;
+            break;
+        }
+        default: {
+            tableName = MEDIALIBRARY_TABLE;
+            break;
+        }
+    }
+}
+
+string MediaScannerDb::InsertMetadata(const Metadata &metadata, MediaLibraryApi api)
+{
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri = GetMediaTypeUri(mediaType);
 
-    values.Put(MEDIA_DATA_DB_URI, mediaTypeUri);
-    values.Put(MEDIA_DATA_DB_FILE_PATH, metadata.GetFilePath());
-    values.Put(MEDIA_DATA_DB_RELATIVE_PATH, metadata.GetRelativePath());
-    values.Put(MEDIA_DATA_DB_MIME_TYPE, metadata.GetFileMimeType());
-    values.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    values.Put(MEDIA_DATA_DB_NAME, metadata.GetFileName());
+    ValuesBucket values;
+    values.PutString(MEDIA_DATA_DB_URI, mediaTypeUri);
+    string tableName = MEDIALIBRARY_TABLE;
 
-    values.Put(MEDIA_DATA_DB_SIZE, metadata.GetFileSize());
-    values.Put(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
-    values.Put(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
-    values.Put(MEDIA_DATA_DB_TITLE, metadata.GetFileTitle());
-    values.Put(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
-    values.Put(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
+    if (api == MediaLibraryApi::API_10) {
+        SetValuesFromMetaDataApi10(metadata, values, true);
+        GetTableNameByPathApi10(mediaType, tableName);
+    } else {
+        SetValuesFromMetaDataApi9(metadata, values, true);
+    }
 
-    values.Put(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
-    values.Put(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
-    values.Put(MEDIA_DATA_DB_DURATION, metadata.GetFileDuration());
-    values.Put(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
-
-    values.Put(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
-    values.Put(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
-    values.Put(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
-
-    values.Put(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
-    values.Put(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
-    values.Put(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
-    values.Put(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
-
-    Uri abilityUri(MEDIALIBRARY_DATA_URI);
-    rowNum = MediaLibraryDataManager::GetInstance()->Insert(abilityUri, values);
-    if (rowNum <= 0) {
-        MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed, return %{public}d", rowNum);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return "";
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
         return "";
     }
 
-    return (!mediaTypeUri.empty() ? (mediaTypeUri + "/" + to_string(rowNum)) : mediaTypeUri);
+    int64_t rowNum = 0;
+    int32_t result = rdbStorePtr->Insert(rowNum, tableName, values);
+    if (rowNum <= 0 || result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed, return %{public}ld", (long)rowNum);
+        return "";
+    }
+
+    if (mediaTypeUri.empty()) {
+        return "";
+    }
+    if (api == MediaLibraryApi::API_10) {
+        return mediaTypeUri + "/" + to_string(rowNum) + "?api_version=10";
+    }
+    return mediaTypeUri + "/" + to_string(rowNum);
 }
 
 vector<string> MediaScannerDb::BatchInsert(const vector<Metadata> &metadataList)
@@ -104,54 +193,45 @@ vector<string> MediaScannerDb::BatchInsert(const vector<Metadata> &metadataList)
  * @param metadata The metadata object which has the information about the file
  * @return string The mediatypeUri corresponding to the given metadata
  */
-string MediaScannerDb::UpdateMetadata(const Metadata &metadata)
+string MediaScannerDb::UpdateMetadata(const Metadata &metadata, MediaLibraryApi api)
 {
     int32_t updateCount(0);
-    DataShareValuesBucket values;
-    DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ?");
-    predicates.SetWhereArgs(vector<string>({ to_string(metadata.GetFileId()) }));
+    ValuesBucket values;
+    string whereClause = MEDIA_DATA_DB_ID + " = ?";
+    vector<string> whereArgs = { to_string(metadata.GetFileId()) };
+    string tableName = MEDIALIBRARY_TABLE;
 
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri = GetMediaTypeUri(mediaType);
+    values.PutString(MEDIA_DATA_DB_URI, mediaTypeUri);
 
-    values.Put(MEDIA_DATA_DB_URI, mediaTypeUri);
-    values.Put(MEDIA_DATA_DB_FILE_PATH, metadata.GetFilePath());
-    values.Put(MEDIA_DATA_DB_RELATIVE_PATH, metadata.GetRelativePath());
-
-    values.Put(MEDIA_DATA_DB_MIME_TYPE, metadata.GetFileMimeType());
-    values.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    values.Put(MEDIA_DATA_DB_NAME, metadata.GetFileName());
-    values.Put(MEDIA_DATA_DB_TITLE, metadata.GetFileTitle());
-
-    values.Put(MEDIA_DATA_DB_SIZE, metadata.GetFileSize());
-    values.Put(MEDIA_DATA_DB_DATE_MODIFIED, metadata.GetFileDateModified());
-
-    values.Put(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
-    values.Put(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
-
-    values.Put(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
-    values.Put(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
-    values.Put(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
-    values.Put(MEDIA_DATA_DB_DURATION, metadata.GetFileDuration());
-
-    values.Put(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
-    values.Put(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
-    values.Put(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
-
-    values.Put(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
-    values.Put(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
-    values.Put(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
-    values.Put(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
-
-    Uri uri(MEDIALIBRARY_DATA_URI);
-    updateCount = MediaLibraryDataManager::GetInstance()->Update(uri, values, predicates);
-    if (updateCount <= 0) {
-        MEDIA_ERR_LOG("RDBSTORE update failed");
-        return "";
+    if (api == MediaLibraryApi::API_10) {
+        SetValuesFromMetaDataApi10(metadata, values, false);
+        GetTableNameByPathApi10(mediaType, tableName);
+    } else {
+        SetValuesFromMetaDataApi9(metadata, values, false);
     }
 
-    return (!mediaTypeUri.empty() ? (mediaTypeUri + "/" + to_string(metadata.GetFileId())) : mediaTypeUri);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return "";
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        return "";
+    }
+    int32_t result = rdbStorePtr->Update(updateCount, tableName, values, whereClause, whereArgs);
+    if (result != NativeRdb::E_OK || updateCount <= 0) {
+        MEDIA_ERR_LOG("Update operation failed. Result %{public}d. Updated %{public}d", result, updateCount);
+        return "";
+    }
+    if (mediaTypeUri.empty()) {
+        return "";
+    }
+    if (api == MediaLibraryApi::API_10) {
+        return mediaTypeUri + "/" + to_string(metadata.GetFileId()) + "?api_version=10";
+    }
+    return mediaTypeUri + "/" + to_string(metadata.GetFileId());
 }
 
 /**
@@ -179,28 +259,56 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
     return false;
 }
 
+static OperationObject GetOprnObjectFromPath(const string &path)
+{
+    const map<string, OperationObject> oprnMap = {
+        { PIC_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO },
+        { VIDEO_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO },
+        { AUDIO_DIR_VALUES, OperationObject::FILESYSTEM_AUDIO }
+    };
+
+    for (const auto &iter : oprnMap) {
+        if (path.find(iter.first) != string::npos) {
+            return iter.second;
+        }
+    }
+    return OperationObject::FILESYSTEM_ASSET;
+}
+
 /**
  * @brief Get date modified, id, size and name info for a file
  *
  * @param path The file path for which to obtain the latest modification info from the db
  * @return unique_ptr<Metadata> The metadata object representing the latest info for the given filepath
  */
-int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata> &ptr)
+int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata> &ptr, MediaLibraryApi api)
 {
-    Uri abilityUri(MEDIALIBRARY_DATA_URI);
-
     static vector<string> columns = {
         MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
-        MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_RECYCLE_PATH, MEDIA_DATA_DB_ORIENTATION
+        MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_ORIENTATION
     };
+    string whereClause;
 
-    DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " = ? And " + MEDIA_DATA_DB_IS_TRASH + " = ? ");
+    OperationObject oprnObject = OperationObject::FILESYSTEM_ASSET;
+
+    if (api == MediaLibraryApi::API_10) {
+        whereClause = MEDIA_DATA_DB_FILE_PATH + " = ? And " + MediaColumn::MEDIA_DATE_TRASHED + " = ? ";
+        oprnObject = GetOprnObjectFromPath(path);
+    } else {
+        columns.push_back(MEDIA_DATA_DB_RECYCLE_PATH);
+        whereClause = MEDIA_DATA_DB_FILE_PATH + " = ? And " + MEDIA_DATA_DB_IS_TRASH + " = ? ";
+    }
     vector<string> args = { path, to_string(NOT_TRASHED) };
-    predicates.SetWhereArgs(args);
-    int errCode = 0;
+    
+    MediaLibraryCommand cmd(oprnObject, OperationType::QUERY, api);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(args);
 
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(abilityUri, columns, predicates, errCode);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return E_RDB;
+    }
+    auto resultSet = rdbStore->Query(cmd, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("return nullptr when query rdb");
         return E_RDB;

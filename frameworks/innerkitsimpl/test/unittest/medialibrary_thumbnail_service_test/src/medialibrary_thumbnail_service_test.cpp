@@ -244,8 +244,9 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InvalidateThumbnail_test_001, TestSiz
     id = "medialib_InvalidateThumbnail_test_001";
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
+    string table = MEDIALIBRARY_TABLE;
     serverTest->Init(storePtr, kvStorePtr, context);
-    serverTest->InvalidateThumbnail(id);
+    serverTest->InvalidateThumbnail(id, table);
     serverTest->ReleaseService();
 }
 

@@ -15,7 +15,7 @@
 #define MLOG_TAG "FileExtUnitTest"
 
 #include "medialibrary_datamanager_test.h"
-
+#include "fetch_result.h"
 #include "get_self_permissions.h"
 #include "media_file_extention_utils.h"
 #include "media_file_utils.h"
@@ -348,6 +348,94 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_002, TestSiz
         close(fd);
     }
     MEDIA_INFO_LOG("DataManager_OpenFile_Test_002 mode: %{public}s, fd: %{public}d.", mode.c_str(), fd);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_Revert_Package_Test_001::Start");
+    shared_ptr<FileAsset> fileAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Revert_Package_Test_001.jpg", g_pictures, fileAsset), true);
+    
+    DataShare::DataShareValuesBucket valuesBucketUpdate;
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_NAME, "Revert_Package_Test_001.jpg");
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_TITLE, "Revert_Package_Test_001");
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
+    int64_t time = MediaFileUtils::UTCTimeSeconds();
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_TIME_PENDING, to_string(time));
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + to_string(fileAsset->GetId()));
+    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucketUpdate, predicates);
+    EXPECT_GT(retVal, 0);
+    
+    string package = fileAsset->GetOwnerPackage();
+    MEDIA_INFO_LOG("DataManager_Revert_Package_Test_001 package:%{publc}s", package.c_str());
+
+    MediaLibraryDataManager::GetInstance()->RevertPendingByPackage(package);
+
+    vector<string> columns;
+    Uri queryUri(MEDIALIBRARY_DATA_URI);
+    int32_t errCode = 0;
+    auto resultSetPtr = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates, errCode);
+    EXPECT_NE(resultSetPtr, nullptr);
+    int count = 0;
+    EXPECT_EQ(resultSetPtr->GetRowCount(count), E_OK);
+
+    auto fetchFileResult = make_shared<FetchResult<FileAsset>>();
+    for (int32_t row = 0; row < count; row++) {
+        unique_ptr<FileAsset> fileAssetObj = fetchFileResult->GetObjectFromRdb(resultSetPtr, row);
+        EXPECT_NE(fileAssetObj, nullptr);
+        EXPECT_EQ(fileAssetObj->GetTimePending(), 0);
+
+        int ret =  MediaLibraryDataManager::GetInstance()->Delete(queryUri, predicates);
+        EXPECT_GT(ret, 0);
+    }
+    MEDIA_INFO_LOG("DataManager_Revert_Package_Test_001::End");
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_BY_DAY_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_Revert_BY_DAY_Test_001::Start");
+    shared_ptr<FileAsset> fileAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Revert_BY_DAY_Test_001.jpg", g_pictures, fileAsset), true);
+
+    DataShare::DataShareValuesBucket valuesBucketUpdate;
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_NAME, "Revert_BY_DAY_Test_001.jpg");
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_TITLE, "Revert_BY_DAY_Test_001");
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
+    int64_t time = MediaFileUtils::UTCTimeSeconds() - 8 * 24 * 60 * 60;
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_TIME_PENDING, to_string(time));
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + to_string(fileAsset->GetId()));
+    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucketUpdate, predicates);
+    EXPECT_GT(retVal, 0);
+
+    MediaLibraryDataManager::GetInstance()->HandleRevertPending();
+
+    vector<string> columns;
+    Uri queryUri(MEDIALIBRARY_DATA_URI);
+    int32_t errCode = 0;
+    auto resultSetPtr = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates, errCode);
+    EXPECT_NE(resultSetPtr, nullptr);
+    int count = 0;
+    EXPECT_EQ(resultSetPtr->GetRowCount(count), E_OK);
+
+    auto fetchFileResult = make_shared<FetchResult<FileAsset>>();
+    for (int32_t row = 0; row < count; row++) {
+        unique_ptr<FileAsset> fileAssetObj = fetchFileResult->GetObjectFromRdb(resultSetPtr, row);
+        EXPECT_NE(fileAssetObj, nullptr);
+        EXPECT_EQ(fileAssetObj->GetTimePending(), 0);
+        int ret = MediaLibraryDataManager::GetInstance()->Delete(queryUri, predicates);
+        EXPECT_GT(ret, 0);
+    }
+    MEDIA_INFO_LOG("DataManager_Revert_BY_DAY_Test_001::End");
 }
 
 /**

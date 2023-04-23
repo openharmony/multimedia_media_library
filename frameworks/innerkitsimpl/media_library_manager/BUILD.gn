@@ -20,26 +20,18 @@ ohos_shared_library("media_library_manager") {
   sources = [ "./media_library_manager.cpp" ]
 
   include_dirs = [
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "//drivers/peripheral/base",
-    "//drivers/peripheral/display/interfaces/include",
-    "${ABILITY_RUNTIME_PATH}/interfaces/kits/native/ability/native",
-    "${MEDIA_LIB_COMMON_UTILS_DIR}/include",
-    "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper/include",
-    "${MEDIA_LIB_INTERFACES_INNER_DIR}/media_library_helper/include",
-    "//commonlibrary/c_utils/base/include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
   ]
 
-  deps = [
-    "$MEDIA_LIB_INNERKITS_DIR/media_library_helper:media_library",
-    "${ABILITY_RUNTIME_PATH}/frameworks/native/ability/native:abilitykit_native",
-  ]
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
 
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:ability_manager",
+    "ability_runtime:abilitykit_native",
     "bundle_framework:appexecfwk_base",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",

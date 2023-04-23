@@ -37,7 +37,8 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED,
     EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED,
     EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF,
-    EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON
+    EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON,
+    EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED
 };
 
 MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
@@ -76,6 +77,9 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED) == 0) {
         isPowerConnected_ = false;
         StopBackgroundOperation();
+    } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED) == 0) {
+        string packageName = want.GetElement().GetBundleName();
+        RevertPendingByPackage(packageName);
     }
 }
 
@@ -128,6 +132,11 @@ void MedialibrarySubscriber::DoStartMtpService()
     ErrCode err = AAFwk::AbilityManagerClient::GetInstance()->StartAbility(want, abilityContext->GetToken(),
         OHOS::AAFwk::DEFAULT_INVAL_VALUE);
     MEDIA_INFO_LOG("MedialibrarySubscriber::DoStartMtpService. End calling StartAbility. ret=%{public}d", err);
+}
+
+void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleName)
+{
+    MediaLibraryDataManager::GetInstance()->RevertPendingByPackage(bundleName);
 }
 }  // namespace Media
 }  // namespace OHOS

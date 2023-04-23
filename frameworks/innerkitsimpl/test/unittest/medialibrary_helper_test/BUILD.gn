@@ -25,10 +25,10 @@ ohos_unittest("media_library_helper_test") {
 
   include_dirs = [
     "./include",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/media_library_helper/include",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension/include",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/utils/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_UTILS_PATH}/include",
   ]
 
   sources = [
@@ -43,9 +43,9 @@ ohos_unittest("media_library_helper_test") {
   ]
 
   deps = [
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/media_library_helper:media_library",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/kits/js:medialibrary",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary",
   ]
 
   external_deps = [
@@ -57,5 +57,5 @@ ohos_unittest("media_library_helper_test") {
   ]
 
   resource_config_file =
-      "${MEDIA_LIB_INNERKITS_DIR}/test/unittest/resources/ohos_test.xml"
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }

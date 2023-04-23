@@ -16,6 +16,7 @@
 
 #include "photo_album_napi.h"
 
+#include "fetch_file_result_napi.h"
 #include "file_asset_napi.h"
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
@@ -54,6 +55,7 @@ napi_value PhotoAlbumNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("commitModify", JSCommitModify),
             DECLARE_NAPI_FUNCTION("addAssets", JSPhotoAlbumAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", JSPhotoAlbumRemoveAssets),
+            DECLARE_NAPI_FUNCTION("getPhotoAssets", JSGetPhotoAssets),
         }
     };
 
@@ -587,5 +589,167 @@ napi_value PhotoAlbumNapi::JSPhotoAlbumRemoveAssets(napi_env env, napi_callback_
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSPhotoAlbumRemoveAssets",
         JSPhotoAlbumRemoveAssetsExecute, JSPhotoAlbumRemoveAssetsCompleteCallback);
+}
+
+static int32_t GetUserAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates)
+{
+    predicates.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, to_string(0));
+    string onClause = MEDIA_DATA_DB_ID + " = " + PhotoMap::ASSET_ID;
+    predicates.LeftOuterJoin(PhotoMap::TABLE)->On({ onClause });
+    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    return E_SUCCESS;
+}
+
+static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType, DataSharePredicates &predicates)
+{
+    switch (subType) {
+        case PhotoAlbumSubType::FAVORITE: {
+            predicates.BeginWrap();
+            constexpr int32_t IS_FAVORITE = 1;
+            predicates.EqualTo(MEDIA_DATA_DB_IS_FAV, to_string(IS_FAVORITE));
+            predicates.And()->EqualTo(MEDIA_DATA_DB_DATE_TRASHED, to_string(0));
+            predicates.EndWrap();
+            break;
+        }
+        case PhotoAlbumSubType::VIDEO: {
+            predicates.BeginWrap();
+            predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
+            predicates.And()->EqualTo(MEDIA_DATA_DB_DATE_TRASHED, to_string(0));
+            predicates.EndWrap();
+            break;
+        }
+        case PhotoAlbumSubType::TRASH: {
+            predicates.BeginWrap();
+            predicates.NotEqualTo(MEDIA_DATA_DB_DATE_TRASHED, to_string(0));
+            predicates.EndWrap();
+            break;
+        }
+        default: {
+            NAPI_ERR_LOG("Unsupported photo album subtype: %{public}d", subType);
+            return E_INVALID_ARGUMENTS;
+        }
+    }
+    return E_SUCCESS;
+}
+
+static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbum,
+    DataSharePredicates &predicates)
+{
+    auto albumId = photoAlbum->GetAlbumId();
+    if (albumId <= 0) {
+        return E_INVALID_ARGUMENTS;
+    }
+    auto type = photoAlbum->GetPhotoAlbumType();
+    auto subType = photoAlbum->GetPhotoAlbumSubType();
+    if ((!PhotoAlbum::CheckPhotoAlbumType(type)) || (!PhotoAlbum::CheckPhotoAlbumSubType(subType))) {
+        return E_INVALID_ARGUMENTS;
+    }
+
+    if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
+        return GetUserAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
+    }
+
+    if ((type != PhotoAlbumType::SYSTEM) || (subType == PhotoAlbumSubType::USER_GENERIC) ||
+        (subType == PhotoAlbumSubType::ANY)) {
+        return E_INVALID_ARGUMENTS;
+    }
+    return GetSystemAlbumPredicates(subType, predicates);
+}
+
+static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
+    unique_ptr<PhotoAlbumNapiAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+
+    /* Parse the first argument */
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetAssetFetchOption(env, context->argv[PARAM0], context), JS_INNER_FAIL);
+
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    auto ret = GetPredicatesByAlbumTypes(photoAlbum, context->predicates);
+    if (ret != E_SUCCESS) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSGetPhotoAssetsExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPhotoAssetsExecute");
+
+    auto context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    string queryUri = URI_QUERY_PHOTO_MAP;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_ALBUM_TYPE_MASK);
+    Uri uri(queryUri);
+    int32_t errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        context->SaveError(E_HAS_DB_ERROR);
+        return;
+    }
+    context->fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
+}
+
+static void GetPhotoMapQueryResult(napi_env env, PhotoAlbumNapiAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    napi_value fetchRes = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchResult));
+    if (fetchRes == nullptr) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
+            "Failed to create js object for FetchFileResult");
+        return;
+    }
+    jsContext->data = fetchRes;
+    jsContext->status = true;
+}
+
+static void JSGetPhotoAssetsCallbackComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPhotoAssetsCallbackComplete");
+
+    auto context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    napi_get_undefined(env, &jsContext->data);
+    napi_get_undefined(env, &jsContext->error);
+    if (context->fetchResult != nullptr) {
+        GetPhotoMapQueryResult(env, context, jsContext);
+    } else {
+        NAPI_ERR_LOG("No fetch file result found!");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to get fetchFileResult from DB");
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value PhotoAlbumNapi::JSGetPhotoAssets(napi_env env, napi_callback_info info)
+{
+    unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsGetPhotoAssets(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets", JSGetPhotoAssetsExecute,
+        JSGetPhotoAssetsCallbackComplete);
 }
 } // namespace OHOS::Media

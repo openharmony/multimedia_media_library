@@ -24,10 +24,11 @@ ohos_unittest("medialibrary_device_test") {
   module_out_path = "media_library/medialibraryextention"
   include_dirs = [ "./include" ]
   sources = [ "./src/medialibrary_device_test.cpp" ]
-  deps = [ "${MEDIA_LIB_INNERKITS_DIR}/medialibrary_data_extension:medialibrary_data_extension" ]
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
 
   external_deps = [
     "device_manager:devicemanagersdk",
+    "kv_store:distributeddata_inner",
     "relational_store:native_rdb",
   ]
 
@@ -38,5 +39,5 @@ ohos_unittest("medialibrary_device_test") {
   }
 
   resource_config_file =
-      "${MEDIA_LIB_INNERKITS_DIR}/test/unittest/resources/ohos_test.xml"
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }

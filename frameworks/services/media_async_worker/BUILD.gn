@@ -17,12 +17,12 @@ import("//foundation/multimedia/media_library/media_library.gni")
 ohos_static_library("medialibrary_async_worker") {
   sources = [ "src/medialibrary_async_worker.cpp" ]
   include_dirs = [
-    "${MEDIA_LIB_SERVICES_DIR}/media_async_worker/include",
-    "${MEDIA_LIB_BASE_DIR}/interfaces/inner_api/media_library_helper/include",
-    "${MEDIA_LIB_BASE_DIR}/frameworks/utils/include",
+    "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_UTILS_PATH}/include",
   ]
 
-  deps = [ "${MEDIA_LIB_INNERKITS_DIR}/media_library_helper:media_library" ]
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
 
   external_deps = [
     "hitrace_native:hitrace_meter",

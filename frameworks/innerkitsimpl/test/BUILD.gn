@@ -15,7 +15,6 @@ group("test") {
   testonly = true
 
   deps = [
-    "fuzztest/medialibrary_fuzzer:fuzztest",
     "unittest/medialib_statistic_test:unittest",
     "unittest/medialibrary_common_utils_test:unittest",
     "unittest/medialibrary_datamanager_test:unittest",
@@ -39,6 +38,5 @@ group("test") {
     "unittest/mediathumbnail_test:unittest",
     "unittest/mtp_native_test:unittest",
     "unittest/photo_album_test:PhotoAlbumTest",
-    "unittest/recycle_directory_test:unittest",
   ]
 }
