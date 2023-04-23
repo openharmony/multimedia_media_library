@@ -21,6 +21,7 @@
 #include <vector>
 #include <unordered_map>
 
+#include "abs_predicates.h"
 #include "abs_shared_result_set.h"
 #include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
@@ -46,6 +47,8 @@ public:
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
+    static std::shared_ptr<FileAsset> GetFileAssetFromDb(NativeRdb::AbsPredicates &predicates,
+        OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
 
     static int32_t InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset);
     static int32_t CheckDisplayNameWithType(const std::string &displayName, int32_t mediaType);
@@ -55,6 +58,11 @@ protected:
 
     static std::shared_ptr<NativeRdb::ResultSet> QueryFiles(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
+    static bool IsContainsValue(NativeRdb::ValuesBucket &values, const std::string &key);
+    static int32_t ModifyAssetInDb(MediaLibraryCommand &cmd);
+    static int32_t UpdateAssetPath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t UpdateFileInDb(MediaLibraryCommand &cmd);
     static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode);
     static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
@@ -76,6 +84,24 @@ private:
     static constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 };
 
+using VerifyFunction = bool (*) (NativeRdb::ValueObject&, MediaLibraryCommand&);
+class AssetInputParamVerification {
+public:
+    static bool CheckParamForUpdate(MediaLibraryCommand &cmd);
+    
+private:
+    static bool Forbidden(NativeRdb::ValueObject &value, MediaLibraryCommand &cmd);
+    static bool IsInt32(NativeRdb::ValueObject &value, MediaLibraryCommand &cmd);
+    static bool IsInt64(NativeRdb::ValueObject &value, MediaLibraryCommand &cmd);
+    static bool IsBool(NativeRdb::ValueObject &value, MediaLibraryCommand &cmd);
+    static bool IsString(NativeRdb::ValueObject &value, MediaLibraryCommand &cmd);
+    static bool IsDouble(NativeRdb::ValueObject &value, MediaLibraryCommand &cmd);
+    static bool IsBelowApi9(NativeRdb::ValueObject &value, MediaLibraryCommand &cmd);
+    static bool IsStringNotNull(NativeRdb::ValueObject &value, MediaLibraryCommand &cmd);
+    static bool IsUniqueValue(NativeRdb::ValueObject &value, MediaLibraryCommand &cmd);
+
+    static const std::unordered_map<std::string, std::vector<VerifyFunction>> UPDATE_VERIFY_PARAM_MAP;
+};
 } // namespace Media
 } // namespace OHOS
 
