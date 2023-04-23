@@ -394,7 +394,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriByNameAndId_Test_001, 
     string displayName = "test.jpg";
     string networkId = "";
     int32_t fd = 1;
-    string targetUri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_IMAGE_URI + "/" + to_string(fd);
+    string targetUri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_IMAGE_URI +  "/" + to_string(fd) + "/" + displayName;
     EXPECT_EQ(MediaFileUtils::GetUriByNameAndId(displayName, networkId, fd), targetUri);
 }
 

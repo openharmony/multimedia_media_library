@@ -88,7 +88,7 @@ void MediaFileExtAbility::OnStop()
 }
 
 sptr<IRemoteObject> MediaFileExtAbility::OnConnect(const AAFwk::Want &want)
-{    
+{
     Extension::OnConnect(want);
     sptr<FileAccessExtStubImpl> remoteObject = new (nothrow) FileAccessExtStubImpl(
         static_pointer_cast<MediaFileExtAbility>(shared_from_this()),
