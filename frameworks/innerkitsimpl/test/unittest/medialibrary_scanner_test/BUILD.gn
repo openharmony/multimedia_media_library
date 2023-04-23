@@ -59,6 +59,7 @@ ohos_unittest("medialibrary_scanner_test") {
     "ability_runtime:dataobs_manager",
     "ability_runtime:runtime",
     "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
     "kv_store:distributeddata_inner",
