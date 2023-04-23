@@ -396,7 +396,7 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
             err = true;
             return;
         }
-        asyncContext->uri = MediaFileUtils::DealWithUriWithName(buffer);
+        asyncContext->uri = buffer;
         CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
         present = false;
     }
@@ -606,7 +606,7 @@ static void GetFileAssetUpdatePredicates(MediaLibraryAsyncContext *context)
     context->predicates.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, 0);
     MediaLibraryNapiUtils::UpdateMediaTypeSelections(context);
     if (!context->uri.empty()) {
-        NAPI_DEBUG_LOG("context->uri is = %{public}s", context->uri.c_str());
+        NAPI_ERR_LOG("context->uri is = %{public}s", context->uri.c_str());
         string fileId;
         MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(context->uri, context->networkId, fileId);
         if (!fileId.empty()) {
