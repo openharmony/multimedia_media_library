@@ -70,23 +70,6 @@ void MediaLibraryExtUnitTest::SetUp()
 
 void MediaLibraryExtUnitTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMediaTypeUri_test_001, TestSize.Level0)
-{
-    MediaScannerDb mediaScannerDb;
-    MediaType mediaType = MEDIA_TYPE_AUDIO;
-    string ret = mediaScannerDb.GetMediaTypeUri(mediaType);
-    EXPECT_EQ(ret, MEDIALIBRARY_AUDIO_URI);
-    mediaType = MEDIA_TYPE_VIDEO;
-    ret = mediaScannerDb.GetMediaTypeUri(mediaType);
-    EXPECT_EQ(ret, MEDIALIBRARY_VIDEO_URI);
-    mediaType = MEDIA_TYPE_IMAGE;
-    ret = mediaScannerDb.GetMediaTypeUri(mediaType);
-    EXPECT_EQ(ret, MEDIALIBRARY_IMAGE_URI);
-    mediaType = MEDIA_TYPE_FILE;
-    ret = mediaScannerDb.GetMediaTypeUri(mediaType);
-    EXPECT_EQ(ret, MEDIALIBRARY_FILE_URI);
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteMetadata_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;

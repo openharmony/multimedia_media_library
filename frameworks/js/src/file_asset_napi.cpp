@@ -1007,7 +1007,7 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     }
     Uri updateAssetUri(uri);
     MediaType mediaType = context->objectPtr->GetMediaType();
-    string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+    string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
     BuildCommitModifyValuesBucket(isApiVersion10, context->objectPtr, valuesBucket);
@@ -1652,7 +1652,7 @@ static void JSFavoriteCallbackComplete(napi_env env, napi_status status, void *d
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
         Media::MediaType mediaType = context->objectPtr->GetMediaType();
-        string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+        string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         UserFileClient::NotifyChange(modifyNotify);
     } else {
@@ -2001,7 +2001,7 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status, void *data
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
         Media::MediaType mediaType = context->objectPtr->GetMediaType();
-        string notifyUri = MediaLibraryNapiUtils::GetMediaTypeUri(mediaType);
+        string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         UserFileClient::NotifyChange(modifyNotify);
         NAPI_DEBUG_LOG("JSTrashCallbackComplete success");
