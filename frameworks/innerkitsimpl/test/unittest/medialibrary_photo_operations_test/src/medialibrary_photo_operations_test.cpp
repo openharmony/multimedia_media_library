@@ -589,7 +589,7 @@ void TestPhotoUpdateParamsVerifyFunctionFailed(const string &predicateColumn, co
 
 void TestPhotoOpenParamsApi10(int32_t fileId, const string &mode, ExceptIntFunction func)
 {
-    string uriString = MediaLibraryDataManagerUtils::GetMediaTypeUri(MediaType::MEDIA_TYPE_IMAGE);
+    string uriString = MediaFileUtils::GetMediaTypeUriV10(MediaType::MEDIA_TYPE_IMAGE);
     uriString += "/" + to_string(fileId);
     Uri uri(uriString);
     MediaLibraryCommand cmd(uri);

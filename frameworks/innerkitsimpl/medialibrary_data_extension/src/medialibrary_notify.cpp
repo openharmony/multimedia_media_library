@@ -15,6 +15,7 @@
 #define MLOG_TAG "FileNotify"
 #include "medialibrary_notify.h"
 #include "data_ability_helper_impl.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
@@ -178,7 +179,7 @@ static void AddNfListMap(AsyncTaskData *data)
     }
     auto* taskData = static_cast<NotifyTaskData*>(data);
     shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(taskData->strId);
-    string typeUri = MediaLibraryDataManagerUtils::GetMediaTypeUri(fileAsset->GetMediaType());
+    string typeUri = MediaFileUtils::GetMediaTypeUriV10(fileAsset->GetMediaType());
     AddNotify(fileAsset, typeUri, taskData);
 }
 

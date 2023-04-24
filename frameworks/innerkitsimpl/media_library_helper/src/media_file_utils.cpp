@@ -733,6 +733,24 @@ std::string MediaFileUtils::GetMediaTypeUri(MediaType mediaType)
     }
 }
 
+std::string MediaFileUtils::GetMediaTypeUriV10(MediaType mediaType)
+{
+    switch (mediaType) {
+        case MEDIA_TYPE_AUDIO:
+            return MEDIALIBRARY_AUDIO_URI;
+        case MEDIA_TYPE_VIDEO:
+        case MEDIA_TYPE_IMAGE:
+            return MEDIALIBRARY_PHOTO_URI;
+        case MEDIA_TYPE_SMARTALBUM:
+            return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
+        case MEDIA_TYPE_DEVICE:
+            return MEDIALIBRARY_DEVICE_URI;
+        case MEDIA_TYPE_FILE:
+        default:
+            return MEDIALIBRARY_FILE_URI;
+    }
+}
+
 void MediaFileUtils::GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask)
 {
     typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
