@@ -171,5 +171,16 @@ void MediaLibraryDataManagerUtils::RemoveTypeValueFromUri(std::string &uri)
         uri = uri.substr(0, typeIndex);
     }
 }
+
+std::string MediaLibraryDataManagerUtils::GetTypeUriByUri(std::string &uri)
+{
+    string typeUri;
+    if (uri.find(MEDIALIBRARY_PHOTO_URI) != string::npos) {
+        typeUri = MEDIALIBRARY_PHOTO_URI;
+    } else if (uri.find(MEDIALIBRARY_ALBUM_URI) != string::npos) {
+        typeUri = MEDIALIBRARY_ALBUM_URI;
+    }
+    return typeUri;
+}
 } // namespace Media
 } // namespace OHOS

@@ -83,6 +83,7 @@ public:
     static int32_t UpdateDateModified(const std::string &dirPath);
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
     static void ScanFile(const std::string &srcPath, MediaLibraryApi api = MediaLibraryApi::API_OLD);
+    static int32_t GetAlbumUrisById(const std::string &fileId, std::list<std::string> &albumUriList);
 
 private:
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);

@@ -17,6 +17,7 @@
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_LIBRARY_NAPI_H_
 
 #include <mutex>
+#include <vector>
 #include "abs_shared_result_set.h"
 #include "album_napi.h"
 #include "data_ability_helper.h"
@@ -58,7 +59,7 @@ struct MediaChangeListener {
     OHOS::DataShare::DataShareObserver::ChangeInfo changeInfo;
     std::string strUri;
 };
-
+class MediaOnNotifyObserver;
 class ChangeListenerNapi {
 public:
     class UvChangeMsg {
@@ -96,7 +97,7 @@ public:
     ~ChangeListenerNapi(){};
 
     void OnChange(MediaChangeListener &listener, const napi_ref cbRef);
-    static napi_value* SolveOnChangeResult(napi_env env, UvChangeMsg *msg);
+    static napi_value SolveOnChange(napi_env env, UvChangeMsg *msg);
     napi_ref cbOnRef_ = nullptr;
     napi_ref cbOffRef_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> audioDataObserver_ = nullptr;
@@ -107,7 +108,7 @@ public:
     sptr<AAFwk::IDataAbilityObserver> deviceDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> remoteFileDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> albumDataObserver_ = nullptr;
-    std::unordered_map<std::string, shared_ptr<DataShare::DataShareObserver>> observers_;
+    std::vector<std::shared_ptr<MediaOnNotifyObserver>> observers_;
 private:
     napi_env env_ = nullptr;
 };
@@ -134,9 +135,10 @@ public:
 
 class MediaOnNotifyObserver : public DataShare::DataShareObserver  {
 public:
-    MediaOnNotifyObserver(const ChangeListenerNapi &listObj, std::string uri) : listObj_(listObj)
+    MediaOnNotifyObserver(const ChangeListenerNapi &listObj, std::string uri, napi_ref ref) : listObj_(listObj)
     {
         uri_ = uri;
+        ref_ = ref;
     }
 
     ~MediaOnNotifyObserver() = default;
@@ -146,10 +148,11 @@ public:
         MediaChangeListener listener;
         listener.changeInfo = changeInfo;
         listener.strUri = uri_;
-        listObj_.OnChange(listener, listObj_.cbOnRef_);
+        listObj_.OnChange(listener, ref_);
     }
     ChangeListenerNapi listObj_;
     std::string uri_;
+    napi_ref ref_;
 };
 class MediaLibraryNapi {
 public:
@@ -207,6 +210,8 @@ private:
     static napi_value UserFileMgrGetAudioAssets(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetPrivateAlbum(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCreateFileKeyEnum(napi_env env);
+    static napi_value UserFileMgrOnCallback(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrOffCallback(napi_env env, napi_callback_info info);
     static napi_value CreateAudioKeyEnum(napi_env env);
     static napi_value CreateImageVideoKeyEnum(napi_env env);
     static napi_value CreateAlbumKeyEnum(napi_env env);
@@ -222,8 +227,10 @@ private:
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
     void UnregisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
-    void RegisterNotifyChange(napi_env env, const std::string &uri, bool isDerived, ChangeListenerNapi &listObj);
-    void UnRegisterNotifyChange(napi_env env, const std::string &uri, ChangeListenerNapi &listObj);
+    void RegisterNotifyChange(napi_env env,
+        const std::string &uri, bool isDerived, napi_ref ref, ChangeListenerNapi &listObj);
+    void UnRegisterNotifyChange(napi_env env, const std::string &uri, napi_ref ref, ChangeListenerNapi &listObj);
+    static bool CheckRef(napi_env env, napi_ref ref, ChangeListenerNapi &listObj, bool isOff);
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;

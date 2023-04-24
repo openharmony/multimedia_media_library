@@ -42,6 +42,7 @@
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
 #include "permission_utils.h"
+#include "photo_map_column.h"
 #include "result_set_utils.h"
 #include "string_ex.h"
 #include "thumbnail_service.h"
@@ -753,10 +754,6 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     }
     InvalidateThumbnail(strFileId);
     ScanFile(srcPath);
-    auto notifyWatch = MediaLibraryNotify::GetInstance();
-    if (notifyWatch != nullptr) {
-        notifyWatch->Notify(fileAsset);
-    }
     return E_SUCCESS;
 }
 
@@ -1498,7 +1495,6 @@ int32_t MediaLibraryObjectUtils::CheckDirExtension(const string &relativePath, c
     auto ret = GetRootDirAssetByRelativePath(relativePath, rootDirAsset);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "get root dir from relativePath failed, path: %{private}s",
         relativePath.c_str());
-    
     string dirMediaTypes = rootDirAsset.GetMediaTypes();
     if (dirMediaTypes == DIR_ALL_TYPE_VALUES) {
         return E_SUCCESS;
@@ -1564,6 +1560,32 @@ shared_ptr<ResultSet> MediaLibraryObjectUtils::QuerySmartAlbum(MediaLibraryComma
     }
     vector<string> columns;
     return uniStore->Query(cmd, columns);
+}
+
+int32_t MediaLibraryObjectUtils::GetAlbumUrisById(const string &fileId, list<string> &albumUriList)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryCommand queryAlbumMapCmd(OperationObject::PHOTO_MAP, OperationType::QUERY);
+    queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoMap::ASSET_ID, fileId);
+    auto resultSet = uniStore->Query(queryAlbumMapCmd, {});
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("GetAlbumUrisById failed");
+        return E_INVALID_FILEID;
+    }
+    int32_t count = -1;
+    int32_t ret = resultSet->GetRowCount(count);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to get count");
+    MEDIA_INFO_LOG("GetAlbumUrisById Query count: %{public}d", count);
+    ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GoToFirstRow");
+    do {
+        int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoMap::ALBUM_ID, resultSet,
+            TYPE_INT32));
+        MEDIA_INFO_LOG("GetAlbumUrisById albumId: %{public}d", albumId);
+        string albumUri = MEDIALIBRARY_ALBUM_URI + "/" + to_string(albumId);
+        albumUriList.emplace_back(albumUri);
+    } while (!resultSet->GoToNextRow());
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS
