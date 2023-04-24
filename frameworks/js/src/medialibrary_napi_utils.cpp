@@ -310,7 +310,7 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
             uri = MediaFileUtils::DealWithUriWithName(uri);
             string fileId;
             MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(uri, context->networkId, fileId);
-            string field = isAlbum ? MEDIA_DATA_DB_BUCKET_ID : MEDIA_DATA_DB_ID;
+            string field = isAlbum ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
             operations.push_back({item.operation, {field, fileId}});
             continue;
         }
