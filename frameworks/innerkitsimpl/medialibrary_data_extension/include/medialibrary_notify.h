@@ -25,6 +25,7 @@
 #include "parcel.h"
 #include "timer.h"
 #include "uri.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -32,8 +33,10 @@ class NotifyTaskData : public AsyncTaskData {
 public:
     NotifyTaskData() = default;
     virtual ~NotifyTaskData() override = default;
-    std::string strId;
     AAFwk::ChangeInfo::ChangeType changeType;
+    int albumId;
+    std::string uri;
+    NotifyType notifyType;
 };
 constexpr size_t MAX_NOTIFY_LIST_SIZE = 32;
 constexpr size_t MNOTIFY_TIME_INTERVAL = 500;
@@ -41,12 +44,10 @@ class MediaLibraryNotify {
 public:
     static std::shared_ptr<MediaLibraryNotify> GetInstance();
     virtual ~MediaLibraryNotify();
-    int32_t Notify(const std::string &strId, AAFwk::ChangeInfo::ChangeType changeType);
-    int32_t Notify(const std::shared_ptr<FileAsset> &closeAsset);
+    int32_t Notify(const std::string &uri, const NotifyType notifyType, const int albumId = 0);
     static Utils::Timer timer_;
     static std::mutex mutex_;
-    static std::unordered_map<std::string,
-        std::unordered_map<AAFwk::ChangeInfo::ChangeType, std::list<Uri>>> nfListMap_;
+    static std::unordered_map<std::string, std::unordered_map<NotifyType, std::list<Uri>>> nfListMap_;
 private:
     MediaLibraryNotify();
     int32_t Init();

@@ -19,6 +19,7 @@
 #include "media_column.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_notify.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
@@ -69,7 +70,13 @@ int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<ValueObject> &
     bindArgs.emplace_back(albumId);
     bindArgs.emplace_back(PhotoAlbumType::USER);
     bindArgs.emplace_back(PhotoAlbumSubType::USER_GENERIC);
-    return MediaLibraryRdbStore::ExecuteForLastInsertedRowId(insertSql, bindArgs);
+    int errCode =  MediaLibraryRdbStore::ExecuteForLastInsertedRowId(insertSql, bindArgs);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if ((errCode == E_OK) && (watch != nullptr)) {
+        watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(assetId),
+            NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
+    }
+    return errCode;
 }
 
 int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &values)
@@ -99,7 +106,16 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
 
 int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
 {
-    return MediaLibraryRdbStore::Delete(predicates);
+    int deleteRow = MediaLibraryRdbStore::Delete(predicates);
+    string strAlbumId = predicates.GetWhereArgs()[0];
+    auto watch = MediaLibraryNotify::GetInstance();
+    for (size_t i = 1; i < predicates.GetWhereArgs().size(); i++) {
+        if ((deleteRow > 0) && (watch != nullptr)) {
+            watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + predicates.GetWhereArgs()[i],
+                NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, atoi(strAlbumId.c_str()));
+        }
+    }
+    return deleteRow;
 }
 
 shared_ptr<ResultSet> PhotoMapOperations::QueryPhotoAssets(const RdbPredicates &rdbPredicate,

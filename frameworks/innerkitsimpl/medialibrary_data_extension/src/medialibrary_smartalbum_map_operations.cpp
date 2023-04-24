@@ -571,17 +571,10 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(const int32
     MEDIA_DEBUG_LOG("HandleAddAssetOperations albumId = %{public}d, childFileAssetId = %{public}d",
         albumId, childFileAssetId);
     int32_t errorCode = E_SUCCESS;
-    auto watch = MediaLibraryNotify::GetInstance();
     if (albumId == TRASH_ALBUM_ID_VALUES) {
         errorCode = InsertTrashAssetsInfoUtil(childFileAssetId);
-        if ((errorCode > 0) && (watch != nullptr)) {
-            watch->Notify(to_string(childFileAssetId), ChangeType::DELETE);
-        }
     } else if (albumId == FAVOURITE_ALBUM_ID_VALUES) {
         errorCode = UpdateFavoriteAssetsInfoUtil(childFileAssetId, true);
-        if ((errorCode > 0) && (watch != nullptr)) {
-            watch->Notify(to_string(childFileAssetId), ChangeType::UPDATE);
-        }
     }
     CHECK_AND_RETURN_RET_LOG(errorCode >= 0, errorCode, "Failed to handleAddAssetOperations");
     if (childAlbumId != DEFAULT_ALBUMID) {
