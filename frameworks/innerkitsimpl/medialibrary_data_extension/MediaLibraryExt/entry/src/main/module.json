@@ -34,24 +34,6 @@
         "type": "dataShare",
         "uri": "datashare://media",
         "visible": true
-      },
-      {
-        "srcEntrance": "./ets/MtpService/MtpService.ts",
-        "name": "MtpServiceExtension",
-        "icon": "$media:icon",
-        "description": "$string:description_serviceability",
-        "type": "service",
-        "visible": true
-      },
-      {
-        "srcEntrance": "./ets/FileExtensionAbility/FileExtensionAbility.ts",
-        "name": "FileExtensionAbility",
-        "icon": "$media:icon",
-        "srcLanguage": "ets",
-        "description": "mediafileextension",
-        "type": "fileAccess",
-        "uri": "fileAccess://media",
-        "visible": true
       }
     ],
     "requestPermissions": [
