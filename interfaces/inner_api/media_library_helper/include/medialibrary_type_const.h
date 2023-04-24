@@ -89,7 +89,8 @@ enum class DirtyType : int32_t {
     TYPE_NEW,
     TYPE_MDIRTY,
     TYPE_FDIRTY,
-    TYPE_DELETED
+    TYPE_DELETED,
+    TYPE_RETRY
 };
 
 const int32_t SUCCESS = 0;
