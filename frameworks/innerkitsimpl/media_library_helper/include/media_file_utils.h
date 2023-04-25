@@ -73,6 +73,7 @@ public:
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string UpdatePath(const std::string &path, const std::string &uri);
     static std::string GetFileMediaTypeUri(int32_t mediaType, const std::string &networkId);
+    static std::string GetFileMediaTypeUriV10(int32_t mediaType, const std::string &networkId);
     static std::string GetUriByNameAndId(const std::string &displayName, const std::string &networkId, int32_t id);
     static MediaType GetMediaType(const std::string &filePath);
     static std::string SplitByChar(const std::string &str, const char split);
