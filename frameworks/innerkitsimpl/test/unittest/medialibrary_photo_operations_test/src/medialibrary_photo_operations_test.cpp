@@ -448,8 +448,8 @@ static int32_t TestQueryAssetLongParams(int64_t longValue, const string &columnV
     if (columnLongValue == longValue) {
         return E_OK;
     } else {
-        MEDIA_ERR_LOG("TestQueryAssetLongParams failed, intValue=%{public}lld, columnValue=%{public}s",
-            longValue, columnValue.c_str());
+        MEDIA_ERR_LOG("TestQueryAssetLongParams failed, intValue=%{public}ld, columnValue=%{public}s",
+            (long) longValue, columnValue.c_str());
         return E_INVALID_VALUES;
     }
 }
