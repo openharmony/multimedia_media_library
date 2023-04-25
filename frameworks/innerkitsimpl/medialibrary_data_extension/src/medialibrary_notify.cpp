@@ -223,4 +223,17 @@ int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyTyp
     }
     return E_OK;
 }
+
+int32_t MediaLibraryNotify::Notify(const shared_ptr<FileAsset> &closeAsset)
+{
+    bool isCreateFile = false;
+    if (closeAsset->GetDateAdded() == closeAsset->GetDateModified() ||
+        closeAsset->GetDateModified() == 0) {
+        isCreateFile = true;
+    }
+    if (isCreateFile) {
+        return Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(closeAsset->GetId()), NotifyType::NOTIFY_ADD);
+    }
+    return Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(closeAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+}
 } // namespace OHOS::Media

@@ -45,6 +45,7 @@ public:
     static std::shared_ptr<MediaLibraryNotify> GetInstance();
     virtual ~MediaLibraryNotify();
     int32_t Notify(const std::string &uri, const NotifyType notifyType, const int albumId = 0);
+    int32_t Notify(const std::shared_ptr<FileAsset> &closeAsset);
     static Utils::Timer timer_;
     static std::mutex mutex_;
     static std::unordered_map<std::string, std::unordered_map<NotifyType, std::list<Uri>>> nfListMap_;

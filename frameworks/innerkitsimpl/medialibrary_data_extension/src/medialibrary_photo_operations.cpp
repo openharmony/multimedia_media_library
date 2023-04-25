@@ -25,6 +25,8 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_notify.h"
+#include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "userfile_manager_types.h"
 #include "value_object.h"
@@ -250,6 +252,10 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
         TransactionRollback();
         return errCode;
     }
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch != nullptr) {
+        watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(deleteRows), NotifyType::NOTIFY_REMOVE);
+    }
     return deleteRows;
 }
 
@@ -302,6 +308,15 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
         return errCode;
     }
 
+    errCode = MediaLibraryObjectUtils::SendTrashNotify(cmd, rowId);
+    if (errCode == E_OK) {
+        return rowId;
+    }
+    MediaLibraryObjectUtils::SendFavoriteNotify(cmd, rowId);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch != nullptr) {
+        watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId), NotifyType::NOTIFY_REMOVE);
+    }
     return rowId;
 }
 } // namespace Media

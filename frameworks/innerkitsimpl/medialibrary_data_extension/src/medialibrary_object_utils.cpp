@@ -1587,5 +1587,50 @@ int32_t MediaLibraryObjectUtils::GetAlbumUrisById(const string &fileId, list<str
     } while (!resultSet->GoToNextRow());
     return E_OK;
 }
+
+int32_t MediaLibraryObjectUtils::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId)
+{
+    ValueObject value;
+    int64_t trashDate = 0;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_DATE_TRASHED, value)) {
+        value.GetLong(trashDate);
+        auto watch = MediaLibraryNotify::GetInstance();
+        if (trashDate > 0) {
+            if (watch != nullptr) {
+                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId), NotifyType::NOTIFY_REMOVE);
+                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+            }
+        } else {
+            if (watch != nullptr) {
+                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId), NotifyType::NOTIFY_ADD);
+                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId), NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+            }
+        }
+        return E_OK;
+    } else {
+        return E_ERR;
+    }
+}
+
+void MediaLibraryObjectUtils::SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId)
+{
+    ValueObject value;
+    bool isFavorite = false;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_IS_FAV, value)) {
+        value.GetBool(isFavorite);
+        auto watch = MediaLibraryNotify::GetInstance();
+        if (isFavorite) {
+            if (watch != nullptr) {
+                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId),
+                    NotifyType::NOTIFY_ALBUM_ADD_ASSERT, DefaultAlbumId::FAVORITE_ALBUM);
+            }
+        } else {
+            if (watch != nullptr) {
+                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId),
+                    NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, DefaultAlbumId::FAVORITE_ALBUM);
+            }
+        }
+    }
+}
 } // namespace Media
 } // namespace OHOS

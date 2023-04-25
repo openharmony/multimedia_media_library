@@ -117,6 +117,11 @@ enum NotifyType {
     NOTIFY_ALBUM_ADD_ASSERT,
     NOTIFY_ALBUM_REMOVE_ASSET
 };
+
+enum DefaultAlbumId {
+    VIDEO_ALBUM = 1,
+    FAVORITE_ALBUM
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H
