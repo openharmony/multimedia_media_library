@@ -15,9 +15,11 @@
 
 #include "medialibrary_command.h"
 
+#include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -446,8 +448,7 @@ void MediaLibraryCommand::ParseOprnObjectFromFileUri()
 
     string uri = uri_.ToString();
     static const map<string, OperationObject> oprnMap = {
-        { MEDIALIBRARY_TYPE_IMAGE_URI, OperationObject::FILESYSTEM_PHOTO },
-        { MEDIALIBRARY_TYPE_VIDEO_URI, OperationObject::FILESYSTEM_PHOTO },
+        { PhotoColumn::PHOTO_TYPE_URI, OperationObject::FILESYSTEM_PHOTO },
         { MEDIALIBRARY_TYPE_AUDIO_URI, OperationObject::FILESYSTEM_AUDIO }
     };
 
