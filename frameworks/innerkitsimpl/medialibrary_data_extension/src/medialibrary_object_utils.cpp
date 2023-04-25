@@ -713,7 +713,7 @@ int32_t MediaLibraryObjectUtils::ScanFileAfterClose(const string &srcPath, const
      */
     string tableName = MEDIALIBRARY_TABLE;
     if (api != MediaLibraryApi::API_OLD) {
-        if ((uri.find(MEDIALIBRARY_PHOTO_URI) != string::npos)) {
+        if ((uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos)) {
             tableName = PhotoColumn::PHOTOS_TABLE;
         } else if (uri.find(MEDIALIBRARY_AUDIO_URI) != string::npos) {
             tableName = AudioColumn::AUDIOS_TABLE;

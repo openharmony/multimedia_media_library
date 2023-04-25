@@ -778,32 +778,6 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
     return result;
 }
 
-static string GetFileMediaTypeUri(MediaType mediaType, const string &networkId)
-{
-    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-    switch (mediaType) {
-        case MEDIA_TYPE_AUDIO:
-            return uri + MEDIALIBRARY_TYPE_AUDIO_URI;
-            break;
-        case MEDIA_TYPE_VIDEO:
-            return uri + MEDIALIBRARY_TYPE_VIDEO_URI;
-            break;
-        case MEDIA_TYPE_IMAGE:
-            return uri + MEDIALIBRARY_TYPE_IMAGE_URI;
-            break;
-        case MEDIA_TYPE_ALBUM:
-            return uri + MEDIALIBRARY_TYPE_ALBUM_URI;
-            break;
-        case MEDIA_TYPE_SMARTALBUM:
-            return uri + MEDIALIBRARY_TYPE_SMART_URI;
-            break;
-        case MEDIA_TYPE_FILE:
-        default:
-            return uri + MEDIALIBRARY_TYPE_FILE_URI;
-            break;
-    }
-}
-
 static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
 {
     MediaLibraryTracer tracer;
@@ -849,7 +823,7 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSe
 
     // Get album asset count index and value
     albumData->SetCount(get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet, TYPE_INT32)));
-    albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) +
+    albumData->SetAlbumUri(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) +
         "/" + to_string(albumData->GetAlbumId()));
     // Get album relativePath index and value
     albumData->SetAlbumRelativePath(get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
@@ -1981,7 +1955,7 @@ static void SetSmartAlbumData(SmartAlbumAsset* smartAlbumData, shared_ptr<DataSh
         TYPE_STRING)));
     smartAlbumData->SetAlbumCapacity(get<int32_t>(ResultSetUtils::GetValFromColumn(SMARTALBUMASSETS_ALBUMCAPACITY,
         resultSet, TYPE_INT32)));
-    smartAlbumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_SMARTALBUM, context->networkId) +
+    smartAlbumData->SetAlbumUri(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_SMARTALBUM, context->networkId) +
         "/" + to_string(smartAlbumData->GetAlbumId()));
     smartAlbumData->SetTypeMask(context->typeMask);
     smartAlbumData->SetDescription(get<string>(ResultSetUtils::GetValFromColumn(SMARTALBUM_DB_DESCRIPTION, resultSet,
