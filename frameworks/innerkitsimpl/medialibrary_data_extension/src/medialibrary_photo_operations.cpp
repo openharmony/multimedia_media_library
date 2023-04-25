@@ -120,7 +120,8 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_URI,
-        PhotoColumn::MEDIA_TYPE
+        PhotoColumn::MEDIA_TYPE,
+        PhotoColumn::MEDIA_TIME_PENDING
     };
     auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
         OperationObject::FILESYSTEM_PHOTO, columns);
@@ -153,7 +154,6 @@ int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
     }
 
     int32_t errCode = CloseAsset(fileAsset);
-    // todo: pending
     return errCode;
 }
 
@@ -278,7 +278,6 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
         return UpdateAssetPath(cmd, fileAsset);
     }
 
-    // todo: update pending later
     // Update if FileAsset.title or FileAsset.displayName is modified
     int32_t errCode = UpdateFileName(cmd, fileAsset);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Photo Name failed, fileName=%{private}s",

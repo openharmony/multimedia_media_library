@@ -141,7 +141,7 @@ int32_t MediaLibraryAssetOperations::UpdateOperation(MediaLibraryCommand &cmd)
     if (!AssetInputParamVerification::CheckParamForUpdate(cmd)) {
         return E_INVALID_VALUES;
     }
-    // todo: check input params
+
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_PHOTO:
             return MediaLibraryPhotoOperations::Update(cmd);
@@ -211,6 +211,25 @@ static bool CheckOprnObject(OperationObject object)
         return false;
     }
     return true;
+}
+
+static OperationObject GetOprnObjectByMediaType(int32_t type)
+{
+    switch (type) {
+        case MediaType::MEDIA_TYPE_IMAGE:
+        case MediaType::MEDIA_TYPE_VIDEO: {
+            return OperationObject::FILESYSTEM_PHOTO;
+        }
+        case MediaType::MEDIA_TYPE_AUDIO: {
+            return OperationObject::FILESYSTEM_AUDIO;
+        }
+        case MediaType::MEDIA_TYPE_FILE: {
+            return OperationObject::FILESYSTEM_ASSET;
+        }
+        default: {
+            return OperationObject::UNKNOWN_OBJECT;
+        }
+    }
 }
 
 shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const string &column,
@@ -301,6 +320,7 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
     
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
+    assetInfo.PutLong(MediaColumn::MEDIA_TIME_PENDING, UNCREATE_FILE_TIMEPENDING);
     cmd.SetValueBucket(assetInfo);
 
     int64_t outRowId = -1;
@@ -580,6 +600,56 @@ static bool CheckMode(const string &mode)
     }
 }
 
+static int32_t CreateFileAndSetPending(const shared_ptr<FileAsset> &fileAsset)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    int32_t errCode = MediaFileUtils::CreateAsset(fileAsset->GetPath());
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Create asset failed, path=%{private}s", fileAsset->GetPath().c_str());
+        return errCode;
+    }
+    int64_t time = MediaFileUtils::UTCTimeSeconds();
+    MediaLibraryCommand updatePendingCmd(GetOprnObjectByMediaType(fileAsset->GetMediaType()),
+        OperationType::UPDATE);
+    updatePendingCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID,
+        to_string(fileAsset->GetId()));
+    ValuesBucket values;
+    values.PutLong(MediaColumn::MEDIA_TIME_PENDING, time);
+    updatePendingCmd.SetValueBucket(values);
+    int32_t rowId = 0;
+    int32_t result = rdbStore->Update(updatePendingCmd, rowId);
+    if (result != NativeRdb::E_OK || rowId <= 0) {
+        MEDIA_ERR_LOG("Update File pending failed. Result %{public}d.", result);
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
+static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const string &mode)
+{
+    int64_t pendingTime = fileAsset->GetTimePending();
+    if (pendingTime != 0) {
+        if (mode == MEDIA_FILEMODE_READONLY) {
+            MEDIA_ERR_LOG("FileAsset [%{public}s] pending status is %{private}ld and open mode is READ_ONLY",
+                fileAsset->GetUri().c_str(), (long) pendingTime);
+            return E_IS_PENDING_ERROR;
+        }
+        string networkId = MediaFileUtils::GetNetworkIdFromUri(fileAsset->GetUri());
+        if (!networkId.empty()) {
+            MEDIA_ERR_LOG("Can not open remote [%{private}s] pending file", networkId.c_str());
+            return E_IS_PENDING_ERROR;
+        }
+        if (pendingTime == UNCREATE_FILE_TIMEPENDING) {
+            int32_t errCode = CreateFileAndSetPending(fileAsset);
+            return errCode;
+        }
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode)
 {
     if (fileAsset == nullptr) {
@@ -592,7 +662,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
         return E_INVALID_MODE;
     }
 
-    // todo: when Pending == -1, create asset
+    SolvePendingStatus(fileAsset, mode);
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     int32_t fd = OpenFile(path, lowerMode);
     if (fd < 0) {

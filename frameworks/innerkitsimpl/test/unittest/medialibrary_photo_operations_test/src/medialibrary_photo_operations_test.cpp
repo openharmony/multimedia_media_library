@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-#include <chrono>
 #define MLOG_TAG "PhotoOperationsTest"
 
 #include "medialibrary_photo_operations_test.h"
 
+#include <chrono>
 #include <fstream>
 #include <thread>
 #include <unistd.h>
@@ -670,7 +670,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_001, Test
     EXPECT_GE(ret, 0);
     unordered_map<string, string> verifyMap = {
         { PhotoColumn::MEDIA_TITLE, "photo" },
-        { PhotoColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_IMAGE) }
+        { PhotoColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_IMAGE) },
+        { PhotoColumn::MEDIA_TIME_PENDING, to_string(UNCREATE_FILE_TIMEPENDING)}
     };
     bool res = QueryAndVerifyPhotoAsset(PhotoColumn::MEDIA_NAME, name, verifyMap);
     EXPECT_EQ(res, true);
@@ -1104,6 +1105,40 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestS
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_FILEID); });
 
     MEDIA_INFO_LOG("end tdd photo_oprn_close_api10_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_pending_api10_test_001");
+    MediaLibraryCommand createCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    string name = "photo.jpg";
+    ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    createCmd.SetValueBucket(values);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(createCmd);
+    EXPECT_GE(fileId, 0);
+
+    string uriString = MediaFileUtils::GetMediaTypeUri(MediaType::MEDIA_TYPE_IMAGE);
+    uriString += "/" + to_string(fileId);
+    Uri uri(uriString);
+    MediaLibraryCommand openCmd(uri);
+    int32_t fd = MediaLibraryPhotoOperations::Open(openCmd, "rw");
+    EXPECT_GE(fd, 0);
+
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    queryCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    vector<string> columns = { PhotoColumn::MEDIA_TIME_PENDING };
+    auto resultSet = g_rdbStore->Query(queryCmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get AssetUniqueNumberTable count");
+        return;
+    }
+    int64_t timePending = GetInt64Val(PhotoColumn::MEDIA_TIME_PENDING, resultSet);
+    EXPECT_GT(timePending, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_pending_api10_test_001");
 }
 } // namespace Media
 } // namespace OHOS

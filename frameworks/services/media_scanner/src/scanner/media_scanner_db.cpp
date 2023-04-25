@@ -80,6 +80,7 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
     values.PutLong(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
     values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
     values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
+    values.PutLong(MEDIA_DATA_DB_TIME_PENDING, 0);
 
     if (isInsert) {
         values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
@@ -100,6 +101,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, metadata.GetFileDateModified());
     values.PutInt(MediaColumn::MEDIA_DURATION, metadata.GetFileDuration());
     values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, metadata.GetDateTaken());
+    values.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
 
     if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO) {
         values.PutInt(PhotoColumn::PHOTO_HEIGHT, metadata.GetFileHeight());
