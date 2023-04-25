@@ -71,6 +71,10 @@ public:
 
     // create PhotoTable sql
     static const std::string CREATE_PHOTO_TABLE;
+
+    // photo uri
+    static const std::string PHOTO_URI_PREFIX;
+    static const std::string PHOTO_TYPE_URI;
 };
 
 class AudioColumn : public MediaColumn {

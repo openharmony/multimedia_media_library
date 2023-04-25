@@ -17,6 +17,7 @@
 #include "fetch_result.h"
 #include "album_asset.h"
 #include "media_log.h"
+#include "media_file_utils.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_column.h"
 
@@ -315,22 +316,6 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetValByIndex(int32_t index, R
     return cellValue;
 }
 
-static string GetFileMediaTypeUri(MediaType mediaType, const string &networkId)
-{
-    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-    switch (mediaType) {
-        case MEDIA_TYPE_AUDIO:
-            return uri + MEDIALIBRARY_TYPE_AUDIO_URI;
-        case MEDIA_TYPE_VIDEO:
-            return uri + MEDIALIBRARY_TYPE_VIDEO_URI;
-        case MEDIA_TYPE_IMAGE:
-            return uri + MEDIALIBRARY_TYPE_IMAGE_URI;
-        case MEDIA_TYPE_FILE:
-        default:
-            return uri + MEDIALIBRARY_TYPE_FILE_URI;
-    }
-}
-
 static void MediaTypeToMask(MediaType mediaType, string &typeMask)
 {
     typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
@@ -370,16 +355,21 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
         }
         fileAsset->SetCount(count);
     }
+    string uri;
     if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
         string typeMask;
         MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
         fileAsset->SetTypeMask(typeMask);
+        uri = MediaFileUtils::GetFileMediaTypeUriV10(fileAsset->GetMediaType(), networkId_) + "/" +
+            to_string(fileAsset->GetId());
+    } else {
+        uri = MediaFileUtils::GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_) + "/" +
+            to_string(fileAsset->GetId());
     }
     if (fileAsset->GetAlbumId() != DEFAULT_INT32) {
-        fileAsset->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId_) + "/" +
+        fileAsset->SetAlbumUri(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId_) + "/" +
             to_string(fileAsset->GetAlbumId()));
     }
-    string uri = GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_) + "/" + to_string(fileAsset->GetId());
     fileAsset->SetUri(move(uri));
 }
 
@@ -444,7 +434,7 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
 
     // Get album asset count index and value
     albumData->SetCount(get<int32_t>(GetRowValFromColumn(MEDIA_DATA_DB_COUNT, TYPE_INT32, resultSet)));
-    albumData->SetAlbumUri(GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId_) + "/" +
+    albumData->SetAlbumUri(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId_) + "/" +
         to_string(albumData->GetAlbumId()));
     // Get album relativePath index and value
     albumData->SetAlbumRelativePath(get<string>(GetRowValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
