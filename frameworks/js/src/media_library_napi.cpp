@@ -1843,7 +1843,8 @@ napi_value MediaLibraryNapi::UserFileMgrOnCallback(napi_env env, napi_callback_i
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string ||
-            napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
+            napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_boolean ||
+            napi_typeof(env, argv[PARAM2], &valueType) != napi_ok || valueType != napi_function) {
             return undefinedResult;
         }
         char buffer[ARG_BUF_SIZE];

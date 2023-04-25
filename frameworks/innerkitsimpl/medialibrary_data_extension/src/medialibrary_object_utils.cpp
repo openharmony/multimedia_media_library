@@ -1575,13 +1575,11 @@ int32_t MediaLibraryObjectUtils::GetAlbumUrisById(const string &fileId, list<str
     int32_t count = -1;
     int32_t ret = resultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to get count");
-    MEDIA_INFO_LOG("GetAlbumUrisById Query count: %{public}d", count);
     ret = resultSet->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GoToFirstRow");
     do {
         int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoMap::ALBUM_ID, resultSet,
             TYPE_INT32));
-        MEDIA_INFO_LOG("GetAlbumUrisById albumId: %{public}d", albumId);
         string albumUri = MEDIALIBRARY_ALBUM_URI + "/" + to_string(albumId);
         albumUriList.emplace_back(albumUri);
     } while (!resultSet->GoToNextRow());
