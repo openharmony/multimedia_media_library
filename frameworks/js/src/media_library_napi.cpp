@@ -1763,20 +1763,9 @@ void MediaLibraryNapi::RegisterNotifyChange(napi_env env,
 
 napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
 {
-    napi_value undefinedResult = nullptr;
-    size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {nullptr};
-    napi_value thisVar = nullptr;
-    size_t res = 0;
-    char buffer[ARG_BUF_SIZE];
-    string type;
-    const int32_t refCount = 1;
-    MediaLibraryNapi *obj = nullptr;
-    napi_status status;
-
     MediaLibraryTracer tracer;
     tracer.Start("JSOnCallback");
-
+    napi_value undefinedResult = nullptr;
     napi_get_undefined(env, &undefinedResult);
     size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = {nullptr};
@@ -1857,7 +1846,8 @@ napi_value MediaLibraryNapi::UserFileMgrOnCallback(napi_env env, napi_callback_i
             napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
             return undefinedResult;
         }
-
+        char buffer[ARG_BUF_SIZE];
+        size_t res = 0;
         if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
             NAPI_ERR_LOG("Failed to get value string utf8 for type");
             return undefinedResult;
