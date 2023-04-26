@@ -42,6 +42,7 @@
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
 #include "permission_utils.h"
+#include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "result_set_utils.h"
 #include "string_ex.h"
@@ -1567,7 +1568,7 @@ int32_t MediaLibraryObjectUtils::GetAlbumUrisById(const string &fileId, list<str
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     MediaLibraryCommand queryAlbumMapCmd(OperationObject::PHOTO_MAP, OperationType::QUERY);
     queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoMap::ASSET_ID, fileId);
-    auto resultSet = uniStore->Query(queryAlbumMapCmd, {});
+    auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoMap::ALBUM_ID});
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("GetAlbumUrisById failed");
         return E_INVALID_FILEID;
@@ -1580,7 +1581,7 @@ int32_t MediaLibraryObjectUtils::GetAlbumUrisById(const string &fileId, list<str
     do {
         int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoMap::ALBUM_ID, resultSet,
             TYPE_INT32));
-        string albumUri = MEDIALIBRARY_ALBUM_URI + "/" + to_string(albumId);
+        string albumUri = PhotoAlbumColumns::ALBUM_URI_PREFIX  + to_string(albumId);
         albumUriList.emplace_back(albumUri);
     } while (!resultSet->GoToNextRow());
     return E_OK;

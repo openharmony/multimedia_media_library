@@ -31,12 +31,12 @@ namespace OHOS {
 namespace Media {
 class NotifyTaskData : public AsyncTaskData {
 public:
-    NotifyTaskData() = default;
+    NotifyTaskData(const std::string &uri, const NotifyType &notifyType, const int albumId)
+        : uri_(std::move(uri)), notifyType_(notifyType), albumId_(albumId) {}
     virtual ~NotifyTaskData() override = default;
-    AAFwk::ChangeInfo::ChangeType changeType;
-    int albumId;
-    std::string uri;
-    NotifyType notifyType;
+    std::string uri_;
+    NotifyType notifyType_;
+    int albumId_;
 };
 constexpr size_t MAX_NOTIFY_LIST_SIZE = 32;
 constexpr size_t MNOTIFY_TIME_INTERVAL = 500;

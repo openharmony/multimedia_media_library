@@ -230,7 +230,8 @@ private:
     void RegisterNotifyChange(napi_env env,
         const std::string &uri, bool isDerived, napi_ref ref, ChangeListenerNapi &listObj);
     void UnRegisterNotifyChange(napi_env env, const std::string &uri, napi_ref ref, ChangeListenerNapi &listObj);
-    static bool CheckRef(napi_env env, napi_ref ref, ChangeListenerNapi &listObj, bool isOff);
+    static bool CheckRef(napi_env env,
+        napi_ref ref, ChangeListenerNapi &listObj, bool isOff, const std::string &uri);
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
@@ -250,6 +251,7 @@ private:
     static thread_local napi_ref sPositionTypeEnumRef_;
 
     static std::mutex sUserFileClientMutex_;
+    static std::mutex sOnOffMutex_;
 };
 
 const int32_t DEFAULT_PRIVATEALBUMTYPE = 3;

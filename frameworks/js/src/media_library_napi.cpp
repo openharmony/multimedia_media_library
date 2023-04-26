@@ -54,6 +54,7 @@ const int32_t NUM_3 = 3;
 const string DATE_FUNCTION = "DATE(";
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
+mutex MediaLibraryNapi::sOnOffMutex_;
 
 static map<string, ListenerType> ListenerTypeMaps = {
     {"audioChange", AUDIO_LISTENER},
@@ -1756,8 +1757,9 @@ void MediaLibraryNapi::RegisterNotifyChange(napi_env env,
 {
     Uri notifyUri(uri);
     shared_ptr<MediaOnNotifyObserver> observer= make_shared<MediaOnNotifyObserver>(listObj, uri, ref);
-    UserFileClient::RegisterObserverExt(notifyUri, static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), isDerived);
-    lock_guard<mutex> lock(MediaLibraryNapi::sUserFileClientMutex_);
+    UserFileClient::RegisterObserverExt(notifyUri,
+        static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), isDerived);
+    lock_guard<mutex> lock(MediaLibraryNapi::sOnOffMutex_);
     listObj.observers_.push_back(observer);
 }
 
@@ -1796,7 +1798,8 @@ napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
     return undefinedResult;
 }
 
-bool MediaLibraryNapi::CheckRef(napi_env env, napi_ref ref, ChangeListenerNapi &listObj, bool isOff)
+bool MediaLibraryNapi::CheckRef(napi_env env,
+    napi_ref ref, ChangeListenerNapi &listObj, bool isOff, const string &uri)
 {
     napi_value offCallback = nullptr;
     napi_status status = napi_get_reference_value(env, ref, &offCallback);
@@ -1804,24 +1807,35 @@ bool MediaLibraryNapi::CheckRef(napi_env env, napi_ref ref, ChangeListenerNapi &
         NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
         return false;
     }
-    lock_guard<mutex> lock(MediaLibraryNapi::sUserFileClientMutex_);
-    NAPI_ERR_LOG("CheckRef, listObj.observers_ size: %{public}d", listObj.observers_.size());
-    for (auto it = listObj.observers_.begin(); it < listObj.observers_.end(); it++) {
-        napi_value onCallback = nullptr;
-        status = napi_get_reference_value(env, (*it)->ref_, &onCallback);
-        if (status != napi_ok) {
-            NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
-            return false;
-        }
-        bool isSame = false;
-        napi_strict_equals(env, offCallback, onCallback, &isSame);
-        if (isSame) {
-            if (isOff) {
-                UserFileClient::UnregisterObserverExt(Uri((*it)->uri_),
-                    static_cast<shared_ptr<DataShare::DataShareObserver>>(*it));
-                listObj.observers_.erase(it);
+    bool isSame = false;
+    shared_ptr<DataShare::DataShareObserver> obs;
+    string obsUri;
+    {
+        lock_guard<mutex> lock(MediaLibraryNapi::sOnOffMutex_);
+        for (auto it = listObj.observers_.begin(); it < listObj.observers_.end(); it++) {
+            napi_value onCallback = nullptr;
+            status = napi_get_reference_value(env, (*it)->ref_, &onCallback);
+            if (status != napi_ok) {
+                NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+                return false;
             }
-            return false;
+            napi_strict_equals(env, offCallback, onCallback, &isSame);
+            if (isSame) {
+                obs = static_cast<shared_ptr<DataShare::DataShareObserver>>(*it);
+                obsUri = (*it)->uri_;
+                if (isOff) {
+                    listObj.observers_.erase(it);
+                }
+                if (uri.compare(obsUri) != 0) {
+                    return true;
+                }
+                return false;
+            }
+        }
+    }
+    if (isSame && isOff) {
+        if (obs != nullptr) {
+            UserFileClient::UnregisterObserverExt(Uri(obsUri), obs);
         }
     }
     return true;
@@ -1845,6 +1859,7 @@ napi_value MediaLibraryNapi::UserFileMgrOnCallback(napi_env env, napi_callback_i
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string ||
             napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_boolean ||
             napi_typeof(env, argv[PARAM2], &valueType) != napi_ok || valueType != napi_function) {
+            NAPI_ERR_LOG("Failed to get argv type");
             return undefinedResult;
         }
         char buffer[ARG_BUF_SIZE];
@@ -1863,8 +1878,8 @@ napi_value MediaLibraryNapi::UserFileMgrOnCallback(napi_env env, napi_callback_i
         napi_ref cbOnRef;
         napi_create_reference(env, argv[PARAM2], refCount, &cbOnRef);
         tracer.Start("RegisterNotifyChange");
-        if (CheckRef(env, cbOnRef, *g_listObj, false)) {
-            obj->RegisterNotifyChange(env, uri, isDerived, cbOnRef,*g_listObj);
+        if (CheckRef(env, cbOnRef, *g_listObj, false, uri)) {
+            obj->RegisterNotifyChange(env, uri, isDerived, cbOnRef, *g_listObj);
         } else {
             NAPI_ERR_LOG("register same cbOnRef, cbOnRef = %{private}p", cbOnRef);
             return undefinedResult;
@@ -1947,7 +1962,7 @@ void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env,
     const std::string &uri, napi_ref ref, ChangeListenerNapi &listObj)
 {
     {
-        lock_guard<mutex> lock(MediaLibraryNapi::sUserFileClientMutex_);
+        lock_guard<mutex> lock(MediaLibraryNapi::sOnOffMutex_);
         if (ref == nullptr) {
             for (auto iter = listObj.observers_.begin(); iter != listObj.observers_.end(); iter++) {
                 if ((*iter)->uri_.compare(uri) == 0) {
@@ -1959,7 +1974,7 @@ void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env,
             return;
         }
     }
-   CheckRef(env, ref, listObj, true);
+    CheckRef(env, ref, listObj, true, uri);
 }
 
 napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info)
@@ -2028,6 +2043,7 @@ napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
+            NAPI_ERR_LOG("Failed to get argv uri");
             return undefinedResult;
         }
         size_t res = 0;
@@ -2041,6 +2057,7 @@ napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_
         if (argc == ARGS_TWO) {
             if (napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function ||
                 g_listObj == nullptr) {
+                NAPI_ERR_LOG("Failed to get argv callback");
                 return undefinedResult;
             }
             const int32_t refCount = 1;

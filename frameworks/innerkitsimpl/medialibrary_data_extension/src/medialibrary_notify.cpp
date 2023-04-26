@@ -21,6 +21,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#include "photo_album_column.h"
 #include "uri.h"
 
 using namespace std;
@@ -69,7 +70,7 @@ static bool SolveUris(const list<Uri> &uris, Parcel &parcel)
     return true;
 }
 
-static int SendAlbumSub(const Uri &notifyUri, ChangeType type, list<Uri> &uris)
+static int SendAlbumSub(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
 {
     Parcel parcel;
     CHECK_AND_RETURN_RET_LOG(SolveUris(uris, parcel), E_SOLVE_URIS_FAILED, "SolveUris failed");
@@ -84,19 +85,20 @@ static int SendAlbumSub(const Uri &notifyUri, ChangeType type, list<Uri> &uris)
     if (ret != 0) {
         MEDIA_ERR_LOG("Parcel data copy failed, err = %{public}d", ret);
     }
-    if (type == static_cast<ChangeType>(NotifyType::NOTIFY_ALBUM_ADD_ASSERT)) {
-        type = ChangeType::INSERT;
+    ChangeType changeType;
+    if (type == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) {
+        changeType = ChangeType::INSERT;
     } else {
-        type = ChangeType::DELETE;
+        changeType = ChangeType::DELETE;
     }
-    return obsMgrClient->NotifyChangeExt({type, {notifyUri}, uBuf, parcel.GetDataSize()});
+    return obsMgrClient->NotifyChangeExt({changeType, {notifyUri}, uBuf, parcel.GetDataSize()});
 }
 
 static int SolveAlbumUri(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
 {
     auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
     if ((type == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) || (type == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET)) {
-        return SendAlbumSub(notifyUri, static_cast<ChangeType>(type), uris);
+        return SendAlbumSub(notifyUri, type, uris);
     } else {
         return obsMgrClient->NotifyChangeExt({static_cast<ChangeType>(type), uris});
     }
@@ -106,7 +108,7 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
 {
     int ret;
     for (auto &[type, uris] : notifyDataMap) {
-        if (uri.find(MEDIALIBRARY_ALBUM_URI) != string::npos) {
+        if (uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX ) != string::npos) {
             Uri notifyUri = Uri(uri);
             ret = SolveAlbumUri(notifyUri, type, uris);
         } else {
@@ -122,12 +124,12 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
 
 static void PushNotification()
 {
-    lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
-    if (MediaLibraryNotify::nfListMap_.empty()) {
-        return;
-    }
     unordered_map<string, NotifyDataMap> tmpNfListMap;
     {
+        lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
+        if (MediaLibraryNotify::nfListMap_.empty()) {
+            return;
+        }
         MediaLibraryNotify::nfListMap_.swap(tmpNfListMap);
         MediaLibraryNotify::nfListMap_.clear();
     }
@@ -145,24 +147,24 @@ static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData
     list<Uri> sendUris;
     Uri uri(srcUri);
     MEDIA_DEBUG_LOG("AddNotify ,keyUri = %{private}s, uri = %{private}s, "
-        "notifyType = %{private}d", keyUri.c_str(), uri.ToString().c_str(), taskData->notifyType);
+        "notifyType = %{private}d", keyUri.c_str(), uri.ToString().c_str(), taskData->notifyType_);
     lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
     if (MediaLibraryNotify::nfListMap_.count(keyUri) == 0) {
         sendUris.emplace_back(uri);
-        notifyDataMap.insert(make_pair(taskData->notifyType, sendUris));
+        notifyDataMap.insert(make_pair(taskData->notifyType_, sendUris));
         MediaLibraryNotify::nfListMap_.insert(make_pair(keyUri, notifyDataMap));
     } else {
         auto iter = MediaLibraryNotify::nfListMap_.find(keyUri);
-        if (iter->second.count(taskData->notifyType) == 0) {
+        if (iter->second.count(taskData->notifyType_) == 0) {
             sendUris.emplace_back(uri);
-            iter->second.insert(make_pair(taskData->notifyType, sendUris));
+            iter->second.insert(make_pair(taskData->notifyType_, sendUris));
         } else {
             auto haveIter = find_if(
-                iter->second.at(taskData->notifyType).begin(),
-                iter->second.at(taskData->notifyType).end(),
+                iter->second.at(taskData->notifyType_).begin(),
+                iter->second.at(taskData->notifyType_).end(),
                 [uri](const Uri &listUri) { return uri.Equals(listUri); });
-            if (haveIter == iter->second.at(taskData->notifyType).end()) {
-                iter->second.find(taskData->notifyType)->second.emplace_back(uri);
+            if (haveIter == iter->second.at(taskData->notifyType_).end()) {
+                iter->second.find(taskData->notifyType_)->second.emplace_back(uri);
             }
         }
     }
@@ -174,22 +176,23 @@ static void AddNfListMap(AsyncTaskData *data)
         return;
     }
     auto* taskData = static_cast<NotifyTaskData*>(data);
-    if ((taskData->notifyType == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) ||
-        (taskData->notifyType == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET)) {
-        if (taskData->albumId > 0) {
-            AddNotify(taskData->uri, MEDIALIBRARY_ALBUM_URI + "/" + to_string(taskData->albumId), taskData);
+    if ((taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) ||
+        (taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET)) {
+        if (taskData->albumId_ > 0) {
+            AddNotify(taskData->uri_,
+                PhotoAlbumColumns::ALBUM_URI_PREFIX  + to_string(taskData->albumId_), taskData);
         } else {
             list<string> albumUriList;
-            string id = MediaLibraryDataManagerUtils::GetIdFromUri(taskData->uri);
+            string id = MediaLibraryDataManagerUtils::GetIdFromUri(taskData->uri_);
             int err = MediaLibraryObjectUtils::GetAlbumUrisById(id, albumUriList);
             CHECK_AND_RETURN_LOG(err == E_OK, "Fail to get albumId");
             for (string uri : albumUriList) {
-                AddNotify(taskData->uri, uri, taskData);
+                AddNotify(taskData->uri_, uri, taskData);
             }
         }
     } else {
-        string typeUri = MediaLibraryDataManagerUtils::GetTypeUriByUri(taskData->uri);
-        AddNotify(taskData->uri, typeUri, taskData);
+        string typeUri = MediaLibraryDataManagerUtils::GetTypeUriByUri(taskData->uri_);
+        AddNotify(taskData->uri_, typeUri, taskData);
     }
 }
 
@@ -210,13 +213,10 @@ int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyTyp
     }
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ASYNC_WORKER_IS_NULL, "AsyncWorker is null");
-    auto *taskData = new (nothrow) NotifyTaskData();
+    auto *taskData = new (nothrow) NotifyTaskData(uri, notifyType, albumId);
     CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_NOTIFY_TASK_DATA_IS_NULL, "taskData is null");
-    MEDIA_ERR_LOG("Notify ,uri = %{private}s, notifyType = %{private}d, albumId = %{private}d",
+    MEDIA_DEBUG_LOG("Notify ,uri = %{private}s, notifyType = %{private}d, albumId = %{private}d",
         uri.c_str(), notifyType, albumId);
-    taskData->uri = uri;
-    taskData->notifyType = notifyType;
-    taskData->albumId = albumId;
     shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(AddNfListMap, taskData);
     if (notifyAsyncTask != nullptr) {
         asyncWorker->AddTask(notifyAsyncTask, false);
