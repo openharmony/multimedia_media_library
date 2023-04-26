@@ -19,6 +19,7 @@
 #include <cstdlib>
 
 #include "ability_info.h"
+#include "app_mgr_client.h"
 #include "dataobs_mgr_client.h"
 #include "media_datashare_stub_impl.h"
 #include "hilog_wrapper.h"
@@ -34,6 +35,7 @@
 #include "media_scanner_manager.h"
 #include "media_log.h"
 #include "system_ability_definition.h"
+#include "singleton.h"
 #include "permission_utils.h"
 
 using namespace std;
@@ -65,7 +67,8 @@ void MediaDataShareExtAbility::Init(const shared_ptr<AbilityLocalRecord> &record
 {
     if ((record == nullptr) || (application == nullptr) || (handler == nullptr) || (token == nullptr)) {
         MEDIA_ERR_LOG("MediaDataShareExtAbility::init failed, some object is nullptr");
-        exit(0);
+        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        return;
     }
     DataShareExtAbility::Init(record, application, handler, token);
 }
@@ -77,20 +80,23 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
         MEDIA_ERR_LOG("Failed to get context");
-        exit(0);
+        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        return;
     }
     MEDIA_INFO_LOG("%{public}s runtime language  %{public}d", __func__, runtime_.GetLanguage());
 
     auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
         MEDIA_ERR_LOG("Failed to get dataManager");
-        exit(0);
+        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        return;
     }
     auto extensionContext = GetContext();
     int32_t ret = dataManager->InitMediaLibraryMgr(context, extensionContext);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to init MediaLibraryMgr");
-        exit(0);
+        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        return;
     }
     dataManager->SetOwner(static_pointer_cast<MediaDataShareExtAbility>(shared_from_this()));
 
@@ -99,7 +105,8 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         scannerManager->Start();
     } else {
         MEDIA_ERR_LOG("Failed to get scanner manager");
-        exit(0);
+        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        return;
     }
 
     Media::MedialibrarySubscriber::Subscribe();
@@ -292,7 +299,7 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     } else if (err < 0) {
         return err;
     }
-    
+
     return MediaLibraryDataManager::GetInstance()->OpenFile(Uri(uriStr), unifyMode);
 }
 

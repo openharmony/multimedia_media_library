@@ -18,6 +18,7 @@
 
 #include <cstdlib>
 
+#include "app_mgr_client.h"
 #include "extension_context.h"
 #include "file_access_ext_stub_impl.h"
 #include "js_runtime_utils.h"
@@ -26,6 +27,7 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
+#include "singleton.h"
 
 namespace OHOS {
 namespace Media {
@@ -72,12 +74,14 @@ void MediaFileExtAbility::OnStart(const AAFwk::Want &want)
     auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
         MEDIA_ERR_LOG("Failed to get context");
-        exit(0);
+        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        return;
     }
     int32_t errCode = MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("failed to init MediaLibraryManager, exit");
-        exit(0);
+        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        return;
     }
 }
 
@@ -88,7 +92,7 @@ void MediaFileExtAbility::OnStop()
 }
 
 sptr<IRemoteObject> MediaFileExtAbility::OnConnect(const AAFwk::Want &want)
-{    
+{
     Extension::OnConnect(want);
     sptr<FileAccessExtStubImpl> remoteObject = new (nothrow) FileAccessExtStubImpl(
         static_pointer_cast<MediaFileExtAbility>(shared_from_this()),
