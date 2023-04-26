@@ -232,8 +232,8 @@ int32_t MediaLibraryNotify::Notify(const shared_ptr<FileAsset> &closeAsset)
         isCreateFile = true;
     }
     if (isCreateFile) {
-        return Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(closeAsset->GetId()), NotifyType::NOTIFY_ADD);
+        return Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_ADD);
     }
-    return Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(closeAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+    return Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_UPDATE);
 }
 } // namespace OHOS::Media

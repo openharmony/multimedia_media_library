@@ -254,7 +254,7 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     }
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {
-        watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(deleteRows), NotifyType::NOTIFY_REMOVE);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(deleteRows), NotifyType::NOTIFY_REMOVE);
     }
     return deleteRows;
 }
@@ -315,7 +315,7 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
     MediaLibraryObjectUtils::SendFavoriteNotify(cmd, rowId);
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {
-        watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId), NotifyType::NOTIFY_REMOVE);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_UPDATE);
     }
     return rowId;
 }
