@@ -1564,9 +1564,9 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
         napi_create_string_utf8(env, subUri.c_str(), NAPI_AUTO_LENGTH, &subUriRet);
         napi_set_element(env, subUriArray, subElementIndex++, subUriRet);
     }
-    status = napi_set_named_property(env, result, "suburis", subUriArray);
+    status = napi_set_named_property(env, result, "subUris", subUriArray);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("Set suburi named property error!");
+        NAPI_ERR_LOG("Set subUri named property error!");
     }
     return status;
 }
@@ -1574,6 +1574,10 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
 napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
 {
     static napi_value result;
+    if (msg->changeInfo_.uris_.empty()) {
+        napi_get_undefined(env, &result);
+        return result;
+    }
     napi_create_object(env, &result);
     SetValueArray(env, "uris", msg->changeInfo_.uris_, result);
     if (msg->data_ != nullptr && msg->changeInfo_.size_ > 0) {
@@ -1586,7 +1590,7 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
         if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(msg->data_), msg->changeInfo_.size_)) {
             napi_status status = SetSubUris(env, parcel, result);
             if (status != napi_ok) {
-                NAPI_ERR_LOG("Set subArray named property error! field: suburis");
+                NAPI_ERR_LOG("Set subArray named property error! field: subUris");
                 return nullptr;
             }
         }
@@ -1614,15 +1618,17 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
         delete work;
         return;
     }
-    if (listener.changeInfo.changeType_ == DataShare::DataShareObserver::ChangeType::OTHER) {
-        NAPI_ERR_LOG("changeInfo.changeType_ is other");
-        return;
-    }
-    if (msg->changeInfo_.size_ > 0) {
-        msg->data_ = new (nothrow) uint8_t[msg->changeInfo_.size_];
-        int copyRet = memcpy_s(msg->data_, msg->changeInfo_.size_, msg->changeInfo_.data_, msg->changeInfo_.size_);
-        if (copyRet != 0) {
-            NAPI_ERR_LOG("Parcel data copy failed, err = %{public}d", copyRet);
+    if (!listener.changeInfo.uris_.empty()) {
+        if (listener.changeInfo.changeType_ == DataShare::DataShareObserver::ChangeType::OTHER) {
+            NAPI_ERR_LOG("changeInfo.changeType_ is other");
+            return;
+        }
+        if (msg->changeInfo_.size_ > 0) {
+            msg->data_ = new (nothrow) uint8_t[msg->changeInfo_.size_];
+            int copyRet = memcpy_s(msg->data_, msg->changeInfo_.size_, msg->changeInfo_.data_, msg->changeInfo_.size_);
+            if (copyRet != 0) {
+                NAPI_ERR_LOG("Parcel data copy failed, err = %{public}d", copyRet);
+            }
         }
     }
     work->data = reinterpret_cast<void *>(msg);
@@ -1813,7 +1819,7 @@ bool MediaLibraryNapi::CheckRef(napi_env env,
 napi_value MediaLibraryNapi::UserFileMgrOnCallback(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("JSOnCallback");
+    tracer.Start("UserFileMgrOnCallback");
     napi_value undefinedResult = nullptr;
     napi_get_undefined(env, &undefinedResult);
     size_t argc = ARGS_THREE;
@@ -1995,7 +2001,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
 napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("JSOffCallback");
+    tracer.Start("UserFileMgrOffCallback");
     napi_value undefinedResult = nullptr;
     napi_get_undefined(env, &undefinedResult);
     size_t argc = ARGS_TWO;
@@ -2033,7 +2039,7 @@ napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_
             napi_create_reference(env, argv[PARAM1], refCount, &cbOffRef);
         }
 
-        tracer.Start("UnregisterChange");
+        tracer.Start("UnRegisterNotifyChange");
         obj->UnRegisterNotifyChange(env, uri, cbOffRef, *g_listObj);
         tracer.Finish();
     }
