@@ -1738,7 +1738,7 @@ void MediaLibraryNapi::RegisterNotifyChange(napi_env env,
     shared_ptr<MediaOnNotifyObserver> observer= make_shared<MediaOnNotifyObserver>(listObj, uri, ref);
     UserFileClient::RegisterObserverExt(notifyUri,
         static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), isDerived);
-    lock_guard<mutex> lock(MediaLibraryNapi::sOnOffMutex_);
+    lock_guard<mutex> lock(sOnOffMutex_);
     listObj.observers_.push_back(observer);
 }
 
@@ -1790,7 +1790,7 @@ bool MediaLibraryNapi::CheckRef(napi_env env,
     shared_ptr<DataShare::DataShareObserver> obs;
     string obsUri;
     {
-        lock_guard<mutex> lock(MediaLibraryNapi::sOnOffMutex_);
+        lock_guard<mutex> lock(sOnOffMutex_);
         for (auto it = listObj.observers_.begin(); it < listObj.observers_.end(); it++) {
             napi_value onCallback = nullptr;
             status = napi_get_reference_value(env, (*it)->ref_, &onCallback);
@@ -1943,7 +1943,7 @@ void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env,
     if (ref == nullptr) {
         std::vector<std::shared_ptr<MediaOnNotifyObserver>> offObservers;
         {
-            lock_guard<mutex> lock(MediaLibraryNapi::sOnOffMutex_);
+            lock_guard<mutex> lock(sOnOffMutex_);
             for (auto iter = listObj.observers_.begin(); iter != listObj.observers_.end(); iter++) {
                 if ((*iter)->uri_.compare(uri) == 0) {
                     offObservers.push_back(*iter);
@@ -1971,7 +1971,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
     napi_value argv[ARGS_TWO] = {nullptr};
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, ARGS_ONE <= argc && argc<= ARGS_TWO, "requires one or two parameters");
+    NAPI_ASSERT(env, ARGS_ONE <= argc && argc <= ARGS_TWO, "requires one or two parameters");
     if (thisVar == nullptr || argv[PARAM0] == nullptr) {
         NAPI_ERR_LOG("Failed to retrieve details about the callback");
         return undefinedResult;
