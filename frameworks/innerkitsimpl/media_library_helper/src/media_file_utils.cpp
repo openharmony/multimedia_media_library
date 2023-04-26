@@ -476,10 +476,6 @@ string MediaFileUtils::GetFileMediaTypeUri(int32_t mediaType, const string &netw
             return uri + MEDIALIBRARY_TYPE_VIDEO_URI;
         case MEDIA_TYPE_IMAGE:
             return uri + MEDIALIBRARY_TYPE_IMAGE_URI;
-        case MEDIA_TYPE_ALBUM:
-            return uri + MEDIALIBRARY_TYPE_ALBUM_URI;
-        case MEDIA_TYPE_SMARTALBUM:
-            return uri + MEDIALIBRARY_TYPE_SMART_URI;
         case MEDIA_TYPE_FILE:
         default:
             return uri + MEDIALIBRARY_TYPE_FILE_URI;
@@ -495,10 +491,6 @@ string MediaFileUtils::GetFileMediaTypeUriV10(int32_t mediaType, const string &n
         case MEDIA_TYPE_VIDEO:
         case MEDIA_TYPE_IMAGE:
             return uri + PhotoColumn::PHOTO_TYPE_URI;
-        case MEDIA_TYPE_ALBUM:
-            return uri + MEDIALIBRARY_TYPE_ALBUM_URI;
-        case MEDIA_TYPE_SMARTALBUM:
-            return uri + MEDIALIBRARY_TYPE_SMART_URI;
         case MEDIA_TYPE_FILE:
         default:
             return uri + MEDIALIBRARY_TYPE_FILE_URI;
