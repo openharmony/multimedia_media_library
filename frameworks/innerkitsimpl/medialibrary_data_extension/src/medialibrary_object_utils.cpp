@@ -1596,13 +1596,13 @@ int32_t MediaLibraryObjectUtils::SendTrashNotify(MediaLibraryCommand &cmd, int32
         auto watch = MediaLibraryNotify::GetInstance();
         if (trashDate > 0) {
             if (watch != nullptr) {
-                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId), NotifyType::NOTIFY_REMOVE);
-                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_REMOVE);
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
             }
         } else {
             if (watch != nullptr) {
-                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId), NotifyType::NOTIFY_ADD);
-                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId), NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ADD);
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
             }
         }
         return E_OK;
@@ -1620,12 +1620,12 @@ void MediaLibraryObjectUtils::SendFavoriteNotify(MediaLibraryCommand &cmd, int32
         auto watch = MediaLibraryNotify::GetInstance();
         if (isFavorite) {
             if (watch != nullptr) {
-                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId),
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
                     NotifyType::NOTIFY_ALBUM_ADD_ASSERT, DefaultAlbumId::FAVORITE_ALBUM);
             }
         } else {
             if (watch != nullptr) {
-                watch->Notify(MEDIALIBRARY_PHOTO_URI + "/" + to_string(rowId),
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
                     NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, DefaultAlbumId::FAVORITE_ALBUM);
             }
         }
