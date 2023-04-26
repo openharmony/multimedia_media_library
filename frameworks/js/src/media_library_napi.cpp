@@ -1625,6 +1625,10 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
         }
         if (msg->changeInfo_.size_ > 0) {
             msg->data_ = new (nothrow) uint8_t[msg->changeInfo_.size_];
+            if(msg->data_ == nullptr) {
+                NAPI_ERR_LOG("new msg->data failed");
+                return;
+            }
             int copyRet = memcpy_s(msg->data_, msg->changeInfo_.size_, msg->changeInfo_.data_, msg->changeInfo_.size_);
             if (copyRet != 0) {
                 NAPI_ERR_LOG("Parcel data copy failed, err = %{public}d", copyRet);
@@ -1796,9 +1800,9 @@ bool MediaLibraryNapi::CheckRef(napi_env env,
             }
             napi_strict_equals(env, offCallback, onCallback, &isSame);
             if (isSame) {
-                obs = static_cast<shared_ptr<DataShare::DataShareObserver>>(*it);
                 obsUri = (*it)->uri_;
-                if (isOff) {
+                if ((isOff) && (uri.compare(obsUri) == 0)) {
+                    obs = static_cast<shared_ptr<DataShare::DataShareObserver>>(*it);
                     listObj.observers_.erase(it);
                 }
                 if (uri.compare(obsUri) != 0) {
@@ -1834,19 +1838,19 @@ napi_value MediaLibraryNapi::UserFileMgrOnCallback(napi_env env, napi_callback_i
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string ||
             napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_boolean ||
             napi_typeof(env, argv[PARAM2], &valueType) != napi_ok || valueType != napi_function) {
-            NAPI_ERR_LOG("Failed to get argv type");
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return undefinedResult;
         }
         char buffer[ARG_BUF_SIZE];
         size_t res = 0;
         if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
-            NAPI_ERR_LOG("Failed to get value string utf8 for type");
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return undefinedResult;
         }
         string uri = string(buffer);
         bool isDerived = false;
         if (napi_get_value_bool(env, argv[PARAM1], &isDerived) != napi_ok) {
-            NAPI_ERR_LOG("Failed to get value string utf8 for type");
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return undefinedResult;
         }
         const int32_t refCount = 1;
@@ -1856,7 +1860,7 @@ napi_value MediaLibraryNapi::UserFileMgrOnCallback(napi_env env, napi_callback_i
         if (CheckRef(env, cbOnRef, *g_listObj, false, uri)) {
             obj->RegisterNotifyChange(env, uri, isDerived, cbOnRef, *g_listObj);
         } else {
-            NAPI_ERR_LOG("register same cbOnRef, cbOnRef = %{private}p", cbOnRef);
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return undefinedResult;
         }
         tracer.Finish();
@@ -1936,19 +1940,24 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
 void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env,
     const std::string &uri, napi_ref ref, ChangeListenerNapi &listObj)
 {
-    {
-        lock_guard<mutex> lock(MediaLibraryNapi::sOnOffMutex_);
-        if (ref == nullptr) {
+    if (ref == nullptr) {
+        std::vector<std::shared_ptr<MediaOnNotifyObserver>> offObservers;
+        {
+            lock_guard<mutex> lock(MediaLibraryNapi::sOnOffMutex_);
             for (auto iter = listObj.observers_.begin(); iter != listObj.observers_.end(); iter++) {
                 if ((*iter)->uri_.compare(uri) == 0) {
-                    UserFileClient::UnregisterObserverExt(Uri((*iter)->uri_),
-                        static_cast<shared_ptr<DataShare::DataShareObserver>>((*iter)));
+                    offObservers.push_back(*iter);
                     listObj.observers_.erase(iter);
                 }
             }
-            return;
         }
+        for (auto obs : offObservers) {
+            UserFileClient::UnregisterObserverExt(Uri(uri),
+                static_cast<shared_ptr<DataShare::DataShareObserver>>(obs));
+        }
+        return;
     }
+
     CheckRef(env, ref, listObj, true, uri);
 }
 
@@ -2018,13 +2027,13 @@ napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-            NAPI_ERR_LOG("Failed to get argv uri");
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return undefinedResult;
         }
         size_t res = 0;
         char buffer[ARG_BUF_SIZE];
         if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
-            NAPI_ERR_LOG("Failed to get value string utf8 for type");
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return undefinedResult;
         }
         string uri = string(buffer);
@@ -2032,7 +2041,7 @@ napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_
         if (argc == ARGS_TWO) {
             if (napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function ||
                 g_listObj == nullptr) {
-                NAPI_ERR_LOG("Failed to get argv callback");
+                NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
                 return undefinedResult;
             }
             const int32_t refCount = 1;

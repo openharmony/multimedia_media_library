@@ -56,8 +56,8 @@ const std::string PhotoColumn::PHOTO_POSITION = "position";
 
 const std::string PhotoColumn::PHOTOS_TABLE = "Photos";
 
-const std::string PhotoColumn::PHOTO_URI_PREFIX = "datashare:///media/photo/";
-const std::string PhotoColumn::PHOTO_TYPE_URI = "/photo";
+const std::string PhotoColumn::PHOTO_URI_PREFIX = "datashare:///media/Photo/";
+const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
 
 const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS " +
     PHOTOS_TABLE + " (" +
