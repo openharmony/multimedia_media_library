@@ -284,7 +284,12 @@ bool IThumbnailHelper::DoThumbnailSync(ThumbRdbOpt &opts, ThumbnailData &outData
     }
 
     vector<string> devices = { opts.networkId };
-    if (ThumbnailUtils::SyncPullTable(opts, devices, true)) {
+    MediaLibrarySyncOpts syncOpts;
+    syncOpts.rdbStore = opts.store;
+    syncOpts.table = MEDIALIBRARY_TABLE;
+    syncOpts.bundleName = BUNDLE_NAME;
+    syncOpts.row = opts.row;
+    if (MediaLibrarySyncOperation::SyncPullTable(syncOpts, devices)) {
         MEDIA_INFO_LOG("GetThumbnailPixelMap SyncPullTable FALSE");
         return false;
     }

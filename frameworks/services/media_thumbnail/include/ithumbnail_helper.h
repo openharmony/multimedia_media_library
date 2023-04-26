@@ -24,6 +24,7 @@
 #include "datashare_proxy.h"
 #include "datashare_values_bucket.h"
 #include "medialibrary_async_worker.h"
+#include "medialibrary_sync_operation.h"
 #include "result_set_bridge.h"
 #include "thumbnail_utils.h"
 #include "pixel_map.h"

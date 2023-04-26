@@ -18,6 +18,7 @@
 #include "context.h"
 #include "ability_context_impl.h"
 #include "js_runtime.h"
+#include "medialibrary_sync_operation.h"
 #define private public
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
@@ -282,7 +283,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPullTable_test_001, TestSize.Leve
     devices.push_back("SyncPullTable");
     string bundleName = "medialib_SyncPullTable_test_001";
     string tableName = "tableTest";
-    bool ret = rdbStorePtr->SyncPullTable(bundleName, tableName, devices);
+    bool ret = rdbStorePtr->SyncPullTable(bundleName, tableName, -1, devices);
     EXPECT_EQ(ret, false);
 }
 
@@ -293,9 +294,9 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPushTable_test_001, TestSize.Leve
     }
     vector<string> devices;
     devices.push_back("SyncPushTable");
-    string bundleName = "medialib_SyncPullTable_test_001";
+    string bundleName = "medialib_SyncPushTable_test_001";
     string tableName = "tableTest";
-    bool ret = rdbStorePtr->SyncPushTable(bundleName, tableName, devices, false);
+    bool ret = rdbStorePtr->SyncPushTable(bundleName, tableName, -1, devices, false);
     EXPECT_EQ(ret, false);
 }
 

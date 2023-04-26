@@ -27,6 +27,7 @@
 #include "image_packer.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_sync_operation.h"
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -718,8 +719,13 @@ bool ThumbnailUtils::UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data,
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
         return false;
     }
-    vector<string> devices;
-    SyncPushTable(opts, devices);
+    vector<string> devices = {opts.networkId};
+    MediaLibrarySyncOpts syncOpts;
+    syncOpts.rdbStore = opts.store;
+    syncOpts.table = MEDIALIBRARY_TABLE;
+    syncOpts.bundleName = BUNDLE_NAME;
+    syncOpts.row = opts.row;
+    MediaLibrarySyncOperation::SyncPushTable(syncOpts, devices);
     CloudSyncHelper::GetInstance()->StartSync();
     return true;
 }
@@ -1073,16 +1079,6 @@ Status ThumbnailUtils::SaveThumbnailData(ThumbnailData &data, const string &netw
     Status status = SaveImage(kvStore, data.thumbnailKey, data.thumbnail);
     if (status != DistributedKv::Status::SUCCESS) {
         MEDIA_ERR_LOG("SaveImage failed! status %{public}d", status);
-        return status;
-    }
-    if (!networkId.empty()) {
-        MediaLibraryTracer tracer;
-        tracer.Start("SaveThumbnailData::SyncPushKvstore");
-        auto syncStatus = SyncPushKvstore(kvStore, data.thumbnailKey, networkId);
-        if (syncStatus != DistributedKv::Status::SUCCESS) {
-            MEDIA_ERR_LOG("SyncPushKvstore failed! ret %{public}d", syncStatus);
-            return syncStatus;
-        }
     }
 
     return status;
@@ -1094,16 +1090,6 @@ Status ThumbnailUtils::SaveLcdData(ThumbnailData &data, const string &networkId,
     Status status = SaveImage(kvStore, data.lcdKey, data.lcd);
     if (status != DistributedKv::Status::SUCCESS) {
         MEDIA_ERR_LOG("SaveLcdData SaveImage failed! status %{public}d", status);
-        return status;
-    }
-    if (!networkId.empty()) {
-        MediaLibraryTracer tracer;
-        tracer.Start("SaveLcdData::SyncPushKvstore");
-        auto syncStatus = SyncPushKvstore(kvStore, data.lcdKey, networkId);
-        if (syncStatus != DistributedKv::Status::SUCCESS) {
-            MEDIA_ERR_LOG("SaveLcdData SyncPushKvstore failed! ret %{public}d", syncStatus);
-            return syncStatus;
-        }
     }
     return status;
 }
@@ -1136,134 +1122,6 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     }
     (void)close(fd);
     return SUCCESS;
-}
-
-bool ThumbnailUtils::SyncPushTable(ThumbRdbOpt &opts, vector<string> &devices, bool isBlock)
-{
-    MEDIA_DEBUG_LOG("SyncPushTable table = %{public}s", opts.table.c_str());
-    // start sync
-    DistributedRdb::SyncOption option;
-    option.mode = DistributedRdb::SyncMode::PUSH;
-    option.isBlock = isBlock;
-
-    NativeRdb::AbsRdbPredicates predicate(opts.table);
-    (devices.size() > 0) ? predicate.InDevices(devices) : predicate.InAllDevices();
-
-    DistributedRdb::SyncCallback callback = [](const DistributedRdb::SyncResult& syncResult) {
-        for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
-            if (iter->first.empty()) {
-                MEDIA_ERR_LOG("SyncPushTable networkId is empty");
-                continue;
-            }
-            if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPushTable device = %{private}s syncResult = %{private}d",
-                    iter->first.c_str(), iter->second);
-                continue;
-            }
-            MEDIA_ERR_LOG("SyncPushTable device = %{private}s success", iter->first.c_str());
-        }
-    };
-
-    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "SyncPushTable rdbStore->Sync");
-    int ret = opts.store->Sync(option, predicate, callback);
-    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
-
-    return ret == E_OK;
-}
-
-bool ThumbnailUtils::SyncPullTable(ThumbRdbOpt &opts, vector<string> &devices, bool isBlock)
-{
-    MEDIA_DEBUG_LOG("SyncPullTable table = %{public}s", opts.table.c_str());
-    DistributedRdb::SyncOption option;
-    option.mode = DistributedRdb::SyncMode::PULL;
-    option.isBlock = isBlock;
-
-    NativeRdb::AbsRdbPredicates predicate(opts.table);
-    (devices.size() > 0) ? predicate.InDevices(devices) : predicate.InAllDevices();
-    if (!opts.row.empty()) {
-        predicate.EqualTo(MEDIA_DATA_DB_ID, opts.row);
-    }
-
-    shared_ptr<SyncStatus> status = make_shared<SyncStatus>();
-    DistributedRdb::SyncCallback callback = [status](const DistributedRdb::SyncResult& syncResult) {
-        for (auto iter = syncResult.begin(); iter != syncResult.end(); iter++) {
-            if (iter->second != 0) {
-                MEDIA_ERR_LOG("SyncPullTable device = %{private}s syncResult = %{private}d",
-                    iter->first.c_str(), iter->second);
-                continue;
-            }
-            unique_lock<mutex> lock(status->mtx_);
-            status->isSyncComplete_ = true;
-            break;
-        }
-        status->cond_.notify_one();
-    };
-
-    MediaLibraryTracer tracer;
-    tracer.Start("SyncPullTable rdbStore->Sync");
-    int ret = opts.store->Sync(option, predicate, callback);
-    if (ret != E_OK || !isBlock) {
-        return ret == E_OK;
-    }
-
-    unique_lock<mutex> lock(status->mtx_);
-    bool success = status->cond_.wait_for(lock, chrono::milliseconds(WAIT_FOR_MS),
-        [status] { return status->isSyncComplete_; });
-    if (success) {
-        MEDIA_DEBUG_LOG("wait_for SyncCompleted");
-    } else {
-        MEDIA_INFO_LOG("wait_for timeout");
-    }
-
-    return true;
-}
-
-Status ThumbnailUtils::SyncPullKvstore(const shared_ptr<SingleKvStore> &kvStore, const string key,
-    const string &networkId)
-{
-    MEDIA_DEBUG_LOG("networkId is %{private}s key is %{private}s",
-        networkId.c_str(), key.c_str());
-    if (kvStore == nullptr) {
-        MEDIA_ERR_LOG("kvStore is null");
-        return DistributedKv::Status::ERROR;
-    }
-    if (networkId.empty()) {
-        MEDIA_ERR_LOG("networkId empty error");
-        return DistributedKv::Status::ERROR;
-    }
-
-    DataQuery dataQuery;
-    dataQuery.KeyPrefix(key);
-    dataQuery.Limit(1, 0); // for force to sync single key
-    vector<string> devices = { networkId };
-    MediaLibraryTracer tracer;
-    tracer.Start("SyncPullKvstore kvStore->SyncPull");
-    auto callback = make_shared<MediaLibrarySyncCallback>();
-    Status status = kvStore->Sync(devices, OHOS::DistributedKv::SyncMode::PULL, dataQuery, callback);
-    if (!callback->WaitFor()) {
-        MEDIA_DEBUG_LOG("wait_for timeout");
-        status = Status::ERROR;
-    }
-    return status;
-}
-
-Status ThumbnailUtils::SyncPushKvstore(const shared_ptr<SingleKvStore> &kvStore, string key, const string &networkId)
-{
-    MEDIA_DEBUG_LOG("networkId is %{private}s", networkId.c_str());
-    if (kvStore == nullptr) {
-        MEDIA_ERR_LOG("kvStore is null");
-        return Status::ERROR;
-    }
-    if (networkId.empty()) {
-        MEDIA_ERR_LOG("networkId empty error");
-        return Status::ERROR;
-    }
-    DistributedKv::DataQuery dataQuery;
-    dataQuery.KeyPrefix(key);
-    vector<string> devices = { networkId };
-    MediaLibraryTracer tracer;
-    tracer.Start("SyncPushKvstore kvStore->SyncPush");
-    return kvStore->Sync(devices, OHOS::DistributedKv::SyncMode::PUSH, dataQuery);
 }
 
 bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, unique_ptr<PixelMap> &pixelMap)
@@ -1436,7 +1294,7 @@ bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, co
         if (!networkId.empty()) {
             MediaLibraryTracer tracer;
             tracer.Start("SyncPullKvstore");
-            auto syncStatus = SyncPullKvstore(kvStore, key, networkId);
+            auto syncStatus = MediaLibrarySyncOperation::SyncPullKvstore(kvStore, key, networkId);
             if (syncStatus == DistributedKv::Status::SUCCESS) {
                 MEDIA_DEBUG_LOG("SyncPullKvstore SUCCESS");
                 return true;
@@ -1556,32 +1414,6 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
     } else {
         MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_CLOUD_ID.c_str(), err);
     }
-}
-
-void MediaLibrarySyncCallback::SyncCompleted(const map<string, DistributedKv::Status> &results)
-{
-    for (auto &item : results) {
-        if (item.second == Status::SUCCESS) {
-            MEDIA_DEBUG_LOG("ThumbnailUtils::SyncCompleted OK");
-            unique_lock<mutex> lock(status_.mtx_);
-            status_.isSyncComplete_ = true;
-            break;
-        }
-    }
-    status_.cond_.notify_one();
-}
-
-bool MediaLibrarySyncCallback::WaitFor()
-{
-    unique_lock<mutex> lock(status_.mtx_);
-    bool ret = status_.cond_.wait_for(lock, chrono::milliseconds(WAIT_FOR_MS),
-        [this]() { return status_.isSyncComplete_; });
-    if (!ret) {
-        MEDIA_INFO_LOG("ThumbnailUtils::SyncPullKvstore wait_for timeout");
-    } else {
-        MEDIA_DEBUG_LOG("ThumbnailUtils::SyncPullKvstore wait_for SyncCompleted");
-    }
-    return ret;
 }
 } // namespace Media
 } // namespace OHOS
