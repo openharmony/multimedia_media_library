@@ -1502,22 +1502,6 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
     return result;
 }
 
-
-static napi_status SetValueUtf8String(const napi_env& env, const char* fieldStr, const char* str, napi_value& result)
-{
-    napi_value value;
-    napi_status status = napi_create_string_utf8(env, str, NAPI_AUTO_LENGTH, &value);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Set value create utf8 string error! field: %{public}s", fieldStr);
-        return status;
-    }
-    status = napi_set_named_property(env, result, fieldStr, value);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Set utf8 string named property error! field: %{public}s", fieldStr);
-    }
-    return status;
-}
-
 static napi_status SetValueInt32(const napi_env& env, const char* fieldStr, const int intValue, napi_value& result)
 {
     napi_value value;
@@ -1529,21 +1513,6 @@ static napi_status SetValueInt32(const napi_env& env, const char* fieldStr, cons
     status = napi_set_named_property(env, result, fieldStr, value);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Set int32 named property error! field: %{public}s", fieldStr);
-    }
-    return status;
-}
-
-static napi_status SetValueBool(const napi_env& env, const char* fieldStr, const bool boolvalue, napi_value& result)
-{
-    napi_value value = nullptr;
-    napi_status status = napi_get_boolean(env, boolvalue, &value);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Set value create boolean error! field: %{public}s", fieldStr);
-        return status;
-    }
-    status = napi_set_named_property(env, result, fieldStr, value);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Set boolean named property error! field: %{public}s", fieldStr);
     }
     return status;
 }
@@ -2769,6 +2738,36 @@ napi_value MediaLibraryNapi::JSDeleteSmartAlbum(napi_env env, napi_callback_info
         }
     }
     return result;
+}
+
+static napi_status SetValueUtf8String(const napi_env& env, const char* fieldStr, const char* str, napi_value& result)
+{
+    napi_value value;
+    napi_status status = napi_create_string_utf8(env, str, NAPI_AUTO_LENGTH, &value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Set value create utf8 string error! field: %{public}s", fieldStr);
+        return status;
+    }
+    status = napi_set_named_property(env, result, fieldStr, value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Set utf8 string named property error! field: %{public}s", fieldStr);
+    }
+    return status;
+}
+
+static napi_status SetValueBool(const napi_env& env, const char* fieldStr, const bool boolvalue, napi_value& result)
+{
+    napi_value value = nullptr;
+    napi_status status = napi_get_boolean(env, boolvalue, &value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Set value create boolean error! field: %{public}s", fieldStr);
+        return status;
+    }
+    status = napi_set_named_property(env, result, fieldStr, value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Set boolean named property error! field: %{public}s", fieldStr);
+    }
+    return status;
 }
 
 static void PeerInfoToJsArray(const napi_env &env, const vector<unique_ptr<PeerInfo>> &vecPeerInfo,
