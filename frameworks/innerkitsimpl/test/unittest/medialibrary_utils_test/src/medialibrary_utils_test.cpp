@@ -19,6 +19,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_sync_operation.h"
 #include "medialibrary_utils_test.h"
 #define private public
 #include "thumbnail_utils.h"
@@ -353,13 +354,14 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPushTable_test_001, TestSize.Leve
         exit(1);
     }
     string table = "medialib_SyncPushTable_test_001";
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-        .table = table
+    MediaLibrarySyncOpts syncOpts = {
+        .rdbStore = storePtr,
+        .table = table,
+        .bundleName = "medialib_SyncPushTable_test_001",
     };
     vector<string> devices;
     bool isBlock = true;
-    bool ret = ThumbnailUtils::SyncPushTable(opts, devices, isBlock);
+    bool ret = MediaLibrarySyncOperation::SyncPushTable(syncOpts, devices, isBlock);
     EXPECT_EQ(ret, false);
 }
 
@@ -369,13 +371,13 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPullTable_test_001, TestSize.Leve
         exit(1);
     }
     string table = "medialib_SyncPullTable_test_001";
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-        .table = table
+    MediaLibrarySyncOpts syncOpts = {
+        .rdbStore = storePtr,
+        .table = table,
+        .bundleName = "medialib_SyncPullTable_test_001",
     };
     vector<string> devices;
-    bool isBlock = true;
-    bool ret = ThumbnailUtils::SyncPullTable(opts, devices, isBlock);
+    bool ret = MediaLibrarySyncOperation::SyncPullTable(syncOpts, devices);
     EXPECT_EQ(ret, false);
 }
 
@@ -469,26 +471,26 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteOriginImage_test_001, TestSize.
 HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPullKvstore_test_001, TestSize.Level0)
 {
     string key = "SyncPullKvstore";
-    auto ret = ThumbnailUtils::SyncPullKvstore(nullptr, key, "");
+    auto ret = MediaLibrarySyncOperation::SyncPullKvstore(nullptr, key, "");
     EXPECT_EQ(ret, DistributedKv::Status::ERROR);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = ThumbnailUtils::SyncPullKvstore(kvStorePtr, key, "");
+    ret = MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr, key, "");
     EXPECT_EQ(ret, DistributedKv::Status::ERROR);
     string networkId = "Kvstore";
-    ret = ThumbnailUtils::SyncPullKvstore(kvStorePtr, key, networkId);
+    ret = MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr, key, networkId);
     EXPECT_EQ(ret, DistributedKv::Status::ERROR);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPushKvstore_test_001, TestSize.Level0)
 {
     string key = "SyncPushKvstore";
-    auto ret = ThumbnailUtils::SyncPushKvstore(nullptr, key, "");
+    auto ret = MediaLibrarySyncOperation::SyncPushKvstore(nullptr, key, "");
     EXPECT_EQ(ret, DistributedKv::Status::ERROR);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = ThumbnailUtils::SyncPushKvstore(kvStorePtr, key, "");
+    ret = MediaLibrarySyncOperation::SyncPushKvstore(kvStorePtr, key, "");
     EXPECT_EQ(ret, DistributedKv::Status::ERROR);
     string networkId = "Kvstore";
-    ret = ThumbnailUtils::SyncPushKvstore(kvStorePtr, key, networkId);
+    ret = MediaLibrarySyncOperation::SyncPushKvstore(kvStorePtr, key, networkId);
     EXPECT_NE(ret, DistributedKv::Status::ERROR);
 }
 

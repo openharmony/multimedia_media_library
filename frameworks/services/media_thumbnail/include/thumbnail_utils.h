@@ -133,12 +133,6 @@ public:
     static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailRdbData> &infos, int &err);
     static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailRdbData> &infos, int &err);
 
-    static bool SyncPushTable(ThumbRdbOpt &opts, std::vector<std::string> &devices, bool isBlock = false);
-    static bool SyncPullTable(ThumbRdbOpt &opts, std::vector<std::string> &devices, bool isBlock = false);
-    static DistributedKv::Status SyncPushKvstore(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
-        const std::string key, const std::string &networkId);
-    static DistributedKv::Status SyncPullKvstore(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
-        const std::string key, const std::string &networkId);
 private:
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     static int64_t UTCTimeSeconds();
@@ -168,23 +162,6 @@ private:
     static bool InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool CleanDistributeLcdInfo(ThumbRdbOpt &opts);
     static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
-};
-
-class SyncStatus {
-public:
-    std::condition_variable cond_;
-    std::mutex mtx_;
-    bool isSyncComplete_{false};
-};
-
-class MediaLibrarySyncCallback : public DistributedKv::KvStoreSyncCallback {
-public:
-    MediaLibrarySyncCallback() = default;
-    ~MediaLibrarySyncCallback() override {}
-    void SyncCompleted(const std::map<std::string, DistributedKv::Status> &results) override;
-    bool WaitFor();
-private:
-    SyncStatus status_;
 };
 } // namespace Media
 } // namespace OHOS
