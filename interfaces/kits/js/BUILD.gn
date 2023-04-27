@@ -107,6 +107,7 @@ ohos_shared_library("medialibrary") {
     ":medialibraryinf_js",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail:medialibrary_thumbnail",
+    "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
 
   external_deps = [
@@ -116,6 +117,7 @@ ohos_shared_library("medialibrary") {
     "ability_runtime:abilitykit_native",
     "ability_runtime:dataobs_manager",
     "ability_runtime:napi_base_context",
+    "access_token:libtokenid_sdk",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
@@ -163,6 +165,7 @@ ohos_shared_library("userfilemanager") {
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail:medialibrary_thumbnail",
+    "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
 
   external_deps = [
@@ -172,6 +175,7 @@ ohos_shared_library("userfilemanager") {
     "ability_runtime:abilitykit_native",
     "ability_runtime:dataobs_manager",
     "ability_runtime:napi_base_context",
+    "access_token:libtokenid_sdk",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
