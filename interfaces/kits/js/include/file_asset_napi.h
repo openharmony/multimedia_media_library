@@ -115,6 +115,7 @@ private:
     static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrFavorite(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetThumbnail(napi_env env, napi_callback_info info);
+    static napi_value JSGetReadOnlyFd(napi_env env, napi_callback_info info);
 
     bool HandleParamSet(const std::string &inputKey, const std::string &value);
     napi_env env_;

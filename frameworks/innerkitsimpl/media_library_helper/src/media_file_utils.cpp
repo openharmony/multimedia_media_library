@@ -773,4 +773,17 @@ void MediaFileUtils::AppendFetchOptionSelection(std::string &selection, const st
         }
     }
 }
+
+bool MediaFileUtils::CheckMode(const string &mode)
+{
+    if (mode.empty()) {
+        return false;
+    }
+    if (MEDIA_OPEN_MODES.find(mode) != MEDIA_OPEN_MODES.end()) {
+        return true;
+    } else {
+        MEDIA_ERR_LOG("Input Mode %{public}s is invalid", mode.c_str());
+        return false;
+    }
+}
 } // namespace OHOS::Media

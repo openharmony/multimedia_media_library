@@ -151,11 +151,7 @@ bool PermissionUtils::CheckCallerPermission(const std::array<std::string, PERM_G
      * Grant if all non-zero bit in typeMask passed permission check,
      * in that case, resultMask should be the same with typeMask
      */
-    if (resultMask == typeMask) {
-        return true;
-    }
-
-    return false;
+    return resultMask == typeMask;
 }
 
 // system api check for api10

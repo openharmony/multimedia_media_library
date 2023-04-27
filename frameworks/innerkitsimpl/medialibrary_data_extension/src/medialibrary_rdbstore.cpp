@@ -160,9 +160,7 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     if (MediaLibraryDevice::GetInstance()->IsHasActiveDevice()) {
         vector<string> devices = vector<string>();
         GetAllNetworkId(devices);
-        if (!SyncPushTable(bundleName_, cmd.GetTableName(), rowId, devices)) {
-            MEDIA_ERR_LOG("SyncPushTable Error");
-        }
+        SyncPushTable(bundleName_, cmd.GetTableName(), rowId, devices);
     }
 
     MEDIA_DEBUG_LOG("rdbStore_->Insert end, rowId = %d, ret = %{public}d", (int)rowId, ret);
@@ -185,9 +183,7 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
 
     vector<string> devices = vector<string>();
     GetAllNetworkId(devices);
-    if (!SyncPushTable(bundleName_, cmd.GetTableName(), deletedRows, devices)) {
-        MEDIA_ERR_LOG("SyncPushTable Error");
-    }
+    SyncPushTable(bundleName_, cmd.GetTableName(), deletedRows, devices);
 
     return ret;
 }
@@ -208,9 +204,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
 
     vector<string> devices = vector<string>();
     GetAllNetworkId(devices);
-    if (!SyncPushTable(bundleName_, cmd.GetTableName(), changedRows, devices)) {
-        MEDIA_ERR_LOG("SyncPushTable Error");
-    }
+    SyncPushTable(bundleName_, cmd.GetTableName(), changedRows, devices);
 
     return ret;
 }
@@ -449,21 +443,19 @@ string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
 }
 
 bool MediaLibraryRdbStore::SyncPullTable(const string &bundleName, const string &tableName,
-    int32_t rowId, const vector<string> &devices)
+    int32_t rowId, vector<string> &devices)
 {
     MediaLibrarySyncOpts syncOpts;
     SetSyncOpts(syncOpts, bundleName, tableName, rowId);
-    vector<string> devList(devices);
-    return MediaLibrarySyncOperation::SyncPullTable(syncOpts, devList);
+    return MediaLibrarySyncOperation::SyncPullTable(syncOpts, devices);
 }
 
 bool MediaLibraryRdbStore::SyncPushTable(const string &bundleName, const string &tableName,
-    int32_t rowId, const vector<string> &devices, bool isBlock)
+    int32_t rowId, vector<string> &devices, bool isBlock)
 {
     MediaLibrarySyncOpts syncOpts;
     SetSyncOpts(syncOpts, bundleName, tableName, rowId);
-    vector<string> devList(devices);
-    return MediaLibrarySyncOperation::SyncPushTable(syncOpts, devList, isBlock);
+    return MediaLibrarySyncOperation::SyncPushTable(syncOpts, devices, isBlock);
 }
 
 void MediaLibraryRdbStore::SetSyncOpts(MediaLibrarySyncOpts &syncOpts, const string &bundleName,
