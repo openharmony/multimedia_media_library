@@ -22,6 +22,7 @@
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "hitrace_meter.h"
+#include "ipc_skeleton.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
@@ -32,10 +33,12 @@
 #include "medialibrary_peer_info.h"
 #include "medialibrary_tracer.h"
 #include "media_column.h"
+#include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_album_napi.h"
 #include "result_set_utils.h"
 #include "smart_album_napi.h"
+#include "tokenid_kit.h"
 #include "string_ex.h"
 #include "string_wrapper.h"
 #include "userfile_client.h"
@@ -56,7 +59,7 @@ const string DATE_FUNCTION = "DATE(";
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
-
+string ChangeListenerNapi::trashAlbumUri_;
 static map<string, ListenerType> ListenerTypeMaps = {
     {"audioChange", AUDIO_LISTENER},
     {"videoChange", VIDEO_LISTENER},
@@ -90,7 +93,9 @@ thread_local napi_ref MediaLibraryNapi::sImageVideoKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAlbumKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAlbumType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAlbumSubType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sNotifyType_ = nullptr;
 constexpr int32_t DEFAULT_REFCOUNT = 1;
+constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
 MediaLibraryNapi::MediaLibraryNapi()
     : resultNapiType_(ResultNapiType::TYPE_NAPI_MAX), env_(nullptr) {}
 
@@ -187,7 +192,8 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumSubType", CreateAlbumSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
-        DECLARE_NAPI_PROPERTY("PhotoSubType", CreatePhotoSubTypeEnum(env))
+        DECLARE_NAPI_PROPERTY("PhotoSubType", CreatePhotoSubTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env))
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -1398,14 +1404,6 @@ static void JSTrashAssetExecute(napi_env env, void *data)
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Media asset delete failed, err: %{public}d", changedRows);
-    } else {
-        size_t index = uri.rfind('/');
-        if (index != string::npos) {
-            string notifyUri = uri.substr(0, index);
-            NAPI_DEBUG_LOG("JSDeleteAssetExcute notifyUri = %{private}s", notifyUri.c_str());
-            Uri modifyNotify(notifyUri);
-            UserFileClient::NotifyChange(modifyNotify);
-        }
     }
 }
 
@@ -1421,10 +1419,6 @@ static void JSTrashAssetCompleteCallback(napi_env env, napi_status status, void 
     napi_get_undefined(env, &jsContext->data);
     if (context->error == ERR_DEFAULT) {
         jsContext->status = true;
-        Media::MediaType mediaType = MediaLibraryNapiUtils::GetMediaTypeFromUri(context->uri);
-        string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
-        Uri modifyNotify(notifyUri);
-        UserFileClient::NotifyChange(modifyNotify);
     } else {
         context->HandleError(env, jsContext->error);
     }
@@ -1567,6 +1561,37 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
     return status;
 }
 
+string ChangeListenerNapi::GetTrashAlbumUri()
+{
+   if (!trashAlbumUri_.empty()) {
+        return trashAlbumUri_;
+    }
+    string queryUri = URI_QUERY_PHOTO_ALBUM;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_TYPE_MASK);
+    Uri uri(queryUri);
+    int errCode = 0;
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::TRASH));
+    vector<string> columns;
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    unique_ptr<FetchResult<PhotoAlbum>> albumSet = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
+    if (albumSet == nullptr) {
+        return trashAlbumUri_;
+    }
+    if (albumSet->GetCount() != 1) {
+        return trashAlbumUri_;
+    }
+    trashAlbumUri_ = albumSet->GetFirstObject()->GetAlbumUri();
+    return trashAlbumUri_;
+}
+
+static bool isSystemApp()
+{
+    auto tokenId = IPCSkeleton::GetSelfTokenID();
+    bool isSystemApp = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(tokenId);
+    return isSystemApp;
+}
+
 napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
 {
     static napi_value result;
@@ -1576,6 +1601,14 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
     }
     napi_create_object(env, &result);
     SetValueArray(env, "uris", msg->changeInfo_.uris_, result);
+    if (msg->changeInfo_.uris_.size() == DEFAULT_ALBUM_COUNT) {
+        if (msg->changeInfo_.uris_.front().ToString().compare(GetTrashAlbumUri()) == 0) {
+            if (!isSystemApp()) {
+                napi_get_undefined(env, &result);
+                return nullptr;
+            }
+        }
+    }
     if (msg->data_ != nullptr && msg->changeInfo_.size_ > 0) {
         if ((int)msg->changeInfo_.changeType_ == ChangeType::INSERT) {
             SetValueInt32(env, "type", (int)NotifyType::NOTIFY_ALBUM_ADD_ASSERT, result);
@@ -1656,6 +1689,9 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
                 napi_value retVal = nullptr;
                 napi_value result[ARGS_ONE];
                 result[PARAM0] = ChangeListenerNapi::SolveOnChange(env, msg);
+                if (result[PARAM0] == nullptr) {
+                    break;
+                }
                 napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
                 if (status != napi_ok) {
                     NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
@@ -1800,6 +1836,7 @@ bool MediaLibraryNapi::CheckRef(napi_env env,
                 if ((isOff) && (uri.compare(obsUri) == 0)) {
                     obs = static_cast<shared_ptr<DataShare::DataShareObserver>>(*it);
                     listObj.observers_.erase(it);
+                    break;
                 }
                 if (uri.compare(obsUri) != 0) {
                     return true;
@@ -1940,13 +1977,17 @@ void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env,
     const std::string &uri, napi_ref ref, ChangeListenerNapi &listObj)
 {
     if (ref == nullptr) {
+        if (listObj.observers_.size() == 0) {
+            return;
+        }
         std::vector<std::shared_ptr<MediaOnNotifyObserver>> offObservers;
         {
             lock_guard<mutex> lock(sOnOffMutex_);
             for (auto iter = listObj.observers_.begin(); iter != listObj.observers_.end(); iter++) {
-                if ((*iter)->uri_.compare(uri) == 0) {
+                if (uri.compare((*iter)->uri_) == 0) {
                     offObservers.push_back(*iter);
                     listObj.observers_.erase(iter);
+                    if (iter == listObj.observers_.end()) break;
                 }
             }
         }
@@ -1956,7 +1997,6 @@ void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env,
         }
         return;
     }
-
     CheckRef(env, ref, listObj, true, uri);
 }
 
@@ -2016,9 +2056,6 @@ napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_
     napi_value argv[ARGS_TWO] = {nullptr};
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    if (argc == ARGS_TWO) {
-        return JSOffCallback(env, info);
-    }
     NAPI_ASSERT(env, ARGS_ONE <= argc && argc<= ARGS_TWO, "requires one or two parameters");
     if (thisVar == nullptr || argv[PARAM0] == nullptr) {
         NAPI_ERR_LOG("Failed to retrieve details about the callback");
@@ -2039,6 +2076,18 @@ napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_
             return undefinedResult;
         }
         string uri = string(buffer);
+        if (ListenerTypeMaps.find(uri) != ListenerTypeMaps.end()) {
+            if (argc == ARGS_TWO) {
+                if (napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function ||
+                    g_listObj == nullptr) {
+                    return undefinedResult;
+                }
+                const int32_t refCount = 1;
+                napi_create_reference(env, argv[PARAM1], refCount, &g_listObj->cbOffRef_);
+            }
+            obj->UnregisterChange(env, uri, *g_listObj);
+            return undefinedResult;
+        }
         napi_ref cbOffRef = nullptr;
         if (argc == ARGS_TWO) {
             if (napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function ||
@@ -3722,6 +3771,11 @@ napi_value MediaLibraryNapi::CreateAlbumSubTypeEnum(napi_env env)
 
     CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sAlbumSubType_), JS_INNER_FAIL);
     return result;
+}
+
+napi_value MediaLibraryNapi::CreateNotifyTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, notifyTypeEnum, sNotifyType_);
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,
