@@ -53,6 +53,19 @@ const std::string THUMBNAIL_OPERN_KEYWORD = "operation";
 const std::string THUMBNAIL_HEIGHT = "height";
 const std::string THUMBNAIL_WIDTH = "width";
 const std::string THUMBNAIL_PATH = "path";
+
+static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    auto lastIndex = path.find_last_of('.');
+    if (lastIndex == std::string::npos) {
+        lastIndex = ROOT_MEDIA_DIR.length() - 1;
+    }
+    lastIndex = lastIndex - ROOT_MEDIA_DIR.length();
+    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length(), lastIndex) + "-" + key + ".jpg";
+}
 } // namespace Media
 } // namespace OHOS
 
