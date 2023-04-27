@@ -502,7 +502,6 @@ static void GetPublicDirectoryExecute(napi_env env, void *data)
     vector<string> selectionArgs;
     vector<string> columns;
     DataSharePredicates predicates;
-    NAPI_ERR_LOG("context->dirType is = %{public}d", context->dirType);
     selectionArgs.push_back(to_string(context->dirType));
     predicates.SetWhereClause(DIRECTORY_DB_DIRECTORY_TYPE + " = ?");
     predicates.SetWhereArgs(selectionArgs);
@@ -523,7 +522,7 @@ static void GetPublicDirectoryExecute(napi_env env, void *data)
             context->error = JS_INNER_FAIL;
             return;
         }
-        NAPI_ERR_LOG("Query for get publicDirectory count = %{private}d", count);
+        NAPI_INFO_LOG("Query for get publicDirectory count = %{private}d", count);
         if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
             context->directoryRelativePath = get<string>(
                 ResultSetUtils::GetValFromColumn(DIRECTORY_DB_DIRECTORY, resultSet, TYPE_STRING));
@@ -1037,7 +1036,6 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
 
     auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
     CHECK_NULL_PTR_RETURN_VOID(resultSet, "Failed to get file asset by id, query resultSet is nullptr");
-    NAPI_ERR_LOG("errCode is %{public}d", errCode);
 
     // Create FetchResult object using the contents of resultSet
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
@@ -1940,7 +1938,6 @@ static void SetSmartAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<
         return;
     }
     if (smartAlbum->GetAlbumCapacity() == 0) {
-        NAPI_ERR_LOG("SmartAlbum have no asset");
         return;
     }
     string trashPrefix;
@@ -2052,7 +2049,6 @@ static void MediaLibSmartAlbumsAsyncResult(napi_env env, MediaLibraryAsyncContex
         napi_get_undefined(env, &jsContext->error);
         jsContext->data = albumNapiObj;
     } else if (!context->privateSmartAlbumNativeArray.empty()) {
-        NAPI_ERR_LOG("context->privateSmartAlbumNativeArray.empty()");
         jsContext->status = true;
         napi_value albumArray = nullptr;
         napi_create_array(env, &albumArray);

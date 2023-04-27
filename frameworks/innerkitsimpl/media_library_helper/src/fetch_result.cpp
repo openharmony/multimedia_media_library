@@ -195,7 +195,7 @@ template <class T>
 unique_ptr<T> FetchResult<T>::GetFirstObject()
 {
     if ((resultset_ == nullptr) || (resultset_->GoToFirstRow() != 0)) {
-        MEDIA_ERR_LOG("resultset is null|first row failed");
+        MEDIA_DEBUG_LOG("resultset is null|first row failed");
         return nullptr;
     }
 
@@ -206,7 +206,7 @@ template <class T>
 unique_ptr<T> FetchResult<T>::GetNextObject()
 {
     if ((resultset_ == nullptr) || (resultset_->GoToNextRow() != 0)) {
-        MEDIA_ERR_LOG("resultset is null|go to next row failed");
+        MEDIA_DEBUG_LOG("resultset is null|go to next row failed");
         return nullptr;
     }
 
