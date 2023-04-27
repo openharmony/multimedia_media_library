@@ -295,7 +295,7 @@ static OperationObject GetOprnObjectFromPath(const string &path)
  */
 int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata> &ptr, MediaLibraryApi api)
 {
-    static vector<string> columns = {
+    vector<string> columns = {
         MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_ORIENTATION
     };

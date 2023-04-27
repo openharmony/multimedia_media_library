@@ -34,7 +34,7 @@ public:
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH;
     // default fetch columns
-    static const std::set<std::string> DEFAULT_FETCH_COLUMN;
+    static const std::set<std::string> DEFAULT_FETCH_COLUMNS;
 
     // table name
     static const std::string TABLE;
