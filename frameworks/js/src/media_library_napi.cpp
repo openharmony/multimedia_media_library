@@ -47,12 +47,14 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
+using ChangeType = AAFwk::ChangeInfo::ChangeType;
 thread_local unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 const int32_t NUM_2 = 2;
 const int32_t NUM_3 = 3;
 const string DATE_FUNCTION = "DATE(";
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
+mutex MediaLibraryNapi::sOnOffMutex_;
 
 static map<string, ListenerType> ListenerTypeMaps = {
     {"audioChange", AUDIO_LISTENER},
@@ -154,8 +156,8 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getPhotoAlbums", UserFileMgrGetAlbums),
             DECLARE_NAPI_FUNCTION("createPhotoAsset", UserFileMgrCreateAsset),
             DECLARE_NAPI_FUNCTION("delete", UserFileMgrTrashAsset),
-            DECLARE_NAPI_FUNCTION("on", JSOnCallback),
-            DECLARE_NAPI_FUNCTION("off", JSOffCallback),
+            DECLARE_NAPI_FUNCTION("on", UserFileMgrOnCallback),
+            DECLARE_NAPI_FUNCTION("off", UserFileMgrOffCallback),
             DECLARE_NAPI_FUNCTION("getPrivateAlbum", UserFileMgrGetPrivateAlbum),
             DECLARE_NAPI_FUNCTION("getActivePeers", JSGetActivePeers),
             DECLARE_NAPI_FUNCTION("getAllPeers", JSGetAllPeers),
@@ -1489,22 +1491,101 @@ napi_value MediaLibraryNapi::JSDeleteAsset(napi_env env, napi_callback_info info
     return result;
 }
 
-napi_value* ChangeListenerNapi::SolveOnChangeResult(napi_env env, UvChangeMsg *msg)
+static napi_status SetValueInt32(const napi_env& env, const char* fieldStr, const int intValue, napi_value& result)
 {
-    static napi_value result[ARGS_THREE] = { nullptr };
-    napi_value uriArray = nullptr;
-    napi_create_array_with_length(env, msg->changeInfo_.uris_.size(), &uriArray);
+    napi_value value;
+    napi_status status = napi_create_int32(env, intValue, &value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Set value create int32 error! field: %{public}s", fieldStr);
+        return status;
+    }
+    status = napi_set_named_property(env, result, fieldStr, value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Set int32 named property error! field: %{public}s", fieldStr);
+    }
+    return status;
+}
+
+static napi_status SetValueArray(const napi_env& env,
+    const char* fieldStr, const std::list<Uri> listValue, napi_value& result)
+{
+    napi_value value = nullptr;
+    napi_status status = napi_create_array_with_length(env, listValue.size(), &value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create array error! field: %{public}s", fieldStr);
+        return status;
+    }
     int elementIndex = 0;
-    for (auto uri : msg->changeInfo_.uris_) {
+    for (auto uri : listValue) {
         napi_value uriRet = nullptr;
         napi_create_string_utf8(env, uri.ToString().c_str(), NAPI_AUTO_LENGTH, &uriRet);
-        napi_set_element(env, uriArray, elementIndex++, uriRet);
+        status = napi_set_element(env, value, elementIndex++, uriRet);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Set lite item failed, error: %d", status);
+        }
     }
-    result[PARAM0] = uriArray;
-    napi_get_undefined(env, &result[PARAM1]);
-    napi_value type = nullptr;
-    napi_create_int32(env, msg->changeInfo_.changeType_, &type);
-    result[PARAM2] = type;
+    status = napi_set_named_property(env, result, fieldStr, value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Set array named property error! field: %{public}s", fieldStr);
+    }
+
+    return status;
+}
+
+static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParcel> parcel, napi_value& result)
+{
+    uint32_t len = 0;
+    napi_status status = napi_invalid_arg;
+    if (!parcel->ReadUint32(len)) {
+        NAPI_ERR_LOG("Failed to read sub uri list length");
+        return status;
+    }
+    napi_value subUriArray = nullptr;
+    napi_create_array_with_length(env, len, &subUriArray);
+    int subElementIndex = 0;
+    for (uint32_t i = 0; i < len; i++) {
+        string subUri = parcel->ReadString();
+        if (subUri.empty()) {
+            NAPI_ERR_LOG("Failed to read sub uri");
+            return status;
+        }
+        napi_value subUriRet = nullptr;
+        napi_create_string_utf8(env, subUri.c_str(), NAPI_AUTO_LENGTH, &subUriRet);
+        napi_set_element(env, subUriArray, subElementIndex++, subUriRet);
+    }
+    status = napi_set_named_property(env, result, "subUris", subUriArray);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Set subUri named property error!");
+    }
+    return status;
+}
+
+napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
+{
+    static napi_value result;
+    if (msg->changeInfo_.uris_.empty()) {
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    napi_create_object(env, &result);
+    SetValueArray(env, "uris", msg->changeInfo_.uris_, result);
+    if (msg->data_ != nullptr && msg->changeInfo_.size_ > 0) {
+        if ((int)msg->changeInfo_.changeType_ == ChangeType::INSERT) {
+            SetValueInt32(env, "type", (int)NotifyType::NOTIFY_ALBUM_ADD_ASSERT, result);
+        } else {
+            SetValueInt32(env, "type", (int)NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, result);
+        }
+        shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
+        if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(msg->data_), msg->changeInfo_.size_)) {
+            napi_status status = SetSubUris(env, parcel, result);
+            if (status != napi_ok) {
+                NAPI_ERR_LOG("Set subArray named property error! field: subUris");
+                return nullptr;
+            }
+        }
+    } else {
+        SetValueInt32(env, "type", (int)msg->changeInfo_.changeType_, result);
+    }
     return result;
 }
 
@@ -1526,15 +1607,21 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
         delete work;
         return;
     }
-    if (listener.changeInfo.changeType_ == DataShare::DataShareObserver::ChangeType::OTHER) {
-        NAPI_ERR_LOG("changeInfo.changeType_ is other");
-        return;
-    }
-    if (msg->changeInfo_.size_ > 0) {
-        msg->data_ = new (nothrow) uint8_t[msg->changeInfo_.size_];
-        int copyRet = memcpy_s(msg->data_, msg->changeInfo_.size_, msg->changeInfo_.data_, msg->changeInfo_.size_);
-        if (copyRet != 0) {
-            NAPI_ERR_LOG("Parcel data copy failed, err = %{public}d", copyRet);
+    if (!listener.changeInfo.uris_.empty()) {
+        if (listener.changeInfo.changeType_ == DataShare::DataShareObserver::ChangeType::OTHER) {
+            NAPI_ERR_LOG("changeInfo.changeType_ is other");
+            return;
+        }
+        if (msg->changeInfo_.size_ > 0) {
+            msg->data_ = new (nothrow) uint8_t[msg->changeInfo_.size_];
+            if(msg->data_ == nullptr) {
+                NAPI_ERR_LOG("new msg->data failed");
+                return;
+            }
+            int copyRet = memcpy_s(msg->data_, msg->changeInfo_.size_, msg->changeInfo_.data_, msg->changeInfo_.size_);
+            if (copyRet != 0) {
+                NAPI_ERR_LOG("Parcel data copy failed, err = %{public}d", copyRet);
+            }
         }
     }
     work->data = reinterpret_cast<void *>(msg);
@@ -1559,9 +1646,10 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
                     NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
                     break;
                 }
-                napi_value* result = ChangeListenerNapi::SolveOnChangeResult(env, msg);
                 napi_value retVal = nullptr;
-                napi_call_function(env, nullptr, jsCallback, ARGS_THREE, result, &retVal);
+                napi_value result[ARGS_ONE];
+                result[PARAM0] = ChangeListenerNapi::SolveOnChange(env, msg);
+                napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
                 if (status != napi_ok) {
                     NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
                     break;
@@ -1633,59 +1721,139 @@ void MediaLibraryNapi::RegisterChange(napi_env env, const string &type, ChangeLi
 }
 
 void MediaLibraryNapi::RegisterNotifyChange(napi_env env,
-    const std::string &uri, bool isDerived, ChangeListenerNapi &listObj)
+    const std::string &uri, bool isDerived, napi_ref ref, ChangeListenerNapi &listObj)
 {
     Uri notifyUri(uri);
-    shared_ptr<DataShare::DataShareObserver> observer= make_shared<MediaOnNotifyObserver>(listObj, uri);
-    UserFileClient::RegisterObserverExt(notifyUri, observer, isDerived);
-    listObj.observers_.insert(make_pair(uri, observer));
+    shared_ptr<MediaOnNotifyObserver> observer= make_shared<MediaOnNotifyObserver>(listObj, uri, ref);
+    UserFileClient::RegisterObserverExt(notifyUri,
+        static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), isDerived);
+    lock_guard<mutex> lock(sOnOffMutex_);
+    listObj.observers_.push_back(observer);
 }
 
 napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSOnCallback");
     napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
     size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = {nullptr};
     napi_value thisVar = nullptr;
-    size_t res = 0;
-    char buffer[ARG_BUF_SIZE];
-    string type;
-    const int32_t refCount = 1;
-    MediaLibraryNapi *obj = nullptr;
-    napi_status status;
-
-    MediaLibraryTracer tracer;
-    tracer.Start("JSOnCallback");
-
-    napi_get_undefined(env, &undefinedResult);
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameters");
-    if (thisVar == nullptr || argv[PARAM0] == nullptr || argv[PARAM1] == nullptr) {
-        NAPI_ERR_LOG("Failed to retrieve details about the callback");
-        return undefinedResult;
-    }
-
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
+    MediaLibraryNapi *obj = nullptr;
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string ||
             napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
             return undefinedResult;
         }
-
+        char buffer[ARG_BUF_SIZE];
+        size_t res = 0;
         if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
             NAPI_ERR_LOG("Failed to get value string utf8 for type");
             return undefinedResult;
         }
-        type = string(buffer);
-
+        string type = string(buffer);
+        const int32_t refCount = 1;
         napi_create_reference(env, argv[PARAM1], refCount, &g_listObj->cbOnRef_);
-
         tracer.Start("RegisterChange");
         obj->RegisterChange(env, type, *g_listObj);
         tracer.Finish();
     }
+    return undefinedResult;
+}
 
+bool MediaLibraryNapi::CheckRef(napi_env env,
+    napi_ref ref, ChangeListenerNapi &listObj, bool isOff, const string &uri)
+{
+    napi_value offCallback = nullptr;
+    napi_status status = napi_get_reference_value(env, ref, &offCallback);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+        return false;
+    }
+    bool isSame = false;
+    shared_ptr<DataShare::DataShareObserver> obs;
+    string obsUri;
+    {
+        lock_guard<mutex> lock(sOnOffMutex_);
+        for (auto it = listObj.observers_.begin(); it < listObj.observers_.end(); it++) {
+            napi_value onCallback = nullptr;
+            status = napi_get_reference_value(env, (*it)->ref_, &onCallback);
+            if (status != napi_ok) {
+                NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+                return false;
+            }
+            napi_strict_equals(env, offCallback, onCallback, &isSame);
+            if (isSame) {
+                obsUri = (*it)->uri_;
+                if ((isOff) && (uri.compare(obsUri) == 0)) {
+                    obs = static_cast<shared_ptr<DataShare::DataShareObserver>>(*it);
+                    listObj.observers_.erase(it);
+                }
+                if (uri.compare(obsUri) != 0) {
+                    return true;
+                }
+                return false;
+            }
+        }
+    }
+    if (isSame && isOff) {
+        if (obs != nullptr) {
+            UserFileClient::UnregisterObserverExt(Uri(obsUri), obs);
+        }
+    }
+    return true;
+}
+
+napi_value MediaLibraryNapi::UserFileMgrOnCallback(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrOnCallback");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    size_t argc = ARGS_THREE;
+    napi_value argv[ARGS_THREE] = {nullptr};
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc == ARGS_THREE, "requires 3 parameters");
+    MediaLibraryNapi *obj = nullptr;
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
+    if (status == napi_ok && obj != nullptr) {
+        napi_valuetype valueType = napi_undefined;
+        if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string ||
+            napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_boolean ||
+            napi_typeof(env, argv[PARAM2], &valueType) != napi_ok || valueType != napi_function) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return undefinedResult;
+        }
+        char buffer[ARG_BUF_SIZE];
+        size_t res = 0;
+        if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return undefinedResult;
+        }
+        string uri = string(buffer);
+        bool isDerived = false;
+        if (napi_get_value_bool(env, argv[PARAM1], &isDerived) != napi_ok) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return undefinedResult;
+        }
+        const int32_t refCount = 1;
+        napi_ref cbOnRef;
+        napi_create_reference(env, argv[PARAM2], refCount, &cbOnRef);
+        tracer.Start("RegisterNotifyChange");
+        if (CheckRef(env, cbOnRef, *g_listObj, false, uri)) {
+            obj->RegisterNotifyChange(env, uri, isDerived, cbOnRef, *g_listObj);
+        } else {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return undefinedResult;
+        }
+        tracer.Finish();
+    }
     return undefinedResult;
 }
 
@@ -1758,15 +1926,28 @@ void MediaLibraryNapi::UnregisterChange(napi_env env, const string &type, Change
     }
 }
 
-void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env, const std::string &uri, ChangeListenerNapi &listObj)
+void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env,
+    const std::string &uri, napi_ref ref, ChangeListenerNapi &listObj)
 {
-    if (listObj.observers_.find(uri) ==  listObj.observers_.end()) {
-        NAPI_ERR_LOG("Failed to find UnRegisterNotifyChange uri");
+    if (ref == nullptr) {
+        std::vector<std::shared_ptr<MediaOnNotifyObserver>> offObservers;
+        {
+            lock_guard<mutex> lock(sOnOffMutex_);
+            for (auto iter = listObj.observers_.begin(); iter != listObj.observers_.end(); iter++) {
+                if ((*iter)->uri_.compare(uri) == 0) {
+                    offObservers.push_back(*iter);
+                    listObj.observers_.erase(iter);
+                }
+            }
+        }
+        for (auto obs : offObservers) {
+            UserFileClient::UnregisterObserverExt(Uri(uri),
+                static_cast<shared_ptr<DataShare::DataShareObserver>>(obs));
+        }
         return;
     }
-    shared_ptr<DataShare::DataShareObserver> observer = listObj.observers_.find(uri)->second;
-    UserFileClient::UnregisterObserverExt(Uri(uri), observer);
-    listObj.observers_.find(uri)->second = nullptr;
+
+    CheckRef(env, ref, listObj, true, uri);
 }
 
 napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info)
@@ -1779,7 +1960,7 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
     napi_value argv[ARGS_TWO] = {nullptr};
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, ARGS_ONE <= argc && argc<= ARGS_TWO, "requires one or two parameters");
+    NAPI_ASSERT(env, ARGS_ONE <= argc && argc <= ARGS_TWO, "requires one or two parameters");
     if (thisVar == nullptr || argv[PARAM0] == nullptr) {
         NAPI_ERR_LOG("Failed to retrieve details about the callback");
         return undefinedResult;
@@ -1809,6 +1990,55 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
 
         tracer.Start("UnregisterChange");
         obj->UnregisterChange(env, type, *g_listObj);
+        tracer.Finish();
+    }
+
+    return undefinedResult;
+}
+
+napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrOffCallback");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {nullptr};
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, ARGS_ONE <= argc && argc<= ARGS_TWO, "requires one or two parameters");
+    if (thisVar == nullptr || argv[PARAM0] == nullptr) {
+        NAPI_ERR_LOG("Failed to retrieve details about the callback");
+        return undefinedResult;
+    }
+    MediaLibraryNapi *obj = nullptr;
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
+    if (status == napi_ok && obj != nullptr) {
+        napi_valuetype valueType = napi_undefined;
+        if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return undefinedResult;
+        }
+        size_t res = 0;
+        char buffer[ARG_BUF_SIZE];
+        if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return undefinedResult;
+        }
+        string uri = string(buffer);
+        napi_ref cbOffRef = nullptr;
+        if (argc == ARGS_TWO) {
+            if (napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function ||
+                g_listObj == nullptr) {
+                NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+                return undefinedResult;
+            }
+            const int32_t refCount = 1;
+            napi_create_reference(env, argv[PARAM1], refCount, &cbOffRef);
+        }
+
+        tracer.Start("UnRegisterNotifyChange");
+        obj->UnRegisterNotifyChange(env, uri, cbOffRef, *g_listObj);
         tracer.Finish();
     }
 
@@ -2525,21 +2755,6 @@ static napi_status SetValueUtf8String(const napi_env& env, const char* fieldStr,
     status = napi_set_named_property(env, result, fieldStr, value);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Set utf8 string named property error! field: %{public}s", fieldStr);
-    }
-    return status;
-}
-
-static napi_status SetValueInt32(const napi_env& env, const char* fieldStr, const int intValue, napi_value& result)
-{
-    napi_value value;
-    napi_status status = napi_create_int32(env, intValue, &value);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Set value create int32 error! field: %{public}s", fieldStr);
-        return status;
-    }
-    status = napi_set_named_property(env, result, fieldStr, value);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Set int32 named property error! field: %{public}s", fieldStr);
     }
     return status;
 }

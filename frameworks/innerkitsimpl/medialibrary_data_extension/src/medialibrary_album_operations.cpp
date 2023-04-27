@@ -37,7 +37,7 @@ using namespace OHOS::DataShare;
 
 namespace OHOS::Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
-
+constexpr int32_t AFTER_AGR_SIZE = 2;
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
     int64_t outRow = -1;
@@ -70,10 +70,6 @@ int32_t MediaLibraryAlbumOperations::ModifyAlbumOperation(MediaLibraryCommand &c
     } else {
         string dstDirPath = MediaLibraryDataManagerUtils::GetParentPath(srcDirPath) + "/" + dstDirName;
         ret = MediaLibraryObjectUtils::RenameDirObj(cmd, srcDirPath, dstDirPath);
-    }
-    auto watch = MediaLibraryNotify::GetInstance();
-    if ((ret > 0) && (watch != nullptr)) {
-        watch->Notify(strId, ChangeType::UPDATE);
     }
     return ret;
 }
@@ -200,7 +196,12 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     if (err < 0) {
         return err;
     }
-    return CreatePhotoAlbum(albumName);
+    int rowId = CreatePhotoAlbum(albumName);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if ((rowId > 0) && (watch != nullptr)) {
+        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX  + to_string(rowId), NotifyType::NOTIFY_ADD);
+    }
+    return rowId;
 }
 
 int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
@@ -210,7 +211,15 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(NativeRdb::RdbPredicates &
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
     predicates.EndWrap();
 
-    return MediaLibraryRdbStore::Delete(predicates);
+    int deleteRow = MediaLibraryRdbStore::Delete(predicates);
+    auto watch = MediaLibraryNotify::GetInstance();
+    for (size_t i = 0; i < predicates.GetWhereArgs().size() - AFTER_AGR_SIZE; i++) {
+        if ((deleteRow > 0) && (watch != nullptr)) {
+            watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX +
+                predicates.GetWhereArgs()[i], NotifyType::NOTIFY_REMOVE);
+        }
+    }
+    return deleteRow;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
@@ -259,7 +268,12 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values
     rdbPredicates.EndWrap();
 
     int32_t changedRows = 0;
-    return MediaLibraryRdbStore::Update(changedRows, rdbValues, rdbPredicates);
+    err = MediaLibraryRdbStore::Update(changedRows, rdbValues, rdbPredicates);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if ((err > 0) && (watch != nullptr)) {
+        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(changedRows), NotifyType::NOTIFY_UPDATE);
+    }
+    return err;
 }
 
 int MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(MediaLibraryCommand &cmd)

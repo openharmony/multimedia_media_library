@@ -170,12 +170,7 @@ int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd
     if (srcPath.compare(dstFilePath) == 0) {
         return E_SAME_PATH;
     }
-    int errCode = MediaLibraryObjectUtils::RenameFileObj(cmd, srcPath, dstFilePath);
-    auto watch = MediaLibraryNotify::GetInstance();
-    if ((errCode > 0) && (watch != nullptr)) {
-        watch->Notify(strFileId, ChangeType::UPDATE);
-    }
-    return errCode;
+    return MediaLibraryObjectUtils::RenameFileObj(cmd, srcPath, dstFilePath);
 }
 
 int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cmd)
