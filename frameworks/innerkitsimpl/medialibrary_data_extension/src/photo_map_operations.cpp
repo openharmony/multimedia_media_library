@@ -72,7 +72,7 @@ int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<ValueObject> &
     bindArgs.emplace_back(PhotoAlbumSubType::USER_GENERIC);
     int errCode =  MediaLibraryRdbStore::ExecuteForLastInsertedRowId(INSERT_MAP_SQL, bindArgs);
     auto watch = MediaLibraryNotify::GetInstance();
-    if ((errCode > 0) && (watch != nullptr)) {
+    if (errCode > 0) {
         watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + assetId,
             NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
     }
@@ -114,7 +114,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     }
     auto watch = MediaLibraryNotify::GetInstance();
     for (size_t i = 1; i < predicates.GetWhereArgs().size(); i++) {
-        if ((deleteRow > 0) && (watch != nullptr)) {
+        if (deleteRow > 0) {
             watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + predicates.GetWhereArgs()[i],
                 NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, atoi(strAlbumId.c_str()));
         }

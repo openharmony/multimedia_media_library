@@ -46,13 +46,16 @@ public:
     virtual ~MediaLibraryNotify();
     int32_t Notify(const std::string &uri, const NotifyType notifyType, const int albumId = 0);
     int32_t Notify(const std::shared_ptr<FileAsset> &closeAsset);
+    int32_t GetAlbumIdBySubType(const PhotoAlbumSubType subType);
     static Utils::Timer timer_;
     static std::mutex mutex_;
     static std::unordered_map<std::string, std::unordered_map<NotifyType, std::list<Uri>>> nfListMap_;
 private:
     MediaLibraryNotify();
     int32_t Init();
+    int32_t GetDefaultAlbums(std::unordered_map<PhotoAlbumSubType, int> &outAlbums);
     static std::shared_ptr<MediaLibraryNotify> instance_;
+    std::unordered_map<PhotoAlbumSubType, int> defaultAlbums_;
 };
 } // namespace Media
 } // namespace OHOS
