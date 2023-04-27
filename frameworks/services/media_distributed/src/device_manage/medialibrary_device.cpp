@@ -307,7 +307,7 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     // 获取同一网络中的所有设备Id
     std::vector<OHOS::DistributedHardware::DmDeviceInfo> deviceList;
     GetAllNetworkId(deviceList);
-    MEDIA_ERR_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
+    MEDIA_INFO_LOG("MediaLibraryDevice InitDeviceRdbStore deviceList size = %{public}d", (int) deviceList.size());
     for (auto& deviceInfo : deviceList) {
         DevOnlineProcess(deviceInfo);
     }

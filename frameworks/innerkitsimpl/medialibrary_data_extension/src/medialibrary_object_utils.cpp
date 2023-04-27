@@ -751,7 +751,6 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
         watch->RemoveByFileUri(fileAsset->GetUri());
-        MEDIA_ERR_LOG("watch RemoveByFileUri");
     }
     InvalidateThumbnail(strFileId);
     ScanFile(srcPath);
@@ -1049,7 +1048,7 @@ int32_t MediaLibraryObjectUtils::GetIdByPathFromDb(const string &path)
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, fileId, "Failed to obtain path from database");
 
     auto ret = queryResultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(ret == 0, fileId, "Failed to shift at first row");
+    CHECK_AND_RETURN_RET(ret == 0, fileId);
 
     ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_ID, columnIndex);
     CHECK_AND_RETURN_RET_LOG(ret == 0, fileId, "Failed to obtain column index");
