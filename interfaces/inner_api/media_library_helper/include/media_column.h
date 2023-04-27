@@ -70,6 +70,7 @@ public:
     static const std::string PHOTO_POSITION;
     static const std::string PHOTO_DIRTY;
     static const std::string PHOTO_CLOUD_ID;
+    static const std::string PHOTO_SUBTYPE;
 
     // table name
     static const std::string PHOTOS_TABLE;

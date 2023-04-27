@@ -22,6 +22,7 @@
 
 #include "datashare_predicates.h"
 #include "directory_ex.h"
+#include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
@@ -370,6 +371,16 @@ ResultNapiType FileAsset::GetResultNapiType() const
 void FileAsset::SetResultNapiType(const ResultNapiType type)
 {
     resultNapiType_ = type;
+}
+
+int32_t FileAsset::GetPhotoSubType() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_SUBTYPE);
+}
+
+void FileAsset::SetPhotoSubType(int32_t photoSubType)
+{
+    member_[PhotoColumn::PHOTO_SUBTYPE] = photoSubType;
 }
 
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)

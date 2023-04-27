@@ -159,6 +159,17 @@ int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
     return errCode;
 }
 
+static void SetPhotoSubType(MediaLibraryCommand &cmd, FileAsset &fileAsset)
+{
+    ValueObject valueObject;
+    ValuesBucket &values = cmd.GetValueBucket();
+    if (values.GetObject(PhotoColumn::PHOTO_SUBTYPE, valueObject)) {
+        int32_t subType = 0;
+        valueObject.GetInt(subType);
+        fileAsset.SetPhotoSubType(subType);
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
 {
     string displayName;
@@ -174,6 +185,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET(values.GetObject(PhotoColumn::MEDIA_TYPE, valueObject), E_HAS_DB_ERROR);
     valueObject.GetInt(mediaType);
     fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
+    SetPhotoSubType(cmd, fileAsset);
 
     // Check rootdir and extension
     int32_t errCode = CheckDisplayNameWithType(displayName, mediaType);

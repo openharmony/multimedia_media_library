@@ -138,6 +138,9 @@ public:
     ResultNapiType GetResultNapiType() const;
     void SetResultNapiType(const ResultNapiType type);
 
+    int32_t GetPhotoSubType() const;
+    void SetPhotoSubType(int32_t photoSubType);
+
     void SetOpenStatus(int32_t fd, int32_t openStatus);
     void RemoveOpenStatus(int32_t fd);
     int32_t GetOpenStatus(int32_t fd);
