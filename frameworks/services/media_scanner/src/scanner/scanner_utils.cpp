@@ -113,7 +113,6 @@ bool ScannerUtils::IsFileHidden(const string &path)
         }
     }
 
-    MEDIA_ERR_LOG("Either filepath is empty or it is not hidden");
     return false;
 }
 
