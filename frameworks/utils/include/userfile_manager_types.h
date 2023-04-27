@@ -112,6 +112,18 @@ const std::vector<std::tuple<MediaType, std::string, MediaTypeMaskInteger, size_
     std::make_tuple(MEDIA_TYPE_VIDEO,   "VIDEO",    MediaTypeMaskInteger::BIT_IMAGEVIDEO, 2),
     std::make_tuple(MEDIA_TYPE_AUDIO,   "AUDIO",    MediaTypeMaskInteger::BIT_AUDIO,      1)
 };
+enum NotifyType {
+    NOTIFY_ADD,
+    NOTIFY_UPDATE,
+    NOTIFY_REMOVE,
+    NOTIFY_ALBUM_ADD_ASSERT,
+    NOTIFY_ALBUM_REMOVE_ASSET
+};
+
+enum DefaultAlbumId {
+    VIDEO_ALBUM = 1,
+    FAVORITE_ALBUM
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H

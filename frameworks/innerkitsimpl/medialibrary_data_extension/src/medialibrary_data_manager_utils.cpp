@@ -19,6 +19,7 @@
 #include "media_log.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_db_const.h"
+#include "photo_album_column.h"
 
 using namespace std;
 
@@ -170,6 +171,17 @@ void MediaLibraryDataManagerUtils::RemoveTypeValueFromUri(std::string &uri)
     if (typeIndex != std::string::npos) {
         uri = uri.substr(0, typeIndex);
     }
+}
+
+std::string MediaLibraryDataManagerUtils::GetTypeUriByUri(std::string &uri)
+{
+    string typeUri;
+    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
+        typeUri = PhotoColumn::PHOTO_URI_PREFIX;
+    } else if (uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX ) != string::npos) {
+        typeUri = PhotoAlbumColumns::ALBUM_URI_PREFIX ;
+    }
+    return typeUri;
 }
 } // namespace Media
 } // namespace OHOS

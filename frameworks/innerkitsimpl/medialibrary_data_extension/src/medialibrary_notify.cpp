@@ -21,13 +21,14 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#include "photo_album_column.h"
 #include "uri.h"
 
 using namespace std;
 
 namespace OHOS::Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
-using NotifyDataMap = unordered_map<ChangeType, list<Uri>>;
+using NotifyDataMap = unordered_map<NotifyType, list<Uri>>;
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::instance_;
 mutex MediaLibraryNotify::mutex_;
 unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
@@ -69,7 +70,7 @@ static bool SolveUris(const list<Uri> &uris, Parcel &parcel)
     return true;
 }
 
-static int SendAlbumSub(const Uri &notifyUri, ChangeType type, list<Uri> &uris)
+static int SendAlbumSub(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
 {
     Parcel parcel;
     CHECK_AND_RETURN_RET_LOG(SolveUris(uris, parcel), E_SOLVE_URIS_FAILED, "SolveUris failed");
@@ -84,37 +85,35 @@ static int SendAlbumSub(const Uri &notifyUri, ChangeType type, list<Uri> &uris)
     if (ret != 0) {
         MEDIA_ERR_LOG("Parcel data copy failed, err = %{public}d", ret);
     }
-    return obsMgrClient->NotifyChangeExt({type, {notifyUri}, uBuf, parcel.GetDataSize()});
+    ChangeType changeType;
+    if (type == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) {
+        changeType = ChangeType::INSERT;
+    } else {
+        changeType = ChangeType::DELETE;
+    }
+    return obsMgrClient->NotifyChangeExt({changeType, {notifyUri}, uBuf, parcel.GetDataSize()});
 }
 
-static int SolveAlbumUri(const Uri &notifyUri, ChangeType type, list<Uri> &uris)
+static int SolveAlbumUri(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
 {
     auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
-    auto iter = find_if(uris.begin(), uris.end(), [notifyUri](const Uri &listUri) {
-        return notifyUri.Equals(listUri);
-    });
-    int ret = 0;
-    if (iter != uris.end()) {
-        uris.remove(notifyUri);
-        ret = obsMgrClient->NotifyChangeExt({type, {notifyUri}});
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("NotifyChangeExt failed, errorCode = %{public}d", ret);
-            return E_NOTIFY_CHANGE_EXT_FAILED;
-        }
+    if ((type == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) || (type == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET)) {
+        return SendAlbumSub(notifyUri, type, uris);
+    } else {
+        return obsMgrClient->NotifyChangeExt({static_cast<ChangeType>(type), uris});
     }
-    return SendAlbumSub(notifyUri, type, uris);
 }
 
 static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
 {
     int ret;
     for (auto &[type, uris] : notifyDataMap) {
-        if (uri.find(MEDIALIBRARY_ALBUM_URI) != string::npos) {
+        if (uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX ) != string::npos) {
             Uri notifyUri = Uri(uri);
             ret = SolveAlbumUri(notifyUri, type, uris);
         } else {
             auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
-            ret = obsMgrClient->NotifyChangeExt({type, uris});
+            ret = obsMgrClient->NotifyChangeExt({static_cast<ChangeType>(type), uris});
         }
         if (ret != E_OK) {
             MEDIA_ERR_LOG("PushNotification failed, errorCode = %{public}d", ret);
@@ -125,12 +124,12 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
 
 static void PushNotification()
 {
-    if (MediaLibraryNotify::nfListMap_.empty()) {
-        return;
-    }
     unordered_map<string, NotifyDataMap> tmpNfListMap;
     {
         lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
+        if (MediaLibraryNotify::nfListMap_.empty()) {
+            return;
+        }
         MediaLibraryNotify::nfListMap_.swap(tmpNfListMap);
         MediaLibraryNotify::nfListMap_.clear();
     }
@@ -142,31 +141,30 @@ static void PushNotification()
     }
 }
 
-static void AddNotify(const shared_ptr<FileAsset> &fileAsset, const string &strUri, NotifyTaskData* taskData)
+static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData* taskData)
 {
     NotifyDataMap notifyDataMap;
     list<Uri> sendUris;
-    Uri uri(fileAsset->GetUri());
-    MEDIA_DEBUG_LOG("AddNotify ,strUri = %{private}s, uri = %{private}s, "
-        "changeType = %{private}d", strUri.c_str(), uri.ToString().c_str(), taskData->changeType);
+    Uri uri(srcUri);
+    MEDIA_DEBUG_LOG("AddNotify ,keyUri = %{private}s, uri = %{private}s, "
+        "notifyType = %{private}d", keyUri.c_str(), uri.ToString().c_str(), taskData->notifyType_);
     lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
-    if (MediaLibraryNotify::nfListMap_.count(strUri) == 0) {
+    if (MediaLibraryNotify::nfListMap_.count(keyUri) == 0) {
         sendUris.emplace_back(uri);
-        notifyDataMap.insert(make_pair(taskData->changeType, sendUris));
-        MediaLibraryNotify::nfListMap_.insert(make_pair(strUri, notifyDataMap));
+        notifyDataMap.insert(make_pair(taskData->notifyType_, sendUris));
+        MediaLibraryNotify::nfListMap_.insert(make_pair(keyUri, notifyDataMap));
     } else {
-        auto iter = MediaLibraryNotify::nfListMap_.find(strUri);
-        if (iter->second.count(taskData->changeType) == 0) {
+        auto iter = MediaLibraryNotify::nfListMap_.find(keyUri);
+        if (iter->second.count(taskData->notifyType_) == 0) {
             sendUris.emplace_back(uri);
-            iter->second.insert(make_pair(taskData->changeType, sendUris));
-            auto tmp = MediaLibraryNotify::nfListMap_.at(strUri);
+            iter->second.insert(make_pair(taskData->notifyType_, sendUris));
         } else {
             auto haveIter = find_if(
-                iter->second.at(taskData->changeType).begin(),
-                iter->second.at(taskData->changeType).end(),
+                iter->second.at(taskData->notifyType_).begin(),
+                iter->second.at(taskData->notifyType_).end(),
                 [uri](const Uri &listUri) { return uri.Equals(listUri); });
-            if (haveIter == iter->second.at(taskData->changeType).end()) {
-                iter->second.find(taskData->changeType)->second.emplace_back(uri);
+            if (haveIter == iter->second.at(taskData->notifyType_).end()) {
+                iter->second.find(taskData->notifyType_)->second.emplace_back(uri);
             }
         }
     }
@@ -178,9 +176,24 @@ static void AddNfListMap(AsyncTaskData *data)
         return;
     }
     auto* taskData = static_cast<NotifyTaskData*>(data);
-    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(taskData->strId);
-    string typeUri = MediaFileUtils::GetMediaTypeUriV10(fileAsset->GetMediaType());
-    AddNotify(fileAsset, typeUri, taskData);
+    if ((taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) ||
+        (taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET)) {
+        if (taskData->albumId_ > 0) {
+            AddNotify(taskData->uri_,
+                PhotoAlbumColumns::ALBUM_URI_PREFIX  + to_string(taskData->albumId_), taskData);
+        } else {
+            list<string> albumUriList;
+            string id = MediaLibraryDataManagerUtils::GetIdFromUri(taskData->uri_);
+            int err = MediaLibraryObjectUtils::GetAlbumUrisById(id, albumUriList);
+            CHECK_AND_RETURN_LOG(err == E_OK, "Fail to get albumId");
+            for (string uri : albumUriList) {
+                AddNotify(taskData->uri_, uri, taskData);
+            }
+        }
+    } else {
+        string typeUri = MediaLibraryDataManagerUtils::GetTypeUriByUri(taskData->uri_);
+        AddNotify(taskData->uri_, typeUri, taskData);
+    }
 }
 
 int32_t MediaLibraryNotify::Init()
@@ -190,7 +203,7 @@ int32_t MediaLibraryNotify::Init()
     return E_OK;
 }
 
-int32_t MediaLibraryNotify::Notify(const string &strId, ChangeType changeType)
+int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyType, const int albumId)
 {
     if (MediaLibraryNotify::nfListMap_.size() > MAX_NOTIFY_LIST_SIZE) {
         MediaLibraryNotify::timer_.Shutdown();
@@ -200,10 +213,10 @@ int32_t MediaLibraryNotify::Notify(const string &strId, ChangeType changeType)
     }
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ASYNC_WORKER_IS_NULL, "AsyncWorker is null");
-    auto *taskData = new (nothrow) NotifyTaskData();
+    auto *taskData = new (nothrow) NotifyTaskData(uri, notifyType, albumId);
     CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_NOTIFY_TASK_DATA_IS_NULL, "taskData is null");
-    taskData->strId = strId;
-    taskData->changeType = changeType;
+    MEDIA_DEBUG_LOG("Notify ,uri = %{private}s, notifyType = %{private}d, albumId = %{private}d",
+        uri.c_str(), notifyType, albumId);
     shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(AddNfListMap, taskData);
     if (notifyAsyncTask != nullptr) {
         asyncWorker->AddTask(notifyAsyncTask, false);
@@ -219,8 +232,8 @@ int32_t MediaLibraryNotify::Notify(const shared_ptr<FileAsset> &closeAsset)
         isCreateFile = true;
     }
     if (isCreateFile) {
-        return Notify(to_string(closeAsset->GetId()), ChangeType::INSERT);
+        return Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_ADD);
     }
-    return Notify(to_string(closeAsset->GetId()), ChangeType::UPDATE);
+    return Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_UPDATE);
 }
 } // namespace OHOS::Media
