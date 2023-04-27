@@ -586,7 +586,6 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
 
 int32_t MediaFileUtils::CreateAsset(const string &filePath)
 {
-    MEDIA_ERR_LOG("CreateAsset in");
     int32_t errCode = E_ERR;
 
     if (filePath.empty()) {

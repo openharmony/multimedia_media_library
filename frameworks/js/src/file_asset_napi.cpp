@@ -1429,7 +1429,7 @@ static unique_ptr<PixelMap> QueryThumbnail(std::string &uri, Size &size, const s
     unique_ptr<PixelMap> pixelMap;
     auto ret = ThumbnailUtils::GetPixelMapFromResult(resultSet, size, pixelMap);
     if (ret != DataShare::E_OK) {
-        NAPI_ERR_LOG("getImageFromResult error %{public}d", ret);
+        NAPI_DEBUG_LOG("getImageFromResult error %{public}d", ret);
     }
 
     return pixelMap;
@@ -1465,7 +1465,6 @@ static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->error);
             jsContext->status = true;
         } else {
-            NAPI_ERR_LOG("negative ret");
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                 "Get thumbnail failed");
             napi_get_undefined(env, &jsContext->data);
@@ -2010,7 +2009,6 @@ static void JSTrashCallbackComplete(napi_env env, napi_status status, void *data
 
     tracer.Finish();
     if (context->work != nullptr) {
-        NAPI_ERR_LOG("JSTrashCallbackComplete context->work != nullptr");
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
