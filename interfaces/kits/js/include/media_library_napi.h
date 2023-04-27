@@ -216,6 +216,7 @@ private:
     static napi_value CreateImageVideoKeyEnum(napi_env env);
     static napi_value CreateAlbumKeyEnum(napi_env env);
     static napi_value CreatePositionTypeEnum(napi_env env);
+    static napi_value CreatePhotoSubTypeEnum(napi_env env);
 
     static napi_value CreateAlbumTypeEnum(napi_env env);
     static napi_value CreateAlbumSubTypeEnum(napi_env env);
@@ -249,6 +250,7 @@ private:
     static thread_local napi_ref sAlbumType_;
     static thread_local napi_ref sAlbumSubType_;
     static thread_local napi_ref sPositionTypeEnumRef_;
+    static thread_local napi_ref sPhotoSubType_;
 
     static std::mutex sUserFileClientMutex_;
     static std::mutex sOnOffMutex_;
