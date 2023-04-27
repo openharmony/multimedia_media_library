@@ -343,7 +343,7 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     string updateUri = URI_UPDATE_PHOTO_ALBUM;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(updateUri, PHOTO_ALBUM_TYPE_MASK);
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(updateUri, PHOTO_TYPE_MASK);
     Uri uri(updateUri);
     int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
     context->SaveError(changedRows);
@@ -469,7 +469,7 @@ static void JSPhotoAlbumAddAssetsExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     string addAssetUri = URI_PHOTO_ALBUM_ADD_ASSET;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(addAssetUri, PHOTO_ALBUM_TYPE_MASK);
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(addAssetUri, PHOTO_TYPE_MASK);
     Uri uri(addAssetUri);
     auto changedRows = UserFileClient::BatchInsert(uri, context->valuesBuckets);
     context->SaveError(changedRows);
@@ -549,7 +549,7 @@ static void JSPhotoAlbumRemoveAssetsExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     string removeAssetUri = URI_PHOTO_ALBUM_REMOVE_ASSET;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(removeAssetUri, PHOTO_ALBUM_TYPE_MASK);
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(removeAssetUri, PHOTO_TYPE_MASK);
     Uri uri(removeAssetUri);
     auto deletedRows = UserFileClient::Delete(uri, context->predicates);
     if (deletedRows < 0) {
@@ -690,7 +690,7 @@ static void JSGetPhotoAssetsExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     string queryUri = URI_QUERY_PHOTO_MAP;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_ALBUM_TYPE_MASK);
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_TYPE_MASK);
     Uri uri(queryUri);
     int32_t errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
@@ -726,8 +726,8 @@ static void JSGetPhotoAssetsCallbackComplete(napi_env env, napi_status status, v
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
-    napi_get_undefined(env, &jsContext->data);
-    napi_get_undefined(env, &jsContext->error);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
     if (context->fetchResult != nullptr) {
         GetPhotoMapQueryResult(env, context, jsContext);
     } else {

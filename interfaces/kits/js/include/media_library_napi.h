@@ -203,8 +203,8 @@ private:
     static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrTrashAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetAlbums(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrGetPhotoAssets(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrGetAudioAssets(napi_env env, napi_callback_info info);
+    static napi_value JSGetPhotoAssets(napi_env env, napi_callback_info info);
+    static napi_value JSGetAudioAssets(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetPrivateAlbum(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCreateFileKeyEnum(napi_env env);
     static napi_value CreateAudioKeyEnum(napi_env env);

@@ -42,6 +42,13 @@ const std::string MediaColumn::MEDIA_DATE_DELETED = "date_deleted";
 const std::string MediaColumn::MEDIA_HIDDEN = "hidden";
 const std::string MediaColumn::MEDIA_PARENT_ID = "parent";
 const std::string MediaColumn::MEDIA_RELATIVE_PATH = "relative_path";
+const std::set<std::string> MediaColumn::MEDIA_COLUMNS = {
+    MEDIA_ID, MEDIA_URI, MEDIA_FILE_PATH, MEDIA_SIZE, MEDIA_TITLE, MEDIA_NAME, MEDIA_TYPE, MEDIA_MIME_TYPE,
+    MEDIA_OWNER_PACKAGE, MEDIA_DEVICE_NAME, MEDIA_THUMBNAIL, MEDIA_DATE_MODIFIED, MEDIA_DATE_ADDED, MEDIA_DATE_TAKEN,
+    MEDIA_TIME_VISIT, MEDIA_DURATION, MEDIA_TIME_PENDING, MEDIA_IS_FAV, MEDIA_DATE_TRASHED, MEDIA_DATE_DELETED,
+    MEDIA_HIDDEN, MEDIA_PARENT_ID, MEDIA_RELATIVE_PATH
+};
+const std::set<std::string> MediaColumn::DEFAULT_FETCH_COLUMNS = { MEDIA_ID, MEDIA_NAME, MEDIA_TYPE };
 
 const std::string PhotoColumn::PHOTO_DIRTY = "dirty";
 const std::string PhotoColumn::PHOTO_CLOUD_ID = "cloud_id";
@@ -95,6 +102,18 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_LCD_VISIT_TIME + " BIGINT DEFAULT 0, " +
     PHOTO_POSITION + " INT DEFAULT 1)";
 
+const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
+    PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE, PhotoColumn::PHOTO_LCD,
+    PhotoColumn::PHOTO_HEIGHT, PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_LCD_VISIT_TIME, PhotoColumn::PHOTO_POSITION,
+    PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_CLOUD_ID
+};
+
+bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
+{
+    return (PHOTO_COLUMNS.find(columnName) != PHOTO_COLUMNS.end()) ||
+        (MEDIA_COLUMNS.find(columnName) != MEDIA_COLUMNS.end());
+}
+
 const std::string AudioColumn::AUDIO_ALBUM = "audio_album";
 const std::string AudioColumn::AUDIO_ARTIST = "artist";
 
@@ -128,6 +147,16 @@ const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_RELATIVE_PATH + " TEXT, " +
     AUDIO_ALBUM + " TEXT)";
 
+const std::set<std::string> AudioColumn::AUDIO_COLUMNS = {
+    AudioColumn::AUDIO_ALBUM, AudioColumn::AUDIO_ARTIST
+};
+
+bool AudioColumn::IsAudioColumn(const std::string &columnName)
+{
+    return (AUDIO_COLUMNS.find(columnName) != AUDIO_COLUMNS.end()) ||
+        (MEDIA_COLUMNS.find(columnName) != MEDIA_COLUMNS.end());
+}
+
 const std::string DocumentColumn::DOCUMENT_LCD = "lcd";
 const std::string DocumentColumn::DOCUMENT_LCD_VISIT_TIME = "lcd_visit_time";
 
@@ -160,5 +189,15 @@ const std::string DocumentColumn::CREATE_DOCUMENT_TABLE = "CREATE TABLE IF NOT E
     MEDIA_RELATIVE_PATH + " TEXT, " +
     DOCUMENT_LCD + " TEXT, " +
     DOCUMENT_LCD_VISIT_TIME + " BIGINT DEFAULT 0)";
+
+const std::set<std::string> DocumentColumn::DOCUMENT_COLUMNS = {
+    DocumentColumn::DOCUMENT_LCD, DocumentColumn::DOCUMENT_LCD_VISIT_TIME
+};
+
+bool DocumentColumn::IsDocumentColumn(const std::string &columnName)
+{
+    return (DOCUMENT_COLUMNS.find(columnName) != DOCUMENT_COLUMNS.end()) ||
+        (MEDIA_COLUMNS.find(columnName) != MEDIA_COLUMNS.end());
+}
 }  // namespace Media
 }  // namespace OHOS

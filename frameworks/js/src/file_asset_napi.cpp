@@ -148,6 +148,7 @@ napi_value FileAssetNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("fileType", JSGetMediaType),
             DECLARE_NAPI_GETTER_SETTER("displayName", JSGetFileDisplayName, JSSetFileDisplayName),
             DECLARE_NAPI_FUNCTION("getThumbnail", UserFileMgrGetThumbnail),
+            DECLARE_NAPI_FUNCTION("getReadOnlyFd", JSGetReadOnlyFd),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -2253,48 +2254,6 @@ napi_value FileAssetNapi::UserFileMgrSet(napi_env env, napi_callback_info info)
     return jsResult;
 }
 
-napi_value FileAssetNapi::UserFileMgrOpen(napi_env env, napi_callback_info info)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("UserFileMgrOpen");
-
-    napi_value ret = nullptr;
-    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
-    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-
-    string mode;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, mode) == napi_ok,
-        "Failed to parse js args");
-    asyncContext->valuesBucket.Put(MEDIA_FILEMODE, mode);
-    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
-    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
-
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrOpen",
-        JSOpenExecute, JSOpenCompleteCallback);
-}
-
-napi_value FileAssetNapi::UserFileMgrClose(napi_env env, napi_callback_info info)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("UserFileMgrClose");
-
-    napi_value ret = nullptr;
-    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
-    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, asyncContext->fd) ==
-        napi_ok, "Failed to parse js args");
-
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrClose",
-        [](napi_env env, void *data) {
-            FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
-            if (close(context->fd) < 0) {
-               NAPI_ERR_LOG("Failed to close, errno: %{public}d", errno);
-               context->error = errno;
-            }
-        }, reinterpret_cast<CompleteCallback>(JSCloseCompleteCallback));
-}
-
 napi_value FileAssetNapi::UserFileMgrCommitModify(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -2409,6 +2368,257 @@ napi_value FileAssetNapi::UserFileMgrGetThumbnail(napi_env env, napi_callback_in
         reinterpret_cast<CompleteCallback>(JSGetThumbnailCompleteCallback));
 
     return result;
+}
+
+static napi_value ParseArgsUserFileMgrOpen(napi_env env, napi_callback_info info,
+    unique_ptr<FileAssetAsyncContext> &context, bool isReadOnly)
+{
+    size_t minArgs = ARGS_ZERO;
+    size_t maxArgs = ARGS_ONE;
+    if (!isReadOnly) {
+        minArgs++;
+        maxArgs++;
+    }
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+    auto fileUri = context->objectInfo->GetFileUri();
+    MediaLibraryNapiUtils::UriAppendKeyValue(fileUri, API_VERSION, to_string(API_VERSION_10));
+    context->valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
+
+    if (isReadOnly) {
+        context->valuesBucket.Put(MEDIA_FILEMODE, MEDIA_FILEMODE_READONLY);
+    } else {
+        string mode;
+        CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[PARAM0], mode),
+            JS_ERR_PARAMETER_INVALID);
+        transform(mode.begin(), mode.end(), mode.begin(), ::tolower);
+        if (!MediaFileUtils::CheckMode(mode)) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return nullptr;
+        }
+        context->valuesBucket.Put(MEDIA_FILEMODE, mode);
+    }
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+int32_t AddTypeMaskByMediaType(string &uri, const MediaType mediaType)
+{
+    switch (mediaType) {
+        case MEDIA_TYPE_FILE:
+            MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, DOCUMENT_TYPE_MASK);
+            break;
+        case MEDIA_TYPE_IMAGE:
+        case MEDIA_TYPE_VIDEO:
+            MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, PHOTO_TYPE_MASK);
+            break;
+        case MEDIA_TYPE_AUDIO:
+            MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, AUDIO_TYPE_MASK);
+            break;
+        default:
+            return -EINVAL;
+    }
+    return E_SUCCESS;
+}
+
+static void UserFileMgrOpenExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSOpenExecute");
+
+    FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    bool isValid = false;
+    string mode = context->valuesBucket.Get(MEDIA_FILEMODE, isValid);
+    if (!isValid) {
+        context->SaveError(-EINVAL);
+        return;
+    }
+    string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
+    if (!isValid) {
+        context->SaveError(-EINVAL);
+        return ;
+    }
+    auto ret = AddTypeMaskByMediaType(fileUri, context->objectInfo->GetMediaType());
+    if (ret != E_SUCCESS) {
+        context->SaveError(ret);
+        return ;
+    }
+
+    Uri openFileUri(fileUri);
+    int32_t retVal = UserFileClient::OpenFile(openFileUri, mode);
+    if (retVal <= 0) {
+        context->SaveError(retVal);
+        NAPI_ERR_LOG("File open asset failed, ret: %{public}d", retVal);
+    } else {
+        context->fd = retVal;
+        if (mode.find('w') != string::npos) {
+            context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_WRITE);
+        } else {
+            context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_READONLY);
+        }
+    }
+}
+
+static void UserFileMgrOpenCallbackComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrOpenCallbackComplete");
+
+    auto context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env, napi_create_int32(env, context->fd, &jsContext->data), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value FileAssetNapi::UserFileMgrOpen(napi_env env, napi_callback_info info)
+{
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsUserFileMgrOpen(env, info, asyncContext, false));
+    if (asyncContext->objectInfo->fileAssetPtr == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrOpen",
+        UserFileMgrOpenExecute, UserFileMgrOpenCallbackComplete);
+}
+
+napi_value FileAssetNapi::JSGetReadOnlyFd(napi_env env, napi_callback_info info)
+{
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsUserFileMgrOpen(env, info, asyncContext, true));
+    if (asyncContext->objectInfo->fileAssetPtr == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets", UserFileMgrOpenExecute,
+        UserFileMgrOpenCallbackComplete);
+}
+
+static napi_value ParseArgsUserFileMgrClose(napi_env env, napi_callback_info info,
+    unique_ptr<FileAssetAsyncContext> &context)
+{
+    size_t minArgs = ARGS_ONE;
+    size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+    context->valuesBucket.Put(MEDIA_DATA_DB_URI, context->objectInfo->GetFileUri());
+
+    int32_t fd = 0;
+    CHECK_COND(env, MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[PARAM0], fd), JS_ERR_PARAMETER_INVALID);
+    if (fd <= 0) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+    context->fd = fd;
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void UserFileMgrCloseExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSOpenExecute");
+
+    FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    int32_t fd = context->fd;
+    bool openStatus = CheckFileOpenStatus(context, fd);
+    if (!openStatus) {
+        return;
+    }
+    auto ret = close(fd);
+    if (ret != E_SUCCESS)  {
+        context->SaveError(-errno);
+        NAPI_ERR_LOG("Close failed, errno: %{public}d", errno);
+        return;
+    }
+
+    string closeUri = URI_CLOSE_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, API_VERSION, to_string(API_VERSION_10));
+    ret = AddTypeMaskByMediaType(closeUri, context->objectInfo->GetMediaType());
+    if (ret != E_SUCCESS) {
+        context->SaveError(ret);
+        return ;
+    }
+    Uri closeAssetUri(closeUri);
+    ret = UserFileClient::Insert(closeAssetUri, context->valuesBucket);
+    if (ret != E_SUCCESS) {
+        context->SaveError(ret);
+    }
+}
+
+static void UserFileMgrCloseCallbackComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrCloseCallbackComplete");
+
+    auto context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env, napi_create_int32(env, E_SUCCESS, &jsContext->data), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value FileAssetNapi::UserFileMgrClose(napi_env env, napi_callback_info info)
+{
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsUserFileMgrClose(env, info, asyncContext));
+    if (asyncContext->objectInfo->fileAssetPtr == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets", UserFileMgrCloseExecute,
+        UserFileMgrCloseCallbackComplete);
 }
 } // namespace Media
 } // namespace OHOS

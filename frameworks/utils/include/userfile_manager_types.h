@@ -72,7 +72,9 @@ enum class MediaTypeMaskInteger: std::uint32_t {
 constexpr size_t TYPE_MASK_STRING_SIZE = 3;
 const std::string DEFAULT_TYPE_MASK;
 const std::string URI_PARAM_KEY_TYPE = "type";
-const std::string PHOTO_ALBUM_TYPE_MASK = "001";
+const std::string PHOTO_TYPE_MASK = "001";
+const std::string AUDIO_TYPE_MASK = "010";
+const std::string DOCUMENT_TYPE_MASK = "100";
 const std::string URI_PARAM_API_VERSION = "api_version";
 enum {
     TYPE_MASK_BIT_DEFAULT = '0',

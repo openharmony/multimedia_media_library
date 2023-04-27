@@ -29,7 +29,7 @@ const std::string PhotoAlbumColumns::ALBUM_COUNT = "count";
 // For api9 compatibility
 const std::string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
 // default fetch columns
-const std::set<std::string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMN = {
+const std::set<std::string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
     ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT
 };
 

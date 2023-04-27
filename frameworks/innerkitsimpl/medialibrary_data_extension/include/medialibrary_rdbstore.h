@@ -41,9 +41,9 @@ public:
         const std::vector<std::string> &columns) override;
 
     bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
-        int32_t rowId, const std::vector<std::string> &devices) override;
+        int32_t rowId, std::vector<std::string> &devices) override;
     bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
-        int32_t rowId, const std::vector<std::string> &devices, bool isBlock = false) override;
+        int32_t rowId, std::vector<std::string> &devices, bool isBlock = false) override;
     int32_t ExecuteSql(const std::string &sql) override;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql) override;
 

@@ -6,7 +6,6 @@
             "OHOS::Media::MediaLibraryNapi::UserFileMgrInit(napi_env__*, napi_value__*)";
             "OHOS::Media::MediaLibraryNapi::JSGetActivePeers(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::MediaLibraryNapi::UserFileMgrGetPrivateAlbum(napi_env__ *,napi_callback_info__ *)";
-            "OHOS::Media::MediaLibraryNapi::UserFileMgrGetAudioAssets(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::MediaLibraryNapi::JSOnCallback(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::MediaLibraryNapi::JSGetPrivateAlbum(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::MediaLibraryNapi::UserFileMgrTrashAsset(napi_env__ *,napi_callback_info__ *)";
@@ -28,7 +27,6 @@
             "OHOS::Media::MediaLibraryNapi::CreateImageVideoKeyEnum(napi_env__ *)";
             "OHOS::Media::MediaLibraryNapi::CreateDirectoryTypeEnum(napi_env__ *)";
             "OHOS::Media::MediaLibraryNapi::JSGetSmartAlbums(napi_env__ *,napi_callback_info__ *)";
-            "OHOS::Media::MediaLibraryNapi::UserFileMgrGetPhotoAssets(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::MediaLibraryNapi::JSStoreMediaAsset(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::MediaLibraryNapi::JSStartImagePreview(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::MediaLibraryNapi::JSGetAlbums(napi_env__ *,napi_callback_info__ *)";

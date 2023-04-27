@@ -16,6 +16,7 @@
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_COLUMN_H_
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_COLUMN_H_
 
+#include <set>
 #include <string>
 
 namespace OHOS::Media {
@@ -50,6 +51,10 @@ public:
     // Asset Parameter deperated
     static const std::string MEDIA_PARENT_ID;
     static const std::string MEDIA_RELATIVE_PATH;
+    // All Columns
+    static const std::set<std::string> MEDIA_COLUMNS;
+    // Default fetch columns
+    static const std::set<std::string> DEFAULT_FETCH_COLUMNS;
 };
 
 class PhotoColumn : public MediaColumn {
@@ -75,6 +80,11 @@ public:
     // photo uri
     static const std::string PHOTO_URI_PREFIX;
     static const std::string PHOTO_TYPE_URI;
+
+    // all columns
+    static const std::set<std::string> PHOTO_COLUMNS;
+
+    static bool IsPhotoColumn(const std::string &columnName);
 };
 
 class AudioColumn : public MediaColumn {
@@ -88,6 +98,11 @@ public:
 
     // create AudioTable sql
     static const std::string CREATE_AUDIO_TABLE;
+
+    // all columns
+    static const std::set<std::string> AUDIO_COLUMNS;
+
+    static bool IsAudioColumn(const std::string &columnName);
 };
 
 class DocumentColumn : public MediaColumn {
@@ -101,6 +116,11 @@ public:
 
     // create DocumentTable sql
     static const std::string CREATE_DOCUMENT_TABLE;
+
+    // all columns
+    static const std::set<std::string> DOCUMENT_COLUMNS;
+
+    static bool IsDocumentColumn(const std::string &columnName);
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_COLUMN_H_

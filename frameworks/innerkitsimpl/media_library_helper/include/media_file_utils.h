@@ -89,6 +89,7 @@ public:
     static void GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask);
     static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask);
     static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition);
+    static bool CheckMode(const std::string &mode);
 };
 } // namespace OHOS::Media
 
