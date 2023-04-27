@@ -265,9 +265,7 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
         return errCode;
     }
     auto watch = MediaLibraryNotify::GetInstance();
-    if (watch != nullptr) {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(deleteRows), NotifyType::NOTIFY_REMOVE);
-    }
+    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(deleteRows), NotifyType::NOTIFY_REMOVE);
     return deleteRows;
 }
 
@@ -320,15 +318,13 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
         return errCode;
     }
 
-    errCode = MediaLibraryObjectUtils::SendTrashNotify(cmd, rowId);
+    errCode = MediaLibraryObjectUtils::SendTrashNotify(cmd, fileAsset->GetId());
     if (errCode == E_OK) {
         return rowId;
     }
-    MediaLibraryObjectUtils::SendFavoriteNotify(cmd, rowId);
+    MediaLibraryObjectUtils::SendFavoriteNotify(cmd, fileAsset->GetId());
     auto watch = MediaLibraryNotify::GetInstance();
-    if (watch != nullptr) {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_UPDATE);
-    }
+    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(fileAsset->GetId()), NotifyType::NOTIFY_UPDATE);
     return rowId;
 }
 } // namespace Media
