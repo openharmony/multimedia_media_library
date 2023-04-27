@@ -36,6 +36,7 @@ group("test") {
     "unittest/mediascanner_test:unittest",
     "unittest/mediathumbnail_test:unittest",
     "unittest/mtp_native_test:unittest",
+    "unittest/notify_test:Notifytest",
     "unittest/photo_album_test:PhotoAlbumTest",
   ]
 }
