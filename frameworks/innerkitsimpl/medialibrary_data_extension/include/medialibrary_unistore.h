@@ -45,13 +45,13 @@ public:
     }
     
     virtual bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
-        int32_t rowId, const std::vector<std::string> &devices)
+        int32_t rowId, std::vector<std::string> &devices)
     {
         return false;
     }
 
     virtual bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
-        int32_t rowId, const std::vector<std::string> &devices, bool isBlock = false)
+        int32_t rowId, std::vector<std::string> &devices, bool isBlock = false)
     {
         return false;
     }

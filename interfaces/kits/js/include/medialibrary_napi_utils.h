@@ -183,9 +183,8 @@ const int32_t API_VERSION_10 = 10;
 
 enum NapiAssetType {
     TYPE_AUDIO = 0,
-    TYPE_VIDEO = 1,
-    TYPE_IMAGE = 2,
-    TYPE_ALBUM = 3,
+    TYPE_PHOTO = 1,
+    TYPE_ALBUM = 2,
 };
 
 enum AlbumType {

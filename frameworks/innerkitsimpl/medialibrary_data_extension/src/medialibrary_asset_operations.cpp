@@ -587,19 +587,6 @@ static int32_t OpenFile(const string &filePath, const string &mode)
     return MediaPrivacyManager(absFilePath, mode).Open();
 }
 
-static bool CheckMode(const string &mode)
-{
-    if (mode.empty()) {
-        return false;
-    }
-    if (MEDIA_OPEN_MODES.find(mode) != MEDIA_OPEN_MODES.end()) {
-        return true;
-    } else {
-        MEDIA_ERR_LOG("Input Mode %{public}s is invalid", mode.c_str());
-        return false;
-    }
-}
-
 static int32_t CreateFileAndSetPending(const shared_ptr<FileAsset> &fileAsset)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -658,7 +645,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     
     string lowerMode = mode;
     transform(lowerMode.begin(), lowerMode.end(), lowerMode.begin(), ::tolower);
-    if (!CheckMode(lowerMode)) {
+    if (!MediaFileUtils::CheckMode(lowerMode)) {
         return E_INVALID_MODE;
     }
 
