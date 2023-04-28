@@ -26,6 +26,7 @@
 #include "sqlite_database_utils.h"
 #include "sqlite_sql_builder.h"
 #include "sqlite_utils.h"
+#include "cloud_sync_helper.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -179,6 +180,7 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
         valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
         ret = rdbStore_->Update(deletedRows, cmd.GetTableName(), valuesBucket,
             cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
+        CloudSyncHelper::GetInstance()->StartSync();
     } else {
         ret = rdbStore_->Delete(deletedRows, cmd.GetTableName(), cmd.GetAbsRdbPredicates()->GetWhereClause(),
             cmd.GetAbsRdbPredicates()->GetWhereArgs());
@@ -212,7 +214,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     vector<string> devices = vector<string>();
     GetAllNetworkId(devices);
     SyncPushTable(bundleName_, cmd.GetTableName(), changedRows, devices);
-
+    CloudSyncHelper::GetInstance()->StartSync();
     return ret;
 }
 
@@ -335,6 +337,7 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
         ValuesBucket valuesBucket;
         valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
         err = rdbStore_->Update(deletedRows, valuesBucket, predicates);
+        CloudSyncHelper::GetInstance()->StartSync();
     } else {
         err = rdbStore_->Delete(deletedRows, predicates);
     }
@@ -362,6 +365,7 @@ int32_t MediaLibraryRdbStore::Update(int32_t &changedRows, const ValuesBucket &v
         MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", err);
         return E_HAS_DB_ERROR;
     }
+        CloudSyncHelper::GetInstance()->StartSync();
     return changedRows;
 }
 
