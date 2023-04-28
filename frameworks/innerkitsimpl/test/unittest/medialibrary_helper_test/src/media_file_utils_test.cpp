@@ -437,25 +437,25 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_006, TestS
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFilename_Test_001, TestSize.Level0)
 {
     string filePath = "";
-    EXPECT_EQ(MediaFileUtils::GetFilename(filePath), "");
+    EXPECT_EQ(MediaFileUtils::GetFileName(filePath), "");
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFilename_Test_002, TestSize.Level0)
 {
     string filePath = "test";
-    EXPECT_EQ(MediaFileUtils::GetFilename(filePath), "");
+    EXPECT_EQ(MediaFileUtils::GetFileName(filePath), "");
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFilename_Test_003, TestSize.Level0)
 {
     string filePath = "test/";
-    EXPECT_EQ(MediaFileUtils::GetFilename(filePath), "");
+    EXPECT_EQ(MediaFileUtils::GetFileName(filePath), "");
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFilename_Test_004, TestSize.Level0)
 {
     string filePath = "test/test";
-    EXPECT_EQ(MediaFileUtils::GetFilename(filePath), "test");
+    EXPECT_EQ(MediaFileUtils::GetFileName(filePath), "test");
 }
 } // namespace Media
 } // namespace OHOS

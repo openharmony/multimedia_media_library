@@ -28,8 +28,6 @@ public:
     MediaLibraryDataManagerUtils();
     ~MediaLibraryDataManagerUtils();
 
-    static std::string GetFileName(const std::string &path);
-    static std::string GetParentPath(const std::string &path);
     static bool IsNumber(const std::string &str);
     static std::string GetOperationType(const std::string &uri);
     static std::string GetIdFromUri(const std::string &uri);

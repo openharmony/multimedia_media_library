@@ -869,23 +869,22 @@ int MediaFileExtentionUtils::GetThumbnail(const Uri &uri, const Size &size, std:
     string pixelMapUri = queryUriStr + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
         MEDIA_DATA_DB_WIDTH + "=" + std::to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" +
         std::to_string(size.height);
-    Uri queryUri(pixelMapUri);
-    DataShare::DataSharePredicates predicates;
-    std::vector<std::string> columns;
-    int errCode = 0;
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryUri, columns, predicates, errCode);
-    if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("queryResultSet is nullptr, errCode is %{public}d", errCode);
+    auto fd = MediaLibraryDataManager::GetInstance()->GetThumbnail(pixelMapUri);
+    if (fd < 0) {
+        MEDIA_ERR_LOG("queryThumb is null, errCode is %{public}d", fd);
         return E_FAIL;
     }
-    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShareResultSet>(queryResultSet);
-    int rowCount = 0;
-    int err = resultSet->GetRowCount(rowCount);
-    if ((err != DataShare::E_OK) || (rowCount <= 0)) {
-        MEDIA_ERR_LOG("GetRowCount err %{public}d", err);
+    uint32_t err = 0;
+    SourceOptions opts;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, err);
+    if (imageSource  == nullptr) {
+        MEDIA_ERR_LOG("CreateImageSource err %{public}d", err);
         return E_FAIL;
     }
-    return ThumbnailUtils::GetPixelMapFromResult(resultSet, size, pixelMap);
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = size;
+    pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    return E_OK;
 }
 
 int MediaFileExtentionUtils::GetFileInfoFromUri(const Uri &selectFile, FileInfo &fileInfo)

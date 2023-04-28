@@ -117,7 +117,7 @@ bool MediaFileUtils::IsDirEmpty(const string &path)
     return entCount <= EMPTY_DIR_ENTRY_COUNT;
 }
 
-string MediaFileUtils::GetFilename(const string &filePath)
+string MediaFileUtils::GetFileName(const string &filePath)
 {
     string fileName;
 
@@ -125,7 +125,7 @@ string MediaFileUtils::GetFilename(const string &filePath)
         size_t lastSlash = filePath.rfind('/');
         if (lastSlash != string::npos) {
             if (filePath.size() > (lastSlash + 1)) {
-                fileName = filePath.substr(lastSlash + 1, filePath.length() - lastSlash);
+                fileName = filePath.substr(lastSlash + 1);
             }
         }
     }
@@ -264,7 +264,7 @@ bool MediaFileUtils::CopyFile(const string &filePath, const string &newPath)
     bool errCode = false;
 
     if (!(newPath.empty()) && !(filePath.empty())) {
-        newPathCorrected = newPath + "/" + GetFilename(filePath);
+        newPathCorrected = newPath + "/" + GetFileName(filePath);
     } else {
         MEDIA_ERR_LOG("Src filepath or dest filePath value cannot be empty");
         return false;
@@ -282,7 +282,7 @@ bool MediaFileUtils::CopyFile(const string &filePath, const string &newPath)
                               filePath.c_str(), errno);
                 return false;
             }
-            newPathCorrected = canonicalDirPath + "/" + GetFilename(filePath);
+            newPathCorrected = canonicalDirPath + "/" + GetFileName(filePath);
             errCode = CopyFileUtil(filePath, newPathCorrected);
         }
     }
@@ -378,6 +378,17 @@ string MediaFileUtils::GetFirstDentry(const string &path)
         dentry = path.substr(0, slashIndex);
     }
     return dentry;
+}
+
+string MediaFileUtils::GetParentPath(const string &path)
+{
+    string name;
+    size_t slashIndex = path.rfind("/");
+    if (slashIndex != string::npos) {
+        name = path.substr(0, slashIndex);
+    }
+
+    return name;
 }
 
 int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)

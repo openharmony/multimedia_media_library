@@ -33,6 +33,7 @@
 #include "string_ex.h"
 #include "thumbnail_const.h"
 #include "thumbnail_utils.h"
+#include "unique_fd.h"
 #include "userfile_client.h"
 
 using OHOS::HiviewDFX::HiLog;
@@ -1414,25 +1415,27 @@ static unique_ptr<PixelMap> QueryThumbnail(std::string &uri, Size &size, const s
     if (isApiVersion10) {
         MediaLibraryNapiUtils::UriAppendKeyValue(queryUriStr, API_VERSION, to_string(API_VERSION_10));
     }
+    tracer.Start("DataShare::OpenFile");
     Uri queryUri(queryUriStr);
-    tracer.Start("DataShare::Query");
-    DataShare::DataSharePredicates predicates;
-    vector<string> columns;
-    int errCode = 0;
-    auto resultSet = UserFileClient::Query(queryUri, predicates, columns, errCode);
-    if (resultSet == nullptr) {
-        NAPI_ERR_LOG("Query thumbnail error, errCode is %{public}d", errCode);
+    UniqueFd uniqueFd(UserFileClient::OpenFile(queryUri, "R"));
+    if (uniqueFd.Get() < 0) {
+        NAPI_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
         return nullptr;
     }
     tracer.Finish();
 
-    unique_ptr<PixelMap> pixelMap;
-    auto ret = ThumbnailUtils::GetPixelMapFromResult(resultSet, size, pixelMap);
-    if (ret != DataShare::E_OK) {
-        NAPI_DEBUG_LOG("getImageFromResult error %{public}d", ret);
+    tracer.Start("ImageSource::CreateImageSource");
+    SourceOptions opts;
+    uint32_t err = 0;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(uniqueFd.Get(), opts, err);
+    if (imageSource  == nullptr) {
+        NAPI_ERR_LOG("CreateImageSource err %{public}d", err);
+        return nullptr;
     }
 
-    return pixelMap;
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = size;
+    return imageSource->CreatePixelMap(decodeOpts, err);
 }
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)

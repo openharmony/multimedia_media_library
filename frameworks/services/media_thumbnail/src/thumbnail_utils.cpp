@@ -105,25 +105,13 @@ bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &t
     return true;
 }
 
-bool ThumbnailUtils::ClearThumbnailAllRecord(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
+bool ThumbnailUtils::DeleteThumbFile(ThumbnailData &data, bool isLcd)
 {
-    if (IsImageExist(thumbnailData.lcdKey, opts.networkId, opts.kvStore)) {
-        if (!RemoveDataFromKv(opts.kvStore, thumbnailData.lcdKey)) {
-            MEDIA_ERR_LOG("ThumbnailUtils::RemoveDataFromKv faild");
-            return false;
-        }
+    string fileName = ThumbnailUtils::GetThumbPath(data.path, isLcd ? data.lcdKey : data.thumbnailKey);
+    if (!MediaFileUtils::DeleteFile(fileName)) {
+        MEDIA_ERR_LOG("delete file faild %{public}d", errno);
+        return false;
     }
-
-    if (IsImageExist(thumbnailData.thumbnailKey, opts.networkId, opts.kvStore)) {
-        if (!RemoveDataFromKv(opts.kvStore, thumbnailData.thumbnailKey)) {
-            MEDIA_ERR_LOG("ThumbnailUtils::RemoveDataFromKv faild");
-            return false;
-        }
-        if (!DeleteDistributeThumbnailInfo(opts)) {
-            return false;
-        }
-    }
-
     return true;
 }
 
@@ -1073,6 +1061,31 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
     return true;
 }
 
+int ThumbnailUtils::SaveFile(ThumbnailData &data, bool isLcd)
+{
+    const mode_t fileMode = 02770;
+    string fileName = ThumbnailUtils::GetThumbPath(data.path, isLcd ? data.lcdKey : data.thumbnailKey);
+    string dir = MediaFileUtils::GetParentPath(fileName);
+    if (!MediaFileUtils::CreateDirectory(dir)) {
+        return -errno;
+    }
+    int fd = open(fileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC | fileMode);
+    if (fd < 0) {
+        MEDIA_ERR_LOG("SaveFile failed! filePath %{private}s status %{public}d", fileName.c_str(), errno);
+        return -errno;
+    }
+
+    int writeSize = isLcd ? data.lcd.size() : data.thumbnail.size();
+    int size = write(fd, isLcd ? data.lcd.data() : data.thumbnail.data(), writeSize);
+    if (size != writeSize) {
+        return E_NO_SPACE;
+    }
+    if (close(fd) < 0) {
+        return -errno;
+    }
+    return E_OK;
+}
+
 Status ThumbnailUtils::SaveThumbnailData(ThumbnailData &data, const string &networkId,
     const shared_ptr<SingleKvStore> &kvStore)
 {
@@ -1252,22 +1265,30 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbna
         return isDelete;
     }
     rdbSet.reset();
-
     if (IsKeyNotSame(tmpData.thumbnailKey, thumbnailData.thumbnailKey)) {
-        if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, tmpData.thumbnailKey)) {
-            MEDIA_ERR_LOG("DeleteThumbnailData Faild");
-            return isDelete;
+        if (DeleteThumbFile(tmpData, false)) {
+            isDelete = true;
         }
-        isDelete = true;
     }
     if (IsKeyNotSame(tmpData.lcdKey, thumbnailData.lcdKey)) {
-        if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, tmpData.lcdKey)) {
-            MEDIA_ERR_LOG("DeleteLCDlData Faild");
-            return isDelete;
+        if (DeleteThumbFile(tmpData, true)) {
+            isDelete = true;
         }
-        isDelete = true;
     }
     return isDelete;
+}
+
+string ThumbnailUtils::GetThumbPath(const string &path, const string &key)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    auto lastIndex = path.find_last_of('.');
+    if (lastIndex == string::npos) {
+        lastIndex = ROOT_MEDIA_DIR.length() - 1;
+    }
+    lastIndex = lastIndex - ROOT_MEDIA_DIR.length();
+    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length(), lastIndex) + "-" + key + ".jpg";
 }
 
 bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, const shared_ptr<SingleKvStore> &kvStore)
