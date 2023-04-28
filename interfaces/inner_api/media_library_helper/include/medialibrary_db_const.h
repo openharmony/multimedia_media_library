@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,6 +27,13 @@ enum {
     MEDIA_RDB_VERSION_ADD_CLOUD = 2,
     MEDIA_RDB_VERSION_ADD_PHOTO_TABLE,
 };
+
+enum {
+    MEDIA_API_VERSION_DEFAULT = 8,
+    MEDIA_API_VERSION_V9,
+    MEDIA_API_VERSION_V10,
+};
+
 const std::string MEDIA_LIBRARY_VERSION = "1.0";
 
 const int32_t DEVICE_SYNCSTATUSING = 0;
@@ -44,6 +51,13 @@ const std::string MEDIA_DATA_ABILITY_DB_NAME = "media_library.db";
 
 const std::string BUNDLE_NAME = "com.ohos.medialibrary.medialibrarydata";
 
+const std::string ML_FILE_SCHEME = "file";
+const std::string ML_FILE_PREFIX = "file://";
+const std::string ML_FILE_URI_PREFIX = "file://media";
+const std::string ML_URI_NETWORKID = "networkid";
+const std::string ML_URI_NETWORKID_EQUAL = "?networkid=";
+const std::string ML_URI_AUTHORITY = "media";
+const std::string ML_DATA_SHARE_SCHEME = "datashare";
 const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "datashare://";
 const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
 const std::string MEDIALIBRARY_MEDIA_PREFIX = MEDIALIBRARY_DATA_ABILITY_PREFIX +
