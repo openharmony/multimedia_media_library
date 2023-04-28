@@ -26,6 +26,7 @@
 #include "sqlite_database_utils.h"
 #include "sqlite_sql_builder.h"
 #include "sqlite_utils.h"
+#include "cloud_sync_helper.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -173,9 +174,17 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
-
-    int32_t ret = rdbStore_->Delete(deletedRows, cmd.GetTableName(), cmd.GetAbsRdbPredicates()->GetWhereClause(),
-        cmd.GetAbsRdbPredicates()->GetWhereArgs());
+    int32_t ret = NativeRdb::E_ERROR;
+    if (cmd.GetTableName() == MEDIALIBRARY_TABLE || cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        ValuesBucket valuesBucket;
+        valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
+        ret = rdbStore_->Update(deletedRows, cmd.GetTableName(), valuesBucket,
+            cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
+        CloudSyncHelper::GetInstance()->StartSync();
+    } else {
+        ret = rdbStore_->Delete(deletedRows, cmd.GetTableName(), cmd.GetAbsRdbPredicates()->GetWhereClause(),
+            cmd.GetAbsRdbPredicates()->GetWhereArgs());
+    }
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Delete failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
@@ -205,7 +214,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     vector<string> devices = vector<string>();
     GetAllNetworkId(devices);
     SyncPushTable(bundleName_, cmd.GetTableName(), changedRows, devices);
-
+    CloudSyncHelper::GetInstance()->StartSync();
     return ret;
 }
 
@@ -216,7 +225,17 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
         return nullptr;
     }
-
+    if (cmd.GetTableName() == MEDIALIBRARY_TABLE || cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
+        string dirtyFilterCondition = "dirty <> " + std::to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED));
+        if (!strQueryCondition.empty()) {
+            dirtyFilterCondition += " AND ";
+            strQueryCondition = dirtyFilterCondition + strQueryCondition;
+        } else {
+            strQueryCondition = dirtyFilterCondition;
+        }
+        cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
+    }
     auto *predicates = cmd.GetAbsRdbPredicates();
 #ifdef ML_DEBUG
     MEDIA_DEBUG_LOG("tablename = %s", cmd.GetTableName().c_str());
@@ -312,9 +331,17 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
-
+    int err = E_ERR;
     int32_t deletedRows = 0;
-    int err = rdbStore_->Delete(deletedRows, predicates);
+    if (predicates.GetTableName() == MEDIALIBRARY_TABLE || predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        ValuesBucket valuesBucket;
+        valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
+        err = rdbStore_->Update(deletedRows, valuesBucket, predicates);
+        CloudSyncHelper::GetInstance()->StartSync();
+    } else {
+        err = rdbStore_->Delete(deletedRows, predicates);
+    }
+
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to execute delete, err: %{public}d", err);
         return E_HAS_DB_ERROR;
@@ -338,6 +365,7 @@ int32_t MediaLibraryRdbStore::Update(int32_t &changedRows, const ValuesBucket &v
         MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", err);
         return E_HAS_DB_ERROR;
     }
+        CloudSyncHelper::GetInstance()->StartSync();
     return changedRows;
 }
 
@@ -669,6 +697,9 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     vector<string> executeSqlStrs = {
         CREATE_MEDIA_TABLE,
         PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
+        PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
+        PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
         AudioColumn::CREATE_AUDIO_TABLE,
         DocumentColumn::CREATE_DOCUMENT_TABLE,
         CREATE_SMARTALBUM_TABLE,
@@ -686,6 +717,9 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         CREATE_BUNDLE_PREMISSION_TABLE,
         CREATE_MEDIALIBRARY_ERROR_TABLE,
         CREATE_REMOTE_THUMBNAIL_TABLE,
+        CREATE_FILES_DELETE_TRIGGER,
+        CREATE_FILES_MDIRTY_TRIGGER,
+        CREATE_FILES_FDIRTY_TRIGGER,
         PhotoAlbumColumns::CREATE_TABLE,
         PhotoAlbumColumns::INDEX_ALBUM_TYPES,
         PhotoMap::CREATE_TABLE,
