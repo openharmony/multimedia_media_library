@@ -193,7 +193,7 @@ void ClearAndRestart()
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MediaLibraryUnitTestUtils::Init();
     }
-    
+
     system("rm -rf /storage/media/local/files/*");
     for (const auto &dir : TEST_ROOT_DIRS) {
         string ROOT_PATH = "/storage/media/100/local/files/";
@@ -262,7 +262,7 @@ bool QueryAndVerifyPhotoAsset(const string &columnName, const string &value,
         MEDIA_ERR_LOG("Get resultSet failed");
         return false;
     }
-    
+
     int32_t resultSetCount = 0;
     int32_t ret = resultSet->GetRowCount(resultSetCount);
     if (ret != NativeRdb::E_OK || resultSetCount <= 0) {
@@ -449,7 +449,7 @@ static int32_t TestQueryAssetLongParams(int64_t longValue, const string &columnV
         return E_OK;
     } else {
         MEDIA_ERR_LOG("TestQueryAssetLongParams failed, intValue=%{public}ld, columnValue=%{public}s",
-            (long) longValue, columnValue.c_str());
+            static_cast<long>(longValue), columnValue.c_str());
         return E_INVALID_VALUES;
     }
 }
@@ -627,7 +627,7 @@ void MediaLibraryPhotoOperationsTest::TearDownTestCase()
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MediaLibraryUnitTestUtils::Init();
     }
-    
+
     system("rm -rf /storage/media/local/files/*");
     CleanTestTables();
     g_rdbStore = nullptr;
@@ -691,7 +691,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_002, Test
     string chineseLongString = CHAR256_CHINESE + ".jpg";
     TestPhotoCreateParamsApi10(chineseLongString, MediaType::MEDIA_TYPE_IMAGE,
         E_INVALID_DISPLAY_NAME);
-    
+
     TestPhotoCreateParamsApi10("photo", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
     TestPhotoCreateParamsApi10("photo.", MediaType::MEDIA_TYPE_IMAGE, E_INVALID_DISPLAY_NAME);
     TestPhotoCreateParamsApi10("photo.abc", MediaType::MEDIA_TYPE_IMAGE,
@@ -952,7 +952,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_004, Test
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
     TestPhotoUpdateByQueryApi10(PhotoColumn::MEDIA_ID, to_string(fileId2),
         { { PhotoColumn::MEDIA_TITLE, "photo2" } }, E_OK);
-    
+
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_004");
 }
 
@@ -964,7 +964,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_005, Test
         MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
         return;
     }
-    
+
     MediaLibraryCommand queryPathCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
     queryPathCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
@@ -1076,7 +1076,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSi
         MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
         return;
     }
-    
+
     static constexpr int LARGE_NUM = 1000;
     TestPhotoOpenParamsApi10(fileId, "",
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
