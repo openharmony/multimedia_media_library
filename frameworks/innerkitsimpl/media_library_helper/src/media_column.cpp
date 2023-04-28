@@ -102,6 +102,37 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_LCD_VISIT_TIME + " BIGINT DEFAULT 0, " +
     PHOTO_POSITION + " INT DEFAULT 1)";
 
+const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
+                        "CREATE TRIGGER photos_delete_trigger AFTER UPDATE ON " +
+                        PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN new.dirty = " +
+                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
+                        " and OLD.cloud_id is NULL " +
+                        " BEGIN " +
+                        " DELETE FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE file_id = old.file_id;" +
+                        " END;";
+
+const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
+                        "CREATE TRIGGER photos_fdirty_trigger AFTER UPDATE ON " +
+                        PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL AND" +
+                        " new.date_modified <> old.date_modified " +
+                        " BEGIN " +
+                        " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET dirty = " +
+                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_FDIRTY)) +
+                        " WHERE file_id = old.file_id;" +
+                        " END;";
+
+const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
+                        "CREATE TRIGGER photos_mdirty_trigger AFTER UPDATE ON " +
+                        PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL" +
+                        " AND new.date_modified = old.date_modified AND old.dirty = " +
+                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
+                        " AND new.dirty = old.dirty " +
+                        " BEGIN " +
+                        " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET dirty = " +
+                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
+                        " WHERE file_id = old.file_id;" +
+                        " END;";
+
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE, PhotoColumn::PHOTO_LCD,
     PhotoColumn::PHOTO_HEIGHT, PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_LCD_VISIT_TIME, PhotoColumn::PHOTO_POSITION,
