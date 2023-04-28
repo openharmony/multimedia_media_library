@@ -90,6 +90,7 @@
               "header": {
                 "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
                 "header_files": [
+                  "media_file_uri.h",
                   "media_volume.h"
                 ]
               },
