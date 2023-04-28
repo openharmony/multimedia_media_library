@@ -669,17 +669,17 @@ int32_t MediaLibraryDataManager::DistributeDeviceAging()
     return result;
 }
 
-shared_ptr<ResultSetBridge> MediaLibraryDataManager::GetThumbnail(const string &uri)
+int MediaLibraryDataManager::GetThumbnail(const string &uri)
 {
     if (thumbnailService_ == nullptr) {
         MEDIA_ERR_LOG("thumbnailService_ is null");
-        return nullptr;
+        return E_FAIL;
     }
     if (!uri.empty() && MediaLibraryObjectUtils::CheckUriPending(uri)) {
         MEDIA_ERR_LOG("failed to get thumbnail, the file:%{public}s is pending", uri.c_str());
-        return nullptr;
+        return E_FAIL;
     }
-    return thumbnailService_->GetThumbnail(uri);
+    return thumbnailService_->GetThumbnailFd(uri);
 }
 
 void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri)
@@ -787,20 +787,11 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         return nullptr;
     }
 
-    MediaLibraryCommand cmd(uri, OperationType::QUERY);
-    shared_ptr<ResultSetBridge> queryResultSet;
-    if (cmd.GetOprnObject() == OperationObject::THUMBNAIL) {
-        tracer.Start("GetThumbnail");
-        queryResultSet = GetThumbnail(uri.ToString());
-    } else {
-        auto absResultSet = QueryRdb(uri, columns, predicates, errCode);
-        if (absResultSet == nullptr) {
-            return nullptr;
-        }
-        queryResultSet = RdbUtils::ToResultSetBridge(absResultSet);
+    auto absResultSet = QueryRdb(uri, columns, predicates, errCode);
+    if (absResultSet == nullptr) {
+        return nullptr;
     }
-
-    return queryResultSet;
+    return RdbUtils::ToResultSetBridge(absResultSet);
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
@@ -943,14 +934,9 @@ int32_t MediaLibraryDataManager::InitialiseThumbnailService(
     if (thumbnailService_ != nullptr) {
         return E_OK;
     }
-    thumbnailService_ = ThumbnailService::GetInstance();
-    if (thumbnailService_ == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager::InitialiseThumbnailService failed");
-        return E_ERR;
-    }
-    int ret = thumbnailService_->Init(rdbStore_, kvStorePtr_, extensionContext);
+    int ret = ThumbnailService::GetInstance()->Init(rdbStore_, kvStorePtr_, extensionContext);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to init ThumbnailService");
+        MEDIA_ERR_LOG("Failed to init ThumbnailService, err %{public}d", ret);
         return E_ERR;
     }
     return E_OK;

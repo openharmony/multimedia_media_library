@@ -183,7 +183,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
         return false;
     }
 
-    if (data.dateModified == 0) {
+    if (data.dateModified == 0 || force) {
         ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
     }
 
@@ -192,22 +192,19 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
         return false;
     }
 
-    if (!ThumbnailUtils::IsImageExist(data.lcdKey, opts.networkId, opts.kvStore)) {
-        if (!ThumbnailUtils::LoadSourceImage(data, false, opts.screenSize)) {
-            MEDIA_ERR_LOG("LoadSourceImage faild");
-            return false;
-        }
-        if (!ThumbnailUtils::CompressImage(data.source, data.lcd)) {
-            MEDIA_ERR_LOG("CompressImage faild");
-            return false;
-        }
+    if (!ThumbnailUtils::LoadSourceImage(data, false, opts.screenSize)) {
+        MEDIA_ERR_LOG("LoadSourceImage faild");
+        return false;
+    }
+    if (!ThumbnailUtils::CompressImage(data.source, data.lcd)) {
+        MEDIA_ERR_LOG("CompressImage faild");
+        return false;
+    }
 
-        if (ThumbnailUtils::SaveLcdData(data, opts.networkId, opts.kvStore) != Status::SUCCESS) {
-            MEDIA_ERR_LOG("SaveLcdData faild");
-            return false;
-        }
-    } else {
-        return true;
+    err = ThumbnailUtils::SaveFile(data, true);
+    if (err < 0) {
+        MEDIA_ERR_LOG("SaveLcd faild %{public}d", err);
+        return false;
     }
 
     data.lcd.clear();
@@ -235,7 +232,7 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
         return false;
     }
 
-    if (data.dateModified == 0) {
+    if (data.dateModified == 0 || force) {
         ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
     }
 
@@ -244,20 +241,19 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
         return false;
     }
 
-    if (!ThumbnailUtils::IsImageExist(data.thumbnailKey, opts.networkId, opts.kvStore)) {
-        if (!ThumbnailUtils::LoadSourceImage(data)) {
-            MEDIA_ERR_LOG("LoadSourceImage faild");
-            return false;
-        }
-        if (!ThumbnailUtils::CompressImage(data.source, data.thumbnail)) {
-            MEDIA_ERR_LOG("CompressImage faild");
-            return false;
-        }
+    if (!ThumbnailUtils::LoadSourceImage(data)) {
+        MEDIA_ERR_LOG("LoadSourceImage faild");
+        return false;
+    }
+    if (!ThumbnailUtils::CompressImage(data.source, data.thumbnail)) {
+        MEDIA_ERR_LOG("CompressImage faild");
+        return false;
+    }
 
-        if (ThumbnailUtils::SaveThumbnailData(data, opts.networkId, opts.kvStore) != Status::SUCCESS) {
-            MEDIA_ERR_LOG("SaveThumbnailData faild");
-            return false;
-        }
+    err = ThumbnailUtils::SaveFile(data, false);
+    if (err < 0) {
+        MEDIA_ERR_LOG("SaveThumbnailData faild %{public}d", err);
+        return false;
     }
     data.thumbnail.clear();
     if ((data.dateModified == 0) || force) {

@@ -3157,7 +3157,7 @@ static napi_value GetStoreMediaAssetArgs(napi_env env, napi_value param,
         NAPI_ERR_LOG("param get fail");
         return nullptr;
     }
-    string fileName = MediaFileUtils::GetFilename(context->storeMediaSrc);
+    string fileName = MediaFileUtils::GetFileName(context->storeMediaSrc);
     if (fileName.empty() || (fileName.at(0) == '.')) {
         NAPI_ERR_LOG("src file name is not proper");
         context->error = JS_E_RELATIVEPATH;

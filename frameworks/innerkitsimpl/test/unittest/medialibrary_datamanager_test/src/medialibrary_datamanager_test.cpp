@@ -1193,11 +1193,11 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetThumbnail_Test_001, Tes
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     string uri = "GetThumbnail";
     auto ret = mediaLibraryDataManager->GetThumbnail(uri);
-    EXPECT_EQ(ret, nullptr);
+    EXPECT_LT(ret, 0);
     shared_ptr<OHOS::AbilityRuntime::Context> extensionContext;
     mediaLibraryDataManager->InitialiseThumbnailService(extensionContext);
     ret = mediaLibraryDataManager->GetThumbnail(uri);
-    EXPECT_EQ(ret, nullptr);
+    EXPECT_LT(ret, 0);
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_001, TestSize.Level0)

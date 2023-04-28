@@ -114,7 +114,9 @@ int32_t ThumbnailAgingHelper::ClearLcdFromFileTable(ThumbRdbOpt &opts)
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
         ThumbnailUtils::ThumbnailDataCopy(data, infos[i]);
-        ThumbnailUtils::DeleteLcdData(opts, data);
+        if (ThumbnailUtils::DeleteThumbFile(data, true)) {
+            ThumbnailUtils::CleanThumbnailInfo(opts, false, true);
+        }
     }
 
     return E_OK;
@@ -238,44 +240,6 @@ int32_t ThumbnailAgingHelper::InvalidateDistributeBatch(ThumbRdbOpt &opts)
     return E_OK;
 }
 
-int32_t ThumbnailAgingHelper::AgingLcdKeysFromFiles(ThumbRdbOpt &opts)
-{
-    int32_t err = E_ERR;
-    vector<ThumbnailRdbData> infos;
-    if (!ThumbnailUtils::QueryHasLcdFiles(opts, infos, err)) {
-        MEDIA_ERR_LOG("Failed to QueryHasLcdFiles %{public}d", err);
-        return err;
-    }
-
-    for (uint32_t i = 0; i < infos.size(); i++) {
-        string key = infos[i].lcdKey;
-        if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, key)) {
-            MEDIA_ERR_LOG("RemoveDataFromKv faild key: %{public}s", key.c_str());
-        }
-    }
-
-    return E_OK;
-}
-
-int32_t ThumbnailAgingHelper::AgingThumbnailKeysFromFiles(ThumbRdbOpt &opts)
-{
-    int32_t err = E_ERR;
-    vector<ThumbnailRdbData> infos;
-    if (!ThumbnailUtils::QueryHasThumbnailFiles(opts, infos, err)) {
-        MEDIA_ERR_LOG("Failed to QueryHasThumbnailFiles %{public}d", err);
-        return err;
-    }
-
-    for (uint32_t i = 0; i < infos.size(); i++) {
-        string key = infos[i].thumbnailKey;
-        if (!ThumbnailUtils::RemoveDataFromKv(opts.kvStore, key)) {
-            MEDIA_ERR_LOG("RemoveDataFromKv faild key: %{public}s", key.c_str());
-        }
-    }
-
-    return E_OK;
-}
-
 int32_t ThumbnailAgingHelper::ClearKeyAndRecordFromMap(ThumbRdbOpt &opts)
 {
     int32_t err = E_ERR;
@@ -289,7 +253,9 @@ int32_t ThumbnailAgingHelper::ClearKeyAndRecordFromMap(ThumbRdbOpt &opts)
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
         ThumbnailUtils::ThumbnailDataCopy(data, infos[i]);
-        ThumbnailUtils::ClearThumbnailAllRecord(opts, data);
+        if (ThumbnailUtils::DeleteOriginImage(opts, data)) {
+            ThumbnailUtils::DeleteDistributeThumbnailInfo(opts);
+        }
     }
     return E_OK;
 }

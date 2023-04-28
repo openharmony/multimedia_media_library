@@ -383,6 +383,7 @@ static int32_t RecycleFile(const shared_ptr<FileAsset> &fileAsset)
     if (!MediaFileUtils::MoveFile(fileAsset->GetPath(), assetPath)) {
         return E_RENAME_FILE_FAIL;
     }
+    MediaLibraryObjectUtils::InvalidateThumbnail(to_string(fileAsset->GetId()));
 
     if (hasSameName) {
         fileAsset->SetRecyclePath(assetPath);
@@ -426,11 +427,13 @@ static int32_t RemoveTrashAssetsInfoUtil(const int32_t fileAssetId)
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_GET_ASSET_FAIL, "fileAsset is nullptr, assetId: %{public}d",
         fileAssetId);
 
+    int32_t ret = 0;
     if (fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {
-        return RecycleFileAssetsInfoUtil(fileAsset);
+        ret = RecycleFileAssetsInfoUtil(fileAsset);
     } else {
-        return RecycleDirAssetsInfoUtil(fileAsset);
+        ret = RecycleDirAssetsInfoUtil(fileAsset);
     }
+    return ret;
 }
 
 static int32_t UpdateFavoriteAssetsInfoUtil(const int32_t fileAssetId, const bool isFavorites)
@@ -544,6 +547,7 @@ static int32_t TrashFileAssetsInfoUtil(const int32_t assetId)
     CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to make recycle display name");
     errorCode = MediaFileUtils::ModifyAsset(oldPath, recyclePath);
     CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to modifyAsset");
+    MediaLibraryObjectUtils::InvalidateThumbnail(to_string(assetId));
     int64_t trashDate = MediaFileUtils::UTCTimeSeconds();
     return UpdateTrashInfoInDb(assetId, trashDate, recyclePath, oldPath, TRASHED_ASSET);
 }

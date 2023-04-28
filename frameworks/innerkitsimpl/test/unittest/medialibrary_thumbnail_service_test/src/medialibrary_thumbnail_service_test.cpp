@@ -69,17 +69,17 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetThumbnail_test_001, TestSize.Level
     }
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     string uri = "";
-    auto serviceSptr = serverTest->GetThumbnail(uri);
-    EXPECT_EQ(serviceSptr, nullptr);
+    auto fd = serverTest->GetThumbnailFd(uri);
+    EXPECT_LT(fd, 0);
     uri = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
         THUMBNAIL_WIDTH + "=1&" + THUMBNAIL_HEIGHT + "=1";
-    serviceSptr = serverTest->GetThumbnail(uri);
-    EXPECT_EQ(serviceSptr, nullptr);
+    fd = serverTest->GetThumbnailFd(uri);
+    EXPECT_LT(fd, 0);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
     serverTest->Init(storePtr, kvStorePtr, context);
-    serviceSptr = serverTest->GetThumbnail(uri);
-    EXPECT_EQ(serviceSptr, nullptr);
+    fd = serverTest->GetThumbnailFd(uri);
+    EXPECT_LT(fd, 0);
     serverTest->ReleaseService();
 }
 

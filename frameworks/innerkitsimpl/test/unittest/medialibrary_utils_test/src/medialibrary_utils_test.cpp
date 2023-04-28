@@ -432,14 +432,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteDistributeLcdData_test_001, Tes
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_ClearThumbnailAllRecord_test_001, TestSize.Level0)
-{
-    ThumbnailData thumbnailData;
-    ThumbRdbOpt opts;
-    bool ret = ThumbnailUtils::ClearThumbnailAllRecord(opts, thumbnailData);
-    EXPECT_EQ(ret, true);
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_DoUpdateRemoteThumbnail_test_001, TestSize.Level0)
 {
     ThumbnailData thumbnailData;

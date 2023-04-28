@@ -32,6 +32,7 @@ constexpr int32_t E_PERMISSION_DENIED = -EACCES;
 constexpr int32_t E_NO_SUCH_FILE      = -ENOENT;
 constexpr int32_t E_FILE_EXIST        = -EEXIST;
 constexpr int32_t E_NO_MEMORY         = -ENOMEM;
+constexpr int32_t E_NO_SPACE          = -ENOSPC;
 
 // medialibary inner common err { 200, 1999 }
 constexpr int32_t E_COMMON_OFFSET = 200;

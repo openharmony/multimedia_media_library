@@ -68,7 +68,7 @@ int32_t MediaLibraryAlbumOperations::ModifyAlbumOperation(MediaLibraryCommand &c
     if (dstDirName.empty() && !values.IsEmpty()) {
         ret = MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
     } else {
-        string dstDirPath = MediaLibraryDataManagerUtils::GetParentPath(srcDirPath) + "/" + dstDirName;
+        string dstDirPath = MediaFileUtils::GetParentPath(srcDirPath) + "/" + dstDirName;
         ret = MediaLibraryObjectUtils::RenameDirObj(cmd, srcDirPath, dstDirPath);
     }
     return ret;
