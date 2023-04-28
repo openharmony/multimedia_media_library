@@ -21,6 +21,15 @@
 
 namespace OHOS::Media {
 
+enum class DirtyTypes : int32_t {
+    TYPE_SYNCED,
+    TYPE_NEW,
+    TYPE_MDIRTY,
+    TYPE_FDIRTY,
+    TYPE_DELETED,
+    TYPE_RETRY
+};
+
 class MediaColumn {
 public:
     // Asset Base Parameter
@@ -76,6 +85,11 @@ public:
 
     // create PhotoTable sql
     static const std::string CREATE_PHOTO_TABLE;
+
+    // create Photo cloud sync trigger
+    static const std::string CREATE_PHOTOS_DELETE_TRIGGER;
+    static const std::string CREATE_PHOTOS_FDIRTY_TRIGGER;
+    static const std::string CREATE_PHOTOS_MDIRTY_TRIGGER;
 
     // photo uri
     static const std::string PHOTO_URI_PREFIX;
