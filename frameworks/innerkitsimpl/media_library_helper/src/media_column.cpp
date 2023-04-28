@@ -126,7 +126,7 @@ const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL" +
                         " AND new.date_modified = old.date_modified AND old.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
-                        " AND new.dirty = old.dirty " +
+                        " AND new.dirty = old.dirty" +
                         " BEGIN " +
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
