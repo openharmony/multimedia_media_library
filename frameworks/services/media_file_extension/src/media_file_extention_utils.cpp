@@ -33,6 +33,7 @@
 #include "thumbnail_utils.h"
 #include "uri_helper.h"
 #include "n_error.h"
+#include "unique_fd.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -869,14 +870,14 @@ int MediaFileExtentionUtils::GetThumbnail(const Uri &uri, const Size &size, std:
     string pixelMapUri = queryUriStr + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
         MEDIA_DATA_DB_WIDTH + "=" + std::to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" +
         std::to_string(size.height);
-    auto fd = MediaLibraryDataManager::GetInstance()->GetThumbnail(pixelMapUri);
-    if (fd < 0) {
-        MEDIA_ERR_LOG("queryThumb is null, errCode is %{public}d", fd);
+    UniqueFd uniqueFd(MediaLibraryDataManager::GetInstance()->GetThumbnail(pixelMapUri));
+    if (uniqueFd.Get() < 0) {
+        MEDIA_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
         return E_FAIL;
     }
     uint32_t err = 0;
     SourceOptions opts;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, err);
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(uniqueFd.Get(), opts, err);
     if (imageSource  == nullptr) {
         MEDIA_ERR_LOG("CreateImageSource err %{public}d", err);
         return E_FAIL;
