@@ -279,14 +279,14 @@ int32_t MediaLibraryObjectUtils::DeleteRows(const vector<int64_t> &rowIds)
 
 int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t parentId)
 {
-    string title = MediaLibraryDataManagerUtils::GetFileName(path);
+    string title = MediaFileUtils::GetFileName(path);
     if (MediaFileUtils::CheckDisplayName(title) < 0) {
         MEDIA_ERR_LOG("Check display name failed!");
         return E_INVALID_DISPLAY_NAME;
     }
 
     string relativePath;
-    string parentPath = MediaLibraryDataManagerUtils::GetParentPath(path);
+    string parentPath = MediaFileUtils::GetParentPath(path);
     if (parentPath.length() > ROOT_MEDIA_DIR.length()) {
         relativePath = parentPath.substr(ROOT_MEDIA_DIR.length()) + "/";
     }
@@ -441,18 +441,15 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
     return err;
 }
 
-static inline void InvalidateThumbnail(const string &id, const string &tableName = MEDIALIBRARY_TABLE)
+void MediaLibraryObjectUtils::InvalidateThumbnail(const string &id, const string &tableName)
 {
-    auto thumbnailService = ThumbnailService::GetInstance();
-    if (thumbnailService != nullptr) {
-        thumbnailService->InvalidateThumbnail(id, tableName);
-    }
+    ThumbnailService::GetInstance()->InvalidateThumbnail(id, tableName);
 }
 
 int32_t MediaLibraryObjectUtils::DeleteMisc(const int32_t fileId, const string &filePath, const int32_t parentId)
 {
     // 1) update parent's modify time
-    string parentPath = MediaLibraryDataManagerUtils::GetParentPath(filePath);
+    string parentPath = MediaFileUtils::GetParentPath(filePath);
     auto updatedRows = UpdateDateModified(parentPath);
     if (updatedRows <= 0) {
         MEDIA_ERR_LOG("Update album date_modified failed, path: %{private}s", parentPath.c_str());
@@ -567,7 +564,7 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
         return errCode;
     }
 
-    string dstAlbumPath = MediaLibraryDataManagerUtils::GetParentPath(dstFilePath);
+    string dstAlbumPath = MediaFileUtils::GetParentPath(dstFilePath);
     NativeAlbumAsset dirAsset = GetDirAsset(dstAlbumPath);
     if (dirAsset.GetAlbumId() <= 0) {
         MEDIA_ERR_LOG("Failed to get or create directory");
@@ -581,7 +578,8 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
         }
         return errCode;
     }
-    string dstFileName = MediaLibraryDataManagerUtils::GetFileName(dstFilePath);
+    InvalidateThumbnail(cmd.GetOprnFileId());
+    string dstFileName = MediaFileUtils::GetFileName(dstFilePath);
     if ((ProcessNoMediaFile(dstFileName, dstAlbumPath) == E_SUCCESS) ||
         (ProcessHiddenFile(dstFileName, srcFilePath) == E_SUCCESS)) {
         MEDIA_ERR_LOG("New file is a .nomedia file or hidden file.");
@@ -592,7 +590,7 @@ int32_t MediaLibraryObjectUtils::RenameFileObj(MediaLibraryCommand &cmd,
     auto ret = UpdateFileInfoInDb(cmd, dstFilePath, dirAsset.GetAlbumId(), dirAsset.GetAlbumName());
     if (ret > 0) {
         UpdateDateModified(dstAlbumPath);
-        string srcAlbumPath = MediaLibraryDataManagerUtils::GetParentPath(srcFilePath);
+        string srcAlbumPath = MediaFileUtils::GetParentPath(srcFilePath);
         UpdateDateModified(srcAlbumPath);
     }
     return ret;
@@ -618,14 +616,14 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
         MEDIA_ERR_LOG("Rename directory failed!");
         return E_HAS_FS_ERROR;
     }
-    string dstDirName = MediaLibraryDataManagerUtils::GetFileName(dstDirPath);
+    string dstDirName = MediaFileUtils::GetFileName(dstDirPath);
     if (ProcessHiddenDir(dstDirName, srcDirPath) == E_SUCCESS) {
         MEDIA_ERR_LOG("New album is a hidden album.");
         return E_SUCCESS;
     }
 
     ValuesBucket &values = cmd.GetValueBucket();
-    values.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, MediaLibraryDataManagerUtils::GetParentPath(dstDirPath));
+    values.PutString(Media::MEDIA_DATA_DB_RELATIVE_PATH, MediaFileUtils::GetParentPath(dstDirPath));
     values.PutString(Media::MEDIA_DATA_DB_FILE_PATH, dstDirPath);
     values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::GetAlbumDateModified(dstDirPath));
     int32_t retVal = ModifyInfoByIdInDb(cmd);
@@ -639,7 +637,7 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
         MEDIA_DATA_DB_FILE_PATH + ", '" + srcDirPath + "/' , '" + dstDirPath + "/'), " +
         MEDIA_DATA_DB_RELATIVE_PATH + " = replace(" + MEDIA_DATA_DB_RELATIVE_PATH + ", '" + srcDirPath + "', '" +
         dstDirPath + "'), " + MEDIA_DATA_DB_ALBUM_NAME + " = replace(" + MEDIA_DATA_DB_ALBUM_NAME + ", '" +
-        MediaLibraryDataManagerUtils::GetFileName(srcDirPath) + "', '" + dstDirName + "')" + "where " +
+        MediaFileUtils::GetFileName(srcDirPath) + "', '" + dstDirName + "')" + "where " +
         MEDIA_DATA_DB_FILE_PATH + " LIKE '" + srcDirPath + "/%'";
     if (uniStore->ExecuteSql(modifyAlbumInternalsStmt) != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Album update sql failed");
@@ -675,6 +673,10 @@ static bool CheckIsOwner(const string &bundleName)
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
     string uriString = cmd.GetUri().ToString();
+    if (cmd.GetOprnObject() == OperationObject::THUMBNAIL) {
+        return ThumbnailService::GetInstance()->GetThumbnailFd(uriString);
+    }
+
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromUri(uriString);
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain path from Database");
@@ -741,9 +743,9 @@ int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
         return E_INVALID_FILEID;
     }
     string srcPath = fileAsset->GetPath();
-    string fileName = MediaLibraryDataManagerUtils::GetFileName(srcPath);
+    string fileName = MediaFileUtils::GetFileName(srcPath);
     if ((fileName.length() != 0) && (fileName.at(0) != '.')) {
-        string dirPath = MediaLibraryDataManagerUtils::GetParentPath(srcPath);
+        string dirPath = MediaFileUtils::GetParentPath(srcPath);
         UpdateDateModified(dirPath);
     }
 

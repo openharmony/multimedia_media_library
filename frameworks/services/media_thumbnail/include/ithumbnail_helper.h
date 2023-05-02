@@ -68,8 +68,7 @@ public:
     IThumbnailHelper() = default;
     virtual ~IThumbnailHelper() = default;
     virtual int32_t CreateThumbnail(ThumbRdbOpt &opts, bool isSync = false);
-    virtual int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts,
-        std::shared_ptr<DataShare::ResultSetBridge> &outResultSet);
+    virtual int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts);
     static void DeleteThumbnailKv(ThumbRdbOpt &opts);
     static void CreateLcd(AsyncTaskData *data);
     static void CreateThumbnail(AsyncTaskData *data);

@@ -310,11 +310,9 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
         return E_CHECK_SYSTEMAPP_FAIL;
     }
     bool isWrite = (insertUri == closeUri) ? false : true;
-    if (insertUri.find(DISTRIBUTE_THU_OPRN_CREATE) == string::npos) {
-        int32_t err = CheckPermFromUri(insertUri, isWrite);
-        if (err < 0) {
-            return err;
-        }
+    int32_t err = CheckPermFromUri(insertUri, isWrite);
+    if (err < 0) {
+        return err;
     }
 
     return MediaLibraryDataManager::GetInstance()->Insert(Uri(insertUri), value);

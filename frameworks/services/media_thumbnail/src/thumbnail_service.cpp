@@ -50,7 +50,7 @@ shared_ptr<ThumbnailService> ThumbnailService::GetInstance()
         if (thumbnailServiceInstance_ != nullptr) {
             return thumbnailServiceInstance_;
         }
-        thumbnailServiceInstance_ = shared_ptr<ThumbnailService>(new (std::nothrow)ThumbnailService());
+        thumbnailServiceInstance_ = shared_ptr<ThumbnailService>(new ThumbnailService());
     }
 
     return thumbnailServiceInstance_;
@@ -90,41 +90,34 @@ void ThumbnailService::ReleaseService()
     thumbnailServiceInstance_ = nullptr;
 }
 
-shared_ptr<DataShare::ResultSetBridge> ThumbnailService::GetThumbnail(const string &uri)
+int ThumbnailService::GetThumbnailFd(const string &uri)
 {
-    string fileId;
-    string networkId;
-    string uriString = uri;
-    string tableName;
-
+    string id, networkId, table;
     Size size;
-    bool success = ThumbnailUriUtils::ParseThumbnailInfo(uriString, fileId, size, networkId, tableName);
-    if (!success) {
-        return nullptr;
+    if (!ThumbnailUriUtils::ParseThumbnailInfo(uri, id, size, networkId, table)) {
+        return E_FAIL;
     }
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
-        .kvStore = kvStorePtr_,
-        .context = context_,
         .networkId = networkId,
-        .table = tableName,
-        .row = fileId,
+        .table = table,
+        .row = id,
         .uri = uri,
-        .screenSize= screenSize_
     };
-    shared_ptr<DataShare::ResultSetBridge> resultSet;
     shared_ptr<IThumbnailHelper> thumbnailHelper = ThumbnailHelperFactory::GetThumbnailHelper(size);
     if (thumbnailHelper == nullptr) {
-        MEDIA_ERR_LOG("thumbnailHelper nullptr");
-        return nullptr;
+        return E_NO_MEMORY;
     }
-    int32_t err = thumbnailHelper->GetThumbnailPixelMap(opts, resultSet);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GetThumbnailPixelMap failed : %{public}d", err);
-        return nullptr;
+    if (ThumbnailHelperFactory::IsThumbnailFromLcd(size)) {
+        opts.screenSize = screenSize_;
     }
-    return resultSet;
+    int fd = thumbnailHelper->GetThumbnailPixelMap(opts);
+    if (fd < 0) {
+        MEDIA_ERR_LOG("GetThumbnailPixelMap failed : %{public}d", fd);
+    }
+    return fd;
 }
+
 
 int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri)
 {
@@ -310,7 +303,6 @@ void ThumbnailService::InvalidateThumbnail(const std::string &id, const std::str
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
-        .kvStore = kvStorePtr_,
         .table = tableName,
         .row = id,
     };

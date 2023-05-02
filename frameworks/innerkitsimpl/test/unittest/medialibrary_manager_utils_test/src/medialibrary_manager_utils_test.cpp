@@ -35,26 +35,6 @@ void MediaLibraryExtUnitTest::SetUp() {}
 
 void MediaLibraryExtUnitTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileName_test_001, TestSize.Level0)
-{
-    string path = "medialib_GetFileName_test_001/test";
-    string dirPath = MediaLibraryDataManagerUtils::GetFileName(path);
-    EXPECT_EQ("test", dirPath);
-    path = "medialib_GetFileName_test_001";
-    dirPath = MediaLibraryDataManagerUtils::GetFileName(path);
-    EXPECT_EQ("", dirPath);
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetParentPath_test_001, TestSize.Level0)
-{
-    string path = "medialib_GetParentPath_test_001/test";
-    string dirPath = MediaLibraryDataManagerUtils::GetParentPath(path);
-    EXPECT_EQ("medialib_GetParentPath_test_001", dirPath);
-    path = "medialib_GetParentPath_test_001";
-    dirPath = MediaLibraryDataManagerUtils::GetParentPath(path);
-    EXPECT_EQ("", dirPath);
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_IsNumber_test_001, TestSize.Level0)
 {
     string srt = "";

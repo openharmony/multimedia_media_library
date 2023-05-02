@@ -25,8 +25,7 @@ public:
     LcdThumbnailHelper() = default;
     virtual ~LcdThumbnailHelper() override = default;
     int32_t CreateThumbnail(ThumbRdbOpt &opts, bool isSync = false) override;
-    int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts,
-        std::shared_ptr<DataShare::ResultSetBridge> &outResultSet) override;
+    int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts) override;
 };
 } // namespace Media
 } // namespace OHOS
