@@ -66,6 +66,11 @@ static map<string, ListenerType> ListenerTypeMaps = {
     {"remoteFileChange", REMOTEFILE_LISTENER}
 };
 
+const std::string SUBTYPE = "subType";
+const std::map<std::string, std::string> PHOTO_CREATE_OPTIONS_PARAM = {
+    { SUBTYPE, PhotoColumn::PHOTO_SUBTYPE }
+};
+
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDirectoryEnumRef_ = nullptr;
@@ -73,6 +78,7 @@ thread_local napi_ref MediaLibraryNapi::sVirtualAlbumTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPrivateAlbumEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPositionTypeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sPhotoSubType_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 using Context = MediaLibraryAsyncContext* ;
 
@@ -179,7 +185,8 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("PrivateAlbumType", CreatePrivateAlbumTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumSubType", CreateAlbumSubTypeEnum(env)),
-        DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env))
+        DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("PhotoSubType", CreatePhotoSubTypeEnum(env))
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -1018,6 +1025,26 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     context->fileAsset = move(fileAsset);
 }
 
+static void SetFileAssetByIdV10(int32_t id, const string &networkId, MediaLibraryAsyncContext *context)
+{
+    bool isValid = false;
+    string displayName = context->valuesBucket.Get(MEDIA_DATA_DB_NAME, isValid);
+    if (!isValid) {
+        NAPI_ERR_LOG("getting title is invalid");
+        return;
+    }
+    unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
+    fileAsset->SetId(id);
+    MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
+    string uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId) + SLASH_CHAR + to_string(id);
+    fileAsset->SetUri(uri);
+    fileAsset->SetMediaType(mediaType);
+    fileAsset->SetDisplayName(displayName);
+    fileAsset->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+    fileAsset->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
+    context->fileAsset = move(fileAsset);
+}
+
 static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
@@ -1244,14 +1271,25 @@ static void JSCreateAssetExecute(napi_env env, void *data)
         context->error = JS_E_RELATIVEPATH;
         return;
     }
-    string uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+
+    string uri;
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(API_VERSION_10));
+    } else {
+        uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+    }
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->typeMask);
     Uri createFileUri(uri);
     int index = UserFileClient::Insert(createFileUri, context->valuesBucket);
     if (index < 0) {
         context->SaveError(index);
     } else {
-        getFileAssetById(index, "", context);
+        if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+            SetFileAssetByIdV10(index, "", context);
+        } else {
+            getFileAssetById(index, "", context);
+        }
     }
 }
 
@@ -3375,6 +3413,47 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
     return result;
 }
 
+static napi_status ParseAssetCreateOption(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
+{
+    for (const auto &iter : PHOTO_CREATE_OPTIONS_PARAM) {
+        string param = iter.first;
+        bool present = false;
+        napi_status result = napi_has_named_property(env, arg, param.c_str(), &present);
+        CHECK_COND_RET(result == napi_ok, result, "failed to check named property");
+        if (!present) {
+            continue;
+        }
+        napi_value value;
+        result = napi_get_named_property(env, arg, param.c_str(), &value);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get named property");
+        napi_valuetype valueType = napi_undefined;
+        result = napi_typeof(env, value, &valueType);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get value type");
+        if (valueType == napi_number) {
+            int32_t number = 0;
+            result = napi_get_value_int32(env, value, &number);
+            CHECK_COND_RET(result == napi_ok, result, "failed to get int32_t");
+            context.valuesBucket.Put(iter.second, number);
+        } else if (valueType == napi_boolean) {
+            bool isTrue = false;
+            result = napi_get_value_bool(env, value, &isTrue);
+            CHECK_COND_RET(result == napi_ok, result, "failed to get bool");
+            context.valuesBucket.Put(iter.second, isTrue);
+        } else if (valueType == napi_string) {
+            char buffer[ARG_BUF_SIZE];
+            size_t res = 0;
+            result = napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res);
+            CHECK_COND_RET(result == napi_ok, result, "failed to get string");
+            context.valuesBucket.Put(iter.second, string(buffer));
+        } else {
+            NAPI_ERR_LOG("valueType %{public}d is unaccepted", static_cast<int>(valueType));
+            return napi_invalid_arg;
+        }
+    }
+
+    return napi_ok;
+}
+
 static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -3397,9 +3476,20 @@ static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
 
     /* Parse the second argument into albumUri if exists */
     string albumUri;
-    if ((context->argc >= ARGS_TWO) &&
-        (MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], albumUri) == napi_ok)) {
-        context->valuesBucket.Put(MEDIA_DATA_DB_URI, albumUri);
+    if ((context->argc >= ARGS_TWO)) {
+        napi_valuetype valueType;
+        NAPI_ASSERT(env, napi_typeof(env, context->argv[ARGS_ONE], &valueType) == napi_ok, "Failed to get napi type");
+        if (valueType == napi_string) {
+            if (MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], albumUri) == napi_ok) {
+                context->valuesBucket.Put(MEDIA_DATA_DB_URI, albumUri);
+            }
+        } else if (valueType == napi_object) {
+            NAPI_ASSERT(env, ParseAssetCreateOption(env, context->argv[ARGS_ONE], *context) == napi_ok,
+                "Parse asset create option failed");
+        } else {
+            NAPI_ERR_LOG("valueType %{public}d is unaccepted", static_cast<int>(valueType));
+            return nullptr;
+        }
     }
 
     context->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
@@ -4124,5 +4214,11 @@ napi_value MediaLibraryNapi::CreatePositionTypeEnum(napi_env env)
     const int32_t startIdx = 1;
     return CreateNumberEnumProperty(env, positionTypeEnum, sPositionTypeEnumRef_, startIdx);
 }
+
+napi_value MediaLibraryNapi::CreatePhotoSubTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, photoSubTypeEnum, sPhotoSubType_);
+}
+
 } // namespace Media
 } // namespace OHOS
