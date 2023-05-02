@@ -35,7 +35,7 @@ public:
     THUMBNAIL_API_EXPORT static std::shared_ptr<ThumbnailService> GetInstance();
     THUMBNAIL_API_EXPORT void ReleaseService();
 
-    THUMBNAIL_API_EXPORT std::shared_ptr<DataShare::ResultSetBridge> GetThumbnail(const std::string &uri);
+    THUMBNAIL_API_EXPORT int GetThumbnailFd(const std::string &uri);
     THUMBNAIL_API_EXPORT int32_t LcdAging();
     THUMBNAIL_API_EXPORT int32_t LcdDistributeAging(const std::string &udid);
     THUMBNAIL_API_EXPORT int32_t GenerateThumbnails();

@@ -694,26 +694,23 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
 
 void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int32_t type)
 {
-    auto thumbnailService = ThumbnailService::GetInstance();
-    if (thumbnailService != nullptr) {
-        string tableName;
-        switch (type) {
-            case MediaType::MEDIA_TYPE_IMAGE:
-            case MediaType::MEDIA_TYPE_VIDEO: {
-                tableName = PhotoColumn::PHOTOS_TABLE;
-                break;
-            }
-            case MediaType::MEDIA_TYPE_AUDIO: {
-                tableName = AudioColumn::AUDIOS_TABLE;
-                break;
-            }
-            default: {
-                MEDIA_ERR_LOG("Can not match this type %{public}d", type);
-                return;
-            }
+    string tableName;
+    switch (type) {
+        case MediaType::MEDIA_TYPE_IMAGE:
+        case MediaType::MEDIA_TYPE_VIDEO: {
+            tableName = PhotoColumn::PHOTOS_TABLE;
+            break;
         }
-        thumbnailService->InvalidateThumbnail(fileId, tableName);
+        case MediaType::MEDIA_TYPE_AUDIO: {
+            tableName = AudioColumn::AUDIOS_TABLE;
+            break;
+        }
+        default: {
+            MEDIA_ERR_LOG("Can not match this type %{public}d", type);
+            return;
+        }
     }
+    ThumbnailService::GetInstance()->InvalidateThumbnail(fileId, tableName);
 }
 
 void MediaLibraryAssetOperations::ScanFile(const string &path)

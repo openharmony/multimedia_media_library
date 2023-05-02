@@ -92,6 +92,7 @@ public:
     static std::unordered_map<std::string, DirAsset> GetDirQuerySetMap();
     std::shared_ptr<MediaDataShareExtAbility> GetOwner();
     void SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExtension);
+    int GetThumbnail(const std::string &uri);
 
 private:
     bool QuerySync(const std::string &networkId, const std::string &tableName);
@@ -103,7 +104,6 @@ private:
     void ScanFile(const NativeRdb::ValuesBucket &values, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore1);
     int32_t InitDeviceData();
     int32_t InitialiseThumbnailService(const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
-    std::shared_ptr<DataShare::ResultSetBridge> GetThumbnail(const std::string &uri);
     int32_t CreateThumbnail(const NativeRdb::ValuesBucket &values);
     int32_t LcdDistributeAging();
     int32_t DistributeDeviceAging();

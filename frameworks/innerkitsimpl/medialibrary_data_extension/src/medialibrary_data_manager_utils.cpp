@@ -25,27 +25,6 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-string MediaLibraryDataManagerUtils::GetFileName(const string &path)
-{
-    string name;
-    size_t slashIndex = path.rfind("/");
-    if (slashIndex != string::npos) {
-        name = path.substr(slashIndex + 1);
-    }
-    return name;
-}
-
-string MediaLibraryDataManagerUtils::GetParentPath(const string &path)
-{
-    string name;
-    size_t slashIndex = path.rfind("/");
-    if (slashIndex != string::npos) {
-        name = path.substr(0, slashIndex);
-    }
-
-    return name;
-}
-
 bool MediaLibraryDataManagerUtils::IsNumber(const string &str)
 {
     if (str.empty()) {

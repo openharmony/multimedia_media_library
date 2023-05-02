@@ -49,9 +49,6 @@ private:
     static int32_t GetDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
     static int32_t GetAgingDistributeLcdData(ThumbRdbOpt &opts,
         int LcdLimit, std::vector<ThumbnailRdbData> &outDatas);
-
-    static int32_t AgingLcdKeysFromFiles(ThumbRdbOpt &opts);
-    static int32_t AgingThumbnailKeysFromFiles(ThumbRdbOpt &opts);
 };
 } // namespace Media
 } // namespace OHOS

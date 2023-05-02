@@ -102,10 +102,13 @@ public:
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
     static bool DeleteLcdData(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
-    static bool ClearThumbnailAllRecord(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
+    static bool DeleteThumbFile(ThumbnailData &data, bool isLcd);
+    static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
+
     static bool GetKvResultSet(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore, const std::string &key,
         const std::string &networkId, std::shared_ptr<DataShare::ResultSetBridge> &outResultSet);
     static bool DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
+    static std::string GetThumbPath(const std::string &path, const std::string &key);
     // Steps
     static bool LoadSourceImage(ThumbnailData &data, const bool isThumbnail = true,
         const Size &desiredSize = { DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE });
@@ -116,6 +119,7 @@ public:
     static bool GenLcdKey(ThumbnailData &data);
     static DistributedKv::Status SaveLcdData(ThumbnailData &data, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
+    static int SaveFile(ThumbnailData &Data, bool isLcd);
     static bool UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
@@ -161,7 +165,6 @@ private:
     static bool UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool CleanDistributeLcdInfo(ThumbRdbOpt &opts);
-    static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
 };
 } // namespace Media
 } // namespace OHOS

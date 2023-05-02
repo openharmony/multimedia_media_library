@@ -86,6 +86,7 @@ public:
     static int32_t GetAlbumUrisById(const std::string &fileId, std::list<std::string> &albumUriList);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId);
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId);
+    static void InvalidateThumbnail(const string &id, const string &tableName = MEDIALIBRARY_TABLE);
 
 private:
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);

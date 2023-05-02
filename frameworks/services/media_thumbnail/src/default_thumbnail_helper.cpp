@@ -14,6 +14,8 @@
  */
 #define MLOG_TAG "Thumbnail"
 
+#include <fcntl.h>
+
 #include "default_thumbnail_helper.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
@@ -53,8 +55,7 @@ int32_t DefaultThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
     return E_OK;
 }
 
-int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts,
-    shared_ptr<DataShare::ResultSetBridge> &outResultSet)
+int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts)
 {
     int err = E_ERR;
     ThumbnailWait thumbnailWait(false);
@@ -80,21 +81,19 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts,
         }
     }
 
-    if (!ThumbnailUtils::IsImageExist(thumbnailData.thumbnailKey, opts.networkId, opts.kvStore)) {
-        MEDIA_ERR_LOG("image not exist in kvStore, key [%{public}s]", thumbnailData.thumbnailKey.c_str());
+    string fileName = ThumbnailUtils::GetThumbPath(thumbnailData.path, thumbnailData.thumbnailKey);
+    if (access(fileName.c_str(), F_OK) != 0) {
+        MEDIA_ERR_LOG("image not exist, key [%{public}s]", thumbnailData.thumbnailKey.c_str());
         if (!DoCreateThumbnail(opts, thumbnailData, true)) {
-            return E_ERR;
+            return E_THUMBNAIL_LOCAL_CREATE_FAIL;
         }
     }
-
-    if (!ThumbnailUtils::GetKvResultSet(opts.kvStore, thumbnailData.thumbnailKey, opts.networkId, outResultSet)) {
-        MEDIA_ERR_LOG("GetKvResultSet Faild");
-        return E_ERR;
+    auto fd = open(fileName.c_str(), O_RDONLY);
+    if (fd >= 0) {
+        ThumbnailUtils::DoUpdateRemoteThumbnail(opts, thumbnailData, err);
+        return fd;
     }
-
-    thumbnailData.lcdKey.clear();
-    ThumbnailUtils::DoUpdateRemoteThumbnail(opts, thumbnailData, err);
-    return E_OK;
+    return -errno;
 }
 } // namespace Media
 } // namespace OHOS
