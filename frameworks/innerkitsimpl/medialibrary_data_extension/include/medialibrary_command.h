@@ -68,7 +68,9 @@ enum class OperationType : uint32_t {
     COPY,
     INSERT_PERMISSION,
     ALBUM_ADD_ASSETS,
-    ALBUM_REMOVE_ASSETS
+    ALBUM_REMOVE_ASSETS,
+    ALBUM_RECOVER_ASSETS,
+    ALBUM_DELETE_ASSETS,                // Delete assets permanently from system
 };
 
 class MediaLibraryCommand {

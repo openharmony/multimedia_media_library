@@ -658,7 +658,7 @@ int32_t MediaLibraryDataCallBack::InsertUniqueMemberTableValues(const UniqueMemb
     return insertResult;
 }
 
-const string &TriggerClearMap()
+const string &TriggerDeleteAlbumClearMap()
 {
     static const string TRIGGER_CLEAR_MAP = BaseColumn::CreateTrigger() + "photo_album_clear_map" +
     " AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
@@ -693,9 +693,20 @@ const string &TriggerRemoveAssets()
     return TRIGGER_REMOVE_ASSETS;
 }
 
-int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
+const string &TriggerDeletePhotoClearMap()
 {
-    vector<string> executeSqlStrs = {
+    static const string TRIGGER_DELETE_ASSETS = BaseColumn::CreateTrigger() + "delete_photo_clear_map" +
+    " AFTER DELETE ON " + PhotoColumn::PHOTOS_TABLE +
+    " BEGIN " +
+        "DELETE FROM " + PhotoMap::TABLE +
+        " WHERE " + PhotoMap::ASSET_ID + "=" + "OLD." + MediaColumn::MEDIA_ID + ";" +
+    " END;";
+    return TRIGGER_DELETE_ASSETS;
+}
+
+static int32_t ExecuteSql(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
         CREATE_MEDIA_TABLE,
         PhotoColumn::CREATE_PHOTO_TABLE,
         PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
@@ -724,9 +735,10 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         PhotoAlbumColumns::CREATE_TABLE,
         PhotoAlbumColumns::INDEX_ALBUM_TYPES,
         PhotoMap::CREATE_TABLE,
-        TriggerClearMap(),
+        TriggerDeleteAlbumClearMap(),
         TriggerAddAssets(),
         TriggerRemoveAssets(),
+        TriggerDeletePhotoClearMap(),
     };
 
     for (const string& sqlStr : executeSqlStrs) {
@@ -734,6 +746,15 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
             return NativeRdb::E_ERROR;
         }
     }
+    return NativeRdb::E_OK;
+}
+
+int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
+{
+    if (ExecuteSql(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
+    }
+
     if (PrepareSystemAlbums(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }

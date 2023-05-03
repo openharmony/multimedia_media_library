@@ -33,6 +33,13 @@ thread_local PhotoAlbum *PhotoAlbumNapi::pAlbumData_ = nullptr;
 thread_local napi_ref PhotoAlbumNapi::constructor_ = nullptr;
 static const string PHOTO_ALBUM_CLASS = "UserFileMgrPhotoAlbum";
 
+struct TrashAlbumExecuteOpt {
+    napi_env env;
+    void *data;
+    string tracerLabel;
+    string uri;
+};
+
 using CompleteCallback = napi_async_complete_callback;
 
 PhotoAlbumNapi::PhotoAlbumNapi() : env_(nullptr) {}
@@ -53,9 +60,11 @@ napi_value PhotoAlbumNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("albumSubType", JSGetPhotoAlbumSubType),
             DECLARE_NAPI_GETTER_SETTER("coverUri", JSGetCoverUri, JSSetCoverUri),
             DECLARE_NAPI_FUNCTION("commitModify", JSCommitModify),
-            DECLARE_NAPI_FUNCTION("addAssets", JSPhotoAlbumAddAssets),
-            DECLARE_NAPI_FUNCTION("removeAssets", JSPhotoAlbumRemoveAssets),
+            DECLARE_NAPI_FUNCTION("addPhotoAssets", JSPhotoAlbumAddAssets),
+            DECLARE_NAPI_FUNCTION("removePhotoAssets", JSPhotoAlbumRemoveAssets),
             DECLARE_NAPI_FUNCTION("getPhotoAssets", JSGetPhotoAssets),
+            DECLARE_NAPI_FUNCTION("recoverPhotoAssets", JSRecoverPhotos),
+            DECLARE_NAPI_FUNCTION("deletePhotoAssets", JSDeletePhotos),
         }
     };
 
@@ -384,19 +393,20 @@ napi_value PhotoAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
         JSCommitModifyCompleteCallback);
 }
 
-static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> &assetsArray)
+static napi_value GetAssetsIdArray(napi_env env, napi_value arg, const bool trashOnly, vector<string> &assetsArray)
 {
     bool isArray = false;
     CHECK_ARGS(env, napi_is_array(env, arg, &isArray), JS_INNER_FAIL);
     if (!isArray) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array type");
         return nullptr;
     }
 
     uint32_t len = 0;
     CHECK_ARGS(env, napi_get_array_length(env, arg, &len), JS_INNER_FAIL);
     if (len <= 0) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        NAPI_ERR_LOG("Failed to check array length: %{public}u", len);
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array length");
         return nullptr;
     }
 
@@ -404,16 +414,18 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> 
         napi_value asset = nullptr;
         CHECK_ARGS(env, napi_get_element(env, arg, i, &asset), JS_INNER_FAIL);
         if (asset == nullptr) {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset element");
             return nullptr;
         }
+
         FileAssetNapi *obj = nullptr;
         CHECK_ARGS(env, napi_unwrap(env, asset, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
         if (obj == nullptr) {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset napi object");
             return nullptr;
         }
-        if ((obj->GetMediaType() != MEDIA_TYPE_IMAGE && obj->GetMediaType() != MEDIA_TYPE_VIDEO) || obj->IsTrash()) {
+        if ((obj->GetMediaType() != MEDIA_TYPE_IMAGE && obj->GetMediaType() != MEDIA_TYPE_VIDEO) ||
+            (trashOnly != obj->IsTrash())) {
             continue;
         }
         assetsArray.push_back(to_string(obj->GetFileId()));
@@ -440,13 +452,13 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
 
     /* Parse the first argument */
     vector<string> assetsArray;
-    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], assetsArray));
+    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], false, assetsArray));
     if (assetsArray.empty()) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
     int32_t albumId = photoAlbum->GetAlbumId();
-    for (const auto assetId : assetsArray) {
+    for (const auto &assetId : assetsArray) {
         DataShareValuesBucket valuesBucket;
         valuesBucket.Put(PhotoMap::ALBUM_ID, albumId);
         valuesBucket.Put(PhotoMap::ASSET_ID, assetId);
@@ -525,7 +537,7 @@ static napi_value ParseArgsRemoveAssets(napi_env env, napi_callback_info info,
 
     /* Parse the first argument */
     vector<string> assetsArray;
-    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], assetsArray));
+    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], false, assetsArray));
     if (assetsArray.empty()) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
@@ -593,10 +605,11 @@ napi_value PhotoAlbumNapi::JSPhotoAlbumRemoveAssets(napi_env env, napi_callback_
 
 static int32_t GetUserAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates)
 {
-    predicates.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, to_string(0));
-    string onClause = MEDIA_DATA_DB_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.LeftOuterJoin(PhotoMap::TABLE)->On({ onClause });
+    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
+    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
     return E_SUCCESS;
 }
 
@@ -606,21 +619,31 @@ static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType, DataSha
         case PhotoAlbumSubType::FAVORITE: {
             predicates.BeginWrap();
             constexpr int32_t IS_FAVORITE = 1;
-            predicates.EqualTo(MEDIA_DATA_DB_IS_FAV, to_string(IS_FAVORITE));
-            predicates.And()->EqualTo(MEDIA_DATA_DB_DATE_TRASHED, to_string(0));
+            predicates.EqualTo(MediaColumn::MEDIA_IS_FAV, to_string(IS_FAVORITE));
+            predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+            predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
             predicates.EndWrap();
             break;
         }
         case PhotoAlbumSubType::VIDEO: {
             predicates.BeginWrap();
-            predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
-            predicates.And()->EqualTo(MEDIA_DATA_DB_DATE_TRASHED, to_string(0));
+            predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
+            predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+            predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
             predicates.EndWrap();
             break;
         }
         case PhotoAlbumSubType::TRASH: {
             predicates.BeginWrap();
-            predicates.NotEqualTo(MEDIA_DATA_DB_DATE_TRASHED, to_string(0));
+            predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+            predicates.EndWrap();
+            break;
+        }
+        case PhotoAlbumSubType::HIDDEN: {
+            predicates.BeginWrap();
+            constexpr int32_t IS_HIDDEN = 1;
+            predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(IS_HIDDEN));
+            predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
             predicates.EndWrap();
             break;
         }
@@ -751,5 +774,122 @@ napi_value PhotoAlbumNapi::JSGetPhotoAssets(napi_env env, napi_callback_info inf
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets", JSGetPhotoAssetsExecute,
         JSGetPhotoAssetsCallbackComplete);
+}
+
+static napi_value TrashAlbumParseArgs(napi_env env, napi_callback_info info,
+    unique_ptr<PhotoAlbumNapiAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (!PhotoAlbum::IsTrashAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check trash album type");
+        return nullptr;
+    }
+
+    /* Parse the first argument */
+    vector<string> assetsArray;
+    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], true, assetsArray));
+    if (assetsArray.empty()) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Assets array is empty");
+        return nullptr;
+    }
+    context->predicates.In(MediaColumn::MEDIA_ID, assetsArray);
+    context->valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, 0);
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void TrashAlbumExecute(const TrashAlbumExecuteOpt &opt)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start(opt.tracerLabel);
+
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(opt.data);
+    string uriStr = opt.uri;
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriStr, PHOTO_TYPE_MASK);
+    Uri uri(uriStr);
+    int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        return;
+    }
+    context->changedRows = changedRows;
+}
+
+static void TrashAlbumComplete(napi_env env, napi_status status, void *data)
+{
+    PhotoAlbumNapiAsyncContext *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void RecoverPhotosExecute(napi_env env, void *data)
+{
+    TrashAlbumExecuteOpt opt = {
+        .env = env,
+        .data = data,
+        .tracerLabel = "RecoverPhotosExecute",
+        .uri = URI_RECOVER_PHOTOS,
+    };
+    TrashAlbumExecute(opt);
+}
+
+static void RecoverPhotosComplete(napi_env env, napi_status status, void *data)
+{
+    TrashAlbumComplete(env, status, data);
+}
+
+napi_value PhotoAlbumNapi::JSRecoverPhotos(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(TrashAlbumParseArgs(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRecoverPhotos", RecoverPhotosExecute,
+        RecoverPhotosComplete);
+}
+
+static void DeletePhotosExecute(napi_env env, void *data)
+{
+    TrashAlbumExecuteOpt opt = {
+        .env = env,
+        .data = data,
+        .tracerLabel = "DeletePhotosExecute",
+        .uri = URI_DELETE_PHOTOS,
+    };
+    TrashAlbumExecute(opt);
+}
+
+static void DeletePhotosComplete(napi_env env, napi_status status, void *data)
+{
+    TrashAlbumComplete(env, status, data);
+}
+
+napi_value PhotoAlbumNapi::JSDeletePhotos(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(TrashAlbumParseArgs(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSDeletePhotos", DeletePhotosExecute,
+        DeletePhotosComplete);
 }
 } // namespace OHOS::Media

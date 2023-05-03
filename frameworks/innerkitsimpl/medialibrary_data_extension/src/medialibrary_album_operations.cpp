@@ -34,6 +34,7 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -252,8 +253,7 @@ int32_t PrepareUpdateValues(const ValuesBucket &values, ValuesBucket &updateValu
     return E_OK;
 }
 
-int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values,
-    const DataShare::DataSharePredicates &predicates)
+int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataShare::DataSharePredicates &predicates)
 {
     ValuesBucket rdbValues;
     int32_t err = PrepareUpdateValues(values, rdbValues);
@@ -261,7 +261,7 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values
         return err;
     }
 
-    RdbPredicates rdbPredicates = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
     // Only user generic albums can be updated
     rdbPredicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
@@ -274,6 +274,96 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values
         watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(changedRows), NotifyType::NOTIFY_UPDATE);
     }
     return err;
+}
+
+int32_t RecoverPhotoAssets(const DataShare::DataSharePredicates &predicates)
+{
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+
+    ValuesBucket rdbValues;
+    rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);
+
+    int32_t changedRows = 0;
+    return MediaLibraryRdbStore::Update(changedRows, rdbValues, rdbPredicates);
+}
+
+static inline int32_t DeletePhotoInDb(int32_t fileId)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    return MediaLibraryRdbStore::Delete(predicates);
+}
+
+int32_t DeletePhotoAssets(const DataShare::DataSharePredicates &predicates)
+{
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+
+    vector<string> columns = {
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_FILE_PATH
+    };
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    int32_t count = 0;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    int32_t deletedRows = 0;
+    for (int32_t i = 0; i < count; i++) {
+        err = resultSet->GoToNextRow();
+        if (err != E_OK) {
+            return E_HAS_DB_ERROR;
+        }
+
+        // Delete file from db.
+        int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
+        if (fileId <= 0) {
+            return E_HAS_DB_ERROR;
+        }
+        int32_t deletedRow = DeletePhotoInDb(fileId);
+        if (deletedRow < 0) {
+            return E_HAS_DB_ERROR;
+        }
+        // If deletedRow is 0, the file may be deleted already somewhere else, so just continue.
+        if (deletedRow == 0) {
+            continue;
+        }
+
+        // Delete file from file system.
+        string filePath = get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
+                                                                       TYPE_STRING));
+        if (filePath.empty()) {
+            return E_HAS_DB_ERROR;
+        }
+        if (!MediaFileUtils::DeleteFile(filePath) && (errno != -ENOENT)) {
+            MEDIA_ERR_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
+            return E_HAS_FS_ERROR;
+        }
+        deletedRows += deletedRow;
+    }
+    return deletedRows;
+}
+
+int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opType, const ValuesBucket &values,
+    const DataShare::DataSharePredicates &predicates)
+{
+    switch (opType) {
+        case OperationType::UPDATE:
+            return UpdatePhotoAlbum(values, predicates);
+        case OperationType::ALBUM_RECOVER_ASSETS:
+            return RecoverPhotoAssets(predicates);
+        case OperationType::ALBUM_DELETE_ASSETS:
+            return DeletePhotoAssets(predicates);
+        default:
+            MEDIA_ERR_LOG("Unknown operation type: %{public}d", opType);
+            return E_ERR;
+    }
 }
 
 int MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(MediaLibraryCommand &cmd)

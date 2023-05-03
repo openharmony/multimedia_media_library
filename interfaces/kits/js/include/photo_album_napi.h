@@ -61,6 +61,8 @@ private:
     static napi_value JSPhotoAlbumAddAssets(napi_env env, napi_callback_info info);
     static napi_value JSPhotoAlbumRemoveAssets(napi_env env, napi_callback_info info);
     static napi_value JSGetPhotoAssets(napi_env env, napi_callback_info info);
+    static napi_value JSRecoverPhotos(napi_env env, napi_callback_info info);
+    static napi_value JSDeletePhotos(napi_env env, napi_callback_info info);
 
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
