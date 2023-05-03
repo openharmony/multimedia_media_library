@@ -108,7 +108,7 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
 {
     int ret;
     for (auto &[type, uris] : notifyDataMap) {
-        if (uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX ) != string::npos) {
+        if (uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX) != string::npos) {
             Uri notifyUri = Uri(uri);
             ret = SolveAlbumUri(notifyUri, type, uris);
         } else {

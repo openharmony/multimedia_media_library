@@ -284,6 +284,15 @@ void FileAssetNapi::SetTrash(bool isTrash)
     fileAssetPtr->SetIsTrash(trashFlag);
 }
 
+napi_status GetNapiObject(napi_env env, napi_callback_info info, FileAssetNapi **obj)
+{
+    napi_value thisVar = nullptr;
+    CHECK_STATUS_RET(napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr), "Failed to get cb info");
+    CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void **>(obj)), "Failed to unwrap thisVar");
+    CHECK_COND_RET(*obj != nullptr, napi_invalid_arg, "Failed to get napi object!");
+    return napi_ok;
+}
+
 napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -310,25 +319,12 @@ napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
 
 napi_value FileAssetNapi::JSGetFileUri(napi_env env, napi_callback_info info)
 {
-    napi_status status;
-    napi_value jsResult = nullptr;
     FileAssetNapi *obj = nullptr;
-    string uri = "";
-    napi_value thisVar = nullptr;
+    CHECK_ARGS(env, GetNapiObject(env, info, &obj), JS_INNER_FAIL);
 
-    napi_get_undefined(env, &jsResult);
-    GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
-    if (status != napi_ok || thisVar == nullptr) {
-        NAPI_ERR_LOG("Invalid arguments! status: %{public}d", status);
-        return jsResult;
-    }
-
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    if (status == napi_ok && obj != nullptr) {
-        uri = obj->GetFileUri();
-        napi_create_string_utf8(env, uri.c_str(), NAPI_AUTO_LENGTH, &jsResult);
-    }
-
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetFileUri().c_str(), NAPI_AUTO_LENGTH, &jsResult),
+        JS_INNER_FAIL);
     return jsResult;
 }
 

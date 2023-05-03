@@ -27,6 +27,8 @@ const std::string OPRN_CREATE = "create";
 const std::string OPRN_DELETE = "delete";
 const std::string OPRN_QUERY = "query";
 const std::string OPRN_UPDATE = "update";
+const std::string OPRN_RECOVER_PHOTOS = "recover_photos";
+const std::string OPRN_DELETE_PHOTOS = "delete_photos_permanently";   // Delete photos permanently from system
 
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -65,6 +67,8 @@ const std::string URI_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_A
 const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_UPDATE;
 const std::string URI_DELETE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_DELETE;
 const std::string URI_QUERY_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_QUERY;
+const std::string URI_RECOVER_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_RECOVER_PHOTOS;
+const std::string URI_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_DELETE_PHOTOS;
 
 // Photo map operations constants
 const std::string PHOTO_MAP_OPRN = "photo_map_v10_operation";

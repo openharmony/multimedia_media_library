@@ -335,6 +335,10 @@ void FileAsset::SetSelfId(const string &selfId)
 
 int32_t FileAsset::GetIsTrash() const
 {
+    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
+        return static_cast<int32_t>(GetInt64Member(MediaColumn::MEDIA_DATE_TRASHED));
+    }
+
     return GetInt32Member(MEDIA_DATA_DB_IS_TRASH);
 }
 

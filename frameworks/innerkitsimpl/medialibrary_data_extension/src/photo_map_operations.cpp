@@ -42,26 +42,26 @@ int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<ValueObject> &
      *     AND (EXISTS (SELECT file_id FROM Files WHERE file_id = ? AND data_trashed = 0))
      *     AND (EXISTS (SELECT album_id FROM PhotoAlbum WHERE album_id = ? AND album_type = ? AND album_subtype = ?));
      */
-    static const string insertSql = "INSERT INTO " + PhotoMap::TABLE +
+    static const string INSERT_MAP_SQL = "INSERT INTO " + PhotoMap::TABLE +
         " (" + PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + ") " +
         "SELECT ?, ? WHERE " +
         "(NOT EXISTS (SELECT * FROM " + PhotoMap::TABLE + " WHERE " +
             PhotoMap::ALBUM_ID + " = ? AND " + PhotoMap::ASSET_ID + " = ?)) " +
-        "AND (EXISTS (SELECT " + MediaColumn::MEDIA_ID + " FROM " + MEDIALIBRARY_TABLE + " WHERE " +
+        "AND (EXISTS (SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
             MediaColumn::MEDIA_ID + " = ? AND " + MediaColumn::MEDIA_DATE_TRASHED + " = 0)) " +
         "AND (EXISTS (SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
             " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = ? AND " + PhotoAlbumColumns::ALBUM_TYPE + " = ? AND " +
             PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?));";
-
     bool isValid = false;
     int32_t albumId = value.Get(PhotoMap::ALBUM_ID, isValid);
     if (!isValid) {
         return -EINVAL;
     }
-    int32_t assetId = value.Get(PhotoMap::ASSET_ID, isValid);
+    string assetId = value.Get(PhotoMap::ASSET_ID, isValid);
     if (!isValid) {
         return -EINVAL;
     }
+
     bindArgs.emplace_back(albumId);
     bindArgs.emplace_back(assetId);
     bindArgs.emplace_back(albumId);
@@ -70,10 +70,10 @@ int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<ValueObject> &
     bindArgs.emplace_back(albumId);
     bindArgs.emplace_back(PhotoAlbumType::USER);
     bindArgs.emplace_back(PhotoAlbumSubType::USER_GENERIC);
-    int errCode =  MediaLibraryRdbStore::ExecuteForLastInsertedRowId(insertSql, bindArgs);
+    int errCode =  MediaLibraryRdbStore::ExecuteForLastInsertedRowId(INSERT_MAP_SQL, bindArgs);
     auto watch = MediaLibraryNotify::GetInstance();
     if ((errCode > 0) && (watch != nullptr)) {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(assetId),
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + assetId,
             NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
     }
     return errCode;
