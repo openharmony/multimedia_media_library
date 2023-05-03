@@ -155,8 +155,6 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at MakeDirQuerySetMap");
 
     MakeRootDirs();
-    errCode = InitialiseKvStore();
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseKvStore");
 
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
@@ -245,6 +243,7 @@ int32_t MediaLibraryDataManager::InitialiseKvStore()
         .encrypt = false,
         .backup = false,
         .autoSync = false,
+        .securityLevel = DistributedKv::SecurityLevel::S3,
         .area = DistributedKv::Area::EL2,
         .kvStoreType = KvStoreType::SINGLE_VERSION,
         .baseDir = context_->GetDatabaseDir(),
@@ -386,6 +385,9 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
 
 int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &cmd)
 {
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
     int32_t result = E_FAIL;
     switch (cmd.GetOprnType()) {
         case OperationType::GENERATE:
@@ -559,7 +561,6 @@ void MediaLibraryDataManager::InterruptBgworker()
     }
 
     if (thumbnailService_ == nullptr) {
-        MEDIA_ERR_LOG("thumbnailService_ is null");
         return;
     }
     thumbnailService_->InterruptBgworker();
@@ -580,8 +581,7 @@ int32_t MediaLibraryDataManager::GenerateThumbnails()
     }
 
     if (thumbnailService_ == nullptr) {
-        MEDIA_ERR_LOG("thumbnailService_ is null");
-        return E_FAIL;
+        return E_THUMBNAIL_SERVICE_NULLPTR;
     }
     return thumbnailService_->GenerateThumbnails();
 }
@@ -596,8 +596,7 @@ int32_t MediaLibraryDataManager::DoAging()
     }
 
     if (thumbnailService_ == nullptr) {
-        MEDIA_ERR_LOG("thumbnailService_ is null");
-        return E_FAIL;
+        return E_THUMBNAIL_SERVICE_NULLPTR;
     }
     int32_t errorCode = thumbnailService_->LcdAging();
     if (errorCode != 0) {
@@ -630,8 +629,7 @@ int32_t MediaLibraryDataManager::LcdDistributeAging()
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::LcdDistributeAging IN");
     auto deviceInstance = MediaLibraryDevice::GetInstance();
     if ((thumbnailService_ == nullptr) || (deviceInstance == nullptr)) {
-        MEDIA_ERR_LOG("thumbnailService_ is null");
-        return E_FAIL;
+        return E_THUMBNAIL_SERVICE_NULLPTR;
     }
     int32_t result = E_SUCCESS;
     vector<string> deviceUdids;
@@ -651,7 +649,6 @@ int32_t MediaLibraryDataManager::DistributeDeviceAging()
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::DistributeDeviceAging IN");
     auto deviceInstance = MediaLibraryDevice::GetInstance();
     if ((thumbnailService_ == nullptr) || (deviceInstance == nullptr)) {
-        MEDIA_ERR_LOG("thumbnailService_ is null");
         return E_FAIL;
     }
     int32_t result = E_FAIL;
@@ -672,8 +669,7 @@ int32_t MediaLibraryDataManager::DistributeDeviceAging()
 int MediaLibraryDataManager::GetThumbnail(const string &uri)
 {
     if (thumbnailService_ == nullptr) {
-        MEDIA_ERR_LOG("thumbnailService_ is null");
-        return E_FAIL;
+        return E_THUMBNAIL_SERVICE_NULLPTR;
     }
     if (!uri.empty() && MediaLibraryObjectUtils::CheckUriPending(uri)) {
         MEDIA_ERR_LOG("failed to get thumbnail, the file:%{public}s is pending", uri.c_str());
@@ -691,7 +687,6 @@ void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri)
     }
 
     if (thumbnailService_ == nullptr) {
-        MEDIA_ERR_LOG("thumbnailService_ is null");
         return;
     }
     if (!uri.empty()) {
@@ -709,8 +704,7 @@ void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri)
 int32_t MediaLibraryDataManager::CreateThumbnail(const ValuesBucket &values)
 {
     if (thumbnailService_ == nullptr) {
-        MEDIA_ERR_LOG("thumbnailService_ is null");
-        return E_ERR;
+        return E_THUMBNAIL_SERVICE_NULLPTR;
     }
     string actualUri;
     ValueObject valueObject;
@@ -934,7 +928,11 @@ int32_t MediaLibraryDataManager::InitialiseThumbnailService(
     if (thumbnailService_ != nullptr) {
         return E_OK;
     }
-    int ret = ThumbnailService::GetInstance()->Init(rdbStore_, kvStorePtr_, extensionContext);
+    thumbnailService_ = ThumbnailService::GetInstance();
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+    int ret = thumbnailService_->Init(rdbStore_, kvStorePtr_, extensionContext);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to init ThumbnailService, err %{public}d", ret);
         return E_ERR;

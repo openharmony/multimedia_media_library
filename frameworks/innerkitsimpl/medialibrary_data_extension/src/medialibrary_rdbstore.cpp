@@ -49,6 +49,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetBundleName(context->GetBundleName());
     config_.SetArea(context->GetArea());
     config_.SetReadConSize(RDB_CONNECT_NUM);
+    config_.SetSecurityLevel(SecurityLevel::S3);
     isInTransaction_.store(false);
 }
 
