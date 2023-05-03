@@ -688,7 +688,8 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
         JS_ERR_PARAMETER_INVALID);
 
     /* Parse the first argument */
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetAssetFetchOption(env, context->argv[PARAM0], context), JS_INNER_FAIL);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
+        JS_INNER_FAIL);
 
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     auto ret = GetPredicatesByAlbumTypes(photoAlbum, context->predicates);

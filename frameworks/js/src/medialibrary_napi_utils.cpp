@@ -281,7 +281,7 @@ MediaType MediaLibraryNapiUtils::GetMediaTypeFromUri(const string &uri)
 
 template <class AsyncContext>
 bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
-    shared_ptr<DataShareAbsPredicates> &predicate, bool isAlbum)
+    shared_ptr<DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType)
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
@@ -308,7 +308,7 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
             UriRemoveAllFragment(uri);
             string fileId;
             MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(uri, context->networkId, fileId);
-            string field = isAlbum ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
+            string field = (fetchOptType == ALBUM_FETCH_OPT) ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
             operations.push_back({item.operation, {field, fileId}});
             continue;
         }
@@ -319,10 +319,11 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
 }
 
 template <class AsyncContext>
-napi_status MediaLibraryNapiUtils::GetAssetFetchOption(napi_env env, napi_value arg, AsyncContext &context)
+napi_status MediaLibraryNapiUtils::GetFetchOption(napi_env env, napi_value arg, const FetchOptionType &fetchOptType,
+    AsyncContext &context)
 {
     // Parse the argument into fetchOption if any
-    CHECK_STATUS_RET(GetPredicate(env, arg, "predicates", context, false), "invalid predicate");
+    CHECK_STATUS_RET(GetPredicate(env, arg, "predicates", context, fetchOptType), "invalid predicate");
     CHECK_STATUS_RET(GetArrayProperty(env, arg, "fetchColumns", context->fetchColumn),
         "Failed to parse fetchColumn");
     return napi_ok;
@@ -330,7 +331,7 @@ napi_status MediaLibraryNapiUtils::GetAssetFetchOption(napi_env env, napi_value 
 
 template <class AsyncContext>
 napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value arg, const string &propName,
-    AsyncContext &context, bool isAlbum)
+    AsyncContext &context, const FetchOptionType &fetchOptType)
 {
     bool present = false;
     napi_value property = nullptr;
@@ -339,7 +340,7 @@ napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value a
     if (present) {
         CHECK_STATUS_RET(napi_get_named_property(env, arg, propName.c_str(), &property), "Failed to get property");
         shared_ptr<DataShareAbsPredicates> predicate = DataSharePredicatesProxy::GetNativePredicates(env, property);
-        CHECK_COND_RET(HandleSpecialPredicate(context, predicate, isAlbum) == TRUE, napi_invalid_arg,
+        CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE, napi_invalid_arg,
             "invalid predicate");
     }
     return napi_ok;
@@ -353,7 +354,8 @@ napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback(napi_env env, napi
     constexpr size_t maxArgs = ARGS_TWO;
     CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         "Failed to get object info");
-    CHECK_STATUS_RET(GetAssetFetchOption(env, context->argv[PARAM0], context), "Failed to get fetch option");
+    CHECK_STATUS_RET(GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
+        "Failed to get fetch option");
     CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
     return napi_ok;
 }
@@ -367,7 +369,8 @@ napi_status MediaLibraryNapiUtils::ParseAlbumFetchOptCallback(napi_env env, napi
     CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         "Failed to get object info");
     // Parse the argument into fetchOption if any
-    CHECK_STATUS_RET(GetPredicate(env, context->argv[PARAM0], "predicates", context, true), "invalid predicate");
+    CHECK_STATUS_RET(GetPredicate(env, context->argv[PARAM0], "predicates", context, ALBUM_FETCH_OPT),
+        "invalid predicate");
     CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
     return napi_ok;
 }
@@ -405,23 +408,6 @@ napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo(napi_env env, napi_
     CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo)),
         "Failed to unwrap thisVar");
     CHECK_COND_RET(asyncContext->objectInfo != nullptr, napi_invalid_arg, "Failed to get object info");
-    return napi_ok;
-}
-
-template <class AsyncContext>
-napi_status MediaLibraryNapiUtils::GetFetchOption(napi_env env, napi_value arg, AsyncContext &context)
-{
-    /* Parse the argument into fetchOption if any */
-    bool hasOpt = false;
-    CHECK_STATUS_RET(hasFetchOpt(env, arg, hasOpt), "Failed to get fetchopt");
-    if (hasOpt) {
-        CHECK_STATUS_RET(GetProperty(env, arg, "selections", context->selection), "Failed to parse selections");
-        CHECK_STATUS_RET(GetProperty(env, arg, "order", context->order), "Failed to parse order");
-        CHECK_STATUS_RET(GetArrayProperty(env, arg, "selectionArgs", context->selectionArgs),
-            "Failed to parse selectionArgs");
-        CHECK_STATUS_RET(GetProperty(env, arg, "uri", context->uri), "Failed to parse uri");
-        CHECK_STATUS_RET(GetProperty(env, arg, "networkId", context->networkId), "Failed to parse networkId");
-    }
     return napi_ok;
 }
 
@@ -726,28 +712,34 @@ void MediaLibraryNapiUtils::UriAppendKeyValue(string &uri, const string &key, co
 }
 
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
-    unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate, bool isAlbum);
+    unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
+    const FetchOptionType &fetchOptType);
 
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<AlbumNapiAsyncContext>>(
-    unique_ptr<AlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate, bool isAlbum);
+    unique_ptr<AlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
+    const FetchOptionType &fetchOptType);
 
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<SmartAlbumNapiAsyncContext>>(
-    unique_ptr<SmartAlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate, bool isAlbum);
+    unique_ptr<SmartAlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
+    const FetchOptionType &fetchOptType);
 
-template napi_status MediaLibraryNapiUtils::GetAssetFetchOption<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
-    napi_value arg, unique_ptr<MediaLibraryAsyncContext> &context);
+template napi_status MediaLibraryNapiUtils::GetFetchOption<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
+    napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<MediaLibraryAsyncContext> &context);
 
-template napi_status MediaLibraryNapiUtils::GetAssetFetchOption<unique_ptr<PhotoAlbumNapiAsyncContext>>(napi_env env,
-    napi_value arg, unique_ptr<PhotoAlbumNapiAsyncContext> &context);
+template napi_status MediaLibraryNapiUtils::GetFetchOption<unique_ptr<PhotoAlbumNapiAsyncContext>>(napi_env env,
+    napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<PhotoAlbumNapiAsyncContext> &context);
 
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
-    const napi_value arg, const string &propName, unique_ptr<MediaLibraryAsyncContext> &context, bool isAlbum);
+    const napi_value arg, const string &propName, unique_ptr<MediaLibraryAsyncContext> &context,
+    const FetchOptionType &fetchOptType);
 
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<AlbumNapiAsyncContext>>(napi_env env,
-    const napi_value arg, const string &propName, unique_ptr<AlbumNapiAsyncContext> &context, bool isAlbum);
+    const napi_value arg, const string &propName, unique_ptr<AlbumNapiAsyncContext> &context,
+    const FetchOptionType &fetchOptType);
 
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<SmartAlbumNapiAsyncContext>>(napi_env env,
-    const napi_value arg, const string &propName, unique_ptr<SmartAlbumNapiAsyncContext> &context, bool isAlbum);
+    const napi_value arg, const string &propName, unique_ptr<SmartAlbumNapiAsyncContext> &context,
+    const FetchOptionType &fetchOptType);
 
 template napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback<unique_ptr<MediaLibraryAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context);
