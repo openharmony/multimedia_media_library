@@ -110,6 +110,7 @@ private:
     bool ShouldCheckFileName(const OperationObject &oprnObject);
     std::shared_ptr<ThumbnailService> thumbnailService_;
     int32_t RevertPendingByFileId(const std::string &fileId);
+    int32_t SyncPullThumbnailKeys(const Uri &uri);
 
     std::shared_mutex mgrSharedMutex_;
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
