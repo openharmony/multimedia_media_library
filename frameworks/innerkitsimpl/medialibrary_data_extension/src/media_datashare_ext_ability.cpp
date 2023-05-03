@@ -396,20 +396,15 @@ string MediaDataShareExtAbility::GetType(const Uri &uri)
 
 int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)
 {
-    MEDIA_INFO_LOG("%{public}s begin.", __func__);
     string insertUri = uri.ToString();
     if (!PermissionUtils::SystemApiCheck(insertUri)) {
         MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
         return E_CHECK_SYSTEMAPP_FAIL;
     }
-    if (!PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA)) {
-        auto ret = CheckPermFromUri(insertUri, true);
-        if (ret < 0) {
-            MEDIA_ERR_LOG("%{public}s Check calling permission failed.", __func__);
-            return ret;
-        }
+    int32_t err = CheckPermFromUri(insertUri, true);
+    if (err < 0) {
+        return err;
     }
-    MEDIA_INFO_LOG("%{public}s end.", __func__);
     return MediaLibraryDataManager::GetInstance()->BatchInsert(Uri(insertUri), values);
 }
 

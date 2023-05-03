@@ -44,15 +44,18 @@ void NapiError::HandleError(napi_env env, napi_value &errorObj)
     MediaLibraryNapiUtils::HandleError(env, error, errorObj, apiName);
 }
 
-void NapiError::ThrowError(napi_env env, int32_t err)
+void NapiError::ThrowError(napi_env env, int32_t err, const std::string &errMsg)
 {
-    string errMessage = "operation not support";
-    string errCode = std::to_string(err);
-    if (jsErrMap.count(err) > 0) {
-        errMessage = jsErrMap.at(err);
+    string message = errMsg;
+    if (errMsg.empty()) {
+        message = "operation not support";
+        if (jsErrMap.count(err) > 0) {
+            message = jsErrMap.at(err);
+        }
     }
-    NAPI_ERR_LOG("ThrowError errCode:%{public}d errMessage:%{public}s", err, errMessage.c_str());
-    NAPI_CALL_RETURN_VOID(env, napi_throw_error(env, errCode.c_str(), errMessage.c_str()));
+
+    NAPI_ERR_LOG("ThrowError errCode:%{public}d errMsg:%{public}s", err, message.c_str());
+    NAPI_CALL_RETURN_VOID(env, napi_throw_error(env, to_string(err).c_str(), message.c_str()));
 }
 } // namespace Media
 } // namespace OHOS

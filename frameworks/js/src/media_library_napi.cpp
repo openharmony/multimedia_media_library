@@ -1399,27 +1399,23 @@ static void JSTrashAssetExecute(napi_env env, void *data)
     tracer.Start("JSTrashAssetExecute");
 
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     string uri = context->uri;
     if (uri.empty()) {
         context->error = ERR_INVALID_OUTPUT;
         return;
     }
     MediaLibraryNapiUtils::UriRemoveAllFragment(uri);
-    Media::MediaType mediaType = MediaLibraryNapiUtils::GetMediaTypeFromUri(uri);
-    if (mediaType != MediaType::MEDIA_TYPE_IMAGE &&
-        mediaType != MediaType::MEDIA_TYPE_VIDEO &&
-        mediaType != MediaType::MEDIA_TYPE_AUDIO) {
+    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
         context->error = E_VIOLATION_PARAMETERS;
         return;
     }
-    string deleteId = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
+    string deleteId = MediaFileUtils::GetIdFromUri(uri);
     string deleteUri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, context->typeMask);
+    MediaLibraryNapiUtils::UriAppendKeyValue(deleteUri, API_VERSION, to_string(API_VERSION_10));
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, PHOTO_TYPE_MASK);
     Uri updateAssetUri(deleteUri);
     DataSharePredicates predicates;
-    predicates.EqualTo(MEDIA_DATA_DB_ID, deleteId);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, deleteId);
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
@@ -1443,7 +1439,6 @@ static void JSTrashAssetCompleteCallback(napi_env env, napi_status status, void 
     tracer.Start("JSTrashAssetCompleteCallback");
 
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     CHECK_NULL_PTR_RETURN_VOID(jsContext, "jsContext context is null");
     jsContext->status = false;
@@ -1650,7 +1645,7 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
         }
         if (msg->changeInfo_.size_ > 0) {
             msg->data_ = new (nothrow) uint8_t[msg->changeInfo_.size_];
-            if(msg->data_ == nullptr) {
+            if (msg->data_ == nullptr) {
                 NAPI_ERR_LOG("new msg->data failed");
                 return;
             }
@@ -3657,9 +3652,6 @@ napi_value MediaLibraryNapi::UserFileMgrTrashAsset(napi_env env, napi_callback_i
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
         JS_ERR_PARAMETER_INVALID);
-    MediaLibraryNapiUtils::GenTypeMaskFromArray({ MediaLibraryNapiUtils::GetMediaTypeFromUri(asyncContext->uri) },
-        asyncContext->typeMask);
-
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrTrashAsset", JSTrashAssetExecute,
         JSTrashAssetCompleteCallback);
 }

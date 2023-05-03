@@ -286,6 +286,8 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { OPRN_UPDATE, OperationType::UPDATE },
         { OPRN_ALBUM_ADD_ASSETS, OperationType::ALBUM_ADD_ASSETS },
         { OPRN_ALBUM_REMOVE_ASSETS, OperationType::ALBUM_REMOVE_ASSETS },
+        { OPRN_RECOVER_PHOTOS, OperationType::ALBUM_RECOVER_ASSETS },
+        { OPRN_DELETE_PHOTOS, OperationType::ALBUM_DELETE_ASSETS },
     };
 
     if (oprnTypeMap.find(oprnName) != oprnTypeMap.end()) {

@@ -410,10 +410,9 @@ int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &
 
 int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)
 {
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::BatchInsert");
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
-        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        MEDIA_ERR_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
     }
 
@@ -459,7 +458,7 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
 
     MediaLibraryCommand cmd(uri, OperationType::DELETE);
     // MEDIALIBRARY_TABLE just for RdbPredicates
-    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates,
         cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
@@ -541,7 +540,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
         }
         case OperationObject::PHOTO_ALBUM: {
-            return MediaLibraryAlbumOperations::UpdatePhotoAlbum(value, predicates);
+            return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);
         }
         default:
             break;
@@ -821,7 +820,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
 
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
     // MEDIALIBRARY_TABLE just for RdbPredicates
-    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates,
         MEDIALIBRARY_TABLE);
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
@@ -837,7 +836,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
     } else if (oprnObject == OperationObject::PHOTO_ALBUM) {
         queryResultSet = MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
     } else if (oprnObject == OperationObject::PHOTO_MAP) {
-        queryResultSet = PhotoMapOperations::QueryPhotoAssets(rdbPredicate, columns);
+        queryResultSet = PhotoMapOperations::QueryPhotoAssets(
+            RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
     } else if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
         oprnObject == OperationObject::FILESYSTEM_DOCUMENT) {
         queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);
