@@ -193,6 +193,11 @@ enum AlbumType {
     TYPE_NONE = 2,
 };
 
+enum FetchOptionType {
+    ASSET_FETCH_OPT = 0,
+    ALBUM_FETCH_OPT = 1
+};
+
 const std::vector<std::string> privateAlbumTypeNameEnum {
     "TYPE_FAVORITE", "TYPE_TRASH", "TYPE_HIDE", "TYPE_SMART", "TYPE_SEARCH"
 };
@@ -370,12 +375,12 @@ public:
     static MediaType GetMediaTypeFromUri(const std::string &uri);
     template <class AsyncContext>
     static napi_status GetPredicate(napi_env env, const napi_value arg, const std::string &propName,
-        AsyncContext &context, bool isAlbum);
+        AsyncContext &context, const FetchOptionType &fetchOptType);
     template <class AsyncContext>
     static napi_status ParseAlbumFetchOptCallback(napi_env env, napi_callback_info info, AsyncContext &context);
     template <class AsyncContext>
     static bool HandleSpecialPredicate(AsyncContext &context,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate, bool isAlbum);
+        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType);
     template <class AsyncContext>
     static void UpdateMediaTypeSelections(AsyncContext *context);
     static void GetNetworkIdAndFileIdFromUri(const std::string &uri, std::string &networkId, std::string &fileId);
@@ -385,10 +390,8 @@ public:
         const size_t minArgs, const size_t maxArgs);
 
     template <class AsyncContext>
-    static napi_status GetFetchOption(napi_env env, napi_value arg, AsyncContext &context);
-
-    template <class AsyncContext>
-    static napi_status GetAssetFetchOption(napi_env env, napi_value arg, AsyncContext &context);
+    static napi_status GetFetchOption(napi_env env, napi_value arg, const FetchOptionType &fetchOptType,
+        AsyncContext &context);
 
     template <class AsyncContext>
     static napi_status GetParamCallback(napi_env env, AsyncContext &context);
