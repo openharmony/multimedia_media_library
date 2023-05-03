@@ -138,6 +138,11 @@ bool PhotoAlbum::IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlb
     return (albumType == PhotoAlbumType::USER) && (albumSubType == PhotoAlbumSubType::USER_GENERIC);
 }
 
+bool PhotoAlbum::IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
+{
+    return (albumType == PhotoAlbumType::SYSTEM) && (albumSubType == PhotoAlbumSubType::TRASH);
+}
+
 bool PhotoAlbum::CheckPhotoAlbumType(const PhotoAlbumType albumType)
 {
     return (albumType == PhotoAlbumType::USER) || (albumType == PhotoAlbumType::SYSTEM);
