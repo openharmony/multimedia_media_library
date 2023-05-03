@@ -100,7 +100,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryThumbnailSet_test_001, TestSize.
     EXPECT_NE(resultSetPtr, nullptr);
 }
 
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryThumbnailInfo_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
@@ -446,27 +445,27 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteOriginImage_test_001, TestSize.
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPullKvstore_test_001, TestSize.Level0)
 {
-    string key = "SyncPullKvstore";
-    auto ret = MediaLibrarySyncOperation::SyncPullKvstore(nullptr, key, "");
+    vector<string> thumbnailKeys = {"SyncPullKvstore"};
+    auto ret = MediaLibrarySyncOperation::SyncPullKvstore(nullptr, thumbnailKeys, "");
     EXPECT_EQ(ret, DistributedKv::Status::ERROR);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr, key, "");
+    ret = MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr, thumbnailKeys, "");
     EXPECT_EQ(ret, DistributedKv::Status::ERROR);
     string networkId = "Kvstore";
-    ret = MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr, key, networkId);
+    ret = MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr, thumbnailKeys, networkId);
     EXPECT_EQ(ret, DistributedKv::Status::ERROR);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPushKvstore_test_001, TestSize.Level0)
 {
-    string key = "SyncPushKvstore";
-    auto ret = MediaLibrarySyncOperation::SyncPushKvstore(nullptr, key, "");
+    vector<string> thumbnailKeys = {"SyncPushKvstore"};
+    auto ret = MediaLibrarySyncOperation::SyncPushKvstore(nullptr, thumbnailKeys, "");
     EXPECT_EQ(ret, DistributedKv::Status::ERROR);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = MediaLibrarySyncOperation::SyncPushKvstore(kvStorePtr, key, "");
+    ret = MediaLibrarySyncOperation::SyncPushKvstore(kvStorePtr, thumbnailKeys, "");
     EXPECT_EQ(ret, DistributedKv::Status::ERROR);
     string networkId = "Kvstore";
-    ret = MediaLibrarySyncOperation::SyncPushKvstore(kvStorePtr, key, networkId);
+    ret = MediaLibrarySyncOperation::SyncPushKvstore(kvStorePtr, thumbnailKeys, networkId);
     EXPECT_NE(ret, DistributedKv::Status::ERROR);
 }
 

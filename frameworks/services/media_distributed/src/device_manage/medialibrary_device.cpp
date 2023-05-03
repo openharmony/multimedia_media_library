@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -203,6 +203,7 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
 
     MediaLibrarySyncOpts syncOpts;
     syncOpts.rdbStore = rdbStore_;
+    syncOpts.kvStore = kvStore_;
     syncOpts.bundleName = bundleName_;
     std::vector<std::string> devices = { mldevInfo.networkId };
     MediaLibrarySyncOperation::SyncPullAllTableByNetworkId(syncOpts, devices);
@@ -322,6 +323,12 @@ bool MediaLibraryDevice::InitDeviceRdbStore(const shared_ptr<NativeRdb::RdbStore
     MEDIA_INFO_LOG("deviceInfoMap size = %{public}d, deviceDataBaseList size = %{public}d",
         (int) deviceInfoMap_.size(), (int) deviceDataBaseList.size());
     return true;
+}
+
+bool MediaLibraryDevice::InitDeviceKvStore(const shared_ptr<DistributedKv::SingleKvStore> &kvStore)
+{
+    kvStore_ = kvStore;
+    return kvStore_ != nullptr;
 }
 
 bool MediaLibraryDevice::UpdateDeviceSyncStatus(const std::string &networkId,

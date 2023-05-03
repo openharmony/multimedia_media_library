@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -57,6 +57,7 @@ public:
 
     void GetAllNetworkId(std::vector<OHOS::DistributedHardware::DmDeviceInfo> &deviceList);
     bool InitDeviceRdbStore(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    bool InitDeviceKvStore(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
     void NotifyDeviceChange();
     void NotifyRemoteFileChange();
     bool UpdateDeviceSyncStatus(const std::string &networkId, const std::string &tableName, int32_t syncStatus);
@@ -93,6 +94,7 @@ private:
     std::unordered_map<std::string, OHOS::Media::MediaLibraryDeviceInfo> deviceInfoMap_;
     std::map<std::string, std::set<int>> excludeMap_;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    std::shared_ptr<DistributedKv::SingleKvStore> kvStore_;
     std::shared_ptr<DevicesInfoInteract> devsInfoInter_;
     std::string bundleName_;
     std::mutex cvMtx_;
