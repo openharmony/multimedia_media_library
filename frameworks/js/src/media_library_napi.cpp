@@ -3529,7 +3529,8 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
         JS_ERR_PARAMETER_INVALID);
 
     /* Parse the first argument */
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetAssetFetchOption(env, context->argv[PARAM0], context), JS_INNER_FAIL);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
+        JS_INNER_FAIL);
     auto &predicates = context->predicates;
     switch (context->assetType) {
         case TYPE_AUDIO: {
@@ -4022,7 +4023,7 @@ napi_value MediaLibraryNapi::DeletePhotoAlbums(napi_env env, napi_callback_info 
         JSDeletePhotoAlbumsExecute, JSDeletePhotoAlbumsCompleteCallback);
 }
 
-static napi_value GetFetchOption(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context, bool hasCallback)
+static napi_value GetAlbumFetchOption(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context, bool hasCallback)
 {
     if (context->argc < (ARGS_ONE + hasCallback)) {
         NAPI_ERR_LOG("No arguments to parse");
@@ -4031,7 +4032,7 @@ static napi_value GetFetchOption(napi_env env, unique_ptr<MediaLibraryAsyncConte
 
     // The index of fetchOption should always be the last arg besides callback
     napi_value fetchOption = context->argv[context->argc - 1 - hasCallback];
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetAssetFetchOption(env, fetchOption, context), JS_INNER_FAIL);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env, fetchOption, ALBUM_FETCH_OPT, context), JS_INNER_FAIL);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -4104,13 +4105,13 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
         case ARGS_ZERO:
             break;
         case ARGS_ONE:
-            CHECK_NULLPTR_RET(GetFetchOption(env, context, hasCallback));
+            CHECK_NULLPTR_RET(GetAlbumFetchOption(env, context, hasCallback));
             break;
         case ARGS_TWO:
             CHECK_NULLPTR_RET(ParseAlbumTypes(env, context));
             break;
         case ARGS_THREE:
-            CHECK_NULLPTR_RET(GetFetchOption(env, context, hasCallback));
+            CHECK_NULLPTR_RET(GetAlbumFetchOption(env, context, hasCallback));
             CHECK_NULLPTR_RET(ParseAlbumTypes(env, context));
             break;
         default:
