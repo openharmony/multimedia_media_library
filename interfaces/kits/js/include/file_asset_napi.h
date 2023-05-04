@@ -62,6 +62,8 @@ public:
     void SetFavorite(bool isFavorite);
     bool IsTrash() const;
     void SetTrash(bool isTrash);
+    bool IsHidden() const;
+    void SetHidden(bool isHidden);
 
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
         const std::shared_ptr<AbilityRuntime::Context> &context);
@@ -116,6 +118,7 @@ private:
     static napi_value UserFileMgrFavorite(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetThumbnail(napi_env env, napi_callback_info info);
     static napi_value JSGetReadOnlyFd(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrSetHidden(napi_env env, napi_callback_info info);
 
     bool HandleParamSet(const std::string &inputKey, const std::string &value);
     napi_env env_;
@@ -141,6 +144,7 @@ struct FileAssetAsyncContext : public NapiError {
     int32_t fd;
     bool isFavorite = false;
     bool isTrash = false;
+    bool isHidden = false;
     std::string networkId;
     std::shared_ptr<PixelMap> pixelmap;
 

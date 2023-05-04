@@ -25,6 +25,7 @@
 #include "hilog/log.h"
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
+#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
@@ -57,6 +58,9 @@ constexpr int32_t NOT_TRASH = 0;
 
 constexpr int32_t IS_FAV = 1;
 constexpr int32_t NOT_FAV = 0;
+
+constexpr int32_t IS_HIDDEN = 1;
+constexpr int32_t NOT_HIDDEN = 0;
 
 using CompleteCallback = napi_async_complete_callback;
 
@@ -150,6 +154,7 @@ napi_value FileAssetNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER_SETTER("displayName", JSGetFileDisplayName, JSSetFileDisplayName),
             DECLARE_NAPI_FUNCTION("getThumbnail", UserFileMgrGetThumbnail),
             DECLARE_NAPI_FUNCTION("getReadOnlyFd", JSGetReadOnlyFd),
+            DECLARE_NAPI_FUNCTION("setHidden", UserFileMgrSetHidden),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -282,6 +287,16 @@ void FileAssetNapi::SetTrash(bool isTrash)
 {
     int32_t trashFlag = (isTrash ? IS_TRASH : NOT_TRASH);
     fileAssetPtr->SetIsTrash(trashFlag);
+}
+
+bool FileAssetNapi::IsHidden() const
+{
+    return fileAssetPtr->IsHidden();
+}
+
+void FileAssetNapi::SetHidden(bool isHidden)
+{
+    fileAssetPtr->SetHidden(isHidden);
 }
 
 napi_status GetNapiObject(napi_env env, napi_callback_info info, FileAssetNapi **obj)
@@ -2217,9 +2232,9 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 
 bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value)
 {
-    if ((inputKey == MEDIA_DATA_DB_NAME) && (fileAssetPtr->GetMemberMap().count(MEDIA_DATA_DB_NAME))) {
+    if ((inputKey == MediaColumn::MEDIA_NAME) && (fileAssetPtr->GetMemberMap().count(MediaColumn::MEDIA_NAME))) {
         fileAssetPtr->SetDisplayName(value);
-        fileAssetPtr->GetMemberMap()[MEDIA_DATA_DB_NAME] = value;
+        fileAssetPtr->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(value));
     } else {
         NAPI_ERR_LOG("invalid key %{public}s, no support key", inputKey.c_str());
         return false;
@@ -2309,7 +2324,8 @@ static void UserFileMgrFavoriteExecute(napi_env env, void *data)
     DataShareValuesBucket valuesBucket;
     int32_t changedRows;
     valuesBucket.Put(MediaColumn::MEDIA_IS_FAV, context->isFavorite ? IS_FAV : NOT_FAV);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, context->objectPtr->GetId());
+    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+    predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
     changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
@@ -2616,6 +2632,78 @@ napi_value FileAssetNapi::UserFileMgrClose(napi_env env, napi_callback_info info
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets", UserFileMgrCloseExecute,
         UserFileMgrCloseCallbackComplete);
+}
+
+static void UserFileMgrSetHiddenExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrSetHiddenExecute");
+
+    FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    string uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(API_VERSION_10));
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
+    Uri updateAssetUri(uri);
+    DataSharePredicates predicates;
+    DataShareValuesBucket valuesBucket;
+    int32_t changedRows;
+    valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, context->isHidden ? IS_HIDDEN : NOT_HIDDEN);
+    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+    predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
+
+    changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to modify hidden state, err: %{public}d", changedRows);
+    } else {
+        context->objectPtr->SetHidden(context->isHidden);
+        context->changedRows = changedRows;
+    }
+}
+
+static void UserFileMgrSetHiddenComplete(napi_env env, napi_status status, void *data)
+{
+    FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        napi_create_int32(env, context->changedRows, &jsContext->data);
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->changedRows,
+            "Failed to modify hidden state");
+        napi_get_undefined(env, &jsContext->data);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value FileAssetNapi::UserFileMgrSetHidden(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrSetHidden");
+
+    napi_value ret = nullptr;
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    NAPI_ASSERT(
+        env, MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isHidden) == napi_ok,
+        "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrSetHidden",
+        UserFileMgrSetHiddenExecute, UserFileMgrSetHiddenComplete);
 }
 } // namespace Media
 } // namespace OHOS
