@@ -1415,7 +1415,8 @@ static void JSTrashAssetExecute(napi_env env, void *data)
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, PHOTO_TYPE_MASK);
     Uri updateAssetUri(deleteUri);
     DataSharePredicates predicates;
-    predicates.EqualTo(MediaColumn::MEDIA_ID, deleteId);
+    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+    predicates.SetWhereArgs({ deleteId });
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
@@ -3481,9 +3482,6 @@ static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
         } else if (valueType == napi_object) {
             NAPI_ASSERT(env, ParseAssetCreateOption(env, context->argv[ARGS_ONE], *context) == napi_ok,
                 "Parse asset create option failed");
-        } else {
-            NAPI_ERR_LOG("valueType %{public}d is unaccepted", static_cast<int>(valueType));
-            return nullptr;
         }
     }
 
@@ -3563,14 +3561,17 @@ static void JSGetAssetsExecute(napi_env env, void *data)
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    string queryUri = URI_QUERY_PHOTO;
-    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(API_VERSION_10));
+    string queryUri;
     switch (context->assetType) {
         case TYPE_AUDIO: {
+            queryUri = URI_QUERY_AUDIO;
+            MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(API_VERSION_10));
             MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, AUDIO_TYPE_MASK);
             break;
         }
         case TYPE_PHOTO: {
+            queryUri = URI_QUERY_PHOTO;
+            MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(API_VERSION_10));
             MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_TYPE_MASK);
             break;
         }
