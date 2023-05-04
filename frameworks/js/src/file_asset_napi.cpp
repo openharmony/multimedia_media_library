@@ -1431,6 +1431,7 @@ static unique_ptr<PixelMap> QueryThumbnail(std::string &uri, Size &size, const s
 
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize = size;
+    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     return imageSource->CreatePixelMap(decodeOpts, err);
 }
 
