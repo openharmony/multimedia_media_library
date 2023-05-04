@@ -387,6 +387,16 @@ void FileAsset::SetPhotoSubType(int32_t photoSubType)
     member_[PhotoColumn::PHOTO_SUBTYPE] = photoSubType;
 }
 
+bool FileAsset::IsHidden() const
+{
+    return GetInt32Member(MediaColumn::MEDIA_HIDDEN);
+}
+
+void FileAsset::SetHidden(bool isHidden)
+{
+    member_[MediaColumn::MEDIA_HIDDEN] = isHidden;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
