@@ -20,6 +20,7 @@
 #include <malloc.h>
 #include <sys/stat.h>
 
+#include "cloud_sync_helper.h"
 #include "datashare_abs_result_set.h"
 #include "device_manager.h"
 #include "distributed_kv_data_manager.h"
@@ -36,8 +37,8 @@
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
 #include "thumbnail_const.h"
+#include "unique_fd.h"
 #include "uri_helper.h"
-#include "cloud_sync_helper.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -1063,25 +1064,24 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
 
 int ThumbnailUtils::SaveFile(ThumbnailData &data, bool isLcd)
 {
-    const mode_t fileMode = 02770;
+    const mode_t fileMode = 0664;
     string fileName = ThumbnailUtils::GetThumbPath(data.path, isLcd ? data.lcdKey : data.thumbnailKey);
     string dir = MediaFileUtils::GetParentPath(fileName);
     if (!MediaFileUtils::CreateDirectory(dir)) {
         return -errno;
     }
-    int fd = open(fileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC | fileMode);
-    if (fd < 0) {
+    mode_t mask = umask(0);
+    UniqueFd fd(open(fileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC | fileMode));
+    umask(mask);
+    if (fd.Get() < 0) {
         MEDIA_ERR_LOG("SaveFile failed! filePath %{private}s status %{public}d", fileName.c_str(), errno);
         return -errno;
     }
 
     int writeSize = isLcd ? data.lcd.size() : data.thumbnail.size();
-    int size = write(fd, isLcd ? data.lcd.data() : data.thumbnail.data(), writeSize);
+    int size = write(fd.Get(), isLcd ? data.lcd.data() : data.thumbnail.data(), writeSize);
     if (size != writeSize) {
         return E_NO_SPACE;
-    }
-    if (close(fd) < 0) {
-        return -errno;
     }
     return E_OK;
 }

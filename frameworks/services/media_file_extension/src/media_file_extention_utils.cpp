@@ -884,6 +884,7 @@ int MediaFileExtentionUtils::GetThumbnail(const Uri &uri, const Size &size, std:
     }
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize = size;
+    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     return E_OK;
 }

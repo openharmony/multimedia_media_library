@@ -37,7 +37,7 @@
 using namespace std;
 
 namespace OHOS::Media {
-static const mode_t CHOWN_RWX_USR_GRP = 02770;
+static const mode_t CHOWN_RWX_USR_GRP = 02771;
 static const mode_t CHOWN_RW_USR_GRP = 0660;
 constexpr size_t DISPLAYNAME_MAX = 255;
 const int32_t OPEN_FDS = 64;

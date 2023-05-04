@@ -76,6 +76,7 @@ FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &res
         MEDIA_ERR_LOG("unsupported FetchResType");
         fetchResType_ = FetchResType::TYPE_FILE;
     }
+    GetCount();
 }
 
 template <class T>
