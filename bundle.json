@@ -1,7 +1,7 @@
 {
     "name": "@ohos/media_library",
     "description": "provides a set of easy-to-use APIs for getting media file metadata information",
-    "version": "3.1",
+    "version": "4.0",
     "license": "Apache License 2.0",
     "publishAs": "code-segment",
     "segment": {
@@ -18,8 +18,8 @@
       ],
       "features": [],
       "adapted_system_type": [ "standard" ],
-      "rom": "4068KB",
-      "ram": "4068KB",
+      "rom": "10444KB",
+      "ram": "35093KB",
       "hisysevent_config": [
         "//foundation/multimedia/media_library/hisysevent.yaml"
       ],
