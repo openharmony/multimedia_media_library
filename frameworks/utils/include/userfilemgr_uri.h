@@ -43,6 +43,7 @@ const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
 const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
 const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
 const std::string URI_QUERY_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + OPRN_QUERY;
+const std::string URI_QUERY_AUDIO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_AUDIOOPRN + "/" + OPRN_QUERY;
 const std::string URI_CLOSE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
 
 // Thumbnail operations constants
