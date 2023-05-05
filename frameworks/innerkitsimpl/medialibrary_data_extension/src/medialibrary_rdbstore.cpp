@@ -366,7 +366,7 @@ int32_t MediaLibraryRdbStore::Update(int32_t &changedRows, const ValuesBucket &v
         MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", err);
         return E_HAS_DB_ERROR;
     }
-        CloudSyncHelper::GetInstance()->StartSync();
+    CloudSyncHelper::GetInstance()->StartSync();
     return changedRows;
 }
 
@@ -798,11 +798,32 @@ int32_t VersionAddCloud(RdbStore &store, int32_t oldVersion, int32_t newVersion)
     return NativeRdb::E_OK;
 }
 
+int32_t AddMetaModifiedColumn(RdbStore &store, int32_t oldVersion, int32_t newVersion)
+{
+    const std::string alterMetaModified =
+        "ALTER TABLE " + MEDIALIBRARY_TABLE + " ADD COLUMN " +
+        MEDIA_DATA_DB_META_DATE_MODIFIED + " BIGINT DEFAULT 0";
+    int32_t result = store.ExecuteSql(alterMetaModified);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb meta_date_modified error %{private}d", result);
+    }
+    const std::string alterSyncing = "ALTER TABLE " + MEDIALIBRARY_TABLE +
+        " ADD COLUMN " + MEDIA_DATA_DB_SYNCING + " INT DEFAULT 0";
+    result = store.ExecuteSql(alterSyncing);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb syncing error %{private}d", result);
+    }
+    return NativeRdb::E_OK;
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
     if (oldVersion < MEDIA_RDB_VERSION_ADD_CLOUD) {
         VersionAddCloud(store, oldVersion, newVersion);
+    }
+    if (oldVersion < MEDIA_RDB_VERSION_ADD_META_MODIFED) {
+        AddMetaModifiedColumn(store, oldVersion, newVersion);
     }
     return NativeRdb::E_OK;
 }
