@@ -30,6 +30,9 @@ ohos_static_library("medialibrary_common_utils") {
     "hiviewdfx_hilog_native:libhilog",
   ]
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
+
+  subsystem_name = "multimedia"
+  part_name = "media_library"
 }
 
 ohos_static_library("permission_utils") {
@@ -54,4 +57,7 @@ ohos_static_library("permission_utils") {
     "ipc:ipc_core",
     "samgr:samgr_proxy",
   ]
+
+  subsystem_name = "multimedia"
+  part_name = "media_library"
 }

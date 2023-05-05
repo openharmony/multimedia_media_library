@@ -10,28 +10,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
-import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
+import("../../../../../../arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
+import("../../../../../../foundation/arkui/ace_engine/ace_config.gni")
 
 js_declaration("medialibrary_js") {
   part_name = "media_library"
   sources = [ "./@ohos.multimedia.mediaLibrary.d.ts" ]
 }
 
-ohos_copy("medialibrary_declaration") {
-  sources = [ "./@ohos.multimedia.mediaLibrary.d.ts" ]
-  outputs = [ target_out_dir + "/$target_name/" ]
-  module_source_dir = target_out_dir + "/$target_name"
-  module_install_name = ""
-}
-
 # compile .js to .abc.
 action("gen_medialibraryinf_abc") {
   visibility = [ ":*" ]
-  script = "//arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
+  script = "../../../../../../arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
 
   args = [
     "--src-js",
@@ -46,7 +39,8 @@ action("gen_medialibraryinf_abc") {
     rebase_path("${node_modules}"),
     "--module",
   ]
-  deps = [ "//arkcompiler/ets_frontend/ts2panda:ark_ts2abc_build" ]
+  deps =
+      [ "../../../../../../arkcompiler/ets_frontend/ts2panda:ark_ts2abc_build" ]
 
   inputs = [ "${MEDIALIB_JS_PATH}/src/medialibraryinf.js" ]
   outputs = [ target_out_dir + "/medialibraryinf.abc" ]
