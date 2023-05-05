@@ -18,6 +18,7 @@
 
 #include "album_napi.h"
 #include "hitrace_meter.h"
+#include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_napi.h"
@@ -305,10 +306,14 @@ napi_value FetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info
                 NAPI_ERR_LOG("unsupported FetchResType");
                 break;
         }
+        if (count < 0) {
+            NapiError::ThrowError(env, JS_INNER_FAIL, "Failed to get count");
+            return nullptr;
+        }
         napi_create_int32(env, count, &jsResult);
     } else {
-        NAPI_ERR_LOG("JSGetCount obj == nullptr, status: %{public}d", status);
-        NAPI_ASSERT(env, false, "JSGetCount obj == nullptr");
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get native obj");
+        return nullptr;
     }
 
     return jsResult;

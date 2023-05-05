@@ -150,10 +150,8 @@ bool PhotoAlbum::CheckPhotoAlbumType(const PhotoAlbumType albumType)
 
 bool PhotoAlbum::CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType)
 {
-    PhotoAlbumSubType systemStart = PhotoAlbumSubType::VIDEO;
-    PhotoAlbumSubType systemEnd = CAMERA;
     return (albumSubType == PhotoAlbumSubType::USER_GENERIC) || (albumSubType == PhotoAlbumSubType::ANY) ||
-        ((albumSubType >= systemStart) && (albumSubType <= systemEnd));
+        ((albumSubType >= PhotoAlbumSubType::SYSTEM_START) && (albumSubType <= PhotoAlbumSubType::SYSTEM_END));
 }
 }  // namespace Media
 }  // namespace OHOS

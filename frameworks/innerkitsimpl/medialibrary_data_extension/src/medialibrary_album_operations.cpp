@@ -39,6 +39,7 @@ using namespace OHOS::RdbDataShareAdapter;
 namespace OHOS::Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
 constexpr int32_t AFTER_AGR_SIZE = 2;
+constexpr int64_t AGING_TIME = 30 * 60 * 60 * 24;
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
     int64_t outRow = -1;
@@ -253,7 +254,7 @@ int32_t PrepareUpdateValues(const ValuesBucket &values, ValuesBucket &updateValu
     return E_OK;
 }
 
-int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataShare::DataSharePredicates &predicates)
+int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
     ValuesBucket rdbValues;
     int32_t err = PrepareUpdateValues(values, rdbValues);
@@ -276,7 +277,7 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataShare::DataShareP
     return err;
 }
 
-int32_t RecoverPhotoAssets(const DataShare::DataSharePredicates &predicates)
+int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
@@ -296,7 +297,7 @@ static inline int32_t DeletePhotoInDb(int32_t fileId)
     return MediaLibraryRdbStore::Delete(predicates);
 }
 
-int32_t DeletePhotoAssets(const DataShare::DataSharePredicates &predicates)
+int32_t DeletePhotoAssets(const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
@@ -350,8 +351,17 @@ int32_t DeletePhotoAssets(const DataShare::DataSharePredicates &predicates)
     return deletedRows;
 }
 
+int32_t AgingPhotoAssets()
+{
+    auto time = MediaFileUtils::UTCTimeSeconds();
+    DataSharePredicates predicates;
+    predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.And()->LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(time - AGING_TIME));
+    return DeletePhotoAssets(predicates);
+}
+
 int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opType, const ValuesBucket &values,
-    const DataShare::DataSharePredicates &predicates)
+    const DataSharePredicates &predicates)
 {
     switch (opType) {
         case OperationType::UPDATE:
@@ -360,6 +370,8 @@ int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opTyp
             return RecoverPhotoAssets(predicates);
         case OperationType::ALBUM_DELETE_ASSETS:
             return DeletePhotoAssets(predicates);
+        case OperationType::AGING:
+            return AgingPhotoAssets();
         default:
             MEDIA_ERR_LOG("Unknown operation type: %{public}d", opType);
             return E_ERR;

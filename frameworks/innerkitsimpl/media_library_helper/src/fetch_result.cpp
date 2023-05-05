@@ -107,7 +107,7 @@ int32_t FetchResult<T>::GetCount()
     if (resultset_ == nullptr || resultset_->GetRowCount(count) != NativeRdb::E_OK) {
         return 0;
     }
-    return count;
+    return count < 0 ? 0 : count;
 }
 
 template <class T>
