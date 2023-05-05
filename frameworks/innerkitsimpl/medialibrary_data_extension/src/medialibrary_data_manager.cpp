@@ -985,7 +985,11 @@ bool MediaLibraryDataManager::ShouldCheckFileName(const OperationObject &oprnObj
 
 int32_t MediaLibraryDataManager::DoTrashAging()
 {
-    return MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
+    auto ret = MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
+    if (ret != E_SUCCESS) {
+        return ret;
+    }
+    return MediaLibraryAlbumOperations::HandlePhotoAlbum(OperationType::AGING, {}, {});
 }
 
 int32_t MediaLibraryDataManager::RevertPendingByFileId(const std::string &fileId)

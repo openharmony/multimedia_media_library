@@ -234,7 +234,7 @@ const std::vector<std::string> directoryEnumValues {
 };
 
 const std::vector<std::string> systemAlbumSubType {
-    "VIDEO", "FAVORITE", "HIDDEN", "TRASH", "SCREENSHOTS", "CAMERA"
+    "FAVORITE", "VIDEO", "HIDDEN", "TRASH", "SCREENSHOT", "CAMERA"
 };
 
 const std::vector<std::string> positionTypeEnum {

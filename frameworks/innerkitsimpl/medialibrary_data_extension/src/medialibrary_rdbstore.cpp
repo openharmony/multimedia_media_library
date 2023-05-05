@@ -514,7 +514,7 @@ int32_t PrepareSystemAlbums(RdbStore &store)
     ValuesBucket values;
     int32_t err = E_FAIL;
     store.BeginTransaction();
-    for (int32_t i = PhotoAlbumSubType::VIDEO; i <= PhotoAlbumSubType::CAMERA; i++) {
+    for (int32_t i = PhotoAlbumSubType::SYSTEM_START; i <= PhotoAlbumSubType::SYSTEM_END; i++) {
         values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SYSTEM);
         values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, i);
 

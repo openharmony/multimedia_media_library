@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "trash_async_worker.h"
+#include "medialibrary_album_operations.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "media_log.h"
 
@@ -51,6 +52,7 @@ void TrashAsyncTaskWorker::StartWorker()
 {
     MediaLibrarySmartAlbumMapOperations::SetInterrupt(false);
     MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
+    MediaLibraryAlbumOperations::HandlePhotoAlbum(OperationType::AGING, {}, {});
 }
 } // namespace Media
 } // namespace OHOS
