@@ -1071,7 +1071,7 @@ int ThumbnailUtils::SaveFile(ThumbnailData &data, bool isLcd)
         return -errno;
     }
     mode_t mask = umask(0);
-    UniqueFd fd(open(fileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC | fileMode));
+    UniqueFd fd(open(fileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, fileMode));
     umask(mask);
     if (fd.Get() < 0) {
         MEDIA_ERR_LOG("SaveFile failed! filePath %{private}s status %{public}d", fileName.c_str(), errno);
