@@ -3750,8 +3750,8 @@ napi_value MediaLibraryNapi::CreateAlbumSubTypeEnum(napi_env env)
     CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "USER_GENERIC", PhotoAlbumSubType::USER_GENERIC),
         JS_INNER_FAIL);
     for (size_t i = 0; i < systemAlbumSubType.size(); i++) {
-        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, systemAlbumSubType[i], PhotoAlbumSubType::VIDEO + i),
-            JS_INNER_FAIL);
+        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, systemAlbumSubType[i],
+            PhotoAlbumSubType::SYSTEM_START + i), JS_INNER_FAIL);
     }
     CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "ANY", PhotoAlbumSubType::ANY), JS_INNER_FAIL);
 

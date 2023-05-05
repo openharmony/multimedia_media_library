@@ -633,17 +633,33 @@ static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType, DataSha
             predicates.EndWrap();
             break;
         }
+        case PhotoAlbumSubType::HIDDEN: {
+            predicates.BeginWrap();
+            constexpr int32_t IS_HIDDEN = 1;
+            predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(IS_HIDDEN));
+            predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+            predicates.EndWrap();
+            break;
+        }
         case PhotoAlbumSubType::TRASH: {
             predicates.BeginWrap();
             predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
             predicates.EndWrap();
             break;
         }
-        case PhotoAlbumSubType::HIDDEN: {
+        case PhotoAlbumSubType::SCREENSHOT: {
             predicates.BeginWrap();
-            constexpr int32_t IS_HIDDEN = 1;
-            predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(IS_HIDDEN));
+            predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)));
             predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+            predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+            predicates.EndWrap();
+            break;
+        }
+        case PhotoAlbumSubType::CAMERA: {
+            predicates.BeginWrap();
+            predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::CAMERA)));
+            predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+            predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
             predicates.EndWrap();
             break;
         }

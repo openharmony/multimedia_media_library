@@ -47,19 +47,27 @@ enum MediaType {
 
 enum PhotoAlbumType : int32_t {
     USER = 0,
-    SYSTEM = 100
+    SYSTEM = 1024
 };
 
 enum PhotoAlbumSubType : int32_t {
     USER_GENERIC = 1,
 
-    VIDEO = 101,
-    FAVORITE,
+    SYSTEM_START = 1025,
+    FAVORITE = SYSTEM_START,
+    VIDEO,
     HIDDEN,
     TRASH,
-    SCREENSHOTS,
+    SCREENSHOT,
     CAMERA,
+    SYSTEM_END = CAMERA,
     ANY = std::numeric_limits<int32_t>::max()
+};
+
+enum class PhotoSubType : int32_t {
+    DEFAULT,
+    SCREENSHOT,
+    CAMERA
 };
 
 enum class MediaTypeMaskInteger: std::uint32_t {
