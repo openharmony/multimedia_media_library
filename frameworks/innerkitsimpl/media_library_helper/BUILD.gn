@@ -40,6 +40,7 @@ ohos_shared_library("media_library") {
     "src/fetch_result.cpp",
     "src/file_asset.cpp",
     "src/media_column.cpp",
+    "src/media_file_uri.cpp",
     "src/media_file_utils.cpp",
     "src/media_volume.cpp",
     "src/medialibrary_helper_container.cpp",
