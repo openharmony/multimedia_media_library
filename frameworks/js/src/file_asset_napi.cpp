@@ -35,6 +35,7 @@
 #include "thumbnail_utils.h"
 #include "unique_fd.h"
 #include "userfile_client.h"
+#include "userfilemgr_uri.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -986,19 +987,22 @@ static void JSCommitModifyExecute(napi_env env, void *data)
         isApiVersion10 = true;
     }
 
-    if (!isApiVersion10) {
-        if (MediaFileUtils::CheckTitle(context->objectPtr->GetTitle()) < 0) {
-            context->error = JS_E_DISPLAYNAME;
-            return;
-        }
-    }
-
     if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) < 0) {
         context->error = JS_E_DISPLAYNAME;
         return;
     }
 
-    string uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    string uri = MEDIALIBRARY_DATA_URI + "/";
+    if (!isApiVersion10) {
+        if (MediaFileUtils::CheckTitle(context->objectPtr->GetTitle()) < 0) {
+            context->error = JS_E_DISPLAYNAME;
+            return;
+        }
+        uri += MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET;
+    } else {
+        uri += MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET;
+    }
+
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
     if (isApiVersion10) {
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(API_VERSION_10));
