@@ -479,7 +479,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_update_album_005, TestSize.Level0)
     values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, "file://media/asset/10");
 
     // Try to update system albums one by one
-    for (int32_t i = PhotoAlbumSubType::VIDEO; i <= PhotoAlbumSubType::CAMERA; i++) {
+    for (int32_t i = PhotoAlbumSubType::SYSTEM_START; i <= PhotoAlbumSubType::SYSTEM_END; i++) {
         // Build predicates
         DataSharePredicates predicates;
         predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
@@ -492,7 +492,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_update_album_005, TestSize.Level0)
     DataSharePredicates predicates;
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
     EXPECT_EQ(UpdatePhotoAlbum(values, predicates), 0);
-    for (int32_t i = PhotoAlbumSubType::VIDEO; i <= PhotoAlbumSubType::CAMERA; i++) {
+    for (int32_t i = PhotoAlbumSubType::SYSTEM_START; i <= PhotoAlbumSubType::SYSTEM_END; i++) {
         CheckUpdatedSystemAlbum(static_cast<PhotoAlbumSubType>(i), "", "");
     }
     MEDIA_INFO_LOG("photoalbum_update_album_005 end");

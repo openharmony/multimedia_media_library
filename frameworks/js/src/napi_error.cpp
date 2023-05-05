@@ -47,7 +47,7 @@ void NapiError::HandleError(napi_env env, napi_value &errorObj)
 void NapiError::ThrowError(napi_env env, int32_t err, const std::string &errMsg)
 {
     string message = errMsg;
-    if (errMsg.empty()) {
+    if (message.empty()) {
         message = "operation not support";
         if (jsErrMap.count(err) > 0) {
             message = jsErrMap.at(err);
