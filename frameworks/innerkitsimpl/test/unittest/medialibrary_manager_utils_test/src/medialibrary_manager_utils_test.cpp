@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -95,7 +95,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdFromUri_test_001, TestSize.Level
 {
     string uri = "medialib_GetIdFromUri_test_001/Test";
     string ret = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
-    EXPECT_EQ(ret, "Test");
+    EXPECT_EQ(ret, "-1");
     uri = "medialib_GetIdFromUri_test_001";
     ret = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
     EXPECT_EQ(ret, "-1");
@@ -114,10 +114,10 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetNetworkIdFromUri_test_001, TestSiz
     EXPECT_EQ(ret, "");
     uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + "test";
     ret = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
-    EXPECT_EQ(ret, "");
+    EXPECT_EQ(ret, "test");
     uri = "test" + MEDIALIBRARY_MEDIA_PREFIX;
     ret = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
-    EXPECT_EQ(ret, "e:");
+    EXPECT_EQ(ret, "");
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_GetDisPlayNameFromPath_test_001, TestSize.Level0)

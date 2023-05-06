@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1772,7 +1772,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkUriValid_test_001, TestSize.
     EXPECT_EQ(ret, false);
     ret = MediaFileExtentionUtils::CheckUriValid("datashare://test/CheckUriValid1");
     EXPECT_EQ(ret, false);
-    ret = MediaFileExtentionUtils::CheckUriValid("datashare://1");
+    ret = MediaFileExtentionUtils::CheckUriValid("datashare://media/1");
     EXPECT_EQ(ret, true);
 }
 
@@ -1788,9 +1788,9 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkUriSupport_test_001, TestSiz
 {
     int32_t ret = MediaFileExtentionUtils::CheckUriSupport("");
     EXPECT_EQ(ret, E_URI_INVALID);
-    ret = MediaFileExtentionUtils::CheckUriSupport("datashare://test/1");
+    ret = MediaFileExtentionUtils::CheckUriSupport("datashare://media/1");
     EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
-    ret = MediaFileExtentionUtils::CheckUriSupport("datashare://1");
+    ret = MediaFileExtentionUtils::CheckUriSupport("datashare:///media/1");
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
@@ -1858,23 +1858,27 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkValidDirName_test_001, TestS
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkMkdirValid_test_001, TestSize.Level0)
 {
     MediaFileUriType uriType = URI_FILE_ROOT;
-    string parentUriStr = "datashare://1";
+    string parentUriStr = "datashare:///1";
     string displayName = "Camera/";
     int32_t ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
     EXPECT_EQ(ret, E_INVALID_DISPLAY_NAME);
-    string parentUriStrTest = "datashare://test/";
-    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStrTest, displayName);
+    parentUriStr = "datashare://test/";
+    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
     EXPECT_EQ(ret, E_DISTIBUTED_URI_NO_SUPPORT);
-    string displayNameTest = "Camera";
-    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayNameTest);
+    parentUriStr = "datashare:///test/";
+    displayName = "Camera";
+    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
     EXPECT_EQ(ret, E_SUCCESS);
+
     uriType = URI_MEDIA_ROOT;
-    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStrTest, displayName);
+    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
     EXPECT_EQ(ret, E_URI_INVALID);
+    parentUriStr = "datashare:///media/1";
+    displayName = "Camera/";
     ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
     EXPECT_EQ(ret, E_INVALID_DISPLAY_NAME);
-    string name = "test";
-    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, name);
+    displayName = "test";
+    ret = MediaFileExtentionUtils::CheckMkdirValid(uriType, parentUriStr, displayName);
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
