@@ -21,5 +21,3 @@ MEDIALIB_UTILS_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/utils"
 MEDIALIB_SERVICES_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/services"
 MEDIALIB_CLOUD_SYNC_PATH = "${MEDIALIB_SERVICES_PATH}/media_cloud_sync"
 MEDIALIB_MTP_PATH = "${MEDIALIB_SERVICES_PATH}/media_mtp"
-
-FILE_API_PATH = "//foundation/filemanagement/file_api"
