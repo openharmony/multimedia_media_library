@@ -28,9 +28,9 @@ public:
     Command() = default;
     virtual ~Command() = default;
     Command(const Command &command) = delete;
-    Command(Command&& command) = delete;
-    Command& operator=(const Command &command) = delete;
-    Command& operator=(Command&& command) = delete;
+    Command(Command &&command) = delete;
+    Command &operator=(const Command &command) = delete;
+    Command &operator=(Command &&command) = delete;
     static std::unique_ptr<Command> Create(const ExecEnv &env);
     virtual int32_t Start(const ExecEnv &env) = 0;
 protected:
