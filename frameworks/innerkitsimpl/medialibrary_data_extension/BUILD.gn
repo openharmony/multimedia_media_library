@@ -43,7 +43,6 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
-    "${FILE_API_PATH}/utils/filemgmt_libn/include",
 
     "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
     "../../../../../distributeddatamgr/distributedfile/interfaces/kits/js/src/common",
@@ -177,6 +176,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "device_security_level:dslm_sdk",
     "dfs_service:cloudsync_kit_inner",
     "eventhandler:libeventhandler",
+    "file_api:filemgmt_libn",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "init:libbegetutil",
