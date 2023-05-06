@@ -80,6 +80,8 @@ public:
     static const std::string PHOTO_DIRTY;
     static const std::string PHOTO_CLOUD_ID;
     static const std::string PHOTO_SUBTYPE;
+    static const std::string PHOTO_META_DATE_MODIFIED;
+    static const std::string PHOTO_SYNCING;
 
     // table name
     static const std::string PHOTOS_TABLE;
