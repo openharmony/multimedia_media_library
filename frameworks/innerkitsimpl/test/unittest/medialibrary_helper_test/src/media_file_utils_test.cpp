@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include "medialibrary_helper_test.h"
 
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
@@ -394,7 +395,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriByNameAndId_Test_001, 
     string displayName = "test.jpg";
     string networkId = "";
     int32_t fd = 1;
-    string targetUri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_IMAGE_URI + "/" + to_string(fd);
+    string targetUri = MediaFileUri(MEDIA_TYPE_IMAGE, to_string(fd), networkId).ToString();
     EXPECT_EQ(MediaFileUtils::GetUriByNameAndId(displayName, networkId, fd), targetUri);
 }
 

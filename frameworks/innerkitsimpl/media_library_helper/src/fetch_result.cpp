@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 
 #include "fetch_result.h"
 #include "album_asset.h"
+#include "media_file_uri.h"
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "medialibrary_tracer.h"
@@ -362,15 +363,17 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
         string typeMask;
         MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
         fileAsset->SetTypeMask(typeMask);
-        uri = MediaFileUtils::GetFileMediaTypeUriV10(fileAsset->GetMediaType(), networkId_) + "/" +
-            to_string(fileAsset->GetId());
+        MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()),
+             networkId_, MEDIA_API_VERSION_V10);
+        uri = fileUri.ToString();
     } else {
-        uri = MediaFileUtils::GetFileMediaTypeUri(fileAsset->GetMediaType(), networkId_) + "/" +
-            to_string(fileAsset->GetId());
+        MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()),
+            networkId_);
+        uri = fileUri.ToString();
     }
     if (fileAsset->GetAlbumId() != DEFAULT_INT32) {
-        fileAsset->SetAlbumUri(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId_) + "/" +
-            to_string(fileAsset->GetAlbumId()));
+        fileAsset->SetAlbumUri(MediaFileUri(MEDIA_TYPE_ALBUM, to_string(fileAsset->GetAlbumId()),
+            networkId_).ToString());
     }
     fileAsset->SetUri(move(uri));
 }
@@ -436,8 +439,8 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
 
     // Get album asset count index and value
     albumData->SetCount(get<int32_t>(GetRowValFromColumn(MEDIA_DATA_DB_COUNT, TYPE_INT32, resultSet)));
-    albumData->SetAlbumUri(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId_) + "/" +
-        to_string(albumData->GetAlbumId()));
+    albumData->SetAlbumUri(MediaFileUri(MEDIA_TYPE_ALBUM, to_string(albumData->GetAlbumId()),
+        networkId_).ToString());
     // Get album relativePath index and value
     albumData->SetAlbumRelativePath(get<string>(GetRowValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
         TYPE_STRING, resultSet)));

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1627,7 +1627,8 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
         return nullptr;
     }
     auto tmpIdx = index + 2; // "//" len
-    if (uri.substr(0, tmpIdx) != MEDIALIBRARY_DATA_ABILITY_PREFIX) {
+    if (uri.substr(0, tmpIdx) != MEDIALIBRARY_DATA_ABILITY_PREFIX &&
+        uri.substr(0, tmpIdx) != ML_FILE_PREFIX) {
         return nullptr;
     }
     index = uri.find("thumbnail");
