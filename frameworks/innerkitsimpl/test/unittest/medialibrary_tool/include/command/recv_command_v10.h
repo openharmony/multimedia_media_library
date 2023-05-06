@@ -24,9 +24,9 @@ public:
     RecvCommandV10() = default;
     ~RecvCommandV10() override = default;
     RecvCommandV10(const RecvCommandV10 &recvCommand) = delete;
-    RecvCommandV10(RecvCommandV10&& recvCommand) = delete;
-    RecvCommandV10& operator=(const RecvCommandV10 &recvCommand) = delete;
-    RecvCommandV10& operator=(RecvCommandV10&& recvCommand) = delete;
+    RecvCommandV10(RecvCommandV10 &&recvCommand) = delete;
+    RecvCommandV10 &operator=(const RecvCommandV10 &recvCommand) = delete;
+    RecvCommandV10 &operator=(RecvCommandV10 &&recvCommand) = delete;
     int32_t Start(const ExecEnv &env) override;
 };
 } // namespace MediaTool
