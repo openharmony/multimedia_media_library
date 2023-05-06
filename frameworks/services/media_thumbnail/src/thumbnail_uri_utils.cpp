@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <map>
 
+#include "media_file_uri.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "media_column.h"
@@ -105,48 +106,12 @@ bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outF
 
 string ThumbnailUriUtils::GetNetworkIdFromUri(const string &uri)
 {
-    string networkId;
-    if (uri.empty()) {
-        return networkId;
-    }
-    size_t pos = uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX);
-    if (pos == string::npos) {
-        return networkId;
-    }
-
-    string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
-    if (tempUri.empty()) {
-        return networkId;
-    }
-    pos = tempUri.find_first_of('/');
-    if (pos == 0 || pos == string::npos) {
-        return networkId;
-    }
-    networkId = tempUri.substr(0, pos);
-    return networkId;
+    return MediaFileUri(uri).GetNetworkId();
 }
 
 string ThumbnailUriUtils::GetIdFromUri(const string &uri)
 {
-    string rowNum = "-1";
-
-    size_t pos = uri.rfind('/');
-    if (pos != std::string::npos) {
-        size_t posQuery = uri.find('?');
-        size_t posSegment = uri.find('#');
-        if (posQuery == string::npos && posSegment == string::npos) {
-            // datashare:///media/image/1
-            rowNum = uri.substr(pos + 1);
-        } else if (posQuery == string::npos) {
-            // datashare:///media/image/1#123
-            rowNum = uri.substr(pos + 1, posSegment - pos - 1);
-        } else {
-            // datashare:///media/image/1?xxx=yyy#123
-            rowNum = uri.substr(pos + 1, posQuery - pos - 1);
-        }
-    }
-
-    return rowNum;
+    return MediaFileUri(uri).GetFileId();
 }
 
 string ThumbnailUriUtils::GetTableFromUri(const string &uri)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include "medialibrary_data_manager_utils.h"
 
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_common_utils.h"
@@ -88,37 +89,12 @@ string MediaLibraryDataManagerUtils::GetOperationType(const string &uri)
 
 string MediaLibraryDataManagerUtils::GetIdFromUri(const string &uri)
 {
-    string rowNum = "-1";
-
-    size_t pos = uri.rfind('/');
-    if (pos != std::string::npos) {
-        rowNum = uri.substr(pos + 1);
-    }
-
-    return rowNum;
+    return MediaFileUri(uri).GetFileId();
 }
 
 string MediaLibraryDataManagerUtils::GetNetworkIdFromUri(const string &uri)
 {
-    string networkId;
-    if (uri.empty()) {
-        return networkId;
-    }
-    size_t pos = uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX);
-    if (pos == string::npos) {
-        return networkId;
-    }
-    string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
-    if (tempUri.empty()) {
-        return networkId;
-    }
-    pos = tempUri.find_first_of('/');
-    if (pos == 0 || pos == string::npos) {
-        return networkId;
-    }
-    networkId = tempUri.substr(0, pos);
-
-    return networkId;
+    return MediaFileUri(uri).GetNetworkId();
 }
 
 string MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(const std::string &path)

@@ -17,6 +17,7 @@
 #include "medialibrary_napi_utils.h"
 
 #include "datashare_predicates_proxy.h"
+#include "media_file_uri.h"
 #include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager_utils.h"
@@ -32,31 +33,10 @@ namespace OHOS {
 namespace Media {
 void MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(const string &uri, string &networkId, string &fileId)
 {
-    networkId = "";
-    fileId = "-1";
-    if (uri.empty()) {
-        NAPI_ERR_LOG("input uri is empty");
-        return;
-    }
-    size_t pos = uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX);
-    if (pos == string::npos) {
-        NAPI_ERR_LOG("invalid input uri: %{private}s", uri.c_str());
-        return;
-    }
-    string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
-    if (tempUri.empty()) {
-        NAPI_ERR_LOG("invalid input uri: %{private}s", uri.c_str());
-        return;
-    }
-    pos = tempUri.find_first_of('/');
-    if (pos != 0 && pos != string::npos) {
-        networkId = tempUri.substr(0, pos);
-    }
-
-    pos = uri.rfind('/');
-    if (pos != string::npos) {
-        fileId = uri.substr(pos + 1);
-    } else {
+    MediaFileUri fileUri(uri);
+    networkId = fileUri.GetNetworkId();
+    fileId = fileUri.GetFileId();
+    if (fileId.empty()) {
         NAPI_ERR_LOG("get file_id failed, uri: %{private}s", uri.c_str());
     }
 }
