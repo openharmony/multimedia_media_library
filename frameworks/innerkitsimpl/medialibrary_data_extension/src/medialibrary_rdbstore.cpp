@@ -421,10 +421,10 @@ int32_t MediaLibraryRdbStore::Commit()
         MEDIA_ERR_LOG("no transaction now");
         return E_HAS_DB_ERROR;
     }
-    isInTransaction_.store(false);
-    transactionCV_.notify_all();
 
     int32_t errCode = rdbStore_->Commit();
+    isInTransaction_.store(false);
+    transactionCV_.notify_all();
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("commit failed, errCode=%{public}d", errCode);
         return E_HAS_DB_ERROR;
@@ -443,10 +443,10 @@ int32_t MediaLibraryRdbStore::RollBack()
         MEDIA_ERR_LOG("no transaction now");
         return E_HAS_DB_ERROR;
     }
-    isInTransaction_.store(false);
-    transactionCV_.notify_all();
 
     int32_t errCode = rdbStore_->RollBack();
+    isInTransaction_.store(false);
+    transactionCV_.notify_all();
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rollback failed, errCode=%{public}d", errCode);
         return E_HAS_DB_ERROR;
