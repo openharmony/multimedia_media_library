@@ -24,9 +24,9 @@ public:
     CommandLine() = default;
     ~CommandLine() = default;
     CommandLine(const CommandLine &commandLine) = delete;
-    CommandLine(CommandLine&& commandLine) = delete;
-    CommandLine& operator=(const CommandLine &commandLine) = delete;
-    CommandLine& operator=(CommandLine&& commandLine) = delete;
+    CommandLine(CommandLine &&commandLine) = delete;
+    CommandLine &operator=(const CommandLine &commandLine) = delete;
+    CommandLine &operator=(CommandLine &&commandLine) = delete;
     static int32_t Parser(ExecEnv &env);
 };
 } // namespace MediaTool

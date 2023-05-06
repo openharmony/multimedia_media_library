@@ -25,9 +25,9 @@ public:
     ControlMain() = default;
     ~ControlMain() = default;
     ControlMain(const ControlMain &controlMain) = delete;
-    ControlMain(ControlMain&& controlMain) = delete;
-    ControlMain& operator=(const ControlMain &controlMain) = delete;
-    ControlMain& operator=(ControlMain&& controlMain) = delete;
+    ControlMain(ControlMain &&controlMain) = delete;
+    ControlMain &operator=(const ControlMain &controlMain) = delete;
+    ControlMain &operator=(ControlMain &&controlMain) = delete;
     static int32_t Main(const std::vector<std::string> &args);
 };
 } // namespace MediaTool

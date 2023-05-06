@@ -22,7 +22,7 @@ namespace MediaTool {
 class FileUtils {
 public:
     static bool IsFile(const std::string &path);
-    static bool SendData(int rfd, int wfd);
+    static bool SendData(const int rfd, const int wfd);
 };
 } // namespace MediaTool
 } // namespace Media
