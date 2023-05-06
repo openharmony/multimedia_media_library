@@ -32,6 +32,7 @@ public:
     UserFileClient() {}
     virtual ~UserFileClient() {}
     static bool IsValid();
+    static void Init(const sptr<IRemoteObject> &token);
     static void Init(napi_env env, napi_callback_info info);
     static std::shared_ptr<DataShare::DataShareResultSet> Query(Uri &uri,
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode);
