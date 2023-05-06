@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <fcntl.h>
 
 #include "file_access_extension_info.h"
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_thumbnail_helper.h"
@@ -189,28 +190,7 @@ int MediaFileExtentionUtils::Delete(const Uri &sourceFileUri)
 
 bool MediaFileExtentionUtils::CheckUriValid(const string &uri)
 {
-    size_t pos = uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX);
-    if (pos == string::npos) {
-        MEDIA_ERR_LOG("invalid uri %{public}s", uri.c_str());
-        return false;
-    }
-    size_t slashIndex = uri.rfind(SLASH_CHAR);
-    if (slashIndex == string::npos) {
-        MEDIA_ERR_LOG("invalid uri %{public}s", uri.c_str());
-        return false;
-    }
-    string id = uri.substr(slashIndex + 1);
-    if (id.empty()) {
-        MEDIA_ERR_LOG("invalid uri %{public}s", uri.c_str());
-        return false;
-    }
-    for (const char &c : id) {
-        if (!isdigit(c)) {
-            MEDIA_ERR_LOG("invalid uri %{public}s", uri.c_str());
-            return false;
-        }
-    }
-    return true;
+    return MediaFileUri(uri).IsValid();
 }
 
 bool MediaFileExtentionUtils::CheckDistributedUri(const string &uri)
@@ -306,30 +286,41 @@ int32_t ResolveUriWithType(const string &mimeType, MediaFileUriType &uriType)
  */
 int32_t MediaFileExtentionUtils::ResolveUri(const FileInfo &fileInfo, MediaFileUriType &uriType)
 {
-    string uri = fileInfo.uri;
-    if (uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX) != 0) {
+    MediaFileUri uri(fileInfo.uri);
+    string scheme = uri.GetScheme();
+    if (scheme != ML_FILE_SCHEME &&
+        scheme != ML_DATA_SHARE_SCHEME) {
         return E_INVALID_URI;
     }
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
-    uri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length() + networkId.length());
-    if (uri.find(MEDIALIBRARY_DATA_URI_IDENTIFIER) != 0) {
+
+    if (uri.ToString().find(MEDIALIBRARY_DATA_URI_IDENTIFIER) == string::npos) {
         return E_INVALID_URI;
     }
-    uri = uri.substr(MEDIALIBRARY_DATA_URI_IDENTIFIER.length());
-    if (uri == MEDIALIBRARY_ROOT) {
+
+    string path = uri.GetPath();
+    if (scheme == ML_DATA_SHARE_SCHEME) {
+        if (path.length() > MEDIALIBRARY_DATA_URI_IDENTIFIER.length()) {
+            path = path.substr(MEDIALIBRARY_DATA_URI_IDENTIFIER.length());
+        } else {
+            return E_INVALID_URI;
+        }
+    }
+
+    if (path == MEDIALIBRARY_ROOT) {
         uriType = MediaFileUriType::URI_ROOT;
         return E_SUCCESS;
     }
-    if (uri.find(MEDIALIBRARY_ROOT) == 0) {
-        return ResolveRootUri(uri, uriType);
+    if (path.find(MEDIALIBRARY_ROOT) == 0) {
+        return ResolveRootUri(path, uriType);
     }
-    if (uri.find(MEDIALIBRARY_TYPE_FILE_URI) == 0) {
+    if (path.find(MEDIALIBRARY_TYPE_FILE_URI) == 0) {
         return ResolveUriWithType(fileInfo.mimeType, uriType);
     }
     if (MediaFileExtentionUtils::CheckUriValid(fileInfo.uri)) {
         uriType = MediaFileUriType::URI_FILE;
         return E_SUCCESS;
     }
+
     return E_INVALID_URI;
 }
 
@@ -533,8 +524,7 @@ int GetFileInfo(FileInfo &fileInfo, const shared_ptr<NativeRdb::ResultSet> &resu
 {
     int fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
     int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
-    fileInfo.uri =
-        MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), networkId) + SLASH_CHAR + to_string(fileId);
+    fileInfo.uri = MediaFileUri(MediaType(mediaType), to_string(fileId), networkId).ToString();
     fileInfo.relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
     fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
     fileInfo.mimeType = GetStringVal(MEDIA_DATA_DB_MIME_TYPE, result);
@@ -558,8 +548,7 @@ int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb:
         int fileId = GetInt32Val(MEDIA_DATA_DB_BUCKET_ID, result);
         fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_TITLE, result);
         fileInfo.mimeType = parentInfo.mimeType;
-        fileInfo.uri =
-            MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALBUM, networkId) + SLASH_CHAR + to_string(fileId);
+        fileInfo.uri = MediaFileUri(MEDIA_TYPE_ALBUM, to_string(fileId), networkId).ToString();
         fileInfo.relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
         fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
         fileInfo.mode = ALBUM_MODE_RW;
@@ -772,7 +761,7 @@ int32_t MediaFileExtentionUtils::Query(const Uri &uri, std::vector<std::string> 
 bool GetRootInfo(shared_ptr<NativeRdb::ResultSet> &result, RootInfo &rootInfo)
 {
     string networkId = GetStringVal(DEVICE_DB_NETWORK_ID, result);
-    rootInfo.uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_ROOT;
+    rootInfo.uri = ML_FILE_URI_PREFIX + "/" + networkId + MEDIALIBRARY_ROOT;
     rootInfo.displayName = GetStringVal(DEVICE_DB_NAME, result);
     rootInfo.deviceFlags = DEVICE_FLAG_SUPPORTS_READ;
     rootInfo.deviceType = DEVICE_SHARED_TERMINAL;
@@ -811,7 +800,7 @@ int32_t MediaFileExtentionUtils::GetRoots(vector<RootInfo> &rootList)
 {
     RootInfo rootInfo;
     // add local root
-    rootInfo.uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_ROOT;
+    rootInfo.uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_ROOT;
     rootInfo.displayName = MEDIALIBRARY_LOCAL_DEVICE_NAME;
     rootInfo.deviceFlags = DEVICE_FLAG_SUPPORTS_READ | DEVICE_FLAG_SUPPORTS_WRITE;
     rootInfo.deviceType = DEVICE_LOCAL_DISK;
@@ -1288,8 +1277,7 @@ void GetUriByRelativePath(const string &relativePath, string &fileUriStr)
         "Get Uri failed, relativePath: %{private}s", relativePath.c_str());
     int fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
     int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
-    fileUriStr =
-        MediaFileUtils::GetFileMediaTypeUri(MediaType(mediaType), "") + SLASH_CHAR + to_string(fileId);
+    fileUriStr = MediaFileUri(MediaType(mediaType), to_string(fileId)).ToString();
 }
 
 int GetRelativePathByUri(const string &uriStr, string &relativePath)

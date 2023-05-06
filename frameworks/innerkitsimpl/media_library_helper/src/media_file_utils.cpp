@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,6 +29,7 @@
 
 #include "directory_ex.h"
 #include "media_column.h"
+#include "media_file_uri.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -411,36 +412,12 @@ int64_t MediaFileUtils::UTCTimeSeconds()
 
 string MediaFileUtils::GetIdFromUri(const string &uri)
 {
-    string rowNum = "-1";
-
-    size_t pos = uri.rfind('/');
-    if (pos != std::string::npos) {
-        rowNum = uri.substr(pos + 1);
-    }
-
-    return rowNum;
+    return MediaFileUri(uri).GetFileId();
 }
 
 string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
 {
-    string networkId;
-    if (uri.empty()) {
-        return networkId;
-    }
-    size_t pos = uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX);
-    if (pos == string::npos) {
-        return networkId;
-    }
-    string tempUri = uri.substr(MEDIALIBRARY_DATA_ABILITY_PREFIX.length());
-    if (tempUri.empty()) {
-        return networkId;
-    }
-    pos = tempUri.find_first_of('/');
-    if (pos == 0 || pos == string::npos) {
-        return networkId;
-    }
-    networkId = tempUri.substr(0, pos);
-    return networkId;
+    return MediaFileUri(uri).GetNetworkId();
 }
 
 string MediaFileUtils::UpdatePath(const string &path, const string &uri)
@@ -511,7 +488,7 @@ string MediaFileUtils::GetFileMediaTypeUriV10(int32_t mediaType, const string &n
 string MediaFileUtils::GetUriByNameAndId(const string &displayName, const string &networkId, int32_t id)
 {
     MediaType mediaType = GetMediaType(displayName);
-    return MediaFileUtils::GetFileMediaTypeUri(mediaType, networkId) + SLASH_CHAR + to_string(id);
+    return MediaFileUri(mediaType, to_string(id), networkId).ToString();
 }
 
 MediaType MediaFileUtils::GetMediaType(const string &filePath)

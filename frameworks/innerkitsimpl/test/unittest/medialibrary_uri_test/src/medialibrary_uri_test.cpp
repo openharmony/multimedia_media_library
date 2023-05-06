@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -155,7 +155,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetNetworkIdFromUri_test_001, TestSiz
     deviceId = ThumbnailUriUtils::GetNetworkIdFromUri(MEDIALIBRARY_DATA_ABILITY_PREFIX);
     EXPECT_EQ(deviceId, "");
     deviceId = ThumbnailUriUtils::GetNetworkIdFromUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + "test");
-    EXPECT_EQ(deviceId, "");
+    EXPECT_EQ(deviceId, "test");
     deviceId = ThumbnailUriUtils::GetNetworkIdFromUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + "Uri/test");
     EXPECT_EQ(deviceId, "Uri");
 }
@@ -165,7 +165,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdFromUri_test_001, TestSize.Level
     string rowNum = ThumbnailUriUtils::GetIdFromUri("");
     EXPECT_EQ(rowNum, "-1");
     rowNum = ThumbnailUriUtils::GetIdFromUri("GetIdFromUri/test");
-    EXPECT_EQ(rowNum, "test");
+    EXPECT_EQ(rowNum, "-1");
 }
 
 }// namespace Media
