@@ -41,7 +41,7 @@ const std::string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     ALBUM_TYPE + " INT, " +
     ALBUM_SUBTYPE + " INT, " +
-    ALBUM_NAME + " TEXT, " +
+    ALBUM_NAME + " TEXT COLLATE NOCASE, " +
     ALBUM_COVER_URI + " TEXT, " +
     ALBUM_COUNT + " INT DEFAULT 0, " +
     ALBUM_RELATIVE_PATH + " TEXT)";
