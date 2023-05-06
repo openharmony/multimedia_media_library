@@ -22,9 +22,10 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 2;
+const int32_t MEDIA_RDB_VERSION = 3;
 enum {
     MEDIA_RDB_VERSION_ADD_CLOUD = 2,
+    MEDIA_RDB_VERSION_ADD_META_MODIFED = 3,
     MEDIA_RDB_VERSION_ADD_PHOTO_TABLE,
 };
 
@@ -108,6 +109,8 @@ const std::string MEDIA_DATA_DB_CONTENT_CREATE_TIME = "content_create_time";
 const std::string MEDIA_DATA_DB_POSITION = "position";
 const std::string MEDIA_DATA_DB_DIRTY = "dirty";
 const std::string MEDIA_DATA_DB_CLOUD_ID = "cloud_id";
+const std::string MEDIA_DATA_DB_META_DATE_MODIFIED = "meta_date_modified";
+const std::string MEDIA_DATA_DB_SYNCING = "syncing";
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
 const std::string MEDIA_DATA_DB_TIME_VISIT = "time_visit";
@@ -206,7 +209,9 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        MEDIA_DATA_DB_ALBUM + " TEXT, " +
                                        MEDIA_DATA_DB_CLOUD_ID + " TEXT, " +
                                        MEDIA_DATA_DB_DIRTY + " INT DEFAULT 0, " +
-                                       MEDIA_DATA_DB_POSITION + " INT DEFAULT 1)";
+                                       MEDIA_DATA_DB_POSITION + " INT DEFAULT 1, " +
+                                       MEDIA_DATA_DB_META_DATE_MODIFIED + "  BIGINT DEFAULT 0, " +
+                                       MEDIA_DATA_DB_SYNCING + " INT DEFAULT 0)";
 
 const std::string CREATE_BUNDLE_PREMISSION_TABLE = "CREATE TABLE IF NOT EXISTS " +
                                       BUNDLE_PERMISSION_TABLE + " (" +
