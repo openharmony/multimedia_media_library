@@ -39,6 +39,7 @@ using namespace OHOS::RdbDataShareAdapter;
 namespace OHOS::Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
 constexpr int32_t AFTER_AGR_SIZE = 2;
+constexpr int32_t THAN_AGR_SIZE = 1;
 constexpr int64_t AGING_TIME = 30 * 60 * 60 * 24;
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -200,7 +201,7 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     }
     int rowId = CreatePhotoAlbum(albumName);
     auto watch = MediaLibraryNotify::GetInstance();
-    if ((rowId > 0) && (watch != nullptr)) {
+    if (rowId > 0) {
         watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX  + to_string(rowId), NotifyType::NOTIFY_ADD);
     }
     return rowId;
@@ -216,7 +217,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(NativeRdb::RdbPredicates &
     int deleteRow = MediaLibraryRdbStore::Delete(predicates);
     auto watch = MediaLibraryNotify::GetInstance();
     for (size_t i = 0; i < predicates.GetWhereArgs().size() - AFTER_AGR_SIZE; i++) {
-        if ((deleteRow > 0) && (watch != nullptr)) {
+        if (deleteRow > 0) {
             watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX +
                 predicates.GetWhereArgs()[i], NotifyType::NOTIFY_REMOVE);
         }
@@ -271,8 +272,11 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     int32_t changedRows = 0;
     err = MediaLibraryRdbStore::Update(changedRows, rdbValues, rdbPredicates);
     auto watch = MediaLibraryNotify::GetInstance();
-    if ((err > 0) && (watch != nullptr)) {
-        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(changedRows), NotifyType::NOTIFY_UPDATE);
+    if (err > 0) {
+        for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - AFTER_AGR_SIZE; i++) {
+            watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX +
+                rdbPredicates.GetWhereArgs()[i], NotifyType::NOTIFY_UPDATE);
+        }
     }
     return err;
 }
@@ -286,7 +290,18 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);
 
     int32_t changedRows = 0;
-    return MediaLibraryRdbStore::Update(changedRows, rdbValues, rdbPredicates);
+    int errCode = MediaLibraryRdbStore::Update(changedRows, rdbValues, rdbPredicates);
+    auto watch = MediaLibraryNotify::GetInstance();
+    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+    for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - THAN_AGR_SIZE; i++) {
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i], NotifyType::NOTIFY_ADD);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i], NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+        if (trashAlbumId > 0) {
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i],
+                NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
+        }
+    }
+    return errCode;
 }
 
 static inline int32_t DeletePhotoInDb(int32_t fileId)
@@ -347,6 +362,10 @@ int32_t DeletePhotoAssets(const DataSharePredicates &predicates)
             return E_HAS_FS_ERROR;
         }
         deletedRows += deletedRow;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - THAN_AGR_SIZE; i++) {
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i], NotifyType::NOTIFY_REMOVE);
     }
     return deletedRows;
 }

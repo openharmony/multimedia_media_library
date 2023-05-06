@@ -43,7 +43,6 @@
 #include "mimetype_utils.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
-#include "photo_map_column.h"
 #include "result_set_utils.h"
 #include "string_ex.h"
 #include "thumbnail_service.h"
@@ -1564,71 +1563,53 @@ shared_ptr<ResultSet> MediaLibraryObjectUtils::QuerySmartAlbum(MediaLibraryComma
     return uniStore->Query(cmd, columns);
 }
 
-int32_t MediaLibraryObjectUtils::GetAlbumUrisById(const string &fileId, list<string> &albumUriList)
-{
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    MediaLibraryCommand queryAlbumMapCmd(OperationObject::PHOTO_MAP, OperationType::QUERY);
-    queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoMap::ASSET_ID, fileId);
-    auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoMap::ALBUM_ID});
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("GetAlbumUrisById failed");
-        return E_INVALID_FILEID;
-    }
-    int32_t count = -1;
-    int32_t ret = resultSet->GetRowCount(count);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to get count");
-    ret = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GoToFirstRow");
-    do {
-        int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoMap::ALBUM_ID, resultSet,
-            TYPE_INT32));
-        string albumUri = PhotoAlbumColumns::ALBUM_URI_PREFIX  + to_string(albumId);
-        albumUriList.emplace_back(albumUri);
-    } while (!resultSet->GoToNextRow());
-    return E_OK;
-}
-
 int32_t MediaLibraryObjectUtils::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId)
 {
     ValueObject value;
     int64_t trashDate = 0;
-    if (cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_DATE_TRASHED, value)) {
-        value.GetLong(trashDate);
-        auto watch = MediaLibraryNotify::GetInstance();
-        if (trashDate > 0) {
-            if (watch != nullptr) {
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_REMOVE);
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
-            }
-        } else {
-            if (watch != nullptr) {
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ADD);
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
-            }
-        }
-        return E_OK;
-    } else {
-        return E_ERR;
+    if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_DATE_TRASHED, value)) {
+        return E_DO_NOT_NEDD_SEND_NOTIFY;
     }
+    value.GetLong(trashDate);
+    auto watch = MediaLibraryNotify::GetInstance();
+    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+    if (trashDate > 0) {
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_REMOVE);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+        if (trashAlbumId > 0) {
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+                NotifyType::NOTIFY_ALBUM_ADD_ASSERT, trashAlbumId);
+        }
+    } else {
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ADD);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+        if (trashAlbumId > 0) {
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+                NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
+        }
+    }
+    return E_OK;
 }
 
 void MediaLibraryObjectUtils::SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId)
 {
     ValueObject value;
     bool isFavorite = false;
-    if (cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_IS_FAV, value)) {
-        value.GetBool(isFavorite);
-        auto watch = MediaLibraryNotify::GetInstance();
-        if (isFavorite) {
-            if (watch != nullptr) {
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-                    NotifyType::NOTIFY_ALBUM_ADD_ASSERT, DefaultAlbumId::FAVORITE_ALBUM);
-            }
-        } else {
-            if (watch != nullptr) {
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-                    NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, DefaultAlbumId::FAVORITE_ALBUM);
-            }
+    if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_IS_FAV, value)) {
+       return;
+    }
+    value.GetBool(isFavorite);
+    auto watch = MediaLibraryNotify::GetInstance();
+    int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
+    if (isFavorite) {
+        if (favAlbumId > 0) {
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+                NotifyType::NOTIFY_ALBUM_ADD_ASSERT, favAlbumId);
+        }
+    } else {
+        if (favAlbumId > 0) {
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+                NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, favAlbumId);
         }
     }
 }

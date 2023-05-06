@@ -17,11 +17,15 @@
 #include "data_ability_helper_impl.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
+#include "photo_map_column.h"
+#include "result_set_utils.h"
 #include "uri.h"
 
 using namespace std;
@@ -170,6 +174,30 @@ static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData
     }
 }
 
+static int32_t GetAlbumUrisById(const string &fileId, list<string> &albumUriList)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryCommand queryAlbumMapCmd(OperationObject::PHOTO_MAP, OperationType::QUERY);
+    queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoMap::ASSET_ID, fileId);
+    auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoMap::ALBUM_ID});
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("GetAlbumUrisById failed");
+        return E_INVALID_FILEID;
+    }
+    int32_t count = -1;
+    int32_t ret = resultSet->GetRowCount(count);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to get count");
+    ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GoToFirstRow");
+    do {
+        int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoMap::ALBUM_ID, resultSet,
+            TYPE_INT32));
+        string albumUri = PhotoAlbumColumns::ALBUM_URI_PREFIX  + to_string(albumId);
+        albumUriList.emplace_back(albumUri);
+    } while (!resultSet->GoToNextRow());
+    return E_OK;
+}
+
 static void AddNfListMap(AsyncTaskData *data)
 {
     if (data == nullptr) {
@@ -184,7 +212,7 @@ static void AddNfListMap(AsyncTaskData *data)
         } else {
             list<string> albumUriList;
             string id = MediaLibraryDataManagerUtils::GetIdFromUri(taskData->uri_);
-            int err = MediaLibraryObjectUtils::GetAlbumUrisById(id, albumUriList);
+            int err = GetAlbumUrisById(id, albumUriList);
             CHECK_AND_RETURN_LOG(err == E_OK, "Fail to get albumId");
             for (string uri : albumUriList) {
                 AddNotify(taskData->uri_, uri, taskData);
@@ -235,5 +263,45 @@ int32_t MediaLibraryNotify::Notify(const shared_ptr<FileAsset> &closeAsset)
         return Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_ADD);
     }
     return Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+}
+
+int32_t MediaLibraryNotify::GetDefaultAlbums(std::unordered_map<PhotoAlbumSubType, int> &outAlbums)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryCommand queryAlbumMapCmd(OperationObject::PHOTO_ALBUM, OperationType::QUERY);
+    queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "UniStore is nullptr!");
+    auto resultSet = uniStore->Query(queryAlbumMapCmd,
+        {PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_SUBTYPE});
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    int32_t count = -1;
+    int32_t ret = resultSet->GetRowCount(count);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to get count");
+    ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GoToFirstRow");
+    do {
+        int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet,
+            TYPE_INT32));
+        int32_t albumSubType = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE,
+            resultSet, TYPE_INT32));
+        MEDIA_INFO_LOG("GetDefaultAlbums albumId: %{public}d, albumSubType: %{public}d", albumId, albumSubType);
+        outAlbums.insert(make_pair(static_cast<PhotoAlbumSubType>(albumSubType), albumId));
+    } while (!resultSet->GoToNextRow());
+    return E_OK;
+}
+
+int32_t MediaLibraryNotify::GetAlbumIdBySubType(const PhotoAlbumSubType subType)
+{
+    int errCode = E_OK;
+    if (defaultAlbums_.size() == 0) {
+        errCode = GetDefaultAlbums(defaultAlbums_);
+    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to GetDefaultAlbums");
+    if (defaultAlbums_.count(subType) == 0) {
+        return E_ERR;
+    }
+    return defaultAlbums_.find(subType)->second;
 }
 } // namespace OHOS::Media

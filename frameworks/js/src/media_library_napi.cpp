@@ -1851,6 +1851,9 @@ napi_value MediaLibraryNapi::UserFileMgrOnCallback(napi_env env, napi_callback_i
     napi_value argv[ARGS_THREE] = {nullptr};
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
+    if (argc == ARGS_TWO) {
+        return JSOnCallback(env, info);
+    }
     NAPI_ASSERT(env, argc == ARGS_THREE, "requires 3 parameters");
     MediaLibraryNapi *obj = nullptr;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
@@ -2038,6 +2041,9 @@ napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_
     napi_value argv[ARGS_TWO] = {nullptr};
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
+    if (argc == ARGS_TWO) {
+        return JSOffCallback(env, info);
+    }
     NAPI_ASSERT(env, ARGS_ONE <= argc && argc<= ARGS_TWO, "requires one or two parameters");
     if (thisVar == nullptr || argv[PARAM0] == nullptr) {
         NAPI_ERR_LOG("Failed to retrieve details about the callback");
