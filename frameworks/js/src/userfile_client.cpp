@@ -63,6 +63,11 @@ bool UserFileClient::IsValid()
     return sDataShareHelper_ != nullptr;
 }
 
+void UserFileClient::Init(const sptr<IRemoteObject> &token)
+{
+    sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+}
+
 void UserFileClient::Init(napi_env env, napi_callback_info info)
 {
     sDataShareHelper_ = GetDataShareHelper(env, info);
