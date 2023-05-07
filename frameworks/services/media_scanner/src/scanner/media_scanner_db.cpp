@@ -362,7 +362,8 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
     DataShare::DataSharePredicates predicates;
     // Append % to end of the path for using LIKE statement
     vector<string> args= { path.back() != '/' ? path + "/%" : path + "%", to_string(NOT_TRASHED) };
-    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " like ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? ");
+    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " like ? AND " + MEDIA_DATA_DB_IS_TRASH +
+         " = ? AND " + MEDIA_DATA_DB_CLOUD_ID + " IS NULL");
     predicates.SetWhereArgs(args);
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
