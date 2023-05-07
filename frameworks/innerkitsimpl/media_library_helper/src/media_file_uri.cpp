@@ -88,12 +88,10 @@ std::string MediaFileUri::MediaFileUriConstruct(MediaType mediaType,
     std::string uri = ML_FILE_URI_PREFIX;
     uri += GetMediaTypeUri(mediaType, apiVersion);
     if (!fileId.empty()) {
-        fileId_ = fileId;
         uri += "/" + fileId;
     }
 
     if (!networkId.empty()) {
-        networkId_ = networkId;
         uri += ML_URI_NETWORKID_EQUAL + networkId;
     }
     return uri;
@@ -160,7 +158,7 @@ static std::string CalFileId(MediaFileUri* uri)
 
     std::string fileId = path.substr(index + 1);
     if (!std::all_of(fileId.begin(), fileId.end(), ::isdigit)) {
-        MEDIA_ERR_LOG("fileId is not all digit, fileId is %{private}s", fileId.c_str());
+        MEDIA_DEBUG_LOG("fileId is not all digit, fileId is %{private}s", fileId.c_str());
         return MEDIA_FILE_ID_DEFAULT;
     }
 
