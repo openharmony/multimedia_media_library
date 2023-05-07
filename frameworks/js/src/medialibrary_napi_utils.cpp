@@ -691,6 +691,25 @@ void MediaLibraryNapiUtils::UriAppendKeyValue(string &uri, const string &key, co
     }
 }
 
+napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<string> &fetchColumn,
+    function<bool(const string &columnName)> isValidColumn)
+{
+    auto validFetchColumns = MediaColumn::DEFAULT_FETCH_COLUMNS;
+    for (const auto &column : fetchColumn) {
+        if (isValidColumn(column)) {
+            validFetchColumns.insert(column);
+        } else {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return nullptr;
+        }
+    }
+    fetchColumn.assign(validFetchColumns.begin(), validFetchColumns.end());
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
     unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
     const FetchOptionType &fetchOptType);
