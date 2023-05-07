@@ -66,7 +66,7 @@ const std::string PhotoColumn::PHOTO_SUBTYPE = "subtype";
 
 const std::string PhotoColumn::PHOTOS_TABLE = "Photos";
 
-const std::string PhotoColumn::PHOTO_URI_PREFIX = "datashare:///media/Photo/";
+const std::string PhotoColumn::PHOTO_URI_PREFIX = "file://media/Photo/";
 const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
 
 const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS " +
