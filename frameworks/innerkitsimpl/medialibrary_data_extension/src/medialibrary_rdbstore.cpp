@@ -658,7 +658,7 @@ int32_t MediaLibraryDataCallBack::InsertUniqueMemberTableValues(const UniqueMemb
     return insertResult;
 }
 
-const string &TriggerDeleteAlbumClearMap()
+static const string &TriggerDeleteAlbumClearMap()
 {
     static const string TRIGGER_CLEAR_MAP = BaseColumn::CreateTrigger() + "photo_album_clear_map" +
     " AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
@@ -669,7 +669,7 @@ const string &TriggerDeleteAlbumClearMap()
     return TRIGGER_CLEAR_MAP;
 }
 
-const string &TriggerAddAssets()
+static const string &TriggerAddAssets()
 {
     static const string TRIGGER_ADD_ASSETS = BaseColumn::CreateTrigger() + "photo_album_insert_asset" +
     " AFTER INSERT ON " + PhotoMap::TABLE +
@@ -681,7 +681,7 @@ const string &TriggerAddAssets()
     return TRIGGER_ADD_ASSETS;
 }
 
-const string &TriggerRemoveAssets()
+static const string &TriggerRemoveAssets()
 {
     static const string TRIGGER_REMOVE_ASSETS = BaseColumn::CreateTrigger() + "photo_album_delete_asset" +
     " AFTER DELETE ON " + PhotoMap::TABLE +
@@ -693,7 +693,7 @@ const string &TriggerRemoveAssets()
     return TRIGGER_REMOVE_ASSETS;
 }
 
-const string &TriggerDeletePhotoClearMap()
+static const string &TriggerDeletePhotoClearMap()
 {
     static const string TRIGGER_DELETE_ASSETS = BaseColumn::CreateTrigger() + "delete_photo_clear_map" +
     " AFTER DELETE ON " + PhotoColumn::PHOTOS_TABLE +
@@ -702,6 +702,88 @@ const string &TriggerDeletePhotoClearMap()
         " WHERE " + PhotoMap::ASSET_ID + "=" + "OLD." + MediaColumn::MEDIA_ID + ";" +
     " END;";
     return TRIGGER_DELETE_ASSETS;
+}
+
+static const string &QueryAlbumJoinMap()
+{
+    static const string QUERY_ALBUM_JOIN_MAP = " SELECT " + PhotoAlbumColumns::ALBUM_ID +
+        " FROM " + PhotoAlbumColumns::TABLE + " INNER JOIN " + PhotoMap::TABLE + " ON " +
+            PhotoAlbumColumns::ALBUM_ID + " = " + PhotoMap::ALBUM_ID + " AND " +
+            PhotoMap::ASSET_ID + " = " + "NEW." + MediaColumn::MEDIA_ID;
+    return QUERY_ALBUM_JOIN_MAP;
+}
+
+static const string &SetHiddenUpdateCount()
+{
+    // Photos.hidden 1 -> 0
+    static const string SET_HIDDEN_UPDATE_COUNT = " UPDATE " + PhotoAlbumColumns::TABLE +
+        " SET " + PhotoAlbumColumns::ALBUM_COUNT + " = " + PhotoAlbumColumns::ALBUM_COUNT + " + 1" +
+        " WHERE " + PhotoAlbumColumns::ALBUM_ID + " IN (" +
+            QueryAlbumJoinMap() + " WHERE " +
+                "NEW." + MediaColumn::MEDIA_HIDDEN + " = 0" + " AND " +
+                "(OLD." + MediaColumn::MEDIA_HIDDEN + " - NEW." + MediaColumn::MEDIA_HIDDEN + " > 0)" +
+        ");";
+    return SET_HIDDEN_UPDATE_COUNT;
+}
+
+static const string &SetTrashUpdateCount()
+{
+    // Photos.date_trashed timestamp -> 0
+    static const string SET_TRASH_UPDATE_COUNT = " UPDATE " + PhotoAlbumColumns::TABLE +
+        " SET " + PhotoAlbumColumns::ALBUM_COUNT + " = " + PhotoAlbumColumns::ALBUM_COUNT + " + 1" +
+        " WHERE " + PhotoAlbumColumns::ALBUM_ID + " IN (" +
+            QueryAlbumJoinMap() + " WHERE " +
+                "SIGN(NEW." + MediaColumn::MEDIA_DATE_TRASHED + ") = 0" + " AND " +
+                "NEW." + MediaColumn::MEDIA_HIDDEN + " = 0" + " AND " +
+                "(" +
+                    "SIGN(OLD." + MediaColumn::MEDIA_DATE_TRASHED + ") - " +
+                    "SIGN(NEW." + MediaColumn::MEDIA_DATE_TRASHED + ") > 0" +
+                ")" +
+        ");";
+    return SET_TRASH_UPDATE_COUNT;
+}
+
+static const string &UnSetHiddenUpdateCount()
+{
+    // Photos.hidden 0 -> 1
+    static const string UNSET_HIDDEN_UPDATE_COUNT = " UPDATE " + PhotoAlbumColumns::TABLE +
+        " SET " + PhotoAlbumColumns::ALBUM_COUNT + " = " + PhotoAlbumColumns::ALBUM_COUNT + " - 1" +
+        " WHERE " + PhotoAlbumColumns::ALBUM_ID + " IN (" +
+            QueryAlbumJoinMap() + " WHERE " +
+                "NEW." + MediaColumn::MEDIA_HIDDEN + " = 1" + " AND " +
+                "(NEW." + MediaColumn::MEDIA_HIDDEN + " - OLD." + MediaColumn::MEDIA_HIDDEN + " > 0)" +
+        ");";
+    return UNSET_HIDDEN_UPDATE_COUNT;
+}
+
+static const string &UnSetTrashUpdateCount()
+{
+    // Photos.date_trashed 0 -> timestamp
+    static const string UNSET_TRASH_UPDATE_COUNT = " UPDATE " + PhotoAlbumColumns::TABLE +
+        " SET " + PhotoAlbumColumns::ALBUM_COUNT + " = " + PhotoAlbumColumns::ALBUM_COUNT + " - 1" +
+        " WHERE " + PhotoAlbumColumns::ALBUM_ID + " IN (" +
+            QueryAlbumJoinMap() + " WHERE " +
+                "SIGN(NEW." + MediaColumn::MEDIA_DATE_TRASHED + ") = 1" + " AND " +
+                "NEW." + MediaColumn::MEDIA_HIDDEN + " = 0" + " AND " +
+                "(" +
+                    "SIGN(NEW." + MediaColumn::MEDIA_DATE_TRASHED + ") - "
+                    "SIGN(OLD." + MediaColumn::MEDIA_DATE_TRASHED + ") > 0" +
+                ")" +
+        ");";
+    return UNSET_TRASH_UPDATE_COUNT;
+}
+
+static const string &TriggerUpdateUserAlbumCount()
+{
+    static const string TRIGGER_UPDATE_USER_ALBUM_COUNT = BaseColumn::CreateTrigger() + "update_user_album_count" +
+        " AFTER UPDATE ON " + PhotoColumn::PHOTOS_TABLE +
+        " BEGIN " +
+            SetHiddenUpdateCount() +
+            SetTrashUpdateCount() +
+            UnSetHiddenUpdateCount() +
+            UnSetTrashUpdateCount() +
+        " END;";
+    return TRIGGER_UPDATE_USER_ALBUM_COUNT;
 }
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -739,6 +821,7 @@ static int32_t ExecuteSql(RdbStore &store)
         TriggerAddAssets(),
         TriggerRemoveAssets(),
         TriggerDeletePhotoClearMap(),
+        TriggerUpdateUserAlbumCount(),
     };
 
     for (const string& sqlStr : executeSqlStrs) {
