@@ -606,10 +606,6 @@ int32_t MediaLibraryDataManager::DoAging()
     if (errorCode != 0) {
         MEDIA_ERR_LOG("DistributeDeviceAging exist error %{public}d", errorCode);
     }
-    errorCode = HandleRevertPending();
-    if (errorCode != 0) {
-        MEDIA_ERR_LOG("HandleRevertPending exist error: %{public}d", errorCode);
-    }
     errorCode = LcdDistributeAging();
     if (errorCode != 0) {
         MEDIA_ERR_LOG("LcdDistributeAging exist error %{public}d", errorCode);
