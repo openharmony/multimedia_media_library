@@ -202,6 +202,7 @@ void MediaLibraryDataManager::InitialiseKvStore()
         .encrypt = false,
         .backup = false,
         .autoSync = false,
+        .securityLevel = DistributedKv::SecurityLevel::S3,
         .area = DistributedKv::Area::EL2,
         .kvStoreType = KvStoreType::SINGLE_VERSION,
         .baseDir = context_->GetDatabaseDir(),
