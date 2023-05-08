@@ -446,8 +446,13 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
 
     // Get album asset count index and value
     albumData->SetCount(get<int32_t>(GetRowValFromColumn(MEDIA_DATA_DB_COUNT, TYPE_INT32, resultSet)));
-    albumData->SetAlbumUri(MediaFileUri(MEDIA_TYPE_ALBUM, to_string(albumData->GetAlbumId()),
-        networkId_).ToString());
+    string albumUri;
+    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
+        albumUri = PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(albumData->GetAlbumId());
+    } else {
+        albumUri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_ALBUM_URI + "/" + to_string(albumData->GetAlbumId());
+    }
+    albumData->SetAlbumUri(albumUri);
     // Get album relativePath index and value
     albumData->SetAlbumRelativePath(get<string>(GetRowValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
         TYPE_STRING, resultSet)));
