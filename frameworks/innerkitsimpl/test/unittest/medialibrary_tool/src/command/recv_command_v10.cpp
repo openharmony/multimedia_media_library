@@ -126,7 +126,7 @@ int32_t RecvCommandV10::Start(const ExecEnv &env)
             continue;
         }
         if (RecvAssets(env, mediaType, env.uri) != Media::E_OK) {
-            hasError = true;;
+            hasError = true;
         }
         printf("\n");
     }
