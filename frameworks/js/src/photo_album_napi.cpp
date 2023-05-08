@@ -426,6 +426,8 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, const bool tras
         }
         if ((obj->GetMediaType() != MEDIA_TYPE_IMAGE && obj->GetMediaType() != MEDIA_TYPE_VIDEO) ||
             (trashOnly != obj->IsTrash())) {
+            NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d, isTrash: %{public}d",
+                obj->GetMediaType(), obj->IsTrash());
             continue;
         }
         assetsArray.push_back(to_string(obj->GetFileId()));
@@ -713,6 +715,8 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
+        PhotoColumn::IsPhotoColumn));
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 

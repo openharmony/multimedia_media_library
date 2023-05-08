@@ -3482,25 +3482,6 @@ static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
     return result;
 }
 
-static napi_value AddDefaultAssetColumns(napi_env env, vector<string> &fetchColumn,
-    function<bool(const string &columnName)> IsValidColumn)
-{
-    auto validFetchColumns = MediaColumn::DEFAULT_FETCH_COLUMNS;
-    for (const auto &column : fetchColumn) {
-        if (IsValidColumn(column)) {
-            validFetchColumns.insert(column);
-        } else {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-            return nullptr;
-        }
-    }
-    fetchColumn.assign(validFetchColumns.begin(), validFetchColumns.end());
-
-    napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
-    return result;
-}
-
 static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -3515,11 +3496,13 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     auto &predicates = context->predicates;
     switch (context->assetType) {
         case TYPE_AUDIO: {
-            CHECK_NULLPTR_RET(AddDefaultAssetColumns(env, context->fetchColumn, AudioColumn::IsAudioColumn));
+            CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
+                AudioColumn::IsAudioColumn));
             break;
         }
         case TYPE_PHOTO: {
-            CHECK_NULLPTR_RET(AddDefaultAssetColumns(env, context->fetchColumn, PhotoColumn::IsPhotoColumn));
+            CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
+                PhotoColumn::IsPhotoColumn));
             break;
         }
         default: {
