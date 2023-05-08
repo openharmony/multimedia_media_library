@@ -1424,8 +1424,8 @@ static unique_ptr<PixelMap> QueryThumbnail(std::string &uri, Size &size, const s
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnail");
 
-    string queryUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH + "=" +
-        to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
+    string queryUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
+        "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUriStr, typeMask);
     if (isApiVersion10) {
         MediaLibraryNapiUtils::UriAppendKeyValue(queryUriStr, API_VERSION, to_string(API_VERSION_10));

@@ -38,7 +38,7 @@ bool MediaLibraryHelperSetFuzzTest(const uint8_t *data, size_t size)
     const std::string albumPath(reinterpret_cast<const char *>(data), size);
     const bool albumVirtual = *(reinterpret_cast<const bool *>(data));
     const std::string typeMask(reinterpret_cast<const char *>(data), size);
-    ResultNapiType type = *(reinterpret_cast<const ResultNapiType*>(data));;
+    ResultNapiType type = *(reinterpret_cast<const ResultNapiType*>(data));
 
     albumAsset.SetAlbumId(albumId);
     albumAsset.SetAlbumName(albumName);
