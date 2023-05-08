@@ -1012,8 +1012,7 @@ static void SetFileAssetByIdV10(int32_t id, const string &networkId, MediaLibrar
     unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
     fileAsset->SetId(id);
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
-    string uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId) + SLASH_CHAR + to_string(id);
-    fileAsset->SetUri(uri);
+    fileAsset->SetUri(MediaFileUri(mediaType, to_string(id), networkId, MEDIA_API_VERSION_V10).ToString());
     fileAsset->SetMediaType(mediaType);
     fileAsset->SetDisplayName(displayName);
     fileAsset->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(displayName));
