@@ -48,7 +48,9 @@ const std::set<std::string> MediaColumn::MEDIA_COLUMNS = {
     MEDIA_TIME_VISIT, MEDIA_DURATION, MEDIA_TIME_PENDING, MEDIA_IS_FAV, MEDIA_DATE_TRASHED, MEDIA_DATE_DELETED,
     MEDIA_HIDDEN, MEDIA_PARENT_ID, MEDIA_RELATIVE_PATH
 };
-const std::set<std::string> MediaColumn::DEFAULT_FETCH_COLUMNS = { MEDIA_ID, MEDIA_NAME, MEDIA_TYPE };
+const std::set<std::string> MediaColumn::DEFAULT_FETCH_COLUMNS = {
+    MEDIA_ID, MEDIA_NAME, MEDIA_TYPE, MEDIA_DATE_TRASHED
+};
 
 const std::string PhotoColumn::PHOTO_DIRTY = "dirty";
 const std::string PhotoColumn::PHOTO_CLOUD_ID = "cloud_id";
