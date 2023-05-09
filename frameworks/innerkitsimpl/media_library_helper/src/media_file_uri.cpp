@@ -197,5 +197,14 @@ bool MediaFileUri::IsValid()
 
     return true;
 }
+
+std::unordered_map<std::string, std::string> &MediaFileUri::GetQueryKeys()
+{
+    if (queryMap_.empty()) {
+        SetQueryMap(this, this->queryMap_);
+    }
+    return queryMap_;
+}
+
 } // namespace Media
 } // namespace OHOS

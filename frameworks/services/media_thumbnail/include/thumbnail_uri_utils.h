@@ -29,14 +29,7 @@ public:
         std::string &outNetworkId, std::string &outTableName);
     static bool ParseThumbnailInfo(const std::string &uriString, std::string &outFileId,
         Size &outSize, std::string &outNetworkId, std::string &outTableName);
-    static bool ParseThumbnailInfo(const std::string &uriString);
 private:
-    static void SplitKeyValue(const std::string &keyValue, std::string &key, std::string &value);
-
-    static void SplitKeys(const std::string &query, std::vector<std::string> &keys);
-    static bool IsNumber(const std::string &str);
-    static void ParseThumbnailKey(const std::string &key, const std::string &value, std::string &outAction,
-        int &outWidth, int &outHeight);
     static void ParseThumbnailVersion(const std::string &key, const std::string &value, MediaLibraryApi api);
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string GetIdFromUri(const std::string &uri);
