@@ -351,7 +351,6 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
     for (const auto &name : columnNames) {
         index++;
         if (GetResultTypeMap().count(name) == 0) {
-            MEDIA_INFO_LOG("Skip invalid column: %{private}s", name.c_str());
             continue;
         }
         auto memberType = GetResultTypeMap().at(name);
