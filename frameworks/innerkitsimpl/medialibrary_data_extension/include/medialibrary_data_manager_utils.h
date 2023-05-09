@@ -34,8 +34,6 @@ public:
     static std::string GetFileTitle(const std::string &displayName);
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string GetDisPlayNameFromPath(const std::string &path);
-    static void SplitKeyValue(const std::string &keyValue, std::string &key, std::string &value);
-    static void SplitKeys(const std::string &query, std::vector<std::string> &keys);
     static std::string ObtionCondition(std::string &strQueryCondition, const std::vector<std::string> &whereArgs);
     static void RemoveTypeValueFromUri(std::string &uri);
     static std::string GetTypeUriByUri(std::string &uri);

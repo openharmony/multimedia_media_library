@@ -30,8 +30,8 @@ public:
     static int32_t CreateLcdBatch(ThumbRdbOpt &opts);
 private:
     static int32_t GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
-    static int32_t GetNoLcdData(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailRdbData> &outDatas);
-    static int32_t GetNoThumbnailData(ThumbRdbOpt &opts, std::vector<ThumbnailRdbData> &outDatas);
+    static int32_t GetNoLcdData(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &outDatas);
+    static int32_t GetNoThumbnailData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
 };
 } // namespace Media
 } // namespace OHOS

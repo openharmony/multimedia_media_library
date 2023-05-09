@@ -295,7 +295,8 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
     for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - THAN_AGR_SIZE; i++) {
         watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i], NotifyType::NOTIFY_ADD);
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i], NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i],
+            NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
         if (trashAlbumId > 0) {
             watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i],
                 NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);

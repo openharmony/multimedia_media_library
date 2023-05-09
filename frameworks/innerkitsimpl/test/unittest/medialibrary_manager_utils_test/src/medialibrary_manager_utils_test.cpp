@@ -110,20 +110,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetDisPlayNameFromPath_test_001, Test
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_SplitKeyValue_test_001, TestSize.Level0)
-{
-    string key = "";
-    string value = "";
-    string keyValue = "medialib_SplitKeyValue_test_001";
-    MediaLibraryDataManagerUtils::SplitKeyValue(keyValue, key, value);
-    EXPECT_EQ(value, "");
-    keyValue = "medialib_SplitKeyValue_test_001=test";
-    key = "key";
-    value = "value";
-    MediaLibraryDataManagerUtils::SplitKeyValue(keyValue, key, value);
-    EXPECT_EQ(value, "test");
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_ObtionCondition_test_001, TestSize.Level0)
 {
     std::vector<string> whereArgs;

@@ -1596,7 +1596,7 @@ void MediaLibraryObjectUtils::SendFavoriteNotify(MediaLibraryCommand &cmd, int32
     ValueObject value;
     bool isFavorite = false;
     if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_IS_FAV, value)) {
-       return;
+        return;
     }
     value.GetBool(isFavorite);
     auto watch = MediaLibraryNotify::GetInstance();

@@ -34,6 +34,7 @@ struct ThumbRdbOpt {
     std::shared_ptr<DistributedKv::SingleKvStore> kvStore;
     std::shared_ptr<AbilityRuntime::Context> context;
     std::string networkId;
+    std::string path;
     std::string table;
     std::string udid;
     std::string row;
@@ -49,7 +50,7 @@ struct ThumbnailData {
         thumbnail.clear();
         lcd.clear();
     }
-    int mediaType{0};
+    int mediaType{-1};
     int64_t dateModified{0};
     float degrees;
     std::shared_ptr<PixelMap> source;
@@ -58,18 +59,6 @@ struct ThumbnailData {
     std::string id;
     std::string cloudId;
     std::string udid;
-    std::string path;
-    std::string hashKey;
-    std::string thumbnailKey;
-    std::string lcdKey;
-    std::string suffix;
-};
-
-struct ThumbnailRdbData {
-    int mediaType;
-    int64_t dateModified{0};
-    std::string id;
-    std::string cloudId;
     std::string path;
     std::string thumbnailKey;
     std::string lcdKey;
@@ -82,7 +71,6 @@ public:
     // utils
     static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
     static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data);
-    static void ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData);
     static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
     static int GetPixelMapFromResult(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, const Size &size,
         std::unique_ptr<PixelMap> &outPixelMap);
@@ -112,36 +100,34 @@ public:
     // Steps
     static bool LoadSourceImage(ThumbnailData &data, const bool isThumbnail = true,
         const Size &desiredSize = { DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE });
-    static bool GenThumbnailKey(ThumbnailData &data);
     static DistributedKv::Status SaveThumbnailData(ThumbnailData &data, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
 
-    static bool GenLcdKey(ThumbnailData &data);
     static DistributedKv::Status SaveLcdData(ThumbnailData &data, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
     static int SaveFile(ThumbnailData &Data, bool isLcd);
-    static bool UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
 
     // RDB Store generate and aging
-    static bool QueryHasLcdFiles(ThumbRdbOpt &opts, std::vector<ThumbnailRdbData> &infos, int &err);
-    static bool QueryHasThumbnailFiles(ThumbRdbOpt &opts, std::vector<ThumbnailRdbData> &infos, int &err);
+    static bool QueryHasLcdFiles(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
+    static bool QueryHasThumbnailFiles(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err);
     static bool QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err);
     static bool QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
-        std::vector<ThumbnailRdbData> &infos, int &err);
+        std::vector<ThumbnailData> &infos, int &err);
     static bool QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
-        std::vector<ThumbnailRdbData> &infos, int &err);
-    static bool QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailRdbData> &infos, int &err);
-    static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailRdbData> &infos, int &err);
-    static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailRdbData> &infos, int &err);
+        std::vector<ThumbnailData> &infos, int &err);
+    static bool QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &infos, int &err);
+    static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
+    static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
 
 private:
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     static int64_t UTCTimeSeconds();
     static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        ThumbnailRdbData &data, int &err);
+        ThumbnailData &data, int &err);
     static void ParseStringResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int index, std::string &data, int &err);
 
@@ -151,7 +137,6 @@ private:
     static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
     static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
     static bool LoadAudioFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
-    static bool GenKey(ThumbnailData &data, std::string &key);
     static std::string GetUdid();
     // KV Store
     static DistributedKv::Status SaveImage(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
