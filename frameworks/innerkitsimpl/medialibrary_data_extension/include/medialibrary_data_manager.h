@@ -88,7 +88,7 @@ public:
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
     void ClearMediaLibraryMgr();
     int32_t MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
-    void CreateThumbnailAsync(const std::string &uri);
+    void CreateThumbnailAsync(const std::string &uri, const std::string &path);
     static std::unordered_map<std::string, DirAsset> GetDirQuerySetMap();
     std::shared_ptr<MediaDataShareExtAbility> GetOwner();
     void SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExtension);

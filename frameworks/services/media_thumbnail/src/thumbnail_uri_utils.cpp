@@ -40,67 +40,39 @@ bool ThumbnailUriUtils::ParseFileUri(const string &uriString, string &outFileId,
     return true;
 }
 
-void ThumbnailUriUtils::ParseThumbnailKey(const string &key, const string &value, string &outAction,
-    int &outWidth, int &outHeight)
-{
-    if (key == THUMBNAIL_OPERN_KEYWORD) {
-        outAction = value;
-    } else if (key == THUMBNAIL_WIDTH) {
-        if (IsNumber(value)) {
-            outWidth = stoi(value);
-        }
-    } else if (key == THUMBNAIL_HEIGHT) {
-        if (IsNumber(value)) {
-            outHeight = stoi(value);
-        }
-    }
-}
-
 bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outFileId, Size &outSize,
-    string &outNetworkId, string &outTableName)
+    string &outPath, string &outTableName)
 {
     string::size_type pos = uriString.find_last_of('?');
     outTableName = GetTableFromUri(uriString);
     if (pos == string::npos) {
         return false;
     }
-    vector<string> keyWords = {
-        THUMBNAIL_OPERN_KEYWORD,
-        THUMBNAIL_WIDTH,
-        THUMBNAIL_HEIGHT,
-        URI_PARAM_API_VERSION
-    };
-    string queryKeys = uriString.substr(pos + 1);
-    string uri = uriString.substr(0, pos);
-    outFileId = GetIdFromUri(uri);
-    outNetworkId = GetNetworkIdFromUri(uri);
-    vector<string> vectorKeys;
-    SplitKeys(queryKeys, vectorKeys);
-    if (vectorKeys.size() != keyWords.size() && vectorKeys.size() != keyWords.size() - 1) {
-        // vectorKeys can contain or not contain api_version message
-        MEDIA_ERR_LOG("Parse error keys count %{private}d", (int)vectorKeys.size());
-        return false;
-    }
-    string action;
-    int width = 0;
-    int height = 0;
-    string subKey;
-    string subVal;
-    for (uint32_t i = 0; i < vectorKeys.size(); i++) {
-        SplitKeyValue(vectorKeys[i], subKey, subVal);
-        if (subKey.empty()) {
-            MEDIA_ERR_LOG("Parse key error [ %{private}s ]", vectorKeys[i].c_str());
-            return false;
-        }
-        ParseThumbnailKey(subKey, subVal, action, width, height);
-    }
-    if (action != MEDIA_DATA_DB_THUMBNAIL || width <= 0 || height <= 0) {
-        MEDIA_ERR_LOG("ParseThumbnailInfo | Error args");
+
+    MediaFileUri uri(uriString);
+    outFileId = uri.GetFileId();
+    auto &queryKey = uri.GetQueryKeys();
+    if (queryKey.count(THUMBNAIL_OPERN_KEYWORD) == 0 &&
+        queryKey[THUMBNAIL_OPERN_KEYWORD] != MEDIA_DATA_DB_THUMBNAIL) {
         return false;
     }
 
-    outSize.width = width;
-    outSize.height = height;
+    if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
+        outSize.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+    }
+
+    if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
+        outSize.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+    }
+
+    if (queryKey.count(THUMBNAIL_PATH) != 0) {
+        outPath = queryKey[THUMBNAIL_PATH];
+    }
+
+    if (outSize.width <= 0 || outSize.height <= 0) {
+        return false;
+    }
+
     return true;
 }
 
@@ -151,53 +123,6 @@ string ThumbnailUriUtils::GetTableFromUri(const string &uri)
         }
     }
     return table;
-}
-
-void ThumbnailUriUtils::SplitKeyValue(const string& keyValue, string &key, string &value)
-{
-    string::size_type pos = keyValue.find('=');
-    if (string::npos != pos) {
-        key = keyValue.substr(0, pos);
-        value = keyValue.substr(pos + 1);
-    }
-}
-
-void ThumbnailUriUtils::SplitKeys(const string& query, vector<string>& keys)
-{
-    string::size_type pos1 = 0;
-    string::size_type pos2 = query.find('&');
-    while (string::npos != pos2) {
-        keys.push_back(query.substr(pos1, pos2-pos1));
-        pos1 = pos2 + 1;
-        pos2 = query.find('&', pos1);
-    }
-    if (pos1 != query.length()) {
-        keys.push_back(query.substr(pos1));
-    }
-}
-
-bool ThumbnailUriUtils::IsNumber(const string &str)
-{
-    if (str.empty()) {
-        MEDIA_ERR_LOG("IsNumber input is empty ");
-        return false;
-    }
-
-    for (char const &c : str) {
-        if (isdigit(c) == 0) {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString)
-{
-    string outFileId;
-    string outNetworkId;
-    Size outSize;
-    string outTableName;
-    return ParseThumbnailInfo(uriString, outFileId, outSize, outTableName, outNetworkId);
 }
 } // namespace Media
 } // namespace OHOS

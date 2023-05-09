@@ -139,7 +139,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_uripermission_operations.cpp",
     "src/photo_map_operations.cpp",
     "src/trash_async_worker.cpp",
-    "src/uri_helper.cpp",
   ]
   sources += media_fileext_source
   sources += media_distributed_source

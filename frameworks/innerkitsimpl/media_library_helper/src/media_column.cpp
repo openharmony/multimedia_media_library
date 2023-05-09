@@ -29,7 +29,6 @@ const std::string MediaColumn::MEDIA_TYPE = "media_type";
 const std::string MediaColumn::MEDIA_MIME_TYPE = "mime_type";
 const std::string MediaColumn::MEDIA_OWNER_PACKAGE = "owner_package";
 const std::string MediaColumn::MEDIA_DEVICE_NAME = "device_name";
-const std::string MediaColumn::MEDIA_THUMBNAIL = "thumbnail";
 const std::string MediaColumn::MEDIA_DATE_MODIFIED = "date_modified";
 const std::string MediaColumn::MEDIA_DATE_ADDED = "date_added";
 const std::string MediaColumn::MEDIA_DATE_TAKEN = "date_taken";
@@ -44,7 +43,7 @@ const std::string MediaColumn::MEDIA_PARENT_ID = "parent";
 const std::string MediaColumn::MEDIA_RELATIVE_PATH = "relative_path";
 const std::set<std::string> MediaColumn::MEDIA_COLUMNS = {
     MEDIA_ID, MEDIA_URI, MEDIA_FILE_PATH, MEDIA_SIZE, MEDIA_TITLE, MEDIA_NAME, MEDIA_TYPE, MEDIA_MIME_TYPE,
-    MEDIA_OWNER_PACKAGE, MEDIA_DEVICE_NAME, MEDIA_THUMBNAIL, MEDIA_DATE_MODIFIED, MEDIA_DATE_ADDED, MEDIA_DATE_TAKEN,
+    MEDIA_OWNER_PACKAGE, MEDIA_DEVICE_NAME, MEDIA_DATE_MODIFIED, MEDIA_DATE_ADDED, MEDIA_DATE_TAKEN,
     MEDIA_TIME_VISIT, MEDIA_DURATION, MEDIA_TIME_PENDING, MEDIA_IS_FAV, MEDIA_DATE_TRASHED, MEDIA_DATE_DELETED,
     MEDIA_HIDDEN, MEDIA_PARENT_ID, MEDIA_RELATIVE_PATH
 };
@@ -59,7 +58,6 @@ const std::string PhotoColumn::PHOTO_SYNCING = "syncing";
 const std::string PhotoColumn::PHOTO_ORIENTATION = "orientation";
 const std::string PhotoColumn::PHOTO_LATITUDE = "latitude";
 const std::string PhotoColumn::PHOTO_LONGITUDE = "longitude";
-const std::string PhotoColumn::PHOTO_LCD = "lcd";
 const std::string PhotoColumn::PHOTO_HEIGHT = "height";
 const std::string PhotoColumn::PHOTO_WIDTH = "width";
 const std::string PhotoColumn::PHOTO_LCD_VISIT_TIME = "lcd_visit_time";
@@ -83,7 +81,6 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_MIME_TYPE + " TEXT, " +
     MEDIA_OWNER_PACKAGE + " TEXT, " +
     MEDIA_DEVICE_NAME + " TEXT, " +
-    MEDIA_THUMBNAIL + " TEXT, " +
     MEDIA_DATE_ADDED + " BIGINT, " +
     MEDIA_DATE_MODIFIED + " BIGINT, " +
     MEDIA_DATE_TAKEN + " BIGINT DEFAULT 0, " +
@@ -103,7 +100,6 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_ORIENTATION + " INT DEFAULT 0, " +
     PHOTO_LATITUDE + " DOUBLE DEFAULT 0, " +
     PHOTO_LONGITUDE + " DOUBLE DEFAULT 0, " +
-    PHOTO_LCD + " TEXT, " +
     PHOTO_HEIGHT + " INT, " +
     PHOTO_WIDTH + " INT, " +
     PHOTO_LCD_VISIT_TIME + " BIGINT DEFAULT 0, " +
@@ -142,7 +138,7 @@ const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         " END;";
 
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
-    PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE, PhotoColumn::PHOTO_LCD,
+    PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE,
     PhotoColumn::PHOTO_HEIGHT, PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_LCD_VISIT_TIME, PhotoColumn::PHOTO_POSITION,
     PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_CLOUD_ID
 };
@@ -170,7 +166,6 @@ const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_MIME_TYPE + " TEXT, " +
     MEDIA_OWNER_PACKAGE + " TEXT, " +
     MEDIA_DEVICE_NAME + " TEXT, " +
-    MEDIA_THUMBNAIL + " TEXT, " +
     AUDIO_ARTIST + " TEXT, " +
     MEDIA_DATE_ADDED + " BIGINT, " +
     MEDIA_DATE_MODIFIED + " BIGINT, " +
@@ -213,7 +208,6 @@ const std::string DocumentColumn::CREATE_DOCUMENT_TABLE = "CREATE TABLE IF NOT E
     MEDIA_MIME_TYPE + " TEXT, " +
     MEDIA_OWNER_PACKAGE + " TEXT, " +
     MEDIA_DEVICE_NAME + " TEXT, " +
-    MEDIA_THUMBNAIL + " TEXT, " +
     MEDIA_DATE_ADDED + " BIGINT, " +
     MEDIA_DATE_MODIFIED + " BIGINT, " +
     MEDIA_DATE_TAKEN + " BIGINT DEFAULT 0, " +

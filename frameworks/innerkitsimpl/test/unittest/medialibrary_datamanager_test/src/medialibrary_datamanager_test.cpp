@@ -1009,10 +1009,10 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateThumbnailAsync_Test_
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     string uri = "";
-    mediaLibraryDataManager->CreateThumbnailAsync(uri);
+    mediaLibraryDataManager->CreateThumbnailAsync(uri, "");
     EXPECT_NE(mediaLibraryDataManager->thumbnailService_, nullptr);
     string uriTest = "CreateThumbnailAsync";
-    mediaLibraryDataManager->CreateThumbnailAsync(uriTest);
+    mediaLibraryDataManager->CreateThumbnailAsync(uriTest, "");
     EXPECT_NE(mediaLibraryDataManager->thumbnailService_, nullptr);
 }
 

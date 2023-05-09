@@ -31,26 +31,17 @@ namespace OHOS {
 namespace Media {
 int32_t LcdThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
 {
-    int err = E_ERR;
     ThumbnailData thumbnailData;
-    auto rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
-    if (rdbSet == nullptr) {
-        MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
-        return err;
-    }
-    rdbSet.reset();
+    GetThumbnailInfo(opts, thumbnailData);
 
-    if (!thumbnailData.lcdKey.empty()) {
-        ThumbnailData tmpData = thumbnailData;
-        ThumbnailUtils::GenLcdKey(tmpData);
-        if (tmpData.lcdKey == thumbnailData.lcdKey) {
-            MEDIA_DEBUG_LOG("CreateLcd key is same, no need generate");
-            return E_OK;
-        }
+    string fileName = ThumbnailUtils::GetThumbPath(thumbnailData.path, THUMBNAIL_LCD_SUFFIX);
+    if (access(fileName.c_str(), F_OK) == 0) {
+        MEDIA_DEBUG_LOG("CreateThumbnail key is same, no need generate");
+        return E_OK;
     }
 
     if (isSync) {
-        DoCreateLcd(opts, thumbnailData, true);
+        DoCreateLcd(opts, thumbnailData);
     } else {
         IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateLcd, opts, thumbnailData, true);
     }
@@ -63,30 +54,11 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts)
     ThumbnailWait thumbnailWait(false);
     thumbnailWait.CheckAndWait(opts.row, true);
     ThumbnailData thumbnailData;
-    auto rdbSet = QueryThumbnailInfo(opts, thumbnailData, err);
-    if (rdbSet == nullptr) {
-        MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
-        return E_ERR;
-    }
-    rdbSet.reset();
+    GetThumbnailInfo(opts, thumbnailData);
 
-    if (thumbnailData.lcdKey.empty()) {
-        if (!opts.networkId.empty()) {
-            auto remoteQuery = ThumbnailUtils::QueryRemoteThumbnail(opts, thumbnailData, err);
-            if ((!remoteQuery || thumbnailData.lcdKey.empty()) &&
-                !IThumbnailHelper::DoThumbnailSync(opts, thumbnailData)) {
-                return E_THUMBNAIL_REMOTE_CREATE_FAIL;
-            }
-        } else if (!DoCreateLcd(opts, thumbnailData)) {
-            MEDIA_ERR_LOG("DoCreateLcd Faild");
-            return E_THUMBNAIL_LOCAL_CREATE_FAIL;
-        }
-    }
-
-    string fileName = ThumbnailUtils::GetThumbPath(thumbnailData.path, thumbnailData.lcdKey);
+    string fileName = ThumbnailUtils::GetThumbPath(thumbnailData.path, THUMBNAIL_LCD_SUFFIX);
     if (access(fileName.c_str(), F_OK) != 0) {
-        MEDIA_ERR_LOG("image not exist, key [%{public}s]", thumbnailData.lcdKey.c_str());
-        if (!DoCreateLcd(opts, thumbnailData, true)) {
+        if (!DoCreateLcd(opts, thumbnailData)) {
             return E_THUMBNAIL_LOCAL_CREATE_FAIL;
         }
     }

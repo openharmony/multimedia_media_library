@@ -32,13 +32,13 @@
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "mimetype_utils.h"
 #include "parameter.h"
 #include "post_proc.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
 #include "thumbnail_const.h"
 #include "unique_fd.h"
-#include "uri_helper.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -108,7 +108,7 @@ bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &t
 
 bool ThumbnailUtils::DeleteThumbFile(ThumbnailData &data, bool isLcd)
 {
-    string fileName = ThumbnailUtils::GetThumbPath(data.path, isLcd ? data.lcdKey : data.thumbnailKey);
+    string fileName = ThumbnailUtils::GetThumbPath(data.path, isLcd ? THUMBNAIL_LCD_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
     if (!MediaFileUtils::DeleteFile(fileName)) {
         MEDIA_ERR_LOG("delete file faild %{public}d", errno);
         return false;
@@ -258,37 +258,6 @@ string ThumbnailUtils::GetUdid()
     return innerUdid;
 }
 
-bool ThumbnailUtils::GenKey(ThumbnailData &data, string &key)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("GenerateKey");
-    if (data.hashKey.empty()) {
-        string sourceKey = GetUdid() + data.path + to_string(data.dateModified);
-        MEDIA_DEBUG_LOG("ThumbnailUtils::GenKey sourceKey %{private}s", sourceKey.c_str());
-        int32_t ret = MediaLibraryCommonUtils::GenKeySHA256(sourceKey, data.hashKey);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("MediaLibraryThumbnail::Failed to GenKey, err: %{public}d", ret);
-            return false;
-        }
-    }
-    key = data.hashKey + data.suffix;
-
-    MEDIA_DEBUG_LOG("GenKey OUT [%{public}s]", key.c_str());
-    return true;
-}
-
-bool ThumbnailUtils::GenThumbnailKey(ThumbnailData &data)
-{
-    data.suffix = THUMBNAIL_END_SUFFIX;
-    return GenKey(data, data.thumbnailKey);
-}
-
-bool ThumbnailUtils::GenLcdKey(ThumbnailData &data)
-{
-    data.suffix = THUMBNAIL_LCD_END_SUFFIX;
-    return GenKey(data, data.lcdKey);
-}
-
 bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data)
 {
     PackOption option = {
@@ -350,10 +319,7 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
     vector<string> column = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_THUMBNAIL,
-        MEDIA_DATA_DB_LCD,
         MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_CLOUD_ID
     };
 
@@ -373,19 +339,15 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
     tracer.Start("QueryThumbnailInfo");
     auto resultSet = QueryThumbnailSet(opts);
     if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
         return nullptr;
     }
 
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
         return nullptr;
     }
 
-    ThumbnailRdbData rdbData;
-    ParseQueryResult(resultSet, rdbData, err);
-    ThumbnailDataCopy(data, rdbData);
+    ParseQueryResult(resultSet, data, err);
     return resultSet;
 }
 
@@ -395,12 +357,11 @@ bool ThumbnailUtils::QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err
         MEDIA_DATA_DB_ID,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
+    rdbPredicates.NotEqualTo(MEDIA_DATA_DB_TIME_VISIT, "0");
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("query failed");
         return false;
     }
     int rowCount = 0;
@@ -430,7 +391,6 @@ bool ThumbnailUtils::QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("query failed");
         return false;
     }
     int rowCount = 0;
@@ -449,7 +409,7 @@ bool ThumbnailUtils::QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount
     return true;
 }
 
-bool ThumbnailUtils::QueryHasLcdFiles(ThumbRdbOpt &opts, vector<ThumbnailRdbData> &infos, int &err)
+bool ThumbnailUtils::QueryHasLcdFiles(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID,
@@ -473,8 +433,8 @@ bool ThumbnailUtils::QueryHasLcdFiles(ThumbRdbOpt &opts, vector<ThumbnailRdbData
         return false;
     }
 
+    ThumbnailData data;
     do {
-        ThumbnailRdbData data;
         ParseQueryResult(resultSet, data, err);
         if (!data.path.empty()) {
             infos.push_back(data);
@@ -483,7 +443,7 @@ bool ThumbnailUtils::QueryHasLcdFiles(ThumbRdbOpt &opts, vector<ThumbnailRdbData
     return true;
 }
 
-bool ThumbnailUtils::QueryHasThumbnailFiles(ThumbRdbOpt &opts, vector<ThumbnailRdbData> &infos, int &err)
+bool ThumbnailUtils::QueryHasThumbnailFiles(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID,
@@ -507,8 +467,8 @@ bool ThumbnailUtils::QueryHasThumbnailFiles(ThumbRdbOpt &opts, vector<ThumbnailR
         return false;
     }
 
+    ThumbnailData data;
     do {
-        ThumbnailRdbData data;
         ParseQueryResult(resultSet, data, err);
         if (!data.path.empty()) {
             infos.push_back(data);
@@ -518,7 +478,7 @@ bool ThumbnailUtils::QueryHasThumbnailFiles(ThumbRdbOpt &opts, vector<ThumbnailR
 }
 
 bool ThumbnailUtils::QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
-    vector<ThumbnailRdbData> &infos, int &err)
+    vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
         REMOTE_THUMBNAIL_DB_FILE_ID,
@@ -542,8 +502,8 @@ bool ThumbnailUtils::QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimi
         return false;
     }
 
+    ThumbnailData data;
     do {
-        ThumbnailRdbData data;
         ParseQueryResult(resultSet, data, err);
         if (!data.lcdKey.empty()) {
             infos.push_back(data);
@@ -553,18 +513,14 @@ bool ThumbnailUtils::QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimi
 }
 
 bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
-    vector<ThumbnailRdbData> &infos, int &err)
+    vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_THUMBNAIL,
-        MEDIA_DATA_DB_LCD,
         MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_DATE_MODIFIED
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
@@ -582,8 +538,8 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
         return false;
     }
 
+    ThumbnailData data;
     do {
-        ThumbnailRdbData data;
         ParseQueryResult(resultSet, data, err);
         if (!data.path.empty()) {
             infos.push_back(data);
@@ -592,18 +548,15 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
     return true;
 }
 
-bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<ThumbnailRdbData> &infos, int &err)
+bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_THUMBNAIL,
-        MEDIA_DATA_DB_LCD,
         MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_DATE_MODIFIED
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.IsNull(MEDIA_DATA_DB_LCD);
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_VISIT, "0");
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
@@ -623,8 +576,8 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
         return false;
     }
 
+    ThumbnailData data;
     do {
-        ThumbnailRdbData data;
         ParseQueryResult(resultSet, data, err);
         if (!data.path.empty()) {
             infos.push_back(data);
@@ -633,22 +586,19 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
     return true;
 }
 
-bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailRdbData> &infos, int &err)
+bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_THUMBNAIL,
-        MEDIA_DATA_DB_LCD,
         MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_DATE_MODIFIED
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.IsNull(MEDIA_DATA_DB_THUMBNAIL);
-    rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
-    rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
+    rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_VISIT, "0");
     rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
     rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
+    rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
+    rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
 
     rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
@@ -668,8 +618,8 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailRd
         return false;
     }
 
+    ThumbnailData data;
     do {
-        ThumbnailRdbData data;
         ParseQueryResult(resultSet, data, err);
         if (!data.path.empty()) {
             infos.push_back(data);
@@ -678,30 +628,20 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailRd
     return true;
 }
 
-bool ThumbnailUtils::UpdateThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
+bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
 {
     ValuesBucket values;
     int changedRows;
-    if (data.thumbnailKey.empty() && data.lcdKey.empty()) {
-        MEDIA_ERR_LOG("No key to update!");
-        return false;
-    }
 
-    if (!data.thumbnailKey.empty()) {
-        values.PutString(MEDIA_DATA_DB_THUMBNAIL, data.thumbnailKey);
-    }
-
-    if (!data.lcdKey.empty()) {
-        values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
-        int64_t timeNow = UTCTimeSeconds();
-        values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
-        if (data.cloudId == "") {
-            values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-        }
+    values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
+    int64_t timeNow = UTCTimeSeconds();
+    values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
+    if (data.cloudId == "") {
+        values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
     }
 
     MediaLibraryTracer tracer;
-    tracer.Start("UpdateThumbnailInfo opts.store->Update");
+    tracer.Start("UpdateLcdInfo opts.store->Update");
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
@@ -738,7 +678,7 @@ bool ThumbnailUtils::UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int
     return true;
 }
 
-bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, vector<ThumbnailRdbData> &infos,
+bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, vector<ThumbnailData> &infos,
     int &err)
 {
     vector<string> column = {
@@ -760,7 +700,7 @@ bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, vector<Thumb
         return false;
     }
 
-    ThumbnailRdbData data;
+    ThumbnailData data;
     do {
         ParseQueryResult(resultSet, data, err);
         infos.push_back(data);
@@ -1034,6 +974,11 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
     }
     MediaLibraryTracer tracer;
     tracer.Start("LoadSourceImage");
+    if (data.mediaType == -1) {
+        auto extension = MediaFileUtils::GetExtensionFromPath(data.path);
+        auto mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
+        data.mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
+    }
 
     bool ret = false;
     data.degrees = 0.0;
@@ -1053,7 +998,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
         tracer.Start("CenterScale");
         PostProc postProc;
         if (!postProc.CenterScale(desiredSize, *data.source)) {
-            MEDIA_ERR_LOG("thumbnail center crop failed");
+            MEDIA_ERR_LOG("thumbnail center crop failed [%{public}s]", data.id.c_str());
             return false;
         }
     }
@@ -1065,7 +1010,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
 int ThumbnailUtils::SaveFile(ThumbnailData &data, bool isLcd)
 {
     const mode_t fileMode = 0664;
-    string fileName = ThumbnailUtils::GetThumbPath(data.path, isLcd ? data.lcdKey : data.thumbnailKey);
+    string fileName = ThumbnailUtils::GetThumbPath(data.path, isLcd ? THUMBNAIL_LCD_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
     string dir = MediaFileUtils::GetParentPath(fileName);
     if (!MediaFileUtils::CreateDirectory(dir)) {
         return -errno;
@@ -1074,8 +1019,13 @@ int ThumbnailUtils::SaveFile(ThumbnailData &data, bool isLcd)
     UniqueFd fd(open(fileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, fileMode));
     umask(mask);
     if (fd.Get() < 0) {
-        MEDIA_ERR_LOG("SaveFile failed! filePath %{private}s status %{public}d", fileName.c_str(), errno);
-        return -errno;
+        if (errno == EEXIST) {
+            UniqueFd fd(open(fileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
+        }
+        if (fd.Get() < 0) {
+            MEDIA_ERR_LOG("SaveFile failed! filePath %{private}s status %{public}d", fileName.c_str(), errno);
+            return -errno;
+        }
     }
 
     int writeSize = isLcd ? data.lcd.size() : data.thumbnail.size();
@@ -1258,22 +1208,19 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbna
 {
     ThumbnailData tmpData;
     bool isDelete = false;
-    int err = 0;
-    auto rdbSet = QueryThumbnailInfo(opts, tmpData, err);
-    if (rdbSet == nullptr) {
-        MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
-        return isDelete;
-    }
-    rdbSet.reset();
-    if (IsKeyNotSame(tmpData.thumbnailKey, thumbnailData.thumbnailKey)) {
-        if (DeleteThumbFile(tmpData, false)) {
-            isDelete = true;
+    if (opts.path.empty()) {
+        int err = 0;
+        auto rdbSet = QueryThumbnailInfo(opts, tmpData, err);
+        if (rdbSet == nullptr) {
+            MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
+            return isDelete;
         }
     }
-    if (IsKeyNotSame(tmpData.lcdKey, thumbnailData.lcdKey)) {
-        if (DeleteThumbFile(tmpData, true)) {
-            isDelete = true;
-        }
+    if (DeleteThumbFile(tmpData, false)) {
+        isDelete = true;
+    }
+    if (DeleteThumbFile(tmpData, true)) {
+        isDelete = true;
     }
     return isDelete;
 }
@@ -1328,17 +1275,6 @@ bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, co
     return ret;
 }
 
-void ThumbnailUtils::ThumbnailDataCopy(ThumbnailData &data, ThumbnailRdbData &rdbData)
-{
-    data.id = rdbData.id;
-    data.path = rdbData.path;
-    data.thumbnailKey = rdbData.thumbnailKey;
-    data.lcdKey = rdbData.lcdKey;
-    data.mediaType = rdbData.mediaType;
-    data.dateModified = rdbData.dateModified;
-    data.cloudId = rdbData.cloudId;
-}
-
 int64_t ThumbnailUtils::UTCTimeSeconds()
 {
     struct timespec t;
@@ -1383,57 +1319,28 @@ void ThumbnailUtils::ParseStringResult(const shared_ptr<ResultSet> &resultSet, i
     }
 }
 
-void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, ThumbnailRdbData &data, int &err)
+void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, ThumbnailData &data, int &err)
 {
     int index;
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_ID, index);
     if (err == NativeRdb::E_OK) {
         ParseStringResult(resultSet, index, data.id, err);
-    } else {
-        MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_ID.c_str(), err);
     }
 
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, index);
     if (err == NativeRdb::E_OK) {
         ParseStringResult(resultSet, index, data.path, err);
-    } else {
-        MEDIA_ERR_LOG("Get column %{private}s index error %{private}d", MEDIA_DATA_DB_FILE_PATH.c_str(), err);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_THUMBNAIL, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.thumbnailKey, err);
-    } else {
-        MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_THUMBNAIL.c_str(), err);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_LCD, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.lcdKey, err);
-    } else {
-        MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_LCD.c_str(), err);
     }
 
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, index);
     if (err == NativeRdb::E_OK) {
         data.mediaType = MediaType::MEDIA_TYPE_ALL;
         err = resultSet->GetInt(index, data.mediaType);
-    } else {
-        MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_MEDIA_TYPE.c_str(), err);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_MODIFIED, index);
-    if (err == NativeRdb::E_OK) {
-        err = resultSet->GetLong(index, data.dateModified);
-    } else {
-        MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_DATE_MODIFIED.c_str(), err);
     }
 
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_CLOUD_ID, index);
     if (err == NativeRdb::E_OK) {
         ParseStringResult(resultSet, index, data.cloudId, err);
-    } else {
-        MEDIA_ERR_LOG("Get column %{public}s index error %{public}d", MEDIA_DATA_DB_CLOUD_ID.c_str(), err);
     }
 }
 } // namespace Media

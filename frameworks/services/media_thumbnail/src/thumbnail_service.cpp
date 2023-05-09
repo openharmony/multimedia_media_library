@@ -92,14 +92,14 @@ void ThumbnailService::ReleaseService()
 
 int ThumbnailService::GetThumbnailFd(const string &uri)
 {
-    string id, networkId, table;
+    string id, path, table;
     Size size;
-    if (!ThumbnailUriUtils::ParseThumbnailInfo(uri, id, size, networkId, table)) {
+    if (!ThumbnailUriUtils::ParseThumbnailInfo(uri, id, size, path, table)) {
         return E_FAIL;
     }
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
-        .networkId = networkId,
+        .path = path,
         .table = table,
         .row = id,
         .uri = uri,
@@ -118,8 +118,7 @@ int ThumbnailService::GetThumbnailFd(const string &uri)
     return fd;
 }
 
-
-int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri)
+int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri, const string &path)
 {
     string fileId;
     string networkId;
@@ -131,7 +130,7 @@ int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri)
 
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
-        .kvStore = kvStorePtr_,
+        .path = path,
         .table = tableName,
         .row = fileId,
         .screenSize = screenSize_
@@ -165,19 +164,18 @@ int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri)
 int32_t ThumbnailService::CreateThumbnail(const std::string &uri)
 {
     string fileId;
-    string networkId;
+    string path;
     Size size;
     string tableName;
-    bool success = ThumbnailUriUtils::ParseThumbnailInfo(uri, fileId, size, networkId, tableName);
+    bool success = ThumbnailUriUtils::ParseThumbnailInfo(uri, fileId, size, path, tableName);
     if (!success) {
-        MEDIA_ERR_LOG("ParseThumbnailInfo faild");
+        MEDIA_ERR_LOG("ParseThumbnailInfo faild %{public}s", uri.c_str());
         return E_ERR;
     }
 
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
-        .kvStore = kvStorePtr_,
-        .context = context_,
+        .path = path,
         .table = tableName,
         .row = fileId,
         .screenSize = screenSize_
@@ -226,16 +224,16 @@ int32_t ThumbnailService::GenerateThumbnails()
             .kvStore = kvStorePtr_,
             .table = tableName
         };
+
+        err = ThumbnailGenerateHelper::CreateThumbnailBatch(opts);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("CreateThumbnailBatch failed : %{public}d", err);
+        }
         if (tableName != AudioColumn::AUDIOS_TABLE) {
             err = ThumbnailGenerateHelper::CreateLcdBatch(opts);
             if (err != E_OK) {
                 MEDIA_ERR_LOG("CreateLcdBatch failed : %{public}d", err);
             }
-        }
-
-        err = ThumbnailGenerateHelper::CreateThumbnailBatch(opts);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("CreateThumbnailBatch failed : %{public}d", err);
         }
     }
 
@@ -294,11 +292,6 @@ int32_t ThumbnailService::InvalidateDistributeThumbnail(const string &udid)
     return err;
 }
 
-bool ThumbnailService::ParseThumbnailInfo(const string &uriString)
-{
-    return ThumbnailUriUtils::ParseThumbnailInfo(uriString);
-}
-
 void ThumbnailService::InvalidateThumbnail(const std::string &id, const std::string &tableName)
 {
     ThumbRdbOpt opts = {
@@ -307,11 +300,7 @@ void ThumbnailService::InvalidateThumbnail(const std::string &id, const std::str
         .row = id,
     };
     ThumbnailData thumbnailData;
-    thumbnailData.thumbnailKey = "invalid";
-    thumbnailData.lcdKey = "invalid";
-    if (ThumbnailUtils::DeleteOriginImage(opts, thumbnailData)) {
-        ThumbnailUtils::CleanThumbnailInfo(opts, true, true);
-    }
+    ThumbnailUtils::DeleteOriginImage(opts, thumbnailData);
 }
 } // namespace Media
 } // namespace OHOS

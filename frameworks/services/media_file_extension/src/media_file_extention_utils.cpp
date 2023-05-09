@@ -32,7 +32,6 @@
 #include "result_set_utils.h"
 #include "scanner_utils.h"
 #include "thumbnail_utils.h"
-#include "uri_helper.h"
 #include "n_error.h"
 #include "unique_fd.h"
 
