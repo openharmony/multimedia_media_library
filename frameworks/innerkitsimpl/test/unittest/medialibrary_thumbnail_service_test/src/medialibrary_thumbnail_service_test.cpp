@@ -190,14 +190,14 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateThumbnailAsync_test_001, TestSi
     }
     string url = "";
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
-    int32_t ret = serverTest->CreateThumbnailAsync(url);
+    int32_t ret = serverTest->CreateThumbnailAsync(url, "");
     EXPECT_EQ(ret, -1);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
     serverTest->Init(storePtr, kvStorePtr, context);
     string tempNetworkId = "1d3cb099659d53b3ee15faaab3c00a8ff983382ebc8b01aabde039ed084e167b";
     url = MEDIALIBRARY_DATA_ABILITY_PREFIX + tempNetworkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-    ret = serverTest->CreateThumbnailAsync(url);
+    ret = serverTest->CreateThumbnailAsync(url, "");
     EXPECT_GT(ret, 0);
     serverTest->ReleaseService();
 }
@@ -221,17 +221,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateThumbnail_test_001, TestSize.Le
     ret = serverTest->CreateThumbnail(url);
     EXPECT_GT(ret, 0);
     serverTest->ReleaseService();
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_ParseThumbnailInfo_test_001, TestSize.Level0)
-{
-    string uriString = "";
-    bool ret = ThumbnailService::ParseThumbnailInfo(uriString);
-    EXPECT_EQ(ret, false);
-    uriString = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
-        THUMBNAIL_WIDTH + "=1&" + THUMBNAIL_HEIGHT + "=1";
-    ret = ThumbnailService::ParseThumbnailInfo(uriString);
-    EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_InvalidateThumbnail_test_001, TestSize.Level0)

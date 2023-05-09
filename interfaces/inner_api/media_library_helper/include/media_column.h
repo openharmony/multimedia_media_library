@@ -43,7 +43,6 @@ public:
     static const std::string MEDIA_MIME_TYPE;
     static const std::string MEDIA_OWNER_PACKAGE;
     static const std::string MEDIA_DEVICE_NAME;
-    static const std::string MEDIA_THUMBNAIL;
 
     // As set Parameter about time
     static const std::string MEDIA_DATE_MODIFIED;
@@ -72,7 +71,6 @@ public:
     static const std::string PHOTO_ORIENTATION;
     static const std::string PHOTO_LATITUDE;
     static const std::string PHOTO_LONGITUDE;
-    static const std::string PHOTO_LCD;
     static const std::string PHOTO_HEIGHT;
     static const std::string PHOTO_WIDTH;
     static const std::string PHOTO_LCD_VISIT_TIME;

@@ -1418,14 +1418,17 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     return result;
 }
 
-static unique_ptr<PixelMap> QueryThumbnail(std::string &uri, Size &size, const std::string &typeMask,
-    const bool isApiVersion10)
+static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const std::string &typeMask,
+    const bool isApiVersion10, const string &path = "")
 {
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnail");
 
     string queryUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
         "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
+    if (!path.empty()) {
+        queryUriStr.append("&" + THUMBNAIL_PATH + "=" + path);
+    }
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUriStr, typeMask);
     if (isApiVersion10) {
         MediaLibraryNapiUtils::UriAppendKeyValue(queryUriStr, API_VERSION, to_string(API_VERSION_10));
@@ -1461,10 +1464,10 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    std::string uri = context->objectPtr->GetUri();
     Size size = { .width = context->thumbWidth, .height = context->thumbHeight };
     bool isApiVersion10 = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR);
-    context->pixelmap = QueryThumbnail(uri, size, context->objectPtr->GetTypeMask(), isApiVersion10);
+    context->pixelmap = QueryThumbnail(context->objectPtr->GetUri(), size, context->objectPtr->GetTypeMask(),
+        isApiVersion10, context->objectPtr->GetPath());
 }
 
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,

@@ -602,14 +602,6 @@ int32_t MediaLibraryDataManager::DoAging()
         MEDIA_ERR_LOG("LcdAging exist error %{public}d", errorCode);
     }
 
-    errorCode = DistributeDeviceAging();
-    if (errorCode != 0) {
-        MEDIA_ERR_LOG("DistributeDeviceAging exist error %{public}d", errorCode);
-    }
-    errorCode = LcdDistributeAging();
-    if (errorCode != 0) {
-        MEDIA_ERR_LOG("LcdDistributeAging exist error %{public}d", errorCode);
-    }
     shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
     if (asyncWorker == nullptr) {
         MEDIA_ERR_LOG("asyncWorker null");
@@ -673,7 +665,7 @@ int MediaLibraryDataManager::GetThumbnail(const string &uri)
     return thumbnailService_->GetThumbnailFd(uri);
 }
 
-void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri)
+void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri, const string &path)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
@@ -689,7 +681,7 @@ void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri)
             MEDIA_ERR_LOG("failed to get thumbnail, the file:%{public}s is pending", uri.c_str());
             return;
         }
-        int32_t err = thumbnailService_->CreateThumbnailAsync(uri);
+        int32_t err = thumbnailService_->CreateThumbnailAsync(uri, path);
         if (err != E_SUCCESS) {
             MEDIA_ERR_LOG("ThumbnailService CreateThumbnailAsync failed : %{public}d", err);
         }
@@ -940,7 +932,7 @@ int32_t ScanFileCallback::OnScanFinished(const int32_t status, const string &uri
 {
     auto instance = MediaLibraryDataManager::GetInstance();
     if (instance != nullptr) {
-        instance->CreateThumbnailAsync(uri);
+        instance->CreateThumbnailAsync(uri, path);
     }
     return E_OK;
 }

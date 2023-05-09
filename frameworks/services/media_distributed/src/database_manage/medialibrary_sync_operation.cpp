@@ -213,7 +213,6 @@ bool MediaLibrarySyncOperation::SyncPullTable(MediaLibrarySyncOpts &syncOpts, ve
 static bool SyncPushTableCallbackExec(const MediaLibrarySyncOpts &syncOpts, const string &networkId, int syncResult)
 {
     if (networkId.empty()) {
-        MEDIA_ERR_LOG("SyncPushTable networkId is empty");
         return false;
     }
     if (syncResult != 0) {
@@ -234,7 +233,6 @@ bool MediaLibrarySyncOperation::SyncPushTable(MediaLibrarySyncOpts &syncOpts, ve
     vector<string> onlineDevices;
     GetOnlineDevices(syncOpts.bundleName, devices, onlineDevices);
     if (onlineDevices.size() == 0) {
-        MEDIA_ERR_LOG("SyncPushTable there is no online device");
         return false;
     }
     NativeRdb::AbsRdbPredicates predicate(syncOpts.table);

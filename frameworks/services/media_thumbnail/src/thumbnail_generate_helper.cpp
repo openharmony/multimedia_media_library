@@ -34,7 +34,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBatch(ThumbRdbOpt &opts)
         return E_ERR;
     }
 
-    vector<ThumbnailRdbData> infos;
+    vector<ThumbnailData> infos;
     int32_t err = GetNoThumbnailData(opts, infos);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to GetNoLcdData %{private}d", err);
@@ -45,11 +45,9 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBatch(ThumbRdbOpt &opts)
         MEDIA_INFO_LOG("No need generate thumbnail.");
         return E_OK;
     }
-    ThumbnailData data;
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
-        ThumbnailUtils::ThumbnailDataCopy(data, infos[i]);
-        IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateThumbnail, opts, data, false);
+        IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateThumbnail, opts, infos[i], false);
     }
 
     return E_OK;
@@ -58,7 +56,6 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBatch(ThumbRdbOpt &opts)
 int32_t ThumbnailGenerateHelper::CreateLcdBatch(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is not init");
         return E_ERR;
     }
 
@@ -74,17 +71,15 @@ int32_t ThumbnailGenerateHelper::CreateLcdBatch(ThumbRdbOpt &opts)
         return E_OK;
     }
 
-    vector<ThumbnailRdbData> infos;
+    vector<ThumbnailData> infos;
     err = GetNoLcdData(opts, THUMBNAIL_LCD_GENERATE_THRESHOLD - lcdCount, infos);
     if ((err != E_OK) || infos.empty()) {
         MEDIA_ERR_LOG("Failed to GetNoLcdData %{private}d", err);
         return err;
     }
-    ThumbnailData data;
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
-        ThumbnailUtils::ThumbnailDataCopy(data, infos[i]);
-        IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateLcd, opts, data, false);
+        IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateLcd, opts, infos[i], false);
     }
     return E_OK;
 }
@@ -99,7 +94,7 @@ int32_t ThumbnailGenerateHelper::GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::GetNoLcdData(ThumbRdbOpt &opts, int lcdLimit, vector<ThumbnailRdbData> &outDatas)
+int32_t ThumbnailGenerateHelper::GetNoLcdData(ThumbRdbOpt &opts, int lcdLimit, vector<ThumbnailData> &outDatas)
 {
     int32_t err = E_ERR;
     if (!ThumbnailUtils::QueryNoLcdInfos(opts, lcdLimit, outDatas, err)) {
@@ -109,7 +104,7 @@ int32_t ThumbnailGenerateHelper::GetNoLcdData(ThumbRdbOpt &opts, int lcdLimit, v
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::GetNoThumbnailData(ThumbRdbOpt &opts, vector<ThumbnailRdbData> &outDatas)
+int32_t ThumbnailGenerateHelper::GetNoThumbnailData(ThumbRdbOpt &opts, vector<ThumbnailData> &outDatas)
 {
     int32_t err = E_ERR;
     if (!ThumbnailUtils::QueryNoThumbnailInfos(opts, outDatas, err)) {

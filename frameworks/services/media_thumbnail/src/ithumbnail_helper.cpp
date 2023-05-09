@@ -20,6 +20,7 @@
 #include "hitrace_meter.h"
 #include "media_column.h"
 #include "medialibrary_errno.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "rdb_helper.h"
 #include "single_kvstore.h"
@@ -31,12 +32,15 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-shared_ptr<ResultSet> IThumbnailHelper::QueryThumbnailInfo(ThumbRdbOpt &opts,
-    ThumbnailData &outData, int &err)
+void IThumbnailHelper::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
 {
     if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is not init");
-        return nullptr;
+        return;
+    }
+    if (!opts.path.empty()) {
+        outData.path = opts.path;
+        outData.id = opts.row;
+        return;
     }
     string filesTableName = opts.table;
     int errCode = E_ERR;
@@ -44,23 +48,27 @@ shared_ptr<ResultSet> IThumbnailHelper::QueryThumbnailInfo(ThumbRdbOpt &opts,
         filesTableName = opts.store->ObtainDistributedTableName(opts.networkId, opts.table, errCode);
     }
     if (filesTableName.empty()) {
-        return nullptr;
+        return;
     }
-    MEDIA_DEBUG_LOG("Get filesTableName [ %{public}s ] id [ %{public}s ]", filesTableName.c_str(), opts.row.c_str());
     opts.table = filesTableName;
-    return ThumbnailUtils::QueryThumbnailInfo(opts, outData, err);
+    int err;
+    ThumbnailUtils::QueryThumbnailInfo(opts, outData, err);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("query fail [%{public}d]", err);
+    }
+    return;
 }
 
 void IThumbnailHelper::CreateLcd(AsyncTaskData* data)
 {
     GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
-    DoCreateLcd(taskData->opts, taskData->thumbnailData, true);
+    DoCreateLcd(taskData->opts, taskData->thumbnailData);
 }
 
 void IThumbnailHelper::CreateThumbnail(AsyncTaskData* data)
 {
     GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
-    DoCreateThumbnail(taskData->opts, taskData->thumbnailData, true);
+    DoCreateThumbnail(taskData->opts, taskData->thumbnailData);
 }
 
 void IThumbnailHelper::AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront)
@@ -110,7 +118,7 @@ WaitStatus ThumbnailWait::InsertAndWait(const string &id, bool isLcd)
     id_ = id;
 
     if (isLcd) {
-        id_ += THUMBNAIL_LCD_END_SUFFIX;
+        id_ += THUMBNAIL_LCD_SUFFIX;
     }
     unique_lock<shared_mutex> writeLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
@@ -136,7 +144,7 @@ void ThumbnailWait::CheckAndWait(const string &id, bool isLcd)
     id_ = id;
 
     if (isLcd) {
-        id_ += THUMBNAIL_LCD_END_SUFFIX;
+        id_ += THUMBNAIL_LCD_SUFFIX;
     }
     shared_lock<shared_mutex> readLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
@@ -164,18 +172,12 @@ void ThumbnailWait::Notify()
     }
 }
 
-bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool force)
+bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, true);
-    int err = 0;
     if (ret == WaitStatus::WAIT_SUCCESS) {
-        ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
         return true;
-    }
-
-    if (!opts.networkId.empty()) {
-        return false;
     }
 
     if (opts.table == AudioColumn::AUDIOS_TABLE) {
@@ -183,87 +185,70 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
         return false;
     }
 
-    if (data.dateModified == 0 || force) {
-        ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
-    }
-
-    if (!ThumbnailUtils::GenLcdKey(data)) {
-        MEDIA_ERR_LOG("GenLcdKey faild");
-        return false;
-    }
-
     if (!ThumbnailUtils::LoadSourceImage(data, false, opts.screenSize)) {
-        MEDIA_ERR_LOG("LoadSourceImage faild");
-        return false;
+        if (opts.path.empty()) {
+            MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
+            return false;
+        } else {
+            opts.path = "";
+            GetThumbnailInfo(opts, data);
+            if (!ThumbnailUtils::LoadSourceImage(data, false, opts.screenSize)) {
+                return false;
+            }
+        }
     }
+
     if (!ThumbnailUtils::CompressImage(data.source, data.lcd)) {
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
     }
 
-    err = ThumbnailUtils::SaveFile(data, true);
+    int err = ThumbnailUtils::SaveFile(data, true);
     if (err < 0) {
         MEDIA_ERR_LOG("SaveLcd faild %{public}d", err);
         return false;
     }
 
     data.lcd.clear();
-    if ((data.dateModified == 0) || force) {
-        ThumbnailUtils::DeleteOriginImage(opts, data);
-    }
-    if (!ThumbnailUtils::UpdateThumbnailInfo(opts, data, err)) {
-        MEDIA_INFO_LOG("UpdateThumbnailInfo faild err : %{public}d", err);
+    if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
+        MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
         return false;
     }
 
     return true;
 }
 
-bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool force)
+bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, false);
-    int err = 0;
     if (ret == WaitStatus::WAIT_SUCCESS) {
-        ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
         return true;
-    }
-    if (!opts.networkId.empty()) {
-        return false;
-    }
-
-    if (data.dateModified == 0 || force) {
-        ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
-    }
-
-    if (!ThumbnailUtils::GenThumbnailKey(data)) {
-        MEDIA_ERR_LOG("GenThumbnailKey faild");
-        return false;
     }
 
     if (!ThumbnailUtils::LoadSourceImage(data)) {
-        MEDIA_ERR_LOG("LoadSourceImage faild");
-        return false;
+        if (opts.path.empty()) {
+            MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
+            return false;
+        } else {
+            opts.path = "";
+            GetThumbnailInfo(opts, data);
+            if (!ThumbnailUtils::LoadSourceImage(data)) {
+                return false;
+            }
+        }
     }
     if (!ThumbnailUtils::CompressImage(data.source, data.thumbnail)) {
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
     }
 
-    err = ThumbnailUtils::SaveFile(data, false);
+    int err = ThumbnailUtils::SaveFile(data, false);
     if (err < 0) {
         MEDIA_ERR_LOG("SaveThumbnailData faild %{public}d", err);
         return false;
     }
     data.thumbnail.clear();
-    if ((data.dateModified == 0) || force) {
-        ThumbnailUtils::DeleteOriginImage(opts, data);
-    }
-    if (!ThumbnailUtils::UpdateThumbnailInfo(opts, data, err)) {
-        MEDIA_ERR_LOG("UpdateThumbnailInfo faild, %{public}d", err);
-        return false;
-    }
-
     return true;
 }
 
@@ -289,7 +274,7 @@ bool IThumbnailHelper::DoThumbnailSync(ThumbRdbOpt &opts, ThumbnailData &outData
         MEDIA_INFO_LOG("GetThumbnailPixelMap SyncPullTable FALSE");
         return false;
     }
-    auto resultSet = QueryThumbnailInfo(opts, outData, ret);
+    auto resultSet = ThumbnailUtils::QueryThumbnailInfo(opts, outData, ret);
     if ((resultSet == nullptr)) {
         MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", ret);
         return false;

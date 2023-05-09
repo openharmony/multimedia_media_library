@@ -25,13 +25,13 @@ constexpr int32_t DEFAULT_LCD_SIZE = 1080;
 
 constexpr uint32_t DEVICE_UDID_LENGTH = 65;
 
-constexpr int32_t THUMBNAIL_LCD_GENERATE_THRESHOLD = 2000;
-constexpr int32_t THUMBNAIL_LCD_AGING_THRESHOLD = 4000;
+constexpr int32_t THUMBNAIL_LCD_GENERATE_THRESHOLD = 5000;
+constexpr int32_t THUMBNAIL_LCD_AGING_THRESHOLD = 10000;
 constexpr int32_t WAIT_FOR_MS = 1000;
 constexpr int32_t WAIT_FOR_SECOND = 3;
 
-const std::string THUMBNAIL_END_SUFFIX = "_THU";
-const std::string THUMBNAIL_LCD_END_SUFFIX = "_LCD";
+const std::string THUMBNAIL_THUMB_SUFFIX = "THMB";
+const std::string THUMBNAIL_LCD_SUFFIX = "LCD";
 const std::string FILE_URI_PREX = "file://";
 
 const std::string THUMBNAIL_FORMAT = "image/jpeg";
@@ -44,6 +44,7 @@ constexpr uint8_t NUMBER_HINT_1 = 1;
 const std::string THUMBNAIL_OPERN_KEYWORD = "operation";
 const std::string THUMBNAIL_HEIGHT = "height";
 const std::string THUMBNAIL_WIDTH = "width";
+const std::string THUMBNAIL_PATH = "path";
 } // namespace Media
 } // namespace OHOS
 

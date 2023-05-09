@@ -84,20 +84,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateRemotePath_test_001, TestSize.L
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GenThumbnailKey_test_001, TestSize.Level0)
-{
-    ThumbnailData thumbnailData;
-    bool ret = ThumbnailUtils::GenThumbnailKey(thumbnailData);
-    EXPECT_EQ(ret, true);
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GenLcdKey_test_001, TestSize.Level0)
-{
-    ThumbnailData thumbnailData;
-    bool ret = ThumbnailUtils::GenLcdKey(thumbnailData);
-    EXPECT_EQ(ret, true);
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryThumbnailSet_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
@@ -172,7 +158,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryHasLcdFiles_test_001, TestSize.L
         .store = storePtr,
         .table = table
     };
-    vector<ThumbnailRdbData> infos;
+    vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryHasLcdFiles(opts, infos, err);
     EXPECT_EQ(ret, false);
@@ -188,7 +174,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryHasThumbnailFiles_test_001, Test
         .store = storePtr,
         .table = table
     };
-    vector<ThumbnailRdbData> infos;
+    vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryHasThumbnailFiles(opts, infos, err);
     EXPECT_EQ(ret, false);
@@ -205,7 +191,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryAgingDistributeLcdInfos_test_001
         .udid = udid
     };
     int LcdLimit = 0;
-    vector<ThumbnailRdbData> infos;
+    vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryAgingDistributeLcdInfos(opts, LcdLimit, infos, err);
     EXPECT_EQ(ret, false);
@@ -222,7 +208,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryAgingLcdInfos_test_001, TestSize
         .table = table
     };
     int LcdLimit = 0;
-    vector<ThumbnailRdbData> infos;
+    vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryAgingLcdInfos(opts, LcdLimit, infos, err);
     EXPECT_EQ(ret, false);
@@ -239,7 +225,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryNoLcdInfos_test_001, TestSize.Le
         .table = table
     };
     int LcdLimit = 0;
-    vector<ThumbnailRdbData> infos;
+    vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryNoLcdInfos(opts, LcdLimit, infos, err);
     EXPECT_EQ(ret, false);
@@ -255,19 +241,19 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryNoThumbnailInfos_test_001, TestS
         .store = storePtr,
         .table = table
     };
-    vector<ThumbnailRdbData> infos;
+    vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryNoThumbnailInfos(opts, infos, err);
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateThumbnailInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateLcdInfo_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
     }
-    string row = "medialib_UpdateThumbnailInfo_test_001";
-    string table = "medialib_UpdateThumbnailInfo_test_001";
+    string row = "medialib_UpdateLcdInfo_test_001";
+    string table = "medialib_UpdateLcdInfo_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
         .table = table,
@@ -275,11 +261,9 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateThumbnailInfo_test_001, TestSiz
     };
     ThumbnailData data;
     int err = 0;
-    bool ret = ThumbnailUtils::UpdateThumbnailInfo(opts, data, err);
+    bool ret = ThumbnailUtils::UpdateLcdInfo(opts, data, err);
     EXPECT_EQ(ret, false);
-    data.thumbnailKey = "UpdateThumbnailInfo";
-    data.lcdKey = "key";
-    ret = ThumbnailUtils::UpdateThumbnailInfo(opts, data, err);
+    ret = ThumbnailUtils::UpdateLcdInfo(opts, data, err);
     EXPECT_EQ(ret, false);
 }
 
@@ -311,7 +295,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryDeviceThumbnailRecords_test_001,
         .store = storePtr,
         .udid = udid
     };
-    vector<ThumbnailRdbData> infos;
+    vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryDeviceThumbnailRecords(opts, infos, err);
     EXPECT_EQ(ret, false);
@@ -580,13 +564,10 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_parseQueryResult_test_001, TestSize.L
         REMOTE_THUMBNAIL_DB_FILE_ID,
         MEDIA_DATA_DB_LCD
     };
-    ThumbnailRdbData data;
+    ThumbnailData data;
     data.id = "0";
     data.path = "/storage/media/local/files";
-    data.thumbnailKey = "ParseQueryResult";
-    data.lcdKey = "ParseQueryResult";
     data.mediaType = 0;
-    data.dateModified = 0;
     int err = 0;
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -690,22 +671,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_loadImageFile_test_001, TestSize.Leve
     EXPECT_EQ(ret, false);
     ret = ThumbnailUtils::LoadAudioFile(data, isThumbnail, desiredSize);
     EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_genKey_test_001, TestSize.Level0)
-{
-    ThumbnailData data;
-    string key = "";
-    bool ret = true;
-    ret = ThumbnailUtils::GenKey(data, key);
-    EXPECT_EQ(ret, true);
-    data.hashKey = "GenKey";
-    data.path = "/storage/media/local/files/";
-    data.dateModified = 0;
-    key = ThumbnailUtils::GetUdid();
-    EXPECT_EQ(key, "");
-    ret = ThumbnailUtils::GenKey(data, key);
-    EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_saveImage_test_001, TestSize.Level0)

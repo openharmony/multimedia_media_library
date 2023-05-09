@@ -37,7 +37,6 @@ public:
     virtual ~GenerateAsyncTaskData() override = default;
     ThumbRdbOpt opts;
     ThumbnailData thumbnailData;
-    std::string thumbnailKey;
 };
 
 enum WaitStatus {
@@ -74,11 +73,10 @@ public:
     static void CreateThumbnail(AsyncTaskData *data);
     static void AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront);
 protected:
-    static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailInfo(
-        ThumbRdbOpt &opts, ThumbnailData &outData, int &err);
+    static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
     static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
-    static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool force = false);
-    static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool force = false);
+    static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
+    static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoThumbnailSync(ThumbRdbOpt &opts, ThumbnailData &outData);
 };
 

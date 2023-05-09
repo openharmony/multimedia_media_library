@@ -74,7 +74,6 @@ const unordered_map<string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_MIME_TYPE, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_OWNER_PACKAGE, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_DEVICE_NAME, MEMBER_TYPE_STRING },
-    { MediaColumn::MEDIA_THUMBNAIL, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_DATE_ADDED, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_DATE_MODIFIED, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_DATE_TAKEN, MEMBER_TYPE_INT64 },
@@ -90,7 +89,6 @@ const unordered_map<string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_ORIENTATION, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_LATITUDE, MEMBER_TYPE_DOUBLE },
     { PhotoColumn::PHOTO_LONGITUDE, MEMBER_TYPE_DOUBLE },
-    { PhotoColumn::PHOTO_LCD, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_HEIGHT, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_WIDTH, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
@@ -1019,8 +1017,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, Test
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_NAME, ""} });
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
-        { { PhotoColumn::MEDIA_THUMBNAIL, "abc"} });
-    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_DATE_MODIFIED, "1000000"} });
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_DATE_ADDED, "1000000"} });
@@ -1057,8 +1053,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, Test
         { { PhotoColumn::PHOTO_LATITUDE, "1"} });
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::PHOTO_LONGITUDE, "1"} });
-    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
-        { { PhotoColumn::PHOTO_LCD, "12345"} });
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::PHOTO_HEIGHT, "12345"} });
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),

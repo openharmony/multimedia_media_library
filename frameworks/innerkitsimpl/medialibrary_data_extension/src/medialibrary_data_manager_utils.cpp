@@ -86,29 +86,6 @@ string MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(const std::string &p
     return displayName;
 }
 
-void MediaLibraryDataManagerUtils::SplitKeyValue(const string &keyValue, string &key, string &value)
-{
-    string::size_type pos = keyValue.find('=');
-    if (string::npos != pos) {
-        key = keyValue.substr(0, pos);
-        value = keyValue.substr(pos + 1);
-    }
-}
-
-void MediaLibraryDataManagerUtils::SplitKeys(const string &query, vector<string> &keys)
-{
-    string::size_type pos1 = 0;
-    string::size_type pos2 = query.find('&');
-    while (string::npos != pos2) {
-        keys.push_back(query.substr(pos1, pos2 - pos1));
-        pos1 = pos2 + 1;
-        pos2 = query.find('&', pos1);
-    }
-    if (pos1 != query.length()) {
-        keys.push_back(query.substr(pos1));
-    }
-}
-
 string MediaLibraryDataManagerUtils::ObtionCondition(string &strQueryCondition, const vector<string> &whereArgs)
 {
     for (string args : whereArgs) {
