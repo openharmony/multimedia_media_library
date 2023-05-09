@@ -40,6 +40,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetPath(realPath);
     config_.SetBundleName(context->GetBundleName());
     config_.SetArea(context->GetArea());
+    config_.SetSecurityLevel(SecurityLevel::S3);
     MEDIA_INFO_LOG("rdb config: name: %{private}s realPath: %{private}s bundleName: %{private}s area: %{private}d",
         name.c_str(), realPath.c_str(), context->GetBundleName().c_str(), context->GetArea());
     Init();
