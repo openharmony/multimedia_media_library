@@ -32,8 +32,6 @@ struct ExecEnv {
     std::string uri;
     std::string recvPath; // real path for the recvPath in optArgs
     DumpOpt dumpOpt;
-    std::string toolName; // this tool name
-    std::string toolPath; // this tool full name path
     std::string workPath; // current work path
     MediaLibraryApi api {MediaLibraryApi::API_10};
     std::string networkId;

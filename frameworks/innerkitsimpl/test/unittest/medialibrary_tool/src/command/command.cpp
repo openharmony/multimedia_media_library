@@ -36,17 +36,6 @@ std::unique_ptr<Command> Command::Create(const ExecEnv &env)
     }
     return nullptr;
 }
-
-const std::vector<MediaType> &Command::GetSupportTypes()
-{
-    static const std::vector<MediaType> SUPPORT_TYPES = {
-        MediaType::MEDIA_TYPE_AUDIO,
-        MediaType::MEDIA_TYPE_FILE,
-        MediaType::MEDIA_TYPE_IMAGE,
-        MediaType::MEDIA_TYPE_VIDEO
-    };
-    return SUPPORT_TYPES;
-}
 } // namespace MediaTool
 } // namespace Media
 } // namespace OHOS

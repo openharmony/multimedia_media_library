@@ -118,7 +118,7 @@ int32_t RecvCommandV10::Start(const ExecEnv &env)
     }
     std::set<std::string> tableNameSet;
     bool hasError = false;
-    auto mediaTypes = GetSupportTypes();
+    auto mediaTypes = UserFileClientEx::GetSupportTypes();
     for (auto mediaType : mediaTypes) {
         std::string tableName = UserFileClientEx::GetTableNameByMediaType(mediaType);
         auto res = tableNameSet.insert(tableName);
