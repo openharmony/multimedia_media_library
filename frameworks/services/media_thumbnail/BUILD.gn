@@ -23,6 +23,7 @@ ohos_shared_library("medialibrary_thumbnail") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/default_thumbnail_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/ithumbnail_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/lcd_thumbnail_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/micro_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_aging_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_datashare_bridge.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_helper.cpp",

@@ -111,7 +111,7 @@ int32_t ThumbnailAgingHelper::ClearLcdFromFileTable(ThumbRdbOpt &opts)
     }
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
-        if (ThumbnailUtils::DeleteThumbFile(infos[i], true)) {
+        if (ThumbnailUtils::DeleteThumbFile(infos[i], ThumbnailType::LCD)) {
             ThumbnailUtils::CleanThumbnailInfo(opts, false, true);
         }
     }
