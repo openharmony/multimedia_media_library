@@ -28,10 +28,6 @@ std::string ExecEnv::ToStr() const
     str.append(uri);
     str.append(", recvPath:");
     str.append(recvPath);
-    str.append(", toolName:");
-    str.append(toolName);
-    str.append(", toolPath:");
-    str.append(toolPath);
     str.append(", workPath:");
     str.append(workPath);
     return str;

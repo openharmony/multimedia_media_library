@@ -52,6 +52,8 @@ const std::unordered_map<std::string, ResultSetDataType> RESULT_TYPE_MAP = {
     { DocumentColumn::DOCUMENT_LCD_VISIT_TIME, ResultSetDataType::TYPE_INT64 },
     { PhotoColumn::PHOTO_DIRTY, ResultSetDataType::TYPE_INT32 },
     { PhotoColumn::PHOTO_CLOUD_ID, ResultSetDataType::TYPE_STRING },
+    { PhotoColumn::PHOTO_META_DATE_MODIFIED, ResultSetDataType::TYPE_INT64 },
+    { PhotoColumn::PHOTO_SYNCING, ResultSetDataType::TYPE_INT32 },
     { PhotoColumn::PHOTO_ORIENTATION, ResultSetDataType::TYPE_INT32 },
     { PhotoColumn::PHOTO_LATITUDE, ResultSetDataType::TYPE_DOUBLE },
     { PhotoColumn::PHOTO_LONGITUDE, ResultSetDataType::TYPE_DOUBLE },
