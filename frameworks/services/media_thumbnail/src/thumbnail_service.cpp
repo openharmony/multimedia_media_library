@@ -108,7 +108,7 @@ int ThumbnailService::GetThumbnailFd(const string &uri)
     if (thumbnailHelper == nullptr) {
         return E_NO_MEMORY;
     }
-    if (ThumbnailHelperFactory::IsThumbnailFromLcd(size)) {
+    if (!ThumbnailHelperFactory::IsThumbnail(size)) {
         opts.screenSize = screenSize_;
     }
     int fd = thumbnailHelper->GetThumbnailPixelMap(opts);

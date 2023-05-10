@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -106,9 +106,28 @@ bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &t
     return true;
 }
 
-bool ThumbnailUtils::DeleteThumbFile(ThumbnailData &data, bool isLcd)
+static string GetThumbnailSuffix(ThumbnailType type)
 {
-    string fileName = ThumbnailUtils::GetThumbPath(data.path, isLcd ? THUMBNAIL_LCD_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
+    string suffix;
+    switch (type) {
+        case ThumbnailType::MICRO:
+            suffix = THUMBNAIL_MICRO_SUFFIX;
+            break;
+        case ThumbnailType::THUMB:
+            suffix = THUMBNAIL_THUMB_SUFFIX;
+            break;
+        case ThumbnailType::LCD:
+            suffix = THUMBNAIL_LCD_SUFFIX;
+            break;
+        default:
+            return "";
+    }
+    return suffix;
+}
+
+bool ThumbnailUtils::DeleteThumbFile(ThumbnailData &data, ThumbnailType type)
+{
+    string fileName = ThumbnailUtils::GetThumbPath(data.path, GetThumbnailSuffix(type));
     if (!MediaFileUtils::DeleteFile(fileName)) {
         MEDIA_ERR_LOG("delete file faild %{public}d", errno);
         return false;
@@ -967,7 +986,7 @@ Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desir
     return decodeSize;
 }
 
-bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
+bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail)
 {
     if (data.source != nullptr) {
         return true;
@@ -1007,10 +1026,34 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
     return true;
 }
 
-int ThumbnailUtils::SaveFile(ThumbnailData &data, bool isLcd)
+int ThumbnailUtils::SaveFile(ThumbnailData &data, ThumbnailType type)
 {
     const mode_t fileMode = 0664;
-    string fileName = ThumbnailUtils::GetThumbPath(data.path, isLcd ? THUMBNAIL_LCD_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
+
+    string suffix;
+    uint8_t *output;
+    int writeSize;
+    switch (type) {
+        case ThumbnailType::MICRO:
+            suffix = THUMBNAIL_MICRO_SUFFIX;
+            output = const_cast<uint8_t *>(data.source->GetPixels());
+            writeSize = data.source->GetByteCount();
+            break;
+        case ThumbnailType::THUMB:
+            suffix = THUMBNAIL_THUMB_SUFFIX;
+            output = data.thumbnail.data();
+            writeSize = data.thumbnail.size();
+            break;
+        case ThumbnailType::LCD:
+            suffix = THUMBNAIL_LCD_SUFFIX;
+            output = data.lcd.data();
+            writeSize = data.lcd.size();
+            break;
+        default:
+            MEDIA_ERR_LOG("Invalid thumbnail type: %{public}d", type);
+            return E_INVALID_ARGUMENTS;
+    }
+    string fileName = ThumbnailUtils::GetThumbPath(data.path, suffix);
     string dir = MediaFileUtils::GetParentPath(fileName);
     if (!MediaFileUtils::CreateDirectory(dir)) {
         return -errno;
@@ -1028,8 +1071,7 @@ int ThumbnailUtils::SaveFile(ThumbnailData &data, bool isLcd)
         }
     }
 
-    int writeSize = isLcd ? data.lcd.size() : data.thumbnail.size();
-    int size = write(fd.Get(), isLcd ? data.lcd.data() : data.thumbnail.data(), writeSize);
+    int size = write(fd.Get(), output, writeSize);
     if (size != writeSize) {
         return E_NO_SPACE;
     }
@@ -1216,10 +1258,10 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbna
             return isDelete;
         }
     }
-    if (DeleteThumbFile(tmpData, false)) {
+    if (DeleteThumbFile(tmpData, ThumbnailType::THUMB)) {
         isDelete = true;
     }
-    if (DeleteThumbFile(tmpData, true)) {
+    if (DeleteThumbFile(tmpData, ThumbnailType::LCD)) {
         isDelete = true;
     }
     return isDelete;

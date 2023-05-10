@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -119,6 +119,8 @@ WaitStatus ThumbnailWait::InsertAndWait(const string &id, bool isLcd)
 
     if (isLcd) {
         id_ += THUMBNAIL_LCD_SUFFIX;
+    } else {
+        id_ += THUMBNAIL_THUMB_SUFFIX;
     }
     unique_lock<shared_mutex> writeLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
@@ -145,6 +147,8 @@ void ThumbnailWait::CheckAndWait(const string &id, bool isLcd)
 
     if (isLcd) {
         id_ += THUMBNAIL_LCD_SUFFIX;
+    } else {
+        id_ += THUMBNAIL_THUMB_SUFFIX;
     }
     shared_lock<shared_mutex> readLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
@@ -185,14 +189,14 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    if (!ThumbnailUtils::LoadSourceImage(data, false, opts.screenSize)) {
+    if (!ThumbnailUtils::LoadSourceImage(data, opts.screenSize, false)) {
         if (opts.path.empty()) {
             MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
             return false;
         } else {
             opts.path = "";
             GetThumbnailInfo(opts, data);
-            if (!ThumbnailUtils::LoadSourceImage(data, false, opts.screenSize)) {
+            if (!ThumbnailUtils::LoadSourceImage(data, opts.screenSize, false)) {
                 return false;
             }
         }
@@ -203,7 +207,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    int err = ThumbnailUtils::SaveFile(data, true);
+    int err = ThumbnailUtils::SaveFile(data, ThumbnailType::LCD);
     if (err < 0) {
         MEDIA_ERR_LOG("SaveLcd faild %{public}d", err);
         return false;
@@ -218,6 +222,47 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
+bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
+{
+    Size size;
+    switch (type) {
+        case ThumbnailType::MICRO:
+            size = { DEFAULT_MICRO_SIZE, DEFAULT_MICRO_SIZE };
+            break;
+        case ThumbnailType::THUMB:
+            size = { DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE };
+            break;
+        default:
+            MEDIA_ERR_LOG("invalid thumbnail type: %{public}d", type);
+            return false;
+    }
+
+    if (!ThumbnailUtils::LoadSourceImage(data, size)) {
+        if (opts.path.empty()) {
+            MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
+            return false;
+        } else {
+            opts.path = "";
+            GetThumbnailInfo(opts, data);
+            if (!ThumbnailUtils::LoadSourceImage(data, size)) {
+                return false;
+            }
+        }
+    }
+    if ((type != ThumbnailType::MICRO) && !ThumbnailUtils::CompressImage(data.source, data.thumbnail)) {
+        MEDIA_ERR_LOG("CompressImage faild");
+        return false;
+    }
+
+    int err = ThumbnailUtils::SaveFile(data, type);
+    if (err < 0) {
+        MEDIA_ERR_LOG("SaveThumbnailData faild %{public}d", err);
+        return false;
+    }
+    data.thumbnail.clear();
+    return true;
+}
+
 bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     ThumbnailWait thumbnailWait(true);
@@ -226,29 +271,9 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
         return true;
     }
 
-    if (!ThumbnailUtils::LoadSourceImage(data)) {
-        if (opts.path.empty()) {
-            MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
-            return false;
-        } else {
-            opts.path = "";
-            GetThumbnailInfo(opts, data);
-            if (!ThumbnailUtils::LoadSourceImage(data)) {
-                return false;
-            }
-        }
-    }
-    if (!ThumbnailUtils::CompressImage(data.source, data.thumbnail)) {
-        MEDIA_ERR_LOG("CompressImage faild");
+    if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         return false;
     }
-
-    int err = ThumbnailUtils::SaveFile(data, false);
-    if (err < 0) {
-        MEDIA_ERR_LOG("SaveThumbnailData faild %{public}d", err);
-        return false;
-    }
-    data.thumbnail.clear();
     return true;
 }
 
