@@ -42,6 +42,7 @@ ohos_unittest("mtp_native_test") {
     "../medialibrary_mtp_test/src/mtp_test.cpp",
     "./src/mtp_data_utils_test.cpp",
     "./src/mtp_native_test.cpp",
+    "./src/mtp_test.cpp",
   ]
 
   deps = [
