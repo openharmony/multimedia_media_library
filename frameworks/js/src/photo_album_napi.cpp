@@ -15,6 +15,7 @@
 #define MLOG_TAG "PhotoAlbumNapi"
 
 #include "photo_album_napi.h"
+#include <nlohmann/json.hpp>
 
 #include "fetch_file_result_napi.h"
 #include "file_asset_napi.h"
@@ -34,6 +35,7 @@ thread_local napi_ref PhotoAlbumNapi::constructor_ = nullptr;
 thread_local napi_ref PhotoAlbumNapi::photoAccessConstructor_ = nullptr;
 static const string PHOTO_ALBUM_CLASS = "UserFileMgrPhotoAlbum";
 static const string PHOTOACCESS_PHOTO_ALBUM_CLASS = "PhotoAccessPhotoAlbum";
+static const string COUNT_GROUP_BY = "count(*) AS count";
 
 struct TrashAlbumExecuteOpt {
     napi_env env;
@@ -815,6 +817,12 @@ static void JSGetPhotoAssetsExecute(napi_env env, void *data)
     string queryUri = UFM_QUERY_PHOTO_MAP;
     Uri uri(queryUri);
     int32_t errCode = 0;
+    std::vector<DataShare::OperationItem> operationItems = context->predicates.GetOperationList();
+    for (DataShare::OperationItem item : operationItems) {
+        if (item.operation == DataShare::OperationType::GROUP_BY) {
+            context->fetchColumn.insert(context->fetchColumn.begin(), COUNT_GROUP_BY);
+        }
+    }
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     if (resultSet == nullptr) {
         context->SaveError(E_HAS_DB_ERROR);

@@ -158,6 +158,8 @@ public:
 
     void CommitModify();
     bool IsDirectory();
+    std::string GetAssetJson();
+    void SetResultTypeMap(const std::string &colName, ResultSetDataType type);
 
     const std::string &GetAllExif() const;
     void SetAllExif(const std::string &allExif);
@@ -175,10 +177,10 @@ private:
 
     std::string albumUri_;
     ResultNapiType resultNapiType_;
-    int32_t count_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> member_;
     std::mutex openStatusMapMutex_;
     std::shared_ptr<std::unordered_map<int32_t, int32_t>> openStatusMap_;
+    std::unordered_map<std::string, ResultSetDataType> resultTypeMap_;
 };
 } // namespace Media
 } // namespace OHOS
