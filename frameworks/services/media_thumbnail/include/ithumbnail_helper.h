@@ -78,6 +78,8 @@ protected:
     static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoThumbnailSync(ThumbRdbOpt &opts, ThumbnailData &outData);
+private:
+    static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
 };
 
 // copy from foundation/distributeddatamgr/data_share/frameworks/native/common/include/idatashare.h

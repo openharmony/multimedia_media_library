@@ -26,7 +26,7 @@ class MediaThumbnailHelper {
 public:
     MediaThumbnailHelper();
     ~MediaThumbnailHelper() = default;
-    static bool IsThumbnailFromLcd(const Size &size);
+    static bool IsThumbnail(const Size &size);
     static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
 };
 } // namespace Media
