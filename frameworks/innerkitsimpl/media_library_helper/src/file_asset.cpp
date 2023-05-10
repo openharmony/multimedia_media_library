@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <fstream>
 #include <unistd.h>
+#include <nlohmann/json.hpp>
 
 #include "datashare_business_error.h"
 #include "datashare_predicates.h"
@@ -39,6 +40,7 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 static constexpr int MAP_INT_MAX = 50;
+using json = nlohmann::json;
 FileAsset::FileAsset()
     : albumUri_(DEFAULT_MEDIA_ALBUM_URI), resultNapiType_(ResultNapiType::TYPE_NAPI_MAX)
 {
@@ -57,12 +59,12 @@ void FileAsset::SetId(int32_t id)
 
 int32_t FileAsset::GetCount() const
 {
-    return count_;
+    return GetInt32Member(MEDIA_DATA_DB_COUNT);
 }
 
 void FileAsset::SetCount(int32_t count)
 {
-    count_ = count;
+    member_[MEDIA_DATA_DB_COUNT] = count;
 }
 
 const string &FileAsset::GetUri() const
@@ -579,6 +581,36 @@ bool FileAsset::IsDirectory()
         return false;
     }
     return mediaType == static_cast<int>(MediaType::MEDIA_TYPE_ALBUM);
+}
+void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)
+{
+    if (resultTypeMap_.count(colName) != 0) {
+        return;
+    }
+    resultTypeMap_.insert(make_pair(colName, type));
+}
+string FileAsset::GetAssetJson()
+{
+    json jsonObject;
+    for (auto &[colName, _]  : member_) {
+        if (resultTypeMap_.count(colName) == 0) {
+            continue;
+        }
+        switch (resultTypeMap_.at(colName)) {
+            case TYPE_STRING:
+                jsonObject[colName] = GetStrMember(colName);
+                break;
+            case TYPE_INT32:
+                jsonObject[colName] = GetInt32Member(colName);
+                break;
+            case TYPE_INT64:
+                jsonObject[colName] = GetInt64Member(colName);
+                break;
+            default:
+                break;
+        }
+    }
+    return jsonObject.dump();
 }
 }  // namespace Media
 }  // namespace OHOS

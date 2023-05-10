@@ -175,6 +175,8 @@ napi_value FileAssetNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setPending", UserFileMgrSetPending),
             DECLARE_NAPI_FUNCTION("getExif", JSGetExif),
             DECLARE_NAPI_FUNCTION("setUserComment", UserFileMgrSetUserComment),
+            DECLARE_NAPI_GETTER("count", JSGetCount),
+            DECLARE_NAPI_FUNCTION("getJson", UserFileMgrGetJson),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -3642,6 +3644,32 @@ static void PhotoAccessHelperSetUserCommentComplete(napi_env env, napi_status st
     delete context;
 }
 
+static void UserFileMgrGetJsonComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrGetJsonComplete");
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    if (context->error == ERR_DEFAULT) {
+        napi_create_string_utf8(env, context->jsonStr.c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->status = true;
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
+            "UserFileClient is invalid");
+        napi_get_undefined(env, &jsContext->data);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
 static void PhotoAccessHelperSetUserCommentExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -3695,5 +3723,29 @@ napi_value FileAssetNapi::PhotoAccessHelperSetUserComment(napi_env env, napi_cal
         PhotoAccessHelperSetUserCommentExecute, PhotoAccessHelperSetUserCommentComplete);
 }
 
+static void UserFileMgrGetJsonExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrGetJsonExecute");
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    context->jsonStr = context->objectPtr->GetAssetJson();
+    return;
+}
+
+napi_value FileAssetNapi::UserFileMgrGetJson(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrGetJson");
+    auto asyncContext = make_unique<FileAssetAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
+        "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    napi_value ret = nullptr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetJson",
+        UserFileMgrGetJsonExecute, UserFileMgrGetJsonComplete);
+}
 } // namespace Media
 } // namespace OHOS
