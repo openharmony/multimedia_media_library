@@ -17,6 +17,7 @@
 
 #include "default_thumbnail_helper.h"
 #include "lcd_thumbnail_helper.h"
+#include "micro_helper.h"
 #include "thumbnail_const.h"
 
 using namespace std;
@@ -25,20 +26,19 @@ namespace OHOS {
 namespace Media {
 shared_ptr<IThumbnailHelper> ThumbnailHelperFactory::GetThumbnailHelper(const Size &size)
 {
-    bool isFromLcd = IsThumbnailFromLcd(size);
-    if (isFromLcd) {
-        shared_ptr<LcdThumbnailHelper> resultHelper = make_shared<LcdThumbnailHelper>();
+    if (IsThumbnail(size)) {
+        shared_ptr<DefaultThumbnailHelper> resultHelper = make_shared<DefaultThumbnailHelper>();
         return resultHelper;
     } else {
-        shared_ptr<DefaultThumbnailHelper> resultHelper = make_shared<DefaultThumbnailHelper>();
+        shared_ptr<LcdThumbnailHelper> resultHelper = make_shared<LcdThumbnailHelper>();
         return resultHelper;
     }
 }
 
-bool ThumbnailHelperFactory::IsThumbnailFromLcd(const Size &size)
+bool ThumbnailHelperFactory::IsThumbnail(const Size &size)
 {
-    return !((size.width <= DEFAULT_THUMBNAIL_SIZE) &&
-            (size.height <= DEFAULT_THUMBNAIL_SIZE));
+    return (size.width <= DEFAULT_THUMBNAIL_SIZE) &&
+            (size.height <= DEFAULT_THUMBNAIL_SIZE);
 }
 } // namespace Media
 } // namespace OHOS

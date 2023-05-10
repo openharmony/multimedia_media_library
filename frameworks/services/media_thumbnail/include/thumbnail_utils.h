@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -90,7 +90,7 @@ public:
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
     static bool DeleteLcdData(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
-    static bool DeleteThumbFile(ThumbnailData &data, bool isLcd);
+    static bool DeleteThumbFile(ThumbnailData &data, ThumbnailType type);
     static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
 
     static bool GetKvResultSet(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore, const std::string &key,
@@ -98,14 +98,13 @@ public:
     static bool DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
     static std::string GetThumbPath(const std::string &path, const std::string &key);
     // Steps
-    static bool LoadSourceImage(ThumbnailData &data, const bool isThumbnail = true,
-        const Size &desiredSize = { DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE });
+    static bool LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail = true);
     static DistributedKv::Status SaveThumbnailData(ThumbnailData &data, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
 
     static DistributedKv::Status SaveLcdData(ThumbnailData &data, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
-    static int SaveFile(ThumbnailData &Data, bool isLcd);
+    static int SaveFile(ThumbnailData &Data, ThumbnailType type);
     static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);

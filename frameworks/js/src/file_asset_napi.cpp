@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <sys/stat.h>
 
 #include "abs_shared_result_set.h"
 #include "hitrace_meter.h"
@@ -1441,7 +1442,6 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, c
         return nullptr;
     }
     tracer.Finish();
-
     tracer.Start("ImageSource::CreateImageSource");
     SourceOptions opts;
     uint32_t err = 0;

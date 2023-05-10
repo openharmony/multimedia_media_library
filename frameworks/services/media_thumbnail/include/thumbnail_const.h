@@ -20,8 +20,15 @@
 
 namespace OHOS {
 namespace Media {
+constexpr int32_t DEFAULT_MICRO_SIZE = 64;
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
 constexpr int32_t DEFAULT_LCD_SIZE = 1080;
+
+enum class ThumbnailType : int32_t {
+    MICRO,
+    THUMB,
+    LCD
+};
 
 constexpr uint32_t DEVICE_UDID_LENGTH = 65;
 
@@ -30,6 +37,7 @@ constexpr int32_t THUMBNAIL_LCD_AGING_THRESHOLD = 10000;
 constexpr int32_t WAIT_FOR_MS = 1000;
 constexpr int32_t WAIT_FOR_SECOND = 3;
 
+const std::string THUMBNAIL_MICRO_SUFFIX = "MICRO";
 const std::string THUMBNAIL_THUMB_SUFFIX = "THMB";
 const std::string THUMBNAIL_LCD_SUFFIX = "LCD";
 const std::string FILE_URI_PREX = "file://";
