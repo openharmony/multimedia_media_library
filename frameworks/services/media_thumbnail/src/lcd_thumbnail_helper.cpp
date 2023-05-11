@@ -61,6 +61,9 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts)
         if (!DoCreateLcd(opts, thumbnailData)) {
             return E_THUMBNAIL_LOCAL_CREATE_FAIL;
         }
+        if (!opts.path.empty()) {
+            fileName = ThumbnailUtils::GetThumbPath(thumbnailData.path, THUMBNAIL_LCD_SUFFIX);
+        }
     }
     auto fd = open(fileName.c_str(), O_RDONLY);
     if (fd >= 0) {
