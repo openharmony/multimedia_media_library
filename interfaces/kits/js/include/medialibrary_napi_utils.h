@@ -460,7 +460,8 @@ public:
     static void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value);
 
     static napi_value AddDefaultAssetColumns(napi_env env, std::vector<std::string> &fetchColumn,
-        std::function<bool(const std::string &columnName)> isValidColumn);
+        std::function<bool(const std::string &columnName)> isValidColumn,
+        const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
 
 private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);

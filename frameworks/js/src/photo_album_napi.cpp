@@ -349,7 +349,6 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     tracer.Start("JSCommitModifyExecute");
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     string updateUri = URI_UPDATE_PHOTO_ALBUM;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(updateUri, PHOTO_TYPE_MASK);
@@ -365,7 +364,6 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, voi
     tracer.Start("JSCommitModifyCompleteCallback");
 
     PhotoAlbumNapiAsyncContext *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
@@ -393,7 +391,7 @@ napi_value PhotoAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
         JSCommitModifyCompleteCallback);
 }
 
-static napi_value GetAssetsIdArray(napi_env env, napi_value arg, const bool trashOnly, vector<string> &assetsArray)
+static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> &assetsArray)
 {
     bool isArray = false;
     CHECK_ARGS(env, napi_is_array(env, arg, &isArray), JS_INNER_FAIL);
@@ -404,10 +402,15 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, const bool tras
 
     uint32_t len = 0;
     CHECK_ARGS(env, napi_get_array_length(env, arg, &len), JS_INNER_FAIL);
-    if (len <= 0) {
+    if (len < 0) {
         NAPI_ERR_LOG("Failed to check array length: %{public}u", len);
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array length");
         return nullptr;
+    }
+    if (len == 0) {
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
     }
 
     for (uint32_t i = 0; i < len; i++) {
@@ -424,10 +427,8 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, const bool tras
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset napi object");
             return nullptr;
         }
-        if ((obj->GetMediaType() != MEDIA_TYPE_IMAGE && obj->GetMediaType() != MEDIA_TYPE_VIDEO) ||
-            (trashOnly != obj->IsTrash())) {
-            NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d, isTrash: %{public}d",
-                obj->GetMediaType(), obj->IsTrash());
+        if ((obj->GetMediaType() != MEDIA_TYPE_IMAGE && obj->GetMediaType() != MEDIA_TYPE_VIDEO)) {
+            NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", obj->GetMediaType());
             continue;
         }
         assetsArray.push_back(to_string(obj->GetFileId()));
@@ -454,10 +455,11 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
 
     /* Parse the first argument */
     vector<string> assetsArray;
-    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], false, assetsArray));
+    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], assetsArray));
     if (assetsArray.empty()) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return nullptr;
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
     }
     int32_t albumId = photoAlbum->GetAlbumId();
     for (const auto &assetId : assetsArray) {
@@ -480,7 +482,9 @@ static void JSPhotoAlbumAddAssetsExecute(napi_env env, void *data)
     tracer.Start("JSPhotoAlbumAddAssetsExecute");
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    if (context->valuesBuckets.empty()) {
+        return;
+    }
 
     string addAssetUri = URI_PHOTO_ALBUM_ADD_ASSET;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(addAssetUri, PHOTO_TYPE_MASK);
@@ -495,7 +499,6 @@ static void JSPhotoAlbumAddAssetsCompleteCallback(napi_env env, napi_status stat
     tracer.Start("JSPhotoAlbumAddAssetsCompleteCallback");
 
     PhotoAlbumNapiAsyncContext *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
@@ -539,10 +542,11 @@ static napi_value ParseArgsRemoveAssets(napi_env env, napi_callback_info info,
 
     /* Parse the first argument */
     vector<string> assetsArray;
-    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], false, assetsArray));
+    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], assetsArray));
     if (assetsArray.empty()) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return nullptr;
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
     }
     context->predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
     context->predicates.And()->In(PhotoMap::ASSET_ID, assetsArray);
@@ -560,7 +564,9 @@ static void JSPhotoAlbumRemoveAssetsExecute(napi_env env, void *data)
     tracer.Start("JSPhotoAlbumRemoveAssetsExecute");
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    if (context->predicates.GetOperationList().empty()) {
+        return;
+    }
 
     string removeAssetUri = URI_PHOTO_ALBUM_REMOVE_ASSET;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(removeAssetUri, PHOTO_TYPE_MASK);
@@ -577,7 +583,6 @@ static void JSPhotoAlbumRemoveAssetsCompleteCallback(napi_env env, napi_status s
     tracer.Start("JSPhotoAlbumRemoveAssetsCompleteCallback");
 
     PhotoAlbumNapiAsyncContext *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
@@ -760,7 +765,6 @@ static void JSGetPhotoAssetsExecute(napi_env env, void *data)
     tracer.Start("JSGetPhotoAssetsExecute");
 
     auto context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     string queryUri = URI_QUERY_PHOTO_MAP;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_TYPE_MASK);
@@ -794,7 +798,6 @@ static void JSGetPhotoAssetsCallbackComplete(napi_env env, napi_status status, v
     tracer.Start("JSGetPhotoAssetsCallbackComplete");
 
     auto context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -841,12 +844,14 @@ static napi_value TrashAlbumParseArgs(napi_env env, napi_callback_info info,
 
     /* Parse the first argument */
     vector<string> assetsArray;
-    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], true, assetsArray));
+    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], assetsArray));
     if (assetsArray.empty()) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Assets array is empty");
-        return nullptr;
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
     }
     context->predicates.In(MediaColumn::MEDIA_ID, assetsArray);
+    context->predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     context->valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, 0);
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
@@ -862,6 +867,9 @@ static void TrashAlbumExecute(const TrashAlbumExecuteOpt &opt)
     tracer.Start(opt.tracerLabel);
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(opt.data);
+    if (context->predicates.GetOperationList().empty()) {
+        return;
+    }
     string uriStr = opt.uri;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriStr, PHOTO_TYPE_MASK);
     Uri uri(uriStr);
