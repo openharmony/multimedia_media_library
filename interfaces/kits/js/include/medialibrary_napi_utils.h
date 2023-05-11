@@ -307,7 +307,8 @@ const std::vector<std::pair<std::string, std::string>> AUDIOKEY_ENUM_PROPERTIES 
     std::make_pair("ARTIST",                    MEDIA_DATA_DB_ARTIST),
     std::make_pair("AUDIOALBUM",                MEDIA_DATA_DB_AUDIO_ALBUM),
     std::make_pair("DURATION",                  MEDIA_DATA_DB_DURATION),
-    std::make_pair("FAVORITE",                  MEDIA_DATA_DB_IS_FAV)
+    std::make_pair("FAVORITE",                  MEDIA_DATA_DB_IS_FAV),
+    std::make_pair("SIZE",                      MediaColumn::MEDIA_SIZE)
 };
 
 const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPERTIES = {
@@ -326,7 +327,8 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("MEDIA_TYPE",                MediaColumn::MEDIA_TYPE),
     std::make_pair("DATE_TRASHED",              MediaColumn::MEDIA_DATE_TRASHED),
     std::make_pair("POSITION",                  PhotoColumn::PHOTO_POSITION),
-    std::make_pair("HIDDEN",                    MediaColumn::MEDIA_HIDDEN)
+    std::make_pair("HIDDEN",                    MediaColumn::MEDIA_HIDDEN),
+    std::make_pair("SIZE",                      MediaColumn::MEDIA_SIZE)
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
