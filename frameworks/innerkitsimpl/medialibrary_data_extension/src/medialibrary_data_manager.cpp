@@ -345,7 +345,8 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
             return UriPermissionOperations::HandleUriPermOperations(cmd);
         }
         default: {
-            return MediaLibraryObjectUtils::InsertInDb(cmd);
+            MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject");
+            return E_FAIL;
         }
     }
 }
@@ -493,9 +494,7 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
             break;
     }
 
-    // DeleteInfoByIdInDb can finish the default delete of smartalbum and smartmap,
-    // so no need to distinct them in switch-case deliberately
-    return MediaLibraryObjectUtils::DeleteInfoByIdInDb(cmd);
+    return E_FAIL;
 }
 
 int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBucket &dataShareValue,

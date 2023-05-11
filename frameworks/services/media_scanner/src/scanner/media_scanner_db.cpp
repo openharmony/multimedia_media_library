@@ -257,11 +257,16 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
         return false;
     }
 
-    Uri deleteUri(MEDIALIBRARY_DATA_URI);
-    DataShare::DataSharePredicates predicates;
-    predicates.In(MEDIA_DATA_DB_ID, idList);
-    auto deletedCount = MediaLibraryDataManager::GetInstance()->Delete(deleteUri, predicates);
-    if (deletedCount > 0) {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return E_ERR;
+    }
+
+    NativeRdb::RdbPredicates rdbPredicate(MEDIALIBRARY_TABLE);
+    rdbPredicate.In(MEDIA_DATA_DB_ID, idList);
+    int32_t ret = rdbStore->Delete(rdbPredicate);
+    if (ret == E_OK) {
         return true;
     }
 

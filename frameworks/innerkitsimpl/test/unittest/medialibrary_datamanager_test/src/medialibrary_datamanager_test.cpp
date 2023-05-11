@@ -391,7 +391,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Leve
         EXPECT_EQ(fileAssetObj->GetTimePending(), 0);
 
         int ret =  MediaLibraryDataManager::GetInstance()->Delete(queryUri, predicates);
-        EXPECT_GT(ret, 0);
+        EXPECT_GT(ret, E_FAIL);
     }
     MEDIA_INFO_LOG("DataManager_Revert_Package_Test_001::End");
 }
@@ -433,7 +433,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_BY_DAY_Test_001, TestSize.Level
         EXPECT_NE(fileAssetObj, nullptr);
         EXPECT_EQ(fileAssetObj->GetTimePending(), 0);
         int ret = MediaLibraryDataManager::GetInstance()->Delete(queryUri, predicates);
-        EXPECT_GT(ret, 0);
+        EXPECT_GT(ret, E_FAIL);
     }
     MEDIA_INFO_LOG("DataManager_Revert_BY_DAY_Test_001::End");
 }
