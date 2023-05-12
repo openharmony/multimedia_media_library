@@ -17,12 +17,16 @@
 #include "medialibrary_helper_test.h"
 
 #include "datashare_result_set.h"
-#include "fetch_result.h"
 #include "media_log.h"
 #include "rdb_helper.h"
 #include "rdb_store_config.h"
 #include "rdb_utils.h"
-
+#define private public
+#include "base_column.h"
+#include "fetch_result.h"
+#include "media_column.h"
+#include "result_set_utils.h"
+#undef private
 using namespace std;
 using namespace testing::ext;
 
@@ -305,6 +309,29 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObject_Test_002, TestSize.Le
 
 /*
  * Feature : MediaLibraryHelperUnitTest
+ * Function : Check getobject
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObject_Test_003, TestSize.Level0)
+{
+    auto fetchResult = make_shared<FetchResult<FileAsset>>(GetEmptyFetchResult());
+    shared_ptr<NativeRdb::ResultSet> resultSet;
+    auto ret = fetchResult->GetObject(resultSet);
+    EXPECT_NE(ret, nullptr);
+    fetchResult->SetFetchResType(FetchResType::TYPE_ALBUM);
+    string typeMask = "GetObject";
+    fetchResult->SetTypeMask(typeMask);
+    fetchResult->GetNetworkId();
+    fetchResult->GetDataShareResultSet();
+    fetchResult->GetFetchResType();
+    fetchResult->GetTypeMask();
+}
+
+/*
+ * Feature : MediaLibraryHelperUnitTest
  * Function : Check isatlastrow
  * SubFunction : NA
  * FunctionPoints : NA
@@ -405,5 +432,105 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_SetFileAsset_Test_001, TestSize
     auto result = make_shared<FetchResult<FileAsset>>();
     EXPECT_EQ(result->GetObject()->GetAlbumUri(), DEFAULT_MEDIA_ALBUM_URI);
 }
+
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check GetRowValFromColumn
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetRowValFromColumn_Test_001, TestSize.Level0)
+{
+    auto fetchResult = make_shared<FetchResult<FileAsset>>(GetEmptyFetchResult());
+    shared_ptr<NativeRdb::ResultSet> resultSet;
+    string columnName = "GetRowValFromColumn";
+    ResultSetDataType dataType = TYPE_STRING;
+    variant<int32_t, int64_t, string> ret = fetchResult->GetRowValFromColumn(columnName, dataType, resultSet);
+    EXPECT_EQ(get<string>(ret), "");
+    fetchResult->Close();
+    ret = fetchResult->GetRowValFromColumn(columnName, dataType, resultSet);
+    EXPECT_EQ(get<string>(ret), "");
+}
+
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check GetValByIndex
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetValByIndex_Test_001, TestSize.Level0)
+{
+    auto fetchResult = make_shared<FetchResult<FileAsset>>(GetEmptyFetchResult());
+    shared_ptr<NativeRdb::ResultSet> resultSet;
+    int32_t index = 1;
+    variant<int32_t, int64_t, string> ret;
+    ret = fetchResult->GetValByIndex(index, ResultSetDataType::TYPE_STRING, resultSet);
+    EXPECT_EQ(get<string>(ret), "");
+    fetchResult->GetValByIndex(index, ResultSetDataType::TYPE_INT32, resultSet);
+    fetchResult->GetValByIndex(index, ResultSetDataType::TYPE_INT64, resultSet);
+    fetchResult->GetValByIndex(index, ResultSetDataType::TYPE_NULL, resultSet);
+    shared_ptr <FileAsset> fileAsset = make_shared<FileAsset>();
+    fetchResult->SetFileAsset(fileAsset.get(), resultSet);
+    shared_ptr<AlbumAsset> albumData = make_shared<AlbumAsset>();
+    fetchResult->SetAlbumAsset(albumData.get(), resultSet);
+    shared_ptr<PhotoAlbum> photoAlbumData = make_shared<PhotoAlbum>();
+    fetchResult->SetPhotoAlbum(photoAlbumData.get(), resultSet);
+    shared_ptr<SmartAlbumAsset> smartAlbumAsset = make_shared<SmartAlbumAsset>();
+    fetchResult->SetSmartAlbumAsset(smartAlbumAsset.get(), resultSet);
+    fetchResult->GetObjectFromResultSet(fileAsset.get(), resultSet);
+    fetchResult->GetObjectFromResultSet(albumData.get(), resultSet);
+    fetchResult->GetObjectFromResultSet(photoAlbumData.get(), resultSet);
+    fetchResult->GetObjectFromResultSet(smartAlbumAsset.get(), resultSet);
+    fetchResult->Close();
+    fetchResult->GetValByIndex(index, ResultSetDataType::TYPE_STRING, resultSet);
+    fetchResult->SetFileAsset(fileAsset.get(), resultSet);
+}
+
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check base
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_base_Test_001, TestSize.Level0)
+{
+    string ret = BaseColumn::CreateIndex();
+    EXPECT_EQ(ret, "CREATE INDEX IF NOT EXISTS ");
+    ret = BaseColumn::CreateTable();
+    EXPECT_EQ(ret, "CREATE TABLE IF NOT EXISTS ");
+    ret = BaseColumn::CreateTrigger();
+    EXPECT_EQ(ret, "CREATE TRIGGER IF NOT EXISTS ");
+}
+
+/*
+ * Feature : MediaLibraryHelperUnitTest
+ * Function : Check media_column
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_media_column_Test_001, TestSize.Level0)
+{
+    bool ret = PhotoColumn::IsPhotoColumn(PhotoColumn::PHOTO_ORIENTATION);
+    EXPECT_EQ(ret, true);
+    ret = PhotoColumn::IsPhotoColumn("media_column");
+    EXPECT_EQ(ret, false);
+    ret = AudioColumn::IsAudioColumn(AudioColumn::AUDIO_ALBUM);
+    EXPECT_EQ(ret, true);
+    ret = AudioColumn::IsAudioColumn("media_column");
+    EXPECT_EQ(ret, false);
+    ret = DocumentColumn::IsDocumentColumn(DocumentColumn::DOCUMENT_LCD);
+    EXPECT_EQ(ret, true);
+    ret = DocumentColumn::IsDocumentColumn("media_column");
+    EXPECT_EQ(ret, false);
+}
+
 } // namespace Media
 } // namespace OHOS
