@@ -16,16 +16,20 @@
 #ifndef MTP_NATIVE_TEST_H
 #define MTP_NATIVE_TEST_H
 
+#include "get_self_permissions.h"
 #include "gtest/gtest.h"
 #include "iservice_registry.h"
-#include "media_log.h"
-#include "media_volume.h"
 #include "media_library_manager.h"
-#include "system_ability_definition.h"
-#include "datashare_helper.h"
-#include "mtp_medialibrary_manager.h"
+#include "media_log.h"
 #include "mtp_operation_context.h"
-#include "mtp_storage_manager.h"
+#include "media_mtp_utils.h"
+#include "mtp_error_utils.h"
+#include "payload_data/close_session_data.h"
+#include "payload_data/object_event_data.h"
+#define private public
+#include "mtp_medialibrary_manager.h"
+#undef private
+
 
 namespace OHOS {
     namespace Media {
