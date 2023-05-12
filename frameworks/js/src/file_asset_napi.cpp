@@ -1466,8 +1466,13 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
 
     Size size = { .width = context->thumbWidth, .height = context->thumbHeight };
     bool isApiVersion10 = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR);
+    string path = context->objectPtr->GetPath();
+    if (path.empty()
+            && !context->objectPtr->GetRelativePath().empty() && !context->objectPtr->GetDisplayName().empty()) {
+        path = ROOT_MEDIA_DIR + context->objectPtr->GetRelativePath() + context->objectPtr->GetDisplayName();
+    }
     context->pixelmap = QueryThumbnail(context->objectPtr->GetUri(), size, context->objectPtr->GetTypeMask(),
-        isApiVersion10, context->objectPtr->GetPath());
+        isApiVersion10, path);
 }
 
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
