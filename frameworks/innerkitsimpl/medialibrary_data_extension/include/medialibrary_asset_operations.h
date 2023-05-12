@@ -69,9 +69,6 @@ protected:
     static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
 
-    static int32_t BeginTransaction();
-    static int32_t TransactionCommit();
-    static int32_t TransactionRollback();
 private:
     static int32_t CreateAssetUniqueId(int32_t type);
     static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
