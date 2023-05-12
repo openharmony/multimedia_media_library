@@ -145,11 +145,6 @@ int32_t SendFile(const ExecEnv &env, FileInfo &fileInfo)
     if (res != Media::E_OK) {
         return res;
     }
-    res = UserFileClientEx::CreateThumbnail(fileInfo.uri);
-    if (res != Media::E_OK) {
-        printf("%s create thumbnail failed. res:%d, uri:%s\n", STR_FAIL.c_str(), res, fileInfo.uri.c_str());
-        return Media::E_ERR;
-    }
     fileInfo.result = Media::E_OK;
     return Media::E_OK;
 }
