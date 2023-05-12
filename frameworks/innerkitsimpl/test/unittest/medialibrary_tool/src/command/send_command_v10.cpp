@@ -21,9 +21,9 @@
 
 #include "constant.h"
 #include "directory_ex.h"
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
-#include "mimetype_utils.h"
 #include "userfile_client_ex.h"
 #include "utils/file_utils.h"
 
@@ -57,15 +57,20 @@ struct FileInfo {
 
 int32_t GetFileInfo(const ExecEnv &env, const std::string &path, std::vector<FileInfo> &fileInfos)
 {
-    std::string extension = ExtractFileExt(path);
-    std::string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     FileInfo fileInfo;
-    fileInfo.mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
     fileInfo.displayName = ExtractFileName(path);
+    fileInfo.mediaType = MediaFileUtils::GetMediaType(fileInfo.displayName);
     fileInfo.path = path;
     fileInfo.result = Media::E_ERR;
-    fileInfos.push_back(fileInfo);
-    return Media::E_OK;
+    auto mediaTypes = UserFileClientEx::GetSupportTypes();
+    for (auto mediaType : mediaTypes) {
+        if (mediaType != fileInfo.mediaType) {
+            continue;
+        }
+        fileInfos.push_back(fileInfo);
+        return Media::E_OK;
+    }
+    return Media::E_ERR;
 }
 
 int32_t GetDirInfo(const ExecEnv &env, const std::string &path, std::vector<FileInfo> &fileInfos)
@@ -102,10 +107,11 @@ int32_t CreateRecord(const ExecEnv &env, FileInfo &fileInfo)
     const std::string displayName = fileInfo.displayName;
     auto fileId = UserFileClientEx::Insert(mediaType, displayName);
     if (fileId <= 0) {
-        printf("%s create record failed. fileId:%d, fileInfo:%s\n", STR_FAIL.c_str(), fileId, fileInfo.ToStr().c_str());
+        printf("%s create record failed. fileId:%d, fileInfo:%s\n",
+            STR_FAIL.c_str(), fileId, fileInfo.ToStr().c_str());
         return Media::E_ERR;
     }
-    fileInfo.uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, env.networkId) + SLASH_CHAR + to_string(fileId);
+    fileInfo.uri = MediaFileUri(mediaType, to_string(fileId), env.networkId, MEDIA_API_VERSION_V10).ToString();
     fileInfo.id = fileId;
     return Media::E_OK;
 }
@@ -137,7 +143,8 @@ int32_t SendFile(const ExecEnv &env, FileInfo &fileInfo)
     if (CreateRecord(env, fileInfo) != Media::E_OK) {
         return Media::E_ERR;
     }
-    if (fileInfo.uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX) != 0) {
+    std::string tableName = UserFileClientEx::GetTableNameByUri(fileInfo.uri);
+    if (tableName.empty()) {
         printf("%s uri issue. uri:%s\n", STR_FAIL.c_str(), fileInfo.uri.c_str());
         return Media::E_ERR;
     }

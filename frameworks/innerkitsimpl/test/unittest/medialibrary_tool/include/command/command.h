@@ -15,10 +15,8 @@
 #ifndef FRAMEWORKS_MEDIATOOLS_COMMAND_COMMAND_H_
 #define FRAMEWORKS_MEDIATOOLS_COMMAND_COMMAND_H_
 #include <memory>
-#include <vector>
 
 #include "exec_env.h"
-#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -33,8 +31,6 @@ public:
     Command &operator=(Command &&command) = delete;
     static std::unique_ptr<Command> Create(const ExecEnv &env);
     virtual int32_t Start(const ExecEnv &env) = 0;
-protected:
-    static const std::vector<MediaType> &GetSupportTypes();
 };
 } // namespace MediaTool
 } // namespace Media

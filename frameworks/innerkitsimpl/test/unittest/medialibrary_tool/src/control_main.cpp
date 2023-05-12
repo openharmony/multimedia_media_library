@@ -77,8 +77,6 @@ int32_t InitDataShareHelper()
 int32_t Init(ExecEnv &env, const std::vector<std::string> &args)
 {
     env.args.assign(args.begin(), args.end());
-    env.toolPath = GetCurrentProcFullFileName();
-    env.toolName = ExtractFileName(env.toolPath);
     std::array<char, PATH_MAX> buffer {0};
     getcwd(buffer.data(), PATH_MAX);
     env.workPath.append(buffer.data());
