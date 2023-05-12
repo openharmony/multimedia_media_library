@@ -16,10 +16,13 @@
 
 #include "medialibrary_rdbstore.h"
 
+#include <mutex>
+
 #include "media_log.h"
 #include "medialibrary_device.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
+#include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "result_set_utils.h"
@@ -953,5 +956,65 @@ void MediaLibraryRdbStoreObserver::NotifyDeviceChange()
         MediaLibraryDevice::GetInstance()->NotifyDeviceChange();
         isNotifyDeviceChange_ = false;
     }
+}
+
+TransactionOperations::TransactionOperations()
+{
+    rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+}
+
+TransactionOperations::~TransactionOperations()
+{
+    if (isStart && !isFinish) {
+        TransactionRollback();
+    }
+}
+
+int32_t TransactionOperations::Start()
+{
+    if (isStart || isFinish) {
+        return E_OK;
+    }
+    isStart = true;
+    return BeginTransaction();
+}
+
+void TransactionOperations::Finish()
+{
+    if (!isStart) {
+        return;
+    }
+    if (!isFinish) {
+        int32_t ret = TransactionCommit();
+        if (ret == E_OK) {
+            isFinish = true;
+        } else {
+            MEDIA_ERR_LOG("Failed to commit transaction, errCode=%{public}d", ret);
+        }
+    }
+}
+
+int32_t TransactionOperations::BeginTransaction()
+{
+    if (rdbStore_ == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    return rdbStore_->BeginTransaction();
+}
+
+int32_t TransactionOperations::TransactionCommit()
+{
+    if (rdbStore_ == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    return rdbStore_->Commit();
+}
+
+int32_t TransactionOperations::TransactionRollback()
+{
+    if (rdbStore_ == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    return rdbStore_->RollBack();
 }
 } // namespace OHOS::Media

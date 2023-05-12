@@ -34,6 +34,7 @@
 #include "medialibrary_inotify.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
+#include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_privacy_manager.h"
@@ -458,7 +459,8 @@ bool MediaLibraryAssetOperations::IsContainsValue(ValuesBucket &values, const st
 
 int32_t MediaLibraryAssetOperations::ModifyAssetInDb(MediaLibraryCommand &cmd)
 {
-    int32_t errCode = BeginTransaction();
+    TransactionOperations transactionOprn;
+    int32_t errCode = transactionOprn.Start();
     if (errCode != E_OK) {
         return errCode;
     }
@@ -474,11 +476,8 @@ int32_t MediaLibraryAssetOperations::ModifyAssetInDb(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("update path failed, ret=%{public}d", ret);
         return ret;
     }
-    errCode = TransactionCommit();
-    if (errCode != E_OK) {
-        TransactionRollback();
-        return errCode;
-    }
+    transactionOprn.Finish();
+
     return rowId;
 }
 
@@ -728,33 +727,6 @@ void MediaLibraryAssetOperations::ScanFile(const string &path)
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }
-}
-
-int32_t MediaLibraryAssetOperations::BeginTransaction()
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-    return rdbStore->BeginTransaction();
-}
-
-int32_t MediaLibraryAssetOperations::TransactionCommit()
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-    return rdbStore->Commit();
-}
-
-int32_t MediaLibraryAssetOperations::TransactionRollback()
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-    return rdbStore->RollBack();
 }
 
 int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type)
