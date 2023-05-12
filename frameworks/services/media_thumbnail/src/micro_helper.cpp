@@ -59,6 +59,9 @@ int32_t MicroHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts)
         if (!DoCreateThumbnail(opts, thumbnailData)) {
             return E_THUMBNAIL_LOCAL_CREATE_FAIL;
         }
+        if (!opts.path.empty()) {
+            fileName = ThumbnailUtils::GetThumbPath(thumbnailData.path, THUMBNAIL_MICRO_SUFFIX);
+        }
     }
     auto fd = open(fileName.c_str(), O_RDONLY);
     if (fd >= 0) {
