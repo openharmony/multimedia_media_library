@@ -193,33 +193,24 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         "Failed to Check Dir and Extension, displayName=%{private}s, mediaType=%{public}d",
         displayName.c_str(), mediaType);
 
-    errCode = BeginTransaction();
+    TransactionOperations transactionOprn;
+    errCode = transactionOprn.Start();
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to start transaction, errCode=%{public}d", errCode);
-        TransactionRollback();
         return errCode;
     }
 
     errCode = SetAssetPathInCreate(fileAsset);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
-        TransactionRollback();
         return errCode;
     }
 
     int32_t outRow = InsertAssetInDb(cmd, fileAsset);
     if (outRow <= 0) {
         MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
-        TransactionRollback();
         return errCode;
     }
-
-    errCode = TransactionCommit();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to commit transaction, errCode=%{public}d", errCode);
-        TransactionRollback();
-        return errCode;
-    }
+    transactionOprn.Finish();
     return outRow;
 }
 
@@ -234,17 +225,15 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     int32_t fileId = fileAsset->GetId();
     InvalidateThumbnail(to_string(fileId), fileAsset->GetMediaType());
 
-    int32_t errCode = BeginTransaction();
+    TransactionOperations transactionOprn;
+    int32_t errCode = transactionOprn.Start();
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to start transaction, errCode=%{public}d", errCode);
-        TransactionRollback();
         return errCode;
     }
 
     // delete file in album
     errCode = SolvePhotoAssetAlbumInDelete(fileAsset);
     if (errCode != E_OK) {
-        TransactionRollback();
         return errCode;
     }
 
@@ -254,16 +243,10 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     int32_t deleteRows = DeleteAssetInDb(cmd);
     if (deleteRows <= 0) {
         MEDIA_ERR_LOG("Delete photo in database failed, errCode=%{public}d", deleteRows);
-        TransactionRollback();
         return E_HAS_DB_ERROR;
     }
 
-    errCode = TransactionCommit();
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to commit transaction, errCode=%{public}d", errCode);
-        TransactionRollback();
-        return errCode;
-    }
+    transactionOprn.Finish();
     auto watch = MediaLibraryNotify::GetInstance();
     watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(deleteRows), NotifyType::NOTIFY_REMOVE);
     return deleteRows;
@@ -299,24 +282,18 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Photo Name failed, fileName=%{private}s",
         fileAsset->GetDisplayName().c_str());
 
-    errCode = BeginTransaction();
+    TransactionOperations transactionOprn;
+    errCode = transactionOprn.Start();
     if (errCode != E_OK) {
-        TransactionRollback();
         return errCode;
     }
 
     int32_t rowId = UpdateFileInDb(cmd);
     if (rowId < 0) {
         MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
-        TransactionRollback();
         return rowId;
     }
-
-    errCode = TransactionCommit();
-    if (errCode != E_OK) {
-        TransactionRollback();
-        return errCode;
-    }
+    transactionOprn.Finish();
 
     errCode = MediaLibraryObjectUtils::SendTrashNotify(cmd, fileAsset->GetId());
     if (errCode == E_OK) {

@@ -20,6 +20,7 @@
 #include "medialibrary_sync_operation.h"
 #include "timer.h"
 #include "value_object.h"
+#include <memory>
 
 namespace OHOS {
 namespace Media {
@@ -131,6 +132,36 @@ private:
     uint32_t timerId_{0};
     std::string bundleName_;
     bool isNotifyDeviceChange_;
+};
+
+/**
+ * This class is used for database transaction creation, commit, and rollback
+ * The usage of class is as follows:
+ *   1. initialize TransactionOperations object
+ *          (for example: TranscationOperations opt)
+ *   2. After init opt, you need call Start() function to start transaction
+ *          int32_t err = opt.Start();
+ *          if err != E_OK, transaction init failed
+ *   3. If you need to commit transaction, then use
+ *          int32_t err = opt.Finish();
+ *          if err != E_OK, transation commit failed and auto rollback
+ *   4. If TransactionOperations is destructed without successfully finish, it will be auto rollback
+ */
+class TransactionOperations {
+public:
+    TransactionOperations();
+    ~TransactionOperations();
+    int32_t Start();
+    void Finish();
+private:
+    int32_t BeginTransaction();
+    int32_t TransactionCommit();
+    int32_t TransactionRollback();
+
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore_;
+    bool isStart = false;
+    bool isFinish = false;
+    std::mutex mutex_;
 };
 } // namespace Media
 } // namespace OHOS

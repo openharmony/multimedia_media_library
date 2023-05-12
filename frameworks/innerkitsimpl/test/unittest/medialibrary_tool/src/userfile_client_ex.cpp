@@ -188,23 +188,6 @@ std::string GetCloseUri(const std::string &uri)
     return strUri;
 }
 
-std::string GetCreateThumbnailUri(const std::string &uri)
-{
-    std::string strUri;
-    std::string operation = GetOperation(uri);
-    if (operation.empty()) {
-        MEDIA_ERR_LOG("get create thumbnail uri failed. uri:%{public}s", uri.c_str());
-        return strUri;
-    }
-    Size size = {DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE};
-    strUri = uri;
-    strUri.append(URI_ARG_FIRST_DELIMITER + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL);
-    strUri.append(URI_ARG_OTHER_DELIMITER + MEDIA_DATA_DB_WIDTH + "=" + std::to_string(size.width));
-    strUri.append(URI_ARG_OTHER_DELIMITER + MEDIA_DATA_DB_HEIGHT + "=" + std::to_string(size.height));
-    strUri.append(URI_ARG_OTHER_DELIMITER + URI_API_VERSION);
-    return strUri;
-}
-
 bool UserFileClientEx::Init(const sptr<IRemoteObject> &token)
 {
     UserFileClient::Init(token);
@@ -320,36 +303,6 @@ int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std:
             ret, closeUri.ToString().c_str(), uri.c_str());
     }
     return ret;
-}
-
-int32_t UserFileClientEx::CreateThumbnail(const std::string &uri)
-{
-    std::string queryUriStr = GetCreateThumbnailUri(uri);
-    if (queryUriStr.empty()) {
-        MEDIA_ERR_LOG("get create thumbnail uri failed. queryUriStr:empty, uri:%{public}s", uri.c_str());
-        return Media::E_FAIL;
-    }
-    Uri queryUri(queryUriStr);
-    DataShare::DataSharePredicates predicates;
-    std::vector<std::string> columns;
-    int errCode = 0;
-    MEDIA_INFO_LOG("create thumbnail. queryUri:%{public}s, uri:%{public}s",
-        queryUri.ToString().c_str(), uri.c_str());
-    auto resultSet = UserFileClient::Query(queryUri, predicates, columns, errCode);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("create thumbnail failed. queryUri:%{public}s, uri:%{public}s",
-            queryUri.ToString().c_str(), uri.c_str());
-        return Media::E_ERR;
-    }
-    int count = 0;
-    int err = resultSet->GetRowCount(count);
-    if ((err != DataShare::E_OK) || (count <= 0)) {
-        MEDIA_ERR_LOG("create thumbnail failed. err:%{public}d, count:%{public}d", err, count);
-        resultSet->Close();
-        return Media::E_ERR;
-    }
-    resultSet->Close();
-    return Media::E_OK;
 }
 
 std::string UserFileClientEx::GetTableNameByMediaType(const MediaType mediaType)

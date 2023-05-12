@@ -1032,7 +1032,8 @@ int32_t MediaLibraryDataManager::HandleRevertPending()
         return E_INVALID_VALUES;
     }
     MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
-    queryCmd.GetAbsRdbPredicates()->LessThan(MEDIA_DATA_DB_TIME_PENDING, to_string(time));
+    queryCmd.GetAbsRdbPredicates()->LessThan(MEDIA_DATA_DB_TIME_PENDING, to_string(time))
+        ->And()->GreaterThan(MEDIA_DATA_DB_TIME_PENDING, to_string(0));
     vector<string> columns = { MEDIA_DATA_DB_ID };
     auto result = MediaLibraryObjectUtils::QueryWithCondition(queryCmd, columns);
     if (result == nullptr) {
