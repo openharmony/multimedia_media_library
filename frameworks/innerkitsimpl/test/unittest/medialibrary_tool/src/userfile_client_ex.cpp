@@ -40,10 +40,10 @@ const std::string URI_ARG_FIRST_DELIMITER = "?";
 const std::string URI_ARG_OTHER_DELIMITER = "&";
 const std::string URI_API_VERSION_STR = std::to_string(static_cast<uint32_t>(MediaLibraryApi::API_10));
 const std::string URI_API_VERSION = URI_PARAM_API_VERSION + "=" + URI_API_VERSION_STR;
-const std::string URI_AUDIO_STR = MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_TYPE_AUDIO_URI + SLASH_CHAR;
-const std::string URI_FILE_STR = MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_TYPE_FILE_URI + SLASH_CHAR;
-const std::string URI_PHOTO_STR = MEDIALIBRARY_DATA_URI_IDENTIFIER + PhotoColumn::PHOTO_TYPE_URI + SLASH_CHAR;
-const std::string URI_VIDEO_STR = MEDIALIBRARY_DATA_URI_IDENTIFIER + MEDIALIBRARY_TYPE_VIDEO_URI + SLASH_CHAR;
+const std::string URI_AUDIO_STR = MEDIALIBRARY_TYPE_AUDIO_URI + SLASH_CHAR;
+const std::string URI_FILE_STR = MEDIALIBRARY_TYPE_FILE_URI + SLASH_CHAR;
+const std::string URI_PHOTO_STR = PhotoColumn::PHOTO_TYPE_URI + SLASH_CHAR;
+const std::string URI_VIDEO_STR = MEDIALIBRARY_TYPE_VIDEO_URI + SLASH_CHAR;
 const std::unordered_map<std::string, MediaType> URI_MEDIATYPE_MAP = {
     { URI_AUDIO_STR, MediaType::MEDIA_TYPE_AUDIO },
     { URI_FILE_STR, MediaType::MEDIA_TYPE_FILE },
@@ -90,13 +90,13 @@ std::string GetOperation(const MediaType mediaType)
 bool GetUriInfo(const std::string &uri, std::string &uriId,
     std::string &networkId, MediaType &mediaType)
 {
-    if (uri.find(MEDIALIBRARY_DATA_ABILITY_PREFIX) != 0) {
+    if (uri.find(ML_FILE_URI_PREFIX) != 0) {
         MEDIA_ERR_LOG("get uri information failed. uri:%{public}s", uri.c_str());
         return false;
     }
     networkId = MediaFileUtils::GetNetworkIdFromUri(uri);
     for (const auto &item : URI_MEDIATYPE_MAP) {
-        std::string matchStr = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + item.first;
+        std::string matchStr = ML_FILE_URI_PREFIX + item.first;
         auto pos = uri.find(matchStr);
         if (pos != 0) {
             continue;
@@ -313,6 +313,17 @@ std::string UserFileClientEx::GetTableNameByMediaType(const MediaType mediaType)
 std::string UserFileClientEx::GetTableNameByUri(const std::string &uri)
 {
     return GetTableName(GetMediaType(uri));
+}
+
+const std::vector<MediaType> &UserFileClientEx::GetSupportTypes()
+{
+    static const std::vector<MediaType> SUPPORT_TYPES = {
+        MediaType::MEDIA_TYPE_AUDIO,
+        MediaType::MEDIA_TYPE_FILE,
+        MediaType::MEDIA_TYPE_IMAGE,
+        MediaType::MEDIA_TYPE_VIDEO
+    };
+    return SUPPORT_TYPES;
 }
 } // namespace MediaTool
 } // namespace Media

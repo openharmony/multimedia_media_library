@@ -15,6 +15,7 @@
 #ifndef FRAMEWORKS_MEDIATOOLS_USER_FILE_CLIENT_EX_H_
 #define FRAMEWORKS_MEDIATOOLS_USER_FILE_CLIENT_EX_H_
 #include <string>
+#include <vector>
 
 #include "fetch_result.h"
 #include "iremote_object.h"
@@ -33,6 +34,7 @@ public:
     static int32_t CreateThumbnail(const std::string &uri);
     static std::string GetTableNameByMediaType(const MediaType mediaType);
     static std::string GetTableNameByUri(const std::string &uri);
+    static const std::vector<MediaType> &GetSupportTypes();
 };
 } // namespace MediaTool
 } // namespace Media
