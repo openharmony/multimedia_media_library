@@ -375,13 +375,14 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
             return UriPermissionOperations::HandleUriPermOperations(cmd);
         }
         default: {
-            MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject");
+            MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
+                cmd.GetOprnObject());
             return E_FAIL;
         }
     }
 }
 
-int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBucket &dataShareValue)
+int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
@@ -397,7 +398,8 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
 #ifdef MEDIALIBRARY_COMPATIBILITY
     ChangeUriFromValuesBucket(value);
 #endif
-    MediaLibraryCommand cmd(uri, value);
+    cmd.SetValueBucket(value);
+
     OperationType oprnType = cmd.GetOprnType();
     if (oprnType == OperationType::CREATE) {
         if (SetCmdBundleAndDevice(cmd) != ERR_OK) {
@@ -441,7 +443,7 @@ int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &
     return result;
 }
 
-int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)
+int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vector<DataShareValuesBucket> &values)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
@@ -449,8 +451,8 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
         return E_FAIL;
     }
 
-    string uriString = uri.ToString();
-    if (uriString == URI_PHOTO_ALBUM_ADD_ASSET) {
+    string uriString = cmd.GetUri().ToString();
+    if (uriString == UFM_PHOTO_ALBUM_ADD_ASSET) {
         return PhotoMapOperations::AddPhotoAssets(values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
@@ -459,7 +461,7 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
     }
     int32_t rowCount = 0;
     for (auto it = values.begin(); it != values.end(); it++) {
-        if (Insert(uri, *it) >= 0) {
+        if (Insert(cmd, *it) >= 0) {
             rowCount++;
         }
     }
@@ -467,19 +469,17 @@ int32_t MediaLibraryDataManager::BatchInsert(const Uri &uri, const vector<DataSh
     return rowCount;
 }
 
-int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicates &predicates)
+int32_t MediaLibraryDataManager::Delete(MediaLibraryCommand &cmd, const DataSharePredicates &predicates)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
     }
-
-    if (uri.ToString().find(MEDIALIBRARY_DATA_URI) == string::npos) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager Delete: Not Data ability Uri");
+    if (cmd.GetUri().ToString().find(MEDIALIBRARY_DATA_URI) == string::npos) {
+        MEDIA_ERR_LOG("Not Data ability Uri");
         return E_INVALID_URI;
     }
-
     MediaLibraryTracer tracer;
     tracer.Start("CheckWhereClause");
     auto whereClause = predicates.GetWhereClause();
@@ -489,7 +489,6 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
     }
     tracer.Finish();
 
-    MediaLibraryCommand cmd(uri, OperationType::DELETE);
     // MEDIALIBRARY_TABLE just for RdbPredicates
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates,
         cmd.GetTableName());
@@ -528,7 +527,7 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
     return E_FAIL;
 }
 
-int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBucket &dataShareValue,
+int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue,
     const DataSharePredicates &predicates)
 {
     MEDIA_DEBUG_LOG("MediaLibraryDataManager::Update");
@@ -548,7 +547,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
     ChangeUriFromValuesBucket(value);
 #endif
 
-    MediaLibraryCommand cmd(uri, value);
+    cmd.SetValueBucket(value);
     cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
 
@@ -780,7 +779,7 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationOb
     }
 }
 
-shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
+shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
@@ -798,7 +797,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         return nullptr;
     }
 
-    auto absResultSet = QueryRdb(uri, columns, predicates, errCode);
+    auto absResultSet = QueryRdb(cmd, columns, predicates, errCode);
     if (absResultSet == nullptr) {
         errCode = (errCode != E_OK) ? errCode : E_FAIL;
         return nullptr;
@@ -846,8 +845,8 @@ int32_t MediaLibraryDataManager::SyncPullThumbnailKeys(const Uri &uri)
     return E_SUCCESS;
 }
 
-shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
-    const DataSharePredicates &predicates, int &errCode)
+shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryCommand &cmd,
+    const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
@@ -877,7 +876,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
     }
     tracer.Finish();
 
-    MediaLibraryCommand cmd(uri, OperationType::QUERY);
     cmd.SetDataSharePred(predicates);
     // MEDIALIBRARY_TABLE just for RdbPredicates
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates,
@@ -939,14 +937,8 @@ bool MediaLibraryDataManager::QuerySync(const string &networkId, const string &t
     return MediaLibrarySyncOperation::SyncPullTable(syncOpts, devices);
 }
 
-int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const string &mode)
+int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
-#ifdef MEDIALIBRARY_COMPATIBILITY
-    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(uri.ToString());
-    MediaLibraryCommand cmd(Uri(realUri), OperationType::OPEN);
-#else
-    MediaLibraryCommand cmd(uri, OperationType::OPEN);
-#endif
     auto oprnObject = cmd.GetOprnObject();
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
         return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
@@ -954,12 +946,12 @@ int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const string &mode)
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
     if (oprnObject != OperationObject::THUMBNAIL) {
-        string uriString = cmd.GetUriStringWithoutSegment();
-        if ((uriString.find(MEDIALIBRARY_TYPE_IMAGE_URI) != string::npos) ||
-            (uriString.find(MEDIALIBRARY_TYPE_VIDEO_URI) != string::npos)) {
+        string opObject = MediaFileUri::GetPathFirstDentry(const_cast<Uri &>(cmd.GetUri()));
+        if (opObject == IMAGE_ASSET_TYPE || opObject == VIDEO_ASSET_TYPE || opObject == URI_TYPE_PHOTO) {
             cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
             return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
-        } else if (uriString.find(MEDIALIBRARY_TYPE_AUDIO_URI) != string::npos) {
+        }
+        if (opObject == AUDIO_ASSET_TYPE || opObject == URI_TYPE_AUDIO_V10) {
             cmd.SetOprnObject(OperationObject::FILESYSTEM_AUDIO);
             return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
         }

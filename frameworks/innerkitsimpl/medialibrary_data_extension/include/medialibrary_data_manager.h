@@ -53,17 +53,18 @@ public:
     EXPORT int32_t InitMediaLibraryRdbStore();
     EXPORT int32_t InitialiseKvStore();
 
-    EXPORT int32_t Insert(const Uri &uri, const DataShare::DataShareValuesBucket &value);
-    EXPORT int32_t Delete(const Uri &uri, const DataShare::DataSharePredicates &predicates);
-    EXPORT int32_t BatchInsert(const Uri &uri, const std::vector<DataShare::DataShareValuesBucket> &values);
-    EXPORT int32_t Update(const Uri &uri, const DataShare::DataShareValuesBucket &value,
+    EXPORT int32_t Insert(MediaLibraryCommand &cmd, const DataShare::DataShareValuesBucket &value);
+    EXPORT int32_t Delete(MediaLibraryCommand &cmd, const DataShare::DataSharePredicates &predicates);
+    EXPORT int32_t BatchInsert(MediaLibraryCommand &cmd,
+        const std::vector<DataShare::DataShareValuesBucket> &values);
+    EXPORT int32_t Update(MediaLibraryCommand &cmd, const DataShare::DataShareValuesBucket &value,
         const DataShare::DataSharePredicates &predicates);
-    EXPORT std::shared_ptr<DataShare::ResultSetBridge> Query(const Uri &uri, const std::vector<std::string> &columns,
-        const DataShare::DataSharePredicates &predicates, int &errCode);
+    EXPORT std::shared_ptr<DataShare::ResultSetBridge> Query(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates, int &errCode);
     EXPORT std::shared_ptr<NativeRdb::ResultSet>
-    QueryRdb(const Uri &uri, const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates,
-        int &errCode);
-    EXPORT int32_t OpenFile(const Uri &uri, const std::string &mode);
+    QueryRdb(MediaLibraryCommand &cmd, const std::vector<std::string> &columns,
+        const DataShare::DataSharePredicates &predicates, int &errCode);
+    EXPORT int32_t OpenFile(MediaLibraryCommand &cmd, const std::string &mode);
     EXPORT std::string GetType(const Uri &uri);
     EXPORT void NotifyChange(const Uri &uri);
     EXPORT int32_t GenerateThumbnails();

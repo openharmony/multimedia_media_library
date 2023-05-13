@@ -22,6 +22,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
 #include "privacy_kit.h"
 #include "system_ability_definition.h"
@@ -107,6 +108,22 @@ void AddPermissionRecord(const AccessTokenID &token, const string &perm, const b
 
 bool PermissionUtils::CheckCallerPermission(const string &permission)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckCallerPermission");
+
+    AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != PermissionState::PERMISSION_GRANTED) {
+        MEDIA_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+#ifdef OHOS_DEBUG
+        AddPermissionRecord(tokenCaller, permission, false);
+#endif
+        return false;
+    }
+#ifdef OHOS_DEBUG
+    AddPermissionRecord(tokenCaller, permission, true);
+#endif
+
     return true;
 }
 
@@ -124,64 +141,6 @@ bool PermissionUtils::CheckCallerPermission(const vector<string> &perms)
     return true;
 }
 
-bool PermissionUtils::CheckCallerPermission(const std::array<std::string, PERM_GRP_SIZE> &perms,
-    const uint32_t typeMask)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("CheckCallerPermissionWithTypeMask");
-
-    if (typeMask == 0) {
-        return false;
-    }
-
-    uint32_t resultMask = 0;
-    for (auto &perm : perms) {
-        uint32_t bit = static_cast<uint32_t>(PERM_MASK_MAP.at(perm));
-        if ((bit & typeMask)) {
-            if (PermissionUtils::CheckCallerPermission(perm)) {
-                resultMask |= bit;
-            } else {
-                return false;
-            }
-        }
-    }
-    /*
-     * Grant if all non-zero bit in typeMask passed permission check,
-     * in that case, resultMask should be the same with typeMask
-     */
-    return resultMask == typeMask;
-}
-
-// system api check for api10
-bool PermissionUtils::SystemApiCheck(const std::string &uri)
-{
-    bool isSystemUri = false;
-    static const set<string> systemApiUri = {
-        MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE,
-        MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE,
-        MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTALBUM_TABLE,
-        MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET,
-        URI_CREATE_PHOTO_ALBUM,
-        URI_UPDATE_PHOTO_ALBUM,
-        URI_DELETE_PHOTO_ALBUM,
-        URI_QUERY_PHOTO_ALBUM,
-        URI_PHOTO_ALBUM_ADD_ASSET,
-        URI_PHOTO_ALBUM_REMOVE_ASSET
-    };
-    if ((systemApiUri.find(uri) != systemApiUri.end())) {
-        isSystemUri = true;
-    }
-    // Check distributed smartalbum
-    string networkId = MediaFileUtils::GetNetworkIdFromUri(uri);
-    if (!networkId.empty()) {
-        isSystemUri = true;
-    }
-
-    if (isSystemUri) {
-        return IsSystemApp();
-    }
-    return true;
-}
 bool PermissionUtils::IsSystemApp()
 {
     uint64_t tokenId = IPCSkeleton::GetCallingFullTokenID();

@@ -16,6 +16,7 @@
 #include "medialibrary_command.h"
 
 #include "media_column.h"
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
@@ -83,12 +84,10 @@ MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, cons
 MediaLibraryCommand::~MediaLibraryCommand() {}
 
 // set functions
-#ifdef MEDIALIBRARY_COMPATIBILITY
 void MediaLibraryCommand::SetOprnObject(OperationObject object)
 {
     oprnObject_ = object;
 }
-#endif
 
 void MediaLibraryCommand::SetOprnAssetId(const std::string &oprnId)
 {
@@ -180,7 +179,7 @@ const string &MediaLibraryCommand::GetDeviceName()
     return deviceName_;
 }
 
-string MediaLibraryCommand::GetUriStringWithoutSegment()
+string MediaLibraryCommand::GetUriStringWithoutSegment() const
 {
     string uriString = uri_.ToString();
     size_t questionMaskPoint = uriString.rfind('?');
@@ -209,9 +208,7 @@ string MediaLibraryCommand::GetQuerySetParam(const std::string &key)
 
 void MediaLibraryCommand::ParseOprnObjectFromUri()
 {
-    string uri = uri_.ToString();
-
-    static const map<string, OperationObject> oprnMap = {
+    static const map<string, OperationObject> OPRN_OBJ_MAP = {
         // use in Insert...
         { MEDIA_FILEOPRN, OperationObject::FILESYSTEM_ASSET },
         { MEDIA_PHOTOOPRN, OperationObject::FILESYSTEM_PHOTO },
@@ -220,13 +217,14 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { MEDIA_ALBUMOPRN, OperationObject::FILESYSTEM_ALBUM },
         { MEDIA_SMARTALBUMOPRN, OperationObject::SMART_ALBUM },
         { MEDIA_SMARTALBUMMAPOPRN, OperationObject::SMART_ALBUM_MAP },
-        { THU_OPRN_GENERATES, OperationObject::THUMBNAIL },
-        { THU_OPRN_AGING, OperationObject::THUMBNAIL },
-        { DISTRIBUTE_THU_OPRN_AGING, OperationObject::THUMBNAIL },
         { DISTRIBUTE_THU_OPRN_CREATE, OperationObject::THUMBNAIL },
         { BUNDLE_PERMISSION_INSERT, OperationObject::BUNDLE_PERMISSION },
         { PHOTO_ALBUM_OPRN, OperationObject::PHOTO_ALBUM },
         { PHOTO_MAP_OPRN, OperationObject::PHOTO_MAP },
+        { UFM_PHOTO, OperationObject::UFM_PHOTO },
+        { UFM_AUDIO, OperationObject::UFM_AUDIO },
+        { UFM_ALBUM, OperationObject::UFM_ALBUM },
+        { UFM_MAP, OperationObject::UFM_MAP },
 
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -242,23 +240,16 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { BUNDLE_PERMISSION_TABLE, OperationObject::BUNDLE_PERMISSION },
     };
 
-    for (const auto &item : oprnMap) {
-        if (uri.find(item.first) != string::npos) {
-            oprnObject_ = item.second;
-            break;
-        }
+    const string opObject = MediaFileUri::GetPathFirstDentry(uri_);
+    if (OPRN_OBJ_MAP.find(opObject) != OPRN_OBJ_MAP.end()) {
+        oprnObject_ = OPRN_OBJ_MAP.at(opObject);
     }
+    MEDIA_DEBUG_LOG("Command operation object is %{public}d", oprnObject_);
 }
 
 void MediaLibraryCommand::ParseOprnTypeFromUri()
 {
-    string insertUri = GetUriStringWithoutSegment();
-    auto found = insertUri.rfind('/');
-    if (found == string::npos) {
-        return;
-    }
-    string oprnName = insertUri.substr(found + 1);
-    static const map<string, OperationType> oprnTypeMap = {
+    static const map<string, OperationType> OPRN_TYPE_MAP = {
         { MEDIA_FILEOPRN_CLOSEASSET, OperationType::CLOSE },
         { MEDIA_FILEOPRN_CREATEASSET, OperationType::CREATE },
         { MEDIA_ALBUMOPRN_CREATEALBUM, OperationType::CREATE },
@@ -271,9 +262,7 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { MEDIA_FILEOPRN_GETALBUMCAPACITY, OperationType::QUERY },
         { MEDIA_QUERYOPRN_QUERYVOLUME, OperationType::QUERY },
         { MEDIA_BOARDCASTOPRN, OperationType::SCAN },
-        { THU_OPRN_GENERATES, OperationType::GENERATE },
-        { THU_OPRN_AGING, OperationType::AGING },
-        { DISTRIBUTE_THU_OPRN_AGING, OperationType::DISTRIBUTE_AGING },
+        { OPRN_SCAN, OperationType::SCAN },
         { DISTRIBUTE_THU_OPRN_CREATE, OperationType::DISTRIBUTE_CREATE },
         { MEDIA_FILEOPRN_COPYASSET, OperationType::COPY },
         { MEDIA_DIROPRN_DELETEDIR, OperationType::DELETE },
@@ -291,14 +280,16 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { OPRN_DELETE, OperationType::DELETE },
         { OPRN_QUERY, OperationType::QUERY },
         { OPRN_UPDATE, OperationType::UPDATE },
-        { OPRN_ALBUM_ADD_ASSETS, OperationType::ALBUM_ADD_ASSETS },
-        { OPRN_ALBUM_REMOVE_ASSETS, OperationType::ALBUM_REMOVE_ASSETS },
+        { OPRN_ALBUM_ADD_PHOTOS, OperationType::ALBUM_ADD_PHOTOS },
+        { OPRN_ALBUM_REMOVE_PHOTOS, OperationType::ALBUM_REMOVE_PHOTOS },
         { OPRN_RECOVER_PHOTOS, OperationType::ALBUM_RECOVER_ASSETS },
         { OPRN_DELETE_PHOTOS, OperationType::ALBUM_DELETE_ASSETS },
+        { OPRN_CLOSE, OperationType::CLOSE },
     };
 
-    if (oprnTypeMap.find(oprnName) != oprnTypeMap.end()) {
-        oprnType_ = oprnTypeMap.at(oprnName);
+    const string opType = MediaFileUri::GetPathSecondDentry(uri_);
+    if (OPRN_TYPE_MAP.find(opType) != OPRN_TYPE_MAP.end()) {
+        oprnType_ = OPRN_TYPE_MAP.at(opType);
     }
     MEDIA_DEBUG_LOG("Command operation type is %{public}d", oprnType_);
 }
@@ -344,6 +335,10 @@ void MediaLibraryCommand::ParseTableName()
         { OperationObject::FILESYSTEM_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
         { OperationObject::PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
         { OperationObject::PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
+        { OperationObject::UFM_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
+        { OperationObject::UFM_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
+        { OperationObject::UFM_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
+        { OperationObject::UFM_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
     };
 
     if (TABLE_NAME_MAP.find(oprnObject_) != TABLE_NAME_MAP.end()) {

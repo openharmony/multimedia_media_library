@@ -16,13 +16,17 @@
 
 #include <thread>
 
+#include "access_token.h"
 #include "accesstoken_kit.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 #include "nativetoken_kit.h"
 #include "token_setproc.h"
 
 namespace OHOS {
 namespace Media {
+using namespace Security::AccessToken;
+
 void PermissionUtilsUnitTest::SetAccessTokenPermission(const std::string &processName,
     const std::vector<std::string> &permission, uint64_t &tokenId)
 {
@@ -56,6 +60,47 @@ void PermissionUtilsUnitTest::SetAccessTokenPermission(const std::string &proces
         MEDIA_ERR_LOG("Reload Native Token Info Failed");
         return;
     }
+}
+
+int32_t PermissionUtilsUnitTest::SetHapPermission(const std::string &bundleName, const int32_t userId)
+{
+    HapInfoParams info = {
+        .userID = userId,
+        .bundleName = bundleName,
+        .instIndex = 0,
+        .appIDDesc = bundleName,
+        .isSystemApp = true
+    };
+
+    HapPolicyParams policy = {
+        .apl = APL_SYSTEM_BASIC,
+        .domain = "test.domain.medialibrary",
+        .permList = { },
+        .permStateList = {
+            {
+                .permissionName = "ohos.permission.READ_IMAGEVIDEO",
+                .isGeneral = true,
+                .resDeviceID = { "local" },
+                .grantStatus = { PermissionState::PERMISSION_GRANTED },
+                .grantFlags = { 1 }
+            },
+            {
+                .permissionName = "ohos.permission.WRITE_IMAGEVIDEO",
+                .isGeneral = true,
+                .resDeviceID = { "local" },
+                .grantStatus = { PermissionState::PERMISSION_GRANTED },
+                .grantFlags = { 1 }
+            }
+        }
+    };
+    AccessTokenIDEx tokenIdEx = { 0 };
+    tokenIdEx = AccessTokenKit::AllocHapToken(info, policy);
+    int ret = SetSelfTokenID(tokenIdEx.tokenIDEx);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Set hap token failed, err: %{public}d", ret);
+        return E_PERMISSION_DENIED;
+    }
+    return E_SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS

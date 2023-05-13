@@ -306,6 +306,15 @@ napi_status MediaLibraryNapiUtils::GetFetchOption(napi_env env, napi_value arg, 
 }
 
 template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::GetAlbumFetchOption(napi_env env, napi_value arg,
+    const FetchOptionType &fetchOptType, AsyncContext &context)
+{
+    // Parse the argument into AlbumFetchOption if any
+    CHECK_STATUS_RET(GetPredicate(env, arg, "predicates", context, fetchOptType), "invalid predicate");
+    return napi_ok;
+}
+
+template <class AsyncContext>
 napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value arg, const string &propName,
     AsyncContext &context, const FetchOptionType &fetchOptType)
 {
@@ -876,6 +885,12 @@ template napi_status MediaLibraryNapiUtils::GetFetchOption<unique_ptr<MediaLibra
     napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<MediaLibraryAsyncContext> &context);
 
 template napi_status MediaLibraryNapiUtils::GetFetchOption<unique_ptr<PhotoAlbumNapiAsyncContext>>(napi_env env,
+    napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<PhotoAlbumNapiAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::GetAlbumFetchOption<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
+    napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<MediaLibraryAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::GetAlbumFetchOption<unique_ptr<PhotoAlbumNapiAsyncContext>>(napi_env env,
     napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<PhotoAlbumNapiAsyncContext> &context);
 
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,

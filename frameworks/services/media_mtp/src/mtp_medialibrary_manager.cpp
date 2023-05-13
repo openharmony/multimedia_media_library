@@ -503,8 +503,7 @@ int32_t MtpMedialibraryManager::CloseFd(const shared_ptr<MtpOperationContext> &c
         MtpErrorUtils::SolveCloseFdError(errCode), "fail to GetAssetById");
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
-    string abilityUri = MEDIALIBRARY_DATA_URI;
-    Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
+    Uri closeAssetUri(URI_CLOSE_FILE);
     if (close(fd) == MTP_SUCCESS) {
         errCode = dataShareHelper_->Insert(closeAssetUri, valuesBucket);
     }
