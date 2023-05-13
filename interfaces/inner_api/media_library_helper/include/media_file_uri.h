@@ -33,7 +33,7 @@ class MediaFileUri : public OHOS::Uri {
     std::string MediaFileUriConstruct(MediaType mediaType, const std::string &networkId,
                                       const std::string &fileId, const int32_t &apiVersion);
 public:
-    explicit MediaFileUri(const std::string &uriStr): Uri(uriStr) {}
+    explicit MediaFileUri(const std::string &uriStr) : Uri(uriStr) {}
     explicit MediaFileUri(MediaType mediaType,
                           const std::string &fileId,
                           const std::string &networkId = "",
@@ -48,6 +48,8 @@ public:
     bool IsValid();
     bool IsApi10();
     static MediaType GetMediaTypeFromUri(const std::string &uri);
+    static std::string GetPathFirstDentry(Uri &uri);
+    static std::string GetPathSecondDentry(Uri &uri);
     static void RemoveAllFragment(std::string &uri);
 };
 } // namespace Media

@@ -156,7 +156,7 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
     CreateFile(MEDIALIBRARY_FILE_URI, "Documents/", "MediaSpaceStatisticsTest.txt", MEDIA_TYPE_FILE,
         FILE_CONTENT_TXT, sizeof(FILE_CONTENT_TXT));
 
-    Uri scanUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN);
+    Uri scanUri(URI_SCANNER);
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR);
     auto ret = sDataShareHelper_->Insert(scanUri, valuesBucket);

@@ -401,6 +401,10 @@ public:
         AsyncContext &context);
 
     template <class AsyncContext>
+    static napi_status GetAlbumFetchOption(napi_env env, napi_value arg, const FetchOptionType &fetchOptType,
+        AsyncContext &context);
+
+    template <class AsyncContext>
     static napi_status GetParamCallback(napi_env env, AsyncContext &context);
 
     template <class AsyncContext>

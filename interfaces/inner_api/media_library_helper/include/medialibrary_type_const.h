@@ -155,6 +155,7 @@ const std::string ROOT_MEDIA_DIR = "/storage/cloud/files/";
 const std::string FS_TYPE_EPFS = "epfs";
 const std::string EPFS_MOUNT_POINT = "/storage/cloud/epfs";
 const char SLASH_CHAR = '/';
+const std::string SLASH_STR = "/";
 
 const std::string SKIPLIST_FILE_PATH = "/data/SkipScanFile.txt";
 
