@@ -208,7 +208,7 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        MEDIA_DATA_DB_URI + " TEXT, " +
                                        MEDIA_DATA_DB_ALBUM + " TEXT, " +
                                        MEDIA_DATA_DB_CLOUD_ID + " TEXT, " +
-                                       MEDIA_DATA_DB_DIRTY + " INT DEFAULT 0, " +
+                                       MEDIA_DATA_DB_DIRTY + " INT DEFAULT 1, " +
                                        MEDIA_DATA_DB_POSITION + " INT DEFAULT 1, " +
                                        MEDIA_DATA_DB_META_DATE_MODIFIED + "  BIGINT DEFAULT 0, " +
                                        MEDIA_DATA_DB_SYNCING + " INT DEFAULT 0)";
@@ -495,6 +495,10 @@ const std::string CREATE_FILES_MDIRTY_TRIGGER = "CREATE TRIGGER mdirty_trigger A
                         std::to_string(static_cast<int32_t>(DirtyType::TYPE_MDIRTY)) +
                         " WHERE file_id = old.file_id;" +
                         " END;";
+
+const std::string CREATE_INSERT_CLOUD_SYNC_TRIGGER =
+                        " CREATE TRIGGER insert_cloud_sync_trigger AFTER INSERT ON " + MEDIALIBRARY_TABLE +
+                        " BEGIN SELECT cloud_sync_func(); END;";
 
 /*
  * Error Table
