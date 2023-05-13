@@ -37,6 +37,12 @@ using namespace OHOS::NativeRdb;
 namespace OHOS::Media {
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 
+const std::string MediaLibraryRdbStore::CloudSyncTriggerFunc(const std::vector<std::string> &args)
+{
+    CloudSyncHelper::GetInstance()->StartSync();
+    return "";
+}
+
 MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
     if (context == nullptr) {
@@ -53,6 +59,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetArea(context->GetArea());
     config_.SetReadConSize(RDB_CONNECT_NUM);
     config_.SetSecurityLevel(SecurityLevel::S3);
+    config_.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     isInTransaction_.store(false);
 }
 
@@ -797,6 +804,7 @@ static int32_t ExecuteSql(RdbStore &store)
         PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
+        PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC,
         AudioColumn::CREATE_AUDIO_TABLE,
         DocumentColumn::CREATE_DOCUMENT_TABLE,
         CREATE_SMARTALBUM_TABLE,
@@ -817,6 +825,7 @@ static int32_t ExecuteSql(RdbStore &store)
         CREATE_FILES_DELETE_TRIGGER,
         CREATE_FILES_MDIRTY_TRIGGER,
         CREATE_FILES_FDIRTY_TRIGGER,
+        CREATE_INSERT_CLOUD_SYNC_TRIGGER,
         PhotoAlbumColumns::CREATE_TABLE,
         PhotoAlbumColumns::INDEX_ALBUM_TYPES,
         PhotoMap::CREATE_TABLE,
