@@ -339,7 +339,6 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_CLOUD_ID
     };
 
     vector<string> selectionArgs;
@@ -655,9 +654,6 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
     values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
     int64_t timeNow = UTCTimeSeconds();
     values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
-    if (data.cloudId == "") {
-        values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-    }
 
     MediaLibraryTracer tracer;
     tracer.Start("UpdateLcdInfo opts.store->Update");
@@ -674,7 +670,6 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
     syncOpts.bundleName = BUNDLE_NAME;
     syncOpts.row = opts.row;
     MediaLibrarySyncOperation::SyncPushTable(syncOpts, devices);
-    CloudSyncHelper::GetInstance()->StartSync();
     return true;
 }
 
@@ -1378,11 +1373,6 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
     if (err == NativeRdb::E_OK) {
         data.mediaType = MediaType::MEDIA_TYPE_ALL;
         err = resultSet->GetInt(index, data.mediaType);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_CLOUD_ID, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.cloudId, err);
     }
 }
 } // namespace Media

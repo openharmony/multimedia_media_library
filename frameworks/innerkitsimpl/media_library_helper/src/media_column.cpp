@@ -93,7 +93,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_HIDDEN + " INT DEFAULT 0, " +
     MEDIA_PARENT_ID + " INT DEFAULT 0, " +
     MEDIA_RELATIVE_PATH + " TEXT, " +
-    PHOTO_DIRTY + " INT DEFAULT 0, " +
+    PHOTO_DIRTY + " INT DEFAULT 1, " +
     PHOTO_CLOUD_ID + " TEXT, " +
     PHOTO_META_DATE_MODIFIED + "  BIGINT DEFAULT 0, " +
     PHOTO_SYNCING + "  INT DEFAULT 0, " +
@@ -136,6 +136,10 @@ const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
                         " WHERE file_id = old.file_id;" +
                         " END;";
+
+const std::string  PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC =
+                        " CREATE TRIGGER photo_insert_cloud_sync_trigger AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
+                        " BEGIN SELECT cloud_sync_func(); END;";
 
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE,
