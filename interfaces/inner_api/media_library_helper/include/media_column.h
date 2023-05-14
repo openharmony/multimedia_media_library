@@ -115,6 +115,10 @@ public:
     // create AudioTable sql
     static const std::string CREATE_AUDIO_TABLE;
 
+    // audio uri
+    static const std::string AUDIO_URI_PREFIX;
+    static const std::string AUDIO_TYPE_URI;
+
     // all columns
     static const std::set<std::string> AUDIO_COLUMNS;
 

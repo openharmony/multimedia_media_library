@@ -475,7 +475,7 @@ string MediaFileUtils::GetFileMediaTypeUriV10(int32_t mediaType, const string &n
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     switch (mediaType) {
         case MEDIA_TYPE_AUDIO:
-            return uri + MEDIALIBRARY_TYPE_AUDIO_URI;
+            return uri + AudioColumn::AUDIO_TYPE_URI;
         case MEDIA_TYPE_VIDEO:
         case MEDIA_TYPE_IMAGE:
             return uri + PhotoColumn::PHOTO_TYPE_URI;
@@ -719,7 +719,7 @@ std::string MediaFileUtils::GetMediaTypeUriV10(MediaType mediaType)
 {
     switch (mediaType) {
         case MEDIA_TYPE_AUDIO:
-            return MEDIALIBRARY_AUDIO_URI;
+            return AudioColumn::AUDIO_URI_PREFIX;
         case MEDIA_TYPE_VIDEO:
         case MEDIA_TYPE_IMAGE:
             return PhotoColumn::PHOTO_URI_PREFIX;
