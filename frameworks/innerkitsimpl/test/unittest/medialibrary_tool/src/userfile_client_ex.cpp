@@ -40,7 +40,7 @@ const std::string URI_ARG_FIRST_DELIMITER = "?";
 const std::string URI_ARG_OTHER_DELIMITER = "&";
 const std::string URI_API_VERSION_STR = std::to_string(static_cast<uint32_t>(MediaLibraryApi::API_10));
 const std::string URI_API_VERSION = URI_PARAM_API_VERSION + "=" + URI_API_VERSION_STR;
-const std::string URI_AUDIO_STR = MEDIALIBRARY_TYPE_AUDIO_URI + SLASH_CHAR;
+const std::string URI_AUDIO_STR = AudioColumn::AUDIO_TYPE_URI + SLASH_CHAR;
 const std::string URI_FILE_STR = MEDIALIBRARY_TYPE_FILE_URI + SLASH_CHAR;
 const std::string URI_PHOTO_STR = PhotoColumn::PHOTO_TYPE_URI + SLASH_CHAR;
 const std::string URI_VIDEO_STR = MEDIALIBRARY_TYPE_VIDEO_URI + SLASH_CHAR;

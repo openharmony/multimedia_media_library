@@ -68,6 +68,8 @@ protected:
     static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode);
     static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
+    static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId);
+    static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId);
 
 private:
     static int32_t CreateAssetUniqueId(int32_t type);

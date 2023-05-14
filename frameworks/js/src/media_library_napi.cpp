@@ -1380,7 +1380,8 @@ static void JSTrashAssetExecute(napi_env env, void *data)
         return;
     }
     MediaLibraryNapiUtils::UriRemoveAllFragment(uri);
-    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
+    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos &&
+        uri.find(AudioColumn::AUDIO_URI_PREFIX) == string::npos) {
         context->error = E_VIOLATION_PARAMETERS;
         return;
     }

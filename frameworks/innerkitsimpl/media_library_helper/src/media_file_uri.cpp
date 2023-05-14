@@ -40,7 +40,7 @@ static std::string SolveMediaTypeV10(MediaType mediaType)
 {
     switch (mediaType) {
         case MEDIA_TYPE_AUDIO:
-            return MEDIALIBRARY_TYPE_AUDIO_URI;
+            return AudioColumn::AUDIO_TYPE_URI;
         case MEDIA_TYPE_VIDEO:
         case MEDIA_TYPE_IMAGE:
             return PhotoColumn::PHOTO_TYPE_URI;

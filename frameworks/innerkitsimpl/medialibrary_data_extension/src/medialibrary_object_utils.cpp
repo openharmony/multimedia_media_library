@@ -718,7 +718,7 @@ int32_t MediaLibraryObjectUtils::ScanFileAfterClose(const string &srcPath, const
     if (api != MediaLibraryApi::API_OLD) {
         if ((uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos)) {
             tableName = PhotoColumn::PHOTOS_TABLE;
-        } else if (uri.find(MEDIALIBRARY_AUDIO_URI) != string::npos) {
+        } else if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
             tableName = AudioColumn::AUDIOS_TABLE;
         }
     }
@@ -1561,57 +1561,6 @@ shared_ptr<ResultSet> MediaLibraryObjectUtils::QuerySmartAlbum(MediaLibraryComma
     }
     vector<string> columns;
     return uniStore->Query(cmd, columns);
-}
-
-int32_t MediaLibraryObjectUtils::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId)
-{
-    ValueObject value;
-    int64_t trashDate = 0;
-    if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_DATE_TRASHED, value)) {
-        return E_DO_NOT_NEDD_SEND_NOTIFY;
-    }
-    value.GetLong(trashDate);
-    auto watch = MediaLibraryNotify::GetInstance();
-    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
-    if (trashDate > 0) {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_REMOVE);
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
-        if (trashAlbumId > 0) {
-            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-                NotifyType::NOTIFY_ALBUM_ADD_ASSERT, trashAlbumId);
-        }
-    } else {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ADD);
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
-        if (trashAlbumId > 0) {
-            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-                NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
-        }
-    }
-    return E_OK;
-}
-
-void MediaLibraryObjectUtils::SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId)
-{
-    ValueObject value;
-    bool isFavorite = false;
-    if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_IS_FAV, value)) {
-        return;
-    }
-    value.GetBool(isFavorite);
-    auto watch = MediaLibraryNotify::GetInstance();
-    int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
-    if (isFavorite) {
-        if (favAlbumId > 0) {
-            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-                NotifyType::NOTIFY_ALBUM_ADD_ASSERT, favAlbumId);
-        }
-    } else {
-        if (favAlbumId > 0) {
-            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-                NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, favAlbumId);
-        }
-    }
 }
 } // namespace Media
 } // namespace OHOS

@@ -451,7 +451,7 @@ void MediaLibraryCommand::ParseOprnObjectFromFileUri()
     string uri = uri_.ToString();
     static const map<string, OperationObject> oprnMap = {
         { PhotoColumn::PHOTO_TYPE_URI, OperationObject::FILESYSTEM_PHOTO },
-        { MEDIALIBRARY_TYPE_AUDIO_URI, OperationObject::FILESYSTEM_AUDIO }
+        { AudioColumn::AUDIO_TYPE_URI, OperationObject::FILESYSTEM_AUDIO }
     };
 
     for (const auto &item : oprnMap) {

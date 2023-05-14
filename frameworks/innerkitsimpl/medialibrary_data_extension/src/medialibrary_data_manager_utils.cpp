@@ -111,7 +111,9 @@ std::string MediaLibraryDataManagerUtils::GetTypeUriByUri(std::string &uri)
     if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         typeUri = PhotoColumn::PHOTO_URI_PREFIX;
     } else if (uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX) != string::npos) {
-        typeUri = PhotoAlbumColumns::ALBUM_URI_PREFIX ;
+        typeUri = PhotoAlbumColumns::ALBUM_URI_PREFIX;
+    } else if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
+        typeUri = AudioColumn::AUDIO_URI_PREFIX;
     }
     return typeUri;
 }
