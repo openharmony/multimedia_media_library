@@ -498,7 +498,7 @@ int32_t MediaLibraryAssetOperations::UpdateAssetPath(MediaLibraryCommand &cmd,
 
     int32_t errCode = MediaFileUtils::ModifyAsset(oldPath, newPath);
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Update Photo Path failed, errCode=%{public}d", errCode);
+        MEDIA_ERR_LOG("Update Asset Path failed, errCode=%{public}d", errCode);
         return errCode;
     }
 
@@ -506,7 +506,7 @@ int32_t MediaLibraryAssetOperations::UpdateAssetPath(MediaLibraryCommand &cmd,
     if (rowId < 0) {
         int32_t ret = MediaFileUtils::ModifyAsset(newPath, oldPath);
         if (ret != E_OK) {
-            MEDIA_ERR_LOG("Resume Photo Path failed, errCode=%{public}d", ret);
+            MEDIA_ERR_LOG("Resume Asset Path failed, errCode=%{public}d", ret);
             return ret;
         }
         return E_HAS_DB_ERROR;
@@ -726,6 +726,68 @@ void MediaLibraryAssetOperations::ScanFile(const string &path)
     int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanFileCb, MediaLibraryApi::API_10);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
+    }
+}
+
+int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId)
+{
+    ValueObject value;
+    int64_t trashDate = 0;
+    if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_DATE_TRASHED, value)) {
+        return E_DO_NOT_NEDD_SEND_NOTIFY;
+    }
+    value.GetLong(trashDate);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
+        int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+        if (trashDate > 0) {
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_REMOVE);
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+            if (trashAlbumId > 0) {
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+                    NotifyType::NOTIFY_ALBUM_ADD_ASSERT, trashAlbumId);
+            }
+        } else {
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ADD);
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+            if (trashAlbumId > 0) {
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+                    NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
+            }
+        }
+    } else if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_AUDIO) {
+        if (trashDate > 0) {
+            watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_REMOVE);
+        } else {
+            watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ADD);
+        }
+    }
+    
+    return E_OK;
+}
+
+void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId)
+{
+    ValueObject value;
+    bool isFavorite = false;
+    if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_IS_FAV, value)) {
+        return;
+    }
+    value.GetBool(isFavorite);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
+        int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
+        if (isFavorite) {
+            if (favAlbumId > 0) {
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+                    NotifyType::NOTIFY_ALBUM_ADD_ASSERT, favAlbumId);
+            }
+        } else {
+            if (favAlbumId > 0) {
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
+                    NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, favAlbumId);
+            }
+        }
     }
 }
 

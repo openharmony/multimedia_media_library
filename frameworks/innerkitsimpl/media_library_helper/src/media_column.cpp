@@ -158,6 +158,9 @@ const std::string AudioColumn::AUDIO_ARTIST = "artist";
 
 const std::string AudioColumn::AUDIOS_TABLE = "Audios";
 
+const std::string AudioColumn::AUDIO_URI_PREFIX = "file://media/Audio/";
+const std::string AudioColumn::AUDIO_TYPE_URI = "/Audio";
+
 const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS " +
     AUDIOS_TABLE + " (" +
     MEDIA_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
