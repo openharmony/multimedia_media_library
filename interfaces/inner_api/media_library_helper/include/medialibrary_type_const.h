@@ -242,6 +242,10 @@ const int DOWNLOAD_DIRECTORY_TYPE_VALUES = DIR_DOWNLOAD;
 const std::string DOWNLOAD_DIR_VALUES = "Download/";
 const std::string DOWNLOAD_EXTENSION_VALUES = DIR_ALL_CONTAINER_TYPE;
 const std::string DOWNLOAD_TYPE_VALUES = DIR_ALL_TYPE_VALUES;
+const std::string DOCUMENT_BUCKET = "Document";
+const std::string IMAGE_BUCKET = "Photo";
+const std::string VIDEO_BUCKET = "Video";
+const std::string AUDIO_BUCKET = "Audio";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES, DOC_DIR_VALUES, DOWNLOAD_DIR_VALUES
