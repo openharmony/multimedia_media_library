@@ -295,11 +295,11 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
     }
     transactionOprn.Finish();
 
-    errCode = MediaLibraryObjectUtils::SendTrashNotify(cmd, fileAsset->GetId());
+    errCode = SendTrashNotify(cmd, fileAsset->GetId());
     if (errCode == E_OK) {
         return rowId;
     }
-    MediaLibraryObjectUtils::SendFavoriteNotify(cmd, fileAsset->GetId());
+    SendFavoriteNotify(cmd, fileAsset->GetId());
     auto watch = MediaLibraryNotify::GetInstance();
     watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(fileAsset->GetId()), NotifyType::NOTIFY_UPDATE);
     return rowId;

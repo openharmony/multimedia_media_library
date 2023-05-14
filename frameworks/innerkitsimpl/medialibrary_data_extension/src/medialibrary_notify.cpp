@@ -259,10 +259,20 @@ int32_t MediaLibraryNotify::Notify(const shared_ptr<FileAsset> &closeAsset)
         closeAsset->GetDateModified() == 0) {
         isCreateFile = true;
     }
-    if (isCreateFile) {
-        return Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_ADD);
+    if (closeAsset->GetMediaType() == MediaType::MEDIA_TYPE_IMAGE ||
+        closeAsset->GetMediaType() == MediaType::MEDIA_TYPE_VIDEO) {
+        if (isCreateFile) {
+            return Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_ADD);
+        }
+        return Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+    } else if (closeAsset->GetMediaType() == MediaType::MEDIA_TYPE_AUDIO) {
+        if (isCreateFile) {
+            return Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_ADD);
+        }
+        return Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+    } else {
+        return E_CHECK_MEDIATYPE_FAIL;
     }
-    return Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(closeAsset->GetId()), NotifyType::NOTIFY_UPDATE);
 }
 
 int32_t MediaLibraryNotify::GetDefaultAlbums(std::unordered_map<PhotoAlbumSubType, int> &outAlbums)

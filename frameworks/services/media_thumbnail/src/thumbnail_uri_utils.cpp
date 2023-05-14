@@ -112,7 +112,7 @@ string ThumbnailUriUtils::GetTableFromUri(const string &uri)
         { MEDIALIBRARY_TYPE_IMAGE_URI, PhotoColumn::PHOTOS_TABLE },
         { MEDIALIBRARY_TYPE_VIDEO_URI, PhotoColumn::PHOTOS_TABLE },
         { PhotoColumn::PHOTO_TYPE_URI, PhotoColumn::PHOTOS_TABLE },
-        { MEDIALIBRARY_TYPE_AUDIO_URI, AudioColumn::AUDIOS_TABLE },
+        { AudioColumn::AUDIO_TYPE_URI, AudioColumn::AUDIOS_TABLE },
         { MEDIALIBRARY_TYPE_FILE_URI, DocumentColumn::DOCUMENTS_TABLE }
     };
     string table = MEDIALIBRARY_TABLE;
