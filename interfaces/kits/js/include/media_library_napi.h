@@ -98,6 +98,8 @@ public:
 
     void OnChange(MediaChangeListener &listener, const napi_ref cbRef);
     static napi_value SolveOnChange(napi_env env, UvChangeMsg *msg);
+    static string GetTrashAlbumUri();
+    static std::string trashAlbumUri_;
     napi_ref cbOnRef_ = nullptr;
     napi_ref cbOffRef_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> audioDataObserver_ = nullptr;
@@ -220,6 +222,7 @@ private:
 
     static napi_value CreateAlbumTypeEnum(napi_env env);
     static napi_value CreateAlbumSubTypeEnum(napi_env env);
+    static napi_value CreateNotifyTypeEnum(napi_env env);
 
     static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -251,6 +254,7 @@ private:
     static thread_local napi_ref sAlbumSubType_;
     static thread_local napi_ref sPositionTypeEnumRef_;
     static thread_local napi_ref sPhotoSubType_;
+    static thread_local napi_ref sNotifyType_;
 
     static std::mutex sUserFileClientMutex_;
     static std::mutex sOnOffMutex_;

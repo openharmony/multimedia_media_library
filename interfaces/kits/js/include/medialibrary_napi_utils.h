@@ -245,6 +245,10 @@ const std::vector<std::string> photoSubTypeEnum {
     "DEFAULT", "SCREENSHOT", "CAMERA"
 };
 
+const std::vector<std::string> notifyTypeEnum {
+    "NOTIFY_ADD", "NOTIFY_UPDATE", "NOTIFY_REMOVE", "NOTIFY_ALBUM_ADD_ASSET", "NOTIFY_ALBUM_REMOVE_ASSET"
+};
+
 const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_ID,
     MEDIA_DATA_DB_RELATIVE_PATH,
