@@ -31,7 +31,7 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 
-int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<ValueObject> &bindArgs)
+int32_t AddSingleAsset(const DataShareValuesBucket &value)
 {
     /**
      * Build insert sql:
@@ -39,7 +39,7 @@ int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<ValueObject> &
      * ?, ?
      * WHERE
      *     (NOT EXISTS (SELECT * FROM PhotoMap WHERE map_album = ? AND map_asset = ?))
-     *     AND (EXISTS (SELECT file_id FROM Files WHERE file_id = ? AND data_trashed = 0))
+     *     AND (EXISTS (SELECT file_id FROM Files WHERE file_id = ?))
      *     AND (EXISTS (SELECT album_id FROM PhotoAlbum WHERE album_id = ? AND album_type = ? AND album_subtype = ?));
      */
     static const string INSERT_MAP_SQL = "INSERT INTO " + PhotoMap::TABLE +
@@ -48,7 +48,7 @@ int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<ValueObject> &
         "(NOT EXISTS (SELECT * FROM " + PhotoMap::TABLE + " WHERE " +
             PhotoMap::ALBUM_ID + " = ? AND " + PhotoMap::ASSET_ID + " = ?)) " +
         "AND (EXISTS (SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
-            MediaColumn::MEDIA_ID + " = ? AND " + MediaColumn::MEDIA_DATE_TRASHED + " = 0)) " +
+            MediaColumn::MEDIA_ID + " = ?)) " +
         "AND (EXISTS (SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
             " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = ? AND " + PhotoAlbumColumns::ALBUM_TYPE + " = ? AND " +
             PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?));";
@@ -62,6 +62,7 @@ int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<ValueObject> &
         return -EINVAL;
     }
 
+    vector<ValueObject> bindArgs;
     bindArgs.emplace_back(albumId);
     bindArgs.emplace_back(assetId);
     bindArgs.emplace_back(albumId);
@@ -87,11 +88,9 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
     }
 
     int32_t changedRows = 0;
-    vector<ValueObject> bindArgs;
     rdbStore->BeginTransaction();
     for (const auto &value : values) {
-        bindArgs.clear();
-        auto ret = AddSingleAsset(value, bindArgs);
+        auto ret = AddSingleAsset(value);
         if (ret == E_HAS_DB_ERROR) {
             rdbStore->RollBack();
             return ret;

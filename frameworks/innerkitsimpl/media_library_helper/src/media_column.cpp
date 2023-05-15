@@ -48,7 +48,7 @@ const std::set<std::string> MediaColumn::MEDIA_COLUMNS = {
     MEDIA_HIDDEN, MEDIA_PARENT_ID, MEDIA_RELATIVE_PATH
 };
 const std::set<std::string> MediaColumn::DEFAULT_FETCH_COLUMNS = {
-    MEDIA_ID, MEDIA_NAME, MEDIA_TYPE, MEDIA_DATE_TRASHED
+    MEDIA_ID, MEDIA_NAME, MEDIA_TYPE
 };
 
 const std::string PhotoColumn::PHOTO_DIRTY = "dirty";
