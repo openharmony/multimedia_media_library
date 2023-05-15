@@ -48,7 +48,7 @@
           "ipc_js",
           "kv_store",
           "multimedia_image_framework",
-          "multimedia_player_framework",
+          "player_framework",
           "napi",
           "relational_store",
           "safwk",
