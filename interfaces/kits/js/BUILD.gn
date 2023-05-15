@@ -126,8 +126,8 @@ ohos_shared_library("medialibrary") {
     "ipc_js:rpc",
     "kv_store:distributeddata_inner",
     "multimedia_image_framework:image",
-    "multimedia_player_framework:media_client",
     "napi:ace_napi",
+    "player_framework:media_client",
     "relational_store:native_rdb",
   ]
 
@@ -182,8 +182,8 @@ ohos_shared_library("userfilemanager") {
     "ipc_js:rpc",
     "kv_store:distributeddata_inner",
     "multimedia_image_framework:image",
-    "multimedia_player_framework:media_client",
     "napi:ace_napi",
+    "player_framework:media_client",
     "relational_store:native_dataability",
     "relational_store:native_rdb",
   ]
