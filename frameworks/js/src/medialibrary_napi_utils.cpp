@@ -692,9 +692,29 @@ void MediaLibraryNapiUtils::UriAppendKeyValue(string &uri, const string &key, co
 }
 
 napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<string> &fetchColumn,
-    function<bool(const string &columnName)> isValidColumn)
+    function<bool(const string &columnName)> isValidColumn, const PhotoAlbumSubType subType)
 {
     auto validFetchColumns = MediaColumn::DEFAULT_FETCH_COLUMNS;
+    switch (subType) {
+        case PhotoAlbumSubType::FAVORITE:
+            validFetchColumns.insert(MediaColumn::MEDIA_IS_FAV);
+            break;
+        case PhotoAlbumSubType::VIDEO:
+            validFetchColumns.insert(MediaColumn::MEDIA_TYPE);
+            break;
+        case PhotoAlbumSubType::HIDDEN:
+            validFetchColumns.insert(MediaColumn::MEDIA_HIDDEN);
+            break;
+        case PhotoAlbumSubType::TRASH:
+            validFetchColumns.insert(MediaColumn::MEDIA_DATE_TRASHED);
+            break;
+        case PhotoAlbumSubType::SCREENSHOT:
+        case PhotoAlbumSubType::CAMERA:
+            validFetchColumns.insert(PhotoColumn::PHOTO_SUBTYPE);
+            break;
+        default:
+            break;
+    }
     for (const auto &column : fetchColumn) {
         if (isValidColumn(column)) {
             validFetchColumns.insert(column);

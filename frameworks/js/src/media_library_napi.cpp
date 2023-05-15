@@ -1988,7 +1988,7 @@ void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env,
     {
         lock_guard<mutex> lock(sOnOffMutex_);
         for (auto iter = listObj.observers_.begin(); iter != listObj.observers_.end();) {
-            if (uri.compare((*iter)->uri_) == 0){
+            if (uri.compare((*iter)->uri_) == 0) {
                 offObservers.push_back(*iter);
                 listObj.observers_.erase(iter++);
             } else {
