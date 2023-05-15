@@ -37,8 +37,8 @@ constexpr int32_t THUMBNAIL_LCD_AGING_THRESHOLD = 10000;
 constexpr int32_t WAIT_FOR_MS = 1000;
 constexpr int32_t WAIT_FOR_SECOND = 3;
 
-const std::string THUMBNAIL_MICRO_SUFFIX = "MICRO";
-const std::string THUMBNAIL_THUMB_SUFFIX = "THMB";
+const std::string THUMBNAIL_MICRO_SUFFIX = "MCR";
+const std::string THUMBNAIL_THUMB_SUFFIX = "THM";
 const std::string THUMBNAIL_LCD_SUFFIX = "LCD";
 const std::string FILE_URI_PREX = "file://";
 
