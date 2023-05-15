@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 // @ts-nocheck
-import Extension from '@ohos.application.FileAccessExtensionAbility'
+import Extension from '@ohos.application.FileAccessExtensionAbility';
 
 export default class FileExtAbility extends Extension {
-    onCreate(want) {
-        console.info('mediaFileExt js inner onCreate, want:' + want.abilityName + "context:" + this.context);
-    }
+  onCreate(want): void {
+    console.info('mediaFileExt js inner onCreate, want:' + want.abilityName + 'context:' + this.context);
+  }
 }
