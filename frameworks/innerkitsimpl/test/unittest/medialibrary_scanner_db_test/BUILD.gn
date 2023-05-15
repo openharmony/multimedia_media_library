@@ -50,7 +50,7 @@ ohos_unittest("medialibrary_scanner_db_test") {
     "data_share:datashare_provider",
     "device_manager:devicemanagersdk",
     "kv_store:distributeddata_inner",
-    "multimedia_player_framework:media_client",
+    "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
   ]

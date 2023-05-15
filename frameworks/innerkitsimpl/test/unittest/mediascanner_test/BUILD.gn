@@ -52,8 +52,8 @@ ohos_unittest("mediascanner_unittest") {
     "data_share:datashare_provider",
     "kv_store:distributeddata_inner",
     "multimedia_image_framework:image_native",
-    "multimedia_player_framework:media_client",
     "napi:ace_napi",
+    "player_framework:media_client",
     "relational_store:native_rdb",
   ]
 
