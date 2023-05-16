@@ -471,29 +471,32 @@ const std::string QUERY_MEDIA_VOLUME = "SELECT sum(" + MEDIA_DATA_DB_SIZE + ") A
 const std::string CREATE_FILES_DELETE_TRIGGER = "CREATE TRIGGER delete_trigger AFTER UPDATE ON " +
                         MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN new.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED)) +
-                        " and OLD.cloud_id is NULL " +
+                        " and OLD.cloud_id is NULL AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
                         " DELETE FROM " + MEDIALIBRARY_TABLE + " WHERE file_id = old.file_id;" +
                         " END;";
 
 const std::string CREATE_FILES_FDIRTY_TRIGGER = "CREATE TRIGGER fdirty_trigger AFTER UPDATE ON " +
                         MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL AND" +
-                        " new.date_modified <> old.date_modified " +
+                        " new.date_modified <> old.date_modified AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
                         " UPDATE " + MEDIALIBRARY_TABLE + " SET dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyType::TYPE_FDIRTY)) +
                         " WHERE file_id = old.file_id;" +
+                        " SELECT cloud_sync_func(); " +
                         " END;";
 
 const std::string CREATE_FILES_MDIRTY_TRIGGER = "CREATE TRIGGER mdirty_trigger AFTER UPDATE ON " +
                         MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL" +
+                        " AND new.time_visit = old.time_visit " +
                         " AND new.date_modified = old.date_modified AND old.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyType::TYPE_SYNCED)) +
-                        " AND new.dirty = old.dirty" +
+                        " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
                         " UPDATE " + MEDIALIBRARY_TABLE + " SET dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyType::TYPE_MDIRTY)) +
                         " WHERE file_id = old.file_id;" +
+                        " SELECT cloud_sync_func(); " +
                         " END;";
 
 const std::string CREATE_INSERT_CLOUD_SYNC_TRIGGER =

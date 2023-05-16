@@ -43,6 +43,11 @@ const std::string MediaLibraryRdbStore::CloudSyncTriggerFunc(const std::vector<s
     return "";
 }
 
+const std::string MediaLibraryRdbStore::IsCallerSelfFunc(const std::vector<std::string> &args)
+{
+    return "true";
+}
+
 MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime::Context> &context)
 {
     if (context == nullptr) {
@@ -60,6 +65,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetReadConSize(RDB_CONNECT_NUM);
     config_.SetSecurityLevel(SecurityLevel::S3);
     config_.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
+    config_.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
     isInTransaction_.store(false);
 }
 
@@ -225,7 +231,6 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     vector<string> devices = vector<string>();
     GetAllNetworkId(devices);
     SyncPushTable(bundleName_, cmd.GetTableName(), changedRows, devices);
-    CloudSyncHelper::GetInstance()->StartSync();
     return ret;
 }
 
@@ -376,7 +381,6 @@ int32_t MediaLibraryRdbStore::Update(int32_t &changedRows, const ValuesBucket &v
         MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", err);
         return E_HAS_DB_ERROR;
     }
-    CloudSyncHelper::GetInstance()->StartSync();
     return changedRows;
 }
 
