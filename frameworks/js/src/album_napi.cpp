@@ -568,6 +568,13 @@ static napi_value ConvertJSArgsToNative(napi_env env, size_t argc, const napi_va
     auto context = &asyncContext;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, context, result, "Async context is null");
     NAPI_ASSERT(env, argv != nullptr, "Argument list is empty");
+    if (argc == ARGS_ONE) {
+        napi_valuetype valueType = napi_undefined;
+        if (napi_typeof(env, argv[PARAM0], &valueType) == napi_ok &&
+            (valueType == napi_undefined || valueType == napi_null)) {
+            argc -= 1;
+        }
+    }
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
