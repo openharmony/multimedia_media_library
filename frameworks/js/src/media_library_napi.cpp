@@ -649,12 +649,14 @@ static void GetFileAssetsExecute(napi_env env, void *data)
 
     GetFileAssetUpdateSelections(context);
     context->fetchColumn = FILE_ASSET_COLUMNS;
+#ifndef MEDIA_LIBRARY_COMPATIBILITY
     if (context->extendArgs.find(DATE_FUNCTION) != string::npos) {
         string group(" GROUP BY (");
         group += context->extendArgs + " )";
         context->selection += group;
         context->fetchColumn.insert(context->fetchColumn.begin(), "count(*)");
     }
+#endif
 
     context->predicates.SetWhereClause(context->selection);
     context->predicates.SetWhereArgs(context->selectionArgs);
