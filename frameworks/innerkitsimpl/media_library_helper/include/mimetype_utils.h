@@ -30,6 +30,8 @@ public:
     MimeTypeUtils& operator=(MimeTypeUtils&&) = delete;
     static int32_t InitMimeTypeMap();
     static std::string GetMimeTypeFromExtension(const std::string &extension);
+    static std::string GetMimeTypeFromExtension(const std::string &extension,
+        const std::unordered_map<std::string, std::vector<std::string>> &mimeTypeMap);
     static MediaType GetMediaTypeFromMimeType(const std::string &mimeType);
 
 private:

@@ -23,11 +23,12 @@
 
 using std::string;
 using std::vector;
+using std::unordered_map;
 using namespace nlohmann;
 
 namespace OHOS {
 namespace Media {
-using MimeTypeMap = std::unordered_map<string, vector<string>>;
+using MimeTypeMap = unordered_map<string, vector<string>>;
 
 MimeTypeMap MimeTypeUtils::mediaJsonMap_;
 const string MIMETYPE_JSON_PATH = "/system/etc/userfilemanager/userfilemanager_mimetypes.json";
@@ -65,9 +66,15 @@ int32_t MimeTypeUtils::InitMimeTypeMap()
 
 string MimeTypeUtils::GetMimeTypeFromExtension(const string &extension)
 {
+    return GetMimeTypeFromExtension(extension, mediaJsonMap_);
+}
+
+string MimeTypeUtils::GetMimeTypeFromExtension(const string &extension,
+    const MimeTypeMap &mimeTypeMap)
+{
     std::string tmp = std::move(extension);
     std::transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
-    for (auto &item : mediaJsonMap_) {
+    for (auto &item : mimeTypeMap) {
         for (auto &ext : item.second) {
             if (ext == tmp) {
                 return item.first;
