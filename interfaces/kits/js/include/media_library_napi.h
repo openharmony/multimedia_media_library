@@ -204,7 +204,8 @@ private:
     static napi_value JSGetMediaRemoteStub(napi_env env, napi_callback_info info);
 
     static napi_value GetUserFileMgr(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrCreateAsset(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrCreatePhotoAsset(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrCreateAudioAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrTrashAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetAlbums(napi_env env, napi_callback_info info);

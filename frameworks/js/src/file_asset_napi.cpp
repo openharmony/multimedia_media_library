@@ -992,6 +992,17 @@ void BuildCommitModifyValuesBucket(const bool &isApiVersion10, const std::shared
     valuesBucket.Put(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
 }
 
+static string BuildCommitModifyUriApi10(FileAssetAsyncContext *context, string &uri)
+{
+    if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
+        context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
+        uri += MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET;
+    } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
+        uri += MEDIA_AUDIOOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET;
+    }
+    return uri;
+}
+
 static void JSCommitModifyExecute(napi_env env, void *data)
 {
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
@@ -1016,7 +1027,7 @@ static void JSCommitModifyExecute(napi_env env, void *data)
         }
         uri += MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET;
     } else {
-        uri += MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET;
+        BuildCommitModifyUriApi10(context, uri);
     }
 
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
@@ -2330,7 +2341,14 @@ static void UserFileMgrFavoriteExecute(napi_env env, void *data)
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    string uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    string uri;
+    if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
+        context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
+        uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
+        uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_AUDIOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    }
+    
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(API_VERSION_10));
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
     Uri updateAssetUri(uri);
@@ -2592,7 +2610,17 @@ static void UserFileMgrCloseExecute(napi_env env, void *data)
         return;
     }
 
-    string closeUri = URI_CLOSE_PHOTO;
+    string closeUri;
+    if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
+        context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
+        closeUri = URI_CLOSE_PHOTO;
+    } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
+        closeUri = URI_CLOSE_AUDIO;
+    } else {
+        context->SaveError(-EINVAL);
+        return;
+    }
+    
     MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, API_VERSION, to_string(API_VERSION_10));
     ret = AddTypeMaskByMediaType(closeUri, context->objectInfo->GetMediaType());
     if (ret != E_SUCCESS) {
@@ -2655,6 +2683,11 @@ static void UserFileMgrSetHiddenExecute(napi_env env, void *data)
 
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    if (context->objectPtr->GetMediaType() != MEDIA_TYPE_IMAGE &&
+        context->objectPtr->GetMediaType() != MEDIA_TYPE_VIDEO) {
+        context->error = -EINVAL;
+        return;
+    }
 
     string uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(API_VERSION_10));

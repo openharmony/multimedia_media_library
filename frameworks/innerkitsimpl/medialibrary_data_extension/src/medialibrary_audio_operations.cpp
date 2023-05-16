@@ -16,7 +16,21 @@
 #include "medialibrary_audio_operations.h"
 
 #include "abs_shared_result_set.h"
+#include "file_asset.h"
+#include "media_column.h"
+#include "media_file_uri.h"
+#include "media_file_utils.h"
+#include "media_log.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
+#include "medialibrary_data_manager_utils.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_errno.h"
+#include "medialibrary_notify.h"
+#include "medialibrary_object_utils.h"
+#include "medialibrary_rdbstore.h"
+#include "userfile_manager_types.h"
+#include "value_object.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -25,33 +39,249 @@ namespace OHOS {
 namespace Media {
 int32_t MediaLibraryAudioOperations::Create(MediaLibraryCommand &cmd)
 {
-    return 0;
+    switch (cmd.GetApi()) {
+        case MediaLibraryApi::API_10:
+            return CreateV10(cmd);
+        case MediaLibraryApi::API_OLD:
+            MEDIA_ERR_LOG("this api is not realized yet");
+            return E_FAIL;
+        default:
+            MEDIA_ERR_LOG("get api failed");
+            return E_FAIL;
+    }
 }
 
 int32_t MediaLibraryAudioOperations::Delete(MediaLibraryCommand& cmd)
 {
-    return 0;
+    string fileId = cmd.GetOprnFileId();
+    vector<string> columns = {
+        AudioColumn::MEDIA_ID,
+        AudioColumn::MEDIA_FILE_PATH,
+        AudioColumn::MEDIA_RELATIVE_PATH,
+        AudioColumn::MEDIA_TYPE
+    };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID,
+        fileId, cmd.GetOprnObject());
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
+        fileId.c_str());
+    
+    int32_t deleteRow = DeleteAudio(fileAsset);
+    CHECK_AND_RETURN_RET_LOG(deleteRow >= 0, deleteRow, "delete audio failed, deleteRow=%{public}d", deleteRow);
+
+    return deleteRow;
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAudioOperations::Query(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
-    return nullptr;
+    switch (cmd.GetApi()) {
+        case MediaLibraryApi::API_10:
+            return QueryV10(cmd, columns);
+        case MediaLibraryApi::API_OLD:
+            MEDIA_ERR_LOG("this api is not realized yet");
+            return nullptr;
+        default:
+            MEDIA_ERR_LOG("get api failed");
+            return nullptr;
+    }
 }
 
 int32_t MediaLibraryAudioOperations::Update(MediaLibraryCommand &cmd)
 {
-    return 0;
+    switch (cmd.GetApi()) {
+        case MediaLibraryApi::API_10:
+            return UpdateV10(cmd);
+        case MediaLibraryApi::API_OLD:
+            MEDIA_ERR_LOG("this api is not realized yet");
+            return E_FAIL;
+        default:
+            MEDIA_ERR_LOG("get api failed");
+            return E_FAIL;
+    }
+
+    return E_OK;
 }
 
 int32_t MediaLibraryAudioOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
-    return 0;
+    string uriString = cmd.GetUriStringWithoutSegment();
+    string id = MediaFileUri(uriString).GetFileId();
+    if (uriString.empty()) {
+        return E_INVALID_URI;
+    }
+
+    vector<string> columns = {
+        AudioColumn::MEDIA_ID,
+        AudioColumn::MEDIA_FILE_PATH,
+        AudioColumn::MEDIA_URI,
+        AudioColumn::MEDIA_TYPE,
+        AudioColumn::MEDIA_TIME_PENDING
+    };
+    auto fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, id,
+        OperationObject::FILESYSTEM_AUDIO, columns);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
+        return E_INVALID_URI;
+    }
+
+    return OpenAsset(fileAsset, mode);
 }
 
 int32_t MediaLibraryAudioOperations::Close(MediaLibraryCommand &cmd)
 {
-    return 0;
+    string strFileId = cmd.GetOprnFileId();
+    if (strFileId.empty()) {
+        return E_INVALID_FILEID;
+    }
+
+    vector<string> columns = {
+        AudioColumn::MEDIA_ID,
+        AudioColumn::MEDIA_FILE_PATH,
+        AudioColumn::MEDIA_URI,
+        AudioColumn::MEDIA_TIME_PENDING,
+        AudioColumn::MEDIA_TYPE
+    };
+    auto fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, strFileId, cmd.GetOprnObject(), columns);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get FileAsset id %{public}s from database failed!", strFileId.c_str());
+        return E_INVALID_FILEID;
+    }
+
+    int32_t errCode = CloseAsset(fileAsset);
+    return errCode;
 }
+
+int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
+{
+    string displayName;
+    int32_t mediaType = 0;
+    FileAsset fileAsset;
+    ValueObject valueObject;
+    ValuesBucket &values = cmd.GetValueBucket();
+
+    CHECK_AND_RETURN_RET(values.GetObject(AudioColumn::MEDIA_NAME, valueObject), E_HAS_DB_ERROR);
+    valueObject.GetString(displayName);
+    fileAsset.SetDisplayName(displayName);
+
+    CHECK_AND_RETURN_RET(values.GetObject(AudioColumn::MEDIA_TYPE, valueObject), E_HAS_DB_ERROR);
+    valueObject.GetInt(mediaType);
+    if (mediaType != MediaType::MEDIA_TYPE_AUDIO) {
+        return E_CHECK_MEDIATYPE_FAIL;
+    }
+    fileAsset.SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
+
+    // Check rootdir and extension
+    int32_t errCode = CheckDisplayNameWithType(displayName, MediaType::MEDIA_TYPE_AUDIO);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to Check Dir and Extension, displayName=%{private}s, mediaType=%{public}d",
+        displayName.c_str(), mediaType);
+
+    TransactionOperations transactionOprn;
+    errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    errCode = SetAssetPathInCreate(fileAsset);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
+        return errCode;
+    }
+
+    int32_t outRow = InsertAssetInDb(cmd, fileAsset);
+    if (outRow <= 0) {
+        MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
+        return errCode;
+    }
+    transactionOprn.Finish();
+    return outRow;
+}
+
+int32_t MediaLibraryAudioOperations::DeleteAudio(const shared_ptr<FileAsset> &fileAsset)
+{
+    string filePath = fileAsset->GetPath();
+    CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
+    bool res = MediaFileUtils::DeleteFile(filePath);
+    CHECK_AND_RETURN_RET_LOG(res, E_HAS_FS_ERROR, "Delete audio file failed, errno: %{public}d", errno);
+
+    // delete thumbnail
+    int32_t fileId = fileAsset->GetId();
+    InvalidateThumbnail(to_string(fileId), fileAsset->GetMediaType());
+
+    TransactionOperations transactionOprn;
+    int32_t errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    // delete file in db
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::DELETE);
+    cmd.GetAbsRdbPredicates()->EqualTo(AudioColumn::MEDIA_ID, to_string(fileId));
+    int32_t deleteRows = DeleteAssetInDb(cmd);
+    if (deleteRows <= 0) {
+        MEDIA_ERR_LOG("Delete audio in database failed, errCode=%{public}d", deleteRows);
+        return E_HAS_DB_ERROR;
+    }
+    transactionOprn.Finish();
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(fileId), NotifyType::NOTIFY_REMOVE);
+    return deleteRows;
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryAudioOperations::QueryV10(
+    MediaLibraryCommand &cmd, const vector<string> &columns)
+{
+    return QueryFiles(cmd, columns);
+}
+
+int32_t MediaLibraryAudioOperations::UpdateV10(MediaLibraryCommand &cmd)
+{
+    vector<string> columns = {
+        AudioColumn::MEDIA_ID,
+        AudioColumn::MEDIA_FILE_PATH,
+        AudioColumn::MEDIA_TYPE,
+        AudioColumn::MEDIA_NAME
+    };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
+        OperationObject::FILESYSTEM_AUDIO, columns);
+    if (fileAsset == nullptr) {
+        return E_INVALID_VALUES;
+    }
+
+    // Update if FileAsset.path is modified
+    if (IsContainsValue(cmd.GetValueBucket(), AudioColumn::MEDIA_FILE_PATH)) {
+        return UpdateAssetPath(cmd, fileAsset);
+    }
+
+    // Update if FileAsset.title or FileAsset.displayName is modified
+    int32_t errCode = UpdateFileName(cmd, fileAsset);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Audio Name failed, fileName=%{private}s",
+        fileAsset->GetDisplayName().c_str());
+
+    TransactionOperations transactionOprn;
+    errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    int32_t rowId = UpdateFileInDb(cmd);
+    if (rowId < 0) {
+        MEDIA_ERR_LOG("Update Audio In database failed, rowId=%{public}d", rowId);
+        return rowId;
+    }
+    transactionOprn.Finish();
+
+    errCode = SendTrashNotify(cmd, fileAsset->GetId());
+    if (errCode == E_OK) {
+        return rowId;
+    }
+
+    // Audio has no favorite album, do not send favorite notify
+    auto watch = MediaLibraryNotify::GetInstance();
+    watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(fileAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+    return rowId;
+}
+
 } // namespace Media
 } // namespace OHOS

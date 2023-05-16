@@ -45,7 +45,6 @@ public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
     static napi_value CreateFileAsset(napi_env env, std::unique_ptr<FileAsset> &iAsset);
-    static napi_value UserFileMgrCreateAsset(napi_env env, FileAsset &iAsset);
 
     std::string GetFileDisplayName() const;
     std::string GetRelativePath() const;
