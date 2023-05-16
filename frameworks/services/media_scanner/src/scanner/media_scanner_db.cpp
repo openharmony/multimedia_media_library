@@ -290,6 +290,33 @@ static OperationObject GetOprnObjectFromPath(const string &path)
     return OperationObject::FILESYSTEM_ASSET;
 }
 
+static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector<string> &columns,
+    OperationObject &oprnObject, string &whereClause)
+{
+    if (api == MediaLibraryApi::API_10) {
+        whereClause = MediaColumn::MEDIA_FILE_PATH + " = ? And " + MediaColumn::MEDIA_DATE_TRASHED + " = ? ";
+        oprnObject = GetOprnObjectFromPath(path);
+        if (oprnObject == OperationObject::FILESYSTEM_PHOTO) {
+            columns = {
+                MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
+                MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION
+            };
+        } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
+            columns = {
+                MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
+                MediaColumn::MEDIA_NAME
+            };
+        }
+    } else {
+        whereClause = MEDIA_DATA_DB_FILE_PATH + " = ? And " + MEDIA_DATA_DB_IS_TRASH + " = ? ";
+        oprnObject = OperationObject::FILESYSTEM_ASSET;
+        columns = {
+            MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
+            MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_RECYCLE_PATH
+        };
+    }
+}
+
 /**
  * @brief Get date modified, id, size and name info for a file
  *
@@ -298,21 +325,11 @@ static OperationObject GetOprnObjectFromPath(const string &path)
  */
 int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata> &ptr, MediaLibraryApi api)
 {
-    vector<string> columns = {
-        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
-        MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_ORIENTATION
-    };
+    vector<string> columns;
     string whereClause;
-
     OperationObject oprnObject = OperationObject::FILESYSTEM_ASSET;
+    GetQueryParamsByPath(path, api, columns, oprnObject, whereClause);
 
-    if (api == MediaLibraryApi::API_10) {
-        whereClause = MEDIA_DATA_DB_FILE_PATH + " = ? And " + MediaColumn::MEDIA_DATE_TRASHED + " = ? ";
-        oprnObject = GetOprnObjectFromPath(path);
-    } else {
-        columns.push_back(MEDIA_DATA_DB_RECYCLE_PATH);
-        whereClause = MEDIA_DATA_DB_FILE_PATH + " = ? And " + MEDIA_DATA_DB_IS_TRASH + " = ? ";
-    }
     vector<string> args = { path, to_string(NOT_TRASHED) };
     
     MediaLibraryCommand cmd(oprnObject, OperationType::QUERY, api);

@@ -166,7 +166,8 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getPhotoAssets", JSGetPhotoAssets),
             DECLARE_NAPI_FUNCTION("getAudioAssets", JSGetAudioAssets),
             DECLARE_NAPI_FUNCTION("getPhotoAlbums", UserFileMgrGetAlbums),
-            DECLARE_NAPI_FUNCTION("createPhotoAsset", UserFileMgrCreateAsset),
+            DECLARE_NAPI_FUNCTION("createPhotoAsset", UserFileMgrCreatePhotoAsset),
+            DECLARE_NAPI_FUNCTION("createAudioAsset", UserFileMgrCreateAudioAsset),
             DECLARE_NAPI_FUNCTION("delete", UserFileMgrTrashAsset),
             DECLARE_NAPI_FUNCTION("on", UserFileMgrOnCallback),
             DECLARE_NAPI_FUNCTION("off", UserFileMgrOffCallback),
@@ -1255,7 +1256,20 @@ static void JSCreateAssetExecute(napi_env env, void *data)
 
     string uri;
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
-        uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+        switch (context->assetType) {
+            case TYPE_PHOTO: {
+                uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+                break;
+            }
+            case TYPE_AUDIO: {
+                uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_AUDIOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+                break;
+            }
+            default: {
+                NAPI_ERR_LOG("Unsupported creation napitype %{public}d", static_cast<int32_t>(context->assetType));
+                return;
+            }
+        }
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(API_VERSION_10));
     } else {
         uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
@@ -1386,19 +1400,22 @@ static void JSTrashAssetExecute(napi_env env, void *data)
         return;
     }
     MediaLibraryNapiUtils::UriRemoveAllFragment(uri);
-    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos &&
-        uri.find(AudioColumn::AUDIO_URI_PREFIX) == string::npos) {
+    string trashId = MediaFileUtils::GetIdFromUri(uri);
+    string trashUri;
+    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
+        trashUri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    } else if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
+        trashUri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_AUDIOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    } else {
         context->error = E_VIOLATION_PARAMETERS;
         return;
     }
-    string deleteId = MediaFileUtils::GetIdFromUri(uri);
-    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
-    MediaLibraryNapiUtils::UriAppendKeyValue(deleteUri, API_VERSION, to_string(API_VERSION_10));
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, PHOTO_TYPE_MASK);
-    Uri updateAssetUri(deleteUri);
+    MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(API_VERSION_10));
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(trashUri, PHOTO_TYPE_MASK);
+    Uri updateAssetUri(trashUri);
     DataSharePredicates predicates;
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({ deleteId });
+    predicates.SetWhereArgs({ trashId });
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
@@ -3478,7 +3495,7 @@ static napi_status ParseAssetCreateOption(napi_env env, napi_value arg, MediaLib
     return napi_ok;
 }
 
-static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
+static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     constexpr size_t minArgs = ARGS_ONE;
@@ -3527,6 +3544,28 @@ static napi_value ParseArgsCreateAsset(napi_env env, napi_callback_info info,
     return result;
 }
 
+static napi_value ParseArgsCreateAudioAsset(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+
+    /* Parse the first argument into displayName */
+    string displayName;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], displayName) ==
+        napi_ok, "Failed to get displayName");
+
+    context->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_AUDIO);
+    context->valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    return result;
+}
+
 static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -3556,7 +3595,9 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
         }
     }
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    if (context->assetType == TYPE_PHOTO) {
+        predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    }
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
@@ -3642,7 +3683,7 @@ napi_value MediaLibraryNapi::UserFileMgrGetAlbums(napi_env env, napi_callback_in
         AlbumsAsyncCallbackComplete);
 }
 
-napi_value MediaLibraryNapi::UserFileMgrCreateAsset(napi_env env, napi_callback_info info)
+napi_value MediaLibraryNapi::UserFileMgrCreatePhotoAsset(napi_env env, napi_callback_info info)
 {
     napi_value ret = nullptr;
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -3651,10 +3692,26 @@ napi_value MediaLibraryNapi::UserFileMgrCreateAsset(napi_env env, napi_callback_
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
     MediaLibraryNapiUtils::GenTypeMaskFromArray(asyncContext->mediaTypes, asyncContext->typeMask);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    NAPI_ASSERT(env, ParseArgsCreateAsset(env, info, asyncContext), "Failed to parse js args");
+    asyncContext->assetType = TYPE_PHOTO;
+    NAPI_ASSERT(env, ParseArgsCreatePhotoAsset(env, info, asyncContext), "Failed to parse js args");
 
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrCreateAsset", JSCreateAssetExecute,
-        JSCreateAssetCompleteCallback);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrCreatePhotoAsset",
+        JSCreateAssetExecute, JSCreateAssetCompleteCallback);
+}
+
+napi_value MediaLibraryNapi::UserFileMgrCreateAudioAsset(napi_env env, napi_callback_info info)
+{
+    napi_value ret = nullptr;
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_AUDIO);
+    MediaLibraryNapiUtils::GenTypeMaskFromArray(asyncContext->mediaTypes, asyncContext->typeMask);
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    asyncContext->assetType = TYPE_AUDIO;
+    NAPI_ASSERT(env, ParseArgsCreateAudioAsset(env, info, asyncContext), "Failed to parse js args");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrCreateAudioAsset",
+        JSCreateAssetExecute, JSCreateAssetCompleteCallback);
 }
 
 napi_value MediaLibraryNapi::UserFileMgrTrashAsset(napi_env env, napi_callback_info info)
