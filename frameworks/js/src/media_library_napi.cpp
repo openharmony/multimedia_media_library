@@ -2024,6 +2024,12 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
         if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
             return undefinedResult;
         }
+        if (argc == ARGS_TWO) {
+            auto status = napi_typeof(env, argv[PARAM1], &valueType);
+            if (status == napi_ok && (valueType == napi_undefined || valueType == napi_null)) {
+                argc -= 1;
+            }
+        }
         size_t res = 0;
         char buffer[ARG_BUF_SIZE];
         if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
@@ -2048,56 +2054,74 @@ napi_value MediaLibraryNapi::JSOffCallback(napi_env env, napi_callback_info info
     return undefinedResult;
 }
 
+static napi_value UserFileMgrOffCheckArgs(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, context->argc, context->argv, thisVar);
+    NAPI_ASSERT(env, ARGS_ONE <= context->argc && context->argc<= ARGS_TWO, "requires one or two parameters");
+    if (thisVar == nullptr || context->argv[PARAM0] == nullptr) {
+        return nullptr;
+    }
+
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, context->argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+
+    if (context->argc == ARGS_TWO) {
+        auto status = napi_typeof(env, context->argv[PARAM1], &valueType);
+        if (status == napi_ok && (valueType == napi_undefined || valueType == napi_null)) {
+            context->argc -= 1;
+        }
+    }
+
+    return thisVar;
+}
+
 napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UserFileMgrOffCallback");
     napi_value undefinedResult = nullptr;
     napi_get_undefined(env, &undefinedResult);
-    size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {nullptr};
-    napi_value thisVar = nullptr;
-    GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, ARGS_ONE <= argc && argc<= ARGS_TWO, "requires one or two parameters");
-    if (thisVar == nullptr || argv[PARAM0] == nullptr) {
-        return undefinedResult;
-    }
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    napi_value thisVar = UserFileMgrOffCheckArgs(env, info, asyncContext);
     MediaLibraryNapi *obj = nullptr;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
     if (status != napi_ok || obj == nullptr || g_listObj == nullptr) {
         return undefinedResult;
     }
-    napi_valuetype valueType = napi_undefined;
-    if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return undefinedResult;
-    }
     size_t res = 0;
     char buffer[ARG_BUF_SIZE];
-    if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
+    if (napi_get_value_string_utf8(env, asyncContext->argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return undefinedResult;
     }
+
     string uri = string(buffer);
+    napi_valuetype valueType = napi_undefined;
     if (ListenerTypeMaps.find(uri) != ListenerTypeMaps.end()) {
-        if (argc == ARGS_TWO) {
-            if (napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
+        if (asyncContext->argc == ARGS_TWO) {
+            if (napi_typeof(env, asyncContext->argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
                 return undefinedResult;
             }
             const int32_t refCount = 1;
-            napi_create_reference(env, argv[PARAM1], refCount, &g_listObj->cbOffRef_);
+            napi_create_reference(env, asyncContext->argv[PARAM1], refCount, &g_listObj->cbOffRef_);
         }
         obj->UnregisterChange(env, uri, *g_listObj);
         return undefinedResult;
     }
     napi_ref cbOffRef = nullptr;
-    if (argc == ARGS_TWO) {
-        if (napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
+    if (asyncContext->argc == ARGS_TWO) {
+        if (napi_typeof(env, asyncContext->argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return undefinedResult;
         }
         const int32_t refCount = 1;
-        napi_create_reference(env, argv[PARAM1], refCount, &cbOffRef);
+        napi_create_reference(env, asyncContext->argv[PARAM1], refCount, &cbOffRef);
     }
     tracer.Start("UnRegisterNotifyChange");
     obj->UnRegisterNotifyChange(env, uri, cbOffRef, *g_listObj);
@@ -3469,6 +3493,8 @@ static napi_status ParseAssetCreateOption(napi_env env, napi_value arg, MediaLib
             result = napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res);
             CHECK_COND_RET(result == napi_ok, result, "failed to get string");
             context.valuesBucket.Put(iter.second, string(buffer));
+        } else if (valueType == napi_undefined || valueType == napi_null) {
+            continue;
         } else {
             NAPI_ERR_LOG("valueType %{public}d is unaccepted", static_cast<int>(valueType));
             return napi_invalid_arg;
@@ -4117,7 +4143,13 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     bool hasCallback = false;
     CHECK_ARGS(env, MediaLibraryNapiUtils::HasCallback(env, context->argc, context->argv, hasCallback),
         JS_ERR_PARAMETER_INVALID);
-
+    if (context->argc == ARGS_THREE) {
+        napi_valuetype valueType = napi_undefined;
+        if (napi_typeof(env, context->argv[PARAM2], &valueType) == napi_ok &&
+            (valueType == napi_undefined || valueType == napi_null)) {
+            context->argc -= 1;
+        }
+    }
     switch (context->argc - hasCallback) {
         case ARGS_ZERO:
             break;
