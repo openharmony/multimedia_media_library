@@ -46,7 +46,8 @@ public:
     bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
         int32_t rowId, std::vector<std::string> &devices, bool isBlock = false) override;
     int32_t ExecuteSql(const std::string &sql) override;
-    std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql) override;
+    std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
+        const std::vector<std::string> &selectionArgs = std::vector<std::string>()) override;
 
     int32_t BeginTransaction();
     int32_t RollBack();

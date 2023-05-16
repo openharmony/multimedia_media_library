@@ -380,14 +380,14 @@ int32_t MediaLibraryRdbStore::Update(int32_t &changedRows, const ValuesBucket &v
     return changedRows;
 }
 
-shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const string &sql)
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const string &sql, const vector<string> &selectionArgs)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return nullptr;
     }
 
-    return rdbStore_->QuerySql(sql);
+    return rdbStore_->QuerySql(sql, selectionArgs);
 }
 
 int32_t MediaLibraryRdbStore::BeginTransaction()
