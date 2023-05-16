@@ -1429,7 +1429,7 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, c
 
     string queryUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
         "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
-    if (!path.empty()) {
+    if (!path.empty() && IsAsciiString(path)) {
         queryUriStr.append("&" + THUMBNAIL_PATH + "=" + path);
     }
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUriStr, typeMask);
