@@ -147,7 +147,9 @@ int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
         PhotoColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_URI,
         PhotoColumn::MEDIA_TIME_PENDING,
-        PhotoColumn::MEDIA_TYPE
+        PhotoColumn::MEDIA_TYPE,
+        MediaColumn::MEDIA_DATE_MODIFIED,
+        MediaColumn::MEDIA_DATE_ADDED
     };
     auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, strFileId, cmd.GetOprnObject(), columns);
     if (fileAsset == nullptr) {
