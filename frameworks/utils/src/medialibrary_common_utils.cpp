@@ -48,39 +48,6 @@ const vector<string> CHAR2HEX_TABLE = {
     "F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "FA", "FB", "FC", "FD", "FE", "FF"
 };
 
-const std::unordered_set<std::string> fileKeyWhiteListUSet {
-    MEDIA_DATA_DB_ID,
-    MEDIA_DATA_DB_RELATIVE_PATH,
-    MEDIA_DATA_DB_NAME,
-    MEDIA_DATA_DB_PARENT_ID,
-    MEDIA_DATA_DB_MIME_TYPE,
-    MEDIA_DATA_DB_MEDIA_TYPE,
-    MEDIA_DATA_DB_SIZE,
-    MEDIA_DATA_DB_DATE_ADDED,
-    MEDIA_DATA_DB_DATE_MODIFIED,
-    MEDIA_DATA_DB_DATE_TAKEN,
-    MEDIA_DATA_DB_TITLE,
-    MEDIA_DATA_DB_ARTIST,
-    MEDIA_DATA_DB_AUDIO_ALBUM,
-    MEDIA_DATA_DB_DURATION,
-    MEDIA_DATA_DB_WIDTH,
-    MEDIA_DATA_DB_HEIGHT,
-    MEDIA_DATA_DB_ORIENTATION,
-    MEDIA_DATA_DB_BUCKET_ID,
-    MEDIA_DATA_DB_BUCKET_NAME,
-    DIRECTORY_DB_DIRECTORY_TYPE,
-    MEDIA_DATA_DB_DATE_TRASHED,
-    MEDIA_DATA_DB_BUCKET_ID,
-    MEDIA_DATA_DB_ALBUM_ID,
-    DEVICE_DB_NETWORK_ID,
-    SMARTABLUMASSETS_PARENTID,
-    SMARTALBUM_DB_ID,
-    MEDIA_DATA_DB_FILE_PATH,
-    MEDIA_DATA_DB_IS_TRASH,
-    MEDIA_DATA_DB_RECYCLE_PATH,
-    MEDIA_DATA_DB_OWNER_PACKAGE,
-};
-
 void MediaLibraryCommonUtils::Char2Hex(const unsigned char *data, const size_t len, std::string &hexStr)
 {
     constexpr int CHAR_WIDTH = 8;
@@ -143,7 +110,48 @@ void MediaLibraryCommonUtils::ExtractKeyWord(std::string &str)
 
 bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)
 {
-    return fileKeyWhiteListUSet.find(express) != fileKeyWhiteListUSet.end();
+    static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
+        // Files table columns
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_RELATIVE_PATH,
+        MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_PARENT_ID,
+        MEDIA_DATA_DB_MIME_TYPE,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_SIZE,
+        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_DATE_TAKEN,
+        MEDIA_DATA_DB_TITLE,
+        MEDIA_DATA_DB_ARTIST,
+        MEDIA_DATA_DB_AUDIO_ALBUM,
+        MEDIA_DATA_DB_DURATION,
+        MEDIA_DATA_DB_WIDTH,
+        MEDIA_DATA_DB_HEIGHT,
+        MEDIA_DATA_DB_ORIENTATION,
+        MEDIA_DATA_DB_BUCKET_ID,
+        MEDIA_DATA_DB_BUCKET_NAME,
+        DIRECTORY_DB_DIRECTORY_TYPE,
+        MEDIA_DATA_DB_DATE_TRASHED,
+        MEDIA_DATA_DB_BUCKET_ID,
+        MEDIA_DATA_DB_ALBUM_ID,
+        DEVICE_DB_NETWORK_ID,
+        SMARTABLUMASSETS_PARENTID,
+        SMARTALBUM_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_IS_TRASH,
+        MEDIA_DATA_DB_RECYCLE_PATH,
+        MEDIA_DATA_DB_OWNER_PACKAGE,
+
+        // Photos table columns
+        COMPAT_HIDDEN,
+        COMPAT_PHOTO_SYNC_STATUS,
+        COMPAT_FILE_SUBTYPE,
+
+        // PhotoAlbum table columns
+        COMPAT_ALBUM_SUBTYPE,
+    };
+    return FILE_KEY_WHITE_LIST.find(express) != FILE_KEY_WHITE_LIST.end();
 }
 
 bool MediaLibraryCommonUtils::CheckExpressValidation(std::vector<std::string> &sepratedStr)

@@ -213,16 +213,18 @@ static void SolvePendingInQuery(AbsRdbPredicates* predicates)
     }
 }
 
-#ifdef MEDIA_LIBRARY_COMPATIBILITY
+#ifdef MEDIALIBRARY_COMPATIBILITY
 static const vector<string> &PhotosCompatColumns()
 {
     /*
-     * Caution: Columns in PHOTOS_COMPAT_COLUMNS and AUDIOS_COMPAT_COLUMNS MUST keep same order with FILE_ASSET_COLUMNS
-     * for sqlite UNION operation.
+     * Caution: Columns MUST KEEP SAME ORDER for sqlite UNION operation in:
+     *     o PHOTOS_COMPAT_COLUMNS
+     *     o AUDIOS_COMPAT_COLUMNS
+     *     o FILES_COMPAT_COLUMNS
      */
     static const vector<string> PHOTOS_COMPAT_COLUMNS = {
         MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_URI,
+        COMPAT_COLUMN_URI,
         MEDIA_DATA_DB_MIME_TYPE,
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_NAME,
@@ -242,7 +244,11 @@ static const vector<string> &PhotosCompatColumns()
         COMPAT_COLUMN_BUCKET_NAME,
         COMPAT_COLUMN_IS_TRASH,
         MEDIA_DATA_DB_IS_FAV,
-        MEDIA_DATA_DB_DATE_TRASHED
+        MEDIA_DATA_DB_DATE_TRASHED,
+
+        MediaColumn::MEDIA_HIDDEN,
+        PhotoColumn::PHOTO_SYNC_STATUS,
+        PhotoColumn::PHOTO_SUBTYPE,
     };
     return PHOTOS_COMPAT_COLUMNS;
 }
@@ -250,12 +256,14 @@ static const vector<string> &PhotosCompatColumns()
 static const vector<string> &AudiosCompatColumns()
 {
     /*
-     * Caution: Columns in PHOTOS_COMPAT_COLUMNS and AUDIOS_COMPAT_COLUMNS MUST keep same order with FILE_ASSET_COLUMNS
-     * for sqlite UNION operation.
+     * Caution: Columns MUST KEEP SAME ORDER for sqlite UNION operation in:
+     *     o PHOTOS_COMPAT_COLUMNS
+     *     o AUDIOS_COMPAT_COLUMNS
+     *     o FILES_COMPAT_COLUMNS
      */
     static const vector<string> AUDIOS_COMPAT_COLUMNS = {
         MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_URI,
+        COMPAT_COLUMN_URI,
         MEDIA_DATA_DB_MIME_TYPE,
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_NAME,
@@ -275,9 +283,53 @@ static const vector<string> &AudiosCompatColumns()
         COMPAT_COLUMN_BUCKET_NAME,
         COMPAT_COLUMN_IS_TRASH,
         MEDIA_DATA_DB_IS_FAV,
-        MEDIA_DATA_DB_DATE_TRASHED
+        MEDIA_DATA_DB_DATE_TRASHED,
+
+        DEFAULT_INT_COLUMN_AS + MediaColumn::MEDIA_HIDDEN,
+        DEFAULT_INT_COLUMN_AS + PhotoColumn::PHOTO_SYNC_STATUS,
+        DEFAULT_INT_COLUMN_AS + PhotoColumn::PHOTO_SUBTYPE,
     };
     return AUDIOS_COMPAT_COLUMNS;
+}
+
+static const vector<string> &FilesCompatColumns()
+{
+    /*
+     * Caution: KEEP SAME ORDER for sqlite UNION operation in columns below:
+     *     o PHOTOS_COMPAT_COLUMNS
+     *     o AUDIOS_COMPAT_COLUMNS
+     *     o FILES_COMPAT_COLUMNS
+     */
+    static const vector<string> FILES_COMPAT_COLUMNS = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_URI,
+        MEDIA_DATA_DB_MIME_TYPE,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_TITLE,
+        MEDIA_DATA_DB_RELATIVE_PATH,
+        MEDIA_DATA_DB_PARENT_ID,
+        MEDIA_DATA_DB_SIZE,
+        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_DATE_TAKEN,
+        MEDIA_DATA_DB_ARTIST,
+        MEDIA_DATA_DB_WIDTH,
+        MEDIA_DATA_DB_HEIGHT,
+        MEDIA_DATA_DB_ORIENTATION,
+        MEDIA_DATA_DB_DURATION,
+        MEDIA_DATA_DB_BUCKET_ID,
+        MEDIA_DATA_DB_BUCKET_NAME,
+        MEDIA_DATA_DB_IS_TRASH,
+        MEDIA_DATA_DB_IS_FAV,
+        MEDIA_DATA_DB_DATE_TRASHED,
+
+        DEFAULT_INT_COLUMN_AS + MediaColumn::MEDIA_HIDDEN,
+        PhotoColumn::PHOTO_SYNC_STATUS,
+        DEFAULT_INT_COLUMN_AS + PhotoColumn::PHOTO_SUBTYPE,
+    };
+
+    return FILES_COMPAT_COLUMNS;
 }
 
 static void BuildQueryColumns(const vector<string> &columns, string &sql)
@@ -286,6 +338,17 @@ static void BuildQueryColumns(const vector<string> &columns, string &sql)
         sql += col + ',';
     }
     sql.pop_back();         // Remove last ','
+}
+
+static void InsertWhereClauseFilter(MediaLibraryCommand &cmd)
+{
+    string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    if (!whereClause.empty()) {
+        whereClause = MediaColumn::ASSETS_QUERY_FILTER + " AND " + whereClause;
+    } else {
+        whereClause = MediaColumn::ASSETS_QUERY_FILTER;
+    }
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
 }
 
 static void BuildCompatQuerySql(MediaLibraryCommand &cmd, const string table, const vector<string> &columns,
@@ -305,9 +368,32 @@ static void BuildCompatQuerySql(MediaLibraryCommand &cmd, const string table, co
     }
 }
 
+static string RemoveWhereSuffix(MediaLibraryCommand &cmd, const string &key)
+{
+    string suffix;
+    string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    size_t keyPos = MediaFileUtils::FindIgnoreCase(whereClause, key);
+    if (keyPos != string::npos) {
+        suffix = whereClause.substr(keyPos);
+        whereClause = whereClause.substr(0, keyPos);
+    }
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+    return suffix;
+}
+
 static void BuildQueryFileSql(MediaLibraryCommand &cmd, vector<string> &selectionArgs, string &sql)
 {
+    InsertWhereClauseFilter(cmd);
+
+    string groupBy = RemoveWhereSuffix(cmd, " GROUP BY ");
+    string having = RemoveWhereSuffix(cmd, " HAVING ");
+    string orderBy = RemoveWhereSuffix(cmd, " ORDER BY ");
+    string limit = RemoveWhereSuffix(cmd, " LIMIT ");
+
     sql = "SELECT ";
+    if (!groupBy.empty()) {
+        sql += "count(*),";
+    }
     BuildQueryColumns(FILE_ASSET_COLUMNS, sql);
 
     sql += " FROM (";
@@ -315,18 +401,34 @@ static void BuildQueryFileSql(MediaLibraryCommand &cmd, vector<string> &selectio
     sql += " UNION ";
     BuildCompatQuerySql(cmd, AudioColumn::AUDIOS_TABLE, AudiosCompatColumns(), selectionArgs, sql);
     sql += " UNION ";
-    BuildCompatQuerySql(cmd, MEDIALIBRARY_TABLE, FILE_ASSET_COLUMNS, selectionArgs, sql);
-    sql += ")";
+    BuildCompatQuerySql(cmd, MEDIALIBRARY_TABLE, FilesCompatColumns(), selectionArgs, sql);
+    sql += ") ";
+
+    if (!groupBy.empty()) {
+        sql += groupBy;
+    }
+    if (!having.empty()) {
+        sql += having;
+    }
 
     const string &order = cmd.GetAbsRdbPredicates()->GetOrder();
-    if (!order.empty()) {
+    if ((!order.empty()) && (!orderBy.empty())) {
+        MEDIA_WARN_LOG("ORDER BY found both in whereClause and predicates, use the predicates one");
         sql += " ORDER BY " + order;
+    } else if (!order.empty()) {
+        sql += " ORDER BY " + order;
+    } else if (!orderBy.empty()) {
+        sql += orderBy;
+    }
+
+    if (!limit.empty()) {
+        sql += limit;
     }
 }
 #endif
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFileOperation(
-    MediaLibraryCommand &cmd, vector<string> columns)
+    MediaLibraryCommand &cmd, const vector<string> &columns)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
@@ -351,7 +453,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFileOperation(
     MediaLibraryTracer tracer;
     tracer.Start("QueryFile RdbStore->Query");
 
-#ifdef MEDIA_LIBRARY_COMPATIBILITY
+#ifdef MEDIALIBRARY_COMPATIBILITY
     string sql;
     vector<string> selectionArgs;
     BuildQueryFileSql(cmd, selectionArgs, sql);

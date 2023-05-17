@@ -206,5 +206,11 @@ bool AudioColumn::IsAudioColumn(const std::string &columnName)
     return (AUDIO_COLUMNS.find(columnName) != AUDIO_COLUMNS.end()) ||
         (MEDIA_COLUMNS.find(columnName) != MEDIA_COLUMNS.end());
 }
+
+const std::string MediaColumn::ASSETS_QUERY_FILTER =
+    PhotoColumn::PHOTO_SYNC_STATUS + " = 0" + " AND " +
+    MediaColumn::MEDIA_DATE_TRASHED + " = 0" + " AND " +
+    MediaColumn::MEDIA_HIDDEN + " = 0" + " AND " +
+    MediaColumn::MEDIA_TIME_PENDING + " = 0";
 }  // namespace Media
 }  // namespace OHOS

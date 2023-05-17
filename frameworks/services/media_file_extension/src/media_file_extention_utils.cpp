@@ -478,9 +478,8 @@ shared_ptr<NativeRdb::ResultSet> GetListRootResult(const FileInfo &parentInfo, M
     const int64_t offset, const int64_t maxCount)
 {
     string selection = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? AND " +
-        MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT ?, ?";
-    vector<string> selectionArgs = { to_string(ROOT_PARENT_ID), to_string(MEDIA_TYPE_NOFILE), to_string(NOT_TRASHED),
-        to_string(offset), to_string(maxCount) };
+        MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT " + to_string(offset) + ", " + to_string(maxCount);
+    vector<string> selectionArgs = { to_string(ROOT_PARENT_ID), to_string(MEDIA_TYPE_NOFILE), to_string(NOT_TRASHED) };
     Uri uri(GetQueryUri(parentInfo, uriType));
     return GetResult(uri, uriType, selection, selectionArgs);
 }
@@ -494,10 +493,8 @@ shared_ptr<NativeRdb::ResultSet> GetListDirResult(const FileInfo &parentInfo, Me
     if (ret != E_SUCCESS) {
         return nullptr;
     }
-    selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? LIMIT ?, ?";
+    selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? LIMIT " + to_string(offset) + ", " + to_string(maxCount);
     selectionArgs.push_back(to_string(MEDIA_TYPE_NOFILE));
-    selectionArgs.push_back(to_string(offset));
-    selectionArgs.push_back(to_string(maxCount));
     Uri uri(GetQueryUri(parentInfo, uriType));
     return GetResult(uri, uriType, selection, selectionArgs);
 }
@@ -511,10 +508,8 @@ shared_ptr<NativeRdb::ResultSet> GetListAlbumResult(const FileInfo &parentInfo, 
     if (ret != E_SUCCESS) {
         return nullptr;
     }
-    selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " = ? LIMIT ?, ?";
+    selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " = ? LIMIT " + to_string(offset) + ", " + to_string(maxCount);
     selectionArgs.push_back(MimeType2MediaType(parentInfo.mimeType));
-    selectionArgs.push_back(to_string(offset));
-    selectionArgs.push_back(to_string(maxCount));
     Uri uri(GetQueryUri(parentInfo, uriType));
     return GetResult(uri, uriType, selection, selectionArgs);
 }
@@ -665,10 +660,8 @@ shared_ptr<NativeRdb::ResultSet> SetScanFileSelection(const FileInfo &parentInfo
     }
     selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     selection += " AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_NOFILE);
-    selection += " AND " + MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT ?, ?";
+    selection += " AND " + MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT " + to_string(offset) + ", " + to_string(maxCount);
     selectionArgs.push_back(to_string(NOT_TRASHED));
-    selectionArgs.push_back(to_string(offset));
-    selectionArgs.push_back(to_string(maxCount));
     Uri uri(GetQueryUri(parentInfo, uriType));
     return GetScanFileResult(uri, uriType, selection, selectionArgs);
 }

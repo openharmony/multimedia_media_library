@@ -192,6 +192,17 @@ std::string AlbumNapi::GetTypeMask() const
     return albumAssetPtr->GetAlbumTypeMask();
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+PhotoAlbumType AlbumNapi::GetAlbumType() const
+{
+    return albumAssetPtr->GetAlbumType();
+}
+PhotoAlbumSubType AlbumNapi::GetAlbumSubType() const
+{
+    return albumAssetPtr->GetAlbumSubType();
+}
+#endif
+
 napi_value AlbumNapi::JSGetAlbumId(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -639,6 +650,44 @@ static napi_value ConvertCommitJSArgsToNative(napi_env env, size_t argc, const n
     return result;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static void UpdateCompatAlbumSelection(AlbumNapiAsyncContext *context)
+{
+    PhotoAlbumSubType subType = context->objectPtr->GetAlbumSubType();
+    string filterClause;
+    switch (subType) {
+        case PhotoAlbumSubType::CAMERA: {
+            static const string CAMERA_FILTER = PhotoColumn::PHOTO_SUBTYPE + "=" +
+                to_string(static_cast<int32_t>(PhotoSubType::CAMERA)) + " AND " + MediaColumn::ASSETS_QUERY_FILTER;
+            filterClause = CAMERA_FILTER;
+            break;
+        }
+        case PhotoAlbumSubType::VIDEO: {
+            static const string VIDEO_FILTER = PhotoColumn::MEDIA_TYPE + "=" +
+                to_string(MediaType::MEDIA_TYPE_VIDEO) + " AND " + MediaColumn::ASSETS_QUERY_FILTER;
+            filterClause = VIDEO_FILTER;
+            break;
+        }
+        case PhotoAlbumSubType::SCREENSHOT: {
+            static const string SCREENSHOT_FILTER = PhotoColumn::PHOTO_SUBTYPE + "=" +
+                to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)) + " AND " + MediaColumn::ASSETS_QUERY_FILTER;
+            filterClause = SCREENSHOT_FILTER;
+            break;
+        }
+        default: {
+            NAPI_ERR_LOG("Album subtype not support for compatibility: %{public}d", subType);
+            context->SaveError(-EINVAL);
+            return;
+        }
+    }
+    if (!context->selection.empty()) {
+        context->selection = filterClause + " AND " + context->selection;
+    } else {
+        context->selection = filterClause;
+    }
+}
+#endif
+
 static void UpdateSelection(AlbumNapiAsyncContext *context)
 {
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
@@ -647,6 +696,9 @@ static void UpdateSelection(AlbumNapiAsyncContext *context)
         context->predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, context->objectPtr->GetAlbumId());
         MediaLibraryNapiUtils::UpdateMediaTypeSelections(context);
     } else {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        UpdateCompatAlbumSelection(context);
+#else
         string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
         MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
         context->selectionArgs.emplace_back("0");
@@ -658,6 +710,7 @@ static void UpdateSelection(AlbumNapiAsyncContext *context)
         string idPrefix = MEDIA_DATA_DB_BUCKET_ID + " = ? ";
         MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, idPrefix);
         context->selectionArgs.emplace_back(std::to_string(context->objectPtr->GetAlbumId()));
+#endif
     }
 }
 
@@ -667,7 +720,6 @@ static void GetFileAssetsNative(napi_env env, void *data)
     tracer.Start("GetFileAssetsNative");
 
     AlbumNapiAsyncContext *context = static_cast<AlbumNapiAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     UpdateSelection(context);
     context->predicates.SetWhereClause(context->selection);
