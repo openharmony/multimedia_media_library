@@ -63,6 +63,13 @@ public:
     void SetResultNapiType(const ResultNapiType type);
     ResultNapiType GetResultNapiType() const;
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    void SetAlbumType(const PhotoAlbumType albumType);
+    void SetAlbumSubType(const PhotoAlbumSubType albumSubType);
+    PhotoAlbumType GetAlbumType() const;
+    PhotoAlbumSubType GetAlbumSubType() const;
+#endif
+
 private:
     int32_t albumId_;
     std::string albumName_;
@@ -76,6 +83,11 @@ private:
     bool albumVirtual_;
     std::string typeMask_;
     ResultNapiType resultNapiType_;
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    PhotoAlbumType albumType_;
+    PhotoAlbumSubType albumSubType_;
+#endif
 };
 } // namespace Media
 } // namespace OHOS

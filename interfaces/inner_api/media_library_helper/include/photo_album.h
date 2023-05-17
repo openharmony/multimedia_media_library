@@ -43,6 +43,9 @@ public:
     void SetCoverUri(const std::string &coverUri);
     const std::string& GetCoverUri() const;
 
+    void SetDateModified(const int64_t dateModified);
+    int64_t GetDateModified() const;
+
     void SetCount(const int32_t count);
     int32_t GetCount() const;
 
@@ -67,6 +70,7 @@ private:
     std::string uri_;
     std::string albumName_;
     std::string coverUri_;
+    int64_t dateModified_;
     int32_t count_;
     std::string relativePath_;
 

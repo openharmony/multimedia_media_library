@@ -57,6 +57,11 @@ public:
     AlbumNapi();
     ~AlbumNapi();
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    PhotoAlbumType GetAlbumType() const;
+    PhotoAlbumSubType GetAlbumSubType() const;
+#endif
+
 private:
     static void AlbumNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
     static napi_value AlbumNapiConstructor(napi_env env, napi_callback_info info);

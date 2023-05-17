@@ -36,7 +36,7 @@ public:
     static int32_t CopyFileOperation(MediaLibraryCommand &cmd);
     static int32_t IsDirectoryOperation(MediaLibraryCommand &cmd);
     static std::shared_ptr<NativeRdb::ResultSet> QueryFileOperation(MediaLibraryCommand &cmd,
-        std::vector<std::string> columns);
+        const std::vector<std::string> &columns);
 
 private:
     static std::shared_ptr<NativeRdb::ResultSet> QueryFavFiles(MediaLibraryCommand &cmd);

@@ -26,6 +26,7 @@ const std::string PhotoAlbumColumns::ALBUM_SUBTYPE = "album_subtype";
 const std::string PhotoAlbumColumns::ALBUM_NAME = "album_name";
 const std::string PhotoAlbumColumns::ALBUM_COVER_URI = "cover_uri";
 const std::string PhotoAlbumColumns::ALBUM_COUNT = "count";
+const std::string PhotoAlbumColumns::ALBUM_DATE_MODIFIED = "date_modified";
 // For api9 compatibility
 const std::string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
 // default fetch columns
@@ -44,6 +45,7 @@ const std::string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_NAME + " TEXT COLLATE NOCASE, " +
     ALBUM_COVER_URI + " TEXT, " +
     ALBUM_COUNT + " INT DEFAULT 0, " +
+    ALBUM_DATE_MODIFIED + " BIGINT DEFAULT 0, " +
     ALBUM_RELATIVE_PATH + " TEXT)";
 
 // Create indexes

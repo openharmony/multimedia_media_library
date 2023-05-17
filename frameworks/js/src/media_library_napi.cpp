@@ -649,14 +649,12 @@ static void GetFileAssetsExecute(napi_env env, void *data)
 
     GetFileAssetUpdateSelections(context);
     context->fetchColumn = FILE_ASSET_COLUMNS;
-#ifndef MEDIA_LIBRARY_COMPATIBILITY
     if (context->extendArgs.find(DATE_FUNCTION) != string::npos) {
         string group(" GROUP BY (");
         group += context->extendArgs + " )";
         context->selection += group;
         context->fetchColumn.insert(context->fetchColumn.begin(), "count(*)");
     }
-#endif
 
     context->predicates.SetWhereClause(context->selection);
     context->predicates.SetWhereArgs(context->selectionArgs);
@@ -794,6 +792,16 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
 void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSet> resultSet,
     const string &networkId)
 {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    albumData->SetAlbumId(get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet,
+        TYPE_INT32)));
+    albumData->SetAlbumName(get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_NAME, resultSet,
+        TYPE_STRING)));
+    albumData->SetAlbumType(static_cast<PhotoAlbumType>(
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_TYPE, resultSet, TYPE_INT32))));
+    albumData->SetAlbumSubType(static_cast<PhotoAlbumSubType>(
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet, TYPE_INT32))));
+#else
     // Get album id index and value
     albumData->SetAlbumId(get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet,
         TYPE_INT32)));
@@ -801,6 +809,7 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSe
     // Get album title index and value
     albumData->SetAlbumName(get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_TITLE, resultSet,
         TYPE_STRING)));
+#endif
 
     // Get album asset count index and value
     albumData->SetCount(get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_COUNT, resultSet, TYPE_INT32)));
@@ -837,22 +846,120 @@ static void GetAlbumResult(MediaLibraryAsyncContext *context, shared_ptr<DataSha
     }
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static void ReplaceAlbumName(const string &arg, string &argInstead)
+{
+    if (arg == "Camera") {
+        argInstead = to_string(PhotoAlbumSubType::CAMERA);
+    } else if (arg == "Videos") {
+        argInstead = to_string(PhotoAlbumSubType::VIDEO);
+    } else if (arg == "Screenshots") {
+        argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
+    } else if (arg == "ScreenRecordings") {
+        argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
+    } else {
+        argInstead = arg;
+    }
+}
+
+static void ReplaceRelativePath(const string &arg, string &argInstead)
+{
+    if (arg == "Camera") {
+        argInstead = to_string(PhotoAlbumSubType::CAMERA);
+    } else if (arg == "Videos") {
+        argInstead = to_string(PhotoAlbumSubType::VIDEO);
+    } else if (arg == "Pictures/Screenshots") {
+        argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
+    } else if (arg == "Videos/ScreenRecordings") {
+        argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
+    } else {
+        argInstead = arg;
+    }
+}
+
+static void ReplaceSelection(string &selection, vector<string> &selectionArgs,
+    const string &key, const string &keyInstead)
+{
+    for (size_t pos = 0; pos != string::npos;) {
+        pos = selection.find(key, pos);
+        if (pos == string::npos) {
+            break;
+        }
+        selection.replace(pos, key.length(), keyInstead);
+
+        size_t argPos = selection.find('?', pos);
+        if (argPos == string::npos) {
+            break;
+        }
+        size_t argIndex = 0;
+        for (size_t i = 0; i < argPos; i++) {
+            if (selection[i] == '?') {
+                argIndex++;
+            }
+        }
+        if (argIndex > selectionArgs.size() - 1) {
+            NAPI_WARN_LOG("SelectionArgs size is not valid, selection format maybe incorrect: %{private}s",
+                selection.c_str());
+            break;
+        }
+        const string &arg = selectionArgs[argIndex];
+        string argInstead = arg;
+        if (key == MEDIA_DATA_DB_BUCKET_NAME) {
+            ReplaceAlbumName(arg, argInstead);
+        } else if (key == MEDIA_DATA_DB_RELATIVE_PATH) {
+            ReplaceRelativePath(arg, argInstead);
+        }
+        selectionArgs[argIndex] = argInstead;
+        pos = argPos + 1;
+    }
+    return E_OK;
+}
+
+static void UpdateCompatSelection(MediaLibraryAsyncContext *context)
+{
+    ReplaceSelection(context->selection, context->selectionArgs, MEDIA_DATA_DB_BUCKET_ID, PhotoAlbumColumns::ALBUM_ID);
+    ReplaceSelection(context->selection, context->selectionArgs,
+        MEDIA_DATA_DB_BUCKET_NAME, PhotoAlbumColumns::ALBUM_SUBTYPE);
+    ReplaceSelection(context->selection, context->selectionArgs,
+        MEDIA_DATA_DB_RELATIVE_PATH, PhotoAlbumColumns::ALBUM_SUBTYPE);
+    static const string COMPAT_QUERY_FILTER = PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
+        to_string(PhotoAlbumSubType::VIDEO) + "," +
+        to_string(PhotoAlbumSubType::SCREENSHOT) + "," +
+        to_string(PhotoAlbumSubType::CAMERA) + ")";
+    if (!context->selection.empty()) {
+        context->selection = COMPAT_QUERY_FILTER + " AND " + context->selection;
+    } else {
+        context->selection = COMPAT_QUERY_FILTER;
+    }
+}
+#endif
+
 static void GetResultDataExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetResultDataExecute");
 
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    UpdateCompatSelection(context);
+#else
     MediaLibraryNapiUtils::UpdateMediaTypeSelections(context);
+#endif
     context->predicates.SetWhereClause(context->selection);
     context->predicates.SetWhereArgs(context->selectionArgs);
     if (!context->order.empty()) {
         context->predicates.SetOrder(context->order);
     }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
     vector<string> columns;
+    const set<string> &defaultFetchCols = PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS;
+    columns.assign(defaultFetchCols.begin(), defaultFetchCols.end());
+    columns.push_back(PhotoAlbumColumns::ALBUM_DATE_MODIFIED);
+#else
+    vector<string> columns;
+#endif
     string queryUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
     if (!context->networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId +
@@ -2291,7 +2398,7 @@ static void SetSmartAlbumData(SmartAlbumAsset* smartAlbumData, shared_ptr<DataSh
 static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("GetResultDataExecute");
+    tracer.Start("GetAllSmartAlbumResultDataExecute");
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NAPI_INFO_LOG("context->privateAlbumType = %{public}d", context->privateAlbumType);

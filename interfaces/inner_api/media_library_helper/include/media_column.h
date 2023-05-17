@@ -62,6 +62,9 @@ public:
     static const std::set<std::string> MEDIA_COLUMNS;
     // Default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS;
+
+    // Util consts
+    static const std::string ASSETS_QUERY_FILTER;
 };
 
 class PhotoColumn : public MediaColumn {

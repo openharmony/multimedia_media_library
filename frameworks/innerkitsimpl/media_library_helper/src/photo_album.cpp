@@ -93,6 +93,16 @@ const string& PhotoAlbum::GetCoverUri() const
     return coverUri_;
 }
 
+void PhotoAlbum::SetDateModified(const int64_t dateModified)
+{
+    dateModified_ = dateModified;
+}
+
+int64_t PhotoAlbum::GetDateModified() const
+{
+    return dateModified_;
+}
+
 void PhotoAlbum::SetCount(const int32_t count)
 {
     count_ = count;

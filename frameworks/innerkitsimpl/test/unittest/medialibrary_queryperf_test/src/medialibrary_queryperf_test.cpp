@@ -406,8 +406,8 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_009, TestSi
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     DataSharePredicates predicates;
-    string selection = MEDIA_DATA_DB_ID + " <> ? LIMIT ?, ? ";
-    vector<string> selectionArgs = { "0", "0", "50" };
+    string selection = MEDIA_DATA_DB_ID + " <> ? LIMIT 0, 50 ";
+    vector<string> selectionArgs = { "0" };
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
     vector<string> columns {
@@ -543,8 +543,8 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_012, TestSi
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     DataSharePredicates predicates;
-    string selection = MEDIA_DATA_DB_ID + " <> ? LIMIT ?, ? ";
-    vector<string> selectionArgs = { "0", "0", "50" };
+    string selection = MEDIA_DATA_DB_ID + " <> ? LIMIT 0, 50 ";
+    vector<string> selectionArgs = { "0" };
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
     vector<string> columns {
