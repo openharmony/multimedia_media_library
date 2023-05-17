@@ -255,8 +255,7 @@ int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyTyp
 int32_t MediaLibraryNotify::Notify(const shared_ptr<FileAsset> &closeAsset)
 {
     bool isCreateFile = false;
-    if (closeAsset->GetDateAdded() == closeAsset->GetDateModified() ||
-        closeAsset->GetDateModified() == 0) {
+    if (closeAsset->GetDateModified() == 0) {
         isCreateFile = true;
     }
     if (closeAsset->GetMediaType() == MediaType::MEDIA_TYPE_IMAGE ||

@@ -139,7 +139,9 @@ int32_t MediaLibraryAudioOperations::Close(MediaLibraryCommand &cmd)
         AudioColumn::MEDIA_FILE_PATH,
         AudioColumn::MEDIA_URI,
         AudioColumn::MEDIA_TIME_PENDING,
-        AudioColumn::MEDIA_TYPE
+        AudioColumn::MEDIA_TYPE,
+        MediaColumn::MEDIA_DATE_MODIFIED,
+        MediaColumn::MEDIA_DATE_ADDED
     };
     auto fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, strFileId, cmd.GetOprnObject(), columns);
     if (fileAsset == nullptr) {
