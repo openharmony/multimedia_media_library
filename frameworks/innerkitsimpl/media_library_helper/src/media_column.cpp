@@ -111,6 +111,7 @@ const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN new.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
                         " and OLD.cloud_id is NULL " +
+                        " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
                         " DELETE FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE file_id = old.file_id;" +
                         " END;";
@@ -119,10 +120,12 @@ const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
                         "CREATE TRIGGER photos_fdirty_trigger AFTER UPDATE ON " +
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL AND" +
                         " new.date_modified <> old.date_modified " +
+                        " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_FDIRTY)) +
                         " WHERE file_id = old.file_id;" +
+                        " SELECT cloud_sync_func(); " +
                         " END;";
 
 const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
@@ -130,11 +133,13 @@ const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL" +
                         " AND new.date_modified = old.date_modified AND old.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
-                        " AND new.dirty = old.dirty" +
+                        " AND new.time_visit = old.time_visit " +
+                        " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
                         " WHERE file_id = old.file_id;" +
+                        " SELECT cloud_sync_func(); " +
                         " END;";
 
 const std::string  PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC =
