@@ -454,6 +454,62 @@ int32_t MediaFileUtils::CheckTitle(const string &title)
     return E_OK;
 }
 
+int32_t MediaFileUtils::CheckRelativePath(const std::string &relativePath)
+{
+    if (relativePath.empty()) {
+        return -EINVAL;
+    }
+
+    int firstPoint = 0;
+    int lastPoint = 0;
+    while (true) {
+        lastPoint = relativePath.find_first_of('/', firstPoint);
+        if (lastPoint == string::npos) {
+            lastPoint = relativePath.length();
+        }
+        int len = lastPoint - firstPoint;
+        if (len == 0) {
+            MEDIA_ERR_LOG("relativePath %{public}s is invalid", relativePath.c_str());
+            return -EINVAL;
+        }
+        string checkedDirName = relativePath.substr(firstPoint, len);
+        if (CheckTitle(checkedDirName) != E_OK) {
+            MEDIA_ERR_LOG("Dir Name %{public}s is invalid in path %{public}s",
+                checkedDirName.c_str(), relativePath.c_str());
+            return -EINVAL;
+        }
+        if (lastPoint == relativePath.length()) {
+            break;
+        }
+        firstPoint = lastPoint + 1;
+    }
+    return E_OK;
+}
+
+void MediaFileUtils::GetRootDirFromRelativePath(const string &relativePath, string &rootDir)
+{
+    rootDir = relativePath;
+    if (relativePath.empty()) {
+        return;
+    }
+    if (relativePath.back() != '/') {
+        rootDir += '/';
+    }
+    if (rootDir[0] == '/') {
+        size_t dirIndex = rootDir.find_first_of('/', 1);
+        if (dirIndex == string::npos) {
+            return;
+        }
+        rootDir = rootDir.substr(1, dirIndex);
+    } else {
+        size_t dirIndex = rootDir.find_first_of('/');
+        if (dirIndex == string::npos) {
+            return;
+        }
+        rootDir = rootDir.substr(0, dirIndex + 1);
+    }
+}
+
 int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
 {
     return CheckTitle(albumName);

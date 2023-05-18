@@ -35,6 +35,10 @@ namespace OHOS {
 namespace Media {
 static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
 
+static const std::string CAMERA_PATH = "Camera";
+static const std::string SCREEN_SHOT_PATH = "Pictures/Screenshots";
+static const std::string SCREEN_RECORD_PATH = "Videos/ScreenRecordings";
+
 class MediaLibraryAssetOperations {
 public:
     static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
@@ -54,6 +58,7 @@ protected:
 
     static int32_t InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset);
     static int32_t CheckDisplayNameWithType(const std::string &displayName, int32_t mediaType);
+    static int32_t CheckRelativePathAndGetSubType(const std::string &relativePath, int32_t mediaType, int32_t &subType);
     static void GetAssetRootDir(int32_t mediaType, std::string &rootDirPath);
     static int32_t SetAssetPathInCreate(FileAsset &fileAsset);
     static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);

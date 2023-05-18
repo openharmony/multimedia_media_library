@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "media_column.h"
 #define MLOG_TAG "FetchResult"
 
 #include "fetch_result.h"
@@ -61,6 +62,8 @@ static const ResultTypeMap &GetResultTypeMap()
         { MEDIA_DATA_DB_OWNER_PACKAGE, TYPE_STRING },
         { MEDIA_DATA_DB_POSITION, TYPE_INT32 },
         { MediaColumn::MEDIA_HIDDEN, TYPE_INT32 },
+        { MediaColumn::MEDIA_VIRTURL_PATH, TYPE_STRING },
+        { PhotoColumn::PHOTO_SUBTYPE, TYPE_INT32 },
     };
     return RESULT_TYPE_MAP;
 }

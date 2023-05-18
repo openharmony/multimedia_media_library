@@ -51,8 +51,7 @@ int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
         case MediaLibraryApi::API_10:
             return CreateV10(cmd);
         case MediaLibraryApi::API_OLD:
-            MEDIA_ERR_LOG("this api is not realized yet");
-            return E_FAIL;
+            return CreateV9(cmd);
         default:
             MEDIA_ERR_LOG("get api failed");
             return E_FAIL;
@@ -170,6 +169,56 @@ static void SetPhotoSubType(MediaLibraryCommand &cmd, FileAsset &fileAsset)
         valueObject.GetInt(subType);
         fileAsset.SetPhotoSubType(subType);
     }
+}
+
+int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
+{
+    string displayName;
+    string relativePath;
+    int32_t mediaType = 0;
+    FileAsset fileAsset;
+    ValueObject valueObject;
+    ValuesBucket &values = cmd.GetValueBucket();
+    CHECK_AND_RETURN_RET(values.GetObject(PhotoColumn::MEDIA_NAME, valueObject), E_HAS_DB_ERROR);
+    valueObject.GetString(displayName);
+    fileAsset.SetDisplayName(displayName);
+    CHECK_AND_RETURN_RET(values.GetObject(PhotoColumn::MEDIA_RELATIVE_PATH, valueObject), E_HAS_DB_ERROR);
+    valueObject.GetString(relativePath);
+    fileAsset.SetRelativePath(relativePath);
+    CHECK_AND_RETURN_RET(values.GetObject(PhotoColumn::MEDIA_TYPE, valueObject), E_HAS_DB_ERROR);
+    valueObject.GetInt(mediaType);
+    fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
+
+    int32_t subType = static_cast<int32_t>(PhotoSubType::DEFAULT);
+    int32_t errCode = CheckRelativePathAndGetSubType(relativePath, mediaType, subType);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to Check RelativePath and Extension, relativePath=%{private}s, mediaType=%{public}d",
+        relativePath.c_str(), mediaType); 
+    fileAsset.SetPhotoSubType(subType);
+    errCode = CheckDisplayNameWithType(displayName, mediaType);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to Check Dir and Extension, displayName=%{private}s, mediaType=%{public}d",
+        displayName.c_str(), mediaType);
+
+    TransactionOperations transactionOprn;
+    errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    errCode = SetAssetPathInCreate(fileAsset);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
+        return errCode;
+    }
+
+    int32_t outRow = InsertAssetInDb(cmd, fileAsset);
+    if (outRow <= 0) {
+        MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
+        return errCode;
+    }
+    transactionOprn.Finish();
+    return outRow;
 }
 
 int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
