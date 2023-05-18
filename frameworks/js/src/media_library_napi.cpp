@@ -2007,7 +2007,8 @@ void MediaLibraryNapi::UnRegisterNotifyChange(napi_env env,
         for (auto iter = listObj.observers_.begin(); iter != listObj.observers_.end();) {
             if (uri.compare((*iter)->uri_) == 0) {
                 offObservers.push_back(*iter);
-                listObj.observers_.erase(iter++);
+                vector<shared_ptr<MediaOnNotifyObserver>>::iterator tmp = iter;
+                iter = listObj.observers_.erase(tmp);
             } else {
                 iter++;
             }
