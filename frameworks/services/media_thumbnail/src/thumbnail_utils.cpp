@@ -663,13 +663,6 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
         return false;
     }
-    vector<string> devices = {opts.networkId};
-    MediaLibrarySyncOpts syncOpts;
-    syncOpts.rdbStore = opts.store;
-    syncOpts.table = MEDIALIBRARY_TABLE;
-    syncOpts.bundleName = BUNDLE_NAME;
-    syncOpts.row = opts.row;
-    MediaLibrarySyncOperation::SyncPushTable(syncOpts, devices);
     return true;
 }
 
@@ -1299,7 +1292,8 @@ bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, co
         if (!networkId.empty()) {
             MediaLibraryTracer tracer;
             tracer.Start("SyncPullKvstore");
-            auto syncStatus = MediaLibrarySyncOperation::SyncPullKvstore(kvStore, key, networkId);
+            vector<string> keys = { key };
+            auto syncStatus = MediaLibrarySyncOperation::SyncPullKvstore(kvStore, keys, networkId);
             if (syncStatus == DistributedKv::Status::SUCCESS) {
                 MEDIA_DEBUG_LOG("SyncPullKvstore SUCCESS");
                 return true;

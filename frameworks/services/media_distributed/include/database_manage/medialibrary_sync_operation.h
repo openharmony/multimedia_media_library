@@ -65,9 +65,9 @@ public:
     static bool SyncPullTable(MediaLibrarySyncOpts &syncOpts, std::vector<std::string> &devices);
     static bool SyncPushTable(MediaLibrarySyncOpts &syncOpts, std::vector<std::string> &devices, bool isBlock = false);
     static DistributedKv::Status SyncPushKvstore(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
-        const std::string &key, const std::string &networkId);
+        const std::vector<std::string> &key, const std::string &networkId);
     static DistributedKv::Status SyncPullKvstore(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
-        const std::string &key, const std::string &networkId);
+        const std::vector<std::string> &key, const std::string &networkId);
 
 private:
     static void GetOnlineDevices(const std::string &bundleName, const std::vector<std::string> &originalDevices,

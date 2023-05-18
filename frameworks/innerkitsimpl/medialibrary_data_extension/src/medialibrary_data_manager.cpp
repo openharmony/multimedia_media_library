@@ -79,6 +79,7 @@ static constexpr int REVERT_DAYS = 7;
 static constexpr int DAY_HOURS = 24;
 static constexpr int PER_HOUR_MINUTES = 60;
 static constexpr int PER_MINUTE_SECONDS = 60;
+static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
 
 MediaLibraryDataManager::MediaLibraryDataManager(void)
 {
@@ -253,6 +254,9 @@ int32_t MediaLibraryDataManager::InitialiseKvStore()
     if (status != Status::SUCCESS || kvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("MediaLibraryDataManager::InitialiseKvStore failed %{private}d", status);
         return E_ERR;
+    }
+    if (!MediaLibraryDevice::GetInstance()->InitDeviceKvStore(kvStorePtr_)) {
+        return E_FAIL;
     }
     return E_OK;
 }
@@ -772,6 +776,46 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
         return nullptr;
     }
     return RdbUtils::ToResultSetBridge(absResultSet);
+}
+
+int32_t MediaLibraryDataManager::SyncPullThumbnailKeys(const Uri &uri)
+{
+    if (MediaLibraryDevice::GetInstance() == nullptr || !MediaLibraryDevice::GetInstance()->IsHasActiveDevice()) {
+        return E_ERR;
+    }
+    if (kvStorePtr_ == nullptr) {
+        return E_ERR;
+    }
+
+    MediaLibraryCommand cmd(uri, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->BeginWrap()->EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE))
+        ->Or()->EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO))->EndWrap()
+        ->And()->EqualTo(MEDIA_DATA_DB_DATE_TRASHED, to_string(0))
+        ->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM))
+        ->OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    vector<string> columns = { MEDIA_DATA_DB_THUMBNAIL, MEDIA_DATA_DB_LCD };
+    auto resultset = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
+    if (resultset == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    vector<string> thumbnailKeys;
+    int count = 0;
+    while (resultset->GoToNextRow() == NativeRdb::E_OK && count < MAX_QUERY_THUMBNAIL_KEY_COUNT) {
+        string thumbnailKey =
+            get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_THUMBNAIL, resultset, TYPE_STRING));
+        thumbnailKeys.push_back(thumbnailKey);
+        string lcdKey = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_LCD, resultset, TYPE_STRING));
+        thumbnailKeys.push_back(lcdKey);
+        count++;
+    }
+
+    if (thumbnailKeys.empty()) {
+        return E_NO_SUCH_FILE;
+    }
+    MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr_, thumbnailKeys,
+        MediaFileUtils::GetNetworkIdFromUri(uri.ToString()));
+    return E_SUCCESS;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &uri, const vector<string> &columns,
