@@ -68,6 +68,8 @@ public:
     static int32_t CheckAlbumName(const std::string &albumName);
     static int32_t CheckDisplayName(const std::string &displayName);
     static int32_t CheckTitle(const std::string &title);
+    static int32_t CheckRelativePath(const std::string &relativePath);
+    static void GetRootDirFromRelativePath(const std::string &relativePath, std::string &rootDir);
     static int64_t GetAlbumDateModified(const std::string &albumPath);
     static int64_t UTCTimeSeconds();
     static std::string GetIdFromUri(const std::string &uri);
