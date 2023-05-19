@@ -321,7 +321,7 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
     }
-    
+
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
     assetInfo.PutLong(MediaColumn::MEDIA_TIME_PENDING, UNCREATE_FILE_TIMEPENDING);
@@ -356,24 +356,16 @@ int32_t MediaLibraryAssetOperations::CheckDisplayNameWithType(const string &disp
 
 void MediaLibraryAssetOperations::GetAssetRootDir(int32_t mediaType, string &rootDirPath)
 {
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_DIR, OperationType::QUERY);
-    cmd.GetAbsRdbPredicates()->EqualTo(DIRECTORY_DB_MEDIA_TYPE, to_string(mediaType));
-
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        return;
-    }
-    auto resultSet = rdbStore->Query(cmd, { DIRECTORY_DB_DIRECTORY });
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain file asset from database, mediaType: %{public}d",
-            static_cast<int>(mediaType));
-        return;
-    }
-
-    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        rootDirPath = GetStringVal(DIRECTORY_DB_DIRECTORY, resultSet);
+    map<int, string> rootDir = {
+        { MEDIA_TYPE_FILE, DOCUMENT_BUCKET + SLASH_CHAR },
+        { MEDIA_TYPE_IMAGE, IMAGE_BUCKET + SLASH_CHAR },
+        { MEDIA_TYPE_VIDEO, VIDEO_BUCKET + SLASH_CHAR },
+        { MEDIA_TYPE_AUDIO, AUDIO_BUCKET + SLASH_CHAR },
+    };
+    if (rootDir.count(mediaType) == 0) {
+        rootDirPath = rootDir[MEDIA_TYPE_FILE];
     } else {
-        MEDIA_ERR_LOG("Can not Get root dir from resultSet");
+        rootDirPath = rootDir[mediaType];
     }
 }
 
@@ -645,7 +637,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     if (fileAsset == nullptr) {
         return E_INVALID_VALUES;
     }
-    
+
     string lowerMode = mode;
     transform(lowerMode.begin(), lowerMode.end(), lowerMode.begin(), ::tolower);
     if (!MediaFileUtils::CheckMode(lowerMode)) {
@@ -862,7 +854,7 @@ int32_t MediaLibraryAssetOperations::CreateAssetRealName(int32_t fileId, int32_t
         size_t fileIdLen = fileNumStr.length();
         fileNumStr = ("00" + fileNumStr).substr(fileIdLen - 1);
     }
-    
+
     string mediaTypeStr;
     switch (mediaType) {
         case MediaType::MEDIA_TYPE_IMAGE:

@@ -90,7 +90,7 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
 static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &values, bool isInsert)
 {
     MediaType mediaType = metadata.GetFileMediaType();
-    
+
     values.PutString(MediaColumn::MEDIA_FILE_PATH, metadata.GetFilePath());
     values.PutString(MediaColumn::MEDIA_MIME_TYPE, metadata.GetFileMimeType());
     values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
@@ -277,9 +277,9 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 static OperationObject GetOprnObjectFromPath(const string &path)
 {
     const map<string, OperationObject> oprnMap = {
-        { PIC_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO },
-        { VIDEO_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO },
-        { AUDIO_DIR_VALUES, OperationObject::FILESYSTEM_AUDIO }
+        { IMAGE_BUCKET, OperationObject::FILESYSTEM_PHOTO },
+        { VIDEO_BUCKET, OperationObject::FILESYSTEM_PHOTO },
+        { AUDIO_BUCKET, OperationObject::FILESYSTEM_AUDIO }
     };
 
     for (const auto &iter : oprnMap) {
@@ -331,7 +331,7 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
     GetQueryParamsByPath(path, api, columns, oprnObject, whereClause);
 
     vector<string> args = { path, to_string(NOT_TRASHED) };
-    
+
     MediaLibraryCommand cmd(oprnObject, OperationType::QUERY, api);
     cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(args);
