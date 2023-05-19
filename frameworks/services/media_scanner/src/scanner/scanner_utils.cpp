@@ -22,7 +22,7 @@
 #include "directory_ex.h"
 
 #include "media_log.h"
-
+#include "medialibrary_type_const.h"
 namespace OHOS {
 namespace Media {
 using namespace std;
@@ -148,7 +148,7 @@ bool ScannerUtils::IsDirHidden(const string &path)
     if (!path.empty()) {
         string dirName = ScannerUtils::GetFileNameFromUri(path);
         if (!dirName.empty() && dirName.at(0) == '.') {
-            MEDIA_ERR_LOG("Directory is of hidden type");
+            MEDIA_DEBUG_LOG("hidden Directory, name:%{private}s path:%{private}s", dirName.c_str(), path.c_str());
             return true;
         }
 
@@ -161,6 +161,7 @@ bool ScannerUtils::IsDirHidden(const string &path)
 
         // Check is the dir is part of skiplist
         if (CheckSkipScanList(path)) {
+            MEDIA_DEBUG_LOG("skip Directory, path:%{private}s", path.c_str());
             return true;
         }
     }
@@ -227,6 +228,17 @@ bool ScannerUtils::CheckSkipScanList(const string &path)
         return true;
     }
 
+    vector<string> list = {
+        { ROOT_MEDIA_DIR + DOCUMENT_BUCKET },
+        { ROOT_MEDIA_DIR + AUDIO_BUCKET },
+        { ROOT_MEDIA_DIR + VIDEO_BUCKET },
+        { ROOT_MEDIA_DIR + IMAGE_BUCKET },
+    };
+    // only skip path as "/storage/media/local/files/Photo" when scanDir
+    // doesn't work in scanFile as path likes "/storage/media/local/files/Photo/*"
+    if (find(list.begin(), list.end(), path) != list.end()) {
+        return true;
+    }
     return false;
 }
 } // namespace Media
