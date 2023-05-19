@@ -121,7 +121,6 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     vector<string> columns = {
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
-        PhotoColumn::MEDIA_URI,
         PhotoColumn::MEDIA_TYPE,
         PhotoColumn::MEDIA_TIME_PENDING
     };
@@ -145,7 +144,6 @@ int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
     vector<string> columns = {
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
-        PhotoColumn::MEDIA_URI,
         PhotoColumn::MEDIA_TIME_PENDING,
         PhotoColumn::MEDIA_TYPE
     };

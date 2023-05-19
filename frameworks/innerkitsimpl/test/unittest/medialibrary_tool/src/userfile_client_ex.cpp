@@ -55,7 +55,7 @@ std::string GetTableName(const MediaType mediaType)
 {
     static const std::map<MediaType, std::string> TYPE_TABLE_MAP = {
         { MediaType::MEDIA_TYPE_AUDIO, AudioColumn::AUDIOS_TABLE },
-        { MediaType::MEDIA_TYPE_FILE, DocumentColumn::DOCUMENTS_TABLE },
+        { MediaType::MEDIA_TYPE_FILE, MEDIALIBRARY_TABLE },
         { MediaType::MEDIA_TYPE_IMAGE, PhotoColumn::PHOTOS_TABLE },
         { MediaType::MEDIA_TYPE_VIDEO, PhotoColumn::PHOTOS_TABLE },
     };

@@ -65,7 +65,6 @@ using ExceptStringFunction = void (*) (const string&);
 
 const unordered_map<string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_ID, MEMBER_TYPE_INT32 },
-    { MediaColumn::MEDIA_URI, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_FILE_PATH, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_SIZE, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_TITLE, MEMBER_TYPE_STRING },
@@ -93,9 +92,7 @@ const unordered_map<string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_WIDTH, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
     { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
-    { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING },
-    { DocumentColumn::DOCUMENT_LCD, MEMBER_TYPE_STRING },
-    { DocumentColumn::DOCUMENT_LCD_VISIT_TIME, MEMBER_TYPE_INT64 }
+    { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING }
 };
 
 namespace {
@@ -104,9 +101,8 @@ void CleanTestTables()
     vector<string> dropTableList = {
         PhotoColumn::PHOTOS_TABLE,
         AudioColumn::AUDIOS_TABLE,
-        DocumentColumn::DOCUMENTS_TABLE,
+        MEDIALIBRARY_TABLE,
         ASSET_UNIQUE_NUMBER_TABLE
-        // todo: album tables
     };
     for (auto &dropTable : dropTableList) {
         string dropSql = "DROP TABLE " + dropTable + ";";
@@ -171,7 +167,7 @@ void SetTables()
     vector<string> createTableSqlList = {
         PhotoColumn::CREATE_PHOTO_TABLE,
         AudioColumn::CREATE_AUDIO_TABLE,
-        DocumentColumn::CREATE_DOCUMENT_TABLE,
+        CREATE_MEDIA_TABLE,
         CREATE_ASSET_UNIQUE_NUMBER_TABLE
         // todo: album tables
     };
@@ -612,6 +608,7 @@ void TestPhotoCloseParamsApi10(int32_t fileId, ExceptIntFunction func)
 
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
 {
+    SetTables();
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
@@ -1004,8 +1001,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, Test
 
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_ID, "1"} });
-    TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
-        { { PhotoColumn::MEDIA_URI, "datashare:///media/image/1"} });
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_FILE_PATH, ""} });
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
