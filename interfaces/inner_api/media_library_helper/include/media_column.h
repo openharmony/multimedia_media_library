@@ -34,7 +34,6 @@ class MediaColumn {
 public:
     // Asset Base Parameter
     static const std::string MEDIA_ID;
-    static const std::string MEDIA_URI;
     static const std::string MEDIA_FILE_PATH;
     static const std::string MEDIA_SIZE;
     static const std::string MEDIA_TITLE;
@@ -123,24 +122,6 @@ public:
     static const std::set<std::string> AUDIO_COLUMNS;
 
     static bool IsAudioColumn(const std::string &columnName);
-};
-
-class DocumentColumn : public MediaColumn {
-public:
-    // column only in DocumentColumn
-    static const std::string DOCUMENT_LCD;
-    static const std::string DOCUMENT_LCD_VISIT_TIME;
-
-    // table name
-    static const std::string DOCUMENTS_TABLE;
-
-    // create DocumentTable sql
-    static const std::string CREATE_DOCUMENT_TABLE;
-
-    // all columns
-    static const std::set<std::string> DOCUMENT_COLUMNS;
-
-    static bool IsDocumentColumn(const std::string &columnName);
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_COLUMN_H_

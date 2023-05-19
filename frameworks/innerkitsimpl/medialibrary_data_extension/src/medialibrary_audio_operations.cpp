@@ -113,7 +113,6 @@ int32_t MediaLibraryAudioOperations::Open(MediaLibraryCommand &cmd, const string
     vector<string> columns = {
         AudioColumn::MEDIA_ID,
         AudioColumn::MEDIA_FILE_PATH,
-        AudioColumn::MEDIA_URI,
         AudioColumn::MEDIA_TYPE,
         AudioColumn::MEDIA_TIME_PENDING
     };
@@ -137,7 +136,6 @@ int32_t MediaLibraryAudioOperations::Close(MediaLibraryCommand &cmd)
     vector<string> columns = {
         AudioColumn::MEDIA_ID,
         AudioColumn::MEDIA_FILE_PATH,
-        AudioColumn::MEDIA_URI,
         AudioColumn::MEDIA_TIME_PENDING,
         AudioColumn::MEDIA_TYPE
     };

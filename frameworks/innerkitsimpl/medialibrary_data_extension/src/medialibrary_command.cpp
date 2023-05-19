@@ -208,7 +208,6 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { MEDIA_FILEOPRN, OperationObject::FILESYSTEM_ASSET },
         { MEDIA_PHOTOOPRN, OperationObject::FILESYSTEM_PHOTO },
         { MEDIA_AUDIOOPRN, OperationObject::FILESYSTEM_AUDIO },
-        { MEDIA_DOCUMENTOPRN, OperationObject::FILESYSTEM_DOCUMENT },
         { MEDIA_DIROPRN, OperationObject::FILESYSTEM_DIR },
         { MEDIA_ALBUMOPRN, OperationObject::FILESYSTEM_ALBUM },
         { MEDIA_SMARTALBUMOPRN, OperationObject::SMART_ALBUM },
@@ -310,7 +309,6 @@ void MediaLibraryCommand::ParseTableName()
         { OperationObject::BUNDLE_PERMISSION, { { OperationType::UNKNOWN_TYPE, BUNDLE_PERMISSION_TABLE } } },
         { OperationObject::FILESYSTEM_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::FILESYSTEM_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
-        { OperationObject::FILESYSTEM_DOCUMENT, { { OperationType::UNKNOWN_TYPE, DocumentColumn::DOCUMENTS_TABLE } } },
         { OperationObject::PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
         { OperationObject::PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
     };
@@ -342,8 +340,7 @@ void MediaLibraryCommand::ParseTableName()
         auto rdbStorePtr = rdbStore->GetRaw();
         int errCode = E_ERR;
         if (rdbStorePtr != nullptr) {
-            if (tableName_ == PhotoColumn::PHOTOS_TABLE || tableName_ == AudioColumn::AUDIOS_TABLE ||
-                tableName_ == DocumentColumn::DOCUMENTS_TABLE) {
+            if (tableName_ == PhotoColumn::PHOTOS_TABLE || tableName_ == AudioColumn::AUDIOS_TABLE) {
                 tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, tableName_, errCode);
             }
             tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE, errCode);

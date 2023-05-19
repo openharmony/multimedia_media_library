@@ -20,7 +20,6 @@
 namespace OHOS {
 namespace Media {
 const std::string MediaColumn::MEDIA_ID = "file_id";
-const std::string MediaColumn::MEDIA_URI = "uri";
 const std::string MediaColumn::MEDIA_FILE_PATH = "data";
 const std::string MediaColumn::MEDIA_SIZE = "size";
 const std::string MediaColumn::MEDIA_TITLE = "title";
@@ -42,7 +41,7 @@ const std::string MediaColumn::MEDIA_HIDDEN = "hidden";
 const std::string MediaColumn::MEDIA_PARENT_ID = "parent";
 const std::string MediaColumn::MEDIA_RELATIVE_PATH = "relative_path";
 const std::set<std::string> MediaColumn::MEDIA_COLUMNS = {
-    MEDIA_ID, MEDIA_URI, MEDIA_FILE_PATH, MEDIA_SIZE, MEDIA_TITLE, MEDIA_NAME, MEDIA_TYPE, MEDIA_MIME_TYPE,
+    MEDIA_ID, MEDIA_FILE_PATH, MEDIA_SIZE, MEDIA_TITLE, MEDIA_NAME, MEDIA_TYPE, MEDIA_MIME_TYPE,
     MEDIA_OWNER_PACKAGE, MEDIA_DEVICE_NAME, MEDIA_DATE_MODIFIED, MEDIA_DATE_ADDED, MEDIA_DATE_TAKEN,
     MEDIA_TIME_VISIT, MEDIA_DURATION, MEDIA_TIME_PENDING, MEDIA_IS_FAV, MEDIA_DATE_TRASHED, MEDIA_DATE_DELETED,
     MEDIA_HIDDEN, MEDIA_PARENT_ID, MEDIA_RELATIVE_PATH
@@ -72,7 +71,6 @@ const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
 const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS " +
     PHOTOS_TABLE + " (" +
     MEDIA_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-    MEDIA_URI + " TEXT, " +
     MEDIA_FILE_PATH + " TEXT, " +
     MEDIA_SIZE + " BIGINT, " +
     MEDIA_TITLE + " TEXT, " +
@@ -169,7 +167,6 @@ const std::string AudioColumn::AUDIO_TYPE_URI = "/Audio";
 const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS " +
     AUDIOS_TABLE + " (" +
     MEDIA_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-    MEDIA_URI + " TEXT, " +
     MEDIA_FILE_PATH + " TEXT, " +
     MEDIA_SIZE + " BIGINT, " +
     MEDIA_TITLE + " TEXT, " +
@@ -199,48 +196,6 @@ const std::set<std::string> AudioColumn::AUDIO_COLUMNS = {
 bool AudioColumn::IsAudioColumn(const std::string &columnName)
 {
     return (AUDIO_COLUMNS.find(columnName) != AUDIO_COLUMNS.end()) ||
-        (MEDIA_COLUMNS.find(columnName) != MEDIA_COLUMNS.end());
-}
-
-const std::string DocumentColumn::DOCUMENT_LCD = "lcd";
-const std::string DocumentColumn::DOCUMENT_LCD_VISIT_TIME = "lcd_visit_time";
-
-const std::string DocumentColumn::DOCUMENTS_TABLE = "Documents";
-
-const std::string DocumentColumn::CREATE_DOCUMENT_TABLE = "CREATE TABLE IF NOT EXISTS " +
-    DOCUMENTS_TABLE + " (" +
-    MEDIA_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-    MEDIA_URI + " TEXT, " +
-    MEDIA_FILE_PATH + " TEXT, " +
-    MEDIA_SIZE + " BIGINT, " +
-    MEDIA_TITLE + " TEXT, " +
-    MEDIA_NAME + " TEXT, " +
-    MEDIA_TYPE + " INT, " +
-    MEDIA_MIME_TYPE + " TEXT, " +
-    MEDIA_OWNER_PACKAGE + " TEXT, " +
-    MEDIA_DEVICE_NAME + " TEXT, " +
-    MEDIA_DATE_ADDED + " BIGINT, " +
-    MEDIA_DATE_MODIFIED + " BIGINT, " +
-    MEDIA_DATE_TAKEN + " BIGINT DEFAULT 0, " +
-    MEDIA_TIME_VISIT + " BIGINT DEFAULT 0, " +
-    MEDIA_DURATION + " INT, " +
-    MEDIA_TIME_PENDING + " BIGINT DEFAULT 0, " +
-    MEDIA_IS_FAV + " INT DEFAULT 0, " +
-    MEDIA_DATE_TRASHED + " BIGINT DEFAULT 0, " +
-    MEDIA_DATE_DELETED + " BIGINT DEFAULT 0, " +
-    MEDIA_HIDDEN + "INT DEFAULT 0, " +
-    MEDIA_PARENT_ID + " INT DEFAULT 0, " +
-    MEDIA_RELATIVE_PATH + " TEXT, " +
-    DOCUMENT_LCD + " TEXT, " +
-    DOCUMENT_LCD_VISIT_TIME + " BIGINT DEFAULT 0)";
-
-const std::set<std::string> DocumentColumn::DOCUMENT_COLUMNS = {
-    DocumentColumn::DOCUMENT_LCD, DocumentColumn::DOCUMENT_LCD_VISIT_TIME
-};
-
-bool DocumentColumn::IsDocumentColumn(const std::string &columnName)
-{
-    return (DOCUMENT_COLUMNS.find(columnName) != DOCUMENT_COLUMNS.end()) ||
         (MEDIA_COLUMNS.find(columnName) != MEDIA_COLUMNS.end());
 }
 }  // namespace Media

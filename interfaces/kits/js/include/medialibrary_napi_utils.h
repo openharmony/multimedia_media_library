@@ -316,7 +316,7 @@ const std::vector<std::pair<std::string, std::string>> AUDIOKEY_ENUM_PROPERTIES 
 };
 
 const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPERTIES = {
-    std::make_pair("URI",                       MediaColumn::MEDIA_URI),
+    std::make_pair("URI",                       MEDIA_DATA_DB_URI),
     std::make_pair("DISPLAY_NAME",              MediaColumn::MEDIA_NAME),
     std::make_pair("DATE_ADDED",                MediaColumn::MEDIA_DATE_ADDED),
     std::make_pair("FILE_TYPE",                 MediaColumn::MEDIA_TYPE),

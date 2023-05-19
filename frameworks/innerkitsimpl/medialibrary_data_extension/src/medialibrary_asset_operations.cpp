@@ -84,9 +84,6 @@ int32_t MediaLibraryAssetOperations::CreateOperation(MediaLibraryCommand &cmd)
             return MediaLibraryPhotoOperations::Create(cmd);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Create(cmd);
-        case OperationObject::FILESYSTEM_DOCUMENT:
-            MEDIA_ERR_LOG("document operation is not finished");
-            return E_INVALID_VALUES;
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("create asset by FileSysetm_Asset is deperated");
             return E_INVALID_VALUES;
@@ -104,9 +101,6 @@ int32_t MediaLibraryAssetOperations::DeleteOperation(MediaLibraryCommand &cmd)
             return MediaLibraryPhotoOperations::Delete(cmd);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Delete(cmd);
-        case OperationObject::FILESYSTEM_DOCUMENT:
-            MEDIA_ERR_LOG("document operation is not finished");
-            return E_INVALID_VALUES;
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("delete asset by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
@@ -125,9 +119,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryOperation(
             return MediaLibraryPhotoOperations::Query(cmd, columns);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Query(cmd, columns);
-        case OperationObject::FILESYSTEM_DOCUMENT:
-            MEDIA_ERR_LOG("document operation is not finished");
-            return nullptr;
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("api9 operation is not finished");
             return nullptr;
@@ -148,9 +139,6 @@ int32_t MediaLibraryAssetOperations::UpdateOperation(MediaLibraryCommand &cmd)
             return MediaLibraryPhotoOperations::Update(cmd);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Update(cmd);
-        case OperationObject::FILESYSTEM_DOCUMENT:
-            MEDIA_ERR_LOG("document operation is not finished");
-            return E_INVALID_VALUES;
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("create asset by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
@@ -168,9 +156,6 @@ int32_t MediaLibraryAssetOperations::OpenOperation(MediaLibraryCommand &cmd, con
             return MediaLibraryPhotoOperations::Open(cmd, mode);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Open(cmd, mode);
-        case OperationObject::FILESYSTEM_DOCUMENT:
-            MEDIA_ERR_LOG("document operation is not finished");
-            return E_INVALID_VALUES;
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("open by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
@@ -188,9 +173,6 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
             return MediaLibraryPhotoOperations::Close(cmd);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Close(cmd);
-        case OperationObject::FILESYSTEM_DOCUMENT:
-            MEDIA_ERR_LOG("document operation is not finished");
-            return E_INVALID_VALUES;
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("close by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
@@ -204,8 +186,7 @@ static bool CheckOprnObject(OperationObject object)
 {
     const set<OperationObject> validOprnObjectet = {
         OperationObject::FILESYSTEM_PHOTO,
-        OperationObject::FILESYSTEM_AUDIO,
-        OperationObject::FILESYSTEM_DOCUMENT
+        OperationObject::FILESYSTEM_AUDIO
     };
     if (validOprnObjectet.find(object) == validOprnObjectet.end()) {
         MEDIA_ERR_LOG("input OperationObject %{public}d error!", object);
@@ -299,8 +280,6 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
     const string& displayName = fileAsset.GetDisplayName();
     ValuesBucket assetInfo;
     assetInfo.PutInt(MediaColumn::MEDIA_TYPE, fileAsset.GetMediaType());
-    assetInfo.PutString(MediaColumn::MEDIA_URI,
-        MediaFileUtils::GetMediaTypeUriV10(fileAsset.GetMediaType()));
     string extension = ScannerUtils::GetFileExtension(displayName);
     assetInfo.PutString(MediaColumn::MEDIA_MIME_TYPE,
         MimeTypeUtils::GetMimeTypeFromExtension(extension));
@@ -928,7 +907,6 @@ int32_t MediaLibraryAssetOperations::CreateAssetPathById(int32_t fileId, int32_t
 const std::unordered_map<std::string, std::vector<VerifyFunction>>
     AssetInputParamVerification::UPDATE_VERIFY_PARAM_MAP = {
     { MediaColumn::MEDIA_ID, { Forbidden } },
-    { MediaColumn::MEDIA_URI, { Forbidden } },
     { MediaColumn::MEDIA_FILE_PATH, { IsStringNotNull, IsUniqueValue } },
     { MediaColumn::MEDIA_SIZE, { Forbidden } },
     { MediaColumn::MEDIA_TITLE, { IsStringNotNull } },
@@ -957,8 +935,6 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, { IsInt64 } },
     { AudioColumn::AUDIO_ALBUM, { Forbidden } },
     { AudioColumn::AUDIO_ARTIST, { Forbidden } },
-    { DocumentColumn::DOCUMENT_LCD, { Forbidden } },
-    { DocumentColumn::DOCUMENT_LCD_VISIT_TIME, { IsInt64 } }
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
