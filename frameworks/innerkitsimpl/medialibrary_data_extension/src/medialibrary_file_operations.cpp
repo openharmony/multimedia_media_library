@@ -213,6 +213,118 @@ static void SolvePendingInQuery(AbsRdbPredicates* predicates)
     }
 }
 
+#ifdef MEDIA_LIBRARY_COMPATIBILITY
+static const vector<string> &PhotosCompatColumns()
+{
+    /*
+     * Caution: Columns in PHOTOS_COMPAT_COLUMNS and AUDIOS_COMPAT_COLUMNS MUST keep same order with FILE_ASSET_COLUMNS
+     * for sqlite UNION operation.
+     */
+    static const vector<string> PHOTOS_COMPAT_COLUMNS = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_URI,
+        MEDIA_DATA_DB_MIME_TYPE,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_TITLE,
+        MEDIA_DATA_DB_RELATIVE_PATH,
+        MEDIA_DATA_DB_PARENT_ID,
+        MEDIA_DATA_DB_SIZE,
+        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_DATE_TAKEN,
+        COMPAT_COLUMN_ARTIST,
+        MEDIA_DATA_DB_WIDTH,
+        MEDIA_DATA_DB_HEIGHT,
+        MEDIA_DATA_DB_ORIENTATION,
+        MEDIA_DATA_DB_DURATION,
+        COMPAT_COLUMN_BUCKET_ID,
+        COMPAT_COLUMN_BUCKET_NAME,
+        COMPAT_COLUMN_IS_TRASH,
+        MEDIA_DATA_DB_IS_FAV,
+        MEDIA_DATA_DB_DATE_TRASHED
+    };
+    return PHOTOS_COMPAT_COLUMNS;
+}
+
+static const vector<string> &AudiosCompatColumns()
+{
+    /*
+     * Caution: Columns in PHOTOS_COMPAT_COLUMNS and AUDIOS_COMPAT_COLUMNS MUST keep same order with FILE_ASSET_COLUMNS
+     * for sqlite UNION operation.
+     */
+    static const vector<string> AUDIOS_COMPAT_COLUMNS = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_URI,
+        MEDIA_DATA_DB_MIME_TYPE,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_TITLE,
+        MEDIA_DATA_DB_RELATIVE_PATH,
+        MEDIA_DATA_DB_PARENT_ID,
+        MEDIA_DATA_DB_SIZE,
+        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_DATE_TAKEN,
+        COMPAT_COLUMN_ARTIST,
+        COMPAT_COLUMN_WIDTH,
+        COMPAT_COLUMN_HEIGHT,
+        COMPAT_COLUMN_ORIENTATION,
+        MEDIA_DATA_DB_DURATION,
+        COMPAT_COLUMN_BUCKET_ID,
+        COMPAT_COLUMN_BUCKET_NAME,
+        COMPAT_COLUMN_IS_TRASH,
+        MEDIA_DATA_DB_IS_FAV,
+        MEDIA_DATA_DB_DATE_TRASHED
+    };
+    return AUDIOS_COMPAT_COLUMNS;
+}
+
+static void BuildQueryColumns(const vector<string> &columns, string &sql)
+{
+    for (const auto &col : columns) {
+        sql += col + ',';
+    }
+    sql.pop_back();         // Remove last ','
+}
+
+static void BuildCompatQuerySql(MediaLibraryCommand &cmd, const string table, const vector<string> &columns,
+    vector<string> &selectionArgs, string &sql)
+{
+    sql += "SELECT ";
+    BuildQueryColumns(columns, sql);
+    sql += " FROM " + table;
+
+    const string &whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    if (!whereClause.empty()) {
+        sql += " WHERE " + whereClause;
+    }
+    const vector<string> &whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+    if (!whereArgs.empty()) {
+        selectionArgs.insert(selectionArgs.end(), whereArgs.begin(), whereArgs.end());
+    }
+}
+
+static void BuildQueryFileSql(MediaLibraryCommand &cmd, vector<string> &selectionArgs, string &sql)
+{
+    sql = "SELECT ";
+    BuildQueryColumns(FILE_ASSET_COLUMNS, sql);
+
+    sql += " FROM (";
+    BuildCompatQuerySql(cmd, PhotoColumn::PHOTOS_TABLE, PhotosCompatColumns(), selectionArgs, sql);
+    sql += " UNION ";
+    BuildCompatQuerySql(cmd, AudioColumn::AUDIOS_TABLE, AudiosCompatColumns(), selectionArgs, sql);
+    sql += " UNION ";
+    BuildCompatQuerySql(cmd, MEDIALIBRARY_TABLE, FILE_ASSET_COLUMNS, selectionArgs, sql);
+    sql += ")";
+
+    const string &order = cmd.GetAbsRdbPredicates()->GetOrder();
+    if (!order.empty()) {
+        sql += " ORDER BY " + order;
+    }
+}
+#endif
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFileOperation(
     MediaLibraryCommand &cmd, vector<string> columns)
 {
@@ -238,7 +350,15 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFileOperation(
     }
     MediaLibraryTracer tracer;
     tracer.Start("QueryFile RdbStore->Query");
+
+#ifdef MEDIA_LIBRARY_COMPATIBILITY
+    string sql;
+    vector<string> selectionArgs;
+    BuildQueryFileSql(cmd, selectionArgs, sql);
+    return uniStore->QuerySql(sql, selectionArgs);
+#else
     return uniStore->Query(cmd, columns);
+#endif
 }
 
 int32_t MediaLibraryFileOperations::CopyFileOperation(MediaLibraryCommand &cmd)

@@ -61,7 +61,8 @@ public:
         return NativeRdb::E_NOT_SUPPORT;
     }
 
-    virtual std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql)
+    virtual std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
+        const std::vector<std::string> &selectionArgs = std::vector<std::string>())
     {
         return nullptr;
     }
