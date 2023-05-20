@@ -46,7 +46,6 @@ ohos_unittest("medialibrary_scanner_test") {
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail:medialibrary_thumbnail",
     "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
 
