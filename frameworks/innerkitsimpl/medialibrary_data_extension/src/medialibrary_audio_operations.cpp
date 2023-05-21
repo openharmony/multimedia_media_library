@@ -249,11 +249,6 @@ int32_t MediaLibraryAudioOperations::UpdateV10(MediaLibraryCommand &cmd)
         return E_INVALID_VALUES;
     }
 
-    // Update if FileAsset.path is modified
-    if (IsContainsValue(cmd.GetValueBucket(), AudioColumn::MEDIA_FILE_PATH)) {
-        return UpdateAssetPath(cmd, fileAsset);
-    }
-
     // Update if FileAsset.title or FileAsset.displayName is modified
     int32_t errCode = UpdateFileName(cmd, fileAsset);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Audio Name failed, fileName=%{private}s",

@@ -419,15 +419,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryFiles(
     return rdbStore->Query(cmd, columns);
 }
 
-bool MediaLibraryAssetOperations::IsContainsValue(ValuesBucket &values, const string &key)
-{
-    ValueObject value;
-    if (values.GetObject(key, value)) {
-        return true;
-    }
-    return false;
-}
-
 int32_t MediaLibraryAssetOperations::ModifyAssetInDb(MediaLibraryCommand &cmd)
 {
     TransactionOperations transactionOprn;
@@ -448,40 +439,6 @@ int32_t MediaLibraryAssetOperations::ModifyAssetInDb(MediaLibraryCommand &cmd)
         return ret;
     }
     transactionOprn.Finish();
-
-    return rowId;
-}
-
-int32_t MediaLibraryAssetOperations::UpdateAssetPath(MediaLibraryCommand &cmd,
-    const shared_ptr<FileAsset> &fileAsset)
-{
-    ValuesBucket &values = cmd.GetValueBucket();
-    ValueObject valueObject;
-    string oldPath = fileAsset->GetPath();
-    string newPath;
-    if (values.GetObject(MediaColumn::MEDIA_FILE_PATH, valueObject)) {
-        valueObject.GetString(newPath);
-        // todo: check path with type and extensions
-    } else {
-        // no new path to update
-        return E_OK;
-    }
-
-    int32_t errCode = MediaFileUtils::ModifyAsset(oldPath, newPath);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Update Asset Path failed, errCode=%{public}d", errCode);
-        return errCode;
-    }
-
-    int32_t rowId = ModifyAssetInDb(cmd);
-    if (rowId < 0) {
-        int32_t ret = MediaFileUtils::ModifyAsset(newPath, oldPath);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("Resume Asset Path failed, errCode=%{public}d", ret);
-            return ret;
-        }
-        return E_HAS_DB_ERROR;
-    }
 
     return rowId;
 }
@@ -899,7 +856,7 @@ int32_t MediaLibraryAssetOperations::CreateAssetPathById(int32_t fileId, int32_t
 const std::unordered_map<std::string, std::vector<VerifyFunction>>
     AssetInputParamVerification::UPDATE_VERIFY_PARAM_MAP = {
     { MediaColumn::MEDIA_ID, { Forbidden } },
-    { MediaColumn::MEDIA_FILE_PATH, { IsStringNotNull, IsUniqueValue } },
+    { MediaColumn::MEDIA_FILE_PATH, { Forbidden } },
     { MediaColumn::MEDIA_SIZE, { Forbidden } },
     { MediaColumn::MEDIA_TITLE, { IsStringNotNull } },
     { MediaColumn::MEDIA_NAME, { IsStringNotNull } },

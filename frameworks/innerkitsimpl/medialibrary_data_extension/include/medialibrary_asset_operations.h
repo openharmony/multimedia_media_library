@@ -62,7 +62,6 @@ protected:
         const std::vector<std::string> &columns);
     static bool IsContainsValue(NativeRdb::ValuesBucket &values, const std::string &key);
     static int32_t ModifyAssetInDb(MediaLibraryCommand &cmd);
-    static int32_t UpdateAssetPath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t UpdateFileInDb(MediaLibraryCommand &cmd);
     static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode);
