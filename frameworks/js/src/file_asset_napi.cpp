@@ -1545,6 +1545,14 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
     context->thumbWidth = DEFAULT_THUMBNAIL_SIZE;
     context->thumbHeight = DEFAULT_THUMBNAIL_SIZE;
 
+    if (argc == ARGS_ONE) {
+        napi_valuetype valueType = napi_undefined;
+        if (napi_typeof(env, argv[PARAM0], &valueType) == napi_ok &&
+            (valueType == napi_undefined || valueType == napi_null)) {
+            argc -= 1;
+        }
+    }
+
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
