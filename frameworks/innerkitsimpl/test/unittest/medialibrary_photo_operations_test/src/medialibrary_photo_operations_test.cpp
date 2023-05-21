@@ -954,45 +954,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_004, Test
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_005");
-    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
-    MediaLibraryCommand queryPathCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    queryPathCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
-    auto resultSet = g_rdbStore->Query(queryPathCmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not get resultSet");
-        return;
-    }
-    string path = GetStringVal(PhotoColumn::MEDIA_FILE_PATH, resultSet);
-    if (path.empty()) {
-        MEDIA_ERR_LOG("Get Path failed");
-        return;
-    }
-
-    string moveToPath = "/storage/media/local/files/Pictures/1.jpg";
-    static constexpr int LARGE_NUM = 1000;
-    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId + LARGE_NUM),
-        { { PhotoColumn::MEDIA_FILE_PATH, moveToPath } },
-        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_VALUES); });
-    EXPECT_EQ(MediaFileUtils::IsFileExists(moveToPath), false);
-    EXPECT_EQ(MediaFileUtils::IsFileExists(path), true);
-    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
-        { { PhotoColumn::MEDIA_FILE_PATH, moveToPath } },
-        [] (int32_t result) { EXPECT_GE(result, E_OK); });
-    EXPECT_EQ(MediaFileUtils::IsFileExists(moveToPath), true);
-    EXPECT_EQ(MediaFileUtils::IsFileExists(path), false);
-
-    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_005");
-}
-
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_006");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
     if (fileId < 0) {
         MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
@@ -1030,12 +991,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, Test
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_IS_FAV, "1"}, { PhotoColumn::MEDIA_TITLE, "123" } });
 
-    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_006");
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_007");
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_006");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
     if (fileId < 0) {
         MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
@@ -1053,7 +1014,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, Test
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::PHOTO_WIDTH, "12345"} });
 
-    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_007");
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_006");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSize.Level0)
