@@ -323,8 +323,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
             return MediaLibraryFileOperations::HandleFileOperation(cmd);
         }
         case OperationObject::FILESYSTEM_PHOTO:
-        case OperationObject::FILESYSTEM_AUDIO:
-        case OperationObject::FILESYSTEM_DOCUMENT: {
+        case OperationObject::FILESYSTEM_AUDIO: {
             return MediaLibraryAssetOperations::HandleInsertOperation(cmd);
         }
         case OperationObject::FILESYSTEM_ALBUM: {
@@ -490,8 +489,7 @@ int32_t MediaLibraryDataManager::Delete(const Uri &uri, const DataSharePredicate
             return PhotoMapOperations::RemovePhotoAssets(rdbPredicate);
         }
         case OperationObject::FILESYSTEM_PHOTO:
-        case OperationObject::FILESYSTEM_AUDIO:
-        case OperationObject::FILESYSTEM_DOCUMENT: {
+        case OperationObject::FILESYSTEM_AUDIO: {
             return MediaLibraryAssetOperations::DeleteOperation(cmd);
         }
         default:
@@ -538,8 +536,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
             return MediaLibraryAlbumOperations::ModifyAlbumOperation(cmd);
         }
         case OperationObject::FILESYSTEM_PHOTO:
-        case OperationObject::FILESYSTEM_AUDIO:
-        case OperationObject::FILESYSTEM_DOCUMENT: {
+        case OperationObject::FILESYSTEM_AUDIO: {
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
         }
         case OperationObject::PHOTO_ALBUM: {
@@ -738,9 +735,6 @@ void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationOb
         case OperationObject::FILESYSTEM_AUDIO:
             tableName = AudioColumn::AUDIOS_TABLE;
             break;
-        case OperationObject::FILESYSTEM_DOCUMENT:
-            tableName = DocumentColumn::DOCUMENTS_TABLE;
-            break;
         default:
             break;
     }
@@ -869,8 +863,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
     } else if (oprnObject == OperationObject::PHOTO_MAP) {
         queryResultSet = PhotoMapOperations::QueryPhotoAssets(
             RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
-    } else if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
-        oprnObject == OperationObject::FILESYSTEM_DOCUMENT) {
+    } else if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
         queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);
     } else {
         tracer.Start("QueryFile");
@@ -915,8 +908,7 @@ int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const string &mode)
 {
     MediaLibraryCommand cmd(uri, OperationType::OPEN);
     auto oprnObject = cmd.GetOprnObject();
-    if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
-        oprnObject == OperationObject::FILESYSTEM_DOCUMENT) {
+    if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
         return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
     }
     return MediaLibraryObjectUtils::OpenFile(cmd, mode);

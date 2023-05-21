@@ -25,7 +25,6 @@ namespace Media {
 namespace MediaTool {
 const std::unordered_map<std::string, ResultSetDataType> RESULT_TYPE_MAP = {
     { MediaColumn::MEDIA_ID, ResultSetDataType::TYPE_INT32 },
-    { MediaColumn::MEDIA_URI, ResultSetDataType::TYPE_STRING },
     { MediaColumn::MEDIA_FILE_PATH, ResultSetDataType::TYPE_STRING },
     { MediaColumn::MEDIA_SIZE, ResultSetDataType::TYPE_INT64 },
     { MediaColumn::MEDIA_TITLE, ResultSetDataType::TYPE_STRING },
@@ -48,8 +47,6 @@ const std::unordered_map<std::string, ResultSetDataType> RESULT_TYPE_MAP = {
     { MediaColumn::MEDIA_RELATIVE_PATH, ResultSetDataType::TYPE_STRING },
     { AudioColumn::AUDIO_ARTIST, ResultSetDataType::TYPE_STRING },
     { AudioColumn::AUDIO_ALBUM, ResultSetDataType::TYPE_STRING },
-    { DocumentColumn::DOCUMENT_LCD, ResultSetDataType::TYPE_STRING },
-    { DocumentColumn::DOCUMENT_LCD_VISIT_TIME, ResultSetDataType::TYPE_INT64 },
     { PhotoColumn::PHOTO_DIRTY, ResultSetDataType::TYPE_INT32 },
     { PhotoColumn::PHOTO_CLOUD_ID, ResultSetDataType::TYPE_STRING },
     { PhotoColumn::PHOTO_META_DATE_MODIFIED, ResultSetDataType::TYPE_INT64 },

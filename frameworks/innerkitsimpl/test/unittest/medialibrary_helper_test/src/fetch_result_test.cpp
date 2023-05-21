@@ -526,10 +526,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_media_column_Test_001, TestSize
     EXPECT_EQ(ret, true);
     ret = AudioColumn::IsAudioColumn("media_column");
     EXPECT_EQ(ret, false);
-    ret = DocumentColumn::IsDocumentColumn(DocumentColumn::DOCUMENT_LCD);
-    EXPECT_EQ(ret, true);
-    ret = DocumentColumn::IsDocumentColumn("media_column");
-    EXPECT_EQ(ret, false);
 }
 
 } // namespace Media

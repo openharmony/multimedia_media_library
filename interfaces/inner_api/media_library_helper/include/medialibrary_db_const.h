@@ -241,7 +241,7 @@ const std::string CREATE_IMAGE_VIEW = "CREATE VIEW IF NOT EXISTS Image AS SELECT
                                       MEDIA_DATA_DB_THUMBNAIL + ", " +
                                       MEDIA_DATA_DB_LCD + ", " +
                                       MEDIA_DATA_DB_SELF_ID + " " +
-                                      "FROM Files WHERE " +
+                                      "FROM " + MEDIALIBRARY_TABLE + " WHERE " +
                                       MEDIA_DATA_DB_MEDIA_TYPE + " = 3";
 
 const std::string CREATE_VIDEO_VIEW = "CREATE VIEW IF NOT EXISTS Video AS SELECT " +
@@ -262,7 +262,7 @@ const std::string CREATE_VIDEO_VIEW = "CREATE VIEW IF NOT EXISTS Video AS SELECT
                                       MEDIA_DATA_DB_BUCKET_NAME + ", " +
                                       MEDIA_DATA_DB_THUMBNAIL + ", " +
                                       MEDIA_DATA_DB_SELF_ID + " " +
-                                      "FROM Files WHERE " +
+                                      "FROM " + MEDIALIBRARY_TABLE + " WHERE " +
                                       MEDIA_DATA_DB_MEDIA_TYPE + " = 4";
 
 const std::string CREATE_AUDIO_VIEW = "CREATE VIEW IF NOT EXISTS Audio AS SELECT " +
@@ -281,7 +281,7 @@ const std::string CREATE_AUDIO_VIEW = "CREATE VIEW IF NOT EXISTS Audio AS SELECT
                                       MEDIA_DATA_DB_BUCKET_NAME + ", " +
                                       MEDIA_DATA_DB_THUMBNAIL + ", " +
                                       MEDIA_DATA_DB_SELF_ID + " " +
-                                      "FROM Files WHERE " +
+                                      "FROM " + MEDIALIBRARY_TABLE + " WHERE " +
                                       MEDIA_DATA_DB_MEDIA_TYPE + " = 5";
 
 const std::string REMOTE_THUMBNAIL_TABLE = "RemoteThumbnailMap";
@@ -329,8 +329,8 @@ const std::string DISTRIBUTED_ALBUM_WHERE_AND_GROUPBY = " WHERE " +
                                                         ALBUM_TABLE + "." + MEDIA_DATA_DB_SELF_ID;
 const std::string CREATE_ALBUM_VIEW = "CREATE VIEW IF NOT EXISTS " + ALBUM_VIEW_NAME +
                                       " AS " + DISTRIBUTED_ALBUM_COLUMNS +
-                                      " FROM Files " + FILE_TABLE + ", " +
-                                      " Files " + ALBUM_TABLE +
+                                      " FROM " + MEDIALIBRARY_TABLE + " " + FILE_TABLE + ", " +
+                                      MEDIALIBRARY_TABLE + " " + ALBUM_TABLE +
                                       DISTRIBUTED_ALBUM_WHERE_AND_GROUPBY;
 const std::string SMARTALBUM_DB_ID = "album_id";
 const std::string SMARTALBUM_DB_ALBUM_TYPE = "album_type";

@@ -718,6 +718,8 @@ napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<st
     for (const auto &column : fetchColumn) {
         if (isValidColumn(column)) {
             validFetchColumns.insert(column);
+        } else if (column == MEDIA_DATA_DB_URI) {
+            continue;
         } else {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;

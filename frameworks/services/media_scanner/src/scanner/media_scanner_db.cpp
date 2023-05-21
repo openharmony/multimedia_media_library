@@ -17,6 +17,7 @@
 #include "media_scanner_db.h"
 
 #include "abs_rdb_predicates.h"
+#include "medialibrary_asset_operations.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -140,16 +141,15 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata, MediaLibraryApi 
 {
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri;
+    ValuesBucket values;
     if (api == MediaLibraryApi::API_10) {
         mediaTypeUri = MediaFileUtils::GetMediaTypeUriV10(mediaType);
     } else {
         mediaTypeUri = MediaFileUtils::GetMediaTypeUri(mediaType);
+        values.PutString(MEDIA_DATA_DB_URI, mediaTypeUri);
     }
 
-    ValuesBucket values;
-    values.PutString(MEDIA_DATA_DB_URI, mediaTypeUri);
     string tableName = MEDIALIBRARY_TABLE;
-
     if (api == MediaLibraryApi::API_10) {
         SetValuesFromMetaDataApi10(metadata, values, true);
         GetTableNameByPathApi10(mediaType, tableName);
@@ -212,8 +212,8 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, MediaLibraryApi 
         mediaTypeUri = MediaFileUtils::GetMediaTypeUriV10(mediaType);
     } else {
         mediaTypeUri = MediaFileUtils::GetMediaTypeUri(mediaType);
+        values.PutString(MEDIA_DATA_DB_URI, mediaTypeUri);
     }
-    values.PutString(MEDIA_DATA_DB_URI, mediaTypeUri);
 
     if (api == MediaLibraryApi::API_10) {
         SetValuesFromMetaDataApi10(metadata, values, false);
