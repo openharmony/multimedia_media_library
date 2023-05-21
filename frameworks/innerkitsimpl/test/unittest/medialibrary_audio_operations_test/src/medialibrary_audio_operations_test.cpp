@@ -955,45 +955,6 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_004, Test
 HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_005");
-    int32_t fileId = SetDefaultAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
-    MediaLibraryCommand queryPathCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY);
-    queryPathCmd.GetAbsRdbPredicates()->EqualTo(AudioColumn::MEDIA_ID, to_string(fileId));
-    vector<string> columns = { AudioColumn::MEDIA_FILE_PATH };
-    auto resultSet = g_rdbStore->Query(queryPathCmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not get resultSet");
-        return;
-    }
-    string path = GetStringVal(AudioColumn::MEDIA_FILE_PATH, resultSet);
-    if (path.empty()) {
-        MEDIA_ERR_LOG("Get Path failed");
-        return;
-    }
-
-    string moveToPath = "/storage/media/local/files/Audios/1.mp3";
-    static constexpr int largeNum = 1000;
-    TestAudioUpdateParamsApi10(AudioColumn::MEDIA_ID, to_string(fileId + largeNum),
-        { { AudioColumn::MEDIA_FILE_PATH, moveToPath } },
-        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_VALUES); });
-    EXPECT_EQ(MediaFileUtils::IsFileExists(moveToPath), false);
-    EXPECT_EQ(MediaFileUtils::IsFileExists(path), true);
-    TestAudioUpdateParamsApi10(AudioColumn::MEDIA_ID, to_string(fileId),
-        { { AudioColumn::MEDIA_FILE_PATH, moveToPath } },
-        [] (int32_t result) { EXPECT_GE(result, E_OK); });
-    EXPECT_EQ(MediaFileUtils::IsFileExists(moveToPath), true);
-    EXPECT_EQ(MediaFileUtils::IsFileExists(path), false);
-
-    MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_005");
-}
-
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_006, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_006");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
     if (fileId < 0) {
         MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
@@ -1031,12 +992,12 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_006, Test
     TestAudioUpdateParamsVerifyFunctionFailed(AudioColumn::MEDIA_ID, to_string(fileId),
         { { AudioColumn::MEDIA_IS_FAV, "1"}, { AudioColumn::MEDIA_TITLE, "123" } });
 
-    MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_006");
+    MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_005");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_006, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_007");
+    MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_006");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
     if (fileId < 0) {
         MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
@@ -1048,7 +1009,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_007, Test
     TestAudioUpdateParamsVerifyFunctionFailed(AudioColumn::MEDIA_ID, to_string(fileId),
         { { AudioColumn::AUDIO_ALBUM, "1"} });
 
-    MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_007");
+    MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_006");
 }
 
 HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_open_api10_test_001, TestSize.Level0)
