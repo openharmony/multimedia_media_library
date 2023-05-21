@@ -87,8 +87,7 @@ int32_t MediaLibraryRdbStore::Init()
     if (rdbDataCallBack.HasDistributedTables()) {
         int ret = rdbStore_->SetDistributedTables(
             { MEDIALIBRARY_TABLE, PhotoColumn::PHOTOS_TABLE, AudioColumn::AUDIOS_TABLE,
-            DocumentColumn::DOCUMENTS_TABLE, SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE,
-            CATEGORY_SMARTALBUM_MAP_TABLE });
+            SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE });
         MEDIA_DEBUG_LOG("ret = %{private}d", ret);
     }
 
@@ -807,7 +806,6 @@ static int32_t ExecuteSql(RdbStore &store)
         PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC,
         AudioColumn::CREATE_AUDIO_TABLE,
-        DocumentColumn::CREATE_DOCUMENT_TABLE,
         CREATE_SMARTALBUM_TABLE,
         CREATE_SMARTALBUMMAP_TABLE,
         CREATE_DEVICE_TABLE,

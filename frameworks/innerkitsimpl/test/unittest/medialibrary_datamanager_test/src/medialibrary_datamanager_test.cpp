@@ -1127,8 +1127,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_NeedQuerySync_Test_001, Te
     mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
     oprnObject = OperationObject::FILESYSTEM_AUDIO;
     mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
-    oprnObject = OperationObject::FILESYSTEM_DOCUMENT;
-    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
     oprnObject = OperationObject::PHOTO_ALBUM;
     mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
     EXPECT_NE(networkIdTest, "");
@@ -1146,17 +1144,15 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_001, T
     MediaLibraryCommand cmdThree(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE);
     ret = mediaLibraryDataManager->SolveInsertCmd(cmdThree);
     EXPECT_EQ(ret, E_OK);
-    MediaLibraryCommand cmdFour(OperationObject::FILESYSTEM_DOCUMENT, OperationType::CREATE);
-    ret = mediaLibraryDataManager->SolveInsertCmd(cmdFour);
     EXPECT_EQ(ret, E_INVALID_VALUES);
-    MediaLibraryCommand cmdFive(OperationObject::FILESYSTEM_ALBUM, OperationType::CREATE);
-    ret = mediaLibraryDataManager->SolveInsertCmd(cmdFive);
+    MediaLibraryCommand cmdFour(OperationObject::FILESYSTEM_ALBUM, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdFour);
     EXPECT_EQ(ret, E_INVALID_PATH);
-    MediaLibraryCommand cmdSix(OperationObject::PHOTO_ALBUM, OperationType::CREATE);
-    ret = mediaLibraryDataManager->SolveInsertCmd(cmdSix);
+    MediaLibraryCommand cmdFive(OperationObject::PHOTO_ALBUM, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdFive);
     EXPECT_NE(ret, E_OK);
-    MediaLibraryCommand cmdSeven(OperationObject::FILESYSTEM_DIR, OperationType::CREATE);
-    ret = mediaLibraryDataManager->SolveInsertCmd(cmdSeven);
+    MediaLibraryCommand cmdSix(OperationObject::FILESYSTEM_DIR, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdSix);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 

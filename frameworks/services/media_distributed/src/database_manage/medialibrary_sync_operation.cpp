@@ -36,7 +36,7 @@ static constexpr int RETRY_COUNT = 3;
 static constexpr int32_t WAIT_FOR_MS = 1000;
 static constexpr int32_t ALBUM_THUMBNAIL_MAX_COUNT = 50;
 static vector<string> table_arr = {
-    MEDIALIBRARY_TABLE, PhotoColumn::PHOTOS_TABLE, AudioColumn::AUDIOS_TABLE, DocumentColumn::DOCUMENTS_TABLE,
+    MEDIALIBRARY_TABLE, PhotoColumn::PHOTOS_TABLE, AudioColumn::AUDIOS_TABLE,
     SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE };
 
 class DistributedAsyncTaskData : public AsyncTaskData {
