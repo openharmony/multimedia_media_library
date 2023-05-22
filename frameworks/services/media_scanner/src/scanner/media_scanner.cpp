@@ -39,6 +39,7 @@ MediaScannerObj::MediaScannerObj(const std::string &path, const std::shared_ptr<
     } else if (type_ == FILE) {
         path_ = path;
     }
+    stopFlag_ = make_shared<bool>(false);
 }
 
 MediaScannerObj::MediaScannerObj(MediaScannerObj::ScanType type) : type_(type)
@@ -66,7 +67,7 @@ int32_t MediaScannerObj::ScanFile()
 
 int32_t MediaScannerObj::ScanDir()
 {
-    MEDIA_INFO_LOG("scan dir %{private}s", path_.c_str());
+    MEDIA_INFO_LOG("scan dir %{private}s", dir_.c_str());
 
     int32_t ret = ScanDirInternal();
     if (ret != E_OK) {
@@ -213,6 +214,10 @@ int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId
 
 int32_t MediaScannerObj::GetFileMetadata()
 {
+    if (path_.empty()) {
+        return E_INVALID_ARGUMENTS;
+    }
+
     struct stat statInfo = { 0 };
     if (stat(path_.c_str(), &statInfo) != 0) {
         MEDIA_ERR_LOG("stat syscall err %{public}d", errno);
@@ -223,6 +228,10 @@ int32_t MediaScannerObj::GetFileMetadata()
     if (data_ == nullptr) {
         MEDIA_ERR_LOG("failed to make unique ptr for metadata");
         return E_DATA;
+    }
+
+    if (S_ISDIR(statInfo.st_mode)) {
+        return E_INVALID_ARGUMENTS;
     }
 
     int32_t err = mediaScannerDb_->GetFileBasicInfo(path_, data_, api_);

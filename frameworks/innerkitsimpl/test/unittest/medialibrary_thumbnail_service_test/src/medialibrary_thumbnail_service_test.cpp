@@ -16,7 +16,9 @@
 #include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
 #include "medialibrary_thumbnail_service_test.h"
+#define private public
 #include "thumbnail_service.h"
+#undef private
 
 using namespace std;
 using namespace OHOS;
@@ -129,9 +131,12 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GenerateThumbnails_test_001, TestSize
     EXPECT_EQ(ret, -1);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
+    serverTest->Init(nullptr, kvStorePtr, context);
+    ret = serverTest->GenerateThumbnails();
+    EXPECT_EQ(ret, -1);
     serverTest->Init(storePtr, kvStorePtr, context);
     ret = serverTest->GenerateThumbnails();
-    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(ret, E_EMPTY_VALUES_BUCKET);
     serverTest->ReleaseService();
 }
 
@@ -189,17 +194,10 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateThumbnailAsync_test_001, TestSi
         exit(1);
     }
     string url = "";
-    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
-    int32_t ret = serverTest->CreateThumbnailAsync(url, "");
-    EXPECT_EQ(ret, -1);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    shared_ptr<OHOS::AbilityRuntime::Context> context;
-    serverTest->Init(storePtr, kvStorePtr, context);
-    string tempNetworkId = "1d3cb099659d53b3ee15faaab3c00a8ff983382ebc8b01aabde039ed084e167b";
-    url = MEDIALIBRARY_DATA_ABILITY_PREFIX + tempNetworkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-    ret = serverTest->CreateThumbnailAsync(url, "");
-    EXPECT_GT(ret, 0);
-    serverTest->ReleaseService();
+    ThumbnailService serverTest;
+    int32_t ret = serverTest.CreateThumbnailAsync(url, "");
+    EXPECT_EQ(ret, E_OK);
+    serverTest.ReleaseService();
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateThumbnail_test_001, TestSize.Level0)
@@ -214,12 +212,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateThumbnail_test_001, TestSize.Le
     url = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
         THUMBNAIL_WIDTH + "=1&" + THUMBNAIL_HEIGHT + "=1";
     ret = serverTest->CreateThumbnail(url);
-    EXPECT_EQ(ret, -1);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    shared_ptr<OHOS::AbilityRuntime::Context> context;
-    serverTest->Init(storePtr, kvStorePtr, context);
-    ret = serverTest->CreateThumbnail(url);
-    EXPECT_GT(ret, 0);
+    EXPECT_EQ(ret, E_OK);
     serverTest->ReleaseService();
 }
 

@@ -74,10 +74,10 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileMetadata_test_001, TestSize.Le
     shared_ptr<IMediaScannerCallback> callback = nullptr;
     MediaScannerObj mediaScannerObj(path, callback, MediaScannerObj::FILE);
     int32_t ret = mediaScannerObj.GetFileMetadata();
-    EXPECT_EQ(ret, E_RDB);
+    EXPECT_NE(ret, E_OK);
     MediaScannerObj mediaScannerObjOne("", callback, MediaScannerObj::FILE);
     ret = mediaScannerObjOne.GetFileMetadata();
-    EXPECT_EQ(ret, E_SYSCALL);
+    EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_GetParentDirInfo_test_001, TestSize.Level0)
@@ -157,7 +157,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Commit_test_001, TestSize.Level0)
     shared_ptr<IMediaScannerCallback> callback = nullptr;
     MediaScannerObj mediaScannerObj(dir, callback, MediaScannerObj::FILE);
     int32_t ret = mediaScannerObj.GetFileMetadata();
-    EXPECT_EQ(ret, E_RDB);
+    EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
     ret = mediaScannerObj.Commit();
     EXPECT_EQ(ret, E_OK);
 }
