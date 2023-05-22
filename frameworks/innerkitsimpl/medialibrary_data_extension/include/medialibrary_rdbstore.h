@@ -75,7 +75,6 @@ private:
         const std::string &tableName, int32_t rowId);
     static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
-    static constexpr int RDB_CONNECT_NUM = 10;
     static constexpr int RDB_TRANSACTION_WAIT_MS = 1000;
     std::mutex transactionMutex_;
     std::condition_variable transactionCV_;
