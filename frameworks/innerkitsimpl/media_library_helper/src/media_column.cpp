@@ -17,8 +17,6 @@
 
 #include <string>
 
-#include "base_column.h"
-
 namespace OHOS {
 namespace Media {
 const std::string MediaColumn::MEDIA_ID = "file_id";
@@ -105,12 +103,6 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_LCD_VISIT_TIME + " BIGINT DEFAULT 0, " +
     PHOTO_POSITION + " INT DEFAULT 1, " +
     PHOTO_SUBTYPE + " INT DEFAULT 0)";
-
-// Create indexes
-const std::string PhotoColumn::INDEX_THPD_ADDTIME =
-    BaseColumn::CreateIndex() + "idx_thpd_dateadded" + " ON " +
-    PHOTOS_TABLE + " (" + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
-    "," + PHOTO_DIRTY + "," + MEDIA_DATE_ADDED + ");";
 
 const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         "CREATE TRIGGER photos_delete_trigger AFTER UPDATE ON " +
