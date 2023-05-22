@@ -62,7 +62,6 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetPath(move(realPath));
     config_.SetBundleName(context->GetBundleName());
     config_.SetArea(context->GetArea());
-    config_.SetReadConSize(RDB_CONNECT_NUM);
     config_.SetSecurityLevel(SecurityLevel::S3);
     config_.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config_.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
