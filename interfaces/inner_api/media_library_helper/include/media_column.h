@@ -86,9 +86,6 @@ public:
     // create PhotoTable sql
     static const std::string CREATE_PHOTO_TABLE;
 
-    // create indexes for Photo
-    static const std::string INDEX_THPD_ADDTIME;
-
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER;
     static const std::string CREATE_PHOTOS_FDIRTY_TRIGGER;

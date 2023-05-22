@@ -242,8 +242,12 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
     if (cmd.GetTableName() == MEDIALIBRARY_TABLE || cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
         string dirtyFilterCondition = "dirty <> " + std::to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED));
-        strQueryCondition = strQueryCondition.empty() ?
-            dirtyFilterCondition : (strQueryCondition + " AND " + dirtyFilterCondition);
+        if (!strQueryCondition.empty()) {
+            dirtyFilterCondition += " AND ";
+            strQueryCondition = dirtyFilterCondition + strQueryCondition;
+        } else {
+            strQueryCondition = dirtyFilterCondition;
+        }
         cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
     }
     auto *predicates = cmd.GetAbsRdbPredicates();
@@ -799,7 +803,6 @@ static int32_t ExecuteSql(RdbStore &store)
     static const vector<string> executeSqlStrs = {
         CREATE_MEDIA_TABLE,
         PhotoColumn::CREATE_PHOTO_TABLE,
-        PhotoColumn::INDEX_THPD_ADDTIME,
         PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
