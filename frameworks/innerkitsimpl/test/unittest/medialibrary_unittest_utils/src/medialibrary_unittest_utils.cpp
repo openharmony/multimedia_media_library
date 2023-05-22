@@ -22,6 +22,7 @@
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "mimetype_utils.h"
+#include "result_set_utils.h"
 #include "scanner_utils.h"
 
 using namespace std;
@@ -60,22 +61,22 @@ void MediaLibraryUnitTestUtils::InitRootDirs()
 void MediaLibraryUnitTestUtils::CleanTestFiles()
 {
     system("rm -rf /storage/media/local/files/*");
-    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
-    DataShare::DataSharePredicates predicates;
-    // delete all data in table Files
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    NativeRdb::AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
     predicates.GreaterThan(MEDIA_DATA_DB_ID, to_string(0));
-    int retVal =  MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, predicates);
-    MEDIA_INFO_LOG("CleanTestFiles Delete retVal: %{public}d", retVal);
+    int32_t deletedRows = -1;
+    auto ret = rdbStore->Delete(deletedRows, predicates);
+    MEDIA_INFO_LOG("CleanTestFiles Delete retVal: %{public}d, deletedRows: %{public}d", ret, deletedRows);
 }
 
 void MediaLibraryUnitTestUtils::CleanBundlePermission()
 {
-    Uri deleteAssetUri(MEDIALIBRARY_BUNDLEPERM_URI);
-    DataShare::DataSharePredicates predicates;
-    // delete all data in table BundlePermission
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    NativeRdb::AbsRdbPredicates predicates(BUNDLE_PERMISSION_TABLE);
     predicates.GreaterThan(MEDIA_DATA_DB_ID, to_string(0));
-    int retVal =  MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, predicates);
-    MEDIA_INFO_LOG("CleanBundlePermission Delete retVal: %{public}d", retVal);
+    int32_t deletedRows = -1;
+    auto ret = rdbStore->Delete(deletedRows, predicates);
+    MEDIA_INFO_LOG("CleanBundlePermission Delete retVal: %{public}d, deletedRows: %{public}d", ret, deletedRows);
 }
 
 shared_ptr<FileAsset> MediaLibraryUnitTestUtils::GetRootAsset(const string &dir)
@@ -100,7 +101,7 @@ bool MediaLibraryUnitTestUtils::GetFileAsset(const int fileId, shared_ptr<FileAs
         exit(1);
     }
     vector<string> columns;
-    DataShare::DataSharePredicates predicates;
+    DataSharePredicates predicates;
     string selections = MEDIA_DATA_DB_ID + " = " + to_string(fileId);
     predicates.SetWhereClause(selections);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
@@ -110,7 +111,7 @@ bool MediaLibraryUnitTestUtils::GetFileAsset(const int fileId, shared_ptr<FileAs
         MEDIA_ERR_LOG("GetFileAsset::resultSet == nullptr");
         return false;
     }
-    auto result = make_shared<DataShare::DataShareResultSet>(resultSet);
+    auto result = make_shared<DataShareResultSet>(resultSet);
     shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(result));
     if (fetchFileResult->GetCount() <= 0) {
         MEDIA_ERR_LOG("GetFileAsset::GetCount <= 0");
@@ -139,7 +140,7 @@ bool MediaLibraryUnitTestUtils::CreateAlbum(string displayName, shared_ptr<FileA
     } else {
         dirPath = parentAlbumAsset->GetPath() + "/" + displayName;
     }
-    DataShare::DataShareValuesBucket valuesBucket;
+    DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, dirPath);
     valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(createAlbumUri, valuesBucket);
@@ -163,7 +164,7 @@ bool MediaLibraryUnitTestUtils::CreateFile(string displayName, shared_ptr<FileAs
         exit(1);
     }
     Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
-    DataShare::DataShareValuesBucket valuesBucket;
+    DataShareValuesBucket valuesBucket;
     string relativePath = parentAlbumAsset->GetRelativePath() + parentAlbumAsset->GetDisplayName() + "/";
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtension(displayName));
     MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
@@ -212,11 +213,12 @@ bool MediaLibraryUnitTestUtils::DeleteDir(const string &path, const string &dirI
     string cmd = "rm -rf " + path;
     system(cmd.c_str());
 
-    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI);
-    DataShare::DataSharePredicates predicates;
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    NativeRdb::AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
     predicates.EqualTo(MEDIA_DATA_DB_ID, dirId)->Or()->EqualTo(MEDIA_DATA_DB_PARENT_ID, dirId);
-    int retVal =  MediaLibraryDataManager::GetInstance()->Delete(deleteAssetUri, predicates);
-    return retVal > 0;
+    int32_t deletedRows = -1;
+    auto ret = rdbStore->Delete(deletedRows, predicates);
+    return ret == 0;
 }
 
 void MediaLibraryUnitTestUtils::TrashFile(shared_ptr<FileAsset> &fileAsset)
@@ -253,7 +255,7 @@ int32_t MediaLibraryUnitTestUtils::GrantUriPermission(const int32_t fileId, cons
     const string &mode)
 {
     Uri addPermission(MEDIALIBRARY_BUNDLEPERM_URI + "/" + BUNDLE_PERMISSION_INSERT);
-    DataShare::DataShareValuesBucket values;
+    DataShareValuesBucket values;
     values.Put(PERMISSION_FILE_ID, fileId);
     values.Put(PERMISSION_BUNDLE_NAME, bundleName);
     values.Put(PERMISSION_MODE, mode);
