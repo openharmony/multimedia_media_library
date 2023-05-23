@@ -15,6 +15,7 @@
 #include <sstream>
 
 #include "media_file_uri.h"
+#include "medialibrary_helper_container.h"
 #include "media_log.h"
 
 namespace OHOS {
@@ -174,6 +175,57 @@ std::string MediaFileUri::GetFileId()
     return this->fileId_;
 }
 
+std::string MediaFileUri::GetFilePath()
+{
+    /* get helper */
+    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+            MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
+    if (dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("get data share helper err");
+        return "";
+    }
+
+    DataShare::DatashareBusinessError error;
+    const std::string uriString = ToString();
+    Uri uri(uriString);
+    DataShare::DataSharePredicates predicates;
+    std::vector<std::string> columns;
+    /* check api version */
+    if (uriString.find(PhotoColumn::PHOTO_TYPE_URI) != std::string::npos) {
+        predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ?");
+        columns.emplace_back(MediaColumn::MEDIA_FILE_PATH);
+    } else {
+        predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ?");
+        columns.emplace_back(MEDIA_DATA_DB_FILE_PATH);
+    }
+    predicates.SetWhereArgs({ GetFileId() });
+
+    /* query and get value */
+    auto resultSet = dataShareHelper->Query(uri, predicates, columns, &error);
+    int32_t ret = error.GetCode();
+    if (ret != 0) {
+        MEDIA_ERR_LOG("data share query err %{public}d", ret);
+        return "";
+    }
+    int32_t rowCount;
+    ret = resultSet->GetRowCount(rowCount);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("result set get row count err %{public}d", ret);
+        return "";
+    }
+    if (rowCount != 1) {
+        MEDIA_ERR_LOG("more than one record");
+        return "";
+    }
+    std::string val;
+    ret = resultSet->GetString(0, val);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("result set get string err %{public}d", ret);
+        return "";
+    }
+    return val;
+}
+
 bool MediaFileUri::IsValid()
 {
     std::string scheme = this->GetScheme();
@@ -205,6 +257,5 @@ std::unordered_map<std::string, std::string> &MediaFileUri::GetQueryKeys()
     }
     return queryMap_;
 }
-
 } // namespace Media
 } // namespace OHOS

@@ -41,6 +41,7 @@ public:
                           MediaFileUriConstruct(mediaType, fileId, networkId, apiVersion)) {}
     std::string GetNetworkId();
     std::string GetFileId();
+    std::string GetFilePath();
     std::unordered_map<std::string, std::string> &GetQueryKeys();
     bool IsValid();
     ~MediaFileUri() = default;
