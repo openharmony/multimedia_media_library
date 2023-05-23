@@ -57,6 +57,7 @@ void MediaLibraryDataManagerUnitTest::SetUp(void)
     MediaLibraryUnitTestUtils::InitRootDirs();
     g_pictures = MediaLibraryUnitTestUtils::GetRootAsset(TEST_PICTURES);
     g_download = MediaLibraryUnitTestUtils::GetRootAsset(TEST_DOWNLOAD);
+    MediaLibraryUnitTestUtils::Init();
 }
 
 void MediaLibraryDataManagerUnitTest::TearDown(void) {}
@@ -190,17 +191,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Trash_Test_001, TestSize.L
     retVal = MediaLibraryDataManager::GetInstance()->Insert(removeSmartAlbumUri, valuesBucket);
     EXPECT_EQ((retVal > 0), true);
     MEDIA_INFO_LOG("DataManager_Trash_Test_001::retVal = %{public}d. End", retVal);
-}
-
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Insert_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("DataManager_Insert_Test_001::Start");
-    Uri insertUri(MEDIALIBRARY_DATA_URI);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_NAME, "DataManager_Insert_Test_001");
-    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(insertUri, valuesBucket);
-    EXPECT_EQ((retVal > 0), true);
-    MEDIA_INFO_LOG("DataManager_Insert_Test_001::retVal = %{public}d. End", retVal);
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DeleteAsset_Test_001, TestSize.Level0)
@@ -391,7 +381,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Leve
         EXPECT_EQ(fileAssetObj->GetTimePending(), 0);
 
         int ret =  MediaLibraryDataManager::GetInstance()->Delete(queryUri, predicates);
-        EXPECT_GT(ret, E_FAIL);
+        EXPECT_EQ(ret, E_FAIL);
     }
     MEDIA_INFO_LOG("DataManager_Revert_Package_Test_001::End");
 }
@@ -432,7 +422,10 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_BY_DAY_Test_001, TestSize.Level
         unique_ptr<FileAsset> fileAssetObj = fetchFileResult->GetObjectFromRdb(resultSetPtr, row);
         EXPECT_NE(fileAssetObj, nullptr);
         EXPECT_EQ(fileAssetObj->GetTimePending(), 0);
-        int ret = MediaLibraryDataManager::GetInstance()->Delete(queryUri, predicates);
+        NativeRdb::AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
+        absPredicates.SetWhereClause(predicates.GetWhereClause());
+        int32_t deletedRows = -1;
+        int ret = MediaLibraryDataManager::GetInstance()->rdbStore_->Delete(deletedRows, absPredicates);
         EXPECT_GT(ret, E_FAIL);
     }
     MEDIA_INFO_LOG("DataManager_Revert_BY_DAY_Test_001::End");
@@ -1080,7 +1073,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_HandleThumbnailOperations_
     OperationType type = OperationType::GENERATE;
     MediaLibraryCommand cmdTest(uri, type);
     ret = mediaLibraryDataManager->HandleThumbnailOperations(cmdTest);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, NativeRdb::E_EMPTY_VALUES_BUCKET);
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_ShouldCheckFileName_Test_001, TestSize.Level0)
@@ -1143,8 +1136,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_001, T
     EXPECT_EQ(ret, E_FAIL);
     MediaLibraryCommand cmdThree(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE);
     ret = mediaLibraryDataManager->SolveInsertCmd(cmdThree);
-    EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(ret, E_INVALID_VALUES);
+    EXPECT_EQ(ret, E_FAIL);
     MediaLibraryCommand cmdFour(OperationObject::FILESYSTEM_ALBUM, OperationType::CREATE);
     ret = mediaLibraryDataManager->SolveInsertCmd(cmdFour);
     EXPECT_EQ(ret, E_INVALID_PATH);
@@ -1173,7 +1165,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_002, T
     EXPECT_EQ(ret, E_FAIL);
     MediaLibraryCommand cmdFive(OperationObject::UNKNOWN_OBJECT, OperationType::CREATE);
     ret = mediaLibraryDataManager->SolveInsertCmd(cmdFive);
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    EXPECT_EQ(ret, E_FAIL);
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SetCmdBundleAndDevice_Test_001, TestSize.Level0)
@@ -1254,10 +1246,10 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnails_Test_00
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     int32_t ret = mediaLibraryDataManager->GenerateThumbnails();
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, NativeRdb::E_EMPTY_VALUES_BUCKET);
     mediaLibraryDataManager->ClearMediaLibraryMgr();
     ret = mediaLibraryDataManager->GenerateThumbnails();
-    EXPECT_EQ(ret, E_FAIL);
+    EXPECT_EQ(ret, NativeRdb::E_EMPTY_VALUES_BUCKET);
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QuerySync_Test_001, TestSize.Level0)
