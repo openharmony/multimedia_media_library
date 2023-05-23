@@ -124,7 +124,7 @@ public:
 
 private:
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
-    static int64_t UTCTimeSeconds();
+    static int64_t UTCTimeMilliSeconds();
     static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         ThumbnailData &data, int &err);
     static void ParseStringResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
