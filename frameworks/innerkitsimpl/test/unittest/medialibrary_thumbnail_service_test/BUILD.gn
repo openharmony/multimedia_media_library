@@ -25,10 +25,7 @@ ohos_unittest("medialibrary_thumbnail_service_test") {
   include_dirs = [ "./include" ]
 
   sources = [ "./src/medialibrary_thumbnail_service_test.cpp" ]
-  deps = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail:medialibrary_thumbnail",
-  ]
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
 
   external_deps = [
     "ability_base:want",
