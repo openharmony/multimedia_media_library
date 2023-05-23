@@ -592,6 +592,10 @@ string MediaFileUtils::GetUriByNameAndId(const string &displayName, const string
 
 MediaType MediaFileUtils::GetMediaType(const string &filePath)
 {
+    if (filePath.empty()) {
+        return MEDIA_TYPE_ALL;
+    }
+
     string extension = GetExtensionFromPath(filePath);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
     return MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
