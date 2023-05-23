@@ -146,7 +146,7 @@ bool AlbumAsset::CreateAlbumAsset()
     if (!(MediaFileUtils::IsDirectory(albumPath_))) {
         return MediaFileUtils::CreateDirectory(albumPath_);
     } else {
-        MEDIA_ERR_LOG("Cannot create album that already exists");
+        MEDIA_ERR_LOG("Cannot create album that already exists: %{private}s", albumPath_.c_str());
         return false;
     }
 }
