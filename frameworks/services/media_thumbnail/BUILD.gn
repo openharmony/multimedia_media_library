@@ -85,7 +85,7 @@ ohos_shared_library("medialibrary_thumbnail") {
     "ipc:ipc_core",
     "kv_store:distributeddata_inner",
     "multimedia_image_framework:image_native",
-    "player_framework:media_client",
+    "multimedia_player_framework:media_client",
     "relational_store:native_rdb",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
