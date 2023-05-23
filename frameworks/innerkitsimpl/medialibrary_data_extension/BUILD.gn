@@ -128,6 +128,9 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_utils.cpp",
   ]
 
+  media_cloud_sync_source =
+      [ "${MEDIALIB_CLOUD_SYNC_PATH}/src/cloud_sync_helper.cpp" ]
+
   sources = [
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/src/sqlite_sql_builder.cpp",
@@ -158,11 +161,11 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_distributed_source
   sources += media_scan_source
   sources += media_thumbnail_source
+  sources += media_cloud_sync_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 
   deps = [
-    "${MEDIALIB_CLOUD_SYNC_PATH}:cloud_sync",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker:medialibrary_async_worker",
     "${MEDIALIB_UTILS_PATH}:medialibrary_common_utils",
