@@ -18,7 +18,6 @@
         <preparer>
             <option name="shell" value="rm -rf /storage/media/100/local/files/*"/>
             <option name="shell" value="rm -rf /storage/media/100/local/files/.*"/>
-            <option name="shell" value="setenforce 0"/>
         </preparer>
     </target>
     <target name="media_library_helper_test">
@@ -48,7 +47,6 @@
         <preparer>
             <option name="shell" value="rm -rf /storage/media/100/local/files/*"/>
             <option name="shell" value="rm -rf /storage/media/100/local/files/.*"/>
-            <option name="shell" value="setenforce 0"/>
         </preparer>
     </target>
     <target name="medialibrary_queryperf_unittest">

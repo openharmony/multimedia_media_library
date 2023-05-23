@@ -627,7 +627,7 @@ void MediaLibraryPhotoOperationsTest::TearDownTestCase()
     }
 
     system("rm -rf /storage/media/local/files/*");
-    CleanTestTables();
+    ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     this_thread::sleep_for(chrono::seconds(1));
