@@ -652,7 +652,7 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
     int changedRows;
 
     values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
-    int64_t timeNow = UTCTimeSeconds();
+    int64_t timeNow = UTCTimeMilliSeconds();
     values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
 
     MediaLibraryTracer tracer;
@@ -674,7 +674,7 @@ bool ThumbnailUtils::UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int
 
     ValuesBucket values;
     int changedRows;
-    int64_t timeNow = UTCTimeSeconds();
+    int64_t timeNow = UTCTimeMilliSeconds();
     values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
@@ -851,7 +851,7 @@ bool ThumbnailUtils::UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData 
 
     if (!data.lcdKey.empty()) {
         values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
-        int64_t timeNow = UTCTimeSeconds();
+        int64_t timeNow = UTCTimeMilliSeconds();
         values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
     }
 
@@ -876,7 +876,7 @@ bool ThumbnailUtils::InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData 
 
     if (!data.lcdKey.empty()) {
         values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
-        int64_t timeNow = UTCTimeSeconds();
+        int64_t timeNow = UTCTimeMilliSeconds();
         values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
     }
 
@@ -1306,11 +1306,13 @@ bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, co
     return ret;
 }
 
-int64_t ThumbnailUtils::UTCTimeSeconds()
+int64_t ThumbnailUtils::UTCTimeMilliSeconds()
 {
     struct timespec t;
+    constexpr int64_t SEC_TO_MSEC = 1e3;
+    constexpr int64_t MSEC_TO_NSEC = 1e6;
     clock_gettime(CLOCK_REALTIME, &t);
-    return (int64_t)(t.tv_sec);
+    return t.tv_sec * SEC_TO_MSEC + t.tv_nsec / MSEC_TO_NSEC;
 }
 
 bool ThumbnailUtils::CheckResultSetCount(const shared_ptr<ResultSet> &resultSet, int &err)
