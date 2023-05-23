@@ -591,7 +591,7 @@ uint32_t MtpPacketTool::GetUInt32(const std::vector<uint8_t> &buffer, size_t &of
 
 bool MtpPacketTool::GetUInt8(const std::vector<uint8_t> &buffer, size_t &offset, uint8_t &value)
 {
-    if ((buffer.size() - offset) < sizeof(uint8_t)) {
+    if (buffer.size() < sizeof(uint8_t) + offset) {
         MEDIA_ERR_LOG("MtpPacketTool::GetUInt8, size incorrect");
         return false;
     }
@@ -603,7 +603,7 @@ bool MtpPacketTool::GetUInt8(const std::vector<uint8_t> &buffer, size_t &offset,
 
 bool MtpPacketTool::GetUInt16(const std::vector<uint8_t> &buffer, size_t &offset, uint16_t &value)
 {
-    if ((buffer.size() - offset) < sizeof(uint16_t)) {
+    if (buffer.size() < sizeof(uint16_t) + offset) {
         MEDIA_ERR_LOG("MtpPacketTool::GetUInt16, size incorrect");
         return false;
     }
@@ -615,7 +615,7 @@ bool MtpPacketTool::GetUInt16(const std::vector<uint8_t> &buffer, size_t &offset
 
 bool MtpPacketTool::GetUInt32(const std::vector<uint8_t> &buffer, size_t &offset, uint32_t &value)
 {
-    if ((buffer.size() - offset) < sizeof(uint32_t)) {
+    if (buffer.size() < sizeof(uint32_t) + offset) {
         MEDIA_ERR_LOG("MtpPacketTool::GetUInt32, size incorrect");
         return false;
     }
@@ -628,7 +628,7 @@ bool MtpPacketTool::GetUInt32(const std::vector<uint8_t> &buffer, size_t &offset
 
 bool MtpPacketTool::GetUInt64(const std::vector<uint8_t> &buffer, size_t &offset, uint64_t &value)
 {
-    if ((buffer.size() - offset) < sizeof(uint64_t)) {
+    if (buffer.size() < sizeof(uint64_t) + offset) {
         MEDIA_ERR_LOG("MtpPacketTool::GetUInt64, size incorrect");
         return false;
     }
