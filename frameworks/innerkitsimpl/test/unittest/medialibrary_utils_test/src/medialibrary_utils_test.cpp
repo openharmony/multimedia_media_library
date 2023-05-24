@@ -553,7 +553,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_setSource_test_001, TestSize.Level0)
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_uTCTimeSeconds_test_001, TestSize.Level0)
 {
-    int64_t ret = ThumbnailUtils::UTCTimeSeconds();
+    int64_t ret = ThumbnailUtils::UTCTimeMilliSeconds();
     EXPECT_GT(ret, 0);
 }
 
