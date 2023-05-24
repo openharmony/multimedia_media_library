@@ -71,7 +71,7 @@ ohos_unittest("mtp_native_test") {
     "hiviewdfx_hilog_native:libhilog",
     "init:libbegetutil",
     "ipc:ipc_core",
-    "multimedia_player_framework:media_client",
+    "player_framework:media_client",
     "relational_store:native_rdb",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",

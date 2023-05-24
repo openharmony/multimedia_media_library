@@ -48,7 +48,7 @@ ohos_unittest("medialibrary_common_utils_test") {
     "data_share:datashare_provider",
     "device_manager:devicemanagersdk",
     "kv_store:distributeddata_inner",
-    "multimedia_player_framework:media_client",
+    "player_framework:media_client",
     "relational_store:native_rdb",
   ]
 

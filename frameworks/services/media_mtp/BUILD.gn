@@ -111,7 +111,7 @@ ohos_shared_library("media_mtp") {
     "hitrace_native:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_core",
-    "multimedia_player_framework:media_client",
+    "player_framework:media_client",
     "relational_store:native_rdb",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
