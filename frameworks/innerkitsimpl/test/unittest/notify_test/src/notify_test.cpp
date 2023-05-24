@@ -155,9 +155,10 @@ void CheckCloseAssetNotify(bool isCreate)
     sDataShareHelper_->RegisterObserverExt(uri, obs, true);
     shared_ptr<FileAsset> closeAsset = make_shared<FileAsset>();
     closeAsset->SetId(OBS_TMP_ID);
+    closeAsset->SetMediaType(MediaType::MEDIA_TYPE_IMAGE);
     if (isCreate) {
         closeAsset->SetDateAdded(DATE_ADD);
-        closeAsset->SetDateModified(DATE_ADD);
+        closeAsset->SetDateModified(0);
     } else {
         closeAsset->SetDateAdded(DATE_ADD);
         closeAsset->SetDateModified(DATE_MODIFY);

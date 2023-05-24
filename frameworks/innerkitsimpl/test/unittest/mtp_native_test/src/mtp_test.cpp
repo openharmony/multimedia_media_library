@@ -35,7 +35,6 @@ HWTEST_F(MtpNativeTest, mtp_packet_tools_test_001, TestSize.Level0)
     MtpPacketTool::GetUInt32(numFirst, numSecond, 0, 0);
     vector<uint8_t> outBuffer;
     size_t offset = 0;
-    size_t offsetTest = 100;
     MtpPacketTool::PutUInt16(outBuffer, 0);
     MtpPacketTool::PutUInt32(outBuffer, 0);
     MtpPacketTool::PutUInt64(outBuffer, 0);
@@ -45,15 +44,34 @@ HWTEST_F(MtpNativeTest, mtp_packet_tools_test_001, TestSize.Level0)
     MtpPacketTool::PutUInt128(outBuffer, valueTeat);
     MtpPacketTool::PutUInt8(outBuffer, 0);
     MtpPacketTool::GetUInt8(outBuffer, offset);
-    bool ret = MtpPacketTool::GetUInt8(outBuffer, offsetTest, numFirst);
+    size_t offsetTest = 50;
+    vector<uint8_t> buffer(100);
+    bool ret = MtpPacketTool::GetUInt8(buffer, offsetTest, numFirst);
     EXPECT_EQ(ret, true);
+    outBuffer.clear();
     ret = MtpPacketTool::GetUInt8(outBuffer, offset, numFirst);
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, false);
     MtpPacketTool::GetUInt16(outBuffer, offset);
     uint16_t numFirstTest = 0;
     ret = MtpPacketTool::GetUInt16(outBuffer, offsetTest, numFirstTest);
+    EXPECT_EQ(ret, false);
+    ret = MtpPacketTool::GetUInt16(buffer, offsetTest, numFirstTest);
     EXPECT_EQ(ret, true);
     MtpPacketTool::GetUInt32(outBuffer, offset);
+    uint32_t valueOne = 0;
+    ret = MtpPacketTool::GetUInt32(buffer, offsetTest, valueOne);
+    EXPECT_EQ(ret, true);
+    ret = MtpPacketTool::GetUInt32(outBuffer, offsetTest, valueOne);
+    EXPECT_EQ(ret, false);
+    uint64_t valueTwo = 0;
+    ret = MtpPacketTool::GetUInt64(buffer, offsetTest, valueTwo);
+    EXPECT_EQ(ret, true);
+    ret = MtpPacketTool::GetUInt64(outBuffer, offsetTest, valueTwo);
+    EXPECT_EQ(ret, false);
+    ret = MtpPacketTool::GetUInt128(buffer, offsetTest, valueTeat);
+    EXPECT_EQ(ret, true);
+    ret = MtpPacketTool::GetUInt128(outBuffer, offsetTest, valueTeat);
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MtpNativeTest, mtp_packet_tools_test_002, TestSize.Level0)
@@ -86,7 +104,8 @@ HWTEST_F(MtpNativeTest, mtp_packet_tools_test_002, TestSize.Level0)
     ret = MtpPacketTool::GetInt128(buffer, offset, valueFour);
     EXPECT_EQ(ret, false);
     MtpPacketTool::PutUInt8(buffer, value);
-    offset = 100;
+    offset = 50;
+    buffer.insert(buffer.end(), 100, 0);
     ret = MtpPacketTool::GetInt8(buffer, offset, value);
     EXPECT_EQ(ret, true);
     MtpPacketTool::PutUInt16(buffer, value);
@@ -114,9 +133,10 @@ HWTEST_F(MtpNativeTest, mtp_packet_tools_test_003, TestSize.Level0)
     EXPECT_EQ(ret, "");
     string str;
     MtpPacketTool::GetString(buffer, offset, str);
-    offset = 100;
-    MtpPacketTool::GetString(buffer, offset, str);
-    MtpPacketTool::GetString(buffer, offset);
+    size_t offsetTest = 50;
+    buffer.insert(buffer.end(), 100, 0);
+    MtpPacketTool::GetString(buffer, offsetTest, str);
+    MtpPacketTool::GetString(buffer, offsetTest);
 }
 
 HWTEST_F(MtpNativeTest, mtp_packet_tools_test_004, TestSize.Level0)
@@ -229,8 +249,9 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_003, TestSize.Level0)
     Property property(propCode, MTP_TYPE_UINT8_CODE);
     vector<uint8_t> buffer;
     property.Write(buffer);
-    size_t offset = 100;
-    property.Read(buffer, offset);
+    size_t offsetTest = 50;
+    buffer.insert(buffer.end(), 100, 0);
+    property.Read(buffer, offsetTest);
     shared_ptr<string> str = make_shared<string>();
     property.SetDefaultValue(str);
     property.SetCurrentValue(str);
@@ -307,7 +328,8 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_005, TestSize.Level0)
     Property propertySix(propCode, MTP_TYPE_INT128_CODE);
     ret = propertySix.ReadValue(buffer, offset, value);
     EXPECT_EQ(ret, false);
-    size_t offsetTest = 100;
+    size_t offsetTest = 50;
+    buffer.insert(buffer.end(), 100, 0);
     property.WriteValue(buffer, value);
     ret = property.ReadValue(buffer, offsetTest, value);
     EXPECT_EQ(ret, true);
@@ -357,7 +379,8 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_006, TestSize.Level0)
     Property propertyFive(propCode, MTP_TYPE_UNDEFINED_CODE);
     ret = propertyFive.ReadValueEx(buffer, offset, value);
     EXPECT_EQ(ret, false);
-    size_t offsetTest = 100;
+    size_t offsetTest = 50;
+    buffer.insert(buffer.end(), 100, 0);
     property.WriteValue(buffer, value);
     property.WriteValueEx(buffer, value);
     ret = property.ReadValueEx(buffer, offsetTest, value);
@@ -394,9 +417,10 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_007, TestSize.Level0)
     EXPECT_EQ(ret, false);
     Property propertyOne(propCode, MTP_TYPE_UNDEFINED_CODE);
     propertyOne.WriteValueData(buffer);
-    offset = 100;
+    size_t offsetTest = 50;
+    buffer.insert(buffer.end(), 100, 0);
     propertyOne.Write(buffer);
-    ret = property.ReadArrayValues(buffer, offset, values);
+    ret = property.ReadArrayValues(buffer, offsetTest, values);
     EXPECT_EQ(ret, false);
 }
 
@@ -432,14 +456,14 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_009, TestSize.Level0)
     bool ret = property.ReadFormData(buffer, offset);
     EXPECT_EQ(ret, false);
     property.WriteFormData(buffer);
-    offset = 100;
-    int8_t valueTest = 0;
-    MtpPacketTool::PutInt8(buffer, valueTest);
-    ret = property.ReadFormData(buffer, offset);
+    size_t offsetTest = 50;
+    buffer.insert(buffer.end(), 100, 0);
+    MtpPacketTool::PutInt8(buffer, offsetTest);
+    ret = property.ReadFormData(buffer, offsetTest);
     EXPECT_EQ(ret, true);
     vector<int> values;
     property.SetFormEnum(values);
-    ret = property.ReadFormData(buffer, offset);
+    ret = property.ReadFormData(buffer, offsetTest);
     EXPECT_EQ(ret, true);
     property.WriteFormData(buffer);
 }

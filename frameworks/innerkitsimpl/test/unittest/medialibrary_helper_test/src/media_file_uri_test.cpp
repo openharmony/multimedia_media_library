@@ -150,8 +150,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_012, TestSize.Level0)
     
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_013, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_AUDIO_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = AudioColumn::AUDIO_URI_PREFIX + to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
     MediaFileUri fileUri(MEDIA_TYPE_AUDIO, to_string(fd_), networkId_, MEDIA_API_VERSION_V10);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);

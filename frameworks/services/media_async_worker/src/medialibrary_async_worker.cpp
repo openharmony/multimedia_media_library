@@ -55,6 +55,7 @@ MediaLibraryAsyncWorker::~MediaLibraryAsyncWorker()
             thread.join();
         }
     }
+    asyncWorkerInstance_ = nullptr;
 }
 
 void MediaLibraryAsyncWorker::Init()
