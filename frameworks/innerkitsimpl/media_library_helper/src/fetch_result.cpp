@@ -61,6 +61,8 @@ static const ResultTypeMap &GetResultTypeMap()
         { MEDIA_DATA_DB_OWNER_PACKAGE, TYPE_STRING },
         { MEDIA_DATA_DB_POSITION, TYPE_INT32 },
         { MediaColumn::MEDIA_HIDDEN, TYPE_INT32 },
+        { MediaColumn::MEDIA_VIRTURL_PATH, TYPE_STRING },
+        { PhotoColumn::PHOTO_SUBTYPE, TYPE_INT32 },
     };
     return RESULT_TYPE_MAP;
 }

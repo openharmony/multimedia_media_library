@@ -58,6 +58,8 @@ public:
     // Asset Parameter deperated
     static const std::string MEDIA_PARENT_ID;
     static const std::string MEDIA_RELATIVE_PATH;
+    static const std::string MEDIA_VIRTURL_PATH;
+
     // All Columns
     static const std::set<std::string> MEDIA_COLUMNS;
     // Default fetch columns

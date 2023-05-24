@@ -1032,7 +1032,7 @@ static void JSCommitModifyExecute(napi_env env, void *data)
 
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
     if (isApiVersion10) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(API_VERSION_10));
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     }
     Uri updateAssetUri(uri);
     MediaType mediaType = context->objectPtr->GetMediaType();
@@ -1434,7 +1434,7 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, c
     }
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUriStr, typeMask);
     if (isApiVersion10) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(queryUriStr, API_VERSION, to_string(API_VERSION_10));
+        MediaLibraryNapiUtils::UriAppendKeyValue(queryUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     }
     tracer.Start("DataShare::OpenFile");
     Uri queryUri(queryUriStr);
@@ -2348,7 +2348,7 @@ static void UserFileMgrFavoriteExecute(napi_env env, void *data)
         uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_AUDIOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
     }
 
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(API_VERSION_10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
     Uri updateAssetUri(uri);
     DataSharePredicates predicates;
@@ -2426,7 +2426,7 @@ static napi_value ParseArgsUserFileMgrOpen(napi_env env, napi_callback_info info
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         JS_ERR_PARAMETER_INVALID);
     auto fileUri = context->objectInfo->GetFileUri();
-    MediaLibraryNapiUtils::UriAppendKeyValue(fileUri, API_VERSION, to_string(API_VERSION_10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(fileUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     context->valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
 
     if (isReadOnly) {
@@ -2611,7 +2611,7 @@ static void UserFileMgrCloseExecute(napi_env env, void *data)
         context->SaveError(-EINVAL);
         return;
     }
-    MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, API_VERSION, to_string(API_VERSION_10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     auto ret = AddTypeMaskByMediaType(closeUri, context->objectInfo->GetMediaType());
     if (ret != E_SUCCESS) {
         context->SaveError(ret);
@@ -2680,7 +2680,7 @@ static void UserFileMgrSetHiddenExecute(napi_env env, void *data)
     }
 
     string uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(API_VERSION_10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
     Uri updateAssetUri(uri);
     DataSharePredicates predicates;

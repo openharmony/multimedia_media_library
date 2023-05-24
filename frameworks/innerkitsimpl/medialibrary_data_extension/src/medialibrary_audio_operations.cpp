@@ -43,8 +43,7 @@ int32_t MediaLibraryAudioOperations::Create(MediaLibraryCommand &cmd)
         case MediaLibraryApi::API_10:
             return CreateV10(cmd);
         case MediaLibraryApi::API_OLD:
-            MEDIA_ERR_LOG("this api is not realized yet");
-            return E_FAIL;
+            return CreateV9(cmd);
         default:
             MEDIA_ERR_LOG("get api failed");
             return E_FAIL;
@@ -92,8 +91,7 @@ int32_t MediaLibraryAudioOperations::Update(MediaLibraryCommand &cmd)
         case MediaLibraryApi::API_10:
             return UpdateV10(cmd);
         case MediaLibraryApi::API_OLD:
-            MEDIA_ERR_LOG("this api is not realized yet");
-            return E_FAIL;
+            return UpdateV9(cmd);
         default:
             MEDIA_ERR_LOG("get api failed");
             return E_FAIL;
@@ -151,20 +149,71 @@ int32_t MediaLibraryAudioOperations::Close(MediaLibraryCommand &cmd)
     return errCode;
 }
 
-int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
+int32_t MediaLibraryAudioOperations::CreateV9(MediaLibraryCommand& cmd)
 {
-    string displayName;
-    int32_t mediaType = 0;
     FileAsset fileAsset;
-    ValueObject valueObject;
     ValuesBucket &values = cmd.GetValueBucket();
 
-    CHECK_AND_RETURN_RET(values.GetObject(AudioColumn::MEDIA_NAME, valueObject), E_HAS_DB_ERROR);
-    valueObject.GetString(displayName);
+    string displayName;
+    CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, AudioColumn::MEDIA_NAME, displayName),
+        E_HAS_DB_ERROR);
     fileAsset.SetDisplayName(displayName);
 
-    CHECK_AND_RETURN_RET(values.GetObject(AudioColumn::MEDIA_TYPE, valueObject), E_HAS_DB_ERROR);
-    valueObject.GetInt(mediaType);
+    string relativePath;
+    CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, AudioColumn::MEDIA_RELATIVE_PATH, relativePath),
+        E_HAS_DB_ERROR);
+    fileAsset.SetRelativePath(relativePath);
+    MediaFileUtils::FormatRelativePath(relativePath);
+
+    int32_t mediaType = 0;
+    CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, AudioColumn::MEDIA_TYPE, mediaType),
+        E_HAS_DB_ERROR);
+    if (mediaType != MediaType::MEDIA_TYPE_AUDIO) {
+        return E_CHECK_MEDIATYPE_FAIL;
+    }
+    fileAsset.SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
+
+    int32_t errCode = CheckRelativePathWithType(relativePath, MediaType::MEDIA_TYPE_AUDIO);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check RelativePath and Extension, "
+        "relativePath=%{private}s, mediaType=%{public}d", relativePath.c_str(), mediaType);
+    errCode = CheckDisplayNameWithType(displayName, MediaType::MEDIA_TYPE_AUDIO);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extension, "
+        "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
+
+    TransactionOperations transactionOprn;
+    errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    errCode = SetAssetPathInCreate(fileAsset);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
+        return errCode;
+    }
+
+    int32_t outRow = InsertAssetInDb(cmd, fileAsset);
+    if (outRow <= 0) {
+        MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
+        return E_HAS_DB_ERROR;
+    }
+    transactionOprn.Finish();
+    return outRow;
+}
+
+int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
+{
+    FileAsset fileAsset;
+    ValuesBucket &values = cmd.GetValueBucket();
+
+    string displayName;
+    CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, AudioColumn::MEDIA_NAME, displayName),
+        E_HAS_DB_ERROR);
+    fileAsset.SetDisplayName(displayName);
+
+    int32_t mediaType = 0;
+    CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, AudioColumn::MEDIA_TYPE, mediaType),
+        E_HAS_DB_ERROR);
     if (mediaType != MediaType::MEDIA_TYPE_AUDIO) {
         return E_CHECK_MEDIATYPE_FAIL;
     }
@@ -250,7 +299,8 @@ int32_t MediaLibraryAudioOperations::UpdateV10(MediaLibraryCommand &cmd)
     }
 
     // Update if FileAsset.title or FileAsset.displayName is modified
-    int32_t errCode = UpdateFileName(cmd, fileAsset);
+    bool isNameChanged = false;
+    int32_t errCode = UpdateFileName(cmd, fileAsset, isNameChanged);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Audio Name failed, fileName=%{private}s",
         fileAsset->GetDisplayName().c_str());
 
@@ -278,5 +328,55 @@ int32_t MediaLibraryAudioOperations::UpdateV10(MediaLibraryCommand &cmd)
     return rowId;
 }
 
+int32_t MediaLibraryAudioOperations::UpdateV9(MediaLibraryCommand &cmd)
+{
+    vector<string> columns = {
+        AudioColumn::MEDIA_ID,
+        AudioColumn::MEDIA_FILE_PATH,
+        AudioColumn::MEDIA_TYPE,
+        AudioColumn::MEDIA_NAME,
+        AudioColumn::MEDIA_RELATIVE_PATH
+    };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
+        OperationObject::FILESYSTEM_AUDIO, columns);
+    if (fileAsset == nullptr) {
+        return E_INVALID_VALUES;
+    }
+
+    // Update if FileAsset.title or FileAsset.displayName is modified
+    bool isNameChanged = false;
+    int32_t errCode = UpdateFileName(cmd, fileAsset, isNameChanged);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Audio Name failed, fileName=%{private}s",
+        fileAsset->GetDisplayName().c_str());
+    errCode = UpdateRelativePath(cmd, fileAsset, isNameChanged);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Audio RelativePath failed, relativePath=%{private}s",
+        fileAsset->GetRelativePath().c_str());
+    if (isNameChanged) {
+        UpdateVirtualPath(cmd, fileAsset);
+    }
+
+    TransactionOperations transactionOprn;
+    errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    int32_t rowId = UpdateFileInDb(cmd);
+    if (rowId < 0) {
+        MEDIA_ERR_LOG("Update Audio In database failed, rowId=%{public}d", rowId);
+        return rowId;
+    }
+    transactionOprn.Finish();
+
+    errCode = SendTrashNotify(cmd, fileAsset->GetId());
+    if (errCode == E_OK) {
+        return rowId;
+    }
+
+    // Audio has no favorite album, do not send favorite notify
+    auto watch = MediaLibraryNotify::GetInstance();
+    watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(fileAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+    return rowId;
+}
 } // namespace Media
 } // namespace OHOS

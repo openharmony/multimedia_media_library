@@ -35,6 +35,10 @@ namespace OHOS {
 namespace Media {
 static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
 
+static const std::string CAMERA_PATH = "Camera/";
+static const std::string SCREEN_SHOT_PATH = "Pictures/Screenshots/";
+static const std::string SCREEN_RECORD_PATH = "Videos/ScreenRecordings/";
+
 class MediaLibraryAssetOperations {
 public:
     static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
@@ -54,6 +58,7 @@ protected:
 
     static int32_t InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset);
     static int32_t CheckDisplayNameWithType(const std::string &displayName, int32_t mediaType);
+    static int32_t CheckRelativePathWithType(const std::string &relativePath, int32_t mediaType);
     static void GetAssetRootDir(int32_t mediaType, std::string &rootDirPath);
     static int32_t SetAssetPathInCreate(FileAsset &fileAsset);
     static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);
@@ -62,13 +67,22 @@ protected:
         const std::vector<std::string> &columns);
     static bool IsContainsValue(NativeRdb::ValuesBucket &values, const std::string &key);
     static int32_t ModifyAssetInDb(MediaLibraryCommand &cmd);
-    static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+        bool &isNameChanged);
+    static int32_t UpdateRelativePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+        bool &isNameChanged);
+    static void UpdateVirtualPath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t UpdateFileInDb(MediaLibraryCommand &cmd);
     static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode);
     static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId);
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId);
+
+    static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
+        int32_t &value);
+    static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
+        std::string &value);
 
 private:
     static int32_t CreateAssetUniqueId(int32_t type);

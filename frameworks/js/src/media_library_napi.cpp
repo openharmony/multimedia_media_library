@@ -1272,7 +1272,7 @@ static void JSCreateAssetExecute(napi_env env, void *data)
                 return;
             }
         }
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(API_VERSION_10));
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     } else {
         uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
     }
@@ -1412,7 +1412,7 @@ static void JSTrashAssetExecute(napi_env env, void *data)
         context->error = E_VIOLATION_PARAMETERS;
         return;
     }
-    MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(API_VERSION_10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(trashUri, PHOTO_TYPE_MASK);
     Uri updateAssetUri(trashUri);
     DataSharePredicates predicates;
@@ -3647,13 +3647,13 @@ static void JSGetAssetsExecute(napi_env env, void *data)
     switch (context->assetType) {
         case TYPE_AUDIO: {
             queryUri = URI_QUERY_AUDIO;
-            MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(API_VERSION_10));
+            MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
             MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, AUDIO_TYPE_MASK);
             break;
         }
         case TYPE_PHOTO: {
             queryUri = URI_QUERY_PHOTO;
-            MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(API_VERSION_10));
+            MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
             MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_TYPE_MASK);
             break;
         }
