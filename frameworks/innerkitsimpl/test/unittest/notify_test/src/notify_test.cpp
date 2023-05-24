@@ -28,7 +28,7 @@
 #include "medialibrary_errno.h"
 #define private public
 #include "medialibrary_notify.h"
-#undef private 
+#undef private
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
@@ -94,6 +94,33 @@ void CheckFileNotify(NotifyType notifyType)
     }
 }
 
+void SolveAlbumNotify(shared_ptr<TestObserver> obs, string assetStr)
+{
+    uint8_t *data = new (nothrow) uint8_t[obs->changeInfo_.size_];
+    if (data == nullptr) {
+        return;
+    }
+    int copyRet = memcpy_s(data, obs->changeInfo_.size_, obs->changeInfo_.data_, obs->changeInfo_.size_);
+    if (copyRet != 0) {
+        return;
+    }
+    shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
+    if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(data), obs->changeInfo_.size_)) {
+        uint32_t len = 0;
+        if (!parcel->ReadUint32(len)) {
+            return;
+        }
+        EXPECT_EQ(len, LIST_SIZE);
+        for (uint32_t i = 0; i < len; i++) {
+            string subUri = parcel->ReadString();
+            if (subUri.empty()) {
+                return;
+            }
+            EXPECT_EQ(subUri, assetStr);
+        }
+    }
+}
+
 void CheckAlbumNotify(NotifyType notifyType, DataShareObserver::ChangeType changeType)
 {
     string assetStr = PhotoColumn::PHOTO_URI_PREFIX + to_string(OBS_TMP_ID);
@@ -109,29 +136,7 @@ void CheckAlbumNotify(NotifyType notifyType, DataShareObserver::ChangeType chang
         unique_lock<mutex> lock(obs->mutex_);
         if (obs->condition_.wait_for(lock, 2s) == cv_status::no_timeout) {
             if (obs->changeInfo_.size_ > 0) {
-                uint8_t *data = new (nothrow) uint8_t[obs->changeInfo_.size_];
-                if(data == nullptr) {
-                    return;
-                }
-                int copyRet = memcpy_s(data, obs->changeInfo_.size_, obs->changeInfo_.data_, obs->changeInfo_.size_);
-                if (copyRet != 0) {
-                    return;
-                }
-                shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
-                if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(data), obs->changeInfo_.size_)) {
-                    uint32_t len = 0;
-                    if (!parcel->ReadUint32(len)) {
-                        return;
-                    }
-                    EXPECT_EQ(len, LIST_SIZE);
-                    for (uint32_t i = 0; i < len; i++) {
-                        string subUri = parcel->ReadString();
-                        if (subUri.empty()) {
-                            return;
-                        }
-                        EXPECT_EQ(subUri, assetStr);
-                    }
-                }
+                SolveAlbumNotify(obs, assetStr);
             } else {
                 EXPECT_TRUE(false);
             }
@@ -184,7 +189,6 @@ void CheckCloseAssetNotify(bool isCreate)
 
 void NotifyTest::SetUpTestCase()
 {
-
     vector<string> perms;
     perms.push_back("ohos.permission.READ_MEDIA");
     perms.push_back("ohos.permission.WRITE_MEDIA");
