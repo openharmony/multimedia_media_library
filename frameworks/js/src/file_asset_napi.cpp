@@ -1290,22 +1290,14 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
     Uri closeAssetUri(closeUri);
 
     bool isValid = false;
-    int fd = context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid);
+    UniqueFd unifd(context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid));
     if (!isValid) {
         context->error = ERR_INVALID_OUTPUT;
         NAPI_ERR_LOG("getting fd is invalid");
         return;
     }
-    bool openStatus = CheckFileOpenStatus(context, fd);
 
-    int32_t retVal = close(fd);
-    if (retVal != E_SUCCESS)  {
-        context->SaveError(retVal);
-        NAPI_ERR_LOG("call close failed %{public}d", retVal);
-        return;
-    }
-
-    if (!openStatus) {
+    if (!CheckFileOpenStatus(context, unifd.Get())) {
         return;
     }
 
@@ -1319,7 +1311,7 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
         return;
     }
 
-    retVal = UserFileClient::Insert(closeAssetUri, context->valuesBucket);
+    auto retVal = UserFileClient::Insert(closeAssetUri, context->valuesBucket);
     if (retVal != E_SUCCESS) {
         context->SaveError(retVal);
         NAPI_ERR_LOG("File close asset failed %{public}d", retVal);
@@ -1413,7 +1405,6 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
 
         asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
-
         JSCloseExecute(asyncContext.get());
         status = napi_create_async_work(
             env, nullptr, resource, [](napi_env env, void *data) {},
@@ -1963,7 +1954,7 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSIsFavorite");
-    
+
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_ONE;
@@ -2348,7 +2339,7 @@ static void UserFileMgrFavoriteExecute(napi_env env, void *data)
     } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
         uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_AUDIOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
     }
-    
+
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(API_VERSION_10));
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
     Uri updateAssetUri(uri);
@@ -2598,18 +2589,10 @@ static void UserFileMgrCloseExecute(napi_env env, void *data)
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    int32_t fd = context->fd;
-    bool openStatus = CheckFileOpenStatus(context, fd);
-    if (!openStatus) {
+    UniqueFd unifd(context->fd);
+    if (!CheckFileOpenStatus(context, unifd.Get())) {
         return;
     }
-    auto ret = close(fd);
-    if (ret != E_SUCCESS)  {
-        context->SaveError(-errno);
-        NAPI_ERR_LOG("Close failed, errno: %{public}d", errno);
-        return;
-    }
-
     string closeUri;
     if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
@@ -2620,9 +2603,8 @@ static void UserFileMgrCloseExecute(napi_env env, void *data)
         context->SaveError(-EINVAL);
         return;
     }
-    
     MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, API_VERSION, to_string(API_VERSION_10));
-    ret = AddTypeMaskByMediaType(closeUri, context->objectInfo->GetMediaType());
+    auto ret = AddTypeMaskByMediaType(closeUri, context->objectInfo->GetMediaType());
     if (ret != E_SUCCESS) {
         context->SaveError(ret);
         return ;

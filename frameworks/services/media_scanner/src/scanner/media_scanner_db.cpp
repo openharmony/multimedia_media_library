@@ -266,12 +266,7 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
     NativeRdb::RdbPredicates rdbPredicate(MEDIALIBRARY_TABLE);
     rdbPredicate.In(MEDIA_DATA_DB_ID, idList);
     int32_t ret = rdbStore->Delete(rdbPredicate);
-    if (ret == E_OK) {
-        return true;
-    }
-
-    MEDIA_ERR_LOG("Failed to delete metadata");
-    return false;
+    return ret == idList.size();
 }
 
 static OperationObject GetOprnObjectFromPath(const string &path)
@@ -474,6 +469,10 @@ int32_t MediaScannerDb::GetIdFromPath(const string &path)
 
 int32_t MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap)
 {
+    static const string ROOT_PATH = "/storage/media/local/files";
+    if (path.find(ROOT_PATH) != 0) {
+        return E_INVALID_ARGUMENTS;
+    }
     DataShare::DataSharePredicates predicates;
     string queryCmd = MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND " + MEDIA_DATA_DB_FILE_PATH + " like ? AND " +
         MEDIA_DATA_DB_IS_TRASH + " = ?";

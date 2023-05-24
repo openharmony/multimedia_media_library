@@ -114,6 +114,20 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/scanner_utils.cpp",
   ]
 
+  media_thumbnail_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/default_thumbnail_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/ithumbnail_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/lcd_thumbnail_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/micro_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_aging_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_datashare_bridge.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_helper_factory.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_service.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_uri_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_utils.cpp",
+  ]
+
   sources = [
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/src/sqlite_sql_builder.cpp",
@@ -143,6 +157,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_fileext_source
   sources += media_distributed_source
   sources += media_scan_source
+  sources += media_thumbnail_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 
@@ -150,7 +165,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_CLOUD_SYNC_PATH}:cloud_sync",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker:medialibrary_async_worker",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail:medialibrary_thumbnail",
     "${MEDIALIB_UTILS_PATH}:medialibrary_common_utils",
     "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
@@ -169,6 +183,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
+    "data_share:datashare_consumer",
     "data_share:datashare_provider",
     "device_auth:deviceauth_sdk",
     "device_manager:devicemanagersdk",
@@ -185,7 +200,10 @@ ohos_shared_library("medialibrary_data_extension") {
     "multimedia_player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
     "user_file_service:file_access_extension_ability_kit",
+    "window_manager:libdm",
   ]
 
   sanitize = {
