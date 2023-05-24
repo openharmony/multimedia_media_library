@@ -25,6 +25,7 @@ namespace OHOS {
 namespace Media {
 constexpr int32_t FILEIO_MODULE_CODE = 139;
 constexpr int32_t UFM_MODULE_CODE = 140;
+constexpr int32_t UFM_SYSCAP_BASE = 202;
 
 #define MODULE_OFFSET  100000
 #define MODULE_CODE(code) (((code) * MODULE_OFFSET))
@@ -54,6 +55,8 @@ constexpr int32_t JS_E_NO_MEMORY      = UFM_JS_ERR(UFM_MODULE_CODE, 13);    // n
 constexpr int32_t JS_E_FILE_KEY       = UFM_JS_ERR(UFM_MODULE_CODE, 14);    // wrong member name
 constexpr int32_t JS_E_INPUT          = UFM_JS_ERR(UFM_MODULE_CODE, 15);
 
+constexpr int32_t JS_E_NAMETOOLONG    = UFM_JS_ERR(UFM_SYSCAP_BASE, 36);
+
 // trans server errorCode to js Error code
 const std::unordered_map<int, int> trans2JsError = {
     { E_PERMISSION_DENIED,    JS_ERR_PERMISSION_DENIED },
@@ -64,6 +67,7 @@ const std::unordered_map<int, int> trans2JsError = {
     { E_FILE_NAME_INVALID,    JS_E_DISPLAYNAME },
     { E_CHECK_EXTENSION_FAIL, JS_E_FILE_TYPE },
     { E_FILE_OPER_FAIL,       JS_INNER_FAIL },
+    { E_NAMETOOLONG,          JS_E_NAMETOOLONG },
     { -EINVAL,                JS_ERR_PARAMETER_INVALID },
     { -ENOMEM,                JS_ERR_NO_MEM },
 };
@@ -78,6 +82,7 @@ const std::unordered_map<int, std::string> jsErrMap = {
     { JS_E_FILE_TYPE,           "file type is not allow in the directory" },
     { JS_E_FILE_KEY,            "member not exist" },
     { JS_ERR_NO_MEM,            "cannot allocate memory" },
+    { JS_E_NAMETOOLONG,         "file name is too long" },
 };
 
 const std::unordered_map<int32_t, int32_t> ClientErrTable {

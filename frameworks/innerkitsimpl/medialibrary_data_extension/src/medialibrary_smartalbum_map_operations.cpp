@@ -306,6 +306,9 @@ static int32_t RecycleDir(const shared_ptr<FileAsset> &fileAsset)
     }
 
     if (!MediaFileUtils::RenameDir(fileAsset->GetPath(), assetPath)) {
+        if (errno == ENAMETOOLONG) {
+            return E_NAMETOOLONG;
+        }
         return E_RENAME_DIR_FAIL;
     }
 
