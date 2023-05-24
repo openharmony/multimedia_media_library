@@ -170,12 +170,12 @@ const int32_t FAVORIT_SMART_ALBUM_ID = 2;
 const std::string FAVORIT_SMART_ALBUM_NAME = "FavoritAlbum";
 
 const std::string API_VERSION = "api_version";
-const int32_t API_VERSION_10 = 10;
 
 enum NapiAssetType {
-    TYPE_AUDIO = 0,
-    TYPE_PHOTO = 1,
-    TYPE_ALBUM = 2,
+    TYPE_DEFAULT = 0,
+    TYPE_AUDIO = 1,
+    TYPE_PHOTO = 2,
+    TYPE_ALBUM = 3,
 };
 
 enum AlbumType {

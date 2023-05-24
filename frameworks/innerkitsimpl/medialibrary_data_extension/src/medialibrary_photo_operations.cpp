@@ -30,20 +30,12 @@
 #include "medialibrary_rdbstore.h"
 #include "userfile_manager_types.h"
 #include "value_object.h"
+#include "values_bucket.h"
 using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
-namespace {
-int32_t SolvePhotoAssetAlbumInDelete(const shared_ptr<FileAsset> &fileAsset)
-{
-    // todo: wait a function to get asset in which album
-
-    return E_OK;
-}
-} // namespace
 
 int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
 {
@@ -51,8 +43,7 @@ int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
         case MediaLibraryApi::API_10:
             return CreateV10(cmd);
         case MediaLibraryApi::API_OLD:
-            MEDIA_ERR_LOG("this api is not realized yet");
-            return E_FAIL;
+            return CreateV9(cmd);
         default:
             MEDIA_ERR_LOG("get api failed");
             return E_FAIL;
@@ -100,8 +91,7 @@ int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
         case MediaLibraryApi::API_10:
             return UpdateV10(cmd);
         case MediaLibraryApi::API_OLD:
-            MEDIA_ERR_LOG("this api is not realized yet");
-            return E_FAIL;
+            return UpdateV9(cmd);
         default:
             MEDIA_ERR_LOG("get api failed");
             return E_FAIL;
@@ -170,22 +160,83 @@ static void SetPhotoSubType(MediaLibraryCommand &cmd, FileAsset &fileAsset)
     }
 }
 
-int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
+static void SetPhotoTypeByRelativePath(const string &relativePath, FileAsset &fileAsset)
 {
-    string displayName;
-    int32_t mediaType = 0;
+    int32_t subType = static_cast<int32_t>(PhotoSubType::DEFAULT);
+    if (relativePath.compare(CAMERA_PATH) == 0) {
+        subType = static_cast<int32_t>(PhotoSubType::CAMERA);
+    } else if (relativePath.compare(SCREEN_RECORD_PATH) == 0 ||
+        relativePath.compare(SCREEN_SHOT_PATH) == 0) {
+        subType = static_cast<int32_t>(PhotoSubType::SCREENSHOT);
+    }
+
+    fileAsset.SetPhotoSubType(subType);
+}
+
+int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
+{
     FileAsset fileAsset;
-    ValueObject valueObject;
     ValuesBucket &values = cmd.GetValueBucket();
 
-    CHECK_AND_RETURN_RET(values.GetObject(PhotoColumn::MEDIA_NAME, valueObject), E_HAS_DB_ERROR);
-    valueObject.GetString(displayName);
+    string displayName;
+    CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName),
+        E_HAS_DB_ERROR);
     fileAsset.SetDisplayName(displayName);
 
-    CHECK_AND_RETURN_RET(values.GetObject(PhotoColumn::MEDIA_TYPE, valueObject), E_HAS_DB_ERROR);
-    valueObject.GetInt(mediaType);
+    string relativePath;
+    CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, PhotoColumn::MEDIA_RELATIVE_PATH, relativePath),
+        E_HAS_DB_ERROR);
+    fileAsset.SetRelativePath(relativePath);
+    MediaFileUtils::FormatRelativePath(relativePath);
+
+    int32_t mediaType = 0;
+    CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_TYPE, mediaType),
+        E_HAS_DB_ERROR);
     fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
-    SetPhotoSubType(cmd, fileAsset);
+
+    int32_t errCode = CheckRelativePathWithType(relativePath, mediaType);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check RelativePath and Extension, "
+        "relativePath=%{private}s, mediaType=%{public}d", relativePath.c_str(), mediaType);
+    SetPhotoTypeByRelativePath(relativePath, fileAsset);
+    errCode = CheckDisplayNameWithType(displayName, mediaType);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extension, "
+        "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
+
+    TransactionOperations transactionOprn;
+    errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    errCode = SetAssetPathInCreate(fileAsset);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
+        return errCode;
+    }
+
+    int32_t outRow = InsertAssetInDb(cmd, fileAsset);
+    if (outRow <= 0) {
+        MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
+        return E_HAS_DB_ERROR;
+    }
+    transactionOprn.Finish();
+    return outRow;
+}
+
+int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
+{
+    FileAsset fileAsset;
+    ValuesBucket &values = cmd.GetValueBucket();
+
+    string displayName;
+    CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName),
+        E_HAS_DB_ERROR);
+    fileAsset.SetDisplayName(displayName);
+
+    int32_t mediaType = 0;
+    CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_TYPE, mediaType),
+        E_HAS_DB_ERROR);
+    fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
 
     // Check rootdir and extension
     int32_t errCode = CheckDisplayNameWithType(displayName, mediaType);
@@ -231,12 +282,6 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
         return errCode;
     }
 
-    // delete file in album
-    errCode = SolvePhotoAssetAlbumInDelete(fileAsset);
-    if (errCode != E_OK) {
-        return errCode;
-    }
-
     // delete file in db
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::DELETE);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -273,9 +318,60 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
     }
 
     // Update if FileAsset.title or FileAsset.displayName is modified
-    int32_t errCode = UpdateFileName(cmd, fileAsset);
+    bool isNameChanged = false;
+    int32_t errCode = UpdateFileName(cmd, fileAsset, isNameChanged);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Photo Name failed, fileName=%{private}s",
         fileAsset->GetDisplayName().c_str());
+
+    TransactionOperations transactionOprn;
+    errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    int32_t rowId = UpdateFileInDb(cmd);
+    if (rowId < 0) {
+        MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
+        return rowId;
+    }
+    transactionOprn.Finish();
+
+    errCode = SendTrashNotify(cmd, fileAsset->GetId());
+    if (errCode == E_OK) {
+        return rowId;
+    }
+    SendFavoriteNotify(cmd, fileAsset->GetId());
+    auto watch = MediaLibraryNotify::GetInstance();
+    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(fileAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+    return rowId;
+}
+
+int32_t MediaLibraryPhotoOperations::UpdateV9(MediaLibraryCommand &cmd)
+{
+    vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_TYPE,
+        PhotoColumn::MEDIA_NAME,
+        PhotoColumn::MEDIA_RELATIVE_PATH
+    };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
+        OperationObject::FILESYSTEM_PHOTO, columns);
+    if (fileAsset == nullptr) {
+        return E_INVALID_VALUES;
+    }
+
+    // Update if FileAsset.title or FileAsset.displayName is modified
+    bool isNameChanged = false;
+    int32_t errCode = UpdateFileName(cmd, fileAsset, isNameChanged);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Photo Name failed, fileName=%{private}s",
+        fileAsset->GetDisplayName().c_str());
+    errCode = UpdateRelativePath(cmd, fileAsset, isNameChanged);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Photo RelativePath failed, relativePath=%{private}s",
+        fileAsset->GetRelativePath().c_str());
+    if (isNameChanged) {
+        UpdateVirtualPath(cmd, fileAsset);
+    }
 
     TransactionOperations transactionOprn;
     errCode = transactionOprn.Start();

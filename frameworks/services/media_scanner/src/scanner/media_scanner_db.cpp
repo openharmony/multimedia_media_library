@@ -118,7 +118,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     }
 }
 
-static void GetTableNameByPathApi10(int32_t mediaType, string &tableName)
+static void GetTableNameByPath(int32_t mediaType, string &tableName)
 {
     switch (mediaType) {
         case MediaType::MEDIA_TYPE_IMAGE:
@@ -152,7 +152,7 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata, MediaLibraryApi 
     string tableName = MEDIALIBRARY_TABLE;
     if (api == MediaLibraryApi::API_10) {
         SetValuesFromMetaDataApi10(metadata, values, true);
-        GetTableNameByPathApi10(mediaType, tableName);
+        GetTableNameByPath(mediaType, tableName);
     } else {
         SetValuesFromMetaDataApi9(metadata, values, true);
     }
@@ -204,8 +204,6 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, MediaLibraryApi 
     ValuesBucket values;
     string whereClause = MEDIA_DATA_DB_ID + " = ?";
     vector<string> whereArgs = { to_string(metadata.GetFileId()) };
-    string tableName = MEDIALIBRARY_TABLE;
-
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri;
     if (api == MediaLibraryApi::API_10) {
@@ -215,9 +213,10 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, MediaLibraryApi 
         values.PutString(MEDIA_DATA_DB_URI, mediaTypeUri);
     }
 
+    string tableName = MEDIALIBRARY_TABLE;
     if (api == MediaLibraryApi::API_10) {
         SetValuesFromMetaDataApi10(metadata, values, false);
-        GetTableNameByPathApi10(mediaType, tableName);
+        GetTableNameByPath(mediaType, tableName);
     } else {
         SetValuesFromMetaDataApi9(metadata, values, false);
     }
