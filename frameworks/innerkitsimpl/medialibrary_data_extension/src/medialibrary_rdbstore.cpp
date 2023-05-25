@@ -194,6 +194,7 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
     if (cmd.GetTableName() == MEDIALIBRARY_TABLE || cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         ValuesBucket valuesBucket;
         valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
+        valuesBucket.PutInt(MEDIA_DATA_DB_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_UPLOAD));
         ret = rdbStore_->Update(deletedRows, cmd.GetTableName(), valuesBucket,
             cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
         CloudSyncHelper::GetInstance()->StartSync();
@@ -241,15 +242,10 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
         return nullptr;
     }
     if (cmd.GetTableName() == MEDIALIBRARY_TABLE || cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
-        string dirtyFilterCondition = "dirty <> " + std::to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED));
-        if (!strQueryCondition.empty()) {
-            dirtyFilterCondition += " AND ";
-            strQueryCondition = dirtyFilterCondition + strQueryCondition;
-        } else {
-            strQueryCondition = dirtyFilterCondition;
-        }
-        cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
+        string queryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
+        string filterCondition = "sync_status = " + std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
+        queryCondition = queryCondition.empty() ? filterCondition : filterCondition + " AND " + queryCondition;
+        cmd.GetAbsRdbPredicates()->SetWhereClause(queryCondition);
     }
     auto *predicates = cmd.GetAbsRdbPredicates();
 #ifdef ML_DEBUG
@@ -351,6 +347,7 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
     if (predicates.GetTableName() == MEDIALIBRARY_TABLE || predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         ValuesBucket valuesBucket;
         valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
+        valuesBucket.PutInt(MEDIA_DATA_DB_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_UPLOAD));
         err = rdbStore_->Update(deletedRows, valuesBucket, predicates);
         CloudSyncHelper::GetInstance()->StartSync();
     } else {
@@ -804,6 +801,7 @@ static int32_t ExecuteSql(RdbStore &store)
     static const vector<string> executeSqlStrs = {
         CREATE_MEDIA_TABLE,
         PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoColumn::INDEX_STHP_ADDTIME,
         PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
@@ -886,6 +884,12 @@ int32_t VersionAddCloud(RdbStore &store, int32_t oldVersion, int32_t newVersion)
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb dirty error %{private}d", result);
     }
+    const std::string alterSyncStatus = "ALTER TABLE " + MEDIALIBRARY_TABLE +
+        " ADD COLUMN " + MEDIA_DATA_DB_SYNC_STATUS +" INT DEFAULT 0";
+    result = store.ExecuteSql(alterSyncStatus);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb syncStatus error %{private}d", result);
+    }
     const std::string alterPosition = "ALTER TABLE " + MEDIALIBRARY_TABLE +
         " ADD COLUMN " + MEDIA_DATA_DB_POSITION +" INT DEFAULT 1";
     result = store.ExecuteSql(alterPosition);
@@ -904,11 +908,11 @@ int32_t AddMetaModifiedColumn(RdbStore &store, int32_t oldVersion, int32_t newVe
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb meta_date_modified error %{private}d", result);
     }
-    const std::string alterSyncing = "ALTER TABLE " + MEDIALIBRARY_TABLE +
-        " ADD COLUMN " + MEDIA_DATA_DB_SYNCING + " INT DEFAULT 0";
-    result = store.ExecuteSql(alterSyncing);
+    const std::string alterSyncStatus = "ALTER TABLE " + MEDIALIBRARY_TABLE +
+        " ADD COLUMN " + MEDIA_DATA_DB_SYNC_STATUS + " INT DEFAULT 0";
+    result = store.ExecuteSql(alterSyncStatus);
     if (result != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Upgrade rdb syncing error %{private}d", result);
+        MEDIA_ERR_LOG("Upgrade rdb syncStatus error %{private}d", result);
     }
     return NativeRdb::E_OK;
 }

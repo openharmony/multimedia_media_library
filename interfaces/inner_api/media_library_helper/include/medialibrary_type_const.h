@@ -93,6 +93,12 @@ enum class DirtyType : int32_t {
     TYPE_RETRY
 };
 
+enum class SyncStatusType : int32_t {
+    TYPE_VISIBLE = 0,
+    TYPE_DOWNLOAD,
+    TYPE_UPLOAD,
+};
+
 const int32_t SUCCESS = 0;
 
 constexpr int32_t DEFAULT_INT32 = 0;
