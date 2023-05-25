@@ -234,9 +234,14 @@ int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
     }
 
     if (mediaType == MEDIA_TYPE_NOFILE) {
+        UpdateDateModified(MediaFileUtils::GetParentPath(MediaFileUtils::GetParentPath(fileAsset.GetPath())));
         return dirAsset.GetAlbumId();
     }
-    return InsertFileInDb(cmd, fileAsset, dirAsset);
+    auto ret = InsertFileInDb(cmd, fileAsset, dirAsset);
+    if (ret > 0) {
+        UpdateDateModified(MediaFileUtils::GetParentPath(fileAsset.GetPath()));
+    }
+    return ret;
 }
 
 NativeAlbumAsset MediaLibraryObjectUtils::GetLastDirExistInDb(const string &dirPath)
