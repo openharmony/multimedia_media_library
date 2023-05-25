@@ -78,13 +78,16 @@ public:
     static const std::string PHOTO_CLOUD_ID;
     static const std::string PHOTO_SUBTYPE;
     static const std::string PHOTO_META_DATE_MODIFIED;
-    static const std::string PHOTO_SYNCING;
+    static const std::string PHOTO_SYNC_STATUS;
 
     // table name
     static const std::string PHOTOS_TABLE;
 
     // create PhotoTable sql
     static const std::string CREATE_PHOTO_TABLE;
+
+    // create indexes for Photo
+    static const std::string INDEX_STHP_ADDTIME;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER;

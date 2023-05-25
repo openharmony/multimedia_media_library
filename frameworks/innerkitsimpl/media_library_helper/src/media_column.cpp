@@ -17,6 +17,8 @@
 
 #include <string>
 
+#include "base_column.h"
+
 namespace OHOS {
 namespace Media {
 const std::string MediaColumn::MEDIA_ID = "file_id";
@@ -53,7 +55,7 @@ const std::set<std::string> MediaColumn::DEFAULT_FETCH_COLUMNS = {
 const std::string PhotoColumn::PHOTO_DIRTY = "dirty";
 const std::string PhotoColumn::PHOTO_CLOUD_ID = "cloud_id";
 const std::string PhotoColumn::PHOTO_META_DATE_MODIFIED = "meta_date_modified";
-const std::string PhotoColumn::PHOTO_SYNCING = "syncing";
+const std::string PhotoColumn::PHOTO_SYNC_STATUS = "sync_status";
 const std::string PhotoColumn::PHOTO_ORIENTATION = "orientation";
 const std::string PhotoColumn::PHOTO_LATITUDE = "latitude";
 const std::string PhotoColumn::PHOTO_LONGITUDE = "longitude";
@@ -94,7 +96,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_DIRTY + " INT DEFAULT 1, " +
     PHOTO_CLOUD_ID + " TEXT, " +
     PHOTO_META_DATE_MODIFIED + "  BIGINT DEFAULT 0, " +
-    PHOTO_SYNCING + "  INT DEFAULT 0, " +
+    PHOTO_SYNC_STATUS + "  INT DEFAULT 0, " +
     PHOTO_ORIENTATION + " INT DEFAULT 0, " +
     PHOTO_LATITUDE + " DOUBLE DEFAULT 0, " +
     PHOTO_LONGITUDE + " DOUBLE DEFAULT 0, " +
@@ -103,6 +105,12 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_LCD_VISIT_TIME + " BIGINT DEFAULT 0, " +
     PHOTO_POSITION + " INT DEFAULT 1, " +
     PHOTO_SUBTYPE + " INT DEFAULT 0)";
+
+// Create indexes
+const std::string PhotoColumn::INDEX_STHP_ADDTIME =
+    BaseColumn::CreateIndex() + "idx_sthp_dateadded" + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
+    "," + MEDIA_TIME_PENDING + "," + MEDIA_DATE_ADDED + ");";
 
 const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         "CREATE TRIGGER photos_delete_trigger AFTER UPDATE ON " +
