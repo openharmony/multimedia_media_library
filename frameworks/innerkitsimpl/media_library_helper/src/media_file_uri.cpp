@@ -200,7 +200,7 @@ std::string MediaFileUri::GetFilePath()
     }
     predicates.SetWhereArgs({ GetFileId() });
 
-    /* query and get value */
+    /* query and check */
     auto resultSet = dataShareHelper->Query(uri, predicates, columns, &error);
     int32_t ret = error.GetCode();
     if (ret != 0) {
@@ -215,6 +215,13 @@ std::string MediaFileUri::GetFilePath()
     }
     if (rowCount != 1) {
         MEDIA_ERR_LOG("more than one record");
+        return "";
+    }
+
+    /* get val */
+    ret = resultSet->GoToNextRow();
+    if (ret != 0) {
+        MEDIA_ERR_LOG("result set go to next row err %{public}d", ret);
         return "";
     }
     std::string val;
