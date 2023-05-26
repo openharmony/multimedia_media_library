@@ -336,6 +336,32 @@ static void MediaTypeToMask(MediaType mediaType, string &typeMask)
 }
 
 template<class T>
+void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
+{
+    string uri;
+    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
+        string typeMask;
+        MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
+        fileAsset->SetTypeMask(typeMask);
+        MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()),
+             networkId_, MEDIA_API_VERSION_V10);
+        uri = fileUri.ToString();
+    } else {
+        MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()),
+            networkId_);
+        uri = fileUri.ToString();
+    }
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    fileAsset->SetAlbumId(0);
+#endif
+    if (fileAsset->GetAlbumId() != DEFAULT_INT32) {
+        fileAsset->SetAlbumUri(MediaFileUri(MEDIA_TYPE_ALBUM, to_string(fileAsset->GetAlbumId()),
+            networkId_).ToString());
+    }
+    fileAsset->SetUri(move(uri));
+}
+
+template<class T>
 void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if ((resultset_ == nullptr) && (resultSet == nullptr)) {
@@ -366,24 +392,7 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
         }
         fileAsset->SetCount(count);
     }
-    string uri;
-    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
-        string typeMask;
-        MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
-        fileAsset->SetTypeMask(typeMask);
-        MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()),
-             networkId_, MEDIA_API_VERSION_V10);
-        uri = fileUri.ToString();
-    } else {
-        MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()),
-            networkId_);
-        uri = fileUri.ToString();
-    }
-    if (fileAsset->GetAlbumId() != DEFAULT_INT32) {
-        fileAsset->SetAlbumUri(MediaFileUri(MEDIA_TYPE_ALBUM, to_string(fileAsset->GetAlbumId()),
-            networkId_).ToString());
-    }
-    fileAsset->SetUri(move(uri));
+    SetAssetUri(fileAsset);
 }
 
 template<class T>
@@ -439,12 +448,19 @@ unique_ptr<T> FetchResult<T>::GetObjectFromRdb(shared_ptr<NativeRdb::ResultSet> 
 template<class T>
 void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    albumData->SetAlbumId(get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_ID, TYPE_INT32, resultSet)));
+    albumData->SetAlbumName(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_NAME, TYPE_STRING, resultSet)));
+    albumData->SetAlbumType(static_cast<PhotoAlbumType>(
+        get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32, resultSet))));
+    albumData->SetAlbumSubType(static_cast<PhotoAlbumSubType>(
+        get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, resultSet))));
+#else
     // Get album id index and value
     albumData->SetAlbumId(get<int32_t>(GetRowValFromColumn(MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32, resultSet)));
-
     // Get album title index and value
     albumData->SetAlbumName(get<string>(GetRowValFromColumn(MEDIA_DATA_DB_TITLE, TYPE_STRING, resultSet)));
-
+#endif
     // Get album asset count index and value
     albumData->SetCount(get<int32_t>(GetRowValFromColumn(MEDIA_DATA_DB_COUNT, TYPE_INT32, resultSet)));
     string albumUri;
@@ -481,6 +497,8 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
     photoAlbumData->SetCount(get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, TYPE_INT32, resultSet)));
     photoAlbumData->SetCoverUri(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_COVER_URI, TYPE_STRING,
         resultSet)));
+    photoAlbumData->SetDateModified(get<int64_t>(GetRowValFromColumn(
+        PhotoAlbumColumns::ALBUM_DATE_MODIFIED, TYPE_INT64, resultSet)));
     photoAlbumData->SetResultNapiType(resultNapiType_);
     photoAlbumData->SetTypeMask(typeMask_);
 }

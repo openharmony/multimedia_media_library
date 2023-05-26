@@ -16,6 +16,7 @@
 
 #include "media_file_utils.h"
 
+#include <algorithm>
 #include <dirent.h>
 #include <fcntl.h>
 #include <fstream>
@@ -929,5 +930,17 @@ bool MediaFileUtils::CheckMode(const string &mode)
         MEDIA_ERR_LOG("Input Mode %{public}s is invalid", mode.c_str());
         return false;
     }
+}
+
+size_t MediaFileUtils::FindIgnoreCase(const std::string &str, const std::string &key)
+{
+    auto it = search(str.begin(), str.end(), key.begin(), key.end(), [](const char a, const char b) {
+        return ::tolower(a) == ::tolower(b);
+    });
+    if (it == str.end()) {
+        return string::npos;
+    }
+    size_t pos = it - str.begin();
+    return (pos > 0) ? pos : 0;
 }
 } // namespace OHOS::Media

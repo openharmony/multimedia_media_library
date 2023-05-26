@@ -103,6 +103,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperatio
         return uniStore->QuerySql(QUERY_MEDIA_VOLUME);
     }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    return uniStore->Query(cmd, columns);
+#else
     string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
     strQueryCondition += " GROUP BY " + MEDIA_DATA_DB_BUCKET_ID;
     cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
@@ -123,6 +126,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperatio
     }
     string querySql = "SELECT * FROM " + cmd.GetTableName();
     return uniStore->QuerySql(querySql);
+#endif
 }
 
 inline int32_t GetStringObject(const ValuesBucket &values, const string &key, string &value)
@@ -142,6 +146,7 @@ inline void PrepareUserAlbum(const string &albumName, const string &relativePath
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
     values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
     values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
+    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
 
     if (!relativePath.empty()) {
         values.PutString(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, relativePath);
@@ -252,6 +257,7 @@ int32_t PrepareUpdateValues(const ValuesBucket &values, ValuesBucket &updateValu
     if (updateValues.IsEmpty()) {
         return -EINVAL;
     }
+    updateValues.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
     return E_OK;
 }
 

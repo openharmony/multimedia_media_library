@@ -303,7 +303,11 @@ void MediaLibraryCommand::ParseTableName()
         { OperationObject::SMART_ALBUM_ASSETS, { { OperationType::UNKNOWN_TYPE, SMARTALBUMASSETS_VIEW_NAME } } },
         { OperationObject::ASSETMAP, { { OperationType::UNKNOWN_TYPE, ASSETMAP_VIEW_NAME } } },
         { OperationObject::FILESYSTEM_DIR, { { OperationType::QUERY, MEDIATYPE_DIRECTORY_TABLE } } },
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        { OperationObject::FILESYSTEM_ALBUM, { { OperationType::QUERY, PhotoAlbumColumns::TABLE } } },
+#else
         { OperationObject::FILESYSTEM_ALBUM, { { OperationType::QUERY, ALBUM_VIEW_NAME } } },
+#endif
         { OperationObject::ALL_DEVICE, { { OperationType::UNKNOWN_TYPE, DEVICE_TABLE } } },
         { OperationObject::ACTIVE_DEVICE, { { OperationType::UNKNOWN_TYPE, DEVICE_TABLE } } },
         { OperationObject::BUNDLE_PERMISSION, { { OperationType::UNKNOWN_TYPE, BUNDLE_PERMISSION_TABLE } } },
@@ -324,27 +328,6 @@ void MediaLibraryCommand::ParseTableName()
         }
     } else {
         tableName_ = MEDIALIBRARY_TABLE;
-    }
-    // distributed tablename, smartalbum and smartalbumMap can not distributed
-    if ((oprnObject_ == OperationObject::SMART_ALBUM) || (oprnObject_ == OperationObject::SMART_ALBUM_MAP)) {
-        MEDIA_DEBUG_LOG("smart table name is %{public}s", tableName_.c_str());
-        return;
-    }
-    // distributed tablename
-    auto networkId = GetOprnDevice();
-    if (networkId.empty()) {
-        return;
-    }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore != nullptr) {
-        auto rdbStorePtr = rdbStore->GetRaw();
-        int errCode = E_ERR;
-        if (rdbStorePtr != nullptr) {
-            if (tableName_ == PhotoColumn::PHOTOS_TABLE || tableName_ == AudioColumn::AUDIOS_TABLE) {
-                tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, tableName_, errCode);
-            }
-            tableName_ = rdbStorePtr->ObtainDistributedTableName(networkId, MEDIALIBRARY_TABLE, errCode);
-        }
     }
     MEDIA_INFO_LOG("Table name is %{public}s", tableName_.c_str());
 }
@@ -458,6 +441,5 @@ void MediaLibraryCommand::ParseOprnObjectFromFileUri()
         }
     }
 }
-
 } // namespace Media
 } // namespace OHOS

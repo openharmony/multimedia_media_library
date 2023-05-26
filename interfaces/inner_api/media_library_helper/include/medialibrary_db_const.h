@@ -535,13 +535,21 @@ static const std::vector<std::string> FILE_ASSET_COLUMNS = {
 };
 
 const std::string EMPTY_COLUMN_AS = "'' AS ";
+const std::string DEFAULT_INT_COLUMN_AS = "0 AS ";
 const std::string COMPAT_COLUMN_ARTIST = EMPTY_COLUMN_AS + MEDIA_DATA_DB_ARTIST;
-const std::string COMPAT_COLUMN_ORIENTATION = EMPTY_COLUMN_AS + MEDIA_DATA_DB_ORIENTATION;
-const std::string COMPAT_COLUMN_BUCKET_ID = EMPTY_COLUMN_AS + MEDIA_DATA_DB_BUCKET_ID;
+const std::string COMPAT_COLUMN_ORIENTATION = DEFAULT_INT_COLUMN_AS + MEDIA_DATA_DB_ORIENTATION;
+const std::string COMPAT_COLUMN_BUCKET_ID = DEFAULT_INT_COLUMN_AS + MEDIA_DATA_DB_BUCKET_ID;
 const std::string COMPAT_COLUMN_BUCKET_NAME = EMPTY_COLUMN_AS + MEDIA_DATA_DB_BUCKET_NAME;
 const std::string COMPAT_COLUMN_IS_TRASH = MEDIA_DATA_DB_DATE_TRASHED + " AS " + MEDIA_DATA_DB_IS_TRASH;
-const std::string COMPAT_COLUMN_WIDTH = EMPTY_COLUMN_AS + MEDIA_DATA_DB_WIDTH;
-const std::string COMPAT_COLUMN_HEIGHT = EMPTY_COLUMN_AS + MEDIA_DATA_DB_HEIGHT;
+const std::string COMPAT_COLUMN_WIDTH = DEFAULT_INT_COLUMN_AS + MEDIA_DATA_DB_WIDTH;
+const std::string COMPAT_COLUMN_HEIGHT = DEFAULT_INT_COLUMN_AS + MEDIA_DATA_DB_HEIGHT;
+const std::string COMPAT_COLUMN_URI = EMPTY_COLUMN_AS + MEDIA_DATA_DB_URI;
+
+// Caution: Keep same definition as MediaColumn! Only for where clause check in API9 getAlbums and album.getFileAssets
+const std::string COMPAT_ALBUM_SUBTYPE = "album_subtype";
+const std::string COMPAT_HIDDEN = "hidden";
+const std::string COMPAT_PHOTO_SYNC_STATUS = "sync_status";
+const std::string COMPAT_FILE_SUBTYPE = "subtype";
 } // namespace Media
 } // namespace OHOS
 
