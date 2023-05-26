@@ -16,6 +16,11 @@
 #include <cstdarg>
 #include <string>
 
+using namespace std;
+
+namespace OHOS {
+namespace Media {
+
 const std::string NEW_STR = "%";
 const std::string OLD_STR = "%{public}";
 const std::size_t OLD_STR_LEN = OLD_STR.length();
@@ -40,3 +45,5 @@ extern "C" void DebugPrintf(const char* fmt, ...)
 #pragma clang diagnostic pop
     va_end(ap);
 }
+} // namespace Media
+} // namespace OHOS

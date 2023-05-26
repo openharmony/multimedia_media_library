@@ -53,7 +53,7 @@ void CreateDeleteDirectory::TearDownTestCase() {}
 void CreateDeleteDirectory::SetUp() {}
 void CreateDeleteDirectory::TearDown(void) {}
 static constexpr int32_t g_mediaDeleteRootDirError = -2010;
-static constexpr const char * g_dataSharePath = "datashare:///media/file/";
+static constexpr const char *g_dataSharePath = "datashare:///media/file/";
 
 static inline int32_t GetAlbumId(string &&relativePath)
 {
