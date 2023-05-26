@@ -15,9 +15,11 @@
 
 #include "userfile_client.h"
 
+#include "ability.h"
+
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
-#include "ability.h"
+#include "medialibrary_helper_container.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -55,6 +57,7 @@ shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(napi_e
         }
         dataShareHelper = DataShare::DataShareHelper::Creator(context->GetToken(), MEDIALIBRARY_DATA_URI);
     }
+    MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(dataShareHelper);
     return dataShareHelper;
 }
 
