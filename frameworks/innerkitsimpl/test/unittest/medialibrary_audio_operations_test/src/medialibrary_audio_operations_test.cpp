@@ -15,7 +15,7 @@
 
 #define MLOG_TAG "audioOperationsTest"
 
-#include "../include/medialibrary_audio_operations_test.h"
+#include "medialibrary_audio_operations_test.h"
 
 #include <chrono>
 #include <fstream>
@@ -85,12 +85,14 @@ const unordered_map<string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_HIDDEN, MEMBER_TYPE_INT32 },
     { MediaColumn::MEDIA_PARENT_ID, MEMBER_TYPE_INT32 },
     { MediaColumn::MEDIA_RELATIVE_PATH, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_VIRTURL_PATH, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_ORIENTATION, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_LATITUDE, MEMBER_TYPE_DOUBLE },
     { PhotoColumn::PHOTO_LONGITUDE, MEMBER_TYPE_DOUBLE },
     { PhotoColumn::PHOTO_HEIGHT, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_WIDTH, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_SUBTYPE, MEMBER_TYPE_INT32 },
     { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
     { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING }
 };
@@ -103,7 +105,6 @@ void CleanTestTables()
         AudioColumn::AUDIOS_TABLE,
         MEDIALIBRARY_TABLE,
         ASSET_UNIQUE_NUMBER_TABLE
-        // todo: album tables
     };
     for (auto &dropTable : dropTableList) {
         string dropSql = "DROP TABLE " + dropTable + ";";
@@ -291,6 +292,23 @@ bool QueryAndVerifyAudioAsset(const string &columnName, const string &value,
     return true;
 }
 
+inline int32_t CreateAudioApi9(int mediaType, const string &displayName, const string &relativePath)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
+        MediaLibraryApi::API_OLD);
+    ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_NAME, displayName);
+    values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
+    values.PutString(MediaColumn::MEDIA_RELATIVE_PATH, relativePath);
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryAudioOperations::Create(cmd);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Create Audio failed, errCode=%{public}d", ret);
+        return ret;
+    }
+    return ret;
+}
+
 inline int32_t CreateAudioApi10(int mediaType, const string &displayName)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
@@ -368,6 +386,21 @@ int32_t MakeAudioUnpending(int fileId)
 
     return E_OK;
 }
+
+int32_t SetDefaultAudioApi9(int mediaType, const string &displayName, const string &relativePath)
+{
+    int fileId = CreateAudioApi9(mediaType, displayName, relativePath);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("create audio failed, res=%{public}d", fileId);
+        return fileId;
+    }
+    int32_t errCode = MakeAudioUnpending(fileId);
+    if (errCode != E_OK) {
+        return errCode;
+    }
+    return fileId;
+}
+
 
 int32_t SetDefaultAudioApi10(int mediaType, const string &displayName)
 {
@@ -518,6 +551,20 @@ int32_t TestQueryAsset(const string &queryKey, const string &queryValue, const s
 }
 } // namespace
 
+void TestAudioCreateParamsApi9(const string &displayName, int32_t type, const string &relativePath,
+    int32_t result)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
+        MediaLibraryApi::API_OLD);
+    ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_NAME, displayName);
+    values.PutInt(MediaColumn::MEDIA_TYPE, type);
+    values.PutString(MediaColumn::MEDIA_RELATIVE_PATH, relativePath);
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryAudioOperations::Create(cmd);
+    EXPECT_EQ(ret, result);
+}
+
 void TestAudioCreateParamsApi10(const string &displayName, int32_t type, int32_t result)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
@@ -540,6 +587,22 @@ void TestAudioDeleteParamsApi10(OperationObject oprnObject, int32_t fileId, Exce
     func(ret);
 }
 
+void TestAudioUpdateParamsApi9(const string &predicateColumn, const string &predicateValue,
+    const unordered_map<string, string> &updateColumns, ExceptIntFunction func)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::UPDATE,
+        MediaLibraryApi::API_OLD);
+    ValuesBucket values;
+    for (auto &iter : updateColumns) {
+        SetValuesBucketInUpdate(iter.first, iter.second, values);
+    }
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(predicateColumn, predicateValue);
+    int32_t ret = MediaLibraryAudioOperations::Update(cmd);
+    func(ret);
+}
+
+
 void TestAudioUpdateParamsApi10(const string &predicateColumn, const string &predicateValue,
     const unordered_map<string, string> &updateColumns, ExceptIntFunction func)
 {
@@ -555,7 +618,7 @@ void TestAudioUpdateParamsApi10(const string &predicateColumn, const string &pre
     func(ret);
 }
 
-void TestAudioUpdateByQueryApi10(const string &predicateColumn, const string &predicateValue,
+void TestAudioUpdateByQuery(const string &predicateColumn, const string &predicateValue,
     const unordered_map<string, string> &checkColumns, int32_t result)
 {
     for (auto &iter : checkColumns) {
@@ -677,7 +740,6 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_001, Test
 HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_create_api10_test_002");
-    string defaultRelativePath = "Pictures/1/";
     TestAudioCreateParamsApi10("", MediaType::MEDIA_TYPE_AUDIO, E_INVALID_DISPLAY_NAME);
     TestAudioCreateParamsApi10("audio\"\".mp3", MediaType::MEDIA_TYPE_AUDIO, E_INVALID_DISPLAY_NAME);
     TestAudioCreateParamsApi10(".audio.mp3", MediaType::MEDIA_TYPE_AUDIO, E_INVALID_DISPLAY_NAME);
@@ -732,6 +794,82 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_delete_api10_test_001, Test
     EXPECT_EQ(count, 0);
 
     MEDIA_INFO_LOG("end tdd audio_oprn_delete_api10_test_001");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd audio_oprn_create_api9_test_001");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
+        MediaLibraryApi::API_OLD);
+    string name = "audio.mp3";
+    ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_AUDIO);
+    values.PutString(MediaColumn::MEDIA_RELATIVE_PATH, "Audios/123/");
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryAudioOperations::Create(cmd);
+    EXPECT_GE(ret, 0);
+    unordered_map<string, string> verifyMap = {
+        { AudioColumn::MEDIA_TITLE, "audio" },
+        { AudioColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_AUDIO) },
+        { AudioColumn::MEDIA_TIME_PENDING, to_string(UNCREATE_FILE_TIMEPENDING) },
+        { AudioColumn::MEDIA_RELATIVE_PATH, "Audios/123/" },
+        { AudioColumn::MEDIA_VIRTURL_PATH, "Audios/123/audio.mp3" }
+    };
+    bool res = QueryAndVerifyAudioAsset(AudioColumn::MEDIA_NAME, name, verifyMap);
+    EXPECT_EQ(res, true);
+    MEDIA_INFO_LOG("end tdd audio_oprn_create_api9_test_001");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd audio_oprn_create_api9_test_002");
+    string defaultRelativePath = "Audios/1/";
+    TestAudioCreateParamsApi9("", MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
+        E_INVALID_DISPLAY_NAME);
+    TestAudioCreateParamsApi9("audio\"\".mp3", MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
+        E_INVALID_DISPLAY_NAME);
+    TestAudioCreateParamsApi9(".audio.mp3", MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
+        E_INVALID_DISPLAY_NAME);
+    string englishLongString = CHAR256_ENGLISH + ".mp3";
+    TestAudioCreateParamsApi9(englishLongString, MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
+        E_INVALID_DISPLAY_NAME);
+    string chineseLongString = CHAR256_CHINESE + ".mp3";
+    TestAudioCreateParamsApi9(chineseLongString, MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
+        E_INVALID_DISPLAY_NAME);
+    
+    TestAudioCreateParamsApi9("audio", MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
+        E_INVALID_DISPLAY_NAME);
+    TestAudioCreateParamsApi9("audio.", MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
+        E_INVALID_DISPLAY_NAME);
+    TestAudioCreateParamsApi9("audio.abc", MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
+        E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    TestAudioCreateParamsApi9("audio.mp4", MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
+        E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    MEDIA_INFO_LOG("end tdd audio_oprn_create_api9_test_002");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start audio_oprn_create_api9_test_003");
+    string defaultDisplayName = "audio.mp3";
+    TestAudioCreateParamsApi9(defaultDisplayName, MediaType::MEDIA_TYPE_AUDIO, "Audios//",
+        E_INVALID_PATH);
+    TestAudioCreateParamsApi9(defaultDisplayName, MediaType::MEDIA_TYPE_AUDIO, "Audios/\"/",
+        E_INVALID_PATH);
+    string longEnglishRelativePath = "Audios/" + CHAR256_ENGLISH + "/";
+    string longChineseRelativePath = "Audios/" + CHAR256_CHINESE + "/";
+    TestAudioCreateParamsApi9(defaultDisplayName, MediaType::MEDIA_TYPE_AUDIO, longEnglishRelativePath,
+        E_INVALID_PATH);
+    TestAudioCreateParamsApi9(defaultDisplayName, MediaType::MEDIA_TYPE_AUDIO, longChineseRelativePath,
+        E_INVALID_PATH);
+    TestAudioCreateParamsApi9(defaultDisplayName, MediaType::MEDIA_TYPE_AUDIO, "/",
+        E_INVALID_PATH);
+    TestAudioCreateParamsApi9(defaultDisplayName, MediaType::MEDIA_TYPE_AUDIO, "Storage/abc",
+        E_CHECK_MEDIATYPE_FAIL);
+    TestAudioCreateParamsApi9(defaultDisplayName, MediaType::MEDIA_TYPE_AUDIO, "Videos/abc",
+        E_CHECK_MEDIATYPE_FAIL);
+    MEDIA_INFO_LOG("end tdd audio_oprn_create_api9_test_003");
 }
 
 HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_001, TestSize.Level0)
@@ -847,7 +985,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_001, Test
     TestAudioUpdateParamsApi10(AudioColumn::MEDIA_ID, to_string(fileId),
         { { AudioColumn::MEDIA_NAME, "aud.mp3" } },
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
-    TestAudioUpdateByQueryApi10(AudioColumn::MEDIA_ID, to_string(fileId),
+    TestAudioUpdateByQuery(AudioColumn::MEDIA_ID, to_string(fileId),
         { { AudioColumn::MEDIA_NAME, "aud.mp3" } }, E_OK);
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_001");
 }
@@ -940,13 +1078,13 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_004, Test
     TestAudioUpdateParamsApi10(AudioColumn::MEDIA_ID, to_string(fileId1),
         { { AudioColumn::MEDIA_TITLE, "audio1" } },
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
-    TestAudioUpdateByQueryApi10(AudioColumn::MEDIA_ID, to_string(fileId1),
+    TestAudioUpdateByQuery(AudioColumn::MEDIA_ID, to_string(fileId1),
         { { AudioColumn::MEDIA_NAME, "audio1.mp3" } }, E_OK);
 
     TestAudioUpdateParamsApi10(AudioColumn::MEDIA_ID, to_string(fileId2),
         { { AudioColumn::MEDIA_NAME, "audio2.mp3" } },
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
-    TestAudioUpdateByQueryApi10(AudioColumn::MEDIA_ID, to_string(fileId2),
+    TestAudioUpdateByQuery(AudioColumn::MEDIA_ID, to_string(fileId2),
         { { AudioColumn::MEDIA_TITLE, "audio2" } }, E_OK);
 
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_004");
@@ -1010,6 +1148,170 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_006, Test
         { { AudioColumn::AUDIO_ALBUM, "1"} });
 
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_006");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_001");
+    string displayName = "audio.mp3";
+    string relativePath = "Audios/1/";
+    int32_t fileId = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, displayName, relativePath);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    unordered_map<string, string> updateMap = {
+        { AudioColumn::MEDIA_NAME, "audio1.mp3" },
+        { AudioColumn::MEDIA_RELATIVE_PATH, "Audios/2" }
+    };
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId), updateMap,
+        [] (int32_t result) { EXPECT_GE(result, E_OK); });
+
+    unordered_map<string, string> queryMap = {
+        { AudioColumn::MEDIA_NAME, "audio1.mp3" },
+        { AudioColumn::MEDIA_TITLE, "audio1" },
+        { AudioColumn::MEDIA_RELATIVE_PATH, "Audios/2/"},
+        { AudioColumn::MEDIA_VIRTURL_PATH, "Audios/2/audio1.mp3"}
+    };
+    TestAudioUpdateByQuery(AudioColumn::MEDIA_ID, to_string(fileId), queryMap, E_OK);
+    MEDIA_INFO_LOG("end tdd audio_oprn_update_api9_test_001");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_002");
+    string relativePath = "Audios/1/";
+    int32_t fileId = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3", relativePath);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_NAME, "" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_NAME, "audio\"\".mp3" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_NAME, ".audio.mp3" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+
+    string englishLongString = CHAR256_ENGLISH + ".mp3";
+    string chineseLongString = CHAR256_CHINESE + ".mp3";
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_NAME, englishLongString } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_NAME, chineseLongString } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_NAME, "audio" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_NAME, "audio." } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_NAME, "audio.abc" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL); });
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_NAME, "audio.mp4" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL); });
+
+    MEDIA_INFO_LOG("end tdd audio_oprn_update_api9_test_002");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start audio_oprn_update_api9_test_003");
+    string relativePath = "Audios/1/";
+    int32_t fileId = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3", relativePath);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    string defaultDisplayName = "audio.mp3";
+    string longEnglishRelativePath = "Audios/" + CHAR256_ENGLISH + "/";
+    string longChineseRelativePath = "Audios/" + CHAR256_CHINESE + "/";
+    TestAudioUpdateParamsApi9(MediaColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_RELATIVE_PATH, "Audios//" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_PATH); });
+    TestAudioUpdateParamsApi9(MediaColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_RELATIVE_PATH, "Audios/\"/" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_PATH); });
+    TestAudioUpdateParamsApi9(MediaColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_RELATIVE_PATH, longEnglishRelativePath } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_PATH); });
+    TestAudioUpdateParamsApi9(MediaColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_RELATIVE_PATH, longChineseRelativePath } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_PATH); });
+    TestAudioUpdateParamsApi9(MediaColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_RELATIVE_PATH, "/" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_PATH); });
+    TestAudioUpdateParamsApi9(MediaColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_RELATIVE_PATH, "Storage/abc" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_CHECK_MEDIATYPE_FAIL); });
+    TestAudioUpdateParamsApi9(MediaColumn::MEDIA_ID, to_string(fileId),
+        { { AudioColumn::MEDIA_RELATIVE_PATH, "Videos/abc" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_CHECK_MEDIATYPE_FAIL); });
+
+    MEDIA_INFO_LOG("end tdd audio_oprn_update_api9_test_003");
+}
+
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_004");
+    string relativePath = "Audios/1/";
+    int32_t fileId1 = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, "audio1.mp3", relativePath);
+    if (fileId1 < 0) {
+        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId1);
+        return;
+    }
+    int32_t fileId2 = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, "audio2.mp3", relativePath);
+    if (fileId2 < 0) {
+        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId2);
+        return;
+    }
+
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId2),
+        { { AudioColumn::MEDIA_NAME, "audio1.mp3" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_HAS_DB_ERROR); });
+    MEDIA_INFO_LOG("end tdd audio_oprn_update_api9_test_004");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_005");
+    string displayName = "audio.mp3";
+    int32_t fileId1 = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, displayName, "Audios/1/");
+    if (fileId1 < 0) {
+        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId1);
+        return;
+    }
+    int32_t fileId2 = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, displayName, "Audios/2/");
+    if (fileId2 < 0) {
+        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId2);
+        return;
+    }
+
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId2),
+        { { AudioColumn::MEDIA_RELATIVE_PATH, "Audios/1" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_HAS_DB_ERROR); });
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId2),
+        { { AudioColumn::MEDIA_RELATIVE_PATH, "Audios/1/" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_HAS_DB_ERROR); });
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId2),
+        { { AudioColumn::MEDIA_RELATIVE_PATH, "/Audios/1" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_HAS_DB_ERROR); });
+    TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId2),
+        { { AudioColumn::MEDIA_RELATIVE_PATH, "/Audios/1/" } },
+        [] (int32_t result) { EXPECT_EQ(result, E_HAS_DB_ERROR); });
+
+    MEDIA_INFO_LOG("end tdd audio_oprn_update_api9_test_005");
 }
 
 HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_open_api10_test_001, TestSize.Level0)
