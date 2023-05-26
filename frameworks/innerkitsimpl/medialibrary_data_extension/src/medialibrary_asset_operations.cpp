@@ -36,6 +36,7 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
+#include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
@@ -268,14 +269,17 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(AbsPredica
     return shared_ptr<FileAsset>(fetchResult->GetFirstObject().release());
 }
 
-int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
+static inline string GetVirtualPath(const string &relativePath, const string &displayName)
 {
-    // All values inserted in this function are the base property for files
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        return E_HAS_DB_ERROR;
+    if (relativePath[relativePath.size() - 1] != SLASH_CHAR) {
+        return relativePath + SLASH_CHAR + displayName;
+    } else {
+        return relativePath + displayName;
     }
+}
 
+static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
+{
     // Fill basic file information into DB
     const string& displayName = fileAsset.GetDisplayName();
     ValuesBucket assetInfo;
@@ -287,16 +291,12 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
     if (cmd.GetApi() == MediaLibraryApi::API_OLD) {
         assetInfo.PutString(MediaColumn::MEDIA_RELATIVE_PATH,
             fileAsset.GetRelativePath());
-        if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
-            assetInfo.PutInt(MediaColumn::MEDIA_PARENT_ID, fileAsset.GetAlbumId());
-        }
+        assetInfo.PutString(MediaColumn::MEDIA_VIRTURL_PATH,
+            GetVirtualPath(fileAsset.GetRelativePath(), fileAsset.GetDisplayName()));
     }
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
     assetInfo.PutString(MediaColumn::MEDIA_TITLE,
         MediaLibraryDataManagerUtils::GetFileTitle(displayName));
-    if (!fileAsset.GetPath().empty() && MediaFileUtils::IsFileExists(fileAsset.GetPath())) {
-        return E_FILE_EXIST;
-    }
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
     }
@@ -306,6 +306,20 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
     assetInfo.PutLong(MediaColumn::MEDIA_TIME_PENDING, UNCREATE_FILE_TIMEPENDING);
     assetInfo.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(assetInfo);
+}
+
+int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
+{
+    // All values inserted in this function are the base property for files
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    if (!fileAsset.GetPath().empty() && MediaFileUtils::IsFileExists(fileAsset.GetPath())) {
+        return E_FILE_EXIST;
+    }
+    FillAssetInfo(cmd, fileAsset);
 
     int64_t outRowId = -1;
     int32_t errCode = rdbStore->Insert(cmd, outRowId);
@@ -314,6 +328,45 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
         return E_HAS_DB_ERROR;
     }
     return static_cast<int32_t>(outRowId);
+}
+
+static bool CheckTypeFromRootDir(const std::string &rootDirName, int32_t type)
+{
+    // "Camera/"
+    if (!strcmp(rootDirName.c_str(), CAMERA_DIR_VALUES.c_str())) {
+        if (type == MEDIA_TYPE_IMAGE || type == MEDIA_TYPE_VIDEO) {
+            return true;
+        }
+    }
+    // "Videos/"
+    if (!strcmp(rootDirName.c_str(), VIDEO_DIR_VALUES.c_str())) {
+        if (type == MEDIA_TYPE_VIDEO) {
+            return true;
+        }
+    }
+    // "Pictures/"
+    if (!strcmp(rootDirName.c_str(), PIC_DIR_VALUES.c_str())) {
+        if (type == MEDIA_TYPE_IMAGE) {
+            return true;
+        }
+    }
+    // "Audios/"
+    if (!strcmp(rootDirName.c_str(), AUDIO_DIR_VALUES.c_str())) {
+        if (type == MEDIA_TYPE_AUDIO) {
+            return true;
+        }
+    }
+    // "Documents/"
+    if (!strcmp(rootDirName.c_str(), DOC_DIR_VALUES.c_str())) {
+        return true;
+    }
+    // "Download/"
+    if (!strcmp(rootDirName.c_str(), DOWNLOAD_DIR_VALUES.c_str())) {
+        return true;
+    }
+    MEDIA_ERR_LOG("Cannot match rootDir %{public}s and mediaType %{public}d",
+        rootDirName.c_str(), type);
+    return false;
 }
 
 int32_t MediaLibraryAssetOperations::CheckDisplayNameWithType(const string &displayName, int32_t mediaType)
@@ -330,6 +383,22 @@ int32_t MediaLibraryAssetOperations::CheckDisplayNameWithType(const string &disp
     CHECK_AND_RETURN_RET_LOG(typeFromExt == mediaType, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL,
         "cannot match, mediaType=%{public}d, ext=%{public}s, type from ext=%{public}d",
         mediaType, ext.c_str(), typeFromExt);
+    return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::CheckRelativePathWithType(const string &relativePath, int32_t mediaType)
+{
+    int32_t ret = MediaFileUtils::CheckRelativePath(relativePath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INVALID_PATH, "Check relativePath failed, "
+        "relativePath=%{private}s", relativePath.c_str());
+    
+    // get rootdir and check if it match mediatype
+    string rootDirName;
+    MediaFileUtils::GetRootDirFromRelativePath(relativePath, rootDirName);
+    CHECK_AND_RETURN_RET_LOG(!rootDirName.empty(), E_INVALID_PATH, "Cannot get rootdirName");
+
+    bool isValid = CheckTypeFromRootDir(rootDirName, mediaType);
+    CHECK_AND_RETURN_RET(isValid, E_CHECK_MEDIATYPE_FAIL);
     return E_OK;
 }
 
@@ -444,7 +513,7 @@ int32_t MediaLibraryAssetOperations::ModifyAssetInDb(MediaLibraryCommand &cmd)
 }
 
 int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
-    const shared_ptr<FileAsset> &fileAsset)
+    const shared_ptr<FileAsset> &fileAsset, bool &isNameChanged)
 {
     ValuesBucket &values = cmd.GetValueBucket();
     ValueObject valueObject;
@@ -487,7 +556,66 @@ int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
         string ext = MediaFileUtils::SplitByChar(fileAsset->GetDisplayName(), '.');
         values.PutString(MediaColumn::MEDIA_NAME, newTitle + "." + ext);
     }
+    isNameChanged = true;
     return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::UpdateRelativePath(MediaLibraryCommand &cmd,
+    const shared_ptr<FileAsset> &fileAsset, bool &isNameChanged)
+{
+    string newRelativePath;
+    ValuesBucket &values = cmd.GetValueBucket();
+    ValueObject valueObject;
+    if (values.GetObject(MediaColumn::MEDIA_RELATIVE_PATH, valueObject)) {
+        valueObject.GetString(newRelativePath);
+    } else {
+        // relativePath is not modified
+        return E_OK;
+    }
+    MediaFileUtils::FormatRelativePath(newRelativePath);
+
+    if (newRelativePath == fileAsset->GetRelativePath()) {
+        // relativepath has not been modified
+        return E_OK;
+    }
+
+    int32_t errCode = CheckRelativePathWithType(newRelativePath, fileAsset->GetMediaType());
+    if (errCode != E_SUCCESS) {
+        MEDIA_ERR_LOG("Check RelativePath failed");
+        return errCode;
+    }
+    values.Delete(MediaColumn::MEDIA_RELATIVE_PATH);
+    values.PutString(MediaColumn::MEDIA_RELATIVE_PATH, newRelativePath);
+
+    isNameChanged = true;
+    return E_OK;
+}
+
+void MediaLibraryAssetOperations::UpdateVirtualPath(MediaLibraryCommand &cmd,
+    const shared_ptr<FileAsset> &fileAsset)
+{
+    string relativePath;
+    string displayName;
+    ValuesBucket &values = cmd.GetValueBucket();
+    ValueObject valueObject;
+
+    if (values.GetObject(MediaColumn::MEDIA_NAME, valueObject)) {
+        valueObject.GetString(displayName);
+    } else {
+        displayName = fileAsset->GetDisplayName();
+    }
+
+    if (values.GetObject(MediaColumn::MEDIA_RELATIVE_PATH, valueObject)) {
+        valueObject.GetString(relativePath);
+    } else {
+        relativePath = fileAsset->GetRelativePath();
+    }
+
+    if (relativePath.back() != '/') {
+        relativePath += '/';
+    }
+    string virtualPath = relativePath + displayName;
+    values.PutString(MediaColumn::MEDIA_VIRTURL_PATH, virtualPath);
 }
 
 int32_t MediaLibraryAssetOperations::UpdateFileInDb(MediaLibraryCommand &cmd)
@@ -719,6 +847,30 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, i
     }
 }
 
+bool MediaLibraryAssetOperations::GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values,
+    const std::string &column, int32_t &value)
+{
+    ValueObject valueObject;
+    if (values.GetObject(column, valueObject)) {
+        valueObject.GetInt(value);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool MediaLibraryAssetOperations::GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values,
+    const std::string &column, string &value)
+{
+    ValueObject valueObject;
+    if (values.GetObject(column, valueObject)) {
+        valueObject.GetString(value);
+    } else {
+        return false;
+    }
+    return true;
+}
+
 int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type)
 {
     string typeString;
@@ -876,7 +1028,8 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { MediaColumn::MEDIA_HIDDEN, { IsBool, IsUniqueValue } },
     { MediaColumn::MEDIA_PARENT_ID, { IsInt64, IsBelowApi9 } },
     { MediaColumn::MEDIA_RELATIVE_PATH, { IsString, IsBelowApi9 } },
-    { PhotoColumn::PHOTO_ORIENTATION, { Forbidden } },
+    { MediaColumn::MEDIA_VIRTURL_PATH, { Forbidden } },
+    { PhotoColumn::PHOTO_ORIENTATION, { IsInt64, IsBelowApi9 } },
     { PhotoColumn::PHOTO_LATITUDE, { Forbidden } },
     { PhotoColumn::PHOTO_LONGITUDE, { Forbidden } },
     { PhotoColumn::PHOTO_HEIGHT, { Forbidden } },
