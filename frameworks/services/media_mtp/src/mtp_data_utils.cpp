@@ -361,7 +361,7 @@ int32_t MtpDataUtils::GetFormat(const shared_ptr<DataShare::DataShareResultSet> 
         MEDIA_ERR_LOG("GetColumnIndex failed");
         return E_FAIL;
     }
-    status = resultSet->GetInt(index, mediaType);
+    resultSet->GetInt(index, mediaType);
     if (mediaType == MEDIA_TYPE_ALBUM) {
         outFormat = MTP_FORMAT_ASSOCIATION_CODE;
         return E_SUCCESS;

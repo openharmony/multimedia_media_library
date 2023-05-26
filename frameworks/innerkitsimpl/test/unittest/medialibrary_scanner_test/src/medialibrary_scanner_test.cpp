@@ -213,5 +213,5 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckSkipScanList_test_001, TestSize.
     EXPECT_EQ(ret, false);
 }
 
-}// namespace Media
+} // namespace Media
 } // namespace OHOS

@@ -133,5 +133,5 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_RemoveTypeValueFromUri_test_001, Test
 }
 
 
-}// namespace Media
+} // namespace Media
 } // namespace OHOS

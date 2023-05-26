@@ -190,7 +190,6 @@ void MediaLibraryAsyncWorker::StartWorker(int num)
             }
         }
     }
-
 }
 } // namespace Media
 } // namespace OHOS

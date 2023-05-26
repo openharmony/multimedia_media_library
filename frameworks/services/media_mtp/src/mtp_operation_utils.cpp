@@ -402,10 +402,10 @@ uint16_t MtpOperationUtils::DoRecevieSendObject()
     object.fd = fd;
     object.offset = initialData;
     object.length = static_cast<int64_t>(context_->sendObjectFileSize) - static_cast<int64_t>(initialData);
-    int result = context_->mtpDriver->ReceiveObj(object);
+    context_->mtpDriver->ReceiveObj(object);
     fsync(fd);
     struct stat sstat;
-    result = fstat(fd, &sstat);
+    int result = fstat(fd, &sstat);
     if (result < 0) {
         MEDIA_ERR_LOG("DoRecevieSendObject fstat error = %{public}d", errno);
         return MTP_ERROR_INCOMPLETE_TRANSFER;
