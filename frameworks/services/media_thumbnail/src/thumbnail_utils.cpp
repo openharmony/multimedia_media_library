@@ -127,7 +127,7 @@ static string GetThumbnailSuffix(ThumbnailType type)
 
 bool ThumbnailUtils::DeleteThumbFile(ThumbnailData &data, ThumbnailType type)
 {
-    string fileName = ThumbnailUtils::GetThumbPath(data.path, GetThumbnailSuffix(type));
+    string fileName = GetThumbnailPath(data.path, GetThumbnailSuffix(type));
     if (!MediaFileUtils::DeleteFile(fileName)) {
         MEDIA_ERR_LOG("delete file faild %{public}d", errno);
         return false;
@@ -1041,7 +1041,7 @@ int ThumbnailUtils::SaveFile(ThumbnailData &data, ThumbnailType type)
             MEDIA_ERR_LOG("Invalid thumbnail type: %{public}d", type);
             return E_INVALID_ARGUMENTS;
     }
-    string fileName = ThumbnailUtils::GetThumbPath(data.path, suffix);
+    string fileName = GetThumbnailPath(data.path, suffix);
     string dir = MediaFileUtils::GetParentPath(fileName);
     if (!MediaFileUtils::CreateDirectory(dir)) {
         return -errno;
@@ -1252,17 +1252,9 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbna
     if (DeleteThumbFile(tmpData, ThumbnailType::LCD)) {
         isDelete = true;
     }
-    string fileName = ThumbnailUtils::GetThumbPath(tmpData.path, "");
+    string fileName = GetThumbnailPath(tmpData.path, "");
     MediaFileUtils::DeleteFile(MediaFileUtils::GetParentPath(fileName));
     return isDelete;
-}
-
-string ThumbnailUtils::GetThumbPath(const string &path, const string &key)
-{
-    if (path.length() < ROOT_MEDIA_DIR.length()) {
-        return "";
-    }
-    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + "/" + key + ".jpg";
 }
 
 bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, const shared_ptr<SingleKvStore> &kvStore)

@@ -33,7 +33,7 @@ int32_t MicroHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
     ThumbnailData thumbnailData;
     GetThumbnailInfo(opts, thumbnailData);
 
-    string fileName = ThumbnailUtils::GetThumbPath(thumbnailData.path, THUMBNAIL_MICRO_SUFFIX);
+    string fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_MICRO_SUFFIX);
     if (access(fileName.c_str(), F_OK) == 0) {
         MEDIA_DEBUG_LOG("CreateThumbnail key is same, no need generate");
         return E_OK;
@@ -54,13 +54,13 @@ int32_t MicroHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts)
     ThumbnailData thumbnailData;
     GetThumbnailInfo(opts, thumbnailData);
 
-    string fileName = ThumbnailUtils::GetThumbPath(thumbnailData.path, THUMBNAIL_MICRO_SUFFIX);
+    string fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_MICRO_SUFFIX);
     if (access(fileName.c_str(), F_OK) != 0) {
         if (!DoCreateThumbnail(opts, thumbnailData)) {
             return E_THUMBNAIL_LOCAL_CREATE_FAIL;
         }
         if (!opts.path.empty()) {
-            fileName = ThumbnailUtils::GetThumbPath(thumbnailData.path, THUMBNAIL_MICRO_SUFFIX);
+            fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_MICRO_SUFFIX);
         }
     }
     auto fd = open(fileName.c_str(), O_RDONLY);

@@ -196,7 +196,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         } else {
             opts.path = "";
             GetThumbnailInfo(opts, data);
-            string fileName = ThumbnailUtils::GetThumbPath(data.path, THUMBNAIL_THUMB_SUFFIX);
+            string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
             if (access(fileName.c_str(), F_OK) == 0) {
                 return true;
             }
@@ -249,7 +249,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
             opts.path = "";
             GetThumbnailInfo(opts, data);
             string suffix = (type == ThumbnailType::MICRO) ? THUMBNAIL_MICRO_SUFFIX : THUMBNAIL_THUMB_SUFFIX;
-            string fileName = ThumbnailUtils::GetThumbPath(data.path, suffix);
+            string fileName = GetThumbnailPath(data.path, suffix);
             if (access(fileName.c_str(), F_OK) == 0) {
                 return true;
             }
