@@ -149,17 +149,6 @@ int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
     return errCode;
 }
 
-static void SetPhotoSubType(MediaLibraryCommand &cmd, FileAsset &fileAsset)
-{
-    ValueObject valueObject;
-    ValuesBucket &values = cmd.GetValueBucket();
-    if (values.GetObject(PhotoColumn::PHOTO_SUBTYPE, valueObject)) {
-        int32_t subType = 0;
-        valueObject.GetInt(subType);
-        fileAsset.SetPhotoSubType(subType);
-    }
-}
-
 static void SetPhotoTypeByRelativePath(const string &relativePath, FileAsset &fileAsset)
 {
     int32_t subType = static_cast<int32_t>(PhotoSubType::DEFAULT);
