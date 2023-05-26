@@ -19,6 +19,7 @@
 #include <string>
 #include <variant>
 #include <grp.h>
+#include <mutex>
 #include <securec.h>
 #include <unistd.h>
 #include <unordered_map>
@@ -55,6 +56,8 @@ public:
 
 private:
     static std::atomic<bool> isInterrupt_;
+
+    static std::mutex g_opMutex;
 };
 } // namespace Media
 } // namespace OHOS
