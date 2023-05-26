@@ -63,7 +63,6 @@ constexpr int32_t E_HAS_DB_ERROR =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 2
 constexpr int32_t E_INVALID_ARGUMENTS =     MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 23);
 constexpr int32_t E_SQL_CHECK_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 24);
 constexpr int32_t E_IS_PENDING_ERROR =      MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 25);
-constexpr int32_t E_NAMETOOLONG =           MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 26);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }
