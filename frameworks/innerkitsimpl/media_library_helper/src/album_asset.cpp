@@ -183,6 +183,24 @@ ResultNapiType AlbumAsset::GetResultNapiType() const
     return resultNapiType_;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+void AlbumAsset::SetAlbumType(const PhotoAlbumType albumType)
+{
+    albumType_ = albumType;
+}
+void AlbumAsset::SetAlbumSubType(const PhotoAlbumSubType albumSubType)
+{
+    albumSubType_ = albumSubType;
+}
 
+PhotoAlbumType AlbumAsset::GetAlbumType() const
+{
+    return albumType_;
+}
+PhotoAlbumSubType AlbumAsset::GetAlbumSubType() const
+{
+    return albumSubType_;
+}
+#endif
 }  // namespace Media
 }  // namespace OHOS

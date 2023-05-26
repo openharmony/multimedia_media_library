@@ -31,6 +31,8 @@ public:
     static const std::string ALBUM_NAME;
     static const std::string ALBUM_COVER_URI;
     static const std::string ALBUM_COUNT;
+    static const std::string ALBUM_DATE_MODIFIED;
+
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH;
     // default fetch columns

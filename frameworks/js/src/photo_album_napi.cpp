@@ -59,6 +59,7 @@ napi_value PhotoAlbumNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("albumType", JSGetPhotoAlbumType),
             DECLARE_NAPI_GETTER("albumSubType", JSGetPhotoAlbumSubType),
             DECLARE_NAPI_GETTER_SETTER("coverUri", JSGetCoverUri, JSSetCoverUri),
+            DECLARE_NAPI_GETTER("dateModified", JSGetDateModified),
             DECLARE_NAPI_FUNCTION("commitModify", JSCommitModify),
             DECLARE_NAPI_FUNCTION("addPhotoAssets", JSPhotoAlbumAddAssets),
             DECLARE_NAPI_FUNCTION("removePhotoAssets", JSPhotoAlbumRemoveAssets),
@@ -108,6 +109,11 @@ const string& PhotoAlbumNapi::GetAlbumUri() const
 const string& PhotoAlbumNapi::GetCoverUri() const
 {
     return photoAlbumPtr->GetCoverUri();
+}
+
+int64_t PhotoAlbumNapi::GetDateModified() const
+{
+    return photoAlbumPtr->GetDateModified();
 }
 
 const string& PhotoAlbumNapi::GetAlbumName() const
@@ -308,6 +314,17 @@ napi_value PhotoAlbumNapi::JSSetCoverUri(napi_env env, napi_callback_info info)
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
     return result;
+}
+
+napi_value PhotoAlbumNapi::JSGetDateModified(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_int64(env, obj->GetDateModified(), &jsResult),
+        JS_INNER_FAIL);
+    return jsResult;
 }
 
 static napi_value ParseArgsCommitModify(napi_env env, napi_callback_info info,
@@ -615,8 +632,10 @@ static int32_t GetUserAlbumPredicates(const int32_t albumId, DataSharePredicates
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     return E_SUCCESS;
 }
 
@@ -625,8 +644,10 @@ static int32_t GetFavoritePredicates(DataSharePredicates &predicates)
     predicates.BeginWrap();
     constexpr int32_t IS_FAVORITE = 1;
     predicates.EqualTo(MediaColumn::MEDIA_IS_FAV, to_string(IS_FAVORITE));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
 }
@@ -635,8 +656,10 @@ static int32_t GetVideoPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
 }
@@ -645,8 +668,10 @@ static int32_t GetHiddenPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     constexpr int32_t IS_HIDDEN = 1;
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(IS_HIDDEN));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(IS_HIDDEN));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
 }
@@ -654,6 +679,7 @@ static int32_t GetHiddenPredicates(DataSharePredicates &predicates)
 static int32_t GetTrashPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
@@ -663,8 +689,10 @@ static int32_t GetScreenshotPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
 }
@@ -673,8 +701,10 @@ static int32_t GetCameraPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::CAMERA)));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
 }
