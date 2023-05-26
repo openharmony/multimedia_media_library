@@ -67,7 +67,7 @@ const std::unordered_map<int, int> trans2JsError = {
     { E_FILE_NAME_INVALID,    JS_E_DISPLAYNAME },
     { E_CHECK_EXTENSION_FAIL, JS_E_FILE_TYPE },
     { E_FILE_OPER_FAIL,       JS_INNER_FAIL },
-    { E_NAMETOOLONG,          JS_E_NAMETOOLONG },
+    { -ENAMETOOLONG,          JS_E_NAMETOOLONG },
     { -EINVAL,                JS_ERR_PARAMETER_INVALID },
     { -ENOMEM,                JS_ERR_NO_MEM },
 };
