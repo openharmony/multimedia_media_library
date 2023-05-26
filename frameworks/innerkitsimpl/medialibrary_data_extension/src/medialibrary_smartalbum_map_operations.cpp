@@ -307,7 +307,7 @@ static int32_t RecycleDir(const shared_ptr<FileAsset> &fileAsset)
 
     if (!MediaFileUtils::RenameDir(fileAsset->GetPath(), assetPath)) {
         if (errno == ENAMETOOLONG) {
-            return E_NAMETOOLONG;
+            return -ENAMETOOLONG;
         }
         return E_RENAME_DIR_FAIL;
     }
@@ -384,6 +384,9 @@ static int32_t RecycleFile(const shared_ptr<FileAsset> &fileAsset)
     }
 
     if (!MediaFileUtils::MoveFile(fileAsset->GetPath(), assetPath)) {
+        if (errno == ENAMETOOLONG) {
+            return -ENAMETOOLONG;
+        }
         return E_RENAME_FILE_FAIL;
     }
     MediaLibraryObjectUtils::InvalidateThumbnail(to_string(fileAsset->GetId()));
