@@ -59,12 +59,7 @@ static inline std::string GetThumbnailPath(const std::string &path, const std::s
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
-    auto lastIndex = path.find_last_of('.');
-    if (lastIndex == std::string::npos) {
-        lastIndex = ROOT_MEDIA_DIR.length() - 1;
-    }
-    lastIndex = lastIndex - ROOT_MEDIA_DIR.length();
-    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length(), lastIndex) + "-" + key + ".jpg";
+    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + "/" + key + ".jpg";
 }
 } // namespace Media
 } // namespace OHOS
