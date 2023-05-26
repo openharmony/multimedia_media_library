@@ -47,6 +47,8 @@ const std::string RECYCLE_DIR = ".recycle/";
 constexpr int64_t ONEDAY_TO_SEC = 60 * 60 * 24;
 constexpr int32_t HASH_COLLISION_MAX_TRY = 10;
 std::atomic<bool> MediaLibrarySmartAlbumMapOperations::isInterrupt_ = false;
+mutex MediaLibrarySmartAlbumMapOperations::g_opMutex;
+
 static string MakeSuffixPathName(const string &assetPath)
 {
     string outSuffixPath;
@@ -453,6 +455,7 @@ static int32_t UpdateFavoriteAssetsInfoUtil(const int32_t fileAssetId, const boo
 int32_t MediaLibrarySmartAlbumMapOperations::HandleRemoveAssetOperation(const int32_t albumId,
     const int32_t childFileAssetId, MediaLibraryCommand &cmd)
 {
+    lock_guard<mutex> guard(g_opMutex);
     int32_t errorCode = E_SUCCESS;
     if (albumId == TRASH_ALBUM_ID_VALUES) {
         errorCode = RemoveTrashAssetsInfoUtil(childFileAssetId);
@@ -580,6 +583,7 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(const int32
 {
     MEDIA_DEBUG_LOG("HandleAddAssetOperations albumId = %{public}d, childFileAssetId = %{public}d",
         albumId, childFileAssetId);
+    lock_guard<mutex> guard(g_opMutex);
     int32_t errorCode = E_SUCCESS;
     if (albumId == TRASH_ALBUM_ID_VALUES) {
         errorCode = InsertTrashAssetsInfoUtil(childFileAssetId);
