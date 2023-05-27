@@ -34,6 +34,7 @@ public:
     static std::shared_ptr<MediaLibraryHelperContainer> GetInstance();
     void CreateDataShareHelper(const sptr<IRemoteObject> &token, const std::string &uri);
     void CreateDataShareHelper(const std::shared_ptr<AppExecFwk::Context> &context, const std::string &uri);
+    void SetDataShareHelper(const std::shared_ptr<DataShare::DataShareHelper> &helper);
     std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper();
 
 private:
