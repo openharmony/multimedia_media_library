@@ -99,5 +99,5 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdFromUri_test_001, TestSize.Level
     EXPECT_EQ(rowNum, "-1");
 }
 
-}// namespace Media
+} // namespace Media
 } // namespace OHOS
