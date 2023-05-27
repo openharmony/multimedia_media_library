@@ -63,11 +63,16 @@ bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &
     struct inotify_event *positionEvent = (struct inotify_event *)eventBuf;
     struct inotify_event *event;
     while (ret >= (int)sizeof(struct inotify_event)) {
-        lock_guard<mutex> lock(eventLock_);
         event = positionEvent;
         if (event->len) {
-            auto iter = watchMap_.find(event->wd);
-            if (iter != watchMap_.end()) {
+            bool isFind;
+            map<int, string>::iterator iter;
+            {
+                lock_guard<mutex> lock(eventLock_);
+                iter = watchMap_.find(event->wd);
+                isFind = iter != watchMap_.end();
+            }
+            if (isFind) {
                 string path = iter->second;
                 SendEvent(*event, path, context);
             }
@@ -92,6 +97,7 @@ void MtpFileObserver::SendBattery(const ContextSptr &context)
 bool MtpFileObserver::StopFileInotify()
 {
     isRunning_ = false;
+    lock_guard<mutex> lock(eventLock_);
     for (auto ret : watchMap_) {
         if (inotify_rm_watch(inotifyFd_, ret.first) == -1) {
             MEDIA_ERR_LOG("MtpFileObserver StopFileInotify inotify_rm_watch error");
@@ -123,7 +129,12 @@ bool MtpFileObserver::WatchPathThread(const ContextSptr &context)
 {
     while (isRunning_) {
         SendBattery(context);
-        if (watchMap_.size() > 0) {
+        int size;
+        {
+            lock_guard<mutex> lock(eventLock_);
+            size = watchMap_.size();
+        }
+        if (size > 0) {
             AddInotifyEvents(inotifyFd_, context);
         }
     }
@@ -133,6 +144,7 @@ bool MtpFileObserver::WatchPathThread(const ContextSptr &context)
 void MtpFileObserver::AddFileInotify(const std::string &path, const std::string &realPath, const ContextSptr &context)
 {
     if (inotifySuccess_) {
+        lock_guard<mutex> lock(eventLock_);
         if (!path.empty() && !realPath.empty()) {
             int ret = inotify_add_watch(inotifyFd_, realPath.c_str(),
                 IN_CLOSE_WRITE | IN_MOVED_FROM | IN_MOVED_TO | IN_CREATE | IN_DELETE);

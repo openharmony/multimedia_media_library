@@ -105,7 +105,7 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
     return MTP_SUCCESS;
 }
 
-void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t bufferSize)
+void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize)
 {
     auto ret = usbfnMtpInterface->Write(buffer);
     bufferSize = static_cast<uint32_t>(ret);
