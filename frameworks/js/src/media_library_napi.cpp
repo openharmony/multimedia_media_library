@@ -2185,6 +2185,7 @@ static napi_value UserFileMgrOffCheckArgs(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     napi_value thisVar = nullptr;
+    context->argc = ARGS_TWO;
     GET_JS_ARGS(env, info, context->argc, context->argv, thisVar);
     NAPI_ASSERT(env, ARGS_ONE <= context->argc && context->argc<= ARGS_TWO, "requires one or two parameters");
     if (thisVar == nullptr || context->argv[PARAM0] == nullptr) {
