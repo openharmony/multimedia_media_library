@@ -49,6 +49,11 @@ void MediaLibraryHelperContainer::CreateDataShareHelper(const std::shared_ptr<Ap
     }
 }
 
+void MediaLibraryHelperContainer::SetDataShareHelper(const std::shared_ptr<DataShare::DataShareHelper> &helper)
+{
+    dataShareHelper_ = helper;
+}
+
 std::shared_ptr<DataShare::DataShareHelper> MediaLibraryHelperContainer::GetDataShareHelper()
 {
     return dataShareHelper_;
