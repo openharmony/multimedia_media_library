@@ -1259,6 +1259,8 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbna
     if (DeleteThumbFile(tmpData, ThumbnailType::LCD)) {
         isDelete = true;
     }
+    string fileName = ThumbnailUtils::GetThumbPath(tmpData.path, "");
+    MediaFileUtils::DeleteFile(MediaFileUtils::GetParentPath(fileName));
     return isDelete;
 }
 
@@ -1267,12 +1269,7 @@ string ThumbnailUtils::GetThumbPath(const string &path, const string &key)
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
-    auto lastIndex = path.find_last_of('.');
-    if (lastIndex == string::npos) {
-        lastIndex = ROOT_MEDIA_DIR.length() - 1;
-    }
-    lastIndex = lastIndex - ROOT_MEDIA_DIR.length();
-    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length(), lastIndex) + "-" + key + ".jpg";
+    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + "/" + key + ".jpg";
 }
 
 bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, const shared_ptr<SingleKvStore> &kvStore)
