@@ -351,6 +351,56 @@ static void InsertWhereClauseFilter(MediaLibraryCommand &cmd)
     cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
 }
 
+static void ReplaceAlbumName(const string &arg, string &argInstead)
+{
+    if (arg == CAMERA_ALBUM_NAME) {
+        argInstead = to_string(static_cast<int32_t>(PhotoSubType::CAMERA));
+    } else if (arg == SCREEN_SHOT_ALBUM_NAME || arg == SCREEN_RECORD_ALBUM_NAME) {
+        argInstead = to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT));
+    } else {
+        argInstead = arg;
+    }
+}
+
+static void ReplaceSelectionAndArgsInQuery(string &selection, vector<string> &selectionArgs,
+    const string &key, const string &keyInstead)
+{
+    if (selection.empty()) {
+        return;
+    }
+
+    for (size_t pos = 0; pos != string::npos;) {
+        pos = selection.find(key, pos);
+        if (pos == string::npos) {
+            break;
+        }
+        selection.replace(pos, key.length(), keyInstead);
+
+        size_t argPos = selection.find('?', pos);
+        if (argPos == string::npos) {
+            break;
+        }
+        size_t argIndex = 0;
+        for (size_t i = 0; i < argPos; i++) {
+            if (selection[i] == '?') {
+                argIndex++;
+            }
+        }
+        if (argIndex > selectionArgs.size() - 1) {
+            MEDIA_INFO_LOG("SelectionArgs size is not valid, selection format maybe incorrect: %{private}s",
+                selection.c_str());
+            break;
+        }
+        const string &arg = selectionArgs[argIndex];
+        string argInstead = arg;
+        if (key == MEDIA_DATA_DB_BUCKET_NAME) {
+            ReplaceAlbumName(arg, argInstead);
+        }
+        selectionArgs[argIndex] = argInstead;
+        pos = argPos + 1;
+    }
+}
+
 static void BuildCompatQuerySql(MediaLibraryCommand &cmd, const string table, const vector<string> &columns,
     vector<string> &selectionArgs, string &sql)
 {
@@ -358,11 +408,17 @@ static void BuildCompatQuerySql(MediaLibraryCommand &cmd, const string table, co
     BuildQueryColumns(columns, sql);
     sql += " FROM " + table;
 
-    const string &whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    vector<string> whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+    if (table == PhotoColumn::PHOTOS_TABLE) {
+        ReplaceSelectionAndArgsInQuery(whereClause, whereArgs, MEDIA_DATA_DB_BUCKET_NAME,
+            PhotoColumn::PHOTO_SUBTYPE);
+    }
+
     if (!whereClause.empty()) {
         sql += " WHERE " + whereClause;
     }
-    const vector<string> &whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+    
     if (!whereArgs.empty()) {
         selectionArgs.insert(selectionArgs.end(), whereArgs.begin(), whereArgs.end());
     }

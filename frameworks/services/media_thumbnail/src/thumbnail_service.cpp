@@ -22,6 +22,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
+#include "result_set_utils.h"
 #include "thumbnail_aging_helper.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"
@@ -90,6 +91,31 @@ void ThumbnailService::ReleaseService()
     thumbnailServiceInstance_ = nullptr;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static int32_t GetPathFromDb(const shared_ptr<NativeRdb::RdbStore> &rdbStorePtr, const string &fileId,
+    const string &table, string &path)
+{
+    if (rdbStorePtr == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
+        return E_INVALID_FILEID;
+    }
+    string querySql = "SELECT " + MediaColumn::MEDIA_FILE_PATH + " FROM " + table +
+        " WHERE " + MediaColumn::MEDIA_ID + "=?";
+    vector<string> selectionArgs = { fileId };
+    auto resultSet = rdbStorePtr->QuerySql(querySql, selectionArgs);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (path.empty()) {
+        return E_INVALID_PATH;
+    }
+    return E_OK;
+}
+#endif
+
 int ThumbnailService::GetThumbnailFd(const string &uri)
 {
     string id, path, table;
@@ -97,6 +123,15 @@ int ThumbnailService::GetThumbnailFd(const string &uri)
     if (!ThumbnailUriUtils::ParseThumbnailInfo(uri, id, size, path, table)) {
         return E_FAIL;
     }
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (path.empty()) {
+        int32_t errCode = GetPathFromDb(rdbStorePtr_, id, table, path);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("GetPathFromDb failed, errCode = %{public}d", errCode);
+            return errCode;
+        }
+    }
+#endif
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .path = path,

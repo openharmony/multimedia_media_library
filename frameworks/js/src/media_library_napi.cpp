@@ -849,13 +849,13 @@ static void GetAlbumResult(MediaLibraryAsyncContext *context, shared_ptr<DataSha
 #ifdef MEDIALIBRARY_COMPATIBILITY
 static void ReplaceAlbumName(const string &arg, string &argInstead)
 {
-    if (arg == "Camera") {
+    if (arg == CAMERA_ALBUM_NAME) {
         argInstead = to_string(PhotoAlbumSubType::CAMERA);
-    } else if (arg == "Videos") {
+    } else if (arg == VIDEO_ALBUM_NAME) {
         argInstead = to_string(PhotoAlbumSubType::VIDEO);
-    } else if (arg == "Screenshots") {
+    } else if (arg == SCREEN_SHOT_ALBUM_NAME) {
         argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
-    } else if (arg == "ScreenRecordings") {
+    } else if (arg == SCREEN_RECORD_ALBUM_NAME) {
         argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
     } else {
         argInstead = arg;
@@ -864,13 +864,13 @@ static void ReplaceAlbumName(const string &arg, string &argInstead)
 
 static void ReplaceRelativePath(const string &arg, string &argInstead)
 {
-    if (arg == "Camera") {
+    if (arg == CAMERA_PATH) {
         argInstead = to_string(PhotoAlbumSubType::CAMERA);
-    } else if (arg == "Videos") {
+    } else if (arg == VIDEO_PATH) {
         argInstead = to_string(PhotoAlbumSubType::VIDEO);
-    } else if (arg == "Pictures/Screenshots") {
+    } else if (arg == SCREEN_SHOT_PATH) {
         argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
-    } else if (arg == "Videos/ScreenRecordings") {
+    } else if (arg == SCREEN_RECORD_PATH) {
         argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
     } else {
         argInstead = arg;
@@ -912,7 +912,6 @@ static void ReplaceSelection(string &selection, vector<string> &selectionArgs,
         selectionArgs[argIndex] = argInstead;
         pos = argPos + 1;
     }
-    return E_OK;
 }
 
 static void UpdateCompatSelection(MediaLibraryAsyncContext *context)
@@ -1116,6 +1115,34 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "getFileAssetById: fileAsset is nullptr");
     context->fileAsset = move(fileAsset);
 }
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static void SetFileAssetByIdV9(int32_t id, const string &networkId, MediaLibraryAsyncContext *context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    bool isValid = false;
+    string displayName = context->valuesBucket.Get(MEDIA_DATA_DB_NAME, isValid);
+    if (!isValid) {
+        NAPI_ERR_LOG("get title is invalid");
+        return;
+    }
+    string relativePath = context->valuesBucket.Get(MEDIA_DATA_DB_RELATIVE_PATH, isValid);
+    if (!isValid) {
+        NAPI_ERR_LOG("get relativePath is invalid");
+        return;
+    }
+    unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
+    fileAsset->SetId(id);
+    MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
+    fileAsset->SetUri(MediaFileUri(mediaType, to_string(id), networkId, MEDIA_API_VERSION_V9).ToString());
+    fileAsset->SetMediaType(mediaType);
+    fileAsset->SetDisplayName(displayName);
+    fileAsset->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+    fileAsset->SetResultNapiType(ResultNapiType::TYPE_MEDIALIBRARY);
+    fileAsset->SetRelativePath(relativePath);
+    context->fileAsset = move(fileAsset);
+}
+#endif
 
 static void SetFileAssetByIdV10(int32_t id, const string &networkId, MediaLibraryAsyncContext *context)
 {
@@ -1340,10 +1367,63 @@ napi_value GetJSArgsForCreateAsset(napi_env env, size_t argc, const napi_value a
     context->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileMediaType);
     context->valuesBucket.Put(MEDIA_DATA_DB_NAME, string(titleBuffer));
     context->valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, string(relativePathBuffer));
+
+    context->assetType = TYPE_DEFAULT;
+    if (fileMediaType == MediaType::MEDIA_TYPE_IMAGE || fileMediaType == MediaType::MEDIA_TYPE_VIDEO) {
+        context->assetType = TYPE_PHOTO;
+    } else if (fileMediaType == MediaType::MEDIA_TYPE_AUDIO) {
+        context->assetType = TYPE_AUDIO;
+    }
+
     NAPI_DEBUG_LOG("GetJSArgsForCreateAsset END");
     // Return true napi_value if params are successfully obtained
     napi_get_boolean(env, true, &result);
     return result;
+}
+
+static void GetCreateUri(MediaLibraryAsyncContext *context, string &uri)
+{
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        switch (context->assetType) {
+            case TYPE_PHOTO: {
+                uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+                break;
+            }
+            case TYPE_AUDIO: {
+                uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_AUDIOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+                break;
+            }
+            default: {
+                NAPI_ERR_LOG("Unsupported creation napitype %{public}d", static_cast<int32_t>(context->assetType));
+                return;
+            }
+        }
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    } else {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        switch (context->assetType) {
+            case TYPE_PHOTO: {
+                uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+                break;
+            }
+            case TYPE_AUDIO: {
+                uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_AUDIOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+                break;
+            }
+            case TYPE_DEFAULT: {
+                uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+                break;
+            }
+            default: {
+                NAPI_ERR_LOG("Unsupported creation napitype %{public}d", static_cast<int32_t>(context->assetType));
+                return;
+            }
+        }
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V9));
+#else
+        uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+#endif
+    }
 }
 
 static void JSCreateAssetExecute(napi_env env, void *data)
@@ -1364,25 +1444,7 @@ static void JSCreateAssetExecute(napi_env env, void *data)
     }
 
     string uri;
-    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
-        switch (context->assetType) {
-            case TYPE_PHOTO: {
-                uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
-                break;
-            }
-            case TYPE_AUDIO: {
-                uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_AUDIOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
-                break;
-            }
-            default: {
-                NAPI_ERR_LOG("Unsupported creation napitype %{public}d", static_cast<int32_t>(context->assetType));
-                return;
-            }
-        }
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    } else {
-        uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
-    }
+    GetCreateUri(context, uri);
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->typeMask);
     Uri createFileUri(uri);
     int index = UserFileClient::Insert(createFileUri, context->valuesBucket);
@@ -1392,7 +1454,11 @@ static void JSCreateAssetExecute(napi_env env, void *data)
         if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
             SetFileAssetByIdV10(index, "", context);
         } else {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+            SetFileAssetByIdV9(index, "", context);
+#else
             getFileAssetById(index, "", context);
+#endif
         }
     }
 }

@@ -121,7 +121,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         return E_INVALID_URI;
     }
 
-    return OpenAsset(fileAsset, mode);
+    return OpenAsset(fileAsset, mode, cmd.GetApi());
 }
 
 int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
