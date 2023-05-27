@@ -35,10 +35,6 @@ namespace OHOS {
 namespace Media {
 static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
 
-static const std::string CAMERA_PATH = "Camera/";
-static const std::string SCREEN_SHOT_PATH = "Pictures/Screenshots/";
-static const std::string SCREEN_RECORD_PATH = "Videos/ScreenRecordings/";
-
 class MediaLibraryAssetOperations {
 public:
     static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
@@ -73,7 +69,8 @@ protected:
         bool &isNameChanged);
     static void UpdateVirtualPath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t UpdateFileInDb(MediaLibraryCommand &cmd);
-    static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode);
+    static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
+        MediaLibraryApi api);
     static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId);

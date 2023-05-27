@@ -651,7 +651,6 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
     ValuesBucket values;
     int changedRows;
 
-    values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
     int64_t timeNow = UTCTimeMilliSeconds();
     values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
 

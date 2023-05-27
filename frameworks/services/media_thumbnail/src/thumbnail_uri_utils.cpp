@@ -88,6 +88,7 @@ string ThumbnailUriUtils::GetIdFromUri(const string &uri)
 
 string ThumbnailUriUtils::GetTableFromUri(const string &uri)
 {
+#ifndef MEDIALIBRARY_COMPATIBILITY
     size_t point = uri.find(URI_PARAM_API_VERSION);
     if (point == string::npos) {
         return MEDIALIBRARY_TABLE;
@@ -107,6 +108,7 @@ string ThumbnailUriUtils::GetTableFromUri(const string &uri)
     if (version != to_string(static_cast<int32_t>(MediaLibraryApi::API_10))) {
         return MEDIALIBRARY_TABLE;
     }
+#endif
     
     static map<string, string> TYPE_TO_TABLE_MAP = {
         { MEDIALIBRARY_TYPE_IMAGE_URI, PhotoColumn::PHOTOS_TABLE },

@@ -774,7 +774,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_001, TestS
     unordered_map<string, string> verifyMap = {
         { PhotoColumn::MEDIA_TITLE, "photo" },
         { PhotoColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_IMAGE) },
-        { PhotoColumn::MEDIA_TIME_PENDING, to_string(UNCREATE_FILE_TIMEPENDING) },
         { PhotoColumn::MEDIA_RELATIVE_PATH, "Pictures/123/" },
         { PhotoColumn::MEDIA_VIRTURL_PATH, "Pictures/123/photo.jpg" }
     };

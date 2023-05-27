@@ -979,6 +979,23 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
 void BuildCommitModifyValuesBucket(const bool &isApiVersion10, const std::shared_ptr<FileAsset> fileAsset,
     DataShareValuesBucket &valuesBucket)
 {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (!isApiVersion10) {
+        valuesBucket.Put(MEDIA_DATA_DB_TITLE, fileAsset->GetTitle());
+        valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
+        if (fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_AUDIO) {
+            // IMAGE, VIDEO AND FILES
+            if (fileAsset->GetOrientation() >= 0) {
+                valuesBucket.Put(MEDIA_DATA_DB_ORIENTATION, fileAsset->GetOrientation());
+            }
+        } else if ((fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_IMAGE) &&
+            (fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_VIDEO)) {
+            // ONLY FILES
+            valuesBucket.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
+            valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
+        }
+    }
+#else
     if (!isApiVersion10) {
         valuesBucket.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
         valuesBucket.Put(MEDIA_DATA_DB_TITLE, fileAsset->GetTitle());
@@ -989,8 +1006,24 @@ void BuildCommitModifyValuesBucket(const bool &isApiVersion10, const std::shared
         valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
         valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
     }
+#endif
     valuesBucket.Put(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
 }
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static string BuildCommitModifyUriApi9(FileAssetAsyncContext *context, string &uri)
+{
+    if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
+        context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
+        uri += MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET;
+    } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
+        uri += MEDIA_AUDIOOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET;
+    } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_FILE) {
+        uri += MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET;
+    }
+    return uri;
+}
+#endif
 
 static string BuildCommitModifyUriApi10(FileAssetAsyncContext *context, string &uri)
 {
@@ -1025,7 +1058,11 @@ static void JSCommitModifyExecute(napi_env env, void *data)
             context->error = JS_E_DISPLAYNAME;
             return;
         }
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        BuildCommitModifyUriApi9(context, uri);
+#else
         uri += MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET;
+#endif
     } else {
         BuildCommitModifyUriApi10(context, uri);
     }
@@ -1285,7 +1322,19 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string closeUri;
+    if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
+        context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
+        closeUri = URI_CLOSE_PHOTO;
+    } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
+        closeUri = URI_CLOSE_AUDIO;
+    } else {
+        closeUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
+    }
+#else
     string closeUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
+#endif
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(closeUri, context->typeMask);
     Uri closeAssetUri(closeUri);
 
@@ -1469,10 +1518,12 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
     Size size = { .width = context->thumbWidth, .height = context->thumbHeight };
     bool isApiVersion10 = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR);
     string path = context->objectPtr->GetPath();
+#ifndef MEDIALIBRARY_COMPATIBILITY
     if (path.empty()
             && !context->objectPtr->GetRelativePath().empty() && !context->objectPtr->GetDisplayName().empty()) {
         path = ROOT_MEDIA_DIR + context->objectPtr->GetRelativePath() + context->objectPtr->GetDisplayName();
     }
+#endif
     context->pixelmap = QueryThumbnail(context->objectPtr->GetUri(), size, context->objectPtr->GetTypeMask(),
         isApiVersion10, path);
 }
@@ -1716,6 +1767,13 @@ static bool GetIsDirectoryiteNative(napi_env env, const FileAssetAsyncContext &f
         return false;
     }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if ((context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_AUDIO) ||
+        (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_IMAGE) ||
+        (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_VIDEO)) {
+        return false;
+    }
+#endif
     bool IsDirectory = false;
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     Uri isDirectoryAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_ISDIRECTORY);
@@ -1878,6 +1936,40 @@ napi_value GetJSArgsForFavorite(napi_env env, size_t argc, const napi_value argv
     return result;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static void FavoriteByUpdate(FileAssetAsyncContext *context)
+{
+    DataShareValuesBucket valuesBucket;
+    string uriString = MEDIALIBRARY_DATA_URI + "/";
+    if ((context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_IMAGE) ||
+        (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_VIDEO)) {
+        uriString = Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    } else {
+        uriString = Media::MEDIA_AUDIOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    }
+    valuesBucket.Put(MEDIA_DATA_DB_IS_FAV, (context->isFavorite ? IS_FAV : NOT_FAV));
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectPtr->GetTypeMask());
+    DataSharePredicates predicates;
+    int32_t fileId = context->objectPtr->GetId();
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
+    predicates.SetWhereArgs({ to_string(fileId) });
+    Uri uri(uriString);
+    context->changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
+}
+#endif
+
+static void FavoriteByInsert(FileAssetAsyncContext *context)
+{
+    DataShareValuesBucket valuesBucket;
+    string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/";
+    uriString += context->isFavorite ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
+    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectPtr->GetId());
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectPtr->GetTypeMask());
+    Uri uri(uriString);
+    context->changedRows = UserFileClient::Insert(uri, valuesBucket);
+}
+
 static void JSFavouriteExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -1886,14 +1978,18 @@ static void JSFavouriteExecute(napi_env env, void *data)
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
-    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectPtr->GetId());
-    string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/";
-    uriString += context->isFavorite ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectPtr->GetTypeMask());
-    Uri uri(uriString);
-    context->changedRows = UserFileClient::Insert(uri, valuesBucket);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string uriString = MEDIALIBRARY_DATA_URI + "/";
+    if ((context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_IMAGE) ||
+        (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_VIDEO) ||
+        (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_AUDIO)) {
+        FavoriteByUpdate(context);
+    } else {
+        FavoriteByInsert(context);
+    }
+#else
+    FavoriteByInsert(context);
+#endif
     if (context->changedRows >= 0) {
         context->objectPtr->SetFavorite(context->isFavorite);
     }
@@ -2000,6 +2096,40 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
     return result;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static void TrashByUpdate(FileAssetAsyncContext *context)
+{
+    DataShareValuesBucket valuesBucket;
+    string uriString = MEDIALIBRARY_DATA_URI + "/";
+    if ((context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_IMAGE) ||
+        (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_VIDEO)) {
+        uriString = Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    } else {
+        uriString = Media::MEDIA_AUDIOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    }
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_TRASHED, (context->isTrash ? MediaFileUtils::UTCTimeSeconds() : NOT_TRASH));
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectPtr->GetTypeMask());
+    DataSharePredicates predicates;
+    int32_t fileId = context->objectPtr->GetId();
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
+    predicates.SetWhereArgs({ to_string(fileId) });
+    Uri uri(uriString);
+    context->changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
+}
+#endif
+
+static void TrashByInsert(FileAssetAsyncContext *context)
+{
+    DataShareValuesBucket valuesBucket;
+    string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/";
+    uriString += context->isTrash ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
+    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectPtr->GetId());
+    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectPtr->GetTypeMask());
+    Uri uri(uriString);
+    context->changedRows = UserFileClient::Insert(uri, valuesBucket);
+}
+
 static void JSTrashExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -2008,14 +2138,17 @@ static void JSTrashExecute(napi_env env, void *data)
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
-    valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectPtr->GetId());
-    string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/";
-    uriString += context->isTrash ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectPtr->GetTypeMask());
-    Uri uri(uriString);
-    context->changedRows = UserFileClient::Insert(uri, valuesBucket);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if ((context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_IMAGE) ||
+        (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_VIDEO) ||
+        (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_AUDIO)) {
+        TrashByUpdate(context);
+    } else {
+        TrashByInsert(context);
+    }
+#else
+    TrashByInsert(context);
+#endif
     if (context->changedRows >= 0) {
         int32_t trashFlag = (context->isTrash ? IS_TRASH : NOT_TRASH);
         context->objectPtr->SetIsTrash(trashFlag);

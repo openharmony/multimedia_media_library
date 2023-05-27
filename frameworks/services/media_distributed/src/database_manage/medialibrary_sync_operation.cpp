@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "medialibrary_asset_operations.h"
 #define MLOG_TAG "Distributed"
 
 #include "medialibrary_sync_operation.h"
@@ -307,7 +308,7 @@ static void GetCameraThumbnailKeys(const shared_ptr<NativeRdb::RdbStore> &rdbSto
     while (rdbResultSet->GoToNextRow() == NativeRdb::E_OK) {
         string relativePath =
             get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH, rdbResultSet, TYPE_STRING));
-        if (relativePath != "Camera/") {
+        if (relativePath != CAMERA_PATH) {
             MEDIA_ERR_LOG("This sync is not for camera");
             return;
         }

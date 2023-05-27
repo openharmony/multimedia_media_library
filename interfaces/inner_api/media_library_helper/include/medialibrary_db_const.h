@@ -550,6 +550,18 @@ const std::string COMPAT_ALBUM_SUBTYPE = "album_subtype";
 const std::string COMPAT_HIDDEN = "hidden";
 const std::string COMPAT_PHOTO_SYNC_STATUS = "sync_status";
 const std::string COMPAT_FILE_SUBTYPE = "subtype";
+
+// system relativePath and albumName, use for API9 compatible API10
+const std::string CAMERA_PATH = "Camera/";
+const std::string VIDEO_PATH = "Video/";
+const std::string SCREEN_SHOT_PATH = "Pictures/Screenshots/";
+const std::string SCREEN_RECORD_PATH = "Videos/ScreenRecordings/";
+
+const std::string CAMERA_ALBUM_NAME = "Camera";
+const std::string VIDEO_ALBUM_NAME = "Video";
+const std::string SCREEN_SHOT_ALBUM_NAME = "Screenshots";
+const std::string SCREEN_RECORD_ALBUM_NAME = "ScreenRecordings";
+
 } // namespace Media
 } // namespace OHOS
 
