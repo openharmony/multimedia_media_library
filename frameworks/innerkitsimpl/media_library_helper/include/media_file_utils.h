@@ -40,6 +40,11 @@ const std::unordered_set<std::string> MEDIA_OPEN_MODES = {
     MEDIA_FILEMODE_READWRITEAPPEND
 };
 
+const int VIRTUAL_ID_DIVIDER = 5;
+const int PHOTO_VIRTUAL_IDENTIFIER = 4;
+const int AUDIO_VIRTUAL_IDENTIFIER = 3;
+const int FILE_VIRTUAL_IDENTIFIER = 2;
+
 /**
  * @brief Utility class for file operations
  *
@@ -95,6 +100,8 @@ public:
     static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition);
     static bool CheckMode(const std::string &mode);
     static size_t FindIgnoreCase(const std::string &str, const std::string &key);
+    static int64_t GetVirtualIdByType(int32_t id, MediaType type);
+    static double GetRealIdByTable(int32_t virtualId, const std::string &tableName);
 };
 } // namespace OHOS::Media
 
