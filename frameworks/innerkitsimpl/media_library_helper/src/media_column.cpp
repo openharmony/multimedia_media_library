@@ -162,6 +162,9 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
 {
+    if (columnName == "count(*)") {
+        return true;
+    }
     return (PHOTO_COLUMNS.find(columnName) != PHOTO_COLUMNS.end()) ||
         (MEDIA_COLUMNS.find(columnName) != MEDIA_COLUMNS.end());
 }

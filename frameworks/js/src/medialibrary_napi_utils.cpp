@@ -268,6 +268,10 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
     vector<OperationItem> operations;
     auto &items = predicate->GetOperationList();
     for (auto &item : items) {
+        if (item.singleParams.empty()) {
+            operations.push_back(item);
+            continue;
+        }
         // change uri ->file id
         // get networkid
         // replace networkid with file id

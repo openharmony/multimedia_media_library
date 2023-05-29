@@ -162,6 +162,8 @@ const std::string MEDIA_DATA_IMAGE_F_NUMBER = "FNumber";
 const std::string MEDIA_DATA_IMAGE_ISO_SPEED_RATINGS = "ISOSpeedRatings";
 const std::string MEDIA_DATA_IMAGE_SCENE_TYPE = "SceneType";
 
+const std::string MEDIA_COLUMN_COUNT = "count(*)";
+
 const std::string PERMISSION_ID = "id";
 const std::string PERMISSION_BUNDLE_NAME = "bundle_name";
 const std::string PERMISSION_FILE_ID = "file_id";
