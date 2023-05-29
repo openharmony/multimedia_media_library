@@ -943,4 +943,31 @@ size_t MediaFileUtils::FindIgnoreCase(const std::string &str, const std::string 
     size_t pos = it - str.begin();
     return (pos > 0) ? pos : 0;
 }
+
+int64_t MediaFileUtils::GetVirtualIdByType(int32_t id, MediaType type)
+{
+    switch (type) {
+        case MediaType::MEDIA_TYPE_IMAGE:
+        case MediaType::MEDIA_TYPE_VIDEO: {
+            return (int64_t) id * VIRTUAL_ID_DIVIDER - PHOTO_VIRTUAL_IDENTIFIER;
+        }
+        case MediaType::MEDIA_TYPE_AUDIO: {
+            return (int64_t) id * VIRTUAL_ID_DIVIDER - AUDIO_VIRTUAL_IDENTIFIER;
+        }
+        default: {
+            return (int64_t)id * VIRTUAL_ID_DIVIDER - FILE_VIRTUAL_IDENTIFIER;
+        }
+    }
+}
+
+double MediaFileUtils::GetRealIdByTable(int32_t virtualId, const string &tableName)
+{
+    if (tableName == PhotoColumn::PHOTOS_TABLE) {
+        return (double) (virtualId + PHOTO_VIRTUAL_IDENTIFIER) / VIRTUAL_ID_DIVIDER;
+    } else if (tableName == AudioColumn::AUDIOS_TABLE) {
+        return (double) (virtualId + AUDIO_VIRTUAL_IDENTIFIER) / VIRTUAL_ID_DIVIDER;
+    } else {
+        return (double) (virtualId + FILE_VIRTUAL_IDENTIFIER) / VIRTUAL_ID_DIVIDER;
+    }
+}
 } // namespace OHOS::Media
