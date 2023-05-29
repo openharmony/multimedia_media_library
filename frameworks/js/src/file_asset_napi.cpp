@@ -1405,9 +1405,12 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
 
         asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
-        JSCloseExecute(asyncContext.get());
+        
         status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void *data) {},
+            env, nullptr, resource, [](napi_env env, void *data) {
+                auto context = static_cast<FileAssetAsyncContext*>(data);
+                JSCloseExecute(context);
+            },
             reinterpret_cast<CompleteCallback>(JSCloseCompleteCallback),
             static_cast<void *>(asyncContext.get()), &asyncContext->work);
         if (status != napi_ok) {
