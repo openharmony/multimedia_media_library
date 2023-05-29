@@ -267,7 +267,7 @@ bool MediaLibrarySyncOperation::SyncPullTable(MediaLibrarySyncOpts &syncOpts, ve
         return false;
     }
     NativeRdb::AbsRdbPredicates predicate(syncOpts.table);
-    (onlineDevices.size() > 0) ? predicate.InDevices(onlineDevices) : predicate.InAllDevices();
+    predicate.InDevices(onlineDevices);
     if (syncOpts.table == MEDIALIBRARY_TABLE && !syncOpts.row.empty()) {
         predicate.EqualTo(MEDIA_DATA_DB_TIME_PENDING, to_string(0))->And()->EqualTo(MEDIA_DATA_DB_ID, syncOpts.row);
     } else if (syncOpts.table == MEDIALIBRARY_TABLE && syncOpts.row.empty()) {
@@ -377,7 +377,7 @@ bool MediaLibrarySyncOperation::SyncPushTable(MediaLibrarySyncOpts &syncOpts, ve
         return false;
     }
     NativeRdb::AbsRdbPredicates predicate(syncOpts.table);
-    (onlineDevices.size() > 0) ? predicate.InDevices(onlineDevices) : predicate.InAllDevices();
+    predicate.InDevices(onlineDevices);
     if (syncOpts.table == MEDIALIBRARY_TABLE && !syncOpts.row.empty()) {
         predicate.EqualTo(MEDIA_DATA_DB_TIME_PENDING, to_string(0))->And()->EqualTo(MEDIA_DATA_DB_ID, syncOpts.row);
     } else if (syncOpts.table == MEDIALIBRARY_TABLE && syncOpts.row.empty()) {
