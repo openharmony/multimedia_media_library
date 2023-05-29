@@ -1131,12 +1131,12 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_001, T
     MediaLibraryCommand cmdOne(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = mediaLibraryDataManager->SolveInsertCmd(cmdOne);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    MediaLibraryCommand cmdTwo(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE);
+    MediaLibraryCommand cmdTwo(OperationObject::FILESYSTEM_PHOTO, OperationType::OPEN);
     ret = mediaLibraryDataManager->SolveInsertCmd(cmdTwo);
-    EXPECT_EQ(ret, E_FAIL);
-    MediaLibraryCommand cmdThree(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE);
+    EXPECT_EQ(ret, E_ERR);
+    MediaLibraryCommand cmdThree(OperationObject::FILESYSTEM_AUDIO, OperationType::OPEN);
     ret = mediaLibraryDataManager->SolveInsertCmd(cmdThree);
-    EXPECT_EQ(ret, E_FAIL);
+    EXPECT_EQ(ret, E_ERR);
     MediaLibraryCommand cmdFour(OperationObject::FILESYSTEM_ALBUM, OperationType::CREATE);
     ret = mediaLibraryDataManager->SolveInsertCmd(cmdFour);
     EXPECT_EQ(ret, E_INVALID_PATH);
