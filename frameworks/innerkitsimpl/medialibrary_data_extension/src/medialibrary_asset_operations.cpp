@@ -293,6 +293,8 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
             fileAsset.GetRelativePath());
         assetInfo.PutString(MediaColumn::MEDIA_VIRTURL_PATH,
             GetVirtualPath(fileAsset.GetRelativePath(), fileAsset.GetDisplayName()));
+    } else {
+        assetInfo.PutLong(MediaColumn::MEDIA_TIME_PENDING, UNCREATE_FILE_TIMEPENDING);
     }
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
     assetInfo.PutString(MediaColumn::MEDIA_TITLE,
@@ -303,7 +305,6 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
-    assetInfo.PutLong(MediaColumn::MEDIA_TIME_PENDING, UNCREATE_FILE_TIMEPENDING);
     assetInfo.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(assetInfo);
 }
@@ -696,7 +697,8 @@ static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const 
     return E_OK;
 }
 
-int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode)
+int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode,
+    MediaLibraryApi api)
 {
     if (fileAsset == nullptr) {
         return E_INVALID_VALUES;
@@ -708,7 +710,22 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
         return E_INVALID_MODE;
     }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (api == MediaLibraryApi::API_10) {
+        SolvePendingStatus(fileAsset, mode);
+    } else {
+        // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
+        if (!MediaFileUtils::IsFileExists(fileAsset->GetPath())) {
+            int32_t errCode = MediaFileUtils::CreateAsset(fileAsset->GetPath());
+            if (errCode != E_OK) {
+                MEDIA_ERR_LOG("Create asset failed, path=%{private}s", fileAsset->GetPath().c_str());
+                return errCode;
+            }
+        }
+    }
+#else
     SolvePendingStatus(fileAsset, mode);
+#endif
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     int32_t fd = OpenFile(path, lowerMode);
     if (fd < 0) {

@@ -911,6 +911,21 @@ int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const string &mode)
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
         return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
     }
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string uriString = cmd.GetUriStringWithoutSegment();
+    if (oprnObject != OperationObject::THUMBNAIL) {
+        if ((uriString.find(MEDIALIBRARY_TYPE_IMAGE_URI) != string::npos) ||
+            (uriString.find(MEDIALIBRARY_TYPE_VIDEO_URI) != string::npos)) {
+            cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+            return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
+        } else if (uriString.find(MEDIALIBRARY_TYPE_AUDIO_URI) != string::npos) {
+            cmd.SetOprnObject(OperationObject::FILESYSTEM_AUDIO);
+            return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
+        }
+    }
+#endif
+
     return MediaLibraryObjectUtils::OpenFile(cmd, mode);
 }
 
