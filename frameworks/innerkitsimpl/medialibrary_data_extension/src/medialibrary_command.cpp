@@ -82,6 +82,13 @@ MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, cons
 MediaLibraryCommand::~MediaLibraryCommand() {}
 
 // set functions
+#ifdef MEDIALIBRARY_COMPATIBILITY
+void MediaLibraryCommand::SetOprnObject(OperationObject object)
+{
+    oprnObject_ = object;
+}
+#endif
+
 void MediaLibraryCommand::SetOprnAssetId(const std::string &oprnId)
 {
     oprnFileId_ = oprnId;

@@ -104,6 +104,9 @@ public:
     MediaLibraryApi GetApi();
     std::string GetQuerySetParam(const std::string &key);
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    void SetOprnObject(OperationObject object);
+#endif
     void SetOprnAssetId(const std::string &oprnId);
     void SetValueBucket(const NativeRdb::ValuesBucket &value);
     void SetTableName(const std::string &tableName);
