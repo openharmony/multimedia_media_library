@@ -648,10 +648,13 @@ static string GetVirtualIdFromUri(const string &uri)
 
 static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
 {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, MediaColumn::ASSETS_QUERY_FILTER);
+#else
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
     MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
     context->selectionArgs.emplace_back("0");
-
+#endif
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
     MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, prefix);
     context->selectionArgs.emplace_back(to_string(MEDIA_TYPE_ALBUM));
@@ -1525,6 +1528,34 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
     return result;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static void HandleCompatDeletePhoto(MediaLibraryAsyncContext *context,
+    const string &mediaType, const string &deleteId)
+{
+    Uri uri(URI_DELETE_PHOTOS);
+    DataSharePredicates predicates;
+    predicates.In(MediaColumn::MEDIA_ID, vector<string>({ deleteId }));
+    predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_ID, deleteId);
+    int changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        return;
+    }
+    context->retVal = changedRows;
+}
+
+static inline void HandleCompatDelete(MediaLibraryAsyncContext *context,
+    const string &mediaType, const string &deleteId)
+{
+    if (mediaType == IMAGE_ASSET_TYPE || mediaType == VIDEO_ASSET_TYPE) {
+        return HandleCompatDeletePhoto(context, mediaType, deleteId);
+    }
+    NAPI_WARN_LOG("Ignore unsupported media type deletion: %{public}s", mediaType.c_str());
+}
+#endif
+
 static void JSDeleteAssetExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -1550,6 +1581,16 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
             mediaType = notifyUri.substr(indexType + 1);
         }
     }
+    if (MediaFileUri::IsUriV10(mediaType)) {
+        NAPI_ERR_LOG("Unsupported media type: %{public}s", mediaType.c_str());
+        context->SaveError(E_INVALID_URI);
+        return;
+    }
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (mediaType == IMAGE_ASSET_TYPE || mediaType == VIDEO_ASSET_TYPE || mediaType == AUDIO_ASSET_TYPE) {
+        return HandleCompatDelete(context, mediaType, deleteId);
+    }
+#endif
     notifyUri = MEDIALIBRARY_DATA_URI + "/" + mediaType;
     NAPI_DEBUG_LOG("JSDeleteAssetExcute notifyUri = %{public}s", notifyUri.c_str());
     string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
@@ -2776,8 +2817,180 @@ napi_value MediaLibraryNapi::JSGetSmartAlbums(napi_env env, napi_callback_info i
     return result;
 }
 
+static napi_value AddDefaultPhotoAlbumColumns(napi_env env, vector<string> &fetchColumn)
+{
+    auto validFetchColumns = PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS;
+    for (const auto &column : fetchColumn) {
+        if (PhotoAlbumColumns::IsPhotoAlbumColumn(column)) {
+            validFetchColumns.insert(column);
+        } else {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return nullptr;
+        }
+    }
+    fetchColumn.assign(validFetchColumns.begin(), validFetchColumns.end());
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static void CompatSetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CompatSetAlbumCoverUri");
+    DataSharePredicates predicates;
+    int err;
+    if (album->GetAlbumType() == PhotoAlbumType::USER) {
+        err = MediaLibraryNapiUtils::GetUserAlbumPredicates(album->GetAlbumId(), predicates);
+    } else {
+        err = MediaLibraryNapiUtils::GetSystemAlbumPredicates(album->GetAlbumSubType(), predicates);
+    }
+    if (err < 0) {
+        NAPI_WARN_LOG("Failed to set cover uri for album subtype: %{public}d", album->GetAlbumSubType());
+        return;
+    }
+    predicates.OrderByDesc(MediaColumn::MEDIA_DATE_ADDED);
+    predicates.Limit(1, 0);
+
+    Uri uri(URI_QUERY_PHOTO_MAP);
+    vector<string> columns;
+    columns.assign(MediaColumn::DEFAULT_FETCH_COLUMNS.begin(), MediaColumn::DEFAULT_FETCH_COLUMNS.end());
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, err);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("Query for Album uri failed! errorCode is = %{public}d", err);
+        context->SaveError(err);
+        return;
+    }
+    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    if (fetchResult->GetCount() == 0) {
+        return;
+    }
+    auto fileAsset = fetchResult->GetFirstObject();
+    if (fileAsset == nullptr) {
+        NAPI_WARN_LOG("Failed to get cover asset!");
+        return;
+    }
+    album->SetCoverUri(fileAsset->GetUri());
+}
+
+static void CompatGetPrivateAlbumExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CompatGetPrivateAlbumExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    string queryUri = URI_QUERY_PHOTO_ALBUM;
+    Uri uri(queryUri);
+    int err = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, err);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", err);
+        context->SaveError(err);
+        return;
+    }
+    err = resultSet->GoToFirstRow();
+    if (err != NativeRdb::E_OK) {
+        context->SaveError(E_HAS_DB_ERROR);
+        return;
+    }
+
+    auto albumData = make_unique<AlbumAsset>();
+    SetAlbumData(albumData.get(), resultSet, "");
+    CompatSetAlbumCoverUri(context, albumData);
+    context->albumNativeArray.push_back(move(albumData));
+}
+
+static void CompatGetPhotoAlbumQueryResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    jsContext->status = true;
+    napi_value albumArray = nullptr;
+    CHECK_ARGS_RET_VOID(env, napi_create_array(env, &albumArray), JS_INNER_FAIL);
+    for (size_t i = 0; i < context->albumNativeArray.size(); i++) {
+        napi_value albumNapiObj = AlbumNapi::CreateAlbumNapi(env, context->albumNativeArray[i]);
+        CHECK_ARGS_RET_VOID(env, napi_set_element(env, albumArray, i, albumNapiObj), JS_INNER_FAIL);
+    }
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    jsContext->data = albumArray;
+}
+
+static void CompatGetPrivateAlbumComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPhotoAlbumsCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error != ERR_DEFAULT || context->albumNativeArray.empty()) {
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+        context->HandleError(env, jsContext->error);
+    } else {
+        CompatGetPhotoAlbumQueryResult(env, context, jsContext);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value ParseArgsGetPrivateAlbum(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    int32_t privateAlbumType = -1;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, context, privateAlbumType),
+        JS_ERR_PARAMETER_INVALID);
+    if (privateAlbumType != PrivateAlbumType::TYPE_FAVORITE && privateAlbumType != PrivateAlbumType::TYPE_TRASH) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid private album type");
+        return nullptr;
+    }
+
+    PhotoAlbumSubType subType = ANY;
+    switch (privateAlbumType) {
+        case PrivateAlbumType::TYPE_FAVORITE: {
+            subType = PhotoAlbumSubType::FAVORITE;
+            break;
+        }
+        case PrivateAlbumType::TYPE_TRASH: {
+            subType = PhotoAlbumSubType::TRASH;
+            break;
+        }
+        default: {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid private album type");
+            return nullptr;
+        }
+    }
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subType));
+    CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value CompatGetPrivateAlbum(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsGetPrivateAlbum(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CompatGetPrivateAlbum",
+        CompatGetPrivateAlbumExecute, CompatGetPrivateAlbumComplete);
+}
+#endif // MEDIALIBRARY_COMPATIBILITY
+
 napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info info)
 {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    return CompatGetPrivateAlbum(env, info);
+#else
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_TWO;
@@ -2810,6 +3023,7 @@ napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info 
             }, GetPrivateAlbumCallbackComplete);
     }
     return result;
+#endif
 }
 
 napi_value GetJSArgsForCreateSmartAlbum(napi_env env, size_t argc, const napi_value argv[],
@@ -4385,24 +4599,6 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     return result;
 }
 
-static napi_value AddDefaultPhotoAlbumColumns(napi_env env, vector<string> &fetchColumn)
-{
-    auto validFetchColumns = PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS;
-    for (const auto &column : fetchColumn) {
-        if (PhotoAlbumColumns::IsPhotoAlbumColumn(column)) {
-            validFetchColumns.insert(column);
-        } else {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-            return nullptr;
-        }
-    }
-    fetchColumn.assign(validFetchColumns.begin(), validFetchColumns.end());
-
-    napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
-    return result;
-}
-
 static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -4532,6 +4728,5 @@ napi_value MediaLibraryNapi::CreatePhotoSubTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, photoSubTypeEnum, sPhotoSubType_);
 }
-
 } // namespace Media
 } // namespace OHOS

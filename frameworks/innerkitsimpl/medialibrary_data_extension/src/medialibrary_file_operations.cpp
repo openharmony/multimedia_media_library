@@ -343,17 +343,6 @@ static void BuildQueryColumns(const vector<string> &columns, string &sql)
     sql.pop_back();         // Remove last ','
 }
 
-static void InsertWhereClauseFilter(MediaLibraryCommand &cmd)
-{
-    string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
-    if (!whereClause.empty()) {
-        whereClause = MediaColumn::ASSETS_QUERY_FILTER + " AND " + whereClause;
-    } else {
-        whereClause = MediaColumn::ASSETS_QUERY_FILTER;
-    }
-    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
-}
-
 static void ReplaceAlbumName(const string &arg, string &argInstead)
 {
     if (arg == CAMERA_ALBUM_NAME) {
@@ -455,8 +444,6 @@ static string RemoveWhereSuffix(MediaLibraryCommand &cmd, const string &key)
 
 static void BuildQueryFileSql(MediaLibraryCommand &cmd, vector<string> &selectionArgs, string &sql)
 {
-    InsertWhereClauseFilter(cmd);
-
     string groupBy = RemoveWhereSuffix(cmd, " GROUP BY ");
     string having = RemoveWhereSuffix(cmd, " HAVING ");
     string orderBy = RemoveWhereSuffix(cmd, " ORDER BY ");

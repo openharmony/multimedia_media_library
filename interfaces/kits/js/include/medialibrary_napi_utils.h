@@ -460,6 +460,10 @@ public:
         std::function<bool(const std::string &columnName)> isValidColumn,
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
 
+    static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType,
+        DataShare::DataSharePredicates &predicates);
+    static int32_t GetUserAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
+
 private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);
 };
