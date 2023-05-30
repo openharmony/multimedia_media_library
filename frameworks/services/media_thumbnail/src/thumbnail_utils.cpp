@@ -952,18 +952,10 @@ Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desir
     float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
     float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
     float scale = 1.0f;
-    if (sourceScale - desiredScale > EPSILON) {
-        if (isThumbnail) {
-            scale = (float)desiredSize.width / sourceSize.width;
-        } else {
-            scale = (float)desiredSize.height / sourceSize.height;
-        }
-    } else if (desiredScale - sourceScale > EPSILON) {
-        if (isThumbnail) {
-            scale = (float)desiredSize.height / sourceSize.height;
-        } else {
-            scale = (float)desiredSize.width / sourceSize.width;
-        }
+    if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) {
+        scale = (float)desiredSize.height / sourceSize.height;
+    } else {
+        scale = (float)desiredSize.width / sourceSize.width;
     }
     scale = scale < 1.0f ? scale : 1.0f;
     Size decodeSize = {
