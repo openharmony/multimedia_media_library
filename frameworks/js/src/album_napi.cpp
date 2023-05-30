@@ -674,6 +674,19 @@ static void UpdateCompatAlbumSelection(AlbumNapiAsyncContext *context)
             filterClause = SCREENSHOT_FILTER;
             break;
         }
+        case PhotoAlbumSubType::FAVORITE: {
+            static const string FAVORITE_FILTER = PhotoColumn::MEDIA_IS_FAV + " = 1" + " AND " +
+                MediaColumn::ASSETS_QUERY_FILTER;
+            filterClause = FAVORITE_FILTER;
+            break;
+        }
+        case PhotoAlbumSubType::TRASH: {
+            static const string TRASH_FILTER =
+                PhotoColumn::PHOTO_SYNC_STATUS + "=" + to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) +
+                " AND " + PhotoColumn::MEDIA_DATE_TRASHED + " > 0 ";
+            filterClause = TRASH_FILTER;
+            break;
+        }
         default: {
             NAPI_ERR_LOG("Album subtype not support for compatibility: %{public}d", subType);
             context->SaveError(-EINVAL);
@@ -681,7 +694,7 @@ static void UpdateCompatAlbumSelection(AlbumNapiAsyncContext *context)
         }
     }
     if (!context->selection.empty()) {
-        context->selection = filterClause + " AND " + context->selection;
+        context->selection = filterClause + " AND (" + context->selection + ")";
     } else {
         context->selection = filterClause;
     }

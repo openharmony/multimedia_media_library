@@ -627,131 +627,6 @@ napi_value PhotoAlbumNapi::JSPhotoAlbumRemoveAssets(napi_env env, napi_callback_
         JSPhotoAlbumRemoveAssetsExecute, JSPhotoAlbumRemoveAssetsCompleteCallback);
 }
 
-static int32_t GetUserAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates)
-{
-    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
-    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    return E_SUCCESS;
-}
-
-static int32_t GetFavoritePredicates(DataSharePredicates &predicates)
-{
-    predicates.BeginWrap();
-    constexpr int32_t IS_FAVORITE = 1;
-    predicates.EqualTo(MediaColumn::MEDIA_IS_FAV, to_string(IS_FAVORITE));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.EndWrap();
-    return E_SUCCESS;
-}
-
-static int32_t GetVideoPredicates(DataSharePredicates &predicates)
-{
-    predicates.BeginWrap();
-    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.EndWrap();
-    return E_SUCCESS;
-}
-
-static int32_t GetHiddenPredicates(DataSharePredicates &predicates)
-{
-    predicates.BeginWrap();
-    constexpr int32_t IS_HIDDEN = 1;
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(IS_HIDDEN));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.EndWrap();
-    return E_SUCCESS;
-}
-
-static int32_t GetTrashPredicates(DataSharePredicates &predicates)
-{
-    predicates.BeginWrap();
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EndWrap();
-    return E_SUCCESS;
-}
-
-static int32_t GetScreenshotPredicates(DataSharePredicates &predicates)
-{
-    predicates.BeginWrap();
-    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.EndWrap();
-    return E_SUCCESS;
-}
-
-static int32_t GetCameraPredicates(DataSharePredicates &predicates)
-{
-    predicates.BeginWrap();
-    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::CAMERA)));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.EndWrap();
-    return E_SUCCESS;
-}
-
-static int32_t GetAllImagesPredicates(DataSharePredicates &predicates)
-{
-    predicates.BeginWrap();
-    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.EndWrap();
-    return E_SUCCESS;
-}
-
-static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType, DataSharePredicates &predicates)
-{
-    switch (subType) {
-        case PhotoAlbumSubType::FAVORITE: {
-            return GetFavoritePredicates(predicates);
-        }
-        case PhotoAlbumSubType::VIDEO: {
-            return GetVideoPredicates(predicates);
-        }
-        case PhotoAlbumSubType::HIDDEN: {
-            return GetHiddenPredicates(predicates);
-        }
-        case PhotoAlbumSubType::TRASH: {
-            return GetTrashPredicates(predicates);
-        }
-        case PhotoAlbumSubType::SCREENSHOT: {
-            return GetScreenshotPredicates(predicates);
-        }
-        case PhotoAlbumSubType::CAMERA: {
-            return GetCameraPredicates(predicates);
-        }
-        case PhotoAlbumSubType::IMAGES: {
-            return GetAllImagesPredicates(predicates);
-        }
-        default: {
-            NAPI_ERR_LOG("Unsupported photo album subtype: %{public}d", subType);
-            return E_INVALID_ARGUMENTS;
-        }
-    }
-}
-
 static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbum,
     DataSharePredicates &predicates)
 {
@@ -766,14 +641,14 @@ static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbu
     }
 
     if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
-        return GetUserAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
+        return MediaLibraryNapiUtils::GetUserAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
     }
 
     if ((type != PhotoAlbumType::SYSTEM) || (subType == PhotoAlbumSubType::USER_GENERIC) ||
         (subType == PhotoAlbumSubType::ANY)) {
         return E_INVALID_ARGUMENTS;
     }
-    return GetSystemAlbumPredicates(subType, predicates);
+    return MediaLibraryNapiUtils::GetSystemAlbumPredicates(subType, predicates);
 }
 
 static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
