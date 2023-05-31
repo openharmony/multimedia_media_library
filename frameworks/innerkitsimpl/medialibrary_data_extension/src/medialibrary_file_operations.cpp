@@ -236,6 +236,7 @@ static const vector<string> &PhotosCompatColumns()
         MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_DATE_TAKEN,
         COMPAT_COLUMN_ARTIST,
+        COMPAT_COLUMN_AUDIO_ALBUM,
         MEDIA_DATA_DB_WIDTH,
         MEDIA_DATA_DB_HEIGHT,
         MEDIA_DATA_DB_ORIENTATION,
@@ -274,7 +275,8 @@ static const vector<string> &AudiosCompatColumns()
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_DATE_TAKEN,
-        COMPAT_COLUMN_ARTIST,
+        MEDIA_DATA_DB_ARTIST,
+        MEDIA_DATA_DB_AUDIO_ALBUM,
         COMPAT_COLUMN_WIDTH,
         COMPAT_COLUMN_HEIGHT,
         COMPAT_COLUMN_ORIENTATION,
@@ -314,6 +316,7 @@ static const vector<string> &FilesCompatColumns()
         MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_DATE_TAKEN,
         MEDIA_DATA_DB_ARTIST,
+        COMPAT_COLUMN_AUDIO_ALBUM,
         MEDIA_DATA_DB_WIDTH,
         MEDIA_DATA_DB_HEIGHT,
         MEDIA_DATA_DB_ORIENTATION,
@@ -362,8 +365,17 @@ static void ReplaceAlbumName(const string &arg, string &argInstead)
     }
 }
 
+static void ReplaceId(const string &fileId, string &idInstead, const string &tableName)
+{
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
+        return;
+    }
+    int32_t id = stoi(fileId);
+    idInstead = to_string(MediaFileUtils::GetRealIdByTable(id, tableName));
+}
+
 static void ReplaceSelectionAndArgsInQuery(string &selection, vector<string> &selectionArgs,
-    const string &key, const string &keyInstead)
+    const string &tableName, const string &key, const string &keyInstead = "")
 {
     if (selection.empty()) {
         return;
@@ -374,8 +386,9 @@ static void ReplaceSelectionAndArgsInQuery(string &selection, vector<string> &se
         if (pos == string::npos) {
             break;
         }
-        selection.replace(pos, key.length(), keyInstead);
-
+        if (!keyInstead.empty()) {
+            selection.replace(pos, key.length(), keyInstead);
+        }
         size_t argPos = selection.find('?', pos);
         if (argPos == string::npos) {
             break;
@@ -395,6 +408,8 @@ static void ReplaceSelectionAndArgsInQuery(string &selection, vector<string> &se
         string argInstead = arg;
         if (key == MEDIA_DATA_DB_BUCKET_NAME) {
             ReplaceAlbumName(arg, argInstead);
+        } else if (key == MEDIA_DATA_DB_ID) {
+            ReplaceId(arg, argInstead, tableName);
         }
         selectionArgs[argIndex] = argInstead;
         pos = argPos + 1;
@@ -411,8 +426,9 @@ static void BuildCompatQuerySql(MediaLibraryCommand &cmd, const string table, co
     string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     vector<string> whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     if (table == PhotoColumn::PHOTOS_TABLE) {
-        ReplaceSelectionAndArgsInQuery(whereClause, whereArgs, MEDIA_DATA_DB_BUCKET_NAME,
+        ReplaceSelectionAndArgsInQuery(whereClause, whereArgs, table, MEDIA_DATA_DB_BUCKET_NAME,
             PhotoColumn::PHOTO_SUBTYPE);
+        ReplaceSelectionAndArgsInQuery(whereClause, whereArgs, table, MEDIA_DATA_DB_ID);
     }
 
     if (!whereClause.empty()) {

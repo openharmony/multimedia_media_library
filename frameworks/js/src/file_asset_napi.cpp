@@ -25,6 +25,7 @@
 #include "fetch_result.h"
 #include "hilog/log.h"
 #include "media_file_utils.h"
+#include "media_file_uri.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
@@ -328,7 +329,12 @@ napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
         id = obj->GetFileId();
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        int64_t virtualId = MediaFileUtils::GetVirtualIdByType(id, obj->GetMediaType());
+        napi_create_int64(env, virtualId, &jsResult);
+#else
         napi_create_int32(env, id, &jsResult);
+#endif
     }
 
     return jsResult;
