@@ -129,7 +129,7 @@ bool MtpFileObserver::WatchPathThread(const ContextSptr &context)
 {
     while (isRunning_) {
         SendBattery(context);
-        int size;
+        size_t size;
         {
             lock_guard<mutex> lock(eventLock_);
             size = watchMap_.size();
