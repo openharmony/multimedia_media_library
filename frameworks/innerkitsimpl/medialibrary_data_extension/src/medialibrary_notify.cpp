@@ -37,6 +37,7 @@ shared_ptr<MediaLibraryNotify> MediaLibraryNotify::instance_;
 mutex MediaLibraryNotify::mutex_;
 unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
 Utils::Timer MediaLibraryNotify::timer_("on_notify");
+uint32_t MediaLibraryNotify::timerId_ = 0;
 
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
 {
@@ -56,7 +57,11 @@ shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
 }
 MediaLibraryNotify::MediaLibraryNotify() = default;
 
-MediaLibraryNotify::~MediaLibraryNotify() = default;
+MediaLibraryNotify::~MediaLibraryNotify()
+{
+    timer_.Shutdown();
+    timer_.Unregister(timerId_);
+};
 
 static bool SolveUris(const list<Uri> &uris, Parcel &parcel)
 {
@@ -226,7 +231,7 @@ static void AddNfListMap(AsyncTaskData *data)
 
 int32_t MediaLibraryNotify::Init()
 {
-    MediaLibraryNotify::timer_.Register(PushNotification, MNOTIFY_TIME_INTERVAL);
+    MediaLibraryNotify::timerId_ = MediaLibraryNotify::timer_.Register(PushNotification, MNOTIFY_TIME_INTERVAL);
     MediaLibraryNotify::timer_.Setup();
     return E_OK;
 }
