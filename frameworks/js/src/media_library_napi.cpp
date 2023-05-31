@@ -617,6 +617,33 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     return result;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static string GetVirtualIdFromUri(const string &uri)
+{
+    MediaFileUri fileUri(uri);
+    string fileId = fileUri.GetFileId();
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
+        return fileId;
+    }
+
+    int32_t id = stoi(fileId);
+    int64_t virtualUri;
+    if ((uri.find(MEDIALIBRARY_TYPE_IMAGE_URI) != string::npos) ||
+        (uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos)) {
+        virtualUri = MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_IMAGE);
+    } else if (uri.find(MEDIALIBRARY_TYPE_VIDEO_URI) != string::npos) {
+        virtualUri = MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_VIDEO);
+    } else if ((uri.find(MEDIALIBRARY_TYPE_AUDIO_URI) != string::npos) ||
+        (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos)) {
+        virtualUri = MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_AUDIO);
+    } else {
+        virtualUri = MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_FILE);
+    }
+
+    return to_string(virtualUri);
+}
+#endif
+
 static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
 {
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
@@ -630,7 +657,11 @@ static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
     if (!context->uri.empty()) {
         NAPI_ERR_LOG("context->uri is = %{public}s", context->uri.c_str());
         context->networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(context->uri);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        string fileId = GetVirtualIdFromUri(context->uri);
+#else
         string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(context->uri);
+#endif
         if (!fileId.empty()) {
             string idPrefix = MEDIA_DATA_DB_ID + " = ? ";
             MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, idPrefix);
