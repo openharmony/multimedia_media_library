@@ -424,7 +424,9 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
         if (status == napi_ok) {
-            obj->fileAssetPtr->SetDisplayName(string(buffer));
+            string displayName = string(buffer);
+            obj->fileAssetPtr->SetDisplayName(displayName);
+            obj->fileAssetPtr->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(displayName));
         }
     }
 
@@ -524,7 +526,12 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
         if (status == napi_ok) {
-            obj->fileAssetPtr->SetTitle(string(buffer));
+            string title = string(buffer);
+            string oldDisplayName = obj->fileAssetPtr->GetDisplayName();
+            string ext = MediaFileUtils::SplitByChar(oldDisplayName, '.');
+            string newDisplayName = title + "." + ext;
+            obj->fileAssetPtr->SetTitle(title);
+            obj->fileAssetPtr->SetDisplayName(newDisplayName);
         }
     }
     return undefinedResult;

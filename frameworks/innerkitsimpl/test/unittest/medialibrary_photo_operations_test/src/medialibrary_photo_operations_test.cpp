@@ -1430,7 +1430,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_001, Tes
     EXPECT_GE(fileId, 0);
 
     string uriString = MediaFileUtils::GetFileMediaTypeUriV10(MediaType::MEDIA_TYPE_IMAGE, "");
-    uriString += "/" + to_string(fileId);
+    uriString += "/" + to_string(fileId) + "?api_version=10";
     Uri uri(uriString);
     MediaLibraryCommand openCmd(uri);
     int32_t fd = MediaLibraryPhotoOperations::Open(openCmd, "rw");
