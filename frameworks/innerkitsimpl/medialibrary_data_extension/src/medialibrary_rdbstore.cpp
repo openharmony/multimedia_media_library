@@ -869,7 +869,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     return NativeRdb::E_OK;
 }
 
-int32_t VersionAddCloud(RdbStore &store, int32_t oldVersion, int32_t newVersion)
+void VersionAddCloud(RdbStore &store)
 {
     const std::string alterCloudId = "ALTER TABLE " + MEDIALIBRARY_TABLE +
         " ADD COLUMN " + MEDIA_DATA_DB_CLOUD_ID +" TEXT";
@@ -895,10 +895,9 @@ int32_t VersionAddCloud(RdbStore &store, int32_t oldVersion, int32_t newVersion)
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb position error %{private}d", result);
     }
-    return NativeRdb::E_OK;
 }
 
-int32_t AddMetaModifiedColumn(RdbStore &store, int32_t oldVersion, int32_t newVersion)
+void AddMetaModifiedColumn(RdbStore &store)
 {
     const std::string alterMetaModified =
         "ALTER TABLE " + MEDIALIBRARY_TABLE + " ADD COLUMN " +
@@ -913,18 +912,75 @@ int32_t AddMetaModifiedColumn(RdbStore &store, int32_t oldVersion, int32_t newVe
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb syncStatus error %{private}d", result);
     }
-    return NativeRdb::E_OK;
+}
+
+void API10TableCreate(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoColumn::INDEX_STHP_ADDTIME,
+        PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
+        PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
+        PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
+        PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC,
+        AudioColumn::CREATE_AUDIO_TABLE,
+        CREATE_ASSET_UNIQUE_NUMBER_TABLE,
+        CREATE_FILES_DELETE_TRIGGER,
+        CREATE_FILES_MDIRTY_TRIGGER,
+        CREATE_FILES_FDIRTY_TRIGGER,
+        CREATE_INSERT_CLOUD_SYNC_TRIGGER,
+        PhotoAlbumColumns::CREATE_TABLE,
+        PhotoAlbumColumns::INDEX_ALBUM_TYPES,
+        PhotoMap::CREATE_TABLE,
+        TriggerDeleteAlbumClearMap(),
+        TriggerAddAssets(),
+        TriggerRemoveAssets(),
+        TriggerDeletePhotoClearMap(),
+        TriggerUpdateUserAlbumCount(),
+    };
+
+    for (int i = 0; i < executeSqlStrs.size(); i++) {
+        if (store.ExecuteSql(executeSqlStrs[i]) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("upgrade fail idx%{public}d", i);
+        }
+    }
+}
+
+void ModifySyncStatus(RdbStore &store)
+{
+    const std::string dropSyncStatus = "ALTER TABLE " + MEDIALIBRARY_TABLE + " DROP column syncing";
+    auto result = store.ExecuteSql(dropSyncStatus);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb syncing error %{private}d", result);
+    }
+
+    const std::string addSyncStatus = "ALTER TABLE " + MEDIALIBRARY_TABLE + " ADD COLUMN " +
+        MEDIA_DATA_DB_SYNC_STATUS +" INT DEFAULT 0";
+    result = store.ExecuteSql(addSyncStatus);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb syncStatus error %{private}d", result);
+    }
 }
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
-    if (oldVersion < MEDIA_RDB_VERSION_ADD_CLOUD) {
-        VersionAddCloud(store, oldVersion, newVersion);
+    if (oldVersion < VERSION_ADD_CLOUD) {
+        VersionAddCloud(store);
     }
-    if (oldVersion < MEDIA_RDB_VERSION_ADD_META_MODIFED) {
-        AddMetaModifiedColumn(store, oldVersion, newVersion);
+
+    if (oldVersion < VERSION_ADD_META_MODIFED) {
+        AddMetaModifiedColumn(store);
     }
+
+    if (oldVersion < VERSION_MODIFY_SYNC_STATUS) {
+        ModifySyncStatus(store);
+    }
+
+    if (oldVersion < VERSION_ADD_API10_TABLE) {
+        API10TableCreate(store);
+    }
+
     return NativeRdb::E_OK;
 }
 
