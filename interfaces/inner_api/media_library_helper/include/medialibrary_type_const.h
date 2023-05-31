@@ -252,6 +252,7 @@ const std::string DOCUMENT_BUCKET = "Document";
 const std::string IMAGE_BUCKET = "Photo";
 const std::string VIDEO_BUCKET = "Video";
 const std::string AUDIO_BUCKET = "Audio";
+const std::string PRE_PATH_VALUES = "/storage/media/";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES, DOC_DIR_VALUES, DOWNLOAD_DIR_VALUES
