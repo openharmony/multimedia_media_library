@@ -151,9 +151,9 @@ const std::string DEFAULT_DIRECTORY = "";
 const std::string DEFAULT_STRING_MEDIA_TYPE = "";
 const std::string DEFAULT_EXTENSION = "";
 const int32_t DEFAULT_MEDIAVOLUME = 0;
-const std::string ROOT_MEDIA_DIR = "/storage/media/local/files/";
+const std::string ROOT_MEDIA_DIR = "/storage/cloud/files/";
 const std::string FS_TYPE_EPFS = "epfs";
-const std::string EPFS_MOUNT_POINT = "/storage/media/local/epfs";
+const std::string EPFS_MOUNT_POINT = "/storage/cloud/epfs";
 const char SLASH_CHAR = '/';
 
 const std::string SKIPLIST_FILE_PATH = "/data/SkipScanFile.txt";
@@ -249,10 +249,9 @@ const std::string DOWNLOAD_DIR_VALUES = "Download/";
 const std::string DOWNLOAD_EXTENSION_VALUES = DIR_ALL_CONTAINER_TYPE;
 const std::string DOWNLOAD_TYPE_VALUES = DIR_ALL_TYPE_VALUES;
 const std::string DOCUMENT_BUCKET = "Document";
-const std::string IMAGE_BUCKET = "Photo";
-const std::string VIDEO_BUCKET = "Video";
+const std::string PHOTO_BUCKET = "Photo";
 const std::string AUDIO_BUCKET = "Audio";
-const std::string PRE_PATH_VALUES = "/storage/media/";
+const std::string PRE_PATH_VALUES = "/storage/cloud/";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES, DOC_DIR_VALUES, DOWNLOAD_DIR_VALUES

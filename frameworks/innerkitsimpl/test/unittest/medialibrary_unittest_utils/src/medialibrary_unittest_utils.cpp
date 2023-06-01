@@ -60,8 +60,8 @@ void MediaLibraryUnitTestUtils::InitRootDirs()
 
 void MediaLibraryUnitTestUtils::CleanTestFiles()
 {
-    system("rm -rf /storage/media/local/files/*");
-    system("rm -rf /storage/media/local/files/.*");
+    system("rm -rf /storage/cloud/files/*");
+    system("rm -rf /storage/cloud/files/.*");
     auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
     NativeRdb::AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
     predicates.GreaterThan(MEDIA_DATA_DB_ID, to_string(0));

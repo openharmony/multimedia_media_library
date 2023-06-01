@@ -30,7 +30,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Extract_test_001, TestSize.Level0)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     mediaScannerDb->GetFileBasicInfo(path, data);
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_ALBUM));
     int32_t ret = MetadataExtractor::Extract(data);
@@ -41,7 +41,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Extract_test_002, TestSize.Level0)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     mediaScannerDb->GetFileBasicInfo(path, data);
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     int32_t ret = MetadataExtractor::Extract(data);
@@ -52,7 +52,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ExtractAVMetadata_test_001, TestSize.
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     mediaScannerDb->GetFileBasicInfo(path, data);
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     int32_t ret = MetadataExtractor::ExtractAVMetadata(data);
@@ -69,7 +69,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ExtractImageMetadata_test_001, TestSi
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     mediaScannerDb->GetFileBasicInfo(path, data);
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     int32_t ret = MetadataExtractor::ExtractImageMetadata(data);
@@ -80,7 +80,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_FillExtractedMetadata_test_001, TestS
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     mediaScannerDb->GetFileBasicInfo(path, data);
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     data->SetFilePath(path);
@@ -97,7 +97,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_FillExtractedMetadata_test_002, TestS
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     mediaScannerDb->GetFileBasicInfo(path, data);
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     data->SetFilePath(path);

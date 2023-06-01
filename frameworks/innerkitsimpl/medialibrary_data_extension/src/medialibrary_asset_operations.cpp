@@ -407,8 +407,8 @@ void MediaLibraryAssetOperations::GetAssetRootDir(int32_t mediaType, string &roo
 {
     map<int, string> rootDir = {
         { MEDIA_TYPE_FILE, DOCUMENT_BUCKET + SLASH_CHAR },
-        { MEDIA_TYPE_IMAGE, IMAGE_BUCKET + SLASH_CHAR },
-        { MEDIA_TYPE_VIDEO, VIDEO_BUCKET + SLASH_CHAR },
+        { MEDIA_TYPE_VIDEO, PHOTO_BUCKET + SLASH_CHAR },
+        { MEDIA_TYPE_IMAGE, PHOTO_BUCKET + SLASH_CHAR },
         { MEDIA_TYPE_AUDIO, AUDIO_BUCKET + SLASH_CHAR },
     };
     if (rootDir.count(mediaType) == 0) {

@@ -110,7 +110,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_LcdDistributeAging_test_001, TestSize
     string udid = "";
     int32_t ret = serverTest->LcdDistributeAging(udid);
     EXPECT_EQ(ret, -1);
-    udid = "/storage/media/local/files/";
+    udid = "/storage/cloud/files/";
     ret = serverTest->LcdDistributeAging(udid);
     EXPECT_EQ(ret, -1);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
@@ -177,7 +177,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InvalidateDistributeThumbnail_test_00
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     int32_t ret = serverTest->InvalidateDistributeThumbnail(udid);
     EXPECT_EQ(ret, -1);
-    udid = "/storage/media/local/files/";
+    udid = "/storage/cloud/files/";
     ret = serverTest->InvalidateDistributeThumbnail(udid);
     EXPECT_EQ(ret, -1);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
