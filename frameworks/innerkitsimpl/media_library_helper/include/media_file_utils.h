@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -44,6 +44,13 @@ const int VIRTUAL_ID_DIVIDER = 5;
 const int PHOTO_VIRTUAL_IDENTIFIER = 4;
 const int AUDIO_VIRTUAL_IDENTIFIER = 3;
 const int FILE_VIRTUAL_IDENTIFIER = 2;
+
+enum TrashType {
+    NOT_TRASHED = 0,
+    TRASHED_ASSET,
+    TRASHED_DIR,
+    TRASHED_DIR_CHILD
+};
 
 /**
  * @brief Utility class for file operations

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -358,6 +358,17 @@ void CheckQuerySize(std::string testNo, int mediaTypeId, int targetFileNumber)
     MEDIA_INFO_LOG("%s QueryTotalSize targetSize = %{public}lld", testNo.c_str(), (long long)targetSize);
     EXPECT_EQ(querySize > 0, true);
     EXPECT_EQ(querySize, targetSize);
+}
+
+int32_t CreateTestFile(MediaType MediaType, string fileName, string relativePath)
+{
+    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
+    Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, MediaType);
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, fileName);
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    return sDataShareHelper_->Insert(createAssetUri, valuesBucket);
 }
 
 /**
@@ -736,6 +747,114 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_018, TestSize.Level
     EXPECT_EQ(mediaVolume.GetAudiosSize(), 0);
     EXPECT_EQ(mediaVolume.GetFilesSize(), 0);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_017::End");
+}
+
+/**
+ * @tc.number    : MediaSpaceStatistics_test_019
+ * @tc.name      : test for get uri or path by default relative path
+ * @tc.desc      : 1.creat a file in Picture
+ *                 2.get uri from path
+ *                 3.get path from uri
+ */
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_019, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_019::Start");
+    int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_019.jpg", "Picture/");
+    const Uri realUri(MEDIALIBRARY_IMAGE_URI + "/" + to_string(index));
+    const string realPath = "/storage/media/100/local/files/Picture/MediaSpaceStatistics_test_019.jpg";
+    Uri fileUri(MEDIALIBRARY_DATA_URI);
+    string filePath;
+    string userId;
+    int32_t ret = mediaLibraryManager->GetUriFromFilePath(realPath, fileUri, userId);
+    EXPECT_EQ((ret < 0), true);
+    MEDIA_INFO_LOG("GetUriFromFilePath::End");
+
+    ret = mediaLibraryManager->GetFilePathFromUri(realUri, filePath, "100");
+    EXPECT_EQ((ret < 0), true);
+    MEDIA_INFO_LOG("GetFilePathFromUri::End");
+
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_019::End");
+}
+
+/**
+ * @tc.number    : MediaSpaceStatistics_test_020
+ * @tc.name      : test for get uri or path by true relative path
+ * @tc.desc      : 1.creat a file in Picture
+ *                 2.get uri from path
+ *                 3.get path from uri
+ */
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_020, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_020::Start");
+    int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_020.txt", "Documents/");
+    const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(index));
+    const string realPath = "/storage/media/100/local/files/Documents/MediaSpaceStatistics_test_020.txt";
+    Uri fileUri(MEDIALIBRARY_DATA_URI);
+    string filePath;
+    string userId;
+    mediaLibraryManager->GetUriFromFilePath(realPath, fileUri, userId);
+    EXPECT_EQ(fileUri.ToString(), realUri.ToString());
+    MEDIA_INFO_LOG("GetUriFromFilePath::End");
+
+    mediaLibraryManager->GetFilePathFromUri(realUri, filePath, "100");
+    EXPECT_EQ(filePath, realPath);
+    MEDIA_INFO_LOG("GetFilePathFromUri::End");
+
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_020::End");
+}
+
+/**
+ * @tc.number    : MediaSpaceStatistics_test_021
+ * @tc.name      : test for get uri or path by true relative path
+ * @tc.desc      : 1.creat a file in Picture
+ *                 2.get uri from path
+ *                 3.get path from uri
+ */
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_021, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_021::Start");
+
+    int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_021.txt", "Download/");
+    const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(index));
+    const string realPath = "/storage/media/100/local/files/Download/MediaSpaceStatistics_test_021.txt";
+    Uri fileUri(MEDIALIBRARY_DATA_URI);
+    string filePath;
+    string userId;
+    mediaLibraryManager->GetUriFromFilePath(realPath, fileUri, userId);
+    EXPECT_EQ(fileUri.ToString(), realUri.ToString());
+    MEDIA_INFO_LOG("GetUriFromFilePath::End");
+
+    mediaLibraryManager->GetFilePathFromUri(realUri, filePath, "100");
+    EXPECT_EQ(filePath, realPath);
+    MEDIA_INFO_LOG("GetFilePathFromUri::End");
+
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_021::End");
+}
+
+/**
+ * @tc.number    : MediaSpaceStatistics_test_022
+ * @tc.name      : test for get uri or path there is not file in database
+ * @tc.desc      : 1.get uri from path
+ *                 2.get path from uri
+ */
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_022, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_022::Start");
+    ClearFile();
+    const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + "1");
+    const string realPath = "/storage/media/100/local/files/Documents/MediaSpaceStatistics_test_022.txt";
+    Uri fileUri(MEDIALIBRARY_DATA_URI);
+    string filePath;
+    string userId;
+    int32_t ret = mediaLibraryManager->GetUriFromFilePath(realPath, fileUri, userId);
+    EXPECT_EQ((ret < 0), true);
+    MEDIA_INFO_LOG("GetUriFromFilePath::End");
+
+    ret = mediaLibraryManager->GetFilePathFromUri(realUri, filePath, "100");
+    EXPECT_EQ((ret < 0), true);
+    MEDIA_INFO_LOG("GetFilePathFromUri::End");
+
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_022::End");
 }
 } // namespace Media
 } // namespace OHOS

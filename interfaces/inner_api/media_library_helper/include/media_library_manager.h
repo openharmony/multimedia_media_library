@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIBRARY_MANAGER_H_
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIBRARY_MANAGER_H_
+#define USERID "100"
 
 #include "album_asset.h"
 #include "file_asset.h"
@@ -99,6 +100,43 @@ public:
      * @version 1.0
      */
     int32_t QueryTotalSize(MediaVolume &outMediaVolume);
+
+    /**
+     * @brief Make a query from database
+     *
+     * @param columnName a column name in datebase
+     * @param value a parameter for input which is a uri or path
+     * @param columns query conditions
+     * @return query result
+     * @since 1.0
+     * @version 1.0
+     */
+    static std::shared_ptr<DataShareResultSet> GetResultSetFromDb(string columnName, const string &value,
+        vector<string> &columns);
+
+    /**
+     * @brief get file path from uri
+     *
+     * @param fileUri a parameter for input  which is uri
+     * @param filePath a parameter for output  which is path
+     * @param userId  a parameter for user id
+     * @return errorcode
+     * @since 1.0
+     * @version 1.0
+     */
+    int32_t GetFilePathFromUri(const Uri &fileUri, std::string &filePath, string userId = USERID);
+
+    /**
+     * @brief Obtain a mediaVolume object from MediaAssets can be obtained
+     *
+     * @param fileUri a parameter for output  which is uri
+     * @param filePath a parameter for input  which is path
+     * @param userId  a parameter for user id
+     * @return errorcode
+     * @since 1.0
+     * @version 1.0
+     */
+    int32_t GetUriFromFilePath(const std::string &filePath, Uri &fileUri, string &userId);
 
 private:
     static shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
