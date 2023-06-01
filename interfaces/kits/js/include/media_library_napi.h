@@ -224,6 +224,7 @@ private:
     static napi_value CreateAlbumTypeEnum(napi_env env);
     static napi_value CreateAlbumSubTypeEnum(napi_env env);
     static napi_value CreateNotifyTypeEnum(napi_env env);
+    static napi_value CreateDefaultChangeUriEnum(napi_env env);
 
     static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -256,6 +257,7 @@ private:
     static thread_local napi_ref sPositionTypeEnumRef_;
     static thread_local napi_ref sPhotoSubType_;
     static thread_local napi_ref sNotifyType_;
+    static thread_local napi_ref sDefaultChangeUriRef_;
 
     static std::mutex sUserFileClientMutex_;
     static std::mutex sOnOffMutex_;

@@ -48,6 +48,7 @@ public:
 
     // util constants
     static const std::string ALBUM_URI_PREFIX;
+    static const std::string DEFAULT_PHOTO_ALBUM_URI;
 
     static bool IsPhotoAlbumColumn(const std::string &columnName);
 };

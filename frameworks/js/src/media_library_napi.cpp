@@ -94,6 +94,7 @@ thread_local napi_ref MediaLibraryNapi::sAlbumKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAlbumType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAlbumSubType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sNotifyType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sDefaultChangeUriRef_ = nullptr;
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
 MediaLibraryNapi::MediaLibraryNapi()
@@ -194,7 +195,8 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("AlbumSubType", CreateAlbumSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoSubType", CreatePhotoSubTypeEnum(env)),
-        DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env))
+        DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env))
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -4059,6 +4061,10 @@ napi_value MediaLibraryNapi::CreateAlbumSubTypeEnum(napi_env env)
 
     CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sAlbumSubType_), JS_INNER_FAIL);
     return result;
+}
+napi_value MediaLibraryNapi::CreateDefaultChangeUriEnum(napi_env env)
+{
+    return CreateStringEnumProperty(env, DEFAULT_URI_ENUM_PROPERTIES, sDefaultChangeUriRef_);
 }
 
 napi_value MediaLibraryNapi::CreateNotifyTypeEnum(napi_env env)
