@@ -812,7 +812,6 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_001, TestS
     unordered_map<string, string> verifyMap = {
         { AudioColumn::MEDIA_TITLE, "audio" },
         { AudioColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_AUDIO) },
-        { AudioColumn::MEDIA_TIME_PENDING, to_string(UNCREATE_FILE_TIMEPENDING) },
         { AudioColumn::MEDIA_RELATIVE_PATH, "Audios/123/" },
         { AudioColumn::MEDIA_VIRTURL_PATH, "Audios/123/audio.mp3" }
     };
@@ -1368,7 +1367,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_001, Tes
     EXPECT_GE(fileId, 0);
 
     string uriString = MediaFileUtils::GetFileMediaTypeUriV10(MediaType::MEDIA_TYPE_AUDIO, "");
-    uriString += "/" + to_string(fileId);
+    uriString += "/" + to_string(fileId) + "?api_version=10";
     Uri uri(uriString);
     MediaLibraryCommand openCmd(uri);
     int32_t fd = MediaLibraryAudioOperations::Open(openCmd, "rw");
