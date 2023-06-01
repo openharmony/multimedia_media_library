@@ -103,6 +103,7 @@ public:
     // photo uri
     static const std::string PHOTO_URI_PREFIX;
     static const std::string PHOTO_TYPE_URI;
+    static const std::string DEFAULT_PHOTO_URI;
 
     // all columns
     static const std::set<std::string> PHOTO_COLUMNS;
@@ -125,6 +126,7 @@ public:
     // audio uri
     static const std::string AUDIO_URI_PREFIX;
     static const std::string AUDIO_TYPE_URI;
+    static const std::string DEFAULT_AUDIO_URI;
 
     // all columns
     static const std::set<std::string> AUDIO_COLUMNS;

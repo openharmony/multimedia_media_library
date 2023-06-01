@@ -334,6 +334,12 @@ const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES 
     std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED)
 };
 
+const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTIES = {
+    std::make_pair("DEFAULT_PHOTO_URI",         PhotoColumn::DEFAULT_PHOTO_URI),
+    std::make_pair("DEFAULT_ALBUM_URI",         PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI),
+    std::make_pair("DEFAULT_AUDIO_URI",         AudioColumn::DEFAULT_AUDIO_URI)
+};
+
 struct JSAsyncContextOutput {
     napi_value error;
     napi_value data;
