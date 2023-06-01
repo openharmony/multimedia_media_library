@@ -69,6 +69,7 @@ const std::string PhotoColumn::PHOTO_SUBTYPE = "subtype";
 const std::string PhotoColumn::PHOTOS_TABLE = "Photos";
 
 const std::string PhotoColumn::PHOTO_URI_PREFIX = "file://media/Photo/";
+const std::string PhotoColumn::DEFAULT_PHOTO_URI = "file://media/Photo";
 const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
 
 const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS " +
@@ -172,6 +173,7 @@ const std::string AudioColumn::AUDIO_ARTIST = "artist";
 const std::string AudioColumn::AUDIOS_TABLE = "Audios";
 
 const std::string AudioColumn::AUDIO_URI_PREFIX = "file://media/Audio/";
+const std::string AudioColumn::DEFAULT_AUDIO_URI = "file://media/Audio";
 const std::string AudioColumn::AUDIO_TYPE_URI = "/Audio";
 
 const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS " +
