@@ -35,6 +35,7 @@ const std::set<std::string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
 };
 
 const std::string PhotoAlbumColumns::ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
+const std::string PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI = "file://media/PhotoAlbum";
 
 // Create tables
 const std::string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
