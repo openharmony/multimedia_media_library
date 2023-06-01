@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,9 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
+#include "media_file_uri.h"
+#include "media_file_utils.h"
+#include "medialibrary_type_const.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -97,6 +100,136 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
         " Audio:%{public}" PRId64,
         outMediaVolume.GetFilesSize(), outMediaVolume.GetVideosSize(),
         outMediaVolume.GetImagesSize(), outMediaVolume.GetAudiosSize());
+    return E_SUCCESS;
+}
+
+std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(string columnName, const string &value,
+    vector<string> &columns)
+{
+    string input = value;
+    if (columnName == MEDIA_DATA_DB_ID) {
+        input = MediaFileUri(input).GetFileId();
+    }
+        
+    Uri uri(MEDIALIBRARY_MEDIA_PREFIX);
+    DataSharePredicates predicates;
+    predicates.EqualTo(columnName, input);
+    predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
+    DatashareBusinessError businessError;
+
+    return sDataShareHelper_->Query(uri, predicates, columns, &businessError);
+}
+
+static int32_t SolvePath(const string &filePath, string &tempPath, string &userId)
+{
+    if (filePath.empty()) {
+        return E_INVALID_ARGUMENTS;
+    }
+    
+    string prePath = PRE_PATH_VALUES;
+    if (filePath.find(prePath) != 0) {
+        return E_INVALID_ARGUMENTS;
+    }
+    string postpath = filePath.substr(prePath.length());
+    auto pos = postpath.find('/');
+    if (pos == string::npos) {
+        return E_INVALID_ARGUMENTS;
+    }
+    userId = postpath.substr(0, pos);
+    postpath = postpath.substr(pos + 1);
+    tempPath = prePath + postpath;
+
+    return E_SUCCESS;
+}
+
+static int32_t CheckResultSet(std::shared_ptr<DataShareResultSet> &resultSet)
+{
+    int count = 0;
+    auto ret = resultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to get resultset row count, ret: %{public}d", ret);
+        return ret;
+    }
+    if (count <= 0) {
+        MEDIA_ERR_LOG("Failed to get count, count: %{public}d", count);
+        return E_FAIL;
+    }
+    ret = resultSet->GoToFirstRow();
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to go to first row, ret: %{public}d", ret);
+        return ret;
+    }
+    return E_SUCCESS;
+}
+
+
+int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &filePath, string userId)
+{
+    string uri = fileUri.ToString();
+    if (!MediaFileUri(uri).IsValid()) {
+        return E_INVALID_ARGUMENTS;
+    }
+    vector<string> columns = {MEDIA_DATA_DB_FILE_PATH};
+    auto resultSet = MediaLibraryManager::GetResultSetFromDb(MEDIA_DATA_DB_ID, uri, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INVALID_URI,
+        "GetFilePathFromUri::uri is not correct: %{public}s", uri.c_str());
+    if (CheckResultSet(resultSet) < 0) {
+        return E_FAIL;
+    }
+
+    std::string tempPath = ResultSetUtils::GetStringValFromColumn(0, resultSet);
+    if (tempPath.find(ROOT_MEDIA_DIR) != 0) {
+        return E_INVALID_ARGUMENTS;
+    }
+    string relativePath = tempPath.substr(ROOT_MEDIA_DIR.length());
+    auto pos = relativePath.rfind('/');
+    if (pos == string::npos) {
+        return E_INVALID_ARGUMENTS;
+    }
+    relativePath = relativePath.substr(0, pos + 1);
+    if ((relativePath != DOC_DIR_VALUES) && (relativePath != DOWNLOAD_DIR_VALUES)) {
+        return E_INVALID_ARGUMENTS;
+    }
+
+    string prePath = PRE_PATH_VALUES;
+    string postpath = tempPath.substr(prePath.length());
+    tempPath = prePath + userId + "/" + postpath;
+    filePath = tempPath;
+    return E_SUCCESS;
+}
+
+int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fileUri, string &userId)
+{
+    if (filePath.empty()) {
+        return E_INVALID_ARGUMENTS;
+    }
+    
+    string tempPath;
+    SolvePath(filePath, tempPath, userId);
+    if (tempPath.find(ROOT_MEDIA_DIR) != 0) {
+        return E_INVALID_ARGUMENTS;
+    }
+    string relativePath = tempPath.substr(ROOT_MEDIA_DIR.length());
+    auto pos = relativePath.rfind('/');
+    if (pos == string::npos) {
+        return E_INVALID_ARGUMENTS;
+    }
+    relativePath = relativePath.substr(0, pos + 1);
+    if ((relativePath != DOC_DIR_VALUES) && (relativePath != DOWNLOAD_DIR_VALUES)) {
+        return E_INVALID_ARGUMENTS;
+    }
+
+    vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_URI };
+    auto resultSet = MediaLibraryManager::GetResultSetFromDb(MEDIA_DATA_DB_FILE_PATH, tempPath, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INVALID_URI,
+        "GetUriFromFilePath::tempPath is not correct: %{public}s", tempPath.c_str());
+    if (CheckResultSet(resultSet) < 0) {
+        return E_FAIL;
+    }
+
+    int32_t fileId = ResultSetUtils::GetIntValFromColumn(0, resultSet);
+    std::string uri = ResultSetUtils::GetStringValFromColumn(1, resultSet);
+    fileUri = Uri(uri + "/" + to_string(fileId));
     return E_SUCCESS;
 }
 } // namespace Media
