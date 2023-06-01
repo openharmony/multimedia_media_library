@@ -62,7 +62,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsExists_test_001, TestSize.Level0)
     path = "medialib_GetFileName_test_001";
     ret = ScannerUtils::IsExists(path);
     EXPECT_EQ(ret, false);
-    path= "/storage/media/local/files/Pictures/IsExists_test_001.jpg";
+    path= "/storage/cloud/files/Pictures/IsExists_test_001.jpg";
     ret = ScannerUtils::IsExists(path);
     EXPECT_EQ(ret, true);
 }
@@ -147,7 +147,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsRegularFile_test_001, TestSize.Leve
     EXPECT_EQ(ret, false);
     shared_ptr<FileAsset> fileAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("IsRegularFile_test_001.jpg", g_pictures, fileAsset), true);
-    path = "/storage/media/local/files/Pictures/IsRegularFile_test_001.jpg";
+    path = "/storage/cloud/files/Pictures/IsRegularFile_test_001.jpg";
     ret = ScannerUtils::IsRegularFile(path);
     EXPECT_EQ(ret, true);
 }

@@ -57,7 +57,7 @@ static constexpr const char *g_dataSharePath = "datashare:///media/file/";
 
 static inline int32_t GetAlbumId(string &&relativePath)
 {
-    return MediaLibraryObjectUtils::GetIdByPathFromDb("/storage/media/local/files/" + relativePath);
+    return MediaLibraryObjectUtils::GetIdByPathFromDb("/storage/cloud/files/" + relativePath);
 }
 
 static int32_t CreateDir(string &&relativePath)
@@ -100,7 +100,7 @@ static int32_t TrashDir(string &&testNum)
 
     Uri deleteDirUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_FMS_TRASHDIR);
     relativePath.pop_back();
-    int32_t albumId = GetAlbumId("/storage/media/local/files/" + relativePath);
+    int32_t albumId = GetAlbumId("/storage/cloud/files/" + relativePath);
     if (albumId <= 0) {
         MEDIA_ERR_LOG("Failed to add album, error: %{public}d", albumId);
         return E_FAIL;

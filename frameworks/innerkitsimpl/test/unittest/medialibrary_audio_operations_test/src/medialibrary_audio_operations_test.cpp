@@ -237,9 +237,9 @@ void ClearAndRestart()
         MediaLibraryUnitTestUtils::Init();
     }
 
-    system("rm -rf /storage/media/local/files/*");
+    system("rm -rf /storage/cloud/files/*");
     for (const auto &dir : TEST_ROOT_DIRS) {
-        string ROOT_PATH = "/storage/media/100/local/files/";
+        string ROOT_PATH = "/storage/cloud/100/files/";
         bool ret = MediaFileUtils::CreateDirectory(ROOT_PATH + dir + "/");
         CHECK_AND_PRINT_LOG(ret, "make %{public}s dir failed, ret=%{public}d", dir.c_str(), ret);
     }
@@ -748,7 +748,7 @@ void MediaLibraryAudioOperationsTest::TearDownTestCase()
         MediaLibraryUnitTestUtils::Init();
     }
 
-    system("rm -rf /storage/media/local/files/*");
+    system("rm -rf /storage/cloud/files/*");
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();

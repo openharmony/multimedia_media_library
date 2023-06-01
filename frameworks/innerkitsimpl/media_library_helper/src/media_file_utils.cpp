@@ -172,7 +172,7 @@ bool MediaFileUtils::CreateDirectory(const string &dirPath)
 
     stringstream folderStream(dirPath);
     while (getline(folderStream, segment, '/')) {
-        if (segment.empty()) {    // skip the first "/" in case of "/storage/media/local/files"
+        if (segment.empty()) {    // skip the first "/" in case of "/storage/cloud/files"
             continue;
         }
 
