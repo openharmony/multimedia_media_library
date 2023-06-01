@@ -1368,7 +1368,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_001, Tes
     EXPECT_GE(fileId, 0);
 
     string uriString = MediaFileUtils::GetFileMediaTypeUriV10(MediaType::MEDIA_TYPE_AUDIO, "");
-    uriString += "/" + to_string(fileId) + "?api_version=10";
+    uriString += "/" + to_string(fileId);
     Uri uri(uriString);
     MediaLibraryCommand openCmd(uri);
     int32_t fd = MediaLibraryAudioOperations::Open(openCmd, "rw");
