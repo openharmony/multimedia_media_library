@@ -39,6 +39,10 @@
 #include "userfile_client.h"
 #include "userfilemgr_uri.h"
 
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+#include "purgeable_pixelmap_builder.h"
+#endif
+
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
 using namespace std;
@@ -1454,7 +1458,20 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, c
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize = size;
     decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+#ifndef IMAGE_PURGEABLE_PIXELMAP
     return imageSource->CreatePixelMap(decodeOpts, err);
+#else
+    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    uint32_t errorCode = 0;
+    unique_ptr<ImageSource> backupImgSrc = ImageSource::CreateImageSource(uniqueFd.Get(), opts, errorCode);
+    if (errorCode == Media::SUCCESS) {
+        PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, backupImgSrc, decodeOpts);
+    } else {
+        NAPI_ERR_LOG("Failed to backup image source when to be purgeable: %{public}d", errorCode);
+    }
+
+    return pixelMap;
+#endif
 }
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
