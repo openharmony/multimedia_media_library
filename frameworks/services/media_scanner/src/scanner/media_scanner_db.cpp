@@ -329,7 +329,7 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
     NativeRdb::RdbPredicates rdbPredicate(MEDIALIBRARY_TABLE);
     rdbPredicate.In(MEDIA_DATA_DB_ID, idList);
     int32_t ret = rdbStore->Delete(rdbPredicate);
-    return ret == idList.size();
+    return ret == static_cast<int32_t>(idList.size());
 }
 
 static OperationObject GetOprnObjectFromPath(const string &path)
