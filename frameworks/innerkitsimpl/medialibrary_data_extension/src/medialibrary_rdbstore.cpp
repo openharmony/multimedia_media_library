@@ -939,7 +939,7 @@ void API10TableCreate(RdbStore &store)
         TriggerUpdateUserAlbumCount(),
     };
 
-    for (int i = 0; i < executeSqlStrs.size(); i++) {
+    for (size_t i = 0; i < executeSqlStrs.size(); i++) {
         if (store.ExecuteSql(executeSqlStrs[i]) != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("upgrade fail idx%{public}d", i);
         }
