@@ -75,9 +75,9 @@ public:
         bool force = false);
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
     static int32_t ListFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-        const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
+        const FileAccessFwk::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
     static int32_t ScanFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-        const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
+        const FileAccessFwk::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList);
     static int32_t Query(const Uri &uri, std::vector<std::string> &columns, std::vector<std::string> &results);
     static int32_t GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList);
     static int Access(const Uri &uri, bool &isExist);

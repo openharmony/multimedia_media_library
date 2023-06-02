@@ -40,9 +40,9 @@ public:
     int Mkdir(const Uri &parentUri, const std::string &displayName, Uri &newFileUri) override;
     int Delete(const Uri &sourceFileUri) override;
     int ListFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-        const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList) override;
+        const FileAccessFwk::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList) override;
     int ScanFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-        const DistributedFS::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList) override;
+        const FileAccessFwk::FileFilter &filter, std::vector<FileAccessFwk::FileInfo> &fileList) override;
     int Query(const Uri &uri, std::vector<std::string> &columns, std::vector<std::string> &results) override;
     int GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList) override;
     int Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri) override;
