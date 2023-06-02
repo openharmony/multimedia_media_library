@@ -840,7 +840,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_003, Test
     mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
     const int64_t offset = 0;
     const int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
     FileAccessFwk::FileInfo rootInfo;
     rootInfo.uri = COMMON_PREFIX + ROOT_URI + MEDIALIBRARY_TYPE_IMAGE_URI;
     rootInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE_PREFIX;
@@ -872,7 +872,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_004, Test
     mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
     const int64_t offset = 0;
     const int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
     FileAccessFwk::FileInfo rootInfo;
     rootInfo.uri = COMMON_PREFIX + ROOT_URI + MEDIALIBRARY_TYPE_VIDEO_URI;
     rootInfo.mimeType = DEFAULT_VIDEO_MIME_TYPE_PREFIX;
@@ -928,7 +928,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_002, TestS
     string chineseLongString = CHAR256_CHINESE + ".jpg";
     TestPhotoCreateParamsApi9(chineseLongString, MediaType::MEDIA_TYPE_IMAGE, defaultRelativePath,
         E_INVALID_DISPLAY_NAME);
-    
+
     TestPhotoCreateParamsApi9("photo", MediaType::MEDIA_TYPE_IMAGE, defaultRelativePath,
         E_INVALID_DISPLAY_NAME);
     TestPhotoCreateParamsApi9("photo.", MediaType::MEDIA_TYPE_IMAGE, defaultRelativePath,

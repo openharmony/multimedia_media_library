@@ -138,13 +138,13 @@ int MediaFileExtAbility::Delete(const Uri &sourceFileUri)
 }
 
 int MediaFileExtAbility::ListFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-    const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
+    const FileAccessFwk::FileFilter &filter, vector<FileInfo> &fileList)
 {
     return ConvertErrno(MediaFileExtentionUtils::ListFile(parentInfo, offset, maxCount, filter, fileList));
 }
 
 int MediaFileExtAbility::ScanFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-    const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
+    const FileAccessFwk::FileFilter &filter, vector<FileInfo> &fileList)
 {
     return ConvertErrno(MediaFileExtentionUtils::ScanFile(parentInfo, offset, maxCount, filter, fileList));
 }

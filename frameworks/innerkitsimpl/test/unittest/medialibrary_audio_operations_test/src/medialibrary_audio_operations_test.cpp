@@ -846,7 +846,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, Test
     mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
     const int64_t offset = 0;
     const int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
 
     FileAccessFwk::FileInfo rootInfo;
     rootInfo.uri = COMMON_PREFIX + ROOT_URI + MEDIALIBRARY_TYPE_AUDIO_URI;
@@ -938,7 +938,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_002, TestS
     string chineseLongString = CHAR256_CHINESE + ".mp3";
     TestAudioCreateParamsApi9(chineseLongString, MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
         E_INVALID_DISPLAY_NAME);
-    
+
     TestAudioCreateParamsApi9("audio", MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
         E_INVALID_DISPLAY_NAME);
     TestAudioCreateParamsApi9("audio.", MediaType::MEDIA_TYPE_AUDIO, defaultRelativePath,
