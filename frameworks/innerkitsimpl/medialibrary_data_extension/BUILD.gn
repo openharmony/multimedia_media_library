@@ -133,8 +133,6 @@ ohos_shared_library("medialibrary_data_extension") {
 
   sources = [
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
-    "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/src/sqlite_sql_builder.cpp",
-    "../../../../../../foundation/distributeddatamgr/relational_store/frameworks/native/rdb/src/string_utils.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
     "src/medialibrary_album_operations.cpp",
