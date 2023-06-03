@@ -794,10 +794,12 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_020, TestSize.Level
     string userId;
     mediaLibraryManager->GetUriFromFilePath(realPath, fileUri, userId);
     EXPECT_EQ(fileUri.ToString(), realUri.ToString());
+    printf("MediaSpaceStatistics_test_020::fileUri is : %s\n", fileUri.ToString().c_str());
     MEDIA_INFO_LOG("GetUriFromFilePath::End");
 
     mediaLibraryManager->GetFilePathFromUri(realUri, filePath, "100");
     EXPECT_EQ(filePath, realPath);
+    printf("MediaSpaceStatistics_test_020::filePath is : %s\n", filePath.c_str());
     MEDIA_INFO_LOG("GetFilePathFromUri::End");
 
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_020::End");
@@ -822,10 +824,12 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_021, TestSize.Level
     string userId;
     mediaLibraryManager->GetUriFromFilePath(realPath, fileUri, userId);
     EXPECT_EQ(fileUri.ToString(), realUri.ToString());
+    printf("MediaSpaceStatistics_test_021::fileUri is : %s\n", fileUri.ToString().c_str());
     MEDIA_INFO_LOG("GetUriFromFilePath::End");
 
     mediaLibraryManager->GetFilePathFromUri(realUri, filePath, "100");
     EXPECT_EQ(filePath, realPath);
+    printf("MediaSpaceStatistics_test_021::filePath is : %s\n", filePath.c_str());
     MEDIA_INFO_LOG("GetFilePathFromUri::End");
 
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_021::End");
