@@ -63,6 +63,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { MediaColumn::MEDIA_HIDDEN, TYPE_INT32 },
         { MediaColumn::MEDIA_VIRTURL_PATH, TYPE_STRING },
         { PhotoColumn::PHOTO_SUBTYPE, TYPE_INT32 },
+        { MEDIA_COLUMN_COUNT, TYPE_INT32 },
     };
     return RESULT_TYPE_MAP;
 }
