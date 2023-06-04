@@ -27,6 +27,7 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
@@ -479,6 +480,17 @@ void MediaLibraryCommand::ParseOprnObjectFromFileUri()
             break;
         }
     }
+}
+
+void MediaLibraryCommand::SetDataSharePred(const DataSharePredicates &pred)
+{
+    datasharePred_ = make_unique<const DataSharePredicates>(pred);
+}
+
+// Caller is responsible for calling SetDataSharePred() firstly, before calling GetDataSharePred()
+const DataSharePredicates &MediaLibraryCommand::GetDataSharePred() const
+{
+    return *datasharePred_;
 }
 } // namespace Media
 } // namespace OHOS
