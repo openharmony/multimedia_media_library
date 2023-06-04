@@ -382,7 +382,9 @@ string GetFilePath(int fileId)
     vector<string> columns = { AudioColumn::MEDIA_FILE_PATH };
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY,
         MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->EqualTo(AudioColumn::MEDIA_ID, to_string(fileId));
+    DataSharePredicates predicates;
+    predicates.EqualTo(AudioColumn::MEDIA_ID, to_string(fileId));
+    cmd.SetDataSharePred(predicates);
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("can not get rdbstore");
         return "";
@@ -422,7 +424,9 @@ int32_t MakeAudioUnpending(int fileId)
     ValuesBucket values;
     values.PutLong(AudioColumn::MEDIA_TIME_PENDING, 0);
     cmd.SetValueBucket(values);
-    cmd.GetAbsRdbPredicates()->EqualTo(AudioColumn::MEDIA_ID, to_string(fileId));
+    DataSharePredicates predicates;
+    predicates.EqualTo(AudioColumn::MEDIA_ID, to_string(fileId));
+    cmd.SetDataSharePred(predicates);
     int32_t changedRows = -1;
     errCode = g_rdbStore->Update(cmd, changedRows);
     if (errCode != E_OK || changedRows <= 0) {
@@ -466,7 +470,9 @@ int32_t SetDefaultAudioApi10(int mediaType, const string &displayName)
 int32_t GetAudioAssetCountIndb(const string &key, const string &value)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY);
-    cmd.GetAbsRdbPredicates()->EqualTo(key, value);
+    DataSharePredicates predicates;
+    predicates.EqualTo(key, value);
+    cmd.SetDataSharePred(predicates);
     vector<string> columns;
     auto resultSet = g_rdbStore->Query(cmd, columns);
     int count = -1;
@@ -562,7 +568,9 @@ int32_t TestQueryAsset(const string &queryKey, const string &queryValue, const s
     }
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY, api);
-    cmd.GetAbsRdbPredicates()->EqualTo(queryKey, queryValue);
+    DataSharePredicates predicates;
+    predicates.EqualTo(queryKey, queryValue);
+    cmd.SetDataSharePred(predicates);
     vector<string> columns;
     columns.push_back(columnKey);
     auto queryResultSet = rdbStore->Query(cmd, columns);
@@ -644,7 +652,9 @@ void TestAudioUpdateParamsApi9(const string &predicateColumn, const string &pred
         SetValuesBucketInUpdate(iter.first, iter.second, values);
     }
     cmd.SetValueBucket(values);
-    cmd.GetAbsRdbPredicates()->EqualTo(predicateColumn, predicateValue);
+    DataSharePredicates predicates;
+    predicates.EqualTo(predicateColumn, predicateValue);
+    cmd.SetDataSharePred(predicates);
     int32_t ret = MediaLibraryAudioOperations::Update(cmd);
     func(ret);
 }
@@ -660,7 +670,9 @@ void TestAudioUpdateParamsApi10(const string &predicateColumn, const string &pre
         SetValuesBucketInUpdate(iter.first, iter.second, values);
     }
     cmd.SetValueBucket(values);
-    cmd.GetAbsRdbPredicates()->EqualTo(predicateColumn, predicateValue);
+    DataSharePredicates predicates;
+    predicates.EqualTo(predicateColumn, predicateValue);
+    cmd.SetDataSharePred(predicates);
     int32_t ret = MediaLibraryAudioOperations::Update(cmd);
     func(ret);
 }
@@ -685,7 +697,9 @@ void TestAudioUpdateParamsVerifyFunctionFailed(const string &predicateColumn, co
         SetValuesBucketInUpdate(iter.first, iter.second, values);
     }
     cmd.SetValueBucket(values);
-    cmd.GetAbsRdbPredicates()->EqualTo(predicateColumn, predicateValue);
+    DataSharePredicates predicates;
+    predicates.EqualTo(predicateColumn, predicateValue);
+    cmd.SetDataSharePred(predicates);
     int32_t ret = MediaLibraryAssetOperations::UpdateOperation(cmd);
     MEDIA_INFO_LOG("column:%{public}s, predicates:%{public}s, ret:%{public}d",
         predicateColumn.c_str(), predicateValue.c_str(), ret);
@@ -972,7 +986,9 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_001, TestS
     // Query
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY,
         MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->EqualTo(AudioColumn::MEDIA_ID, to_string(fileId1));
+    DataSharePredicates predicates;
+    predicates.EqualTo(AudioColumn::MEDIA_ID, to_string(fileId1));
+    cmd.SetDataSharePred(predicates);
     vector<string> columns;
     auto resultSet = MediaLibraryAudioOperations::Query(cmd, columns);
     if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
@@ -1004,9 +1020,11 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_002, TestS
     // Query
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY,
         MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->BeginWrap()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId1))->
+    DataSharePredicates predicates;
+    predicates.BeginWrap()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId1))->
         Or()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId2))->EndWrap()->
         OrderByAsc(MediaColumn::MEDIA_ID);
+    cmd.SetDataSharePred(predicates);
     vector<string> columns;
     auto resultSet = MediaLibraryAudioOperations::Query(cmd, columns);
     if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
@@ -1041,7 +1059,9 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_003, TestS
     // Query
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY,
         MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->EqualTo(AudioColumn::MEDIA_ID, to_string(fileId1));
+    DataSharePredicates predicates;
+    predicates.EqualTo(AudioColumn::MEDIA_ID, to_string(fileId1));
+    cmd.SetDataSharePred(predicates);
     vector<string> columns;
     columns.push_back(MediaColumn::MEDIA_NAME);
     columns.push_back(MediaColumn::MEDIA_DATE_ADDED);

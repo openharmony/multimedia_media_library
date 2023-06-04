@@ -17,10 +17,11 @@
 #define OHOS_MEDIALIBRARY_COMMAND_PARSE_H
 
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "abs_rdb_predicates.h"
+#include "datashare_predicates.h"
 #include "dir_asset.h"
 #include "medialibrary_db_const.h"
 #include "uri.h"
@@ -103,6 +104,8 @@ public:
     std::string GetUriStringWithoutSegment();
     MediaLibraryApi GetApi();
     std::string GetQuerySetParam(const std::string &key);
+    void SetDataSharePred(const DataShare::DataSharePredicates &pred);
+    const DataShare::DataSharePredicates &GetDataSharePred() const;
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
     void SetOprnObject(OperationObject object);
@@ -127,6 +130,7 @@ private:
     Uri uri_{""};
     NativeRdb::ValuesBucket insertValue_;
     std::unique_ptr<NativeRdb::AbsRdbPredicates> absRdbPredicates_;
+    std::unique_ptr<const DataShare::DataSharePredicates> datasharePred_;
     OperationObject oprnObject_{OperationObject::UNKNOWN_OBJECT};
     OperationType oprnType_{OperationType::UNKNOWN_TYPE};
     std::string oprnFileId_;

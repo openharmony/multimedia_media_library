@@ -40,8 +40,6 @@ private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
     static int32_t DeletePhoto(const std::shared_ptr<FileAsset> &fileAsset);
-    static std::shared_ptr<NativeRdb::ResultSet> QueryV10(MediaLibraryCommand &cmd,
-        const std::vector<std::string> &columns);
     static int32_t UpdateV9(MediaLibraryCommand &cmd);
     static int32_t UpdateV10(MediaLibraryCommand &cmd);
 };

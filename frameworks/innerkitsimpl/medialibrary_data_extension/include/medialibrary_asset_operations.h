@@ -59,8 +59,6 @@ protected:
     static int32_t SetAssetPathInCreate(FileAsset &fileAsset);
     static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);
 
-    static std::shared_ptr<NativeRdb::ResultSet> QueryFiles(MediaLibraryCommand &cmd,
-        const std::vector<std::string> &columns);
     static bool IsContainsValue(NativeRdb::ValuesBucket &values, const std::string &key);
     static int32_t ModifyAssetInDb(MediaLibraryCommand &cmd);
     static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
