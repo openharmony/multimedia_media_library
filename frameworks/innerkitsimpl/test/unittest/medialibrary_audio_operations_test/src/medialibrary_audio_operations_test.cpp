@@ -37,6 +37,8 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#include "media_file_ext_ability.h"
+#include "media_file_extention_utils.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_type_const.h"
@@ -57,6 +59,11 @@ using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+const string COMMON_PREFIX = "datashare:///media/";
+const string ROOT_URI = "root";
+#endif
 
 using ExceptIntFunction = void (*) (int32_t);
 using ExceptLongFunction = void (*) (int64_t);
@@ -116,6 +123,46 @@ void CleanTestTables()
         MEDIA_DEBUG_LOG("Drop %{public}s table success", dropTable.c_str());
     }
 }
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+class ArkJsRuntime : public AbilityRuntime::JsRuntime {
+public:
+    ArkJsRuntime() {};
+
+    ~ArkJsRuntime() {};
+
+    void StartDebugMode(bool needBreakPoint)  {};
+    void FinishPreload() {};
+    bool LoadRepairPatch(const string& patchFile, const string& baseFile)
+    {
+        return true;
+    };
+    bool NotifyHotReloadPage()
+    {
+        return true;
+    };
+    bool UnLoadRepairPatch(const string& patchFile)
+    {
+        return true;
+    };
+    bool RunScript(const string& path, const string& hapPath, bool useCommonChunk = false)
+    {
+        return true;
+    };
+    NativeValue* LoadJsModule(const string& path, const string& hapPath)
+    {
+        return nullptr;
+    };
+};
+
+void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
+{
+    for (auto t : fileList) {
+        MEDIA_DEBUG_LOG("medialib_ListFile_test_001 file.uri: %s, file.fileName: %s, file.mode: %d, file.mimeType: %s",
+            t.uri.c_str(), t.fileName.c_str(), t.mode, t.mimeType.c_str());
+    }
+}
+#endif
 
 struct UniqueMemberValuesBucket {
     string assetMediaType;
@@ -758,6 +805,47 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_002, Test
         E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_002");
 }
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd audio_oprn_create_api10_test_003");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    string name = "audio.mp3";
+    ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_AUDIO);
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryAudioOperations::Create(cmd);
+    EXPECT_GE(ret, 0);
+    unordered_map<string, string> verifyMap = {
+        { AudioColumn::MEDIA_TITLE, "audio" },
+        { AudioColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_AUDIO) },
+        { AudioColumn::MEDIA_TIME_PENDING, to_string(UNCREATE_FILE_TIMEPENDING)}
+    };
+    bool res = QueryAndVerifyAudioAsset(AudioColumn::MEDIA_NAME, name, verifyMap);
+    EXPECT_EQ(res, true);
+    shared_ptr<MediaFileExtAbility> mediaFileExtAbility;
+    MediaLibraryUnitTestUtils::Init();
+    ArkJsRuntime runtime;
+    mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
+    const int64_t offset = 0;
+    const int64_t maxCount = 100;
+    DistributedFS::FileFilter filter;
+
+    FileAccessFwk::FileInfo rootInfo;
+    rootInfo.uri = COMMON_PREFIX + ROOT_URI + MEDIALIBRARY_TYPE_AUDIO_URI;
+    rootInfo.mimeType = DEFAULT_AUDIO_MIME_TYPE_PREFIX;
+    vector<FileAccessFwk::FileInfo> rootFileList;
+    ret = mediaFileExtAbility->ListFile(rootInfo, offset, maxCount, filter, rootFileList);
+    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(rootFileList.size(), 1);
+    DisplayFileList(rootFileList);
+
+    MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_003");
+}
+#endif
 
 HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_delete_api10_test_001, TestSize.Level0)
 {
