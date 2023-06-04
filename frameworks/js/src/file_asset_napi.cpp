@@ -424,7 +424,11 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
         if (status == napi_ok) {
-            obj->fileAssetPtr->SetDisplayName(string(buffer));
+            string displayName = string(buffer);
+            obj->fileAssetPtr->SetDisplayName(displayName);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+            obj->fileAssetPtr->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+#endif
         }
     }
 
@@ -524,7 +528,14 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
         if (status == napi_ok) {
-            obj->fileAssetPtr->SetTitle(string(buffer));
+            string title = string(buffer);
+            obj->fileAssetPtr->SetTitle(title);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+            string oldDisplayName = obj->fileAssetPtr->GetDisplayName();
+            string ext = MediaFileUtils::SplitByChar(oldDisplayName, '.');
+            string newDisplayName = title + "." + ext;
+            obj->fileAssetPtr->SetDisplayName(newDisplayName);
+#endif
         }
     }
     return undefinedResult;
@@ -1042,6 +1053,31 @@ static string BuildCommitModifyUriApi10(FileAssetAsyncContext *context, string &
     return uri;
 }
 
+static bool CheckTitleAndDisplayName(const string &title, const string &displayName, bool isApiVersion10)
+{
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (!isApiVersion10) {
+        if (MediaFileUtils::CheckTitle(title) < 0) {
+            return false;
+        }
+    } else {
+        if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
+            return false;
+        }
+    }
+#else
+    if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
+        return false;
+    }
+    if (!isApiVersion10) {
+        if (MediaFileUtils::CheckTitle(title) < 0) {
+            return false;
+        }
+    }
+#endif
+    return true;
+}
+
 static void JSCommitModifyExecute(napi_env env, void *data)
 {
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
@@ -1053,17 +1089,14 @@ static void JSCommitModifyExecute(napi_env env, void *data)
         isApiVersion10 = true;
     }
 
-    if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) < 0) {
+    if (!CheckTitleAndDisplayName(context->objectPtr->GetTitle(),
+        context->objectPtr->GetDisplayName(), isApiVersion10)) {
         context->error = JS_E_DISPLAYNAME;
         return;
     }
 
     string uri = MEDIALIBRARY_DATA_URI + "/";
     if (!isApiVersion10) {
-        if (MediaFileUtils::CheckTitle(context->objectPtr->GetTitle()) < 0) {
-            context->error = JS_E_DISPLAYNAME;
-            return;
-        }
 #ifdef MEDIALIBRARY_COMPATIBILITY
         BuildCommitModifyUriApi9(context, uri);
 #else

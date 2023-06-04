@@ -149,7 +149,7 @@ int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
     return errCode;
 }
 
-static void SetPhotoTypeByRelativePath(const string &relativePath, FileAsset &fileAsset)
+static inline void SetPhotoTypeByRelativePath(const string &relativePath, FileAsset &fileAsset)
 {
     int32_t subType = static_cast<int32_t>(PhotoSubType::DEFAULT);
     if (relativePath.compare(CAMERA_PATH) == 0) {
@@ -159,6 +159,16 @@ static void SetPhotoTypeByRelativePath(const string &relativePath, FileAsset &fi
         subType = static_cast<int32_t>(PhotoSubType::SCREENSHOT);
     }
 
+    fileAsset.SetPhotoSubType(subType);
+}
+
+static inline void SetPhotoSubTypeFromCmd(MediaLibraryCommand &cmd, FileAsset &fileAsset)
+{
+    int32_t subType = static_cast<int32_t>(PhotoSubType::DEFAULT);
+    ValueObject value;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_SUBTYPE, value)) {
+        value.GetInt(subType);
+    }
     fileAsset.SetPhotoSubType(subType);
 }
 
@@ -226,6 +236,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_TYPE, mediaType),
         E_HAS_DB_ERROR);
     fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
+    SetPhotoSubTypeFromCmd(cmd, fileAsset);
 
     // Check rootdir and extension
     int32_t errCode = CheckDisplayNameWithType(displayName, mediaType);
