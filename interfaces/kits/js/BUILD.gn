@@ -12,6 +12,7 @@
 # limitations under the License.
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
+import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 import("../../../../../../arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
 import("../../../../../../foundation/arkui/ace_engine/ace_config.gni")
@@ -135,6 +136,14 @@ ohos_shared_library("medialibrary") {
   sanitize = {
     cfi = true
     debug = false
+  }
+
+  if (purgeable_ashmem_enable) {
+    defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
+    external_deps += [
+      "memory_utils:libpurgeablemem",
+      "memory_utils:pixelmap_builder",
+    ]
   }
 
   relative_install_dir = "module/multimedia"
