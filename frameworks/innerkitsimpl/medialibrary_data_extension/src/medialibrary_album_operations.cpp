@@ -383,7 +383,11 @@ int32_t AgingPhotoAssets()
     DataSharePredicates predicates;
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(time - AGING_TIME));
-    return DeletePhotoAssets(predicates);
+    int32_t err = DeletePhotoAssets(predicates);
+    if (err < 0) {
+        return err;
+    }
+    return E_OK;
 }
 
 int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opType, const ValuesBucket &values,
