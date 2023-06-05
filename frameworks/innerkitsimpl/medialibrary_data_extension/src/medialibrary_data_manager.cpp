@@ -162,7 +162,9 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
 
     errCode = DoTrashAging();
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at DoTrashAging");
+    if (errCode != E_OK) {
+        MEDIA_WARN_LOG("Ignore trash aging failures, just continue");
+    }
     refCnt_++;
     return E_OK;
 }
