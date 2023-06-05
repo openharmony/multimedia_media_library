@@ -123,12 +123,12 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
 static int32_t SolvePath(const string &filePath, string &tempPath, string &userId)
 {
     if (filePath.empty()) {
-        return E_INVALID_ARGUMENTS;
+        return E_INVALID_PATH;
     }
     
     string prePath = PRE_PATH_VALUES;
     if (filePath.find(prePath) != 0) {
-        return E_INVALID_ARGUMENTS;
+        return E_CHECK_ROOT_DIR_FAIL;
     }
     string postpath = filePath.substr(prePath.length());
     auto pos = postpath.find('/');
@@ -167,7 +167,7 @@ int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &file
 {
     string uri = fileUri.ToString();
     if (!MediaFileUri(uri).IsValid()) {
-        return E_INVALID_ARGUMENTS;
+        return E_URI_INVALID;
     }
     vector<string> columns = {MEDIA_DATA_DB_FILE_PATH};
     auto resultSet = MediaLibraryManager::GetResultSetFromDb(MEDIA_DATA_DB_ID, uri, columns);
@@ -179,16 +179,16 @@ int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &file
 
     std::string tempPath = ResultSetUtils::GetStringValFromColumn(0, resultSet);
     if (tempPath.find(ROOT_MEDIA_DIR) != 0) {
-        return E_INVALID_ARGUMENTS;
+        return E_CHECK_ROOT_DIR_FAIL;
     }
     string relativePath = tempPath.substr(ROOT_MEDIA_DIR.length());
-    auto pos = relativePath.rfind('/');
+    auto pos = relativePath.find('/');
     if (pos == string::npos) {
         return E_INVALID_ARGUMENTS;
     }
     relativePath = relativePath.substr(0, pos + 1);
     if ((relativePath != DOC_DIR_VALUES) && (relativePath != DOWNLOAD_DIR_VALUES)) {
-        return E_INVALID_ARGUMENTS;
+        return E_DIR_CHECK_DIR_FAIL;
     }
 
     string prePath = PRE_PATH_VALUES;
@@ -201,22 +201,22 @@ int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &file
 int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fileUri, string &userId)
 {
     if (filePath.empty()) {
-        return E_INVALID_ARGUMENTS;
+        return E_INVALID_PATH;
     }
     
     string tempPath;
     SolvePath(filePath, tempPath, userId);
     if (tempPath.find(ROOT_MEDIA_DIR) != 0) {
-        return E_INVALID_ARGUMENTS;
+        return E_CHECK_ROOT_DIR_FAIL;
     }
     string relativePath = tempPath.substr(ROOT_MEDIA_DIR.length());
-    auto pos = relativePath.rfind('/');
+    auto pos = relativePath.find('/');
     if (pos == string::npos) {
         return E_INVALID_ARGUMENTS;
     }
     relativePath = relativePath.substr(0, pos + 1);
     if ((relativePath != DOC_DIR_VALUES) && (relativePath != DOWNLOAD_DIR_VALUES)) {
-        return E_INVALID_ARGUMENTS;
+        return E_DIR_CHECK_DIR_FAIL;
     }
 
     vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_URI };
