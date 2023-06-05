@@ -279,6 +279,7 @@ int32_t ThumbnailService::LcdAging()
     int32_t err = 0;
     vector<string> tableList;
     tableList.emplace_back(PhotoColumn::PHOTOS_TABLE);
+    tableList.emplace_back(AudioColumn::AUDIOS_TABLE);
     tableList.emplace_back(MEDIALIBRARY_TABLE);
 
     for (const auto &tableName : tableList) {
