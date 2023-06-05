@@ -67,6 +67,7 @@ public:
     static int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates);
     static int32_t Update(int32_t &changedRows, const NativeRdb::ValuesBucket &values,
         const NativeRdb::AbsRdbPredicates &predicates);
+    static int32_t DeleteFromDisk(const NativeRdb::AbsRdbPredicates &predicates);
 
 private:
     bool SubscribeRdbStoreObserver();

@@ -18,6 +18,8 @@
 
 #include <mutex>
 
+#include "cloud_sync_helper.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_device.h"
 #include "medialibrary_errno.h"
@@ -29,7 +31,6 @@
 #include "sqlite_database_utils.h"
 #include "sqlite_sql_builder.h"
 #include "sqlite_utils.h"
-#include "cloud_sync_helper.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -520,6 +521,65 @@ void MediaLibraryRdbStore::SetSyncOpts(MediaLibrarySyncOpts &syncOpts, const str
         syncOpts.row = to_string(rowId);
     }
     syncOpts.rdbStore = rdbStore_;
+}
+
+static inline int32_t DeleteDbByFileId(const string &table, int32_t fileId)
+{
+    AbsRdbPredicates predicates(table);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    return MediaLibraryRdbStore::Delete(predicates);
+}
+
+int32_t MediaLibraryRdbStore::DeleteFromDisk(const AbsRdbPredicates &predicates)
+{
+    vector<string> columns = {
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_FILE_PATH
+    };
+    auto resultSet = Query(predicates, columns);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    int32_t count = 0;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    int32_t deletedRows = 0;
+    for (int32_t i = 0; i < count; i++) {
+        err = resultSet->GoToNextRow();
+        if (err != E_OK) {
+            return E_HAS_DB_ERROR;
+        }
+
+        // Delete file from db.
+        int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
+        if (fileId <= 0) {
+            return E_HAS_DB_ERROR;
+        }
+        int32_t deletedRow = DeleteDbByFileId(predicates.GetTableName(), fileId);
+        if (deletedRow < 0) {
+            return E_HAS_DB_ERROR;
+        }
+        // If deletedRow is 0, the file may be deleted already somewhere else, so just continue.
+        if (deletedRow == 0) {
+            continue;
+        }
+
+        // Delete file from file system.
+        string filePath = get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
+                                                                       TYPE_STRING));
+        if (filePath.empty()) {
+            return E_HAS_DB_ERROR;
+        }
+        if (!MediaFileUtils::DeleteFile(filePath) && (errno != -ENOENT)) {
+            MEDIA_ERR_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
+            return E_HAS_FS_ERROR;
+        }
+        deletedRows += deletedRow;
+    }
+    return deletedRows;
 }
 
 inline void BuildInsertSystemAlbumSql(const ValuesBucket &values, const AbsRdbPredicates &predicates,
