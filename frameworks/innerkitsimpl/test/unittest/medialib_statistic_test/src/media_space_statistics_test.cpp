@@ -844,7 +844,6 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_021, TestSize.Level
 HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_022, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_022::Start");
-    ClearFile();
     const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + "1");
     const string realPath = "/storage/media/100/local/files/Documents/MediaSpaceStatistics_test_022.txt";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
