@@ -88,34 +88,18 @@ string ThumbnailUriUtils::GetIdFromUri(const string &uri)
 
 string ThumbnailUriUtils::GetTableFromUri(const string &uri)
 {
-#ifndef MEDIALIBRARY_COMPATIBILITY
-    size_t point = uri.find(URI_PARAM_API_VERSION);
-    if (point == string::npos) {
-        return MEDIALIBRARY_TABLE;
-    }
-    size_t middlePoint = uri.find('=', point);
-    size_t endPoint = min(uri.find('&', point), uri.find('#', point));
-    if ((middlePoint == string::npos) || (endPoint - middlePoint <= 1)) {
-        return MEDIALIBRARY_TABLE;
-    }
-
-    string version;
-    if (endPoint == string::npos) {
-        version = uri.substr(middlePoint + 1);
-    } else {
-        version = uri.substr(middlePoint + 1, endPoint - middlePoint - 1);
-    }
-    if (version != to_string(static_cast<int32_t>(MediaLibraryApi::API_10))) {
-        return MEDIALIBRARY_TABLE;
-    }
-#endif
-    
     static map<string, string> TYPE_TO_TABLE_MAP = {
-        { MEDIALIBRARY_TYPE_IMAGE_URI, PhotoColumn::PHOTOS_TABLE },
-        { MEDIALIBRARY_TYPE_VIDEO_URI, PhotoColumn::PHOTOS_TABLE },
         { PhotoColumn::PHOTO_TYPE_URI, PhotoColumn::PHOTOS_TABLE },
         { AudioColumn::AUDIO_TYPE_URI, AudioColumn::AUDIOS_TABLE },
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        { MEDIALIBRARY_TYPE_IMAGE_URI, PhotoColumn::PHOTOS_TABLE },
+        { MEDIALIBRARY_TYPE_VIDEO_URI, PhotoColumn::PHOTOS_TABLE },
         { MEDIALIBRARY_TYPE_AUDIO_URI, AudioColumn::AUDIOS_TABLE }
+#else
+        { MEDIALIBRARY_TYPE_IMAGE_URI, MEDIALIBRARY_TABLE },
+        { MEDIALIBRARY_TYPE_VIDEO_URI, MEDIALIBRARY_TABLE },
+        { MEDIALIBRARY_TYPE_AUDIO_URI, MEDIALIBRARY_TABLE }
+#endif
     };
     string table = MEDIALIBRARY_TABLE;
     for (const auto &iter : TYPE_TO_TABLE_MAP) {
