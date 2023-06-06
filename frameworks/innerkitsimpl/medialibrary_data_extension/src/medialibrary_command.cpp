@@ -463,7 +463,7 @@ void MediaLibraryCommand::SetApiFromQuerySetMap()
 
 void MediaLibraryCommand::ParseOprnObjectFromFileUri()
 {
-    if (api_ != MediaLibraryApi::API_10 || oprnObject_ != OperationObject::UNKNOWN_OBJECT) {
+    if (oprnObject_ != OperationObject::UNKNOWN_OBJECT) {
         return;
     }
 
