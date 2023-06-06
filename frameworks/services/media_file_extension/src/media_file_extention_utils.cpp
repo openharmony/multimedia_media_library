@@ -23,17 +23,20 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_thumbnail_helper.h"
+#include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_type_const.h"
+#include "mimetype_utils.h"
 #include "result_set_utils.h"
 #include "scanner_utils.h"
 #include "thumbnail_utils.h"
 #include "n_error.h"
 #include "unique_fd.h"
+#include "userfile_manager_types.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -125,6 +128,21 @@ int MediaFileExtentionUtils::CreateFile(const Uri &parentUri, const string &disp
     return ret;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+bool CheckDestRelativePath(const string destRelativePath)
+{
+    size_t size = destRelativePath.find_first_of("/");
+    if (size == string::npos) {
+        return false;
+    }
+    string path = destRelativePath.substr(0, size + 1);
+    if ((path != DOC_DIR_VALUES) && (path != DOWNLOAD_DIR_VALUES)) {
+        return false;
+    }
+    return true;
+}
+#endif
+
 int MediaFileExtentionUtils::Mkdir(const Uri &parentUri, const string &displayName, Uri &newFileUri)
 {
     string parentUriStr = parentUri.ToString();
@@ -150,6 +168,11 @@ int MediaFileExtentionUtils::Mkdir(const Uri &parentUri, const string &displayNa
         return E_FILE_EXIST;
     }
     relativePath = relativePath + displayName + SLASH_CHAR;
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (!CheckDestRelativePath(relativePath)) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+#endif
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
@@ -164,10 +187,16 @@ int MediaFileExtentionUtils::Delete(const Uri &sourceFileUri)
     string sourceUri = sourceFileUri.ToString();
     auto ret = MediaFileExtentionUtils::CheckUriSupport(sourceUri);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
-    vector<string> columns = { MEDIA_DATA_DB_MEDIA_TYPE };
+    vector<string> columns = { MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_RELATIVE_PATH };
     auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri, columns);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_URI_INVALID, "GetResultSetFromDb failed, uri: %{public}s",
         sourceUri.c_str());
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+    if (!CheckDestRelativePath(relativePath)) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+#endif
     int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
     result->Close();
     int fileId = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(sourceUri));
@@ -259,6 +288,7 @@ int32_t ResolveRootUri(string uri, MediaFileUriType &uriType)
     return ret;
 }
 
+#ifndef MEDIALIBRARY_COMPATIBILITY
 int32_t ResolveUriWithType(const string &mimeType, MediaFileUriType &uriType)
 {
     if ((mimeType.find(DEFAULT_IMAGE_MIME_TYPE_PREFIX) == 0) ||
@@ -270,6 +300,7 @@ int32_t ResolveUriWithType(const string &mimeType, MediaFileUriType &uriType)
     uriType = MediaFileUriType::URI_DIR;
     return E_SUCCESS;
 }
+#endif
 
 /**
  * URI_ROOT Return four uri of media type(images, audios, videos and file).
@@ -279,8 +310,6 @@ int32_t ResolveUriWithType(const string &mimeType, MediaFileUriType &uriType)
  * URI_FILE_ROOT Return the files and folders under the root directory.
  *  datashare:///media/root/file
  * URI_DIR Return the files and folders in the directory.
- *  datashare:///media/file/1
- * URI_ALBUM Return the specified media type assets in the Album.
  *  datashare:///media/file/1
  */
 int32_t MediaFileExtentionUtils::ResolveUri(const FileInfo &fileInfo, MediaFileUriType &uriType)
@@ -313,7 +342,12 @@ int32_t MediaFileExtentionUtils::ResolveUri(const FileInfo &fileInfo, MediaFileU
         return ResolveRootUri(path, uriType);
     }
     if (path.find(MEDIALIBRARY_TYPE_FILE_URI) == 0) {
+#ifndef MEDIALIBRARY_COMPATIBILITY
         return ResolveUriWithType(fileInfo.mimeType, uriType);
+#else
+        uriType = MediaFileUriType::URI_DIR;
+        return E_SUCCESS;
+#endif
     }
     if (MediaFileExtentionUtils::CheckUriValid(fileInfo.uri)) {
         uriType = MediaFileUriType::URI_FILE;
@@ -322,6 +356,26 @@ int32_t MediaFileExtentionUtils::ResolveUri(const FileInfo &fileInfo, MediaFileU
 
     return E_INVALID_URI;
 }
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+void UriAppendKeyValue(string &uri, const string &key, string value = "10")
+{
+    string uriKey = key + '=';
+    if (uri.find(uriKey) != string::npos) {
+        return;
+    }
+
+    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
+    string append = queryMark + key + '=' + value;
+
+    size_t pos = uri.find('#');
+    if (pos == string::npos) {
+        uri += append;
+    } else {
+        uri.insert(pos, append);
+    }
+}
+#endif
 
 bool MediaFileExtentionUtils::CheckValidDirName(const string &displayName)
 {
@@ -367,7 +421,25 @@ string GetQueryUri(const FileInfo &parentInfo, MediaFileUriType uriType)
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     if (uriType == URI_MEDIA_ROOT) {
+#ifndef MEDIALIBRARY_COMPATIBILITY
         queryUri += SLASH_CHAR + MEDIA_ALBUMOPRN_QUERYALBUM;
+#else
+        int32_t mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(parentInfo.mimeType);
+        switch (mediaType) {
+            case MEDIA_TYPE_IMAGE:
+            case MEDIA_TYPE_VIDEO:
+                queryUri += SLASH_CHAR + MEDIA_PHOTOOPRN + SLASH_CHAR + OPRN_QUERY;
+                break;
+            case MEDIA_TYPE_AUDIO:
+                queryUri += SLASH_CHAR + MEDIA_AUDIOOPRN + SLASH_CHAR + OPRN_QUERY;
+                break;
+            case MEDIA_TYPE_FILE:
+            default:
+                MEDIA_ERR_LOG("GetMediaTypeFromMimeType failed");
+                break;
+        }
+        UriAppendKeyValue(queryUri, URI_PARAM_API_VERSION);
+#endif
     }
     return queryUri;
 }
@@ -463,6 +535,7 @@ static string MimeType2MediaType(const string &mimeType)
 shared_ptr<NativeRdb::ResultSet> GetMediaRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
     const int64_t offset, const int64_t maxCount)
 {
+#ifndef MEDIALIBRARY_COMPATIBILITY
     Uri uri(GetQueryUri(parentInfo, uriType));
     DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, MimeType2MediaType(parentInfo.mimeType));
@@ -471,6 +544,20 @@ shared_ptr<NativeRdb::ResultSet> GetMediaRootResult(const FileInfo &parentInfo, 
     int errCode = 0;
     vector<string> columns = { MEDIA_DATA_DB_BUCKET_ID, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_RELATIVE_PATH };
+#else
+    Uri uri(GetQueryUri(parentInfo, uriType));
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, MimeType2MediaType(parentInfo.mimeType));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(NOT_TRASHED));
+    if ((MimeTypeUtils::GetMediaTypeFromMimeType(parentInfo.mimeType) == MEDIA_TYPE_IMAGE) ||
+        (MimeTypeUtils::GetMediaTypeFromMimeType(parentInfo.mimeType) == MEDIA_TYPE_VIDEO)) {
+        predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    }
+    predicates.Limit(maxCount, offset);
+    int errCode = 0;
+    vector<string> columns = { MediaColumn::MEDIA_RELATIVE_PATH, MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_DATE_MODIFIED };
+#endif
     return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
 }
 
@@ -499,6 +586,7 @@ shared_ptr<NativeRdb::ResultSet> GetListDirResult(const FileInfo &parentInfo, Me
     return GetResult(uri, uriType, selection, selectionArgs);
 }
 
+#ifndef MEDIALIBRARY_COMPATIBILITY
 shared_ptr<NativeRdb::ResultSet> GetListAlbumResult(const FileInfo &parentInfo, MediaFileUriType uriType,
     const int64_t offset, const int64_t maxCount, const DistributedFS::FileFilter &filter)
 {
@@ -513,6 +601,7 @@ shared_ptr<NativeRdb::ResultSet> GetListAlbumResult(const FileInfo &parentInfo, 
     Uri uri(GetQueryUri(parentInfo, uriType));
     return GetResult(uri, uriType, selection, selectionArgs);
 }
+#endif
 
 int GetFileInfo(FileInfo &fileInfo, const shared_ptr<NativeRdb::ResultSet> &result, const string &networkId = "")
 {
@@ -532,6 +621,7 @@ int GetFileInfo(FileInfo &fileInfo, const shared_ptr<NativeRdb::ResultSet> &resu
     return E_SUCCESS;
 }
 
+#ifndef MEDIALIBRARY_COMPATIBILITY
 int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::ResultSet> &result,
     vector<FileInfo> &fileList)
 {
@@ -550,6 +640,25 @@ int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb:
     }
     return E_SUCCESS;
 }
+#else
+int32_t GetMediaFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::ResultSet> &result,
+    vector<FileInfo> &fileList)
+{
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "ResultSet is nullptr");
+    FileInfo fileInfo;
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        int fileId = GetInt32Val(MediaColumn::MEDIA_ID, result);
+        fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_TITLE, result);
+        fileInfo.mimeType = parentInfo.mimeType;
+        fileInfo.uri = MediaFileUri(MEDIA_TYPE_ALBUM, to_string(fileId), "").ToString();
+        fileInfo.relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+        fileInfo.mtime = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
+        fileInfo.mode = ALBUM_MODE_RW;
+        fileList.push_back(fileInfo);
+    }
+    return E_SUCCESS;
+}
+#endif
 
 int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::ResultSet> &result,
     vector<FileInfo> &fileList)
@@ -580,16 +689,22 @@ int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int6
             return RootListFile(parentInfo, fileList);
         case URI_MEDIA_ROOT:
             result = GetMediaRootResult(parentInfo, uriType, offset, maxCount);
+#ifndef MEDIALIBRARY_COMPATIBILITY
             return GetAlbumInfoFromResult(parentInfo, result, fileList);
+#else
+            return GetMediaFileInfoFromResult(parentInfo, result, fileList);
+#endif
         case URI_FILE_ROOT:
             result = GetListRootResult(parentInfo, uriType, offset, maxCount);
             return GetFileInfoFromResult(parentInfo, result, fileList);
         case URI_DIR:
             result = GetListDirResult(parentInfo, uriType, offset, maxCount, filter);
             return GetFileInfoFromResult(parentInfo, result, fileList);
+#ifndef MEDIALIBRARY_COMPATIBILITY
         case URI_ALBUM:
             result = GetListAlbumResult(parentInfo, uriType, offset, maxCount, filter);
             return GetFileInfoFromResult(parentInfo, result, fileList);
+#endif
         default:
             return E_FAIL;
     }
@@ -598,7 +713,13 @@ int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int6
 int32_t GetScanFileFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::ResultSet> &result,
     vector<FileInfo> &fileList)
 {
+#ifndef MEDIALIBRARY_COMPATIBILITY
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "the result is nullptr");
+#else
+    if (result == nullptr) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+#endif
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
     while (result->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo fileInfo;
@@ -638,12 +759,18 @@ shared_ptr<NativeRdb::ResultSet> SetScanFileSelection(const FileInfo &parentInfo
         filePath = ROOT_MEDIA_DIR;
         selectionArgs.push_back(filePath + "%");
     } else {
-        vector<string> columns = { MEDIA_DATA_DB_FILE_PATH };
+        vector<string> columns = { MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_RELATIVE_PATH };
         auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, parentInfo.uri, columns);
         CHECK_AND_RETURN_RET_LOG(result != nullptr, nullptr, "Get file path failed, uri: %{public}s",
             parentInfo.uri.c_str());
         filePath = GetStringVal(MEDIA_DATA_DB_FILE_PATH, result);
         selectionArgs.push_back(filePath + "/%");
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        string relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+        if (!CheckDestRelativePath(relativePath)) {
+            return nullptr;
+        }
+#endif
     }
     MEDIA_DEBUG_LOG("ScanFile filepath: %{private}s", filePath.c_str());
     string selection = MEDIA_DATA_DB_FILE_PATH + " LIKE ? ";
@@ -1055,6 +1182,12 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const string &
     fileAsset->SetPath(GetStringVal(MEDIA_DATA_DB_FILE_PATH, result));
     fileAsset->SetDisplayName(displayName);
     fileAsset->SetMediaType(static_cast<MediaType>(GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result)));
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+    if (!CheckDestRelativePath(relativePath)) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+#endif
     fileAsset->SetRelativePath(GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result));
     result->Close();
 
@@ -1214,6 +1347,11 @@ int32_t MediaFileExtentionUtils::Move(const Uri &sourceFileUri, const Uri &targe
         MEDIA_ERR_LOG("Move target parent uri is not correct %{public}s", targetUri.c_str());
         return E_MODIFY_DATA_FAIL;
     }
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (!CheckDestRelativePath(destRelativePath)) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+#endif
     vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_URI, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_NAME,
         MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_RELATIVE_PATH };
     auto result = GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri, columns);
@@ -1226,6 +1364,12 @@ int32_t MediaFileExtentionUtils::Move(const Uri &sourceFileUri, const Uri &targe
     fileAsset->SetPath(GetStringVal(MEDIA_DATA_DB_FILE_PATH, result));
     fileAsset->SetDisplayName(GetStringVal(MEDIA_DATA_DB_NAME, result));
     fileAsset->SetMediaType(static_cast<MediaType>(GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result)));
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+    if (!CheckDestRelativePath(relativePath)) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+#endif
     fileAsset->SetRelativePath(GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result));
     result->Close();
 

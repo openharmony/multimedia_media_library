@@ -40,6 +40,10 @@
 #include "userfile_client.h"
 #include "userfilemgr_uri.h"
 
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+#include "purgeable_pixelmap_builder.h"
+#endif
+
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
 using namespace std;
@@ -424,7 +428,11 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
         if (status == napi_ok) {
-            obj->fileAssetPtr->SetDisplayName(string(buffer));
+            string displayName = string(buffer);
+            obj->fileAssetPtr->SetDisplayName(displayName);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+            obj->fileAssetPtr->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+#endif
         }
     }
 
@@ -524,7 +532,14 @@ napi_value FileAssetNapi::JSSetTitle(napi_env env, napi_callback_info info)
         }
         status = napi_get_value_string_utf8(env, argv[PARAM0], buffer, FILENAME_MAX, &res);
         if (status == napi_ok) {
-            obj->fileAssetPtr->SetTitle(string(buffer));
+            string title = string(buffer);
+            obj->fileAssetPtr->SetTitle(title);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+            string oldDisplayName = obj->fileAssetPtr->GetDisplayName();
+            string ext = MediaFileUtils::SplitByChar(oldDisplayName, '.');
+            string newDisplayName = title + "." + ext;
+            obj->fileAssetPtr->SetDisplayName(newDisplayName);
+#endif
         }
     }
     return undefinedResult;
@@ -1042,6 +1057,31 @@ static string BuildCommitModifyUriApi10(FileAssetAsyncContext *context, string &
     return uri;
 }
 
+static bool CheckTitleAndDisplayName(const string &title, const string &displayName, bool isApiVersion10)
+{
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (!isApiVersion10) {
+        if (MediaFileUtils::CheckTitle(title) < 0) {
+            return false;
+        }
+    } else {
+        if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
+            return false;
+        }
+    }
+#else
+    if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
+        return false;
+    }
+    if (!isApiVersion10) {
+        if (MediaFileUtils::CheckTitle(title) < 0) {
+            return false;
+        }
+    }
+#endif
+    return true;
+}
+
 static void JSCommitModifyExecute(napi_env env, void *data)
 {
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
@@ -1053,17 +1093,14 @@ static void JSCommitModifyExecute(napi_env env, void *data)
         isApiVersion10 = true;
     }
 
-    if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) < 0) {
+    if (!CheckTitleAndDisplayName(context->objectPtr->GetTitle(),
+        context->objectPtr->GetDisplayName(), isApiVersion10)) {
         context->error = JS_E_DISPLAYNAME;
         return;
     }
 
     string uri = MEDIALIBRARY_DATA_URI + "/";
     if (!isApiVersion10) {
-        if (MediaFileUtils::CheckTitle(context->objectPtr->GetTitle()) < 0) {
-            context->error = JS_E_DISPLAYNAME;
-            return;
-        }
 #ifdef MEDIALIBRARY_COMPATIBILITY
         BuildCommitModifyUriApi9(context, uri);
 #else
@@ -1514,7 +1551,20 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, c
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize = size;
     decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+#ifndef IMAGE_PURGEABLE_PIXELMAP
     return imageSource->CreatePixelMap(decodeOpts, err);
+#else
+    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    uint32_t errorCode = 0;
+    unique_ptr<ImageSource> backupImgSrc = ImageSource::CreateImageSource(uniqueFd.Get(), opts, errorCode);
+    if (errorCode == Media::SUCCESS) {
+        PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, backupImgSrc, decodeOpts);
+    } else {
+        NAPI_ERR_LOG("Failed to backup image source when to be purgeable: %{public}d", errorCode);
+    }
+
+    return pixelMap;
+#endif
 }
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)

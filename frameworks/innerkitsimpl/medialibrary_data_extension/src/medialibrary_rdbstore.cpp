@@ -18,6 +18,8 @@
 
 #include <mutex>
 
+#include "cloud_sync_helper.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_device.h"
 #include "medialibrary_errno.h"
@@ -230,6 +232,20 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     return ret;
 }
 
+static void HandleGroupBy(MediaLibraryCommand &cmd, const vector<string> &columns)
+{
+    auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
+    if (it == columns.end()) {
+        return;
+    }
+    string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    if (whereClause.find(" GROUP BY ") != string::npos) {
+        return;
+    }
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause +
+        " GROUP BY (DATE(date_added, 'unixepoch')) ORDER BY date_added DESC ");
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
@@ -243,6 +259,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
         queryCondition = queryCondition.empty() ? filterCondition : filterCondition + " AND " + queryCondition;
         cmd.GetAbsRdbPredicates()->SetWhereClause(queryCondition);
     }
+    HandleGroupBy(cmd, columns);
     auto *predicates = cmd.GetAbsRdbPredicates();
 #ifdef ML_DEBUG
     MEDIA_DEBUG_LOG("tablename = %s", cmd.GetTableName().c_str());
@@ -502,6 +519,65 @@ void MediaLibraryRdbStore::SetSyncOpts(MediaLibrarySyncOpts &syncOpts, const str
         syncOpts.row = to_string(rowId);
     }
     syncOpts.rdbStore = rdbStore_;
+}
+
+static inline int32_t DeleteDbByFileId(const string &table, int32_t fileId)
+{
+    AbsRdbPredicates predicates(table);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    return MediaLibraryRdbStore::Delete(predicates);
+}
+
+int32_t MediaLibraryRdbStore::DeleteFromDisk(const AbsRdbPredicates &predicates)
+{
+    vector<string> columns = {
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_FILE_PATH
+    };
+    auto resultSet = Query(predicates, columns);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    int32_t count = 0;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    int32_t deletedRows = 0;
+    for (int32_t i = 0; i < count; i++) {
+        err = resultSet->GoToNextRow();
+        if (err != E_OK) {
+            return E_HAS_DB_ERROR;
+        }
+
+        // Delete file from db.
+        int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
+        if (fileId <= 0) {
+            return E_HAS_DB_ERROR;
+        }
+        int32_t deletedRow = DeleteDbByFileId(predicates.GetTableName(), fileId);
+        if (deletedRow < 0) {
+            return E_HAS_DB_ERROR;
+        }
+        // If deletedRow is 0, the file may be deleted already somewhere else, so just continue.
+        if (deletedRow == 0) {
+            continue;
+        }
+
+        // Delete file from file system.
+        string filePath = get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
+                                                                       TYPE_STRING));
+        if (filePath.empty()) {
+            return E_HAS_DB_ERROR;
+        }
+        if (!MediaFileUtils::DeleteFile(filePath) && (errno != -ENOENT)) {
+            MEDIA_ERR_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
+            return E_HAS_FS_ERROR;
+        }
+        deletedRows += deletedRow;
+    }
+    return deletedRows;
 }
 
 inline void BuildInsertSystemAlbumSql(const ValuesBucket &values, const AbsRdbPredicates &predicates,
@@ -936,9 +1012,9 @@ void API10TableCreate(RdbStore &store)
         TriggerUpdateUserAlbumCount(),
     };
 
-    for (int i = 0; i < executeSqlStrs.size(); i++) {
+    for (size_t i = 0; i < executeSqlStrs.size(); i++) {
         if (store.ExecuteSql(executeSqlStrs[i]) != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("upgrade fail idx%{public}d", i);
+            MEDIA_ERR_LOG("upgrade fail idx:%{public}zu", i);
         }
     }
 }

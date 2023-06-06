@@ -73,6 +73,11 @@ const std::string MEDIALIBRARY_TYPE_SMARTALBUM_CHANGE_URI  =  "/smartalbum";
 const std::string MEDIALIBRARY_TYPE_DEVICE_URI  =  "/device";
 const std::string MEDIALIBRARY_TYPE_SMART_URI = "/smart";
 
+const std::string URI_TYPE_PHOTO = "Photo";
+const std::string URI_TYPE_AUDIO_V10 = "Audio";
+const std::string URI_TYPE_PHOTO_ALBUM = "PhotoAlbum";
+constexpr int64_t AGING_TIME = static_cast<const int64_t>(30 * 60 * 60 * 24);
+
 const std::string MEDIALIBRARY_SMARTALBUM_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_TABLE;
 const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_MAP_TABLE;
 const std::string MEDIALIBRARY_CATEGORY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/"
@@ -162,6 +167,8 @@ const std::string MEDIA_DATA_IMAGE_EXPOSURE_TIME = "ExposureTime";
 const std::string MEDIA_DATA_IMAGE_F_NUMBER = "FNumber";
 const std::string MEDIA_DATA_IMAGE_ISO_SPEED_RATINGS = "ISOSpeedRatings";
 const std::string MEDIA_DATA_IMAGE_SCENE_TYPE = "SceneType";
+
+const std::string MEDIA_COLUMN_COUNT = "count(*)";
 
 const std::string PERMISSION_ID = "id";
 const std::string PERMISSION_BUNDLE_NAME = "bundle_name";
