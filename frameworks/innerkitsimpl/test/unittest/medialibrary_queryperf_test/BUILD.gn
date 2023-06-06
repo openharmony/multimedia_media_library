@@ -53,6 +53,7 @@ ohos_unittest("medialibrary_queryperf_unittest") {
     "c_utils:utils",
     "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
+    "hiviewdfx_hilog_native:libhilog",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
