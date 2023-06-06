@@ -61,6 +61,7 @@ ohos_unittest("medialibrary_scanner_test") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
+    "hiviewdfx_hilog_native:libhilog",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
