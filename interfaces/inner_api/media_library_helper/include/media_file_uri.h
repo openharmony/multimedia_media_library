@@ -39,12 +39,14 @@ public:
                           const std::string &networkId = "",
                           const int32_t &apiVersion = MEDIA_API_VERSION_V9) : Uri(
                           MediaFileUriConstruct(mediaType, fileId, networkId, apiVersion)) {}
+    ~MediaFileUri() = default;
+
     std::string GetNetworkId();
     std::string GetFileId();
     std::string GetFilePath();
     std::unordered_map<std::string, std::string> &GetQueryKeys();
     bool IsValid();
-    ~MediaFileUri() = default;
+    static bool IsUriV10(const std::string &mediaType);
 };
 } // namespace Media
 } // namespace OHOS

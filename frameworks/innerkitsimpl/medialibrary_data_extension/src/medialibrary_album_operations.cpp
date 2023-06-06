@@ -40,7 +40,6 @@ namespace OHOS::Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
 constexpr int32_t AFTER_AGR_SIZE = 2;
 constexpr int32_t THAN_AGR_SIZE = 1;
-constexpr int64_t AGING_TIME = 30 * 60 * 60 * 24;
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
     int64_t outRow = -1;
@@ -311,65 +310,16 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     return errCode;
 }
 
-static inline int32_t DeletePhotoInDb(int32_t fileId)
-{
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
-    predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    return MediaLibraryRdbStore::Delete(predicates);
-}
-
 int32_t DeletePhotoAssets(const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
 
-    vector<string> columns = {
-        MediaColumn::MEDIA_ID,
-        MediaColumn::MEDIA_FILE_PATH
-    };
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicates, columns);
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
+    int32_t deletedRows = MediaLibraryRdbStore::DeleteFromDisk(rdbPredicates);
+    if (deletedRows < 0) {
+        return deletedRows;
     }
-    int32_t count = 0;
-    int32_t err = resultSet->GetRowCount(count);
-    if (err != E_OK) {
-        return E_HAS_DB_ERROR;
-    }
-    int32_t deletedRows = 0;
-    for (int32_t i = 0; i < count; i++) {
-        err = resultSet->GoToNextRow();
-        if (err != E_OK) {
-            return E_HAS_DB_ERROR;
-        }
 
-        // Delete file from db.
-        int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
-        if (fileId <= 0) {
-            return E_HAS_DB_ERROR;
-        }
-        int32_t deletedRow = DeletePhotoInDb(fileId);
-        if (deletedRow < 0) {
-            return E_HAS_DB_ERROR;
-        }
-        // If deletedRow is 0, the file may be deleted already somewhere else, so just continue.
-        if (deletedRow == 0) {
-            continue;
-        }
-
-        // Delete file from file system.
-        string filePath = get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
-                                                                       TYPE_STRING));
-        if (filePath.empty()) {
-            return E_HAS_DB_ERROR;
-        }
-        if (!MediaFileUtils::DeleteFile(filePath) && (errno != -ENOENT)) {
-            MEDIA_ERR_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
-            return E_HAS_FS_ERROR;
-        }
-        deletedRows += deletedRow;
-    }
     auto watch = MediaLibraryNotify::GetInstance();
     for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - THAN_AGR_SIZE; i++) {
         watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i], NotifyType::NOTIFY_REMOVE);
@@ -383,7 +333,11 @@ int32_t AgingPhotoAssets()
     DataSharePredicates predicates;
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(time - AGING_TIME));
-    return DeletePhotoAssets(predicates);
+    int32_t err = DeletePhotoAssets(predicates);
+    if (err < 0) {
+        return err;
+    }
+    return E_OK;
 }
 
 int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opType, const ValuesBucket &values,

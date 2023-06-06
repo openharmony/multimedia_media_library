@@ -142,6 +142,8 @@ bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)
         MEDIA_DATA_DB_IS_TRASH,
         MEDIA_DATA_DB_RECYCLE_PATH,
         MEDIA_DATA_DB_OWNER_PACKAGE,
+        MEDIA_DATA_DB_IS_FAV,
+        MEDIA_DATA_DB_TIME_PENDING,
 
         // Photos table columns
         COMPAT_HIDDEN,
@@ -162,6 +164,7 @@ bool MediaLibraryCommonUtils::CheckExpressValidation(std::vector<std::string> &s
             continue;
         }
         if (!CheckWhiteList(str)) {
+            MEDIA_ERR_LOG("Failed to check key word: %{public}s", str.c_str());
             return false;
         }
     }

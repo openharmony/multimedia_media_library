@@ -16,8 +16,8 @@
 
 #include "medialibrary_data_manager.h"
 
-#include <unordered_set>
 #include <shared_mutex>
+#include <unordered_set>
 
 #include "abs_rdb_predicates.h"
 #include "datashare_abs_result_set.h"
@@ -25,12 +25,14 @@
 #include "device_manager_callback.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
+#include "media_column.h"
 #include "media_datashare_ext_ability.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_album_operations.h"
-#include "medialibrary_uripermission_operations.h"
+#include "medialibrary_asset_operations.h"
+#include "medialibrary_audio_operations.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_device.h"
 #include "medialibrary_device_info.h"
@@ -39,22 +41,21 @@
 #include "medialibrary_file_operations.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_object_utils.h"
-#include "photo_map_operations.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_sync_operation.h"
-#include "medialibrary_unistore_manager.h"
 #include "medialibrary_tracer.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_uripermission_operations.h"
 #include "mimetype_utils.h"
+#include "permission_utils.h"
+#include "photo_map_operations.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "system_ability_definition.h"
 #include "timer.h"
-#include "permission_utils.h"
 #include "trash_async_worker.h"
-#include "media_column.h"
-#include "medialibrary_asset_operations.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -161,7 +162,9 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
 
     errCode = DoTrashAging();
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at DoTrashAging");
+    if (errCode != E_OK) {
+        MEDIA_WARN_LOG("Ignore trash aging failures, just continue");
+    }
     refCnt_++;
     return E_OK;
 }
@@ -1027,7 +1030,15 @@ int32_t MediaLibraryDataManager::DoTrashAging()
     if (ret != E_SUCCESS) {
         return ret;
     }
-    return MediaLibraryAlbumOperations::HandlePhotoAlbum(OperationType::AGING, {}, {});
+    ret = MediaLibraryAlbumOperations::HandlePhotoAlbum(OperationType::AGING, {}, {});
+    if (ret != E_SUCCESS) {
+        return ret;
+    }
+    ret = MediaLibraryAudioOperations::TrashAging();
+    if (ret != E_SUCCESS) {
+        return ret;
+    }
+    return E_SUCCESS;
 }
 
 int32_t MediaLibraryDataManager::RevertPendingByFileId(const std::string &fileId)
