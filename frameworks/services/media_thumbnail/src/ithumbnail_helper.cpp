@@ -184,11 +184,6 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         return true;
     }
 
-    if (opts.table == AudioColumn::AUDIOS_TABLE) {
-        MEDIA_ERR_LOG("Can not create lcd for audio");
-        return false;
-    }
-
     if (!ThumbnailUtils::LoadSourceImage(data, opts.screenSize, false)) {
         if (opts.path.empty()) {
             MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
