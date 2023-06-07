@@ -847,6 +847,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(const Uri &ur
     tracer.Finish();
 
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
+    cmd.SetDataSharePred(predicates);
     // MEDIALIBRARY_TABLE just for RdbPredicates
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates,
         MEDIALIBRARY_TABLE);
