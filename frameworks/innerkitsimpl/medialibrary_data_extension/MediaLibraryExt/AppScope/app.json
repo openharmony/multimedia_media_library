@@ -11,6 +11,7 @@
     "singleton": false,
     "icon": "$media:app_icon",
     "label": "$string:app_name",
+    "generateBuildHash": true,
     "distributedNotificationEnabled": true
   }
 }
