@@ -33,6 +33,7 @@
 #include "values_bucket.h"
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
@@ -73,16 +74,8 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
-    switch (cmd.GetApi()) {
-        case MediaLibraryApi::API_10:
-            return QueryV10(cmd, columns);
-        case MediaLibraryApi::API_OLD:
-            MEDIA_ERR_LOG("this api is not realized yet");
-            return nullptr;
-        default:
-            MEDIA_ERR_LOG("get api failed");
-            return nullptr;
-    }
+    return MediaLibraryRdbStore::Query(
+        RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE), columns);
 }
 
 int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
@@ -295,12 +288,6 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     auto watch = MediaLibraryNotify::GetInstance();
     watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(deleteRows), NotifyType::NOTIFY_REMOVE);
     return deleteRows;
-}
-
-shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::QueryV10(
-    MediaLibraryCommand &cmd, const vector<string> &columns)
-{
-    return QueryFiles(cmd, columns);
 }
 
 int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)

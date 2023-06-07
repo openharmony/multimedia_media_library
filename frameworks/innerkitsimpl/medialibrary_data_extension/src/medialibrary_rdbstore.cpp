@@ -285,6 +285,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredica
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
         return nullptr;
     }
+    MediaLibraryTracer tracer;
+    tracer.Start("RdbStore->QueryByPredicates");
     return rdbStore_->Query(predicates, columns);
 }
 
