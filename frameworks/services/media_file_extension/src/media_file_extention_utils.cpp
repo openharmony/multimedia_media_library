@@ -564,11 +564,19 @@ shared_ptr<NativeRdb::ResultSet> GetMediaRootResult(const FileInfo &parentInfo, 
 shared_ptr<NativeRdb::ResultSet> GetListRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
     const int64_t offset, const int64_t maxCount)
 {
+#ifndef MEDIALIBRARY_COMPATIBILITY
     string selection = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " <> ? AND " +
         MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT " + to_string(offset) + ", " + to_string(maxCount);
     vector<string> selectionArgs = { to_string(ROOT_PARENT_ID), to_string(MEDIA_TYPE_NOFILE), to_string(NOT_TRASHED) };
     Uri uri(GetQueryUri(parentInfo, uriType));
     return GetResult(uri, uriType, selection, selectionArgs);
+#else
+    string selection = MEDIA_DATA_DB_PARENT_ID + " = ? AND " + MEDIA_DATA_DB_MEDIA_TYPE + " = ? AND " +
+        MEDIA_DATA_DB_IS_TRASH + " = ? LIMIT " + to_string(offset) + ", " + to_string(maxCount);
+    vector<string> selectionArgs = { to_string(ROOT_PARENT_ID), to_string(MEDIA_TYPE_ALBUM), to_string(NOT_TRASHED) };
+    Uri uri(GetQueryUri(parentInfo, uriType));
+    return GetResult(uri, uriType, selection, selectionArgs);
+#endif
 }
 
 shared_ptr<NativeRdb::ResultSet> GetListDirResult(const FileInfo &parentInfo, MediaFileUriType uriType,
@@ -660,6 +668,7 @@ int32_t GetMediaFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<Native
 }
 #endif
 
+#ifndef MEDIALIBRARY_COMPATIBILITY
 int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::ResultSet> &result,
     vector<FileInfo> &fileList)
 {
@@ -672,6 +681,32 @@ int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::
     }
     return E_SUCCESS;
 }
+#else
+int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::ResultSet> &result,
+    vector<FileInfo> &fileList, MediaFileUriType uriType)
+{
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "ResultSet is nullptr");
+    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        FileInfo fileInfo;
+        GetFileInfo(fileInfo, result, networkId);
+        switch (uriType) {
+            case URI_FILE_ROOT:
+                if (fileInfo.relativePath == "" && (fileInfo.fileName == "Documents" ||
+                    fileInfo.fileName == "Download")) {
+                    fileList.push_back(fileInfo);
+                }
+                break;
+            case URI_DIR:
+                fileList.push_back(fileInfo);
+                break;
+            default:
+                return E_FAIL;
+        }
+    }
+    return E_SUCCESS;
+}
+#endif
 
 int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
     const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
@@ -687,23 +722,29 @@ int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int6
     switch (uriType) {
         case URI_ROOT:
             return RootListFile(parentInfo, fileList);
+#ifndef MEDIALIBRARY_COMPATIBILITY
         case URI_MEDIA_ROOT:
             result = GetMediaRootResult(parentInfo, uriType, offset, maxCount);
-#ifndef MEDIALIBRARY_COMPATIBILITY
             return GetAlbumInfoFromResult(parentInfo, result, fileList);
-#else
-            return GetMediaFileInfoFromResult(parentInfo, result, fileList);
-#endif
         case URI_FILE_ROOT:
             result = GetListRootResult(parentInfo, uriType, offset, maxCount);
             return GetFileInfoFromResult(parentInfo, result, fileList);
         case URI_DIR:
             result = GetListDirResult(parentInfo, uriType, offset, maxCount, filter);
             return GetFileInfoFromResult(parentInfo, result, fileList);
-#ifndef MEDIALIBRARY_COMPATIBILITY
         case URI_ALBUM:
             result = GetListAlbumResult(parentInfo, uriType, offset, maxCount, filter);
             return GetFileInfoFromResult(parentInfo, result, fileList);
+#else
+        case URI_MEDIA_ROOT:
+            result = GetMediaRootResult(parentInfo, uriType, offset, maxCount);
+            return GetMediaFileInfoFromResult(parentInfo, result, fileList);
+        case URI_FILE_ROOT:
+            result = GetListRootResult(parentInfo, uriType, offset, maxCount);
+            return GetFileInfoFromResult(parentInfo, result, fileList, uriType);
+        case URI_DIR:
+            result = GetListDirResult(parentInfo, uriType, offset, maxCount, filter);
+            return GetFileInfoFromResult(parentInfo, result, fileList, uriType);
 #endif
         default:
             return E_FAIL;

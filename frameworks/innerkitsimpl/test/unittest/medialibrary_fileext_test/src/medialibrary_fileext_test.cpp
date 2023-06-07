@@ -2405,7 +2405,7 @@ void DisplayFileList(const vector<FileInfo> &fileList)
 
 void ListFileFromRootResult(vector<FileInfo> rootFileList, int offset, int maxCount)
 {
-    const size_t URI_FILE_ROOT_FILE_SIZE = 6;
+    const size_t URI_FILE_ROOT_FILE_SIZE = 2;
     const size_t URI_MEDIA_ROOT_IMAGE_SIZE = 0;
     const size_t URI_MEDIA_ROOT_VIDEO_SIZE = 0;
     const size_t URI_MEDIA_ROOT_AUDIO_SIZE = 0;
@@ -2551,7 +2551,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ListFile_test_002, TestSize.Level
         exit(1);
     }
     shared_ptr<FileAsset> albumAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("ListFile_test_002", g_pictures, albumAsset), true);
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("ListFile_test_002", g_documents, albumAsset), true);
     shared_ptr<FileAsset> tempAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("ListFile_test_002", albumAsset, tempAsset), true);
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("ListFile_002", albumAsset, tempAsset), true);
