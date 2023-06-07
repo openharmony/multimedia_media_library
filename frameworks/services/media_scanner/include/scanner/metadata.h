@@ -108,6 +108,11 @@ public:
     void SetTimePending(const VariantData &timePending);
     int64_t GetTimePending() const;
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    void SetPhotoSubType(const VariantData &photoSubType);
+    int32_t GetPhotoSubType() const;
+#endif
+
     void Init();
 
     using MetadataFnPtr = void (Metadata::*)(const VariantData &);
@@ -157,6 +162,10 @@ private:
 
     // pending
     int64_t timePending_;
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    // photo subtype
+    int32_t photoSubType_;
+#endif
 };
 } // namespace Media
 } // namespace OHOS

@@ -417,8 +417,8 @@ static void BuildCompatQuerySql(MediaLibraryCommand &cmd, const string table, co
     if (table == PhotoColumn::PHOTOS_TABLE) {
         ReplaceSelectionAndArgsInQuery(whereClause, whereArgs, table, MEDIA_DATA_DB_BUCKET_NAME,
             PhotoColumn::PHOTO_SUBTYPE);
-        ReplaceSelectionAndArgsInQuery(whereClause, whereArgs, table, MEDIA_DATA_DB_ID);
     }
+    ReplaceSelectionAndArgsInQuery(whereClause, whereArgs, table, MEDIA_DATA_DB_ID);
 
     if (!whereClause.empty()) {
         sql += " WHERE " + whereClause;

@@ -340,5 +340,17 @@ int64_t Metadata::GetTimePending() const
 {
     return timePending_;
 }
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+void Metadata::SetPhotoSubType(const VariantData &photoSubType)
+{
+    photoSubType_ = std::get<int32_t>(photoSubType);
+}
+
+int32_t Metadata::GetPhotoSubType() const
+{
+    return photoSubType_;
+}
+#endif
 } // namespace Media
 } // namespace OHOS
