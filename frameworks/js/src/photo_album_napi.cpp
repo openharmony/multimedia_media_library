@@ -76,7 +76,6 @@ napi_value PhotoAlbumNapi::Init(napi_env env, napi_value exports)
 napi_value PhotoAlbumNapi::CreatePhotoAlbumNapi(napi_env env, unique_ptr<PhotoAlbum> &albumData)
 {
     if (albumData == nullptr) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
 

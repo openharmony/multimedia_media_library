@@ -1009,11 +1009,12 @@ void BuildCommitModifyValuesBucket(const bool &isApiVersion10, const std::shared
             if (fileAsset->GetOrientation() >= 0) {
                 valuesBucket.Put(MEDIA_DATA_DB_ORIENTATION, fileAsset->GetOrientation());
             }
-        } else if ((fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_IMAGE) &&
-            (fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_VIDEO)) {
-            // ONLY FILES
-            valuesBucket.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
-            valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
+            if ((fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_IMAGE) &&
+                (fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_VIDEO)) {
+                // ONLY FILES
+                valuesBucket.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
+                valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
+            }
         }
     }
 #else

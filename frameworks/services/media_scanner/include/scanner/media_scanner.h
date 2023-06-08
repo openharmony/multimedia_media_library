@@ -87,6 +87,9 @@ private:
     int32_t GetFileMetadata();
     int32_t GetParentDirInfo(const std::string &parent, int32_t parentId);
     int32_t GetMediaInfo();
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    void SetPhotoSubType(const std::string &parent);
+#endif
 
     /* dir */
     int32_t ScanDir();
