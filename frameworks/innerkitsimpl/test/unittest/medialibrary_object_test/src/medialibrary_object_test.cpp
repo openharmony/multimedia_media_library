@@ -46,13 +46,13 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateDirWithPath_test_001, TestSize.
     EXPECT_EQ(ret, E_INVALID_PATH);
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
-    dirPath = "CreateDirWithPath/storage/media/local/data";
+    dirPath = "CreateDirWithPath/storage/cloud/data";
     ret = MediaLibraryObjectUtils::CreateDirWithPath(dirPath);
     EXPECT_EQ(ret, E_INVALID_PATH);
     dirPath = "CreateDirWithPath.exe";
     ret = MediaLibraryObjectUtils::CreateDirWithPath(dirPath);
     EXPECT_EQ(ret, E_INVALID_PATH);
-    dirPath = "/storage/media/local/files/medialib_CreateDirWithPath_test_001";
+    dirPath = "/storage/cloud/files/medialib_CreateDirWithPath_test_001";
     ret = MediaLibraryObjectUtils::CreateDirWithPath(dirPath);
     EXPECT_GT(ret, 0);
     ret = MediaFileUtils::DeleteFile(dirPath);
@@ -76,7 +76,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetDirAsset_test_001, TestSize.Level0
     path = "//data/app/el1";
     dirAsset = MediaLibraryObjectUtils::GetDirAsset(path);
     EXPECT_EQ(dirAsset.GetAlbumId(), E_FAIL);
-    path = "/storage/media/local/files/medialib_GetDirAsset_test_001";
+    path = "/storage/cloud/files/medialib_GetDirAsset_test_001";
     dirAsset = MediaLibraryObjectUtils::GetDirAsset(path);
     EXPECT_GT(dirAsset.GetAlbumId(), 0);
     bool ret = MediaFileUtils::DeleteFile(path);
@@ -100,7 +100,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateFileObj_test_001, TestSize.Leve
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_FILE);
     cmd.SetValueBucket(values);
-    string path = "//storage/media/local/files/CreateFileObj_test_001";
+    string path = "//storage/cloud/files/CreateFileObj_test_001";
     values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, path);
     cmd.SetValueBucket(values);
     ret = MediaLibraryObjectUtils::CreateFileObj(cmd);
@@ -116,7 +116,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateDirObj_test_001, TestSize.Level
     EXPECT_EQ(ret, E_INVALID_PATH);
     cmd.SetTableName(MEDIALIBRARY_TABLE);
     NativeRdb::ValuesBucket values;
-    string path = "/storage/media/local/files/medialib_CreateDirObj_test_001";
+    string path = "/storage/cloud/files/medialib_CreateDirObj_test_001";
     values.PutString(MEDIA_DATA_DB_FILE_PATH, path);
     cmd.SetValueBucket(values);
     ret = MediaLibraryObjectUtils::CreateDirObj(cmd, rowId);
@@ -130,8 +130,8 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_RenameFileObj_test_001, TestSize.Leve
     string dstFilePath = "";
     int32_t ret = MediaLibraryObjectUtils::RenameFileObj(cmd, srcFilePath, dstFilePath);
     EXPECT_EQ(ret, E_INVALID_PATH);
-    srcFilePath = "/storage/media/local/files";
-    dstFilePath = "/storage/media/local/files";
+    srcFilePath = "/storage/cloud/files";
+    dstFilePath = "/storage/cloud/files";
     ret = MediaLibraryObjectUtils::RenameFileObj(cmd, srcFilePath, dstFilePath);
     EXPECT_EQ(ret, E_SUCCESS);
     dstFilePath = "RenameFileObj.test/media";
@@ -157,8 +157,8 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_RenameDirObj_test_001, TestSize.Level
     MediaLibraryUnistoreManager::GetInstance().Init(context);
     ret = MediaLibraryObjectUtils::RenameDirObj(cmd, srcFilePath, dstFilePath);
     EXPECT_EQ(ret, E_INVALID_PATH);
-    srcFilePath = "/storage/media/local/files/medialib_GetDirAsset_test_001";
-    dstFilePath = "/storage/media/local/files";
+    srcFilePath = "/storage/cloud/files/medialib_GetDirAsset_test_001";
+    dstFilePath = "/storage/cloud/files";
     ret = MediaLibraryObjectUtils::RenameDirObj(cmd, srcFilePath, dstFilePath);
     EXPECT_EQ(ret, E_HAS_FS_ERROR);
     srcFilePath = "//data/test";
@@ -221,7 +221,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdByPathFromDb_test_001, TestSize.
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
-    string dirPath = "/storage/media/local/files/medialib_GetIdByPathFromDb_test_001.jpg";
+    string dirPath = "/storage/cloud/files/medialib_GetIdByPathFromDb_test_001.jpg";
     ret = MediaLibraryObjectUtils::CreateDirWithPath(dirPath);
     EXPECT_GT(ret, 0);
     ret = MediaLibraryObjectUtils::GetIdByPathFromDb(dirPath);
@@ -345,7 +345,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsFileExistInDb_test_001, TestSize.Le
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
-    string dirPath = "/storage/media/local/files/medialib_IsFileExistInDb_test_001";
+    string dirPath = "/storage/cloud/files/medialib_IsFileExistInDb_test_001";
     int32_t ret = MediaLibraryObjectUtils::CreateDirWithPath(dirPath);
     EXPECT_GT(ret, 0);
     string path = "";
@@ -384,7 +384,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CopyDir_test_001, TestSize.Level0)
     shared_ptr<FileAsset> srcDirAssetPtr = make_shared<FileAsset>();
     srcDirAssetPtr->SetDisplayName(MEDIA_NO_FILE);
     srcDirAssetPtr->SetId(id);
-    relativePath = "/storage/media/local/files/";
+    relativePath = "/storage/cloud/files/";
     ret = MediaLibraryObjectUtils::CopyDir(srcDirAssetPtr, relativePath);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
@@ -431,7 +431,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteMisc_test_001, TestSize.Level0)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
-    string path = "/storage/media/local/files/medialib_DeleteMisc_test_001";
+    string path = "/storage/cloud/files/medialib_DeleteMisc_test_001";
     int32_t fileId = 1;
     int32_t parentId = 1;
     int32_t ret = MediaLibraryObjectUtils::DeleteMisc(fileId, path, parentId);
@@ -450,7 +450,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckDirExtension_test_001, TestSize.
     ret = MediaLibraryObjectUtils::CheckDirExtension(relativePath, displayName);
     EXPECT_EQ(ret, E_SUCCESS);
     displayName = "medialib_CheckDirExtension_test_001";
-    relativePath = "/storage/media/local/files/medialib_CheckDirExtension_test_001";
+    relativePath = "/storage/cloud/files/medialib_CheckDirExtension_test_001";
     ret = MediaLibraryObjectUtils::CheckDirExtension(relativePath, displayName);
     EXPECT_EQ(ret, E_CHECK_EXTENSION_FAIL);
     string name(256, 'a');
@@ -465,7 +465,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ModifyInfoByPathInDb_test_001, TestSi
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     ret = MediaLibraryObjectUtils::ModifyInfoByPathInDb(cmd, path);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     MediaLibraryUnistoreManager::GetInstance().Stop();
@@ -478,7 +478,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteInfoByPathInDb_test_001, TestSi
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     ret = MediaLibraryObjectUtils::DeleteInfoByPathInDb(cmd, path);
     EXPECT_EQ(ret, E_OK);
     MediaLibraryUnistoreManager::GetInstance().Stop();
@@ -520,7 +520,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteInvalidRowInDb_test_001, TestSi
     EXPECT_EQ(ret, E_SUCCESS);
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
-    string path ="/storage/media/local/files/";
+    string path ="/storage/cloud/files/";
     ret = MediaLibraryObjectUtils::DeleteInvalidRowInDb(path);
     EXPECT_EQ(ret, E_SUCCESS);
     MediaLibraryUnistoreManager::GetInstance().Stop();
@@ -530,9 +530,9 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetLastDirExistInDb_test_001, TestSiz
 {
     NativeAlbumAsset dirAsset = MediaLibraryObjectUtils::GetLastDirExistInDb("");
     EXPECT_EQ(dirAsset.GetAlbumPath(), "");
-    string dirPath = "/storage/media/local/files/test";
+    string dirPath = "/storage/cloud/files/test";
     dirAsset = MediaLibraryObjectUtils::GetLastDirExistInDb(dirPath);
-    EXPECT_EQ(dirAsset.GetAlbumPath(), "/storage/media/local/files");
+    EXPECT_EQ(dirAsset.GetAlbumPath(), "/storage/cloud/files");
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteRows_test_001, TestSize.Level0)
@@ -555,7 +555,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertDirToDbRecursively_test_001, Te
     string dirPathTest = "/storage/media/";
     ret = MediaLibraryObjectUtils::InsertDirToDbRecursively(dirPathTest, rowId);
     EXPECT_EQ(ret, E_INVALID_PATH);
-    string dirPath = "/storage/media/local/files/test";
+    string dirPath = "/storage/cloud/files/test";
     ret = MediaLibraryObjectUtils::InsertDirToDbRecursively(dirPath, rowId);
     EXPECT_EQ(ret, E_SUCCESS);
     MediaLibraryUnistoreManager::GetInstance().Stop();
@@ -566,7 +566,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ProcessHiddenDir_test_001, TestSize.L
     int32_t ret = MediaLibraryObjectUtils::ProcessHiddenDir("", "");
     EXPECT_EQ(ret, E_INVALID_PATH);
     string dstDirName = ".ProcessHiddenDir";
-    string srcDirPath = "/storage/media/local/files/test";
+    string srcDirPath = "/storage/cloud/files/test";
     ret = MediaLibraryObjectUtils::ProcessHiddenDir(dstDirName, srcDirPath);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
@@ -583,7 +583,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateFileInfoInDb_test_001, TestSize
     string bucketName = "UpdateFileInfoInDb";
     int32_t ret = MediaLibraryObjectUtils::UpdateFileInfoInDb(cmd, "", bucketId, bucketName);
     EXPECT_EQ(ret, E_INVALID_PATH);
-    string dstPath = "/storage/media/local/files/";
+    string dstPath = "/storage/cloud/files/";
     ret = MediaLibraryObjectUtils::UpdateFileInfoInDb(cmd, dstPath, bucketId, bucketName);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
@@ -596,7 +596,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CopyAssetByFd_test_001, TestSize.Leve
     int32_t srcId = 1;
     int32_t destFd = 1;
     int32_t destId = 1;
-    string dstPath = "/storage/media/local/files/";
+    string dstPath = "/storage/cloud/files/";
     ret = MediaLibraryObjectUtils::CopyAssetByFd(srcFd, srcId, destFd, destId);
     EXPECT_EQ(ret, E_FILE_OPER_FAIL);
     MediaLibraryObjectUtils::CloseFileById(srcFd);
@@ -606,7 +606,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileResult_test_001, TestSize.Leve
 {
     shared_ptr<NativeRdb::ResultSet> resultSet;
     int count = 0;
-    string relativePath = "/storage/media/local/files/";
+    string relativePath = "/storage/cloud/files/";
     string displayName = "GetFileResult";
     int32_t ret = MediaLibraryObjectUtils::GetFileResult(resultSet, count, relativePath, displayName);
     EXPECT_EQ(ret, E_SUCCESS);
@@ -621,7 +621,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ProcessNoMediaFile_test_001, TestSize
     ret = MediaLibraryObjectUtils::ProcessNoMediaFile("", "");
     EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
     string dstFileName = ".nomedia";
-    string dstAlbumPath = "/storage/media/local/files/test";
+    string dstAlbumPath = "/storage/cloud/files/test";
     ret = MediaLibraryObjectUtils::ProcessNoMediaFile(dstFileName, dstAlbumPath);
     EXPECT_EQ(ret, E_SUCCESS);
     MediaLibraryUnistoreManager::GetInstance().Stop();
@@ -632,7 +632,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ProcessHiddenFile_test_001, TestSize.
     int32_t ret = MediaLibraryObjectUtils::ProcessHiddenFile("", "");
     EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
     string dstDirName = ".ProcessHiddenFile";
-    string srcPath = "/storage/media/local/files/test";
+    string srcPath = "/storage/cloud/files/test";
     ret = MediaLibraryObjectUtils::ProcessHiddenFile(dstDirName, srcPath);
     EXPECT_EQ(ret, E_SUCCESS);
 }

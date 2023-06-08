@@ -546,7 +546,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_setSource_test_001, TestSize.Level0)
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     ret = ThumbnailUtils::SetSource(avMetadataHelper, "");
     EXPECT_EQ(ret, E_ERR);
-    string path = "//storage/media/local/files";
+    string path = "//storage/cloud/files";
     ret = ThumbnailUtils::SetSource(avMetadataHelper, path);
     EXPECT_EQ(ret, E_ERR);
 }
@@ -565,7 +565,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_parseQueryResult_test_001, TestSize.L
     };
     ThumbnailData data;
     data.id = "0";
-    data.path = "/storage/media/local/files";
+    data.path = "/storage/cloud/files";
     data.mediaType = 0;
     int err = 0;
     ThumbRdbOpt opts = {
@@ -662,7 +662,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_loadImageFile_test_001, TestSize.Leve
     Size desiredSize;
     desiredSize.width = 20;
     desiredSize.height = 20;
-    data.path = "/storage/media/local/files";
+    data.path = "/storage/cloud/files";
     data.source = make_shared<PixelMap>();
     bool ret = ThumbnailUtils::LoadImageFile(data, isThumbnail, desiredSize);
     EXPECT_EQ(ret, false);
