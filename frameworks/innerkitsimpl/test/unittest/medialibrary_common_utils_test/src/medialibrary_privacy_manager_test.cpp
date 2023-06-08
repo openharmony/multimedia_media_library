@@ -91,7 +91,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Open_test_007, TestSize.Level0)
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_Open_test_008, TestSize.Level0)
 {
-    string path = "/storage/media/local/files/open.jpeg";
+    string path = "/storage/cloud/files/open.jpeg";
     string mode = "w";
     MediaPrivacyManager mediaPrivacyManager(path, mode);
     int32_t ret = mediaPrivacyManager.Open();
@@ -109,7 +109,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Open_test_009, TestSize.Level0)
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_Open_test_010, TestSize.Level0)
 {
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     string mode = "w";
     MediaPrivacyManager mediaPrivacyManager(path, mode);
     int32_t ret = mediaPrivacyManager.Open();

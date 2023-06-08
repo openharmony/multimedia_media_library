@@ -3149,7 +3149,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_getResultSetFromDb_test_001, Test
     vector<string> columns;
     auto queryResultSet = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, value, columns);
     EXPECT_EQ(queryResultSet, nullptr);
-    string field = "/storage/media/local/files";
+    string field = "/storage/cloud/files";
     queryResultSet = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, value, columns);
     EXPECT_EQ(queryResultSet, nullptr);
 }
@@ -3234,7 +3234,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_checkMkdirValid_test_001, TestSiz
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_getAlbumRelativePathFromDB_test_001, TestSize.Level0)
 {
     string selectUri = "datashare:///media/file";
-    string relativePath = "/storage/media/local/files";
+    string relativePath = "/storage/cloud/files";
     bool ret = MediaFileExtentionUtils::GetAlbumRelativePathFromDB(selectUri, relativePath);
     EXPECT_EQ(ret, false);
 }

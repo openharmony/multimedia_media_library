@@ -761,7 +761,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_019, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_019::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_019.jpg", "Picture/");
     const Uri realUri(MEDIALIBRARY_IMAGE_URI + "/" + to_string(index));
-    const string realPath = "/storage/media/100/local/files/Picture/MediaSpaceStatistics_test_019.jpg";
+    const string realPath = "/storage/cloud/100/files/Picture/MediaSpaceStatistics_test_019.jpg";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
     string userId;
@@ -788,7 +788,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_020, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_020::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_020.txt", "Documents/");
     const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(index));
-    const string realPath = "/storage/media/100/local/files/Documents/MediaSpaceStatistics_test_020.txt";
+    const string realPath = "/storage/cloud/100/files/Documents/MediaSpaceStatistics_test_020.txt";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
     string userId;
@@ -818,7 +818,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_021, TestSize.Level
 
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_021.txt", "Download/");
     const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(index));
-    const string realPath = "/storage/media/100/local/files/Download/MediaSpaceStatistics_test_021.txt";
+    const string realPath = "/storage/cloud/100/files/Download/MediaSpaceStatistics_test_021.txt";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
     string userId;
@@ -845,7 +845,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_022, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_022::Start");
     const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + "1");
-    const string realPath = "/storage/media/100/local/files/Documents/MediaSpaceStatistics_test_022.txt";
+    const string realPath = "/storage/cloud/100/files/Documents/MediaSpaceStatistics_test_022.txt";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
     string userId;
@@ -872,7 +872,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_023, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_023::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_023.txt", "Documents/test1/");
     const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(index));
-    const string realPath = "/storage/media/100/local/files/Documents/test1/MediaSpaceStatistics_test_023.txt";
+    const string realPath = "/storage/cloud/100/files/Documents/test1/MediaSpaceStatistics_test_023.txt";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
     string userId;
@@ -901,7 +901,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_024, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_024::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "test.txt", "Documents/weixin/");
     const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(index));
-    const string realPath = "/storage/media/100/local/files/Documents/weixin/test.txt";
+    const string realPath = "/storage/cloud/100/files/Documents/weixin/test.txt";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
     string userId;
@@ -930,7 +930,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_025, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_025::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_AUDIO, "MediaSpaceStatistics_test_025.mp3", "Download/weixin/");
     const Uri realUri(MEDIALIBRARY_AUDIO_URI + "/" + to_string(index));
-    const string realPath = "/storage/media/100/local/files/Download/weixin/MediaSpaceStatistics_test_025.mp3";
+    const string realPath = "/storage/cloud/100/files/Download/weixin/MediaSpaceStatistics_test_025.mp3";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
     string userId;
@@ -959,7 +959,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_026, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_026::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_IMAGE, "MediaSpaceStatistics_test_026.jpg", "Camera/weixin/");
     const Uri realUri(MEDIALIBRARY_IMAGE_URI + "/" + to_string(index));
-    const string realPath = "/storage/media/100/local/files/Camera/weixin/MediaSpaceStatistics_test_026.jpg";
+    const string realPath = "/storage/cloud/100/files/Camera/weixin/MediaSpaceStatistics_test_026.jpg";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
     string userId;
@@ -986,7 +986,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_027, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_027::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_IMAGE, "MediaSpaceStatistics_test_027.jpg", "Download/weixin/");
     const Uri realUri(MEDIALIBRARY_IMAGE_URI + "/" + to_string(index));
-    const string realPath = "/storage/media/100/local/files/Download/weixin/MediaSpaceStatistics_test_027.jpg";
+    const string realPath = "/storage/cloud/100/files/Download/weixin/MediaSpaceStatistics_test_027.jpg";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
     string userId;

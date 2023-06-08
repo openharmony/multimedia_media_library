@@ -335,8 +335,7 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 static OperationObject GetOprnObjectFromPath(const string &path)
 {
     const map<string, OperationObject> oprnMap = {
-        { IMAGE_BUCKET, OperationObject::FILESYSTEM_PHOTO },
-        { VIDEO_BUCKET, OperationObject::FILESYSTEM_PHOTO },
+        { PHOTO_BUCKET, OperationObject::FILESYSTEM_PHOTO },
         { AUDIO_BUCKET, OperationObject::FILESYSTEM_AUDIO },
 #ifdef MEDIALIBRARY_COMPATIBILITY
         { PIC_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO },
@@ -553,8 +552,7 @@ int32_t MediaScannerDb::GetIdFromPath(const string &path)
 
 int32_t MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap)
 {
-    static const string ROOT_PATH = "/storage/media/local/files";
-    if (path.find(ROOT_PATH) != 0) {
+    if ((path + "/").find(ROOT_MEDIA_DIR) != 0) {
         return E_INVALID_ARGUMENTS;
     }
 

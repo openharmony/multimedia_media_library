@@ -96,7 +96,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadAlbums_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     unordered_map<string, Metadata> albumMap_;
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     int32_t ret = mediaScannerDb.ReadAlbums(path, albumMap_);
     EXPECT_EQ(ret, E_OK);
     string pathTest = "";
@@ -119,7 +119,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_001, TestSize.Lev
     string ret = mediaScannerDb.InsertMetadata(metadata);
     EXPECT_NE(ret, "");
     int32_t parentId = 1;
-    string albumPath = "/storage/media/local/files/";
+    string albumPath = "/storage/cloud/files/";
     string albumName = "InsertMetadata";
     int32_t albumId = UNKNOWN_ID;
     struct stat statInfo;
@@ -145,7 +145,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateAlbum_test_001, TestSize.Level0
     int32_t ret = mediaScannerDb.UpdateAlbum(metadata);
     EXPECT_NE(ret, 0);
     int32_t parentId = 1;
-    string albumPath = "/storage/media/local/files/";
+    string albumPath = "/storage/cloud/files/";
     string albumName = "UpdateAlbum";
     int32_t albumId = UNKNOWN_ID;
     struct stat statInfo;
@@ -194,7 +194,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_002, TestSize.Lev
     mediaScannerDb.SetRdbHelper();
     Metadata metadata;
     int32_t parentId = 1;
-    string albumPath = "/storage/media/local/files/";
+    string albumPath = "/storage/cloud/files/";
     string albumName = "InsertMetadata";
     int32_t albumId = UNKNOWN_ID;
     struct stat statInfo;
@@ -217,7 +217,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadAlbums_test_002, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     unordered_map<string, Metadata> albumMap_;
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     int32_t ret = mediaScannerDb.ReadAlbums(path, albumMap_);
     EXPECT_EQ(ret, E_OK);
     string pathTest = "";
@@ -254,7 +254,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileDBUriFromPath_test_001, TestSi
     string path = "";
     string uri = mediaScannerDb.GetFileDBUriFromPath(path);
     EXPECT_EQ(uri, "");
-    string pathTest = "/storage/media/local/files/";
+    string pathTest = "/storage/cloud/files/";
     uri = mediaScannerDb.GetFileDBUriFromPath(pathTest);
     EXPECT_EQ(uri, "");
 }
@@ -279,7 +279,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertAlbum_test_001, TestSize.Level0
     int32_t ret = mediaScannerDb.InsertAlbum(metadata);
     EXPECT_NE(ret, 0);
     int32_t parentId = 1;
-    string albumPath = "/storage/media/local/files/";
+    string albumPath = "/storage/cloud/files/";
     string albumName = "InsertAlbum";
     int32_t albumId = UNKNOWN_ID;
     struct stat statInfo;
@@ -305,7 +305,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdsFromFilePath_test_001, TestSize
     string pathTest = "";
     unordered_map<int32_t, MediaType> prevIdMap = mediaScannerDb.GetIdsFromFilePath(pathTest);
     EXPECT_EQ(prevIdMap.size(), 0);
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     prevIdMap = mediaScannerDb.GetIdsFromFilePath(path);
     EXPECT_EQ(prevIdMap.size(), 0);
 }
@@ -317,7 +317,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateMetadata_test_001, TestSize.Lev
     string ret = mediaScannerDb.UpdateMetadata(metadata);
     EXPECT_EQ(ret, "");
     int32_t parentId = 1;
-    string albumPath = "/storage/media/local/files/";
+    string albumPath = "/storage/cloud/files/";
     string albumName = "UpdateMetadata";
     int32_t albumId = UNKNOWN_ID;
     struct stat statInfo;
@@ -343,7 +343,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdFromPath_test_001, TestSize.Leve
     string pathTest = "";
     int32_t id = mediaScannerDb.GetIdFromPath(pathTest);
     EXPECT_EQ(id, -1);
-    string path = "/storage/media/local/files/";
+    string path = "/storage/cloud/files/";
     id = mediaScannerDb.GetIdFromPath(path);
     EXPECT_EQ(id, -1);
 }
