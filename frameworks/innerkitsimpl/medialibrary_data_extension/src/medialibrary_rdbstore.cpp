@@ -27,10 +27,8 @@
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
+#include "rdb_sql_utils.h"
 #include "result_set_utils.h"
-#include "sqlite_database_utils.h"
-#include "sqlite_sql_builder.h"
-#include "sqlite_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -58,7 +56,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     string databaseDir = context->GetDatabaseDir();
     string name = MEDIA_DATA_ABILITY_DB_NAME;
     int32_t errCode = 0;
-    string realPath = SqliteDatabaseUtils::GetDefaultDatabasePath(databaseDir, name, errCode);
+    string realPath = RdbSqlUtils::GetDefaultDatabasePath(databaseDir, name, errCode);
     config_.SetName(move(name));
     config_.SetPath(move(realPath));
     config_.SetBundleName(context->GetBundleName());
@@ -327,7 +325,7 @@ void MediaLibraryRdbStore::BuildValuesSql(const NativeRdb::ValuesBucket &values,
 void MediaLibraryRdbStore::BuildQuerySql(const AbsRdbPredicates &predicates, const vector<string> &columns,
     vector<ValueObject> &bindArgs, string &sql)
 {
-    sql.append(SqliteSqlBuilder::BuildQueryString(predicates, columns));
+    sql.append(RdbSqlUtils::BuildQueryString(predicates, columns));
     for (auto &arg : predicates.GetWhereArgs()) {
         bindArgs.emplace_back(arg);
     }
