@@ -151,6 +151,61 @@ ohos_shared_library("medialibrary") {
   part_name = "media_library"
 }
 
+js_declaration("userfilemanager_js") {
+  part_name = "media_library"
+  sources = [ "./@ohos.filemanagement.userFileManager.d.ts" ]
+}
+
+ohos_copy("userfilemanager_declaration") {
+  sources = [ "./@ohos.filemanagement.userFileManager.d.ts" ]
+  outputs = [ target_out_dir + "/$target_name/" ]
+  module_source_dir = target_out_dir + "/$target_name"
+  module_install_name = ""
+  subsystem_name = "multimedia"
+  part_name = "media_library"
+}
+
+# compile .js to .abc.
+action("gen_userfilemanagerinf_abc") {
+  visibility = [ ":*" ]
+  script = "../../../../../../arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
+
+  args = [
+    "--src-js",
+    rebase_path("${MEDIALIB_JS_PATH}/src/userfilemanagerinf.js"),
+    "--dst-file",
+    rebase_path(target_out_dir + "/userfilemanagerinf.abc"),
+    "--node",
+    rebase_path("${node_path}"),
+    "--frontend-tool-path",
+    rebase_path("${ts2abc_build_path}"),
+    "--node-modules",
+    rebase_path("${node_modules}"),
+    "--module",
+  ]
+  deps =
+      [ "../../../../../../arkcompiler/ets_frontend/ts2panda:ark_ts2abc_build" ]
+
+  inputs = [ "${MEDIALIB_JS_PATH}/src/userfilemanagerinf.js" ]
+  outputs = [ target_out_dir + "/userfilemanagerinf.abc" ]
+}
+
+base_output_path = get_label_info(":userfilemanagerinf_js", "target_out_dir")
+userfilemanagerinf_obj_path = base_output_path + "/userfilemanagerinf.o"
+gen_js_obj("userfilemanagerinf_js") {
+  input = "${MEDIALIB_JS_PATH}/src/userfilemanagerinf.js"
+  output = userfilemanagerinf_obj_path
+  dep = ":gen_userfilemanagerinf_abc"
+}
+
+abc_output_path = get_label_info(":userfilemanagerinf_abc", "target_out_dir")
+userfilemanagerinf_abc_obj_path = abc_output_path + "/userfilemanagerinf_abc.o"
+gen_js_obj("userfilemanagerinf_abc") {
+  input = "$target_out_dir/userfilemanagerinf.abc"
+  output = userfilemanagerinf_abc_obj_path
+  dep = ":gen_userfilemanagerinf_abc"
+}
+
 ohos_shared_library("userfilemanager") {
   configs = [ ":napi_config" ]
 
@@ -171,6 +226,8 @@ ohos_shared_library("userfilemanager") {
   ]
 
   deps = [
+    ":userfilemanagerinf_abc",
+    ":userfilemanagerinf_js",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
