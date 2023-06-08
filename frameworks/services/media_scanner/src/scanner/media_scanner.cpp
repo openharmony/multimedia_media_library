@@ -176,6 +176,30 @@ int32_t MediaScannerObj::GetMediaInfo()
     return E_OK;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+void MediaScannerObj::SetPhotoSubType(const string &parent)
+{
+    if ((data_->GetFileMediaType() != MediaType::MEDIA_TYPE_IMAGE) &&
+        (data_->GetFileMediaType() != MediaType::MEDIA_TYPE_VIDEO)) {
+        return;
+    }
+
+    string parentPath = parent + SLASH_CHAR;
+    if (parentPath.find(ROOT_MEDIA_DIR) != 0) {
+        return;
+    }
+
+    size_t len = ROOT_MEDIA_DIR.length();
+    parentPath.erase(0, len);
+
+    if (parentPath == CAMERA_PATH) {
+        data_->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
+    } else if ((parentPath == SCREEN_RECORD_PATH) || (parentPath == SCREEN_SHOT_PATH)) {
+        data_->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::SCREENSHOT));
+    }
+}
+#endif
+
 int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId)
 {
     if (api_ == MediaLibraryApi::API_10) {
@@ -329,6 +353,9 @@ int32_t MediaScannerObj::ScanFileInTraversal(const string &path, const string &p
         return E_IS_PENDING;
     }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    SetPhotoSubType(parent);
+#endif
     err = GetParentDirInfo(parent, parentId);
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get dir info");
