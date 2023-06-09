@@ -46,7 +46,7 @@ public:
     std::string GetFilePath();
     std::unordered_map<std::string, std::string> &GetQueryKeys();
     bool IsValid();
-    static bool IsUriV10(const std::string &mediaType);
+    bool IsApi10();
 };
 } // namespace Media
 } // namespace OHOS

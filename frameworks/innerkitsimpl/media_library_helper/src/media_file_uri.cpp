@@ -265,11 +265,13 @@ std::unordered_map<std::string, std::string> &MediaFileUri::GetQueryKeys()
     return queryMap_;
 }
 
-bool MediaFileUri::IsUriV10(const std::string &mediaType)
+bool MediaFileUri::IsApi10()
 {
-    return mediaType == URI_TYPE_PHOTO ||
-        mediaType == URI_TYPE_PHOTO_ALBUM ||
-        mediaType == URI_TYPE_AUDIO_V10;
+    if ((ToString().find(PhotoColumn::PHOTO_TYPE_URI) != std::string::npos) ||
+        (ToString().find(AudioColumn::AUDIO_TYPE_URI) != std::string::npos)) {
+        return true;
+    }
+    return false;
 }
 } // namespace Media
 } // namespace OHOS

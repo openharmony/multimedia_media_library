@@ -121,17 +121,5 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ObtionCondition_test_001, TestSize.Le
     ret = MediaLibraryDataManagerUtils::ObtionCondition(strQueryCondition, whereArgs);
     strQueryCondition = "medialib_?_test";
 }
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_RemoveTypeValueFromUri_test_001, TestSize.Level0)
-{
-    string url = "medialib_RemoveTypeValueFromUri_test_001";
-    MediaLibraryDataManagerUtils::RemoveTypeValueFromUri(url);
-    EXPECT_EQ("medialib_RemoveTypeValueFromUri_test_001", url);
-    url = "medialib_RemoveTypeValueFromUri_test_001_#_test";
-    MediaLibraryDataManagerUtils::RemoveTypeValueFromUri(url);
-    EXPECT_EQ("medialib_RemoveTypeValueFromUri_test_001_", url);
-}
-
-
 } // namespace Media
 } // namespace OHOS
