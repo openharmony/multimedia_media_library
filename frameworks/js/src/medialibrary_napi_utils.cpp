@@ -819,6 +819,18 @@ static int32_t GetCameraPredicates(DataSharePredicates &predicates)
     return E_SUCCESS;
 }
 
+static int32_t GetAllImagesPredicates(DataSharePredicates &predicates)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EndWrap();
+    return E_SUCCESS;
+}
+
 int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType subType,
     DataSharePredicates &predicates)
 {
@@ -840,6 +852,9 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
         }
         case PhotoAlbumSubType::CAMERA: {
             return GetCameraPredicates(predicates);
+        }
+        case PhotoAlbumSubType::IMAGES: {
+            return GetAllImagesPredicates(predicates);
         }
         default: {
             NAPI_ERR_LOG("Unsupported photo album subtype: %{public}d", subType);
