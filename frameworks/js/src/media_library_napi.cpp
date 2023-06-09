@@ -4250,8 +4250,6 @@ static napi_value ParseArgsCreatePhotoAssetComponent(napi_env env, napi_callback
 
     context->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
 
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
-
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
     return result;
@@ -4289,7 +4287,6 @@ static napi_value ParseArgsCreateAudioAssetSystem(napi_env env, napi_callback_in
 
     context->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_AUDIO);
     context->valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamCallback(env, context) == napi_ok, "Failed to get callback");
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
@@ -4389,8 +4386,6 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     if (context->assetType == TYPE_PHOTO) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
     }
-
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -4744,8 +4739,6 @@ static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info inf
     }
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
 
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
-
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -4932,8 +4925,6 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
     }
     context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
 
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
-
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -5088,8 +5079,6 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
             return nullptr;
     }
     CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
-
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);

@@ -344,7 +344,6 @@ napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback(napi_env env, napi
         "Failed to get object info");
     CHECK_STATUS_RET(GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
         "Failed to get fetch option");
-    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
     return napi_ok;
 }
 
@@ -359,7 +358,6 @@ napi_status MediaLibraryNapiUtils::ParseAlbumFetchOptCallback(napi_env env, napi
     // Parse the argument into fetchOption if any
     CHECK_STATUS_RET(GetPredicate(env, context->argv[PARAM0], "predicates", context, ALBUM_FETCH_OPT),
         "invalid predicate");
-    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
     return napi_ok;
 }
 
@@ -396,6 +394,7 @@ napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo(napi_env env, napi_
     CHECK_STATUS_RET(napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo)),
         "Failed to unwrap thisVar");
     CHECK_COND_RET(asyncContext->objectInfo != nullptr, napi_invalid_arg, "Failed to get object info");
+    CHECK_STATUS_RET(GetParamCallback(env, asyncContext), "Failed to get callback param!");
     return napi_ok;
 }
 
@@ -423,7 +422,6 @@ napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack(napi_env env, napi_call
 
     /* Parse the first argument into param */
     CHECK_STATUS_RET(GetParamBool(env, context->argv[ARGS_ZERO], param), "Failed to get parameter");
-    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
     return napi_ok;
 }
 
@@ -437,7 +435,6 @@ napi_status MediaLibraryNapiUtils::ParseArgsStringCallback(napi_env env, napi_ca
         "Failed to get object info");
 
     CHECK_STATUS_RET(GetParamStringPathMax(env, context->argv[ARGS_ZERO], param), "Failed to get string argument");
-    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
     return napi_ok;
 }
 
@@ -465,7 +462,6 @@ napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback(napi_env env, napi_ca
         "Failed to get object info");
 
     CHECK_STATUS_RET(GetInt32(env, context->argv[ARGS_ZERO], value), "Failed to get number argument");
-    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
     return napi_ok;
 }
 
@@ -476,8 +472,6 @@ napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack(napi_env env, napi_call
     constexpr size_t maxArgs = ARGS_ONE;
     CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         "Failed to get object info");
-
-    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
     return napi_ok;
 }
 
