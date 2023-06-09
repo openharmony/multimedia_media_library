@@ -38,6 +38,7 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
+constexpr int32_t AGING_AGR_SIZE = 3;
 constexpr int32_t AFTER_AGR_SIZE = 2;
 constexpr int32_t THAN_AGR_SIZE = 1;
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
@@ -310,19 +311,27 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     return errCode;
 }
 
-int32_t DeletePhotoAssets(const DataSharePredicates &predicates)
+int32_t DeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-
     int32_t deletedRows = MediaLibraryRdbStore::DeleteFromDisk(rdbPredicates);
-    if (deletedRows < 0) {
-        return deletedRows;
-    }
-
     auto watch = MediaLibraryNotify::GetInstance();
-    for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - THAN_AGR_SIZE; i++) {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i], NotifyType::NOTIFY_REMOVE);
+    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+    if (!isAging) {
+        for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - THAN_AGR_SIZE; i++) {
+            if (trashAlbumId > 0) {
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i],
+                    NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
+            }
+        }
+    } else {
+        for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - AGING_AGR_SIZE; i++) {
+            if (trashAlbumId > 0) {
+                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i],
+                    NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
+            }
+        }
     }
     return deletedRows;
 }
@@ -333,7 +342,7 @@ int32_t AgingPhotoAssets()
     DataSharePredicates predicates;
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(time - AGING_TIME));
-    int32_t err = DeletePhotoAssets(predicates);
+    int32_t err = DeletePhotoAssets(predicates, true);
     if (err < 0) {
         return err;
     }
@@ -349,7 +358,7 @@ int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opTyp
         case OperationType::ALBUM_RECOVER_ASSETS:
             return RecoverPhotoAssets(predicates);
         case OperationType::ALBUM_DELETE_ASSETS:
-            return DeletePhotoAssets(predicates);
+            return DeletePhotoAssets(predicates, false);
         case OperationType::AGING:
             return AgingPhotoAssets();
         default:
