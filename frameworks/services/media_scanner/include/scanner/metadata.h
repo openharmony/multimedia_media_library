@@ -164,7 +164,7 @@ private:
     int64_t timePending_;
 #ifdef MEDIALIBRARY_COMPATIBILITY
     // photo subtype
-    int32_t photoSubType_;
+    int32_t photoSubType_ = 0;
 #endif
 };
 } // namespace Media

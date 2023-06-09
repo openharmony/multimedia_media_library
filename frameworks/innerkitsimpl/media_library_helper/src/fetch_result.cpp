@@ -350,7 +350,11 @@ void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
     } else {
         MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()),
             networkId_);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        uri = MediaFileUtils::GetVirtualUriFromRealUri(fileUri.ToString());
+#else
         uri = fileUri.ToString();
+#endif
     }
 #ifdef MEDIALIBRARY_COMPATIBILITY
     fileAsset->SetAlbumId(0);
