@@ -396,9 +396,9 @@ void MediaLibraryCommand::ParseFileId()
         valueObject.GetString(uriInValue);
     }
     if (uriInValue.empty()) {
-        uriInValue = uri_.ToString();
+        uriInValue = GetUriStringWithoutSegment();
     }
-    MediaLibraryDataManagerUtils::RemoveTypeValueFromUri(uriInValue);
+
     string idFromUri = MediaLibraryDataManagerUtils::GetIdFromUri(uriInValue);
     if (!MediaLibraryDataManagerUtils::IsNumber(idFromUri)) {
         return;

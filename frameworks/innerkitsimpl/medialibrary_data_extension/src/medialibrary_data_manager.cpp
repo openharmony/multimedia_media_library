@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #define MLOG_TAG "DataManager"
 
 #include "medialibrary_data_manager.h"
@@ -19,6 +20,7 @@
 #include <shared_mutex>
 #include <unordered_set>
 
+#include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "device_manager.h"
@@ -56,6 +58,7 @@
 #include "system_ability_definition.h"
 #include "timer.h"
 #include "trash_async_worker.h"
+#include "value_object.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -319,6 +322,25 @@ unordered_map<string, DirAsset> MediaLibraryDataManager::GetDirQuerySetMap()
     return dirQuerySetMap_;
 }
 
+static void ChangeUriFromValuesBucket(ValuesBucket &values)
+{
+    if (!values.HasColumn(MEDIA_DATA_DB_URI)) {
+        return;
+    }
+
+    ValueObject value;
+    if (!values.GetObject(MEDIA_DATA_DB_URI, value)) {
+        return;
+    }
+    string oldUri;
+    if (value.GetString(oldUri) != NativeRdb::E_OK) {
+        return;
+    }
+    string newUri = MediaFileUtils::GetRealUriFromVirtualUri(oldUri);
+    values.Delete(MEDIA_DATA_DB_URI);
+    values.PutString(MEDIA_DATA_DB_URI, newUri);
+}
+
 int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetOprnObject()) {
@@ -370,6 +392,7 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
         MEDIA_ERR_LOG("MediaLibraryDataManager Insert: Input parameter is invalid");
         return E_INVALID_VALUES;
     }
+    ChangeUriFromValuesBucket(value);
 
     MediaLibraryCommand cmd(uri, value);
     OperationType oprnType = cmd.GetOprnType();
@@ -517,6 +540,7 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
         MEDIA_ERR_LOG("MediaLibraryDataManager Update:Input parameter is invalid ");
         return E_INVALID_VALUES;
     }
+    ChangeUriFromValuesBucket(value);
 
     MediaLibraryCommand cmd(uri, value);
     cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
@@ -910,15 +934,20 @@ bool MediaLibraryDataManager::QuerySync(const string &networkId, const string &t
 
 int32_t MediaLibraryDataManager::OpenFile(const Uri &uri, const string &mode)
 {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(uri.ToString());
+    MediaLibraryCommand cmd(Uri(realUri), OperationType::OPEN);
+#else
     MediaLibraryCommand cmd(uri, OperationType::OPEN);
+#endif
     auto oprnObject = cmd.GetOprnObject();
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
         return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
     }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    string uriString = cmd.GetUriStringWithoutSegment();
     if (oprnObject != OperationObject::THUMBNAIL) {
+        string uriString = cmd.GetUriStringWithoutSegment();
         if ((uriString.find(MEDIALIBRARY_TYPE_IMAGE_URI) != string::npos) ||
             (uriString.find(MEDIALIBRARY_TYPE_VIDEO_URI) != string::npos)) {
             cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);

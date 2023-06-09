@@ -109,6 +109,9 @@ public:
     static size_t FindIgnoreCase(const std::string &str, const std::string &key);
     static int64_t GetVirtualIdByType(int32_t id, MediaType type);
     static double GetRealIdByTable(int32_t virtualId, const std::string &tableName);
+    static std::string GetVirtualUriFromRealUri(const std::string &uri);
+    static std::string GetRealUriFromVirtualUri(const std::string &uri);
+    static bool IsUriV10(const std::string &mediaType);
 };
 } // namespace OHOS::Media
 
