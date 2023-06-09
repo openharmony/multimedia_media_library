@@ -133,6 +133,11 @@ int32_t PhotoAlbumNapi::GetCount() const
     return photoAlbumPtr->GetCount();
 }
 
+void PhotoAlbumNapi::SetCount(int32_t count)
+{
+    return photoAlbumPtr->SetCount(count);
+}
+
 const string& PhotoAlbumNapi::GetAlbumUri() const
 {
     return photoAlbumPtr->GetAlbumUri();
@@ -429,8 +434,6 @@ static napi_value ParseArgsCommitModify(napi_env env, napi_callback_info info,
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, photoAlbum->GetAlbumName());
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, photoAlbum->GetCoverUri());
 
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
-
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -572,8 +575,6 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
         context->valuesBuckets.push_back(valuesBucket);
     }
 
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
-
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -593,7 +594,11 @@ static void JSPhotoAlbumAddAssetsExecute(napi_env env, void *data)
         UFM_PHOTO_ALBUM_ADD_ASSET : PAH_PHOTO_ALBUM_ADD_ASSET;
     Uri uri(addAssetsUri);
     auto changedRows = UserFileClient::BatchInsert(uri, context->valuesBuckets);
-    context->SaveError(changedRows);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        return;
+    }
+    context->changedRows = changedRows;
 }
 
 static void JSPhotoAlbumAddAssetsCompleteCallback(napi_env env, napi_status status, void *data)
@@ -608,6 +613,7 @@ static void JSPhotoAlbumAddAssetsCompleteCallback(napi_env env, napi_status stat
     if (context->error == ERR_DEFAULT) {
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
         jsContext->status = true;
+        context->objectInfo->SetCount(context->objectInfo->GetCount() + context->changedRows);
     } else {
         context->HandleError(env, jsContext->error);
     }
@@ -665,8 +671,6 @@ static napi_value ParseArgsRemoveAssets(napi_env env, napi_callback_info info,
     context->predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
     context->predicates.And()->In(PhotoMap::ASSET_ID, assetsArray);
 
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
-
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -688,7 +692,9 @@ static void JSPhotoAlbumRemoveAssetsExecute(napi_env env, void *data)
     auto deletedRows = UserFileClient::Delete(uri, context->predicates);
     if (deletedRows < 0) {
         context->SaveError(deletedRows);
+        return;
     }
+    context->changedRows = deletedRows;
 }
 
 static void JSPhotoAlbumRemoveAssetsCompleteCallback(napi_env env, napi_status status, void *data)
@@ -703,6 +709,8 @@ static void JSPhotoAlbumRemoveAssetsCompleteCallback(napi_env env, napi_status s
     if (context->error == ERR_DEFAULT) {
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
         jsContext->status = true;
+        int32_t count = context->objectInfo->GetCount() - context->changedRows;
+        context->objectInfo->SetCount((count > 0) ? count : 0);
     } else {
         context->HandleError(env, jsContext->error);
     }
@@ -779,8 +787,6 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
     }
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
         PhotoColumn::IsPhotoColumn));
-
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -904,8 +910,6 @@ static napi_value TrashAlbumParseArgs(napi_env env, napi_callback_info info,
     }
     context->predicates.In(MediaColumn::MEDIA_ID, assetsArray);
     context->valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, 0);
-
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
