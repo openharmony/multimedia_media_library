@@ -619,33 +619,6 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     return result;
 }
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
-static string GetVirtualIdFromUri(const string &uri)
-{
-    MediaFileUri fileUri(uri);
-    string fileId = fileUri.GetFileId();
-    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
-        return fileId;
-    }
-
-    int32_t id = stoi(fileId);
-    int64_t virtualUri;
-    if ((uri.find(MEDIALIBRARY_TYPE_IMAGE_URI) != string::npos) ||
-        (uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos)) {
-        virtualUri = MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_IMAGE);
-    } else if (uri.find(MEDIALIBRARY_TYPE_VIDEO_URI) != string::npos) {
-        virtualUri = MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_VIDEO);
-    } else if ((uri.find(MEDIALIBRARY_TYPE_AUDIO_URI) != string::npos) ||
-        (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos)) {
-        virtualUri = MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_AUDIO);
-    } else {
-        virtualUri = MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_FILE);
-    }
-
-    return to_string(virtualUri);
-}
-#endif
-
 static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
 {
 #ifdef MEDIALIBRARY_COMPATIBILITY
@@ -662,11 +635,7 @@ static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
     if (!context->uri.empty()) {
         NAPI_ERR_LOG("context->uri is = %{public}s", context->uri.c_str());
         context->networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(context->uri);
-#ifdef MEDIALIBRARY_COMPATIBILITY
-        string fileId = GetVirtualIdFromUri(context->uri);
-#else
         string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(context->uri);
-#endif
         if (!fileId.empty()) {
             string idPrefix = MEDIA_DATA_DB_ID + " = ? ";
             MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, idPrefix);
@@ -1170,7 +1139,9 @@ static void SetFileAssetByIdV9(int32_t id, const string &networkId, MediaLibrary
     unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
     fileAsset->SetId(id);
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
-    fileAsset->SetUri(MediaFileUri(mediaType, to_string(id), networkId, MEDIA_API_VERSION_V9).ToString());
+    string uri = MediaFileUtils::GetVirtualUriFromRealUri(MediaFileUri(mediaType,
+        to_string(id), networkId, MEDIA_API_VERSION_V9).ToString());
+    fileAsset->SetUri(uri);
     fileAsset->SetMediaType(mediaType);
     fileAsset->SetDisplayName(displayName);
     fileAsset->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(displayName));
@@ -1581,7 +1552,7 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
             mediaType = notifyUri.substr(indexType + 1);
         }
     }
-    if (MediaFileUri::IsUriV10(mediaType)) {
+    if (MediaFileUtils::IsUriV10(mediaType)) {
         NAPI_ERR_LOG("Unsupported media type: %{public}s", mediaType.c_str());
         context->SaveError(E_INVALID_URI);
         return;

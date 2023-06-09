@@ -74,7 +74,9 @@ static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket 
         values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLongitude());
         values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLatitude());
         SetVirtualPath(metadata, values);
-        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
+        if (metadata.GetPhotoSubType() != 0) {
+            values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
+        }
     } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
         values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
         values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
@@ -148,7 +150,9 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutDouble(PhotoColumn::PHOTO_LATITUDE, metadata.GetLongitude());
         values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, metadata.GetLatitude());
 #ifdef MEDIALIBRARY_COMPATIBILITY
-        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
+        if (metadata.GetPhotoSubType() != 0) {
+            values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
+        }
 #endif
     } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
         values.PutString(AudioColumn::AUDIO_ALBUM, metadata.GetAlbum());

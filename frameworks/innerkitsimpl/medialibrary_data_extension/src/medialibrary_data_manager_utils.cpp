@@ -97,14 +97,6 @@ string MediaLibraryDataManagerUtils::ObtionCondition(string &strQueryCondition, 
     return strQueryCondition;
 }
 
-void MediaLibraryDataManagerUtils::RemoveTypeValueFromUri(std::string &uri)
-{
-    size_t typeIndex = uri.find('#');
-    if (typeIndex != std::string::npos) {
-        uri = uri.substr(0, typeIndex);
-    }
-}
-
 std::string MediaLibraryDataManagerUtils::GetTypeUriByUri(std::string &uri)
 {
     string typeUri;

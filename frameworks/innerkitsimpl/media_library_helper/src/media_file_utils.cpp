@@ -970,4 +970,112 @@ double MediaFileUtils::GetRealIdByTable(int32_t virtualId, const string &tableNa
         return (double) (virtualId + FILE_VIRTUAL_IDENTIFIER) / VIRTUAL_ID_DIVIDER;
     }
 }
+
+string MediaFileUtils::GetVirtualUriFromRealUri(const string &uri)
+{
+    if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
+       (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos)) {
+        return uri;
+    }
+
+    string pureUri = uri;
+    string suffixUri;
+    size_t questionMaskPoint = uri.rfind('?');
+    size_t hashKeyPoint = uri.rfind('#');
+    if (questionMaskPoint != string::npos) {
+        suffixUri = uri.substr(questionMaskPoint);
+        pureUri = uri.substr(0, questionMaskPoint);
+    } else if (hashKeyPoint != string::npos) {
+        suffixUri = uri.substr(hashKeyPoint);
+        pureUri = uri.substr(0, hashKeyPoint);
+    }
+    
+    MediaFileUri fileUri(pureUri);
+    string fileId = fileUri.GetFileId();
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
+        return uri;
+    }
+
+    int32_t id = stoi(fileId);
+    int64_t virtualId;
+    MediaType type;
+    if ((pureUri.find(MEDIALIBRARY_TYPE_IMAGE_URI) != string::npos)) {
+        type = MediaType::MEDIA_TYPE_IMAGE;
+        virtualId = GetVirtualIdByType(id, MediaType::MEDIA_TYPE_IMAGE);
+    } else if (pureUri.find(MEDIALIBRARY_TYPE_VIDEO_URI) != string::npos) {
+        type = MediaType::MEDIA_TYPE_VIDEO;
+        virtualId = GetVirtualIdByType(id, MediaType::MEDIA_TYPE_VIDEO);
+    } else if ((pureUri.find(MEDIALIBRARY_TYPE_AUDIO_URI) != string::npos)) {
+        type = MediaType::MEDIA_TYPE_AUDIO;
+        virtualId = GetVirtualIdByType(id, MediaType::MEDIA_TYPE_AUDIO);
+    } else {
+        type = MediaType::MEDIA_TYPE_FILE;
+        virtualId = GetVirtualIdByType(id, MediaType::MEDIA_TYPE_FILE);
+    }
+    MediaFileUri virtualUri(type, to_string(virtualId), fileUri.GetNetworkId(),
+        (fileUri.IsApi10() ? MEDIA_API_VERSION_V10 : MEDIA_API_VERSION_V9));
+
+    if (suffixUri.empty()) {
+        return virtualUri.ToString();
+    } else {
+        return virtualUri.ToString() + suffixUri;
+    }
+}
+
+string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
+{
+    if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
+       (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos)) {
+        return uri;
+    }
+
+    string pureUri = uri;
+    string suffixUri;
+    size_t questionMaskPoint = uri.rfind('?');
+    size_t hashKeyPoint = uri.rfind('#');
+    if (questionMaskPoint != string::npos) {
+        suffixUri = uri.substr(questionMaskPoint);
+        pureUri = uri.substr(0, questionMaskPoint);
+    } else if (hashKeyPoint != string::npos) {
+        suffixUri = uri.substr(hashKeyPoint);
+        pureUri = uri.substr(0, hashKeyPoint);
+    }
+
+    MediaFileUri fileUri(pureUri);
+    string fileId = fileUri.GetFileId();
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
+        return uri;
+    }
+    int32_t id = stoi(fileId);
+    int32_t realId = 0;
+    MediaType type;
+    if ((pureUri.find(MEDIALIBRARY_TYPE_IMAGE_URI) != string::npos)) {
+        type = MediaType::MEDIA_TYPE_IMAGE;
+        realId = static_cast<int32_t>(GetRealIdByTable(id, PhotoColumn::PHOTOS_TABLE));
+    } else if (pureUri.find(MEDIALIBRARY_TYPE_VIDEO_URI) != string::npos) {
+        type = MediaType::MEDIA_TYPE_VIDEO;
+        realId = static_cast<int32_t>(GetRealIdByTable(id, PhotoColumn::PHOTOS_TABLE));
+    } else if ((pureUri.find(MEDIALIBRARY_TYPE_AUDIO_URI) != string::npos)) {
+        type = MediaType::MEDIA_TYPE_AUDIO;
+        realId = static_cast<int32_t>(GetRealIdByTable(id, AudioColumn::AUDIOS_TABLE));
+    } else {
+        type = MediaType::MEDIA_TYPE_FILE;
+        realId = static_cast<int32_t>(GetRealIdByTable(id, MEDIALIBRARY_TABLE));
+    }
+    MediaFileUri realUri(type, to_string(realId), fileUri.GetNetworkId(),
+        (fileUri.IsApi10() ? MEDIA_API_VERSION_V10 : MEDIA_API_VERSION_V9));
+
+    if (suffixUri.empty()) {
+        return realUri.ToString();
+    } else {
+        return realUri.ToString() + suffixUri;
+    }
+}
+
+bool MediaFileUtils::IsUriV10(const string &mediaType)
+{
+    return mediaType == URI_TYPE_PHOTO ||
+        mediaType == URI_TYPE_PHOTO_ALBUM ||
+        mediaType == URI_TYPE_AUDIO_V10;
+}
 } // namespace OHOS::Media
