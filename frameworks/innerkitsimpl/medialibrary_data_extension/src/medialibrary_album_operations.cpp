@@ -20,6 +20,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
@@ -114,6 +115,91 @@ static void QueryAlbumDebug(MediaLibraryCommand &cmd, const vector<string> &colu
     MEDIA_DEBUG_LOG("Querying album, count: %{public}d", count);
 }
 
+static void ReplaceRelativePath(string &selection, vector<string> &selectionArgs)
+{
+    for (size_t pos = 0; pos != string::npos;) {
+        pos = selection.find(MEDIA_DATA_DB_RELATIVE_PATH, pos);
+        if (pos == string::npos) {
+            break;
+        }
+        size_t argPos = selection.find('?', pos);
+        if (argPos == string::npos) {
+            break;
+        }
+        size_t argIndex = 0;
+        for (size_t i = 0; i < argPos; i++) {
+            if (selection[i] == '?') {
+                argIndex++;
+            }
+        }
+        if (argIndex > selectionArgs.size() - 1) {
+            MEDIA_WARN_LOG("SelectionArgs size is not valid, selection format maybe incorrect: %{private}s",
+                selection.c_str());
+            break;
+        }
+        const string &arg = selectionArgs[argIndex];
+        if (!arg.empty()) {
+            MEDIA_WARN_LOG("No empty args in ReplaceRelativePath");
+            return;
+        }
+        selection.replace(argPos, 1, "? OR 1=1)");
+        selection.replace(pos, MEDIA_DATA_DB_RELATIVE_PATH.length(), "(" + PhotoAlbumColumns::ALBUM_ID);
+
+        selectionArgs[argIndex] = "1";
+        pos = argPos + 1;
+    }
+}
+
+static void ReplaceMediaType(string &selection, vector<string> &selectionArgs)
+{
+    for (size_t pos = 0; pos != string::npos;) {
+        pos = selection.find(MEDIA_DATA_DB_MEDIA_TYPE, pos);
+        if (pos == string::npos) {
+            break;
+        }
+        size_t argPos = selection.find('?', pos);
+        if (argPos == string::npos) {
+            break;
+        }
+        size_t argIndex = 0;
+        for (size_t i = 0; i < argPos; i++) {
+            if (selection[i] == '?') {
+                argIndex++;
+            }
+        }
+        if (argIndex > selectionArgs.size() - 1) {
+            MEDIA_WARN_LOG("SelectionArgs size is not valid, selection format maybe incorrect: %{private}s",
+                selection.c_str());
+            break;
+        }
+        selection.replace(argPos, 1, "? OR 1=1)");
+        selection.replace(pos, MEDIA_DATA_DB_MEDIA_TYPE.length(), "(" + PhotoAlbumColumns::ALBUM_ID);
+
+        selectionArgs[argIndex] = "1";
+        pos = argPos + 1;
+    }
+}
+
+static void GetSqlArgs(MediaLibraryCommand &cmd, string &sql, vector<string> &selectionArgs,
+    const vector<string> &columns)
+{
+    string clause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    selectionArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+    sql = "SELECT ";
+    for (int i = 0; i < columns.size(); i++) {
+        if (i != columns.size() - 1) {
+            sql += columns[i] + ",";
+        } else {
+            sql += columns[i];
+        }
+    }
+    sql += " FROM " + cmd.GetAbsRdbPredicates()->GetTableName();
+    sql += " WHERE ";
+    ReplaceRelativePath(clause, selectionArgs);
+    ReplaceMediaType(clause, selectionArgs);
+    sql += clause;
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
@@ -129,7 +215,16 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperatio
     }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
+    string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    if (whereClause.find(MEDIA_DATA_DB_RELATIVE_PATH) != string::npos ||
+        whereClause.find(MEDIA_DATA_DB_MEDIA_TYPE) != string::npos) {
+        string sql;
+        vector<string> selectionArgs;
+        GetSqlArgs(cmd, sql, selectionArgs, columns);
+        return uniStore->QuerySql(sql, selectionArgs);
+    }
     QueryAlbumDebug(cmd, columns, uniStore);
+    
     return uniStore->Query(cmd, columns);
 #else
     string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
