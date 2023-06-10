@@ -484,30 +484,6 @@ static void BuildQueryFileSql(MediaLibraryCommand &cmd, vector<string> &selectio
         sql += limit;
     }
 }
-
-static void CampatQueryDebug(const string &sql, const vector<string> &selectionArgs,
-    const shared_ptr<MediaLibraryUnistore> &store)
-{
-    constexpr int32_t printMax = 512;
-    for (size_t pos = 0; pos < sql.size(); pos += printMax) {
-        MEDIA_DEBUG_LOG("Quering file sql: %{public}s", sql.substr(pos, printMax).c_str());
-    }
-    for (const auto &arg : selectionArgs) {
-        MEDIA_DEBUG_LOG("Quering file, arg: %{public}s", arg.c_str());
-    }
-    auto resultSet = store->QuerySql(sql, selectionArgs);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query file!");
-        return;
-    }
-    int32_t count = -1;
-    int32_t err = resultSet->GetRowCount(count);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
-        return;
-    }
-    MEDIA_DEBUG_LOG("Quering file, count: %{public}d", count);
-}
 #endif
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFileOperation(
@@ -540,7 +516,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFileOperation(
     string sql;
     vector<string> selectionArgs;
     BuildQueryFileSql(cmd, selectionArgs, sql);
-    CampatQueryDebug(sql, selectionArgs, uniStore);
     return uniStore->QuerySql(sql, selectionArgs);
 #else
     return uniStore->Query(cmd, columns);
