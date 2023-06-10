@@ -661,7 +661,12 @@ string MediaFileUtils::GetFileMediaTypeUriV10(int32_t mediaType, const string &n
 string MediaFileUtils::GetUriByNameAndId(const string &displayName, const string &networkId, int32_t id)
 {
     MediaType mediaType = GetMediaType(displayName);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    int64_t fileId = MediaFileUtils::GetVirtualIdByType(id, MediaType(mediaType));
+    return MediaFileUri(mediaType, to_string(fileId), networkId).ToString();
+#else
     return MediaFileUri(mediaType, to_string(id), networkId).ToString();
+#endif
 }
 
 MediaType MediaFileUtils::GetMediaType(const string &filePath)
@@ -989,7 +994,7 @@ string MediaFileUtils::GetVirtualUriFromRealUri(const string &uri)
         suffixUri = uri.substr(hashKeyPoint);
         pureUri = uri.substr(0, hashKeyPoint);
     }
-    
+
     MediaFileUri fileUri(pureUri);
     string fileId = fileUri.GetFileId();
     if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
