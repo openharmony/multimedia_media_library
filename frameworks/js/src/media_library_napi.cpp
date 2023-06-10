@@ -867,7 +867,7 @@ static void ReplaceAlbumName(const string &arg, string &argInstead)
     }
 }
 
-static void ReplaceRelativePath(const string &arg, string &argInstead)
+static bool ReplaceRelativePath(const string &arg, string &argInstead)
 {
     if (arg == CAMERA_PATH) {
         argInstead = to_string(PhotoAlbumSubType::CAMERA);
@@ -877,9 +877,13 @@ static void ReplaceRelativePath(const string &arg, string &argInstead)
         argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
     } else if (arg == SCREEN_RECORD_PATH) {
         argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
+    } else if (arg.empty()) {
+        argInstead = arg;
+        return false;
     } else {
         argInstead = arg;
     }
+    return true;
 }
 
 static void ReplaceSelection(string &selection, vector<string> &selectionArgs,
@@ -890,7 +894,6 @@ static void ReplaceSelection(string &selection, vector<string> &selectionArgs,
         if (pos == string::npos) {
             break;
         }
-        selection.replace(pos, key.length(), keyInstead);
 
         size_t argPos = selection.find('?', pos);
         if (argPos == string::npos) {
@@ -909,10 +912,15 @@ static void ReplaceSelection(string &selection, vector<string> &selectionArgs,
         }
         const string &arg = selectionArgs[argIndex];
         string argInstead = arg;
-        if (key == MEDIA_DATA_DB_BUCKET_NAME) {
+        if (key == MEDIA_DATA_DB_RELATIVE_PATH) {
+            bool shouldReplace = true;
+            shouldReplace = ReplaceRelativePath(arg, argInstead);
+            if (shouldReplace) {
+                selection.replace(pos, key.length(), keyInstead);
+            }
+        } else if (key == MEDIA_DATA_DB_BUCKET_NAME) {
             ReplaceAlbumName(arg, argInstead);
-        } else if (key == MEDIA_DATA_DB_RELATIVE_PATH) {
-            ReplaceRelativePath(arg, argInstead);
+            selection.replace(pos, key.length(), keyInstead);
         }
         selectionArgs[argIndex] = argInstead;
         pos = argPos + 1;
