@@ -88,6 +88,32 @@ string MediaLibraryAlbumOperations::GetDistributedAlbumSql(const string &strQuer
     return distributedAlbumSql;
 }
 
+static void QueryAlbumDebug(MediaLibraryCommand &cmd, const vector<string> &columns,
+    const shared_ptr<MediaLibraryUnistore> &store)
+{
+    MEDIA_DEBUG_LOG("Querying album, table: %{public}s selections: %{public}s",
+        cmd.GetAbsRdbPredicates()->GetTableName().c_str(), cmd.GetAbsRdbPredicates()->GetWhereClause().c_str());
+    for (const auto &arg : cmd.GetAbsRdbPredicates()->GetWhereArgs()) {
+        MEDIA_DEBUG_LOG("Querying album, arg: %{public}s", arg.c_str());
+    }
+    for (const auto &col : columns) {
+        MEDIA_DEBUG_LOG("Querying album, col: %{public}s", col.c_str());
+    }
+
+    auto resultSet = store->Query(cmd, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query file!");
+        return;
+    }
+    int32_t count = -1;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
+        return;
+    }
+    MEDIA_DEBUG_LOG("Querying album, count: %{public}d", count);
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
@@ -103,6 +129,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperatio
     }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
+    QueryAlbumDebug(cmd, columns, uniStore);
     return uniStore->Query(cmd, columns);
 #else
     string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();

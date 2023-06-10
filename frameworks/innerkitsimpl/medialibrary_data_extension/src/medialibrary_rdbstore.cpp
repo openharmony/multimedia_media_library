@@ -261,16 +261,16 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
     }
     HandleGroupBy(cmd, columns);
     auto *predicates = cmd.GetAbsRdbPredicates();
-#ifdef ML_DEBUG
-    MEDIA_DEBUG_LOG("tablename = %s", cmd.GetTableName().c_str());
-    for (auto &col : columns) {
-        MEDIA_DEBUG_LOG("col = %s", col.c_str());
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    MEDIA_DEBUG_LOG("tablename = %{public}s", cmd.GetTableName().c_str());
+    for (const auto &col : columns) {
+        MEDIA_DEBUG_LOG("col = %{public}s", col.c_str());
     }
-    MEDIA_DEBUG_LOG("whereClause = %s", predicates->GetWhereClause().c_str());
+    MEDIA_DEBUG_LOG("whereClause = %{public}s", predicates->GetWhereClause().c_str());
     for (auto &arg : predicates->GetWhereArgs()) {
-        MEDIA_DEBUG_LOG("whereArgs = %s", arg.c_str());
+        MEDIA_DEBUG_LOG("whereArgs = %{public}s", arg.c_str());
     }
-    MEDIA_DEBUG_LOG("limit = %d", predicates->GetLimit());
+    MEDIA_DEBUG_LOG("limit = %{public}d", predicates->GetLimit());
 #endif
 
     return rdbStore_->Query(*predicates, columns);
