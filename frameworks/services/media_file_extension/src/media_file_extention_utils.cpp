@@ -613,8 +613,11 @@ shared_ptr<NativeRdb::ResultSet> GetListAlbumResult(const FileInfo &parentInfo, 
 
 int GetFileInfo(FileInfo &fileInfo, const shared_ptr<NativeRdb::ResultSet> &result, const string &networkId = "")
 {
-    int fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
+    int64_t fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
     int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    fileId = MediaFileUtils::GetVirtualIdByType(fileId, MediaType(mediaType));
+#endif
     fileInfo.uri = MediaFileUri(MediaType(mediaType), to_string(fileId), networkId).ToString();
     fileInfo.relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
     fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
@@ -1452,8 +1455,11 @@ void GetUriByRelativePath(const string &relativePath, string &fileUriStr)
     auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_FILE_PATH, path, columns);
     CHECK_AND_RETURN_LOG(result != nullptr,
         "Get Uri failed, relativePath: %{private}s", relativePath.c_str());
-    int fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
+    int64_t fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
     int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    fileId = MediaFileUtils::GetVirtualIdByType(fileId, MediaType(mediaType));
+#endif
     fileUriStr = MediaFileUri(MediaType(mediaType), to_string(fileId)).ToString();
 }
 
