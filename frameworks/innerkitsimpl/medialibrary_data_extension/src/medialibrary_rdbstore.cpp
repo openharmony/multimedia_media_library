@@ -232,20 +232,6 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     return ret;
 }
 
-static void HandleGroupBy(MediaLibraryCommand &cmd, const vector<string> &columns)
-{
-    auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
-    if (it == columns.end()) {
-        return;
-    }
-    string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
-    if (whereClause.find(" GROUP BY ") != string::npos) {
-        return;
-    }
-    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause +
-        " GROUP BY (DATE(date_added, 'unixepoch')) ORDER BY date_added DESC ");
-}
-
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
@@ -259,7 +245,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
         queryCondition = queryCondition.empty() ? filterCondition : filterCondition + " AND " + queryCondition;
         cmd.GetAbsRdbPredicates()->SetWhereClause(queryCondition);
     }
-    HandleGroupBy(cmd, columns);
     auto *predicates = cmd.GetAbsRdbPredicates();
 #ifdef MEDIALIBRARY_COMPATIBILITY
     MEDIA_DEBUG_LOG("tablename = %{public}s", cmd.GetTableName().c_str());
