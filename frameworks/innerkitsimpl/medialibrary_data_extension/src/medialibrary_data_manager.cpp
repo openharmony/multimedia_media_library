@@ -794,6 +794,7 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(const Uri &uri,
 
     auto absResultSet = QueryRdb(uri, columns, predicates, errCode);
     if (absResultSet == nullptr) {
+        errCode = (errCode != E_OK) ? errCode : E_FAIL;
         return nullptr;
     }
     return RdbUtils::ToResultSetBridge(absResultSet);
