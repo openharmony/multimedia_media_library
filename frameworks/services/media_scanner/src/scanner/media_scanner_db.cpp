@@ -235,7 +235,7 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata, MediaLibraryApi 
         GetTableNameByPath(mediaType, tableName);
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
-        GetTableNameByPath(mediaType, tableName);
+        GetTableNameByPath(mediaType, tableName, metadata.GetFilePath());
 #endif
         SetValuesFromMetaDataApi9(metadata, values, true, tableName);
     }
@@ -315,7 +315,7 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, MediaLibraryApi 
         GetTableNameByPath(mediaType, tableName);
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
-        GetTableNameByPath(mediaType, tableName);
+        GetTableNameByPath(mediaType, tableName, metadata.GetFilePath());
 #endif
         SetValuesFromMetaDataApi9(metadata, values, false, tableName);
     }
