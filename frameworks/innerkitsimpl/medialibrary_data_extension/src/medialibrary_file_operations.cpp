@@ -224,6 +224,7 @@ static const vector<string> &PhotosCompatColumns()
      */
     static const vector<string> PHOTOS_COMPAT_COLUMNS = {
         MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
         COMPAT_COLUMN_URI,
         MEDIA_DATA_DB_MIME_TYPE,
         MEDIA_DATA_DB_MEDIA_TYPE,
@@ -264,6 +265,7 @@ static const vector<string> &AudiosCompatColumns()
      */
     static const vector<string> AUDIOS_COMPAT_COLUMNS = {
         MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
         COMPAT_COLUMN_URI,
         MEDIA_DATA_DB_MIME_TYPE,
         MEDIA_DATA_DB_MEDIA_TYPE,
@@ -304,6 +306,7 @@ static const vector<string> &FilesCompatColumns()
      */
     static const vector<string> FILES_COMPAT_COLUMNS = {
         MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_URI,
         MEDIA_DATA_DB_MIME_TYPE,
         MEDIA_DATA_DB_MEDIA_TYPE,
@@ -423,7 +426,7 @@ static void BuildCompatQuerySql(MediaLibraryCommand &cmd, const string table, co
     if (!whereClause.empty()) {
         sql += " WHERE " + whereClause;
     }
-    
+
     if (!whereArgs.empty()) {
         selectionArgs.insert(selectionArgs.end(), whereArgs.begin(), whereArgs.end());
     }

@@ -336,6 +336,23 @@ static void MediaTypeToMask(MediaType mediaType, string &typeMask)
     }
 }
 
+static bool IsFileTablePath(const string &path)
+{
+    if (path.empty() || path.size() <= ROOT_MEDIA_DIR.size()) {
+        return false;
+    }
+
+    if (path.find(ROOT_MEDIA_DIR) == string::npos) {
+        return false;
+    }
+
+    string relativePath = path.substr(ROOT_MEDIA_DIR.size());
+    if ((relativePath.find(DOWNLOAD_DIR_VALUES) == 0) || (relativePath.find(DOC_DIR_VALUES) == 0)) {
+        return true;
+    }
+    return false;
+}
+
 template<class T>
 void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
 {
@@ -348,11 +365,16 @@ void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
              networkId_, MEDIA_API_VERSION_V10);
         uri = fileUri.ToString();
     } else {
-        MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()),
-            networkId_);
 #ifdef MEDIALIBRARY_COMPATIBILITY
-        uri = MediaFileUtils::GetVirtualUriFromRealUri(fileUri.ToString());
+        if (IsFileTablePath(fileAsset->GetPath())) {
+            MediaFileUri fileUri(MediaType::MEDIA_TYPE_FILE, to_string(fileAsset->GetId()), networkId_);
+            uri = MediaFileUtils::GetVirtualUriFromRealUri(fileUri.ToString());
+        } else {
+            MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()), networkId_);
+            uri = MediaFileUtils::GetVirtualUriFromRealUri(fileUri.ToString());
+        }
 #else
+        MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()), networkId_);
         uri = fileUri.ToString();
 #endif
     }
