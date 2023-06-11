@@ -71,11 +71,26 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
     return deleteRow;
 }
 
+static void HandleGroupBy(AbsPredicates &predicates, const vector<string> &columns)
+{
+    auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
+    if (it == columns.end()) {
+        return;
+    }
+    if (!predicates.GetGroup().empty()) {
+        return;
+    }
+    string whereClause = predicates.GetWhereClause();
+    predicates.SetWhereClause(whereClause +
+        " GROUP BY (DATE(date_added, 'unixepoch')) ORDER BY date_added DESC ");
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
-    return MediaLibraryRdbStore::Query(
-        RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE), columns);
+    RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
+    HandleGroupBy(predicates, columns);
+    return MediaLibraryRdbStore::Query(predicates, columns);
 }
 
 int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
