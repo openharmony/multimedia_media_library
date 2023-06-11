@@ -770,7 +770,6 @@ static napi_value TrashAlbumParseArgs(napi_env env, napi_callback_info info,
         return result;
     }
     context->predicates.In(MediaColumn::MEDIA_ID, assetsArray);
-    context->predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     context->valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, 0);
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
