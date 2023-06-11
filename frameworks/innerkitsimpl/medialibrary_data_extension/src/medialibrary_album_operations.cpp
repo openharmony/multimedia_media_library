@@ -174,6 +174,59 @@ static void GetSqlArgs(MediaLibraryCommand &cmd, string &sql, vector<string> &se
     ReplaceMediaType(clause, selectionArgs);
     sql += clause;
 }
+
+static void QueryAlbumDebug(MediaLibraryCommand &cmd, const vector<string> &columns,
+    const shared_ptr<MediaLibraryUnistore> &store)
+{
+    MEDIA_DEBUG_LOG("Querying album, table: %{public}s selections: %{public}s",
+        cmd.GetAbsRdbPredicates()->GetTableName().c_str(), cmd.GetAbsRdbPredicates()->GetWhereClause().c_str());
+    for (const auto &arg : cmd.GetAbsRdbPredicates()->GetWhereArgs()) {
+        MEDIA_DEBUG_LOG("Querying album, arg: %{public}s", arg.c_str());
+    }
+    for (const auto &col : columns) {
+        MEDIA_DEBUG_LOG("Querying album, col: %{public}s", col.c_str());
+    }
+
+    auto resultSet = store->Query(cmd, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query file!");
+        return;
+    }
+    int32_t count = -1;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
+        return;
+    }
+    MEDIA_DEBUG_LOG("Querying album, count: %{public}d", count);
+}
+
+static void QuerySqlDebug(const string &sql, const vector<string> &selectionArgs, const vector<string> &columns,
+    const shared_ptr<MediaLibraryUnistore> &store)
+{
+    constexpr int32_t printMax = 512;
+    for (size_t pos = 0; pos < sql.size(); pos += printMax) {
+        MEDIA_DEBUG_LOG("Quering album sql: %{public}s", sql.substr(pos, printMax).c_str());
+    }
+    for (const auto &arg : selectionArgs) {
+        MEDIA_DEBUG_LOG("Quering album, arg: %{public}s", arg.c_str());
+    }
+    for (const auto &col : columns) {
+        MEDIA_DEBUG_LOG("Quering album, col: %{public}s", col.c_str());
+    }
+    auto resultSet = store->QuerySql(sql, selectionArgs);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query album!");
+        return;
+    }
+    int32_t count = -1;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
+        return;
+    }
+    MEDIA_DEBUG_LOG("Quering album, count: %{public}d", count);
+}
 #endif
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
@@ -197,9 +250,11 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperatio
         string sql;
         vector<string> selectionArgs;
         GetSqlArgs(cmd, sql, selectionArgs, columns);
+        QuerySqlDebug(sql, selectionArgs, columns, uniStore);
         return uniStore->QuerySql(sql, selectionArgs);
     }
 
+    QueryAlbumDebug(cmd, columns, uniStore);
     return uniStore->Query(cmd, columns);
 #else
     string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
