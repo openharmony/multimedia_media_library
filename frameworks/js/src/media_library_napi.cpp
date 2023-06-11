@@ -762,6 +762,95 @@ napi_value MediaLibraryNapi::JSGetFileAssets(napi_env env, napi_callback_info in
     return result;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static void CompatSetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CompatSetAlbumCoverUri");
+    DataSharePredicates predicates;
+    int err;
+    if (album->GetAlbumType() == PhotoAlbumType::USER) {
+        err = MediaLibraryNapiUtils::GetUserAlbumPredicates(album->GetAlbumId(), predicates);
+    } else {
+        err = MediaLibraryNapiUtils::GetSystemAlbumPredicates(album->GetAlbumSubType(), predicates);
+    }
+    if (err < 0) {
+        NAPI_WARN_LOG("Failed to set cover uri for album subtype: %{public}d", album->GetAlbumSubType());
+        return;
+    }
+    predicates.OrderByDesc(MediaColumn::MEDIA_DATE_ADDED);
+    predicates.Limit(1, 0);
+
+    Uri uri(URI_QUERY_PHOTO_MAP);
+    vector<string> columns;
+    columns.assign(MediaColumn::DEFAULT_FETCH_COLUMNS.begin(), MediaColumn::DEFAULT_FETCH_COLUMNS.end());
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, err);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("Query for Album uri failed! errorCode is = %{public}d", err);
+        context->SaveError(err);
+        return;
+    }
+    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    if (fetchResult->GetCount() == 0) {
+        return;
+    }
+    auto fileAsset = fetchResult->GetFirstObject();
+    if (fileAsset == nullptr) {
+        NAPI_WARN_LOG("Failed to get cover asset!");
+        return;
+    }
+    album->SetCoverUri(fileAsset->GetUri());
+}
+
+static void SetCompatAlbumName(AlbumAsset *albumData)
+{
+    string albumName;
+    switch (albumData->GetAlbumSubType()) {
+        case PhotoAlbumSubType::CAMERA:
+            albumName = CAMERA_ALBUM_NAME;
+            break;
+        case PhotoAlbumSubType::SCREENSHOT:
+            albumName = SCREEN_SHOT_ALBUM_NAME;
+            break;
+        case PhotoAlbumSubType::VIDEO:
+            albumName = VIDEO_ALBUM_NAME;
+            break;
+        default:
+            NAPI_WARN_LOG("Ignore unsupported compat album type: %{public}d", albumData->GetAlbumSubType());
+    }
+    albumData->SetAlbumName(albumName);
+}
+
+static void CompatSetAlbumCount(unique_ptr<AlbumAsset> &album)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CompatSetAlbumCount");
+    DataSharePredicates predicates;
+    int err;
+    if (album->GetAlbumType() == PhotoAlbumType::USER) {
+        err = MediaLibraryNapiUtils::GetUserAlbumPredicates(album->GetAlbumId(), predicates);
+    } else {
+        err = MediaLibraryNapiUtils::GetSystemAlbumPredicates(album->GetAlbumSubType(), predicates);
+    }
+    if (err < 0) {
+        NAPI_WARN_LOG("Failed to set count for album subtype: %{public}d", album->GetAlbumSubType());
+        album->SetCount(0);
+        return;
+    }
+
+    Uri uri(URI_QUERY_PHOTO_MAP);
+    vector<string> columns;
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, err);
+    if (resultSet == nullptr) {
+        NAPI_WARN_LOG("Query for assets failed! errorCode is = %{public}d", err);
+        album->SetCount(0);
+        return;
+    }
+    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    int32_t count = fetchResult->GetCount();
+    album->SetCount(count);
+}
+#else
 static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
 {
     MediaLibraryTracer tracer;
@@ -793,6 +882,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     album->SetCoverUri(coverUri);
     NAPI_DEBUG_LOG("coverUri is = %{public}s", album->GetCoverUri().c_str());
 }
+#endif
 
 void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSet> resultSet,
     const string &networkId)
@@ -800,12 +890,11 @@ void SetAlbumData(AlbumAsset* albumData, shared_ptr<DataShare::DataShareResultSe
 #ifdef MEDIALIBRARY_COMPATIBILITY
     albumData->SetAlbumId(get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet,
         TYPE_INT32)));
-    albumData->SetAlbumName(get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_NAME, resultSet,
-        TYPE_STRING)));
     albumData->SetAlbumType(static_cast<PhotoAlbumType>(
         get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_TYPE, resultSet, TYPE_INT32))));
     albumData->SetAlbumSubType(static_cast<PhotoAlbumSubType>(
         get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet, TYPE_INT32))));
+    SetCompatAlbumName(albumData);
 #else
     // Get album id index and value
     albumData->SetAlbumId(get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_BUCKET_ID, resultSet,
@@ -842,7 +931,12 @@ static void GetAlbumResult(MediaLibraryAsyncContext *context, shared_ptr<DataSha
         unique_ptr<AlbumAsset> albumData = make_unique<AlbumAsset>();
         if (albumData != nullptr) {
             SetAlbumData(albumData.get(), resultSet, context->networkId);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+            CompatSetAlbumCoverUri(context, albumData);
+            CompatSetAlbumCount(albumData);
+#else
             SetAlbumCoverUri(context, albumData);
+#endif
             albumData->SetAlbumTypeMask(context->typeMask);
             context->albumNativeArray.push_back(move(albumData));
         } else {
@@ -921,8 +1015,14 @@ static void ReplaceSelection(string &selection, vector<string> &selectionArgs,
         } else if (key == MEDIA_DATA_DB_BUCKET_NAME) {
             ReplaceAlbumName(arg, argInstead);
             selection.replace(pos, key.length(), keyInstead);
+        } else if (key == MEDIA_DATA_DB_BUCKET_ID) {
+            selection.replace(pos, key.length(), keyInstead);
         }
         selectionArgs[argIndex] = argInstead;
+        argPos = selection.find('?', pos);
+        if (argPos == string::npos) {
+            break;
+        }
         pos = argPos + 1;
     }
 }
@@ -2816,45 +2916,6 @@ static napi_value AddDefaultPhotoAlbumColumns(napi_env env, vector<string> &fetc
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
-static void CompatSetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<AlbumAsset> &album)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("CompatSetAlbumCoverUri");
-    DataSharePredicates predicates;
-    int err;
-    if (album->GetAlbumType() == PhotoAlbumType::USER) {
-        err = MediaLibraryNapiUtils::GetUserAlbumPredicates(album->GetAlbumId(), predicates);
-    } else {
-        err = MediaLibraryNapiUtils::GetSystemAlbumPredicates(album->GetAlbumSubType(), predicates);
-    }
-    if (err < 0) {
-        NAPI_WARN_LOG("Failed to set cover uri for album subtype: %{public}d", album->GetAlbumSubType());
-        return;
-    }
-    predicates.OrderByDesc(MediaColumn::MEDIA_DATE_ADDED);
-    predicates.Limit(1, 0);
-
-    Uri uri(URI_QUERY_PHOTO_MAP);
-    vector<string> columns;
-    columns.assign(MediaColumn::DEFAULT_FETCH_COLUMNS.begin(), MediaColumn::DEFAULT_FETCH_COLUMNS.end());
-    auto resultSet = UserFileClient::Query(uri, predicates, columns, err);
-    if (resultSet == nullptr) {
-        NAPI_ERR_LOG("Query for Album uri failed! errorCode is = %{public}d", err);
-        context->SaveError(err);
-        return;
-    }
-    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
-    if (fetchResult->GetCount() == 0) {
-        return;
-    }
-    auto fileAsset = fetchResult->GetFirstObject();
-    if (fileAsset == nullptr) {
-        NAPI_WARN_LOG("Failed to get cover asset!");
-        return;
-    }
-    album->SetCoverUri(fileAsset->GetUri());
-}
-
 static void CompatGetPrivateAlbumExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
