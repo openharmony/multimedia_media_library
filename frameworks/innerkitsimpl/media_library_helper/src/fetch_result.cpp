@@ -277,7 +277,7 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetRowValFromColumn(string col
         status = resultset_->GetColumnIndex(columnName, index);
     }
     if (status != NativeRdb::E_OK) {
-        ReturnDefaultOnError("failed to obtain the index", dataType);
+        return ReturnDefaultOnError("failed to obtain the index", dataType);
     }
     return GetValByIndex(index, dataType, resultSet);
 }
