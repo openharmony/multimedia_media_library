@@ -230,7 +230,7 @@ int MediaFileExtentionUtils::Delete(const Uri &sourceFileUri)
     } else {
         valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
 #ifdef MEDIALIBRARY_COMPATIBILITY
-        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID,
+        valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID,
             (int) MediaFileUtils::GetRealIdByTable(fileId, MEDIALIBRARY_TABLE));
 #else
         valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileId);
