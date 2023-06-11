@@ -1543,14 +1543,16 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    string mediaType;
-    string deleteId;
+    string mediaType, deleteId;
     bool isValid = false;
     string notifyUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
         context->error = ERR_INVALID_OUTPUT;
         return;
     }
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    notifyUri = MediaFileUtils::GetRealUriFromVirtualUri(notifyUri);
+#endif
     size_t index = notifyUri.rfind('/');
     if (index != string::npos) {
         deleteId = notifyUri.substr(index + 1);
@@ -1571,7 +1573,6 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
     }
 #endif
     notifyUri = MEDIALIBRARY_DATA_URI + "/" + mediaType;
-    NAPI_DEBUG_LOG("JSDeleteAssetExcute notifyUri = %{public}s", notifyUri.c_str());
     string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, context->typeMask);
     Uri deleteAssetUri(deleteUri);

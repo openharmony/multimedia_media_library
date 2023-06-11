@@ -64,7 +64,8 @@ static inline void SetVirtualPath(const Metadata &metaData, ValuesBucket &values
 }
 #endif
 
-static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket &values, MediaType mediaType)
+static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket &values, MediaType mediaType,
+    const string &tableName)
 {
 #ifdef MEDIALIBRARY_COMPATIBILITY
     if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO) {
@@ -73,14 +74,18 @@ static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket 
         values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
         values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLongitude());
         values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLatitude());
-        SetVirtualPath(metadata, values);
+        if (tableName != MEDIALIBRARY_TABLE) {
+            SetVirtualPath(metadata, values);
+        }
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
         }
     } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
         values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
         values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
-        SetVirtualPath(metadata, values);
+        if (tableName != MEDIALIBRARY_TABLE) {
+            SetVirtualPath(metadata, values);
+        }
     } else {
         values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
         values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
@@ -107,7 +112,8 @@ static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket 
 #endif
 }
 
-static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &values, bool isInsert)
+static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &values, bool isInsert,
+    const string &table)
 {
     MediaType mediaType = metadata.GetFileMediaType();
     values.PutString(MEDIA_DATA_DB_FILE_PATH, metadata.GetFilePath());
@@ -122,7 +128,7 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
     values.PutLong(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
     values.PutLong(MEDIA_DATA_DB_TIME_PENDING, 0);
 
-    SetValuesFromMetaDataAndType(metadata, values, mediaType);
+    SetValuesFromMetaDataAndType(metadata, values, mediaType, table);
 
     if (isInsert) {
         values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
@@ -164,8 +170,29 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     }
 }
 
-static void GetTableNameByPath(int32_t mediaType, string &tableName)
+static bool IsFileTablePath(const string &path)
 {
+    if (path.size() <= ROOT_MEDIA_DIR.size()) {
+        return false;
+    }
+
+    if (path.find(ROOT_MEDIA_DIR) == string::npos) {
+        return false;
+    }
+
+    string relativePath = path.substr(ROOT_MEDIA_DIR.size());
+    if ((relativePath.find(DOWNLOAD_DIR_VALUES) == 0) || (relativePath.find(DOC_DIR_VALUES) == 0)) {
+        return true;
+    }
+    return false;
+}
+
+static void GetTableNameByPath(int32_t mediaType, string &tableName, const string &path = "")
+{
+    if (!path.empty() && IsFileTablePath(path)) {
+        tableName = MEDIALIBRARY_TABLE;
+        return;
+    }
     switch (mediaType) {
         case MediaType::MEDIA_TYPE_IMAGE:
         case MediaType::MEDIA_TYPE_VIDEO: {
@@ -207,10 +234,10 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata, MediaLibraryApi 
         SetValuesFromMetaDataApi10(metadata, values, true);
         GetTableNameByPath(mediaType, tableName);
     } else {
-        SetValuesFromMetaDataApi9(metadata, values, true);
 #ifdef MEDIALIBRARY_COMPATIBILITY
         GetTableNameByPath(mediaType, tableName);
 #endif
+        SetValuesFromMetaDataApi9(metadata, values, true, tableName);
     }
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -287,10 +314,10 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, MediaLibraryApi 
         SetValuesFromMetaDataApi10(metadata, values, false);
         GetTableNameByPath(mediaType, tableName);
     } else {
-        SetValuesFromMetaDataApi9(metadata, values, false);
 #ifdef MEDIALIBRARY_COMPATIBILITY
         GetTableNameByPath(mediaType, tableName);
 #endif
+        SetValuesFromMetaDataApi9(metadata, values, false, tableName);
     }
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
