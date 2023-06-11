@@ -99,6 +99,14 @@ int MediaFileExtentionUtils::OpenFile(const Uri &uri, const int flags, int &fd)
     return ret;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static inline string GetUriFromId(int32_t id, const string &networkId)
+{
+    int64_t fileId = MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_FILE);
+    return MediaFileUri(MediaType::MEDIA_TYPE_FILE, to_string(fileId), networkId).ToString();
+}
+#endif
+
 int MediaFileExtentionUtils::CreateFile(const Uri &parentUri, const string &displayName,  Uri &newFileUri)
 {
     if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
@@ -123,7 +131,11 @@ int MediaFileExtentionUtils::CreateFile(const Uri &parentUri, const string &disp
     Uri createFileUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_CREATEASSET);
     ret = MediaLibraryDataManager::GetInstance()->Insert(createFileUri, valuesBucket);
     if (ret > 0) {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        newFileUri = Uri(GetUriFromId(ret, ""));
+#else
         newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", ret));
+#endif
     }
     return ret;
 }
@@ -177,7 +189,11 @@ int MediaFileExtentionUtils::Mkdir(const Uri &parentUri, const string &displayNa
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
     if (ret > 0) {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        newFileUri = Uri(GetUriFromId(ret, ""));
+#else
         newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", ret));
+#endif
     }
     return ret;
 }
@@ -202,13 +218,23 @@ int MediaFileExtentionUtils::Delete(const Uri &sourceFileUri)
     int fileId = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(sourceUri));
     DataShareValuesBucket valuesBucket;
     if (mediaType == MEDIA_TYPE_ALBUM) {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        valuesBucket.Put(MEDIA_DATA_DB_ID,
+            (int) MediaFileUtils::GetRealIdByTable(fileId, MEDIALIBRARY_TABLE));
+#else
         valuesBucket.Put(MEDIA_DATA_DB_ID, fileId);
+#endif
         Uri trashAlbumUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR +
             MEDIA_DIROPRN_FMS_TRASHDIR);
         ret = MediaLibraryDataManager::GetInstance()->Insert(trashAlbumUri, valuesBucket);
     } else {
         valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID,
+            (int) MediaFileUtils::GetRealIdByTable(fileId, MEDIALIBRARY_TABLE));
+#else
         valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileId);
+#endif
         Uri trashAssetUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_SMARTALBUMMAPOPRN + SLASH_CHAR +
             MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
         ret = MediaLibraryDataManager::GetInstance()->Insert(trashAssetUri, valuesBucket);
@@ -616,9 +642,11 @@ int GetFileInfo(FileInfo &fileInfo, const shared_ptr<NativeRdb::ResultSet> &resu
     int64_t fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
     int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    fileId = MediaFileUtils::GetVirtualIdByType(fileId, MediaType(mediaType));
-#endif
+    fileId = MediaFileUtils::GetVirtualIdByType(fileId, MediaType::MEDIA_TYPE_FILE);
+    fileInfo.uri = MediaFileUri(MediaType::MEDIA_TYPE_FILE, to_string(fileId), networkId).ToString();
+#else
     fileInfo.uri = MediaFileUri(MediaType(mediaType), to_string(fileId), networkId).ToString();
+#endif
     fileInfo.relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
     fileInfo.fileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
     fileInfo.mimeType = GetStringVal(MEDIA_DATA_DB_MIME_TYPE, result);
@@ -1100,7 +1128,12 @@ int32_t HandleFileRename(const shared_ptr<FileAsset> &fileAsset)
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string fileUri = fileAsset->GetUri() + SLASH_CHAR + to_string(MediaFileUtils::GetVirtualIdByType(
+        fileAsset->GetId(), MediaType::MEDIA_TYPE_FILE));
+#else
     string fileUri = fileAsset->GetUri() + SLASH_CHAR + to_string(fileAsset->GetId());
+#endif
     valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
     valuesBucket.Put(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
@@ -1253,7 +1286,12 @@ int32_t HandleFileMove(const shared_ptr<FileAsset> &fileAsset, const string &des
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string fileUri = fileAsset->GetUri() + SLASH_CHAR + to_string(MediaFileUtils::GetVirtualIdByType(
+        fileAsset->GetId(), MediaType::MEDIA_TYPE_FILE));
+#else
     string fileUri = fileAsset->GetUri() + SLASH_CHAR + to_string(fileAsset->GetId());
+#endif
     valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
     valuesBucket.Put(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
@@ -1456,11 +1494,13 @@ void GetUriByRelativePath(const string &relativePath, string &fileUriStr)
     CHECK_AND_RETURN_LOG(result != nullptr,
         "Get Uri failed, relativePath: %{private}s", relativePath.c_str());
     int64_t fileId = GetInt32Val(MEDIA_DATA_DB_ID, result);
-    int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    fileId = MediaFileUtils::GetVirtualIdByType(fileId, MediaType(mediaType));
-#endif
+    fileId = MediaFileUtils::GetVirtualIdByType(fileId, MediaType::MEDIA_TYPE_FILE);
+    fileUriStr = MediaFileUri(MediaType::MEDIA_TYPE_FILE, to_string(fileId)).ToString();
+#else
+    int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
     fileUriStr = MediaFileUri(MediaType(mediaType), to_string(fileId)).ToString();
+#endif
 }
 
 int GetRelativePathByUri(const string &uriStr, string &relativePath)
