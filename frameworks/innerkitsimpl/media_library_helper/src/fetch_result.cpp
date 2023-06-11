@@ -277,7 +277,7 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetRowValFromColumn(string col
         status = resultset_->GetColumnIndex(columnName, index);
     }
     if (status != NativeRdb::E_OK) {
-        ReturnDefaultOnError("failed to obtain the index", dataType);
+        return ReturnDefaultOnError("failed to obtain the index", dataType);
     }
     return GetValByIndex(index, dataType, resultSet);
 }
@@ -472,16 +472,37 @@ unique_ptr<T> FetchResult<T>::GetObjectFromRdb(shared_ptr<NativeRdb::ResultSet> 
     return GetObject(resultSet);
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static void SetCompatAlbumName(AlbumAsset *albumData)
+{
+    string albumName;
+    switch (albumData->GetAlbumSubType()) {
+        case PhotoAlbumSubType::CAMERA:
+            albumName = CAMERA_ALBUM_NAME;
+            break;
+        case PhotoAlbumSubType::SCREENSHOT:
+            albumName = SCREEN_SHOT_ALBUM_NAME;
+            break;
+        case PhotoAlbumSubType::VIDEO:
+            albumName = VIDEO_ALBUM_NAME;
+            break;
+        default:
+            MEDIA_WARN_LOG("Ignore unsupported compat album type: %{public}d", albumData->GetAlbumSubType());
+    }
+    albumData->SetAlbumName(albumName);
+}
+#endif
+
 template<class T>
 void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
 #ifdef MEDIALIBRARY_COMPATIBILITY
     albumData->SetAlbumId(get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_ID, TYPE_INT32, resultSet)));
-    albumData->SetAlbumName(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_NAME, TYPE_STRING, resultSet)));
     albumData->SetAlbumType(static_cast<PhotoAlbumType>(
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32, resultSet))));
     albumData->SetAlbumSubType(static_cast<PhotoAlbumSubType>(
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, resultSet))));
+    SetCompatAlbumName(albumData);
 #else
     // Get album id index and value
     albumData->SetAlbumId(get<int32_t>(GetRowValFromColumn(MEDIA_DATA_DB_BUCKET_ID, TYPE_INT32, resultSet)));
