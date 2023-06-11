@@ -1022,6 +1022,20 @@ void ModifySyncStatus(RdbStore &store)
     }
 }
 
+void ModifyDeleteTrigger(RdbStore &store)
+{
+    /* drop old delete trigger */
+    const std::string dropDeleteTrigger = "DROP TRIGGER IF EXISTS photos_delete_trigger";
+    if (store.ExecuteSql(dropDeleteTrigger) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("upgrade fail: drop old delete trigger");
+    }
+
+    /* create new delete trigger */
+    if (store.ExecuteSql(PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("upgrade fail: create new delete trigger");
+    }
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1039,6 +1053,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_API10_TABLE) {
         API10TableCreate(store);
+    }
+
+    if (oldVersion < VERSION_MODIFY_DELETE_TRIGGER) {
+        ModifyDeleteTrigger(store);
     }
 
     return NativeRdb::E_OK;
