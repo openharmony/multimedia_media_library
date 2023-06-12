@@ -119,8 +119,7 @@ const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         "CREATE TRIGGER photos_delete_trigger AFTER UPDATE ON " +
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN new.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
-                        " and OLD.cloud_id is NULL " +
-                        " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
+                        " AND OLD.cloud_id is NULL AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
                         " DELETE FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE file_id = old.file_id;" +
                         " END;";
