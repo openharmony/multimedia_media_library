@@ -322,6 +322,7 @@ unordered_map<string, DirAsset> MediaLibraryDataManager::GetDirQuerySetMap()
     return dirQuerySetMap_;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
 static void ChangeUriFromValuesBucket(ValuesBucket &values)
 {
     if (!values.HasColumn(MEDIA_DATA_DB_URI)) {
@@ -340,6 +341,7 @@ static void ChangeUriFromValuesBucket(ValuesBucket &values)
     values.Delete(MEDIA_DATA_DB_URI);
     values.PutString(MEDIA_DATA_DB_URI, newUri);
 }
+#endif
 
 int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 {
@@ -392,8 +394,9 @@ int32_t MediaLibraryDataManager::Insert(const Uri &uri, const DataShareValuesBuc
         MEDIA_ERR_LOG("MediaLibraryDataManager Insert: Input parameter is invalid");
         return E_INVALID_VALUES;
     }
+#ifdef MEDIALIBRARY_COMPATIBILITY
     ChangeUriFromValuesBucket(value);
-
+#endif
     MediaLibraryCommand cmd(uri, value);
     OperationType oprnType = cmd.GetOprnType();
     if (oprnType == OperationType::CREATE) {
@@ -540,7 +543,10 @@ int32_t MediaLibraryDataManager::Update(const Uri &uri, const DataShareValuesBuc
         MEDIA_ERR_LOG("MediaLibraryDataManager Update:Input parameter is invalid ");
         return E_INVALID_VALUES;
     }
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
     ChangeUriFromValuesBucket(value);
+#endif
 
     MediaLibraryCommand cmd(uri, value);
     cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
