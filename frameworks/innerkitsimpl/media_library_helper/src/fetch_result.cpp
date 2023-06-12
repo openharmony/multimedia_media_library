@@ -336,6 +336,7 @@ static void MediaTypeToMask(MediaType mediaType, string &typeMask)
     }
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
 static bool IsFileTablePath(const string &path)
 {
     if (path.empty() || path.size() <= ROOT_MEDIA_DIR.size()) {
@@ -352,6 +353,7 @@ static bool IsFileTablePath(const string &path)
     }
     return false;
 }
+#endif
 
 template<class T>
 void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
