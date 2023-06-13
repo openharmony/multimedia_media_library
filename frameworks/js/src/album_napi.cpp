@@ -815,15 +815,14 @@ static void CommitModifyNative(napi_env env, void *data)
     tracer.Start("CommitModifyNative");
 
     auto *context = static_cast<AlbumNapiAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto objectPtr = context->objectPtr;
     if (MediaFileUtils::CheckTitle(objectPtr->GetAlbumName()) < 0) {
         context->error = JS_E_DISPLAYNAME;
         NAPI_ERR_LOG("album name invalid = %{public}s", objectPtr->GetAlbumName().c_str());
         return;
     }
-#ifdef MEDIALIBRARY_COMPATIBILITY
-    context->changedRows = 0;
-#else
+
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_TITLE, objectPtr->GetAlbumName());
@@ -849,7 +848,6 @@ static void CommitModifyNative(napi_env env, void *data)
     }
     context->SaveError(changedRows);
     context->changedRows = changedRows;
-#endif
 }
 
 static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, void *data)
