@@ -112,6 +112,7 @@ public:
     static std::string GetVirtualUriFromRealUri(const std::string &uri);
     static std::string GetRealUriFromVirtualUri(const std::string &uri);
     static bool IsUriV10(const std::string &mediaType);
+    static bool IsFileTablePath(const std::string &path);
 };
 } // namespace OHOS::Media
 

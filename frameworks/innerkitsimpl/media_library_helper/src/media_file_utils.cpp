@@ -1083,4 +1083,21 @@ bool MediaFileUtils::IsUriV10(const string &mediaType)
         mediaType == URI_TYPE_PHOTO_ALBUM ||
         mediaType == URI_TYPE_AUDIO_V10;
 }
+
+bool MediaFileUtils::IsFileTablePath(const string &path)
+{
+    if (path.empty() || path.size() <= ROOT_MEDIA_DIR.size()) {
+        return false;
+    }
+
+    if (path.find(ROOT_MEDIA_DIR) == string::npos) {
+        return false;
+    }
+
+    string relativePath = path.substr(ROOT_MEDIA_DIR.size());
+    if ((relativePath.find(DOWNLOAD_DIR_VALUES) == 0) || (relativePath.find(DOC_DIR_VALUES) == 0)) {
+        return true;
+    }
+    return false;
+}
 } // namespace OHOS::Media

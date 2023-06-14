@@ -306,7 +306,15 @@ int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t par
     struct stat statInfo {};
     if (stat(path.c_str(), &statInfo) == 0) {
         values.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        if (statInfo.st_mtime == 0) {
+            values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+        } else {
+            values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
+        }
+#else
         values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
+#endif
     }
     return E_SUCCESS;
 }
@@ -854,7 +862,14 @@ int32_t MediaLibraryObjectUtils::UpdateDateModified(const string &dirPath)
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
     ValuesBucket valuesBucket;
-    valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::GetAlbumDateModified(dirPath));
+    int64_t dateModified = MediaFileUtils::GetAlbumDateModified(dirPath);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (dateModified == 0) {
+        return 0;
+    }
+#endif
+    valuesBucket.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, dateModified);
+
     cmd.SetValueBucket(valuesBucket);
 
     return ModifyInfoByPathInDb(cmd, dirPath);
