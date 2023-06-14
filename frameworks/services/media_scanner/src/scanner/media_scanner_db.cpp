@@ -55,50 +55,17 @@ void MediaScannerDb::SetRdbHelper(void)
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
-static inline void SetVirtualPath(const Metadata &metaData, ValuesBucket &values)
+static inline void SetVirtualPath(const Metadata &metadata, ValuesBucket &values)
 {
-    string relativePath = metaData.GetRelativePath();
-    string displayName = metaData.GetFileName();
+    string relativePath = metadata.GetRelativePath();
+    string displayName = metadata.GetFileName();
     string virtualPath = (relativePath.back() == '/' ? relativePath : relativePath + "/") + displayName;
     values.PutString(MediaColumn::MEDIA_VIRTURL_PATH, virtualPath);
 }
 #endif
 
-static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket &values, MediaType mediaType,
-    const string &tableName)
+static inline void SetRemainFileMetadataApi9(const Metadata &metadata, ValuesBucket &values)
 {
-#ifdef MEDIALIBRARY_COMPATIBILITY
-    if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO) {
-        values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
-        values.PutInt(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
-        values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
-        values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLongitude());
-        values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLatitude());
-        if (tableName != MEDIALIBRARY_TABLE) {
-            SetVirtualPath(metadata, values);
-        }
-        if (metadata.GetPhotoSubType() != 0) {
-            values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
-        }
-    } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
-        values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
-        values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
-        if (tableName != MEDIALIBRARY_TABLE) {
-            SetVirtualPath(metadata, values);
-        }
-    } else {
-        values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
-        values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
-        values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
-        values.PutInt(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
-        values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
-        values.PutString(MEDIA_DATA_DB_BUCKET_NAME, metadata.GetAlbumName());
-        values.PutInt(MEDIA_DATA_DB_PARENT_ID, metadata.GetParentId());
-        values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
-        values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
-        values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
-    }
-#else
     values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
     values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
     values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
@@ -109,6 +76,39 @@ static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket 
     values.PutInt(MEDIA_DATA_DB_BUCKET_ID, metadata.GetParentId());
     values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
     values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
+}
+
+static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket &values, MediaType mediaType,
+    const string &tableName)
+{
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO) {
+        if (tableName == MEDIALIBRARY_TABLE) {
+            SetRemainFileMetadataApi9(metadata, values);
+        } else {
+            values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
+            values.PutInt(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
+            values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
+            values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLongitude());
+            values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLatitude());
+            SetVirtualPath(metadata, values);
+            if (metadata.GetPhotoSubType() != 0) {
+                values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
+            }
+        }
+    } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
+        if (tableName == MEDIALIBRARY_TABLE) {
+            SetRemainFileMetadataApi9(metadata, values);
+        } else {
+            values.PutString(MEDIA_DATA_DB_AUDIO_ALBUM, metadata.GetAlbum());
+            values.PutString(MEDIA_DATA_DB_ARTIST, metadata.GetFileArtist());
+            SetVirtualPath(metadata, values);
+        }
+    } else {
+        SetRemainFileMetadataApi9(metadata, values);
+    }
+#else
+    SetRemainFileMetadataApi9(metadata, values);
 #endif
 }
 
@@ -170,26 +170,9 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     }
 }
 
-static bool IsFileTablePath(const string &path)
-{
-    if (path.size() <= ROOT_MEDIA_DIR.size()) {
-        return false;
-    }
-
-    if (path.find(ROOT_MEDIA_DIR) == string::npos) {
-        return false;
-    }
-
-    string relativePath = path.substr(ROOT_MEDIA_DIR.size());
-    if ((relativePath.find(DOWNLOAD_DIR_VALUES) == 0) || (relativePath.find(DOC_DIR_VALUES) == 0)) {
-        return true;
-    }
-    return false;
-}
-
 static void GetTableNameByPath(int32_t mediaType, string &tableName, const string &path = "")
 {
-    if (!path.empty() && IsFileTablePath(path)) {
+    if (!path.empty() && MediaFileUtils::IsFileTablePath(path)) {
         tableName = MEDIALIBRARY_TABLE;
         return;
     }

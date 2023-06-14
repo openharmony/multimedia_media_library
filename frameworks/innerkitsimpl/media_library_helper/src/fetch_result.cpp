@@ -336,25 +336,6 @@ static void MediaTypeToMask(MediaType mediaType, string &typeMask)
     }
 }
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
-static bool IsFileTablePath(const string &path)
-{
-    if (path.empty() || path.size() <= ROOT_MEDIA_DIR.size()) {
-        return false;
-    }
-
-    if (path.find(ROOT_MEDIA_DIR) == string::npos) {
-        return false;
-    }
-
-    string relativePath = path.substr(ROOT_MEDIA_DIR.size());
-    if ((relativePath.find(DOWNLOAD_DIR_VALUES) == 0) || (relativePath.find(DOC_DIR_VALUES) == 0)) {
-        return true;
-    }
-    return false;
-}
-#endif
-
 template<class T>
 void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
 {
@@ -368,7 +349,7 @@ void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
         uri = fileUri.ToString();
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
-        if (IsFileTablePath(fileAsset->GetPath())) {
+        if (MediaFileUtils::IsFileTablePath(fileAsset->GetPath())) {
             MediaFileUri fileUri(MediaType::MEDIA_TYPE_FILE, to_string(fileAsset->GetId()), networkId_);
             uri = MediaFileUtils::GetVirtualUriFromRealUri(fileUri.ToString());
         } else {
