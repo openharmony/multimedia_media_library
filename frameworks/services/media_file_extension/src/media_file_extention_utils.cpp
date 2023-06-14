@@ -541,8 +541,9 @@ shared_ptr<NativeRdb::ResultSet> GetResult(const Uri &uri, MediaFileUriType uriT
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
     int errCode = 0;
-    vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_MODIFIED,
-        MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_RELATIVE_PATH };
+    vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_DATE_MODIFIED, MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_RELATIVE_PATH };
     return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
 }
 
