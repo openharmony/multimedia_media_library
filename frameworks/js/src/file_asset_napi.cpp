@@ -334,7 +334,12 @@ napi_value FileAssetNapi::JSGetFileId(napi_env env, napi_callback_info info)
     if (status == napi_ok && obj != nullptr) {
         id = obj->GetFileId();
 #ifdef MEDIALIBRARY_COMPATIBILITY
-        int64_t virtualId = MediaFileUtils::GetVirtualIdByType(id, obj->GetMediaType());
+        int64_t virtualId = 0;
+        if (MediaFileUtils::IsFileTablePath(obj->GetFilePath())) {
+            virtualId = MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_FILE);
+        } else {
+            virtualId = MediaFileUtils::GetVirtualIdByType(id, obj->GetMediaType());
+        }
         napi_create_int64(env, virtualId, &jsResult);
 #else
         napi_create_int32(env, id, &jsResult);
@@ -2043,7 +2048,11 @@ static void JSFavouriteExecute(napi_env env, void *data)
     if ((context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_IMAGE) ||
         (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_VIDEO) ||
         (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_AUDIO)) {
-        FavoriteByUpdate(context);
+        if (MediaFileUtils::IsFileTablePath(context->objectPtr->GetPath())) {
+            FavoriteByInsert(context);
+        } else {
+            FavoriteByUpdate(context);
+        }
     } else {
         FavoriteByInsert(context);
     }
@@ -2202,7 +2211,11 @@ static void JSTrashExecute(napi_env env, void *data)
     if ((context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_IMAGE) ||
         (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_VIDEO) ||
         (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_AUDIO)) {
-        TrashByUpdate(context);
+        if (MediaFileUtils::IsFileTablePath(context->objectPtr->GetPath())) {
+            TrashByInsert(context);
+        } else {
+            TrashByUpdate(context);
+        }
     } else {
         TrashByInsert(context);
     }

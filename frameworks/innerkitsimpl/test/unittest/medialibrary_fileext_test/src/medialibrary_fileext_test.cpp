@@ -2780,7 +2780,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromUri_test_006, Test
         exit(1);
     }
     shared_ptr<FileAsset> albumAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("GetFileInfoFromUri_test_006", g_pictures, albumAsset), true);
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("GetFileInfoFromUri_test_006", g_download, albumAsset), true);
     shared_ptr<FileAsset> fileAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("GetFileInfoFromUri_test_006.jpg", albumAsset, fileAsset), true);
     Uri uri(fileAsset->GetUri());
