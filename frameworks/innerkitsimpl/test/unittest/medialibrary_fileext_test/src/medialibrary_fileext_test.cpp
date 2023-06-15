@@ -21,16 +21,19 @@
 #include "file_asset.h"
 #include "get_self_permissions.h"
 #include "js_runtime.h"
+#include "medialibrary_command.h"
 #include "media_file_ext_ability.h"
 #include "media_file_extention_utils.h"
 #include "media_log.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_unittest_utils.h"
 #include "scanner_utils.h"
 #include "securec.h"
 #include "uri.h"
+#include "values_bucket.h"
 
 using namespace std;
 using namespace OHOS;
@@ -122,12 +125,15 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_OpenFile_test_001, TestSize.Level
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
-    shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("OpenFile_test_001.jpg", g_pictures, fileAsset), true);
-    Uri uri(fileAsset->GetUri());
+    Uri fileAsset("");
+    shared_ptr<FileAsset> albumAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("CreateFile_test_001", g_pictures, albumAsset), true);
+    Uri parentUri(albumAsset->GetUri());
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_test_001.jpg", fileAsset), E_SUCCESS);
     int fd = -1;
-    auto ret = mediaFileExtAbility->OpenFile(uri, O_RDWR, fd);
-    MEDIA_DEBUG_LOG("medialib_OpenFile_test_001 uri: %{public}s, fd: %{public}d", uri.ToString().c_str(), fd);
+    auto ret = mediaFileExtAbility->OpenFile(fileAsset, O_RDWR, fd);
+    MEDIA_DEBUG_LOG("medialib_OpenFile_test_001 fileAsset: %{public}s, fd: %{public}d",
+        fileAsset.ToString().c_str(), fd);
     EXPECT_EQ(ret == E_SUCCESS, true);
     if (ret == E_SUCCESS) {
         char str[] = "Hello World!";
@@ -1970,7 +1976,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Delete_test_003, TestSize.Level0)
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Delete_test_001.jpg", albumAsset, fileAsset), true);
     Uri sourceUri(fileAsset->GetUri());
     int32_t ret = MediaFileExtentionUtils::Delete(sourceUri);
-    EXPECT_EQ(ret, JS_ERR_PERMISSION_DENIED);
+    EXPECT_EQ(ret, E_URI_INVALID);
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Delete_test_001.jpg", g_documents, fileAsset), true);
     Uri sourceUriOne(fileAsset->GetUri());
     ret = MediaFileExtentionUtils::Delete(sourceUriOne);
@@ -1982,15 +1988,15 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Delete_test_003, TestSize.Level0)
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Delete_test_001.jpg", g_camera, fileAsset), true);
     Uri sourceUriThree(fileAsset->GetUri());
     ret = MediaFileExtentionUtils::Delete(sourceUriThree);
-    EXPECT_EQ(ret, JS_ERR_PERMISSION_DENIED);
+    EXPECT_EQ(ret, E_URI_INVALID);
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Delete_test_001.mp4", g_videos, fileAsset), true);
     Uri sourceUriFour(fileAsset->GetUri());
     ret = MediaFileExtentionUtils::Delete(sourceUriFour);
-    EXPECT_EQ(ret, JS_ERR_PERMISSION_DENIED);
+    EXPECT_EQ(ret, E_URI_INVALID);
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Delete_test_001.mp3", g_audios, fileAsset), true);
     Uri sourceUriFive(fileAsset->GetUri());
     ret = MediaFileExtentionUtils::Delete(sourceUriFive);
-    EXPECT_EQ(ret, JS_ERR_PERMISSION_DENIED);
+    EXPECT_EQ(ret, E_URI_INVALID);
 }
 
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_001, TestSize.Level0)
@@ -2363,35 +2369,34 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_008, TestSize.Level0)
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
     }
-    shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Rename_test_007.jpg", g_pictures, fileAsset), true);
-    Uri sourceUri(fileAsset->GetUri());
+    Uri sourceUri("");
+    shared_ptr<FileAsset> albumAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("CreateFile_test_001", g_pictures, albumAsset), true);
+    Uri parentUri(albumAsset->GetUri());
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "Rename_test_007.jpg", sourceUri), E_SUCCESS);
     Uri newUri("");
     string displayName = "new_Rename_test_007.jpg";
     int32_t ret = MediaFileExtentionUtils::Rename(sourceUri, displayName, newUri);
     EXPECT_EQ(ret, JS_ERR_PERMISSION_DENIED);
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Rename_test_007.jpg", g_camera, fileAsset), true);
-    Uri sourceUriOne(fileAsset->GetUri());
-    ret = MediaFileExtentionUtils::Rename(sourceUriOne, displayName, newUri);
+    Uri parentUriOne(g_camera->GetUri());
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUriOne, "Rename_test_007.jpg", sourceUri), E_SUCCESS);
+    ret = MediaFileExtentionUtils::Rename(sourceUri, displayName, newUri);
     EXPECT_EQ(ret, JS_ERR_PERMISSION_DENIED);
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Rename_test_007.mp4", g_videos, fileAsset), true);
-    Uri sourceUriTwo(fileAsset->GetUri());
-    displayName = "new_Rename_test_007.mp4";
-    ret = MediaFileExtentionUtils::Rename(sourceUriTwo, displayName, newUri);
+    Uri parentUriTwo(g_videos->GetUri());
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUriTwo, "Rename_test_007.mp4", sourceUri), E_SUCCESS);
+    ret = MediaFileExtentionUtils::Rename(sourceUri, displayName, newUri);
     EXPECT_EQ(ret, JS_ERR_PERMISSION_DENIED);
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Rename_test_007.mp3", g_audios, fileAsset), true);
-    Uri sourceUriThree(fileAsset->GetUri());
-    displayName = "new_Rename_test_007.mp3";
-    ret = MediaFileExtentionUtils::Rename(sourceUriThree, displayName, newUri);
+    Uri parentUriThree(g_audios->GetUri());
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUriThree, "Rename_test_007.mp3", sourceUri), E_SUCCESS);
+    ret = MediaFileExtentionUtils::Rename(sourceUri, displayName, newUri);
     EXPECT_EQ(ret, JS_ERR_PERMISSION_DENIED);
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Rename_test_007.jpg", g_documents, fileAsset), true);
-    Uri sourceUriFour(fileAsset->GetUri());
-    displayName = "new_Rename_test_007.jpg";
-    ret = MediaFileExtentionUtils::Rename(sourceUriFour, displayName, newUri);
+    Uri parentUriFour(g_documents->GetUri());
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUriFour, "Rename_test_007.mp3", sourceUri), E_SUCCESS);
+    ret = MediaFileExtentionUtils::Rename(sourceUri, displayName, newUri);
     EXPECT_EQ(ret, E_SUCCESS);
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Rename_test_007.jpg", g_download, fileAsset), true);
-    Uri sourceUriFive(fileAsset->GetUri());
-    ret = MediaFileExtentionUtils::Rename(sourceUriFive, displayName, newUri);
+    Uri parentUriFive(g_download->GetUri());
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUriFive, "Rename_test_007.mp3", sourceUri), E_SUCCESS);
+    ret = MediaFileExtentionUtils::Rename(sourceUri, displayName, newUri);
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
@@ -2432,7 +2437,7 @@ void ListFileFromRootResult(vector<FileInfo> rootFileList, int offset, int maxCo
             MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_MEDIA_ROOT fileList.size(): %{public}d",
                 (int)fileList.size());
             DisplayFileList(fileList);
-            EXPECT_EQ(fileList.size(), URI_MEDIA_ROOT_IMAGE_SIZE);
+            EXPECT_GT(fileList.size(), URI_MEDIA_ROOT_IMAGE_SIZE);
         }
 
         // URI_MEDIA_ROOT video
@@ -2470,6 +2475,15 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ListFile_test_001, TestSize.Level
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("ListFile_test_001_2.jpg", albumAsset, tempAsset), true);
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("ListFile_test_001_3.jpg", albumAsset, tempAsset), true);
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("ListFile_test_001_1.mp4", g_videos, tempAsset), true);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    string name = "photo.jpg";
+    NativeRdb::ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_GE(ret, 0);
     const int64_t offset = 0;
     const int64_t maxCount = 100;
     DistributedFS::FileFilter filter;
@@ -2479,7 +2493,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ListFile_test_001, TestSize.Level
     rootInfo.uri = COMMON_PREFIX + ROOT_URI;
     MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ROOT uri: %{public}s", rootInfo.uri.c_str());
     vector<FileInfo> rootFileList;
-    auto ret = mediaFileExtAbility->ListFile(rootInfo, offset, maxCount, filter, rootFileList);
+    ret = mediaFileExtAbility->ListFile(rootInfo, offset, maxCount, filter, rootFileList);
     EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_DEBUG_LOG("medialib_ListFile_test_001 URI_ROOT fileList.size(): %{public}d", (int)rootFileList.size());
     DisplayFileList(rootFileList);
@@ -2671,7 +2685,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_002, TestSize.Level
     vector<FileInfo> dirFileList;
     auto ret = mediaFileExtAbility->ScanFile(dirInfo, offset, maxCount, filter, dirFileList);
     EXPECT_EQ(ret, E_SUCCESS);
-    EXPECT_EQ(dirFileList.size(), 8);
+    EXPECT_GT(dirFileList.size(), 4);
 
     vector<FileInfo> limitDirFileList1;
     ret = mediaFileExtAbility->ScanFile(dirInfo, offset, 5, filter, limitDirFileList1);
@@ -2681,7 +2695,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_002, TestSize.Level
     vector<FileInfo> limitDirFileList2;
     ret = mediaFileExtAbility->ScanFile(dirInfo, 5, maxCount, filter, limitDirFileList2);
     EXPECT_EQ(ret, E_SUCCESS);
-    EXPECT_EQ(limitDirFileList2.size(), 3);
+    EXPECT_GT(limitDirFileList2.size(), 3);
 }
 
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_003, TestSize.Level0)

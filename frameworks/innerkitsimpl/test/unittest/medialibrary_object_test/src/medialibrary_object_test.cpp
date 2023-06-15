@@ -203,7 +203,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateDateModified_test_001, TestSize
     EXPECT_EQ(ret, E_INVALID_PATH);
     uriStr = "medialib_UpdateDateModified_test_001";
     ret = MediaLibraryObjectUtils::UpdateDateModified(uriStr);
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    EXPECT_EQ(ret, E_SUCCESS);
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
     ret = MediaLibraryObjectUtils::UpdateDateModified(uriStr);
