@@ -67,7 +67,7 @@ int32_t ClearUserAlbums()
     return E_OK;
 }
 
-inline void CheckColumn(unique_ptr<AbsSharedResultSet> &resultSet, const string &column,
+inline void CheckColumn(shared_ptr<OHOS::NativeRdb::ResultSet> &resultSet, const string &column,
     ResultSetDataType type, const variant<int32_t, string, int64_t, double> &expected)
 {
     EXPECT_EQ(ResultSetUtils::GetValFromColumn(column, resultSet, type), expected);
@@ -108,7 +108,7 @@ void DoCheckAlbumData(const string &name, const bool isRelativePath)
         PhotoAlbumColumns::ALBUM_RELATIVE_PATH,
     };
 
-    auto resultSet = g_rdbStore->Query(predicates, columns);
+    shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, columns);
     ASSERT_NE(resultSet, nullptr);
 
     int32_t count = -1;
