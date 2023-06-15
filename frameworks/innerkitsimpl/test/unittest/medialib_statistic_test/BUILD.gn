@@ -69,4 +69,7 @@ ohos_unittest("medialibrary_statistic_unittest") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]
+
+  defines = []
+  defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 }

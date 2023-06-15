@@ -787,7 +787,12 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_020, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_020::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_020.txt", "Documents/");
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
+    const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(virtualId));
+#else
     const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(index));
+#endif
     const string realPath = "/storage/cloud/100/files/Documents/MediaSpaceStatistics_test_020.txt";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
@@ -817,7 +822,12 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_021, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_021::Start");
 
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_021.txt", "Download/");
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
+    const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(virtualId));
+#else
     const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(index));
+#endif
     const string realPath = "/storage/cloud/100/files/Download/MediaSpaceStatistics_test_021.txt";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
@@ -871,7 +881,12 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_023, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_023::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_023.txt", "Documents/test1/");
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
+    const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(virtualId));
+#else
     const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(index));
+#endif
     const string realPath = "/storage/cloud/100/files/Documents/test1/MediaSpaceStatistics_test_023.txt";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
@@ -900,7 +915,12 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_024, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_024::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "test.txt", "Documents/weixin/");
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
+    const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(virtualId));
+#else
     const Uri realUri(MEDIALIBRARY_FILE_URI + "/" + to_string(index));
+#endif
     const string realPath = "/storage/cloud/100/files/Documents/weixin/test.txt";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
@@ -929,7 +949,12 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_025, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_025::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_AUDIO, "MediaSpaceStatistics_test_025.mp3", "Download/weixin/");
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
+    const Uri realUri(MEDIALIBRARY_AUDIO_URI + "/" + to_string(virtualId));
+#else
     const Uri realUri(MEDIALIBRARY_AUDIO_URI + "/" + to_string(index));
+#endif
     const string realPath = "/storage/cloud/100/files/Download/weixin/MediaSpaceStatistics_test_025.mp3";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
@@ -985,7 +1010,12 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_027, TestSize.Level
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_027::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_IMAGE, "MediaSpaceStatistics_test_027.jpg", "Download/weixin/");
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
+    const Uri realUri(MEDIALIBRARY_IMAGE_URI + "/" + to_string(virtualId));
+#else
     const Uri realUri(MEDIALIBRARY_IMAGE_URI + "/" + to_string(index));
+#endif
     const string realPath = "/storage/cloud/100/files/Download/weixin/MediaSpaceStatistics_test_027.jpg";
     Uri fileUri(MEDIALIBRARY_DATA_URI);
     string filePath;
