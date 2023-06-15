@@ -45,7 +45,7 @@ int32_t MediaLibrarySmartAlbumOperations::CreateSmartAlbumOperation(MediaLibrary
     }
     string albumName;
     valueObject.GetString(albumName);
-    if (MediaFileUtils::CheckTitle(albumName) < 0) {
+    if (MediaFileUtils::CheckAlbumName(albumName) < 0) {
         MEDIA_ERR_LOG("Smart album invalid, albumName = %{public}s", albumName.c_str());
         return E_INVALID_VALUES;
     }

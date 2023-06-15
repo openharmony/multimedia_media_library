@@ -70,6 +70,7 @@ public:
     static std::string GetFirstDentry(const std::string &path);
     static std::string GetLastDentry(const std::string &path);
     static std::string GetParentPath(const std::string &path);
+    static std::string GetTitleFromDisplayName(const std::string &displayName);
     static bool IsDirectory(const std::string &dirName);
     static std::string GetFirstDirName(const std::string &filePath);
     static bool MoveFile(const std::string &oldPath, const std::string &newPath);
@@ -79,7 +80,6 @@ public:
     static int32_t CheckStringSize(const std::string &str, const size_t max);
     static int32_t CheckAlbumName(const std::string &albumName);
     static int32_t CheckDisplayName(const std::string &displayName);
-    static int32_t CheckTitle(const std::string &title);
     static int32_t CheckRelativePath(const std::string &relativePath);
     static void FormatRelativePath(std::string &relativePath);
     static void GetRootDirFromRelativePath(const std::string &relativePath, std::string &rootDir);
