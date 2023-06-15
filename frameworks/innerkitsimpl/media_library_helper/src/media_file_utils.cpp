@@ -1077,6 +1077,36 @@ string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
     }
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+string MediaFileUtils::GetTableFromVirtualUri(const std::string &virtualUri)
+{
+    MediaFileUri uri(virtualUri);
+    if (!uri.IsValid()) {
+        MEDIA_ERR_LOG("virtual uri:%{private}s is invalid", virtualUri.c_str());
+        return "";
+    }
+    string virtualId = uri.GetFileId();
+    if (!std::all_of(virtualId.begin(), virtualId.end(), ::isdigit)) {
+        int64_t id = stol(virtualId);
+        int64_t remainNumber = id % VIRTUAL_ID_DIVIDER;
+        switch (remainNumber) {
+            case VIRTUAL_ID_DIVIDER - PHOTO_VIRTUAL_IDENTIFIER:
+                return PhotoColumn::PHOTOS_TABLE;
+            case VIRTUAL_ID_DIVIDER - AUDIO_VIRTUAL_IDENTIFIER:
+                return AudioColumn::AUDIOS_TABLE;
+            case VIRTUAL_ID_DIVIDER - FILE_VIRTUAL_IDENTIFIER:
+                return MEDIALIBRARY_TABLE;
+            default:
+                MEDIA_ERR_LOG("virtualId:%{public}ld is wrong", (long) id);
+                return "";
+        }
+    } else {
+        MEDIA_ERR_LOG("virtual uri:%{private}s is invalid, can not get id", virtualUri.c_str());
+        return "";
+    }
+}
+#endif
+
 bool MediaFileUtils::IsUriV10(const string &mediaType)
 {
     return mediaType == URI_TYPE_PHOTO ||

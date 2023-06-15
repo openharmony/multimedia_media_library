@@ -18,6 +18,7 @@
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "media_log.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "media_file_uri.h"
@@ -106,14 +107,9 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(string columnName, const string &value,
     vector<string> &columns)
 {
-    string input = value;
-    if (columnName == MEDIA_DATA_DB_ID) {
-        input = MediaFileUri(input).GetFileId();
-    }
-        
     Uri uri(MEDIALIBRARY_MEDIA_PREFIX);
     DataSharePredicates predicates;
-    predicates.EqualTo(columnName, input);
+    predicates.EqualTo(columnName, value);
     predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
     DatashareBusinessError businessError;
 
@@ -166,11 +162,19 @@ static int32_t CheckResultSet(std::shared_ptr<DataShareResultSet> &resultSet)
 int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &filePath, string userId)
 {
     string uri = fileUri.ToString();
-    if (!MediaFileUri(uri).IsValid()) {
+    MediaFileUri virtualUri(uri);
+    if (!virtualUri.IsValid()) {
         return E_URI_INVALID;
     }
-    vector<string> columns = {MEDIA_DATA_DB_FILE_PATH};
-    auto resultSet = MediaLibraryManager::GetResultSetFromDb(MEDIA_DATA_DB_ID, uri, columns);
+    string virtualId = virtualUri.GetFileId();
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (MediaFileUtils::GetTableFromVirtualUri(uri) != MEDIALIBRARY_TABLE) {
+        MEDIA_INFO_LOG("uri:%{private}s does not match Files Table", uri.c_str());
+        return E_URI_INVALID;
+    }
+#endif
+    vector<string> columns = { MEDIA_DATA_DB_FILE_PATH };
+    auto resultSet = MediaLibraryManager::GetResultSetFromDb(MEDIA_DATA_DB_ID, virtualId, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INVALID_URI,
         "GetFilePathFromUri::uri is not correct: %{public}s", uri.c_str());
     if (CheckResultSet(resultSet) != E_SUCCESS) {
@@ -229,7 +233,12 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
 
     int32_t fileId = ResultSetUtils::GetIntValFromColumn(0, resultSet);
     std::string uri = ResultSetUtils::GetStringValFromColumn(1, resultSet);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    int64_t virtualId = MediaFileUtils::GetVirtualIdByType(fileId, MediaType::MEDIA_TYPE_FILE);
+    fileUri = Uri(uri + "/" + to_string(virtualId));
+#else
     fileUri = Uri(uri + "/" + to_string(fileId));
+#endif
     return E_SUCCESS;
 }
 } // namespace Media

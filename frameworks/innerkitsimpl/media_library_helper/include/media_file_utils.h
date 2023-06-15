@@ -111,6 +111,9 @@ public:
     static double GetRealIdByTable(int32_t virtualId, const std::string &tableName);
     static std::string GetVirtualUriFromRealUri(const std::string &uri);
     static std::string GetRealUriFromVirtualUri(const std::string &uri);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    static std::string GetTableFromVirtualUri(const std::string &uri);
+#endif
     static bool IsUriV10(const std::string &mediaType);
     static bool IsFileTablePath(const std::string &path);
 };

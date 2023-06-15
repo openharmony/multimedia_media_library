@@ -18,6 +18,7 @@
 
 #include "datashare_predicates_proxy.h"
 #include "media_file_uri.h"
+#include "media_file_utils.h"
 #include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager_utils.h"
@@ -32,16 +33,6 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
-void MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(const string &uri, string &networkId, string &fileId)
-{
-    MediaFileUri fileUri(uri);
-    networkId = fileUri.GetNetworkId();
-    fileId = fileUri.GetFileId();
-    if (fileId.empty()) {
-        NAPI_ERR_LOG("get file_id failed, uri: %{private}s", uri.c_str());
-    }
-}
-
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
     napi_value ctorObj;
@@ -291,10 +282,15 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
             }
             string uri = static_cast<string>(item.GetSingle(VALUE_IDX));
             UriRemoveAllFragment(uri);
-            string fileId;
-            MediaLibraryNapiUtils::GetNetworkIdAndFileIdFromUri(uri, context->networkId, fileId);
+            MediaFileUri fileUri(uri);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+            if ((fetchOptType != ALBUM_FETCH_OPT) && (!fileUri.IsApi10())) {
+                fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
+            }
+#endif
+            context->networkId = fileUri.GetNetworkId();
             string field = (fetchOptType == ALBUM_FETCH_OPT) ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
-            operations.push_back({item.operation, {field, fileId}});
+            operations.push_back({ item.operation, { field, fileUri.GetFileId() } });
             continue;
         }
         operations.push_back(item);
