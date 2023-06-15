@@ -48,19 +48,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsNumber_test_001, TestSize.Level0)
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileTitle_test_001, TestSize.Level0)
-{
-    string displayName = "";
-    string ret = MediaLibraryDataManagerUtils::GetFileTitle(displayName);
-    EXPECT_EQ(ret, "");
-    displayName = "medialib.test";
-    ret = MediaLibraryDataManagerUtils::GetFileTitle(displayName);
-    EXPECT_NE(ret, "");
-    displayName = "medialib.";
-    ret = MediaLibraryDataManagerUtils::GetFileTitle(displayName);
-    EXPECT_NE(ret, "");
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_GetOperationType_test_001, TestSize.Level0)
 {
     string uri = "medialib_GetOperationType_test_001/test";

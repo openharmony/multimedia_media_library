@@ -423,6 +423,16 @@ static inline bool RegexCheck(const string &str, const string &regexStr)
     return regex_search(str, express);
 }
 
+static inline int32_t CheckTitle(const string &title)
+{
+    static const string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
+    if (RegexCheck(title, TITLE_REGEX_CHECK)) {
+        MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
+        return -EINVAL;
+    }
+    return E_OK;
+}
+
 int32_t MediaFileUtils::CheckDisplayName(const string &displayName)
 {
     int err = CheckStringSize(displayName, DISPLAYNAME_MAX);
@@ -432,27 +442,11 @@ int32_t MediaFileUtils::CheckDisplayName(const string &displayName)
     if (displayName.at(0) == '.') {
         return -EINVAL;
     }
-
-    static const string DISPLAYNAME_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
-    if (RegexCheck(displayName, DISPLAYNAME_REGEX_CHECK)) {
+    string title = GetTitleFromDisplayName(displayName);
+    if (title.empty()) {
         return -EINVAL;
     }
-    return E_OK;
-}
-
-int32_t MediaFileUtils::CheckTitle(const string &title)
-{
-    int err = CheckStringSize(title, DISPLAYNAME_MAX);
-    if (err < 0) {
-        return err;
-    }
-
-    static const string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
-    if (RegexCheck(title, TITLE_REGEX_CHECK)) {
-        MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
-        return -EINVAL;
-    }
-    return E_OK;
+    return CheckTitle(title);
 }
 
 int32_t MediaFileUtils::CheckRelativePath(const std::string &relativePath)
@@ -474,7 +468,7 @@ int32_t MediaFileUtils::CheckRelativePath(const std::string &relativePath)
             return -EINVAL;
         }
         string checkedDirName = relativePath.substr(firstPoint, len);
-        if (CheckTitle(checkedDirName) != E_OK) {
+        if (CheckAlbumName(checkedDirName) != E_OK) {
             MEDIA_ERR_LOG("Dir Name %{public}s is invalid in path %{public}s",
                 checkedDirName.c_str(), relativePath.c_str());
             return -EINVAL;
@@ -530,7 +524,17 @@ void MediaFileUtils::GetRootDirFromRelativePath(const string &relativePath, stri
 
 int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
 {
-    return CheckTitle(albumName);
+    int err = CheckStringSize(albumName, DISPLAYNAME_MAX);
+    if (err < 0) {
+        return err;
+    }
+
+    static const string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
+    if (RegexCheck(albumName, TITLE_REGEX_CHECK)) {
+        MEDIA_ERR_LOG("Failed to check title regex: %{private}s", albumName.c_str());
+        return -EINVAL;
+    }
+    return E_OK;
 }
 
 string MediaFileUtils::GetLastDentry(const string &path)
@@ -563,6 +567,19 @@ string MediaFileUtils::GetParentPath(const string &path)
     }
 
     return name;
+}
+
+string MediaFileUtils::GetTitleFromDisplayName(const string &displayName)
+{
+    string title;
+    if (!displayName.empty()) {
+        string::size_type pos = displayName.find_last_of('.');
+        if (pos == string::npos) {
+            return "";
+        }
+        title = displayName.substr(0, pos);
+    }
+    return title;
 }
 
 int64_t MediaFileUtils::GetAlbumDateModified(const string &albumPath)

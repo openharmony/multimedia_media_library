@@ -1252,7 +1252,7 @@ static void SetFileAssetByIdV9(int32_t id, const string &networkId, MediaLibrary
     fileAsset->SetUri(uri);
     fileAsset->SetMediaType(mediaType);
     fileAsset->SetDisplayName(displayName);
-    fileAsset->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+    fileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_MEDIALIBRARY);
     fileAsset->SetRelativePath(relativePath);
     context->fileAsset = move(fileAsset);
@@ -1273,7 +1273,7 @@ static void SetFileAssetByIdV10(int32_t id, const string &networkId, MediaLibrar
     fileAsset->SetUri(MediaFileUri(mediaType, to_string(id), networkId, MEDIA_API_VERSION_V10).ToString());
     fileAsset->SetMediaType(mediaType);
     fileAsset->SetDisplayName(displayName);
-    fileAsset->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+    fileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     context->fileAsset = move(fileAsset);
 }

@@ -344,7 +344,7 @@ static napi_value ParseArgsCommitModify(napi_env env, napi_callback_info info,
         return nullptr;
     }
 
-    if (MediaFileUtils::CheckTitle(photoAlbum->GetAlbumName()) < 0) {
+    if (MediaFileUtils::CheckAlbumName(photoAlbum->GetAlbumName()) < 0) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
