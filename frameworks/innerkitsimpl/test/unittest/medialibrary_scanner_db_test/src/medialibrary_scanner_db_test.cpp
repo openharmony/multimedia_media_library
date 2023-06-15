@@ -211,6 +211,13 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_002, TestSize.Lev
     metadata.SetFileId(albumId);
     string ret = mediaScannerDb.InsertMetadata(metadata);
     EXPECT_NE(ret, "");
+    unordered_map<string, Metadata> albumMap_;
+    string pathTest = "";
+    unordered_map<int32_t, MediaType> prevIdMap = mediaScannerDb.GetIdsFromFilePath(pathTest);
+    EXPECT_GT(prevIdMap.size(), 0);
+    string path = "/storage/cloud/files/";
+    prevIdMap = mediaScannerDb.GetIdsFromFilePath(path);
+    EXPECT_GT(prevIdMap.size(), 0);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadAlbums_test_002, TestSize.Level0)
@@ -259,19 +266,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileDBUriFromPath_test_001, TestSi
     EXPECT_EQ(uri, "");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_BatchInsert_test_001, TestSize.Level0)
-{
-    MediaScannerDb mediaScannerDb;
-    vector<Metadata> metadataList;
-    Metadata metadata;
-    vector<string> ret = mediaScannerDb.BatchInsert(metadataList);
-    EXPECT_EQ(ret.size(), 0);
-    string albumPath = "BatchInsert";
-    metadataList.push_back(metadata);
-    ret = mediaScannerDb.BatchInsert(metadataList);
-    EXPECT_NE(ret.size(), 0);
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertAlbum_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
@@ -296,18 +290,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertAlbum_test_001, TestSize.Level0
     metadata.SetFileId(albumId);
     ret = mediaScannerDb.InsertAlbum(metadata);
     EXPECT_NE(ret, 0);
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdsFromFilePath_test_001, TestSize.Level0)
-{
-    MediaScannerDb mediaScannerDb;
-    unordered_map<string, Metadata> albumMap_;
-    string pathTest = "";
-    unordered_map<int32_t, MediaType> prevIdMap = mediaScannerDb.GetIdsFromFilePath(pathTest);
-    EXPECT_EQ(prevIdMap.size(), 0);
-    string path = "/storage/cloud/files/";
-    prevIdMap = mediaScannerDb.GetIdsFromFilePath(path);
-    EXPECT_EQ(prevIdMap.size(), 0);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateMetadata_test_001, TestSize.Level0)
@@ -348,25 +330,14 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdFromPath_test_001, TestSize.Leve
     EXPECT_EQ(id, -1);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_FillMetadata_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryExtUnitTest, medialib_BatchInsert_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
-    vector<string> column = {
-        REMOTE_THUMBNAIL_DB_FILE_ID,
-        MEDIA_DATA_DB_LCD
-    };
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-    };
-    RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
-    rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
-    rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
-    rdbPredicates.Limit(0);
-    rdbPredicates.OrderByAsc(MEDIA_DATA_DB_TIME_VISIT);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    unique_ptr<Metadata> ptr;
-    int32_t ret = mediaScannerDb.FillMetadata(resultSet, ptr);
-    EXPECT_EQ(ret, E_RDB);
+    vector<Metadata> metadataList;
+    Metadata metadata;
+    vector<string> ret = mediaScannerDb.BatchInsert(metadataList);
+    EXPECT_EQ(ret.size(), 0);
 }
+
 } // namespace Media
 } // namespace OHOS

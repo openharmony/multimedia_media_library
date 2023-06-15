@@ -17,6 +17,7 @@
 #include "medialibrary_datamanager_test.h"
 #include "fetch_result.h"
 #include "get_self_permissions.h"
+#include "media_file_ext_ability.h"
 #include "media_file_extention_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -34,6 +35,37 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+
+class ArkJsRuntime : public AbilityRuntime::JsRuntime {
+public:
+    ArkJsRuntime() {};
+
+    ~ArkJsRuntime() {};
+
+    void StartDebugMode(bool needBreakPoint)  {};
+    void FinishPreload() {};
+    bool LoadRepairPatch(const string& patchFile, const string& baseFile)
+    {
+        return true;
+    };
+    bool NotifyHotReloadPage()
+    {
+        return true;
+    };
+    bool UnLoadRepairPatch(const string& patchFile)
+    {
+        return true;
+    };
+    bool RunScript(const string& path, const string& hapPath, bool useCommonChunk = false)
+    {
+        return true;
+    };
+    NativeValue* LoadJsModule(const string& path, const string& hapPath)
+    {
+        return nullptr;
+    };
+};
+
 namespace {
     shared_ptr<FileAsset> g_pictures = nullptr;
     shared_ptr<FileAsset> g_download = nullptr;
@@ -301,12 +333,15 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_001,
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_OpenFile_Test_001::Start");
-    shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("OpenFile_Test_001.jpg", g_pictures, fileAsset), true);
-    Uri openFileUri(fileAsset->GetUri());
-    MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
+    ArkJsRuntime runtime;
+    shared_ptr<MediaFileExtAbility> mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
+    Uri fileAsset("");
+    shared_ptr<FileAsset> albumAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("CreateFile_test_001", g_pictures, albumAsset), true);
+    Uri parentUri(albumAsset->GetUri());
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_test_001.jpg", fileAsset), E_SUCCESS);
     for (auto const &mode : MEDIA_OPEN_MODES) {
-        int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(openFileUri, mode);
+        int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(fileAsset, mode);
         EXPECT_GT(fd, 0);
         if (fd > 0) {
             close(fd);
