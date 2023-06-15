@@ -662,12 +662,6 @@ static void UpdateCompatAlbumSelection(AlbumNapiAsyncContext *context)
             filterClause = CAMERA_FILTER;
             break;
         }
-        case PhotoAlbumSubType::VIDEO: {
-            static const string VIDEO_FILTER = PhotoColumn::MEDIA_TYPE + "=" +
-                to_string(MediaType::MEDIA_TYPE_VIDEO) + " AND " + MediaColumn::ASSETS_QUERY_FILTER;
-            filterClause = VIDEO_FILTER;
-            break;
-        }
         case PhotoAlbumSubType::SCREENSHOT: {
             static const string SCREENSHOT_FILTER = PhotoColumn::PHOTO_SUBTYPE + "=" +
                 to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)) + " AND " + MediaColumn::ASSETS_QUERY_FILTER;
