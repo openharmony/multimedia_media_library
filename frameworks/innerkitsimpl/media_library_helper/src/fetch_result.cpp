@@ -466,9 +466,6 @@ static void SetCompatAlbumName(AlbumAsset *albumData)
         case PhotoAlbumSubType::SCREENSHOT:
             albumName = SCREEN_SHOT_ALBUM_NAME;
             break;
-        case PhotoAlbumSubType::VIDEO:
-            albumName = VIDEO_ALBUM_NAME;
-            break;
         default:
             MEDIA_WARN_LOG("Ignore unsupported compat album type: %{public}d", albumData->GetAlbumSubType());
     }

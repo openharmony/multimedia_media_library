@@ -812,9 +812,6 @@ static void SetCompatAlbumName(AlbumAsset *albumData)
         case PhotoAlbumSubType::SCREENSHOT:
             albumName = SCREEN_SHOT_ALBUM_NAME;
             break;
-        case PhotoAlbumSubType::VIDEO:
-            albumName = VIDEO_ALBUM_NAME;
-            break;
         default:
             NAPI_WARN_LOG("Ignore unsupported compat album type: %{public}d", albumData->GetAlbumSubType());
     }
@@ -950,8 +947,6 @@ static void ReplaceAlbumName(const string &arg, string &argInstead)
 {
     if (arg == CAMERA_ALBUM_NAME) {
         argInstead = to_string(PhotoAlbumSubType::CAMERA);
-    } else if (arg == VIDEO_ALBUM_NAME) {
-        argInstead = to_string(PhotoAlbumSubType::VIDEO);
     } else if (arg == SCREEN_SHOT_ALBUM_NAME) {
         argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
     } else if (arg == SCREEN_RECORD_ALBUM_NAME) {
@@ -965,8 +960,6 @@ static bool ReplaceRelativePath(const string &arg, string &argInstead)
 {
     if (arg == CAMERA_PATH) {
         argInstead = to_string(PhotoAlbumSubType::CAMERA);
-    } else if (arg == VIDEO_PATH) {
-        argInstead = to_string(PhotoAlbumSubType::VIDEO);
     } else if (arg == SCREEN_SHOT_PATH) {
         argInstead = to_string(PhotoAlbumSubType::SCREENSHOT);
     } else if (arg == SCREEN_RECORD_PATH) {
@@ -1035,7 +1028,6 @@ static void UpdateCompatSelection(MediaLibraryAsyncContext *context)
     ReplaceSelection(context->selection, context->selectionArgs,
         MEDIA_DATA_DB_RELATIVE_PATH, PhotoAlbumColumns::ALBUM_SUBTYPE);
     static const string COMPAT_QUERY_FILTER = PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
-        to_string(PhotoAlbumSubType::VIDEO) + "," +
         to_string(PhotoAlbumSubType::SCREENSHOT) + "," +
         to_string(PhotoAlbumSubType::CAMERA) + ")";
     if (!context->selection.empty()) {
