@@ -52,6 +52,7 @@ const std::unordered_map<std::string, ResultSetDataType> RESULT_TYPE_MAP = {
     { PhotoColumn::PHOTO_CLOUD_ID, ResultSetDataType::TYPE_STRING },
     { PhotoColumn::PHOTO_META_DATE_MODIFIED, ResultSetDataType::TYPE_INT64 },
     { PhotoColumn::PHOTO_SYNC_STATUS, ResultSetDataType::TYPE_INT32 },
+    { PhotoColumn::PHOTO_CLOUD_VERSION, ResultSetDataType::TYPE_INT64 },
     { PhotoColumn::PHOTO_ORIENTATION, ResultSetDataType::TYPE_INT32 },
     { PhotoColumn::PHOTO_LATITUDE, ResultSetDataType::TYPE_DOUBLE },
     { PhotoColumn::PHOTO_LONGITUDE, ResultSetDataType::TYPE_DOUBLE },
