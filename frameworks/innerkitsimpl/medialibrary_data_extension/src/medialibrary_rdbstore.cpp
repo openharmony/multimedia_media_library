@@ -1036,6 +1036,16 @@ void ModifyDeleteTrigger(RdbStore &store)
     }
 }
 
+void AddCloudVersion(RdbStore &store)
+{
+    const std::string addSyncStatus = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+        PhotoColumn::PHOTO_CLOUD_VERSION +" BIGINT DEFAULT 0";
+    auto result = store.ExecuteSql(addSyncStatus);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb cloudVersion error %{private}d", result);
+    }
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1057,6 +1067,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_MODIFY_DELETE_TRIGGER) {
         ModifyDeleteTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_CLOUD_VERSION) {
+        AddCloudVersion(store);
     }
 
     return NativeRdb::E_OK;
