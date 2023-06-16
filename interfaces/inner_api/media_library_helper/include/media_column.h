@@ -84,6 +84,7 @@ public:
     static const std::string PHOTO_SUBTYPE;
     static const std::string PHOTO_META_DATE_MODIFIED;
     static const std::string PHOTO_SYNC_STATUS;
+    static const std::string PHOTO_CLOUD_VERSION;
 
     // table name
     static const std::string PHOTOS_TABLE;
