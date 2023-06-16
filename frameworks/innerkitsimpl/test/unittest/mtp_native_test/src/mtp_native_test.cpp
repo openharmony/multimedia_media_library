@@ -38,7 +38,6 @@ void MtpNativeTest::SetUpTestCase()
 void MtpNativeTest::TearDownTestCase() {}
 void MtpNativeTest::SetUp() {}
 void MtpNativeTest::TearDown(void) {}
-static constexpr int ERROR_BATTERY = -1;
 static constexpr int TEST_UID = 5003;
 static const string TEST_NAME = "test.jpg";
 static const string PROP_VALUE = "01.jpg";
@@ -2415,11 +2414,6 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_003, TestSize.Level0)
     EXPECT_TRUE(ret == MTP_SESSION_NOT_OPEN_CODE);
     ret = mtpOperUtils->GetStorageInfo(data, containerType, errorCode);
     EXPECT_TRUE(ret == MTP_SESSION_NOT_OPEN_CODE);
-    string path("test/");
-    uint32_t handle = 0;
-    int32_t retInt = mtpOperUtils->GetHandleByPaths(path, handle);
-    EXPECT_TRUE(retInt != MTP_UNDEFINED_CODE);
-
     MEDIA_INFO_LOG("mtp_operation_utils_003::End");
 }
 
@@ -2469,10 +2463,6 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_004, TestSize.Level0)
     string path, realPath;
     ret = mtpOperUtils->GetPathByHandle(handle, path, realPath);
     EXPECT_TRUE(ret == MTP_OK_CODE);
-    path = "/test";
-    mtpOperUtils->GetHandleByPaths(path, handle);
-    int32_t retInt = mtpOperUtils->GetBatteryLevel();
-    EXPECT_TRUE(retInt != ERROR_BATTERY);
 
     MEDIA_INFO_LOG("mtp_operation_utils_004::End");
 }

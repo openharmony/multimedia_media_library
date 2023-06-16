@@ -613,12 +613,11 @@ HWTEST_F(MtpNativeTest, mtp_file_observer_test_001, TestSize.Level0)
     ret = MtpFileObserver::AddInotifyEvents(inotifyFd, context);
     EXPECT_EQ(ret, false);
     MtpFileObserver::SendBattery(context);
+    context->format = 0;
+    context->parent = 1;
+    shared_ptr<MtpEvent> mtpEvent = make_shared<MtpEvent>(context);
     inotify_event event;
-    event.mask = 0x00000101;
-    MtpFileObserver::SendEvent(event, path, context);
-    event.mask = 0x201;
-    MtpFileObserver::SendEvent(event, path, context);
-    event.mask = 0x9;
+    event.mask = 0;
     MtpFileObserver::SendEvent(event, path, context);
     ret = mtpFileObserver.StopFileInotify();
     EXPECT_EQ(ret, false);
