@@ -148,6 +148,20 @@ bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
     return false;
 }
 
+static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
+{
+    int32_t err = NativeRdb::E_OK;
+    for (const auto &sql : sqls) {
+        err = store.ExecuteSql(sql);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to exec: %{public}s", sql.c_str());
+            /* try update as much as possible */
+            continue;
+        }
+    }
+    return NativeRdb::E_OK;
+}
+
 void GetAllNetworkId(vector<string> &networkIds)
 {
     vector<OHOS::DistributedHardware::DmDeviceInfo> deviceList;
@@ -1046,6 +1060,34 @@ void AddCloudVersion(RdbStore &store)
     }
 }
 
+static string UpdateCloudPathSql(const string &table, const string &column)
+{
+    static const string LOCAL_PATH = "/storage/media/local/";
+    static const string CLOUD_PATH = "/storage/cloud/";
+    /*
+     * replace only once:
+     * UPDATE photos
+     * SET data = ([replace](substring(data, 1, len(local_path)), local_path, cloud_path) ||
+     * substring(data, len(local_path) + 1));
+     */
+    return "UPDATE " + table + " SET " + column + " = (REPLACE(SUBSTRING(" +
+        column + ", 1, " + to_string(LOCAL_PATH.length()) + "), '" +
+        LOCAL_PATH + "', '" + CLOUD_PATH + "') || SUBSTRING(" + column + ", " +
+        to_string(LOCAL_PATH.length() + 1) + "))" +
+        " WHERE " + column + " LIKE '" + LOCAL_PATH + "%';";
+}
+
+static int32_t UpdateCloudPath(RdbStore &store)
+{
+    const vector<string> updateCloudPath = {
+        UpdateCloudPathSql(MEDIALIBRARY_TABLE, MEDIA_DATA_DB_FILE_PATH),
+        UpdateCloudPathSql(MEDIALIBRARY_TABLE, MEDIA_DATA_DB_RECYCLE_PATH),
+        UpdateCloudPathSql(MEDIALIBRARY_ERROR_TABLE, MEDIA_DATA_ERROR),
+        UpdateCloudPathSql(PhotoColumn::PHOTOS_TABLE, MediaColumn::MEDIA_FILE_PATH),
+    };
+    return ExecSqls(updateCloudPath, store);
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1071,6 +1113,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_CLOUD_VERSION) {
         AddCloudVersion(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_CLOUD_PATH) {
+        UpdateCloudPath(store);
     }
 
     return NativeRdb::E_OK;
