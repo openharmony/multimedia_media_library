@@ -1787,7 +1787,9 @@ std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     StrToInt(uri.substr(tmpIdx + 1), height);
 
     Size size = { .width = width, .height = height };
-    return QueryThumbnail(fileUri, size, "", false);
+    string typeMask;
+    MediaFileUtils::GenTypeMaskFromUri(fileUri, typeMask);
+    return QueryThumbnail(fileUri, size, typeMask, false);
 }
 
 static void JSFavoriteCallbackComplete(napi_env env, napi_status status, void *data)
