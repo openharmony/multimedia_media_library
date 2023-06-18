@@ -103,6 +103,7 @@ public:
     static std::string GetMediaTypeUri(MediaType mediaType);
     static std::string GetMediaTypeUriV10(MediaType mediaType);
     static void GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask);
+    static void GenTypeMaskFromUri(const std::string &uri, std::string &typeMask);
     static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask);
     static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition);
     static bool CheckMode(const std::string &mode);
@@ -111,6 +112,7 @@ public:
     static double GetRealIdByTable(int32_t virtualId, const std::string &tableName);
     static std::string GetVirtualUriFromRealUri(const std::string &uri);
     static std::string GetRealUriFromVirtualUri(const std::string &uri);
+    static bool StartsWith(const std::string &str, const std::string &prefix);
 #ifdef MEDIALIBRARY_COMPATIBILITY
     static std::string GetTableFromVirtualUri(const std::string &uri);
 #endif
