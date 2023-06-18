@@ -906,6 +906,14 @@ void MediaFileUtils::GenTypeMaskFromArray(const std::vector<uint32_t> types, std
     }
 }
 
+void MediaFileUtils::GenTypeMaskFromUri(const std::string &uri, std::string &typeMask)
+{
+    typeMask = "";
+    if (StartsWith(uri, PhotoColumn::PHOTO_URI_PREFIX)) {
+        typeMask = PHOTO_TYPE_MASK;
+    }
+}
+
 void MediaFileUtils::UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask)
 {
     if (!typeMask.empty()) {
@@ -1129,5 +1137,10 @@ bool MediaFileUtils::IsFileTablePath(const string &path)
         return true;
     }
     return false;
+}
+
+bool MediaFileUtils::StartsWith(const std::string &str, const std::string &prefix)
+{
+    return str.compare(0, prefix.size(), prefix) == 0;
 }
 } // namespace OHOS::Media
