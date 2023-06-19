@@ -79,6 +79,7 @@ ohos_shared_library("media_library") {
     debug = false
   }
 
+  innerapi_tags = [ "platformsdk" ]
   part_name = "media_library"
   subsystem_name = "multimedia"
 }
