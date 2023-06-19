@@ -71,6 +71,21 @@ static const std::unordered_map<int32_t, std::pair<int32_t, string>> mediaErrCod
     { E_INVALID_URI,       { OHOS::FileManagement::LibN::E_URIS, "Invalid URI"                                } },
 };
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+bool CheckDestRelativePath(const string destRelativePath)
+{
+    size_t size = destRelativePath.find_first_of("/");
+    if (size == string::npos) {
+        return false;
+    }
+    string path = destRelativePath.substr(0, size + 1);
+    if ((path != DOC_DIR_VALUES) && (path != DOWNLOAD_DIR_VALUES)) {
+        return false;
+    }
+    return true;
+}
+#endif
+
 int MediaFileExtentionUtils::OpenFile(const Uri &uri, const int flags, int &fd)
 {
     fd = -1;
@@ -123,6 +138,11 @@ int MediaFileExtentionUtils::CreateFile(const Uri &parentUri, const string &disp
     string albumPath = GetStringVal(MEDIA_DATA_DB_FILE_PATH, result);
     result->Close();
     string relativePath = albumPath.substr(ROOT_MEDIA_DIR.size()) + SLASH_CHAR;
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (!CheckDestRelativePath(relativePath)) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+#endif
     string destPath = albumPath + SLASH_CHAR + displayName;
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
@@ -139,21 +159,6 @@ int MediaFileExtentionUtils::CreateFile(const Uri &parentUri, const string &disp
     }
     return ret;
 }
-
-#ifdef MEDIALIBRARY_COMPATIBILITY
-bool CheckDestRelativePath(const string destRelativePath)
-{
-    size_t size = destRelativePath.find_first_of("/");
-    if (size == string::npos) {
-        return false;
-    }
-    string path = destRelativePath.substr(0, size + 1);
-    if ((path != DOC_DIR_VALUES) && (path != DOWNLOAD_DIR_VALUES)) {
-        return false;
-    }
-    return true;
-}
-#endif
 
 int MediaFileExtentionUtils::Mkdir(const Uri &parentUri, const string &displayName, Uri &newFileUri)
 {
@@ -1512,6 +1517,11 @@ int GetRelativePathByUri(const string &uriStr, string &relativePath)
         "Get uri failed, relativePath: %{private}s", relativePath.c_str());
     relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
     relativePath += GetStringVal(MEDIA_DATA_DB_NAME, result) + SLASH_CHAR;
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (!CheckDestRelativePath(relativePath)) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+#endif
     return E_SUCCESS;
 }
 
@@ -1529,6 +1539,11 @@ int GetDuplicateDirectory(const string &srcUriStr, const string &destUriStr, Uri
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_NO_SUCH_FILE,
         "Get destination uri failed, relativePath: %{private}s", destUriStr.c_str());
     destRelativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (!CheckDestRelativePath(destRelativePath)) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+#endif
     destRelativePath += GetStringVal(MEDIA_DATA_DB_NAME, result) + SLASH_CHAR;
     string existUriStr;
     GetUriByRelativePath(destRelativePath + srcDirName, existUriStr);
@@ -1558,6 +1573,11 @@ int CopyFileOperation(string &srcUriStr, string &destRelativePath, CopyResult &c
         return COPY_EXCEPTION;
     }
     string srcRelativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (!CheckDestRelativePath(srcRelativePath)) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+#endif
     string srcFileName = GetStringVal(MEDIA_DATA_DB_NAME, result);
     string existFile;
     GetUriByRelativePath(destRelativePath + srcFileName, existFile);
@@ -1574,7 +1594,11 @@ int CopyFileOperation(string &srcUriStr, string &destRelativePath, CopyResult &c
             return COPY_NOEXCEPTION;
         }
     }
-
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (!CheckDestRelativePath(destRelativePath)) {
+        return JS_ERR_PERMISSION_DENIED;
+    }
+#endif
     int fileId = InsertFileOperation(destRelativePath, srcUriStr);
     if (fileId < 0) {
         MEDIA_ERR_LOG("Insert media library error, fileId: %{public}d", fileId);
