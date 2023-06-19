@@ -619,6 +619,24 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
     return result;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static string GetVirtualIdFromApi10Uri(const string &uri)
+{
+    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
+        return fileId;
+    }
+    int32_t id = stoi(fileId);
+    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
+        return to_string(MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_IMAGE));
+    } else if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
+        return to_string(MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_AUDIO));
+    } else {
+        return fileId;
+    }
+}
+#endif
+
 static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
 {
 #ifdef MEDIALIBRARY_COMPATIBILITY
@@ -635,7 +653,11 @@ static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
     if (!context->uri.empty()) {
         NAPI_ERR_LOG("context->uri is = %{public}s", context->uri.c_str());
         context->networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(context->uri);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        string fileId = GetVirtualIdFromApi10Uri(context->uri);
+#else
         string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(context->uri);
+#endif
         if (!fileId.empty()) {
             string idPrefix = MEDIA_DATA_DB_ID + " = ? ";
             MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, idPrefix);
