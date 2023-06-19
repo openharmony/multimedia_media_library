@@ -121,7 +121,7 @@ static int32_t SolvePath(const string &filePath, string &tempPath, string &userI
     if (filePath.empty()) {
         return E_INVALID_PATH;
     }
-    
+
     string prePath = PRE_PATH_VALUES;
     if (filePath.find(prePath) != 0) {
         return E_CHECK_ROOT_DIR_FAIL;
@@ -207,7 +207,7 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
     if (filePath.empty()) {
         return E_INVALID_PATH;
     }
-    
+
     string tempPath;
     SolvePath(filePath, tempPath, userId);
     if (tempPath.find(ROOT_MEDIA_DIR) != 0) {
@@ -223,7 +223,7 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
         return E_DIR_CHECK_DIR_FAIL;
     }
 
-    vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_URI };
+    vector<string> columns = { MEDIA_DATA_DB_ID};
     auto resultSet = MediaLibraryManager::GetResultSetFromDb(MEDIA_DATA_DB_FILE_PATH, tempPath, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INVALID_URI,
         "GetUriFromFilePath::tempPath is not correct: %{public}s", tempPath.c_str());
@@ -232,12 +232,11 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
     }
 
     int32_t fileId = ResultSetUtils::GetIntValFromColumn(0, resultSet);
-    std::string uri = ResultSetUtils::GetStringValFromColumn(1, resultSet);
 #ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(fileId, MediaType::MEDIA_TYPE_FILE);
-    fileUri = Uri(uri + "/" + to_string(virtualId));
+    fileUri = MediaFileUri(MediaType::MEDIA_TYPE_FILE, to_string(virtualId), "", MEDIA_API_VERSION_V9);
 #else
-    fileUri = Uri(uri + "/" + to_string(fileId));
+    fileUri = MediaFileUri(MediaType::MEDIA_TYPE_FILE, to_string(fileId), "", MEDIA_API_VERSION_V9);
 #endif
     return E_SUCCESS;
 }
