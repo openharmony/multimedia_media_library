@@ -1289,6 +1289,9 @@ static void SetFileAssetByIdV10(int32_t id, const string &networkId, MediaLibrar
     fileAsset->SetDisplayName(displayName);
     fileAsset->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(displayName));
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
+    string typeMask;
+    MediaLibraryNapiUtils::GenTypeMaskFromArray({ mediaType }, typeMask);
+    fileAsset->SetTypeMask(typeMask);
     context->fileAsset = move(fileAsset);
 }
 
