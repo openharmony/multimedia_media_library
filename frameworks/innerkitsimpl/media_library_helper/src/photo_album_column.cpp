@@ -16,32 +16,38 @@
 #include "photo_album_column.h"
 
 #include "media_column.h"
+#include "media_log.h"
+#include "medialibrary_type_const.h"
 #include "photo_map_column.h"
+#include <string>
 
 namespace OHOS::Media {
+using namespace std;
+using namespace NativeRdb;
+
 // PhotoAlbum table
-const std::string PhotoAlbumColumns::TABLE = "PhotoAlbum";
-const std::string PhotoAlbumColumns::ALBUM_ID = "album_id";
-const std::string PhotoAlbumColumns::ALBUM_TYPE = "album_type";
-const std::string PhotoAlbumColumns::ALBUM_SUBTYPE = "album_subtype";
-const std::string PhotoAlbumColumns::ALBUM_NAME = "album_name";
-const std::string PhotoAlbumColumns::ALBUM_COVER_URI = "cover_uri";
-const std::string PhotoAlbumColumns::ALBUM_COUNT = "count";
-const std::string PhotoAlbumColumns::ALBUM_DATE_MODIFIED = "date_modified";
-const std::string PhotoAlbumColumns::ALBUM_DIRTY = "dirty";
-const std::string PhotoAlbumColumns::ALBUM_CLOUD_ID = "cloud_id";
+const string PhotoAlbumColumns::TABLE = "PhotoAlbum";
+const string PhotoAlbumColumns::ALBUM_ID = "album_id";
+const string PhotoAlbumColumns::ALBUM_TYPE = "album_type";
+const string PhotoAlbumColumns::ALBUM_SUBTYPE = "album_subtype";
+const string PhotoAlbumColumns::ALBUM_NAME = "album_name";
+const string PhotoAlbumColumns::ALBUM_COVER_URI = "cover_uri";
+const string PhotoAlbumColumns::ALBUM_COUNT = "count";
+const string PhotoAlbumColumns::ALBUM_DATE_MODIFIED = "date_modified";
+const string PhotoAlbumColumns::ALBUM_DIRTY = "dirty";
+const string PhotoAlbumColumns::ALBUM_CLOUD_ID = "cloud_id";
 // For api9 compatibility
-const std::string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
+const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
 // default fetch columns
-const std::set<std::string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
+const set<string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
     ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT
 };
 
-const std::string PhotoAlbumColumns::ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
-const std::string PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI = "file://media/PhotoAlbum";
+const string PhotoAlbumColumns::ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
+const string PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI = "file://media/PhotoAlbum";
 
 // Create tables
-const std::string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
+const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     TABLE + " (" +
     ALBUM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     ALBUM_TYPE + " INT, " +
@@ -55,7 +61,7 @@ const std::string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_RELATIVE_PATH + " TEXT)";
 
 // Create indexes
-const std::string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
+const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
     " (" + ALBUM_TYPE + "," + ALBUM_SUBTYPE + ");";
 
 // Create triggers
@@ -81,13 +87,131 @@ const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
     " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func(); END;";
 
-bool PhotoAlbumColumns::IsPhotoAlbumColumn(const std::string &columnName)
+bool PhotoAlbumColumns::IsPhotoAlbumColumn(const string &columnName)
 {
-    static const std::set<std::string> PHOTO_ALBUM_COLUMNS = {
+    static const set<string> PHOTO_ALBUM_COLUMNS = {
         PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE,
         PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_COVER_URI, PhotoAlbumColumns::ALBUM_COUNT,
         PhotoAlbumColumns::ALBUM_RELATIVE_PATH
     };
     return PHOTO_ALBUM_COLUMNS.find(columnName) != PHOTO_ALBUM_COLUMNS.end();
+}
+
+void PhotoAlbumColumns::GetUserAlbumPredicates(const int32_t albumId, RdbPredicates &predicates)
+{
+    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
+    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
+    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+}
+
+static void GetFavoritePredicates(RdbPredicates &predicates)
+{
+    predicates.BeginWrap();
+    constexpr int32_t isFavorite = 1;
+    predicates.EqualTo(MediaColumn::MEDIA_IS_FAV, to_string(isFavorite));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EndWrap();
+}
+
+static void GetVideoPredicates(RdbPredicates &predicates)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EndWrap();
+}
+
+static void GetHiddenPredicates(RdbPredicates &predicates)
+{
+    predicates.BeginWrap();
+    constexpr int32_t isHidden = 1;
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(isHidden));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EndWrap();
+}
+
+static void GetTrashPredicates(RdbPredicates &predicates)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EndWrap();
+}
+
+static void GetScreenshotPredicates(RdbPredicates &predicates)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EndWrap();
+}
+
+static void GetCameraPredicates(RdbPredicates &predicates)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::CAMERA)));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EndWrap();
+}
+
+static void GetAllImagesPredicates(RdbPredicates &predicates)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EndWrap();
+}
+
+void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype, RdbPredicates &predicates)
+{
+    switch (subtype) {
+        case PhotoAlbumSubType::FAVORITE: {
+            return GetFavoritePredicates(predicates);
+        }
+        case PhotoAlbumSubType::VIDEO: {
+            return GetVideoPredicates(predicates);
+        }
+        case PhotoAlbumSubType::HIDDEN: {
+            return GetHiddenPredicates(predicates);
+        }
+        case PhotoAlbumSubType::TRASH: {
+            return GetTrashPredicates(predicates);
+        }
+        case PhotoAlbumSubType::SCREENSHOT: {
+            return GetScreenshotPredicates(predicates);
+        }
+        case PhotoAlbumSubType::CAMERA: {
+            return GetCameraPredicates(predicates);
+        }
+        case PhotoAlbumSubType::IMAGES: {
+            return GetAllImagesPredicates(predicates);
+        }
+        default: {
+            predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(0));
+            MEDIA_WARN_LOG("Unsupported system album subtype: %{public}d", subtype);
+            return;
+        }
+    }
 }
 } // namespace OHOS::Media

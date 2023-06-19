@@ -17,6 +17,7 @@
 #include "photo_map_operations.h"
 
 #include "media_column.h"
+#include "medialibrary_album_operations.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
@@ -100,6 +101,16 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
         }
     }
     rdbStore->Commit();
+    if (!values.empty()) {
+        bool isValid = false;
+        int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
+        if (!isValid) {
+            MEDIA_WARN_LOG("Ignore failure on get album id, album updation possibly would be lost");
+            return changedRows;
+        }
+        MediaLibraryAlbumOperations::UpdateUserAlbumInternal({ to_string(albumId) });
+    }
+
     return changedRows;
 }
 
@@ -118,6 +129,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
                 NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, atoi(strAlbumId.c_str()));
         }
     }
+    MediaLibraryAlbumOperations::UpdateUserAlbumInternal({ strAlbumId });
     return deleteRow;
 }
 

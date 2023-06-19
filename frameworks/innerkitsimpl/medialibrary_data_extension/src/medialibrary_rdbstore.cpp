@@ -232,6 +232,8 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
+    MediaLibraryTracer tracer;
+    tracer.Start("RdbStore->DeleteByCmd");
     /* local delete */
     int32_t ret = DoDeleteFromPredicates(*rdbStore_, *(cmd.GetAbsRdbPredicates()), deletedRows);
     if (ret != NativeRdb::E_OK) {
@@ -254,6 +256,8 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
         return E_HAS_DB_ERROR;
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("RdbStore->UpdateByCmd");
     int32_t ret = rdbStore_->Update(changedRows, cmd.GetTableName(), cmd.GetValueBucket(),
         cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
     if (ret != NativeRdb::E_OK) {
@@ -289,6 +293,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
         return nullptr;
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("RdbStore->QueryByCmd");
 #ifdef MEDIALIBRARY_COMPATIBILITY
     auto predicates = cmd.GetAbsRdbPredicates();
     MEDIA_DEBUG_LOG("tablename = %{public}s", predicates->GetTableName().c_str());
@@ -359,6 +365,8 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const string &sql)
         return E_HAS_DB_ERROR;
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("RdbStore->ExecuteSql");
     int32_t ret = rdbStore_->ExecuteSql(sql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->ExecuteSql failed, ret = %{public}d", ret);
@@ -435,7 +443,7 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
 /**
  * Return changed rows on success, or negative values on error cases.
  */
-int32_t MediaLibraryRdbStore::Update(int32_t &changedRows, const ValuesBucket &values,
+int32_t MediaLibraryRdbStore::Update(const ValuesBucket &values,
     const AbsRdbPredicates &predicates)
 {
     if (rdbStore_ == nullptr) {
@@ -443,6 +451,9 @@ int32_t MediaLibraryRdbStore::Update(int32_t &changedRows, const ValuesBucket &v
         return E_HAS_DB_ERROR;
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::Update by predicates");
+    int32_t changedRows = -1;
     int err = rdbStore_->Update(changedRows, values, predicates);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", err);
@@ -458,6 +469,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const string &sq
         return nullptr;
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("RdbStore->QuerySql");
     return rdbStore_->QuerySql(sql, selectionArgs);
 }
 
