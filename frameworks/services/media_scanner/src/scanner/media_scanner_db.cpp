@@ -353,12 +353,12 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
 static OperationObject GetOprnObjectFromPath(const string &path)
 {
     const map<string, OperationObject> oprnMap = {
-        { PHOTO_BUCKET, OperationObject::FILESYSTEM_PHOTO },
-        { AUDIO_BUCKET, OperationObject::FILESYSTEM_AUDIO },
+        { ROOT_MEDIA_DIR + PHOTO_BUCKET, OperationObject::FILESYSTEM_PHOTO },
+        { ROOT_MEDIA_DIR + AUDIO_BUCKET, OperationObject::FILESYSTEM_AUDIO },
 #ifdef MEDIALIBRARY_COMPATIBILITY
-        { PIC_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO },
-        { AUDIO_DIR_VALUES, OperationObject::FILESYSTEM_AUDIO },
-        { VIDEO_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO }
+        { ROOT_MEDIA_DIR + PIC_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO },
+        { ROOT_MEDIA_DIR + AUDIO_DIR_VALUES, OperationObject::FILESYSTEM_AUDIO },
+        { ROOT_MEDIA_DIR + VIDEO_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO }
 #endif
     };
 

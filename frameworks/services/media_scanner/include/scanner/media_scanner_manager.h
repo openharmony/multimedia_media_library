@@ -35,7 +35,8 @@ public:
     void Stop();
     void ScanError();
 
-    int32_t ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
+    int32_t ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
+        MediaLibraryApi api = MediaLibraryApi::API_OLD);
     int32_t ScanFileSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
         MediaLibraryApi api = MediaLibraryApi::API_OLD);
     int32_t ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);

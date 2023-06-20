@@ -1156,6 +1156,29 @@ bool MediaFileUtils::IsFileTablePath(const string &path)
     return false;
 }
 
+bool MediaFileUtils::IsPhotoTablePath(const string &path)
+{
+    if (path.empty() || path.size() <= ROOT_MEDIA_DIR.size()) {
+        return false;
+    }
+
+    if (path.find(ROOT_MEDIA_DIR) == string::npos) {
+        return false;
+    }
+
+    string relativePath = path.substr(ROOT_MEDIA_DIR.size());
+    
+    const vector<string> photoPathVector = {
+        PHOTO_BUCKET, PIC_DIR_VALUES, VIDEO_DIR_VALUES, CAMERA_DIR_VALUES
+    };
+    for (auto &photoPath : photoPathVector) {
+        if (path.find(photoPath) != string::npos) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool MediaFileUtils::StartsWith(const std::string &str, const std::string &prefix)
 {
     return str.compare(0, prefix.size(), prefix) == 0;

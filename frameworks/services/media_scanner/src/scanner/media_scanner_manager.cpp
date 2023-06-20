@@ -43,9 +43,10 @@ std::shared_ptr<MediaScannerManager> MediaScannerManager::GetInstance()
     return instance_;
 }
 
-int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback)
+int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
+    MediaLibraryApi api)
 {
-    MEDIA_DEBUG_LOG("scan file %{private}s", path.c_str());
+    MEDIA_DEBUG_LOG("scan file %{private}s, api%{public}d", path.c_str(), static_cast<int>(api));
 
     string realPath;
     if (!PathToRealPath(path, realPath)) {
@@ -59,7 +60,7 @@ int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared
     }
 
     std::unique_ptr<MediaScannerObj> scanner =
-        std::make_unique<MediaScannerObj>(realPath, callback, MediaScannerObj::FILE);
+        std::make_unique<MediaScannerObj>(realPath, callback, MediaScannerObj::FILE, api);
     executor_.Commit(move(scanner));
 
     return E_OK;
