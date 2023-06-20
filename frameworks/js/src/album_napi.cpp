@@ -34,6 +34,7 @@ thread_local AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 
 thread_local napi_ref AlbumNapi::userFileMgrConstructor_ = nullptr;
+thread_local napi_ref AlbumNapi::photoAccessHelperConstructor_ = nullptr;
 
 AlbumNapi::AlbumNapi()
     : env_(nullptr) {}
@@ -108,6 +109,26 @@ napi_value AlbumNapi::UserFileMgrInit(napi_env env, napi_value exports)
     return exports;
 }
 
+napi_value AlbumNapi::PhotoAccessHelperInit(napi_env env, napi_value exports)
+{
+    NapiClassInfo info = {
+        .name = PHOTOACCESSHELPER_ALBUM_NAPI_CLASS_NAME,
+        .ref = &photoAccessHelperConstructor_,
+        .constructor = AlbumNapiConstructor,
+        .props = {
+            DECLARE_NAPI_FUNCTION("getPhotoAssets", PhotoAccessHelperGetAssets),
+            DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
+            DECLARE_NAPI_GETTER_SETTER("albumName", JSGetAlbumName, JSAlbumNameSetter),
+            DECLARE_NAPI_GETTER("albumUri", JSGetAlbumUri),
+            DECLARE_NAPI_GETTER("count", JSGetCount),
+            DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri)
+        }
+    };
+
+    MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
+    return exports;
+}
+
 void AlbumNapi::SetAlbumNapiProperties()
 {
     albumAssetPtr = std::shared_ptr<AlbumAsset>(sAlbumData_);
@@ -151,8 +172,14 @@ napi_value AlbumNapi::CreateAlbumNapi(napi_env env, unique_ptr<AlbumAsset> &albu
     }
 
     napi_value constructor;
-    napi_ref constructorRef = (albumData->GetResultNapiType() == ResultNapiType::TYPE_MEDIALIBRARY) ?
-        (sConstructor_) : (userFileMgrConstructor_);
+    napi_ref constructorRef;
+    if (albumData->GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) {
+        constructorRef = userFileMgrConstructor_;
+    } else if (albumData->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        constructorRef = photoAccessHelperConstructor_;
+    } else {
+        constructorRef = sConstructor_;
+    }
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
     napi_value result = nullptr;
@@ -958,6 +985,43 @@ napi_value AlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info info
 }
 
 napi_value AlbumNapi::UserFileMgrCommitModify(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrCommitModify");
+
+    napi_value ret = nullptr;
+    unique_ptr<AlbumNapiAsyncContext> asyncContext = make_unique<AlbumNapiAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext), JS_ERR_PARAMETER_INVALID);
+    asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
+    asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "AlbumAsset is nullptr");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrCommitModify", CommitModifyNative,
+        JSCommitModifyCompleteCallback);
+}
+
+napi_value AlbumNapi::PhotoAccessHelperGetAssets(napi_env env, napi_callback_info info)
+{
+    napi_value ret = nullptr;
+    unique_ptr<AlbumNapiAsyncContext> asyncContext = make_unique<AlbumNapiAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_IMAGE);
+    asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext),
+        JS_ERR_PARAMETER_INVALID);
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
+    asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "AlbumAsset is nullptr");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAssets", GetFileAssetsNative,
+        JSGetFileAssetsCompleteCallback);
+}
+
+napi_value AlbumNapi::PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UserFileMgrCommitModify");

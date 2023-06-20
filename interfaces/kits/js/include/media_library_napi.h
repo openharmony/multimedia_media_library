@@ -40,6 +40,7 @@ namespace OHOS {
 namespace Media {
 static const std::string MEDIA_LIB_NAPI_CLASS_NAME = "MediaLibrary";
 static const std::string USERFILE_MGR_NAPI_CLASS_NAME = "UserFileManager";
+static const std::string PHOTOACCESSHELPER_NAPI_CLASS_NAME = "PhotoAccessHelper";
 
 enum ListenerType {
     INVALID_LISTENER = -1,
@@ -160,6 +161,7 @@ class MediaLibraryNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
+    static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
 
     MediaLibraryNapi();
     ~MediaLibraryNapi();
@@ -221,6 +223,12 @@ private:
     static napi_value CreatePositionTypeEnum(napi_env env);
     static napi_value CreatePhotoSubTypeEnum(napi_env env);
 
+    static napi_value GetPhotoAccessHelper(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperTrashAsset(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperOnCallback(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperOffCallback(napi_env env, napi_callback_info info);
+
     static napi_value CreateAlbumTypeEnum(napi_env env);
     static napi_value CreateAlbumSubTypeEnum(napi_env env);
     static napi_value CreateNotifyTypeEnum(napi_env env);
@@ -242,6 +250,7 @@ private:
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
+    static thread_local napi_ref photoAccessHelperConstructor_;
     static thread_local napi_ref sMediaTypeEnumRef_;
     static thread_local napi_ref sDirectoryEnumRef_;
     static thread_local napi_ref sVirtualAlbumTypeEnumRef_;

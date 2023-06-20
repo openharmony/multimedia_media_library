@@ -25,6 +25,7 @@ namespace Media {
 enum class ResultNapiType {
     TYPE_MEDIALIBRARY,
     TYPE_USERFILE_MGR,
+    TYPE_PHOTOACCESS_HELPER,
     TYPE_NAPI_MAX
 };
 
