@@ -42,6 +42,7 @@ ohos_executable("scanner") {
     "data_share:datashare_consumer",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_single",
     "relational_store:native_appdatafwk",
     "samgr:samgr_proxy",
   ]

@@ -36,6 +36,7 @@ ohos_unittest("medialibrary_object_test") {
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_provider",
+    "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
