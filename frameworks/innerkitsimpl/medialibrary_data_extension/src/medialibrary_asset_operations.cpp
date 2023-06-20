@@ -298,7 +298,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     }
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
     assetInfo.PutString(MediaColumn::MEDIA_TITLE,
-        MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+        MediaFileUtils::GetTitleFromDisplayName(displayName));
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
     }
@@ -502,38 +502,33 @@ int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
 
     if (values.GetObject(MediaColumn::MEDIA_TITLE, valueObject)) {
         valueObject.GetString(newTitle);
-        int32_t errCode = MediaFileUtils::CheckTitle(newTitle);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_INVALID_DISPLAY_NAME,
-            "Input title invalid %{private}s, errCode=%{public}d", newTitle.c_str(), errCode);
         containsTitle = true;
     }
     if (values.GetObject(MediaColumn::MEDIA_NAME, valueObject)) {
         valueObject.GetString(newDisplayName);
-        int32_t ret = CheckDisplayNameWithType(newDisplayName, fileAsset->GetMediaType());
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Input displayName invalid %{private}s",
-            newDisplayName.c_str());
         containsDisplayName = true;
     }
-
     if ((!containsTitle) && (!containsDisplayName)) {
         // do not need to update
         return E_OK;
     }
     if (containsTitle && containsDisplayName &&
-        (MediaLibraryDataManagerUtils::GetFileTitle(newDisplayName) != newTitle)) {
+        (MediaFileUtils::GetTitleFromDisplayName(newDisplayName) != newTitle)) {
         MEDIA_ERR_LOG("new displayName [%{private}s] and new title [%{private}s] is not same",
             newDisplayName.c_str(), newTitle.c_str());
         return E_INVALID_DISPLAY_NAME;
     }
-
     if (!containsTitle) {
-        values.PutString(MediaColumn::MEDIA_TITLE,
-            MediaLibraryDataManagerUtils::GetFileTitle(newDisplayName));
+        newTitle = MediaFileUtils::GetTitleFromDisplayName(newDisplayName);
     }
     if (!containsDisplayName) {
-        string ext = MediaFileUtils::SplitByChar(fileAsset->GetDisplayName(), '.');
-        values.PutString(MediaColumn::MEDIA_NAME, newTitle + "." + ext);
+        newDisplayName = newTitle + "." + MediaFileUtils::SplitByChar(fileAsset->GetDisplayName(), '.');
     }
+
+    int32_t ret = CheckDisplayNameWithType(newDisplayName, fileAsset->GetMediaType());
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Input displayName invalid %{private}s", newDisplayName.c_str());
+    values.PutString(MediaColumn::MEDIA_TITLE, newTitle);
+    values.PutString(MediaColumn::MEDIA_NAME, newDisplayName);
     isNameChanged = true;
     return E_OK;
 }
