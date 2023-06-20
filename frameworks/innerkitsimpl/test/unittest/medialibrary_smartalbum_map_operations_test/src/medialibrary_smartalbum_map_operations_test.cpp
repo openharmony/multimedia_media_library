@@ -14,7 +14,7 @@
  */
 #define MLOG_TAG "FileExtUnitTest"
 
-#include "medialibrary_smartalbum_map_operations_test.h" 
+#include "medialibrary_smartalbum_map_operations_test.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_unistore_manager.h"
 #include "ability_context_impl.h"
@@ -52,7 +52,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleSmartAlbumMapOperation_test_001
     MediaLibraryCommand cmd3(OperationObject::FILESYSTEM_ASSET, OperationType::UNKNOWN_TYPE);
     ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd2);
     EXPECT_EQ(ret, E_SMARTALBUM_IS_NOT_EXISTED);
-
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleSmartAlbumMapOperation_test_002, TestSize.Level0)
@@ -61,7 +60,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleSmartAlbumMapOperation_test_002
     MediaLibraryUnistoreManager::GetInstance().Init(context);
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
-    int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd); 
+    int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
     EXPECT_EQ(ret, E_SMARTALBUM_IS_NOT_EXISTED);
 
     cmd.SetTableName(MEDIALIBRARY_TABLE);
@@ -82,12 +81,12 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleSmartAlbumMapOperation_test_002
 HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleSmartAlbumMapOperation_test_003, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
-    int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd); 
+    int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
     NativeRdb::ValuesBucket values;
     cmd.SetValueBucket(values);
     EXPECT_EQ(ret, E_SMARTALBUM_IS_NOT_EXISTED);
 
-    ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd); 
+    ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
     cmd.SetValueBucket(values);
     EXPECT_EQ(ret, E_SMARTALBUM_IS_NOT_EXISTED);
 }
@@ -243,8 +242,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleAgingOperation_test_002, TestSi
     EXPECT_EQ(ret, E_OK);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
-
-
 
 } // namespace Media
 } // namespace OHOSfu
